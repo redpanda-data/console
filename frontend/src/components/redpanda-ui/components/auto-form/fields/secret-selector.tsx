@@ -5,28 +5,26 @@
 import type React from 'react';
 import { createContext, useContext } from 'react';
 import { Input } from '../../input';
-
+import { getProtoFieldCustomData } from '../../../lib/protobuf-provider';
 import type { AutoFormFieldProps } from '../core-types';
-import { getFieldUiConfig } from '../helpers';
-import { getProtoFieldCustomData } from '../proto';
-import type { FieldTypeDefinition } from '../registry';
+import { getFieldUiConfig } from '../ui-config';
 import { resolveSecretScopes } from './secret-selector-scopes';
-import { useFieldTestIds } from './shared';
+import { useFieldTestIds } from './use-field-test-ids';
 
 export interface SecretSelectorAdapterProps {
-  description?: string;
-  disabled?: boolean;
-  error?: string;
+  description?: string | undefined;
+  disabled?: boolean | undefined;
+  error?: string | undefined;
   onChange: (value: string) => void;
-  placeholder?: string;
+  placeholder?: string | undefined;
   scopes: readonly unknown[];
-  testId?: string;
+  testId?: string | undefined;
   value: string;
 }
 
 export type SecretSelectorAdapter = React.ComponentType<SecretSelectorAdapterProps>;
 
-export const SecretSelectorAdapterContext = createContext<SecretSelectorAdapter | null>(null);
+const SecretSelectorAdapterContext = createContext<SecretSelectorAdapter | null>(null);
 
 export function SecretSelectorAdapterProvider({
   adapter,
@@ -47,13 +45,15 @@ function SecretSelectorFieldComponent(props: AutoFormFieldProps) {
 
   const value = typeof props.value === 'string' ? props.value : '';
 
-  if (!Adapter) {
+  if (Adapter === null) {
     return (
       <Input
         aria-invalid={Boolean(props.error)}
         data-testid={testIds.control}
         disabled={props.inputProps.disabled}
-        onChange={(event) => props.inputProps.onValueChange(event.target.value)}
+        onChange={(event) => {
+          props.inputProps.onValueChange(event.target.value);
+        }}
         placeholder={uiConfig.placeholder}
         value={value}
       />
@@ -65,7 +65,9 @@ function SecretSelectorFieldComponent(props: AutoFormFieldProps) {
       description={uiConfig.help}
       disabled={props.inputProps.disabled}
       error={props.error}
-      onChange={(nextValue) => props.inputProps.onValueChange(nextValue)}
+      onChange={(nextValue) => {
+        props.inputProps.onValueChange(nextValue);
+      }}
       placeholder={uiConfig.placeholder}
       scopes={scopes}
       testId={testIds.control}
@@ -75,10 +77,3 @@ function SecretSelectorFieldComponent(props: AutoFormFieldProps) {
 }
 
 export { SecretSelectorFieldComponent };
-
-export const secretSelectorFieldDefinition: FieldTypeDefinition = {
-  name: 'secretSelector',
-  priority: 25,
-  match: (_field, context) => context.inputType === 'secretSelector',
-  component: SecretSelectorFieldComponent,
-};

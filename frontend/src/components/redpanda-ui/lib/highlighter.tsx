@@ -1,6 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
 // Types only: Shiki itself loads with the first block that highlights, not with the page.
 import type { GrammarState, HighlighterCore } from 'shiki/core';
+import type {} from './hast-jsx';
+import { omitUndefined } from './utils/omit-undefined';
 
 // Add the languages you need. Each one loads the first time it is used.
 const languages = {
@@ -47,7 +49,7 @@ const aliases: Record<string, Language> = {
 };
 
 /** One Shiki theme per app theme, matching `code-editor` and `code-tabs`. */
-const THEMES = { light: 'github-light', dark: 'github-dark-default' } as const;
+const THEMES = { light: 'github-light-high-contrast', dark: 'github-dark-default' } as const;
 
 let highlighter: Promise<HighlighterCore> | undefined;
 
@@ -55,7 +57,7 @@ function getHighlighter() {
   highlighter ??= Promise.all([import('shiki/core'), import('shiki/engine/javascript')])
     .then(([{ createHighlighterCore }, { createJavaScriptRegexEngine }]) =>
       createHighlighterCore({
-        themes: [import('shiki/themes/github-light.mjs'), import('shiki/themes/github-dark-default.mjs')],
+        themes: [import('shiki/themes/github-light-high-contrast.mjs'), import('shiki/themes/github-dark-default.mjs')],
         langs: [],
         engine: createJavaScriptRegexEngine({ forgiving: true }),
       })
@@ -74,6 +76,24 @@ function getHighlighter() {
 const SGR_START = '\u001b[';
 const SGR_PARAMS = /^[0-9;]*$/;
 
+const ANSI_CSI = /^\[[0-?]*[ -/]*[@-~]/;
+const ANSI_CHARSET = /^[()][0-9A-Za-z]/;
+const ANSI_SGR = /^\[[0-9;:]*m$/;
+
+/** Remove complete CSI/charset controls for readable logs, not terminal screen emulation. */
+export function stripAnsiControls(code: string, preserveSgr = false): string {
+  const [first, ...escaped] = code.split('\u001b');
+  return [
+    first,
+    ...escaped.map((part) => {
+      const control = ANSI_CSI.exec(part)?.[0] ?? ANSI_CHARSET.exec(part)?.[0];
+      return control === undefined || (preserveSgr && ANSI_SGR.test(control))
+        ? `\u001b${part}`
+        : part.slice(control.length);
+    }),
+  ].join('');
+}
+
 /**
  * Where ANSI output left off: the SGR sequences still in force at the end of the last chunk.
  * Prefixed to the next chunk, they colour it the way one piece would have been.
@@ -86,8 +106,7 @@ interface AnsiState {
 /** Grammar state for a language, or the open SGR sequences for ANSI output. */
 export type HighlightState = GrammarState | AnsiState;
 
-const isAnsiState = (state: HighlightState | undefined): state is AnsiState =>
-  state !== undefined && 'kind' in state && state.kind === 'ansi';
+const isAnsiState = (state: HighlightState | undefined): state is AnsiState => state !== undefined && 'kind' in state;
 
 /** The SGR sequences still in force after `text`, given those in force before it. */
 function openSequences(text: string, before: string): string {
@@ -115,6 +134,10 @@ function openSequences(text: string, before: string): string {
  * The listed language a name refers to, `'ansi'` for terminal output, or null for anything else.
  * Takes the `language-*` class a Markdown fence carries as well as the bare name.
  */
+function isLanguage(value: string): value is Language {
+  return Object.hasOwn(languages, value);
+}
+
 export function resolveLanguage(language: string): Language | 'ansi' | null {
   const name = language.toLowerCase().replace(LANGUAGE_CLASS_PREFIX, '');
 
@@ -122,8 +145,8 @@ export function resolveLanguage(language: string): Language | 'ansi' | null {
     return name;
   }
 
-  if (name in languages) {
-    return name as Language;
+  if (isLanguage(name)) {
+    return name;
   }
 
   return aliases[name] ?? null;
@@ -141,7 +164,7 @@ export interface CodeHighlighter {
 export async function loadHighlighter(language: string): Promise<CodeHighlighter | null> {
   const lang = resolveLanguage(language);
 
-  if (!lang) {
+  if (lang === null) {
     return null;
   }
 
@@ -157,35 +180,34 @@ export async function loadHighlighter(language: string): Promise<CodeHighlighter
       // chunk with the sequences still open keeps streamed output the colour one piece would be.
       const ansiOpen = isAnsiState(state) ? state.open : '';
       const grammarState = isAnsiState(state) ? undefined : state;
-      const tokens = shiki.codeToTokens(lang === 'ansi' ? ansiOpen + code : code, {
-        lang,
-        themes: THEMES,
-        defaultColor: false,
-        grammarState,
-      }).tokens;
+      const source = lang === 'ansi' ? stripAnsiControls(code, true) : code;
+      const tokens = shiki.codeToTokens(
+        lang === 'ansi' ? ansiOpen + source : source,
+        omitUndefined({
+          lang,
+          themes: THEMES,
+          defaultColor: false,
+          grammarState,
+        })
+      ).tokens;
 
       return {
         lines: tokens.map((line) =>
           // ANSI tokens all report offset 0, so a token's place in its line is what identifies it.
-          line.map((token, index) => (
-            <span
-              // theme.css's `code-token` picks the colour for the theme around it.
-              className="code-token"
-              data-slot="code-block-token"
-              key={index}
-              style={
-                {
-                  '--shiki-light': token.htmlStyle?.['--shiki-light'],
-                  '--shiki-dark': token.htmlStyle?.['--shiki-dark'],
-                } as CSSProperties
-              }
-            >
-              {token.content}
-            </span>
-          ))
+          line.map((token, index) => {
+            const style: CSSProperties & Record<'--shiki-light' | '--shiki-dark', string | undefined> = {
+              '--shiki-light': token.htmlStyle?.['--shiki-light'],
+              '--shiki-dark': token.htmlStyle?.['--shiki-dark'],
+            };
+            return (
+              <span className="code-token" data-slot="code-block-token" key={index} style={style}>
+                {token.content}
+              </span>
+            );
+          })
         ),
         state:
-          lang === 'ansi' ? { kind: 'ansi', open: openSequences(code, ansiOpen) } : shiki.getLastGrammarState(tokens),
+          lang === 'ansi' ? { kind: 'ansi', open: openSequences(source, ansiOpen) } : shiki.getLastGrammarState(tokens),
       };
     },
   };
@@ -198,5 +220,5 @@ export async function loadHighlighter(language: string): Promise<CodeHighlighter
 export async function highlightCode(code: string, language: string): Promise<ReactNode[] | null> {
   const codeHighlighter = await loadHighlighter(language);
 
-  return codeHighlighter ? codeHighlighter.highlight(code).lines : null;
+  return codeHighlighter === null ? null : codeHighlighter.highlight(code).lines;
 }

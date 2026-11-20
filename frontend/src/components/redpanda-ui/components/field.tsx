@@ -1,10 +1,11 @@
 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
-import { createContext, useContext, useId, useMemo } from 'react';
-
-import { Label } from './label';
+import { createContext, useContext, useId } from 'react';
+import type { LabelProps } from './label';
+import { labelStyles } from './label/label-styles';
 import { Separator } from './separator';
+import { hasSlotContent } from '../lib/has-slot-content';
 import { cn, type SharedProps } from '../lib/utils';
 
 interface FieldContextValue {
@@ -38,7 +39,7 @@ function FieldLegend({
   className,
   variant = 'legend',
   ...props
-}: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label' }) {
+}: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label' | undefined }) {
   return (
     <legend
       className={cn(
@@ -78,7 +79,7 @@ const fieldVariants = cva('group/field flex w-full gap-3 data-[invalid=true]:tex
         'has-[>[data-slot=field-content]]:items-start has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px',
       ],
       responsive: [
-        '@md/field-group:flex-row flex-col @md/field-group:items-center @md/field-group:[&>*]:w-auto [&>*]:w-full [&>.sr-only]:w-auto',
+        'flex-col @md/field-group:flex-row @md/field-group:items-center [&>*]:w-full @md/field-group:[&>*]:w-auto [&>.sr-only]:w-auto',
         '@md/field-group:[&>[data-slot=field-label]]:flex-auto',
         '@md/field-group:has-[>[data-slot=field-content]]:items-start @md/field-group:has-[>[data-slot=field-content]]:[&>[role=checkbox],[role=radio]]:mt-px',
       ],
@@ -89,16 +90,16 @@ const fieldVariants = cva('group/field flex w-full gap-3 data-[invalid=true]:tex
   },
 });
 
-function Field({
-  className,
-  orientation = 'vertical',
-  testId,
-  ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof fieldVariants> & SharedProps) {
-  const dataProps = props as Record<string, unknown>;
-  const invalid = dataProps['data-invalid'] === true || dataProps['data-invalid'] === 'true';
+export type FieldProps = React.ComponentProps<'div'> &
+  VariantProps<typeof fieldVariants> &
+  SharedProps & {
+    'data-invalid'?: boolean | 'true' | 'false' | undefined;
+  };
+
+function Field({ className, orientation = 'vertical', testId, ...props }: FieldProps) {
+  const invalid = props['data-invalid'] === true || props['data-invalid'] === 'true';
   const errorId = useId();
-  const ctx = useMemo(() => ({ invalid, errorId: invalid ? errorId : undefined }), [invalid, errorId]);
+  const ctx: FieldContextValue = { invalid, errorId: invalid ? errorId : undefined };
 
   return (
     <FieldContext.Provider value={ctx}>
@@ -126,29 +127,38 @@ function FieldContent({ className, ...props }: React.ComponentProps<'div'>) {
 function FieldLabel({
   className,
   children,
+  htmlFor,
   required,
+  inset,
+  invalid,
+  size,
+  surface,
+  variant,
+  testId,
   ...props
-}: React.ComponentProps<typeof Label> & { required?: boolean }) {
+}: LabelProps & { required?: boolean | undefined }) {
   return (
-    <Label
+    <label
       className={cn(
+        labelStyles({ inset, invalid, size, surface, variant }),
         'group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50',
         'has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col has-[>[data-slot=field]]:rounded-md has-[>[data-slot=field]]:border [&>*]:data-[slot=field]:p-4',
-        'has-data-[checked]:border-primary has-data-[checked]:bg-primary-wash',
-        // Checkbox re-injects data-state; Base UI radio emits data-checked — match both so radio cards keep the selected highlight.
         'has-data-[checked]:border-primary has-data-[checked]:bg-primary-wash',
         className
       )}
       data-slot="field-label"
+      data-surface={surface}
+      data-testid={testId}
+      htmlFor={htmlFor}
       {...props}
     >
       {children}
-      {required ? (
+      {required === true ? (
         <span aria-hidden="true" className="text-destructive">
           *
         </span>
       ) : null}
-    </Label>
+    </label>
   );
 }
 
@@ -168,8 +178,8 @@ function FieldDescription({ className, testId, ...props }: React.ComponentProps<
     <div
       className={cn(
         'text-body text-subtle group-has-[[data-orientation=horizontal]]/field:text-balance',
-        'nth-last-2:-mt-1 last:mt-0 [[data-variant=legend]+&]:-mt-1.5',
-        '[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4',
+        'last:mt-0 nth-last-2:-mt-1 [[data-variant=legend]+&]:-mt-1.5',
+        '[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary',
         className
       )}
       data-slot="field-description"
@@ -184,17 +194,17 @@ function FieldSeparator({
   className,
   ...props
 }: React.ComponentProps<'div'> & {
-  children?: React.ReactNode;
+  children?: React.ReactNode | undefined;
 }) {
   return (
     <div
       className={cn('relative -my-2 h-5 text-body group-data-[variant=outline]/field-group:-mb-2', className)}
-      data-content={!!children}
+      data-content={hasSlotContent(children)}
       data-slot="field-separator"
       {...props}
     >
       <Separator className="absolute inset-0 top-1/2" />
-      {children ? (
+      {hasSlotContent(children) ? (
         <span
           className="relative mx-auto block w-fit bg-background px-2 text-subtle"
           data-slot="field-separator-content"
@@ -206,45 +216,48 @@ function FieldSeparator({
   );
 }
 
-function FieldError({
-  className,
-  children,
-  errors,
-  testId,
-  ...props
-}: React.ComponentProps<'div'> & {
-  errors?: Array<{ message?: string } | undefined>;
-} & SharedProps) {
+type FieldErrorProps = React.ComponentProps<'div'> & {
+  errors?: Array<{ message?: string | undefined } | undefined>;
+} & SharedProps;
+
+function fieldErrorContent(children: React.ReactNode, errors: FieldErrorProps['errors']): React.ReactNode {
+  if (hasSlotContent(children)) {
+    return children;
+  }
+  const messages = [
+    ...new Set(
+      errors?.flatMap((error) => {
+        const message = error?.message;
+        return message === undefined || message === '' ? [] : [message];
+      })
+    ),
+  ];
+  if (messages.length === 0) {
+    return null;
+  }
+  if (messages.length === 1) {
+    return messages[0];
+  }
+  return (
+    <ul className="ml-4 flex list-disc flex-col gap-1">
+      {messages.map((message) => (
+        <li key={message}>{message}</li>
+      ))}
+    </ul>
+  );
+}
+
+function FieldError({ className, children, errors, testId, ...props }: FieldErrorProps) {
   const { errorId } = useContext(FieldContext);
-  const content = useMemo(() => {
-    if (children) {
-      return children;
-    }
+  const content = fieldErrorContent(children, errors);
 
-    if (!errors?.length) {
-      return null;
-    }
-
-    const uniqueErrors = [...new Map(errors.map((error) => [error?.message, error])).values()];
-
-    if (uniqueErrors.length === 1) {
-      return uniqueErrors[0]?.message;
-    }
-
-    return (
-      <ul className="ml-4 flex list-disc flex-col gap-1">
-        {uniqueErrors.map((error) => error?.message && <li key={error.message}>{error.message}</li>)}
-      </ul>
-    );
-  }, [children, errors]);
-
-  if (!content) {
+  if (!hasSlotContent(content)) {
     return null;
   }
 
   return (
     <div
-      className={cn('font-normal text-body text-destructive', className)}
+      className={cn('text-body font-normal text-destructive', className)}
       data-slot="field-error"
       data-testid={testId}
       id={errorId}

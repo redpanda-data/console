@@ -164,7 +164,7 @@ export const AclsStep = () => {
             <TabsContent value="specify">
               <div className="space-y-4" data-testid="acl-filters-container">
                 {fields.map((field, index) => (
-                  <Card data-testid={`acl-filter-${index}`} key={field.id} size="full" variant="elevated">
+                  <Card data-testid={`acl-filter-${index}`} key={field.id}>
                     <CardHeader>
                       <CardTitle>{`ACL filter ${index + 1}`}</CardTitle>
                       <CardAction>

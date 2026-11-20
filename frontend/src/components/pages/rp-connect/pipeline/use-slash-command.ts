@@ -70,7 +70,7 @@ function slashReplaceRange(
  * menu lifecycle and text replacement on selection.
  *
  * Focus moves to the CommandInput inside the popover when the menu opens.
- * cmdk handles all keyboard navigation natively (ArrowUp/Down, Enter, Escape).
+ * Command handles all keyboard navigation natively (ArrowUp/Down, Enter, Escape).
  */
 export function useSlashCommand(
   editorInstance: editor.IStandaloneCodeEditor | null,

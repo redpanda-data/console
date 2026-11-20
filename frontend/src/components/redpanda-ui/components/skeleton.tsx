@@ -1,42 +1,7 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 import type React from 'react';
-
 import { cn, type SharedProps } from '../lib/utils';
-
-const skeletonVariants = cva('animate-pulse bg-accent', {
-  variants: {
-    variant: {
-      rounded: 'rounded-md',
-      circle: 'rounded-full',
-      text: 'h-4 rounded-md',
-      heading: 'h-6 rounded-md',
-      avatar: 'aspect-square rounded-full',
-      button: 'h-9 rounded-md',
-      card: 'rounded-lg',
-    },
-    size: {
-      xs: 'h-2',
-      sm: 'h-4',
-      md: 'h-6',
-      lg: 'h-8',
-      xl: 'h-12',
-    },
-    width: {
-      xs: 'w-16',
-      sm: 'w-24',
-      md: 'w-48',
-      lg: 'w-64',
-      xl: 'w-80',
-      full: 'w-full',
-      fit: 'w-fit',
-    },
-  },
-  defaultVariants: {
-    variant: 'rounded',
-    size: 'md',
-    width: 'md',
-  },
-});
+import { skeletonVariants } from './skeleton/variants';
 
 interface SkeletonProps extends React.ComponentProps<'div'>, VariantProps<typeof skeletonVariants>, SharedProps {}
 
@@ -53,9 +18,9 @@ function Skeleton({ className, variant, size, width, testId, ...props }: Skeleto
 
 interface SkeletonGroupProps extends SharedProps {
   children: React.ReactNode;
-  className?: string;
-  direction?: 'horizontal' | 'vertical';
-  spacing?: 'none' | 'sm' | 'md' | 'lg';
+  className?: string | undefined;
+  direction?: 'horizontal' | 'vertical' | undefined;
+  spacing?: 'none' | 'sm' | 'md' | 'lg' | undefined;
 }
 
 function SkeletonGroup({ children, direction = 'vertical', spacing = 'md', className, testId }: SkeletonGroupProps) {
@@ -82,8 +47,8 @@ function SkeletonGroup({ children, direction = 'vertical', spacing = 'md', class
 }
 
 interface SkeletonAvatarProps extends SharedProps {
-  className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  className?: string | undefined;
+  size?: 'sm' | 'md' | 'lg' | undefined;
 }
 
 const skeletonAvatarSizeMap: Record<
@@ -102,9 +67,9 @@ function SkeletonAvatar({ size = 'md', className, testId }: SkeletonAvatarProps)
 }
 
 interface SkeletonTextProps extends SharedProps {
-  className?: string;
-  lines?: number;
-  width?: 'sm' | 'md' | 'lg' | 'full';
+  className?: string | undefined;
+  lines?: number | undefined;
+  width?: 'sm' | 'md' | 'lg' | 'full' | undefined;
 }
 
 function SkeletonText({ lines = 1, width = 'md', className, testId }: SkeletonTextProps) {
@@ -122,4 +87,4 @@ function SkeletonText({ lines = 1, width = 'md', className, testId }: SkeletonTe
   );
 }
 
-export { Skeleton, SkeletonAvatar, SkeletonGroup, SkeletonText, skeletonVariants };
+export { Skeleton, SkeletonAvatar, SkeletonGroup, SkeletonText };

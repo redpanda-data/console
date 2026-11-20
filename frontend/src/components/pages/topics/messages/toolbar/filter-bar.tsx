@@ -11,8 +11,6 @@
 
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
-import { HighlightedInput } from 'components/redpanda-ui/components/highlighted-input';
-import { Listbox, ListboxGroupLabel, ListboxOption } from 'components/redpanda-ui/components/listbox';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { Chip } from 'components/ui/chip';
 import { SearchIcon, XIcon } from 'lucide-react';
@@ -25,6 +23,8 @@ import {
   type SuggestionAction,
   type SuggestionItem,
 } from './filter-suggestions';
+import { HighlightedInput } from './highlighted-input';
+import { Listbox, ListboxGroupLabel, ListboxOption } from './listbox';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../../state/ui';
 import { TonedIcon } from '../../../shared/toned-icon';

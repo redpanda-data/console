@@ -27,8 +27,8 @@ const THEME_CSS = readFileSync(resolve(process.cwd(), 'src/components/redpanda-u
 const CSS_COMMENT = /\/\*[\s\S]*?\*\//g;
 /** The rule is found by its declaration, so it survives upstream rewording the scoping. */
 const SIDEBAR_SELECTION_RULE = /([^{}]*::selection[^{}]*)\{[^}]*--color-sidebar-primary[^}]*\}/;
-/** A `::selection` rule with no selector in front of it — the page-wide one. */
-const PAGE_SELECTION_RULE = /(?:^|})\s*::selection\s*\{([^}]*)\}/;
+/** A `::selection` rule with no selector in front of it — the page-wide one, possibly inside an `@supports` block. */
+const PAGE_SELECTION_RULE = /(?:^|[{}])\s*::selection\s*\{([^}]*)\}/;
 const SELECTION_PSEUDO = /::selection$/;
 
 /** Comments mention `::selection` in prose, so they'd otherwise land inside a selector capture. */

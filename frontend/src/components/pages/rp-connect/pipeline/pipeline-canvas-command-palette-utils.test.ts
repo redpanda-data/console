@@ -59,7 +59,7 @@ describe('searchValue', () => {
     const a = searchValue(node({ label: 'kafka' }), 0);
     const b = searchValue(node({ label: 'kafka' }), 1);
 
-    // Distinct values so cmdk can track each row separately...
+    // Distinct values so Command can track each row separately...
     expect(a).not.toBe(b);
     // ...but identical once the invisible suffix is stripped.
     expect(a.replace(new RegExp(ZWSP, 'g'), '')).toBe(b.replace(new RegExp(ZWSP, 'g'), ''));

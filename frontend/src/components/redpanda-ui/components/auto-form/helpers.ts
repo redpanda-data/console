@@ -1,9 +1,10 @@
 import type { UseFormReturn } from 'react-hook-form';
-
+import { getProtoFieldCustomData } from '../../lib/protobuf-provider';
+import { omitUndefined } from '../../lib/utils/omit-undefined';
 import type { ParsedField, SchemaValidation } from './core-types';
-import { getLabel, getPathInObject, sortFieldsByOrder } from './field-utils';
-import { getProtoFieldCustomData } from './proto';
-import type { AutoFormOptionGroup, AutoFormOptionItem, AutoFormUiRule, FieldTypes } from './types';
+import { getPathInObject, sortFieldsByOrder } from './field-utils';
+import { buildFieldMatchContext } from './registry';
+import { getFieldUiConfig, isRecord } from './ui-config';
 
 export const UNSET_SELECT_VALUE = '__autoform_unset__';
 export const NUMERIC_OPTION_PATTERN = /^-?\d+$/;
@@ -16,206 +17,8 @@ export const EMAIL_FIELD_PATTERN = /(email|e-mail)/i;
 export const CURRENCY_FIELD_PATTERN = /(amount|price|cost|balance|budget|revenue|salary|subtotal|total)/i;
 export const LONG_TEXT_FIELD_PATTERN = /(bio|description|details|notes?|summary|message|comment)/i;
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function toUiRules(value: unknown): AutoFormUiRule[] | undefined {
-  if (!Array.isArray(value)) {
-    return;
-  }
-
-  const rules: AutoFormUiRule[] = [];
-
-  for (const rule of value) {
-    if (!isRecord(rule) || typeof rule.expression !== 'string') {
-      continue;
-    }
-
-    rules.push({
-      id: typeof rule.id === 'string' ? rule.id : undefined,
-      expression: rule.expression,
-      message: typeof rule.message === 'string' ? rule.message : undefined,
-    });
-  }
-
-  return rules.length > 0 ? rules : undefined;
-}
-
-function toOptionItem(value: unknown): AutoFormOptionItem | undefined {
-  if (!isRecord(value) || typeof value.value !== 'string') {
-    return;
-  }
-
-  return {
-    value: value.value,
-    label: typeof value.label === 'string' || typeof value.label === 'number' ? String(value.label) : undefined,
-    icon: value.icon as AutoFormOptionItem['icon'],
-  };
-}
-
-function toOptionGroups(value: unknown): AutoFormOptionGroup[] | undefined {
-  if (!Array.isArray(value)) {
-    return;
-  }
-
-  const groups: AutoFormOptionGroup[] = [];
-
-  for (const candidate of value) {
-    if (!(isRecord(candidate) && Array.isArray(candidate.options))) {
-      continue;
-    }
-
-    const options = candidate.options
-      .map(toOptionItem)
-      .filter((option): option is AutoFormOptionItem => Boolean(option));
-    if (options.length === 0) {
-      continue;
-    }
-
-    groups.push({
-      label:
-        typeof candidate.label === 'string' || typeof candidate.label === 'number'
-          ? String(candidate.label)
-          : undefined,
-      options,
-    });
-  }
-
-  return groups.length > 0 ? groups : undefined;
-}
-
-interface AnnotatedUi {
-  control?: unknown;
-  dataProvider?: unknown;
-  dropzone?: unknown;
-}
-
-// `deriveAnnotatedControl` must skip complex types: a `repeated string`
-// annotated with `data_provider` would otherwise short-circuit to
-// `dataProviderSelect` on the array itself, bypassing the Add-button UI.
-// The annotation still reaches each item via the array's schema[0] template.
-function isComplexFieldType(type: unknown): boolean {
-  return type === 'array' || type === 'map' || type === 'object';
-}
-
-// Picks the widget override from annotations: `dataProvider` wins (opinionated
-// dropdown), else `dropzone` + `control === 'json'` (JSON editor), else undefined
-// so the normal control/type path resolves. Reads all three UI sources.
-function deriveAnnotatedControl(
-  fieldType: unknown,
-  protoUi: AnnotatedUi | undefined,
-  nested: AnnotatedUi | undefined,
-  direct: AnnotatedUi | undefined
-): FieldTypes | undefined {
-  if (isComplexFieldType(fieldType)) {
-    return;
-  }
-
-  const dataProvider =
-    (typeof direct?.dataProvider === 'string' && direct.dataProvider) ||
-    (typeof nested?.dataProvider === 'string' && nested.dataProvider) ||
-    (typeof protoUi?.dataProvider === 'string' && protoUi.dataProvider) ||
-    undefined;
-  if (dataProvider) {
-    return 'dataProviderSelect' as FieldTypes;
-  }
-
-  const dropzone = direct?.dropzone === true || nested?.dropzone === true || protoUi?.dropzone === true;
-  const control = direct?.control ?? nested?.control ?? protoUi?.control;
-  if (dropzone && control === 'json') {
-    return 'dropzone-json' as FieldTypes;
-  }
-
-  return;
-}
-
-export function getFieldUiConfig(field: ParsedField): {
-  control?: FieldTypes;
-  placeholder?: string;
-  example?: string;
-  help?: string;
-  description?: string;
-  visibleWhen?: AutoFormUiRule[];
-  disabledWhen?: AutoFormUiRule[];
-  step?: string;
-  summaryLabel?: string;
-  optionGroups?: AutoFormOptionGroup[];
-  optionLabels?: Record<string, string>;
-} {
-  const protoUi = getProtoFieldCustomData(field)?.ui;
-  const customData = isRecord(field.fieldConfig?.customData) ? field.fieldConfig.customData : undefined;
-  const nestedUi = customData && isRecord(customData.ui) ? customData.ui : undefined;
-
-  const direct = customData
-    ? {
-        control: typeof customData.control === 'string' ? (customData.control as FieldTypes) : undefined,
-        placeholder: typeof customData.placeholder === 'string' ? customData.placeholder : undefined,
-        example: typeof customData.example === 'string' ? customData.example : undefined,
-        help: typeof customData.help === 'string' ? customData.help : undefined,
-        description: typeof customData.description === 'string' ? customData.description : undefined,
-        visibleWhen: toUiRules(customData.visibleWhen),
-        disabledWhen: toUiRules(customData.disabledWhen),
-        step: typeof customData.step === 'string' ? customData.step : undefined,
-        summaryLabel: typeof customData.summaryLabel === 'string' ? customData.summaryLabel : undefined,
-        optionGroups: toOptionGroups(customData.optionGroups),
-        optionLabels: isRecord(customData.optionLabels)
-          ? (customData.optionLabels as Record<string, string>)
-          : undefined,
-      }
-    : undefined;
-
-  const nested = nestedUi
-    ? {
-        control: typeof nestedUi.control === 'string' ? (nestedUi.control as FieldTypes) : undefined,
-        placeholder: typeof nestedUi.placeholder === 'string' ? nestedUi.placeholder : undefined,
-        example: typeof nestedUi.example === 'string' ? nestedUi.example : undefined,
-        help: typeof nestedUi.help === 'string' ? nestedUi.help : undefined,
-        description: typeof nestedUi.description === 'string' ? nestedUi.description : undefined,
-        visibleWhen: toUiRules(nestedUi.visibleWhen),
-        disabledWhen: toUiRules(nestedUi.disabledWhen),
-        step: typeof nestedUi.step === 'string' ? nestedUi.step : undefined,
-        summaryLabel: typeof nestedUi.summaryLabel === 'string' ? nestedUi.summaryLabel : undefined,
-        optionGroups: toOptionGroups(nestedUi.optionGroups),
-        optionLabels: isRecord(nestedUi.optionLabels) ? (nestedUi.optionLabels as Record<string, string>) : undefined,
-      }
-    : undefined;
-
-  // Proto-level widget annotations (data_provider, dropzone) override the
-  // plain control while leaving the explicit-control short-circuit intact.
-  const annotatedControl = deriveAnnotatedControl(field.type, protoUi, nested, direct);
-
-  return {
-    ...(protoUi ?? {}),
-    ...(nested ?? {}),
-    ...(direct ?? {}),
-    control:
-      (typeof field.fieldConfig?.fieldType === 'string' ? (field.fieldConfig.fieldType as FieldTypes) : undefined) ||
-      annotatedControl ||
-      direct?.control ||
-      nested?.control ||
-      (protoUi?.control as FieldTypes | undefined),
-    placeholder:
-      (typeof field.fieldConfig?.inputProps?.placeholder === 'string'
-        ? (field.fieldConfig.inputProps.placeholder as string)
-        : undefined) ||
-      direct?.placeholder ||
-      nested?.placeholder ||
-      protoUi?.placeholder,
-    example: direct?.example || nested?.example || protoUi?.example,
-    help: direct?.help || nested?.help || protoUi?.help,
-    description: direct?.description || nested?.description || protoUi?.description,
-    visibleWhen: direct?.visibleWhen || nested?.visibleWhen || protoUi?.visibleWhen,
-    disabledWhen: direct?.disabledWhen || nested?.disabledWhen || protoUi?.disabledWhen,
-    step: direct?.step || nested?.step || protoUi?.step,
-    summaryLabel: direct?.summaryLabel || nested?.summaryLabel || protoUi?.summaryLabel,
-    optionGroups: direct?.optionGroups || nested?.optionGroups,
-    optionLabels: direct?.optionLabels || nested?.optionLabels,
-  };
-}
-
 export function getRootErrorMessage(rootError: unknown): string | undefined {
-  if (!rootError) {
+  if (rootError === undefined || rootError === null || rootError === '') {
     return;
   }
 
@@ -224,21 +27,29 @@ export function getRootErrorMessage(rootError: unknown): string | undefined {
   }
 
   if (typeof rootError === 'object') {
-    const errorRecord = rootError as Record<string, unknown>;
-    if (typeof errorRecord.message === 'string') {
-      return errorRecord.message;
+    const errorRecord = rootError;
+    const message: unknown = Reflect.get(errorRecord, 'message');
+    if (typeof message === 'string' && message !== '') {
+      return message;
     }
 
-    return Object.values(errorRecord)
-      .map((value) => getRootErrorMessage(value))
-      .filter((message): message is string => Boolean(message))
-      .join('\n');
+    const messages: string[] = [];
+    for (const value of Object.values(errorRecord)) {
+      const errorMessage = getRootErrorMessage(value);
+      if (errorMessage !== undefined && errorMessage !== '') {
+        messages.push(errorMessage);
+      }
+    }
+    return messages.length === 0 ? undefined : messages.join('\n');
   }
-
-  return;
+  return undefined;
 }
 
-export function getFieldErrorMessage(errors: unknown, path: string[]): string | undefined {
+export function getFieldErrorMessage(
+  errors: unknown,
+  path: string[],
+  fieldType?: ParsedField['type']
+): string | undefined {
   if (typeof errors !== 'object' || errors === null) {
     return;
   }
@@ -246,8 +57,12 @@ export function getFieldErrorMessage(errors: unknown, path: string[]): string | 
   if (typeof nestedError !== 'object' || nestedError === null) {
     return;
   }
-  const message = Reflect.get(nestedError, 'message');
-  return typeof message === 'string' ? message : undefined;
+  const message: unknown = Reflect.get(nestedError, 'message');
+  if (typeof message === 'string') {
+    return message;
+  }
+  // RHF reserves `root` for collection validation; on other fields it can be a real child.
+  return fieldType === 'array' || fieldType === 'map' ? getFieldErrorMessage(errors, [...path, 'root']) : undefined;
 }
 
 export function applyValidationErrors(
@@ -285,8 +100,23 @@ export function applyValidationErrors(
   }
 }
 
+function createEmptyJsonValue(kind: NonNullable<ReturnType<typeof getProtoFieldCustomData>>['jsonKind']): unknown {
+  switch (kind) {
+    case 'listValue':
+      return [];
+    case 'any':
+      return { typeUrl: '', valueBase64: '' };
+    case 'struct':
+    case 'value':
+    case undefined:
+      return {};
+    default:
+      throw new Error('Unsupported protobuf JSON kind.');
+  }
+}
+
 export function createEmptyFieldValue(field: ParsedField | undefined): unknown {
-  if (!field) {
+  if (field === undefined) {
     return;
   }
 
@@ -302,20 +132,20 @@ export function createEmptyFieldValue(field: ParsedField | undefined): unknown {
     case 'number':
       return;
     case 'boolean':
-      return protoData?.supportsUnset && !field.required ? undefined : false;
-    case 'select':
-      return field.required && field.options?.length ? Number(field.options[0][0]) || field.options[0][0] : undefined;
+      return getFieldUiConfig(field).supportsUnset === true && !field.required ? undefined : false;
+    case 'select': {
+      const firstOption = field.required ? field.options?.[0] : undefined;
+      if (firstOption === undefined) {
+        return;
+      }
+      const optionValue = firstOption[0];
+      const numericValue = Number(optionValue);
+      return optionValue.trim() !== '' && !Number.isNaN(numericValue) ? numericValue : optionValue;
+    }
     case 'fieldMask':
       return [];
     case 'json':
-      switch (protoData?.jsonKind) {
-        case 'listValue':
-          return [];
-        case 'any':
-          return { typeUrl: '', valueBase64: '' };
-        default:
-          return {};
-      }
+      return createEmptyJsonValue(protoData?.jsonKind);
     case 'array':
       return [];
     case 'map':
@@ -332,7 +162,7 @@ export function createEmptyFieldValue(field: ParsedField | undefined): unknown {
 }
 
 function isKeyValueScalarField(field: ParsedField | undefined): boolean {
-  if (!field) {
+  if (field === undefined) {
     return false;
   }
 
@@ -349,116 +179,115 @@ function isSimpleKeyValueLikeObject(field: ParsedField | undefined): boolean {
 
   const keyField = field.schema.find((candidate) => candidate.key === 'key');
   const valueField = field.schema.find((candidate) => candidate.key === 'value');
-  return Boolean(keyField && valueField && isKeyValueScalarField(keyField) && isKeyValueScalarField(valueField));
+  return (
+    keyField !== undefined &&
+    valueField !== undefined &&
+    isKeyValueScalarField(keyField) &&
+    isKeyValueScalarField(valueField)
+  );
 }
 
-export function resolveRenderFieldType(field: ParsedField): FieldTypes {
+export function resolveRenderFieldType(field: ParsedField): string {
   const uiConfig = getFieldUiConfig(field);
-  if (uiConfig.control) {
+  if (uiConfig.control !== undefined && uiConfig.control !== '') {
     return uiConfig.control;
   }
 
-  const label = String(field.fieldConfig?.label ?? getLabel(field));
-  const identity = `${field.key} ${label}`.toLowerCase();
-  const inputType = String(field.fieldConfig?.inputProps?.type ?? getProtoFieldCustomData(field)?.inputType ?? '');
-  const maxLength = Number(field.fieldConfig?.inputProps?.maxLength ?? 0);
-
-  if (field.type === 'boolean') {
-    const protoData = getProtoFieldCustomData(field);
-    if (protoData?.supportsUnset && !field.required) {
-      return 'boolean';
-    }
-    if (CONSENT_FIELD_PATTERN.test(identity)) {
-      return 'checkbox';
-    }
-    return 'switch';
+  switch (field.type) {
+    case 'boolean':
+      return resolveBooleanControl(field);
+    case 'select':
+      return resolveChoiceControl(field);
+    case 'string':
+      return resolveStringControl(field);
+    case 'number':
+      return resolveNumericControl(field);
+    case 'array':
+    case 'map':
+      return resolveCollectionControl(field);
+    default:
+      return field.type;
   }
+}
 
-  if (field.type === 'select') {
-    const optionCount = field.options?.length ?? 0;
-    if (optionCount > 8) {
-      return 'combobox';
-    }
-    if (optionCount > 0 && optionCount <= 3) {
-      return 'radio';
-    }
-    return 'select';
+function resolveBooleanControl(field: ParsedField): string {
+  if (getFieldUiConfig(field).supportsUnset === true && !field.required) {
+    return 'boolean';
   }
+  return CONSENT_FIELD_PATTERN.test(buildFieldMatchContext(field).identity) ? 'checkbox' : 'switch';
+}
 
-  if (field.type === 'string') {
-    if (SECRET_FIELD_PATTERN.test(identity) || inputType === 'password') {
-      return 'password';
-    }
-    if (inputType === 'email' || EMAIL_FIELD_PATTERN.test(identity)) {
-      return 'email';
-    }
-    if (inputType === 'url' || URL_FIELD_PATTERN.test(identity)) {
-      return 'url';
-    }
-    if (CURRENCY_FIELD_PATTERN.test(identity)) {
-      return 'currency';
-    }
-    if (inputType === 'textarea' || maxLength > 120 || LONG_TEXT_FIELD_PATTERN.test(identity)) {
-      return 'textarea';
-    }
+function resolveChoiceControl(field: ParsedField): string {
+  const optionCount = field.options?.length ?? 0;
+  if (optionCount > 8) {
+    return 'combobox';
   }
+  return optionCount > 0 && optionCount <= 3 ? 'radio' : 'select';
+}
 
-  if (field.type === 'number') {
-    const min = Number(field.fieldConfig?.inputProps?.min);
-    const max = Number(field.fieldConfig?.inputProps?.max);
+function resolveNumericControl(field: ParsedField): string {
+  const min = Number(field.fieldConfig?.inputProps?.['min']);
+  const max = Number(field.fieldConfig?.inputProps?.['max']);
+  // This hint suppresses redundant range help; the actual slider widget remains annotation-driven.
+  return Number.isFinite(min) && Number.isFinite(max) ? 'slider' : field.type;
+}
 
-    // Returns 'slider' only so buildFallbackHelp can suppress a redundant
-    // range hint — the actual widget is opt-in via the proto
-    // `CONTROL_TYPE_SLIDER` annotation, not this resolver. Don't change this
-    // to "fix" a number field rendering as plain; add the annotation instead.
-    if (Number.isFinite(min) && Number.isFinite(max)) {
-      return 'slider';
-    }
-  }
-
-  if (field.type === 'array') {
-    const itemField = field.schema?.[0];
-    if (itemField?.type === 'select' && itemField.options?.length) {
-      return 'multiselect';
-    }
-    if (isSimpleKeyValueLikeObject(itemField)) {
-      return 'keyValue';
-    }
-  }
-
+function resolveCollectionControl(field: ParsedField): string {
   if (field.type === 'map') {
-    const keyField = field.schema?.[0];
-    const valueField = field.schema?.[1];
-    if (isKeyValueScalarField(keyField) && isKeyValueScalarField(valueField)) {
-      return 'keyValue';
-    }
+    return isKeyValueScalarField(field.schema?.[0]) && isKeyValueScalarField(field.schema?.[1])
+      ? 'keyValue'
+      : field.type;
   }
+  const itemField = field.schema?.[0];
+  if (itemField?.type === 'select' && (itemField.options?.length ?? 0) > 0) {
+    return 'multiselect';
+  }
+  return isSimpleKeyValueLikeObject(itemField) ? 'keyValue' : field.type;
+}
 
-  return field.type as FieldTypes;
+function resolveStringControl(field: ParsedField): string {
+  const { identity, inputType, maxLength } = buildFieldMatchContext(field);
+  if (SECRET_FIELD_PATTERN.test(identity) || inputType === 'password') {
+    return 'password';
+  }
+  if (inputType === 'email' || EMAIL_FIELD_PATTERN.test(identity)) {
+    return 'email';
+  }
+  if (inputType === 'url' || URL_FIELD_PATTERN.test(identity)) {
+    return 'url';
+  }
+  if (CURRENCY_FIELD_PATTERN.test(identity)) {
+    return 'currency';
+  }
+  if (inputType === 'textarea' || maxLength > 120 || LONG_TEXT_FIELD_PATTERN.test(identity)) {
+    return 'textarea';
+  }
+  return field.type;
 }
 
 function buildRangeHint(field: ParsedField): string | undefined {
-  const min = field.fieldConfig?.inputProps?.min;
-  const max = field.fieldConfig?.inputProps?.max;
+  const min = field.fieldConfig?.inputProps?.['min'];
+  const max = field.fieldConfig?.inputProps?.['max'];
 
   // Number.isFinite guards against rendering "Accepted range: NaN to Infinity".
-  if (Number.isFinite(min) && Number.isFinite(max)) {
+  if (typeof min === 'number' && Number.isFinite(min) && typeof max === 'number' && Number.isFinite(max)) {
     return `Accepted range: ${min} to ${max}.`;
   }
-  if (Number.isFinite(min)) {
+  if (typeof min === 'number' && Number.isFinite(min)) {
     return `Accepted minimum: ${min}.`;
   }
-  if (Number.isFinite(max)) {
+  if (typeof max === 'number' && Number.isFinite(max)) {
     return `Accepted maximum: ${max}.`;
   }
-
-  return;
+  return undefined;
 }
 
 function buildFallbackHelp(field: ParsedField): string {
   const renderType = resolveRenderFieldType(field);
   const hints = [
-    field.fieldConfig?.inputProps?.pattern ? 'Follow the expected format for this value.' : undefined,
+    typeof field.fieldConfig?.inputProps?.['pattern'] === 'string' && field.fieldConfig.inputProps['pattern'] !== ''
+      ? 'Follow the expected format for this value.'
+      : undefined,
     renderType === 'multiselect' ? 'Choose one or more options.' : undefined,
     renderType === 'radio' || renderType === 'select' || renderType === 'combobox'
       ? 'Choose one of the available options.'
@@ -481,13 +310,14 @@ export function getFieldHelpText(field: ParsedField): string {
   const uiConfig = getFieldUiConfig(field);
   const descriptionText = getFieldDescriptionText(field);
 
-  const parts = [uiConfig.help, uiConfig.example ? `Example: ${uiConfig.example}` : undefined].filter(
-    (value): value is string => Boolean(value)
-  );
+  const parts = [
+    uiConfig.help,
+    uiConfig.example === undefined || uiConfig.example === '' ? undefined : `Example: ${uiConfig.example}`,
+  ].filter((value): value is string => Boolean(value));
 
   const tooltip = [...new Set(parts)].join(' ');
 
-  if (tooltip && tooltip === descriptionText) {
+  if (tooltip !== '' && tooltip === descriptionText) {
     return '';
   }
 
@@ -500,17 +330,17 @@ export function getFieldHelpText(field: ParsedField): string {
  */
 export function getFieldDocsUrl(field: ParsedField): string | undefined {
   const customData = field.fieldConfig?.customData;
-  if (!(customData && typeof customData === 'object')) {
+  if (!(customData !== undefined && typeof customData === 'object')) {
     return;
   }
-  const bag = customData as { docsUrl?: unknown; ui?: { docsUrl?: unknown } };
-  if (typeof bag.docsUrl === 'string' && bag.docsUrl) {
-    return bag.docsUrl;
+  if (typeof customData['docsUrl'] === 'string' && customData['docsUrl'] !== '') {
+    return customData['docsUrl'];
   }
-  if (bag.ui && typeof bag.ui === 'object' && typeof bag.ui.docsUrl === 'string' && bag.ui.docsUrl) {
-    return bag.ui.docsUrl;
+  const ui = customData['ui'];
+  if (isRecord(ui) && typeof ui['docsUrl'] === 'string' && ui['docsUrl'] !== '') {
+    return ui['docsUrl'];
   }
-  return;
+  return undefined;
 }
 
 /**
@@ -520,21 +350,21 @@ export function getFieldDocsUrl(field: ParsedField): string | undefined {
 export function getFieldDescriptionText(field: ParsedField): string | undefined {
   const uiConfig = getFieldUiConfig(field);
 
-  if (uiConfig.description) {
+  if (uiConfig.description !== undefined && uiConfig.description !== '') {
     return uiConfig.description;
   }
 
   const configDescription =
     typeof field.fieldConfig?.description === 'string' ? field.fieldConfig.description : undefined;
-  if (configDescription) {
+  if (configDescription !== undefined && configDescription !== '') {
     return configDescription;
   }
 
-  if (uiConfig.help) {
+  if (uiConfig.help !== undefined && uiConfig.help !== '') {
     return uiConfig.help;
   }
 
-  if (uiConfig.example) {
+  if (uiConfig.example !== undefined && uiConfig.example !== '') {
     return `Example: ${uiConfig.example}`;
   }
 
@@ -553,10 +383,10 @@ function hasSimpleRequiredCount(field: ParsedField): boolean {
  */
 export function defaultClassifyField(field: ParsedField): 'simple' | 'advanced' {
   const customData = isRecord(field.fieldConfig?.customData) ? field.fieldConfig.customData : undefined;
-  if (customData?.advanced === true) {
+  if (customData?.['advanced'] === true) {
     return 'advanced';
   }
-  if (customData?.advanced === false) {
+  if (customData?.['advanced'] === false) {
     return 'simple';
   }
   return field.required || hasSimpleRequiredCount(field) ? 'simple' : 'advanced';
@@ -566,44 +396,37 @@ export function deriveSimpleFields(
   fields: ParsedField[] | undefined,
   classifyField: (field: ParsedField) => 'simple' | 'advanced' = defaultClassifyField
 ): ParsedField[] {
-  if (!fields) {
+  if (fields === undefined) {
     return [];
   }
 
-  return sortFieldsByOrder(
-    fields.flatMap((field) => {
-      const simpleChildren = deriveSimpleFields(field.schema, classifyField);
-      const hasRequiredDescendants = simpleChildren.length > 0;
-      const classification = classifyField(field);
-      const isSimple = classification === 'simple';
+  return sortFieldsByOrder(fields.flatMap((field) => deriveSimpleField(field, classifyField)));
+}
 
-      if (field.type === 'object') {
-        if (isSimple && !hasRequiredDescendants && field.schema?.length) {
-          return [{ ...field, schema: field.schema }];
-        }
-        if (isSimple || hasRequiredDescendants) {
-          return [{ ...field, schema: hasRequiredDescendants ? simpleChildren : field.schema }];
-        }
-        return [];
-      }
-
-      if (field.type === 'oneof') {
-        if (isSimple || hasRequiredDescendants) {
-          return [{ ...field, schema: field.schema }];
-        }
-        return [];
-      }
-
-      if (field.type === 'array' || field.type === 'map') {
-        if (isSimple || hasRequiredDescendants) {
-          return [{ ...field, schema: hasRequiredDescendants ? simpleChildren : field.schema }];
-        }
-        return [];
-      }
-
-      return isSimple ? [field] : [];
-    })
-  );
+function deriveSimpleField(
+  field: ParsedField,
+  classifyField: (field: ParsedField) => 'simple' | 'advanced'
+): ParsedField[] {
+  const simpleChildren = deriveSimpleFields(field.schema, classifyField);
+  const hasRequiredDescendants = simpleChildren.length > 0;
+  const isSimple = classifyField(field) === 'simple';
+  const isContainer = field.type === 'object' || field.type === 'array' || field.type === 'map';
+  if (isContainer) {
+    if (!(isSimple || hasRequiredDescendants)) {
+      return [];
+    }
+    // Map members are positional key/value slots, not independently removable fields.
+    // Project message descendants while retaining both slots and their original order.
+    let schema = hasRequiredDescendants ? simpleChildren : field.schema;
+    if (field.type === 'map') {
+      schema = field.schema?.map((member) => simpleChildren.find((child) => child.key === member.key) ?? member);
+    }
+    return [{ ...field, ...omitUndefined({ schema }) }];
+  }
+  if (field.type === 'oneof') {
+    return isSimple || hasRequiredDescendants ? [field] : [];
+  }
+  return isSimple ? [field] : [];
 }
 
 export function collectLeafFieldPaths(fields: ParsedField[], path: string[] = []): string[] {
@@ -612,7 +435,9 @@ export function collectLeafFieldPaths(fields: ParsedField[], path: string[] = []
     const renderType = resolveRenderFieldType(field);
 
     if (renderType === 'object' || renderType === 'array' || renderType === 'map' || renderType === 'oneof') {
-      return field.schema?.length ? collectLeafFieldPaths(field.schema, nextPath) : [nextPath.join('.')];
+      return field.schema !== undefined && field.schema.length > 0
+        ? collectLeafFieldPaths(field.schema, nextPath)
+        : [nextPath.join('.')];
     }
 
     return [nextPath.join('.')];
@@ -624,27 +449,35 @@ export function filterFieldsByPaths(fields: ParsedField[], paths: string[], curr
     return [];
   }
 
+  const directPaths = new Set(paths);
+  const ancestors = new Set<string>();
+  for (const path of paths) {
+    let separator = path.indexOf('.');
+    while (separator !== -1) {
+      ancestors.add(path.slice(0, separator));
+      separator = path.indexOf('.', separator + 1);
+    }
+  }
+  return filterSelectedFields(fields, directPaths, ancestors, currentPath);
+}
+
+function filterSelectedFields(
+  fields: ParsedField[],
+  directPaths: ReadonlySet<string>,
+  ancestors: ReadonlySet<string>,
+  currentPath: string[]
+): ParsedField[] {
   return sortFieldsByOrder(
     fields.flatMap((field) => {
       const nextPath = [...currentPath, field.key];
       const fullPath = nextPath.join('.');
-      const matchesDirectly = paths.some((path) => path === fullPath);
-      const hasDescendantMatch = paths.some((path) => path.startsWith(`${fullPath}.`));
-
-      if (!(matchesDirectly || hasDescendantMatch)) {
+      if (directPaths.has(fullPath)) {
+        return [{ ...field }];
+      }
+      if (!ancestors.has(fullPath)) {
         return [];
       }
-
-      if (!field.schema?.length || matchesDirectly) {
-        return [
-          {
-            ...field,
-            schema: matchesDirectly ? field.schema : filterFieldsByPaths(field.schema ?? [], paths, nextPath),
-          },
-        ];
-      }
-
-      return [{ ...field, schema: filterFieldsByPaths(field.schema, paths, nextPath) }];
+      return [{ ...field, schema: filterSelectedFields(field.schema ?? [], directPaths, ancestors, nextPath) }];
     })
   );
 }
@@ -658,7 +491,7 @@ export function projectValuesToFields(values: Record<string, unknown>, fields: P
       continue;
     }
 
-    if (field.type === 'object' && isRecord(value) && field.schema?.length) {
+    if (field.type === 'object' && isRecord(value) && field.schema !== undefined && field.schema.length > 0) {
       projected[field.key] = projectValuesToFields(value, field.schema);
       continue;
     }
@@ -701,7 +534,7 @@ export function stringifySummaryValue(value: unknown): string {
   if (isRecord(value)) {
     return `${Object.keys(value).length} field${Object.keys(value).length === 1 ? '' : 's'}`;
   }
-  return String(value);
+  return 'Unsupported value';
 }
 
 export function flattenSummaryEntries(
@@ -713,7 +546,7 @@ export function flattenSummaryEntries(
   }
 
   return Object.entries(payload).flatMap(([key, value]) => {
-    const nextKey = prefix ? `${prefix}.${key}` : key;
+    const nextKey = prefix === '' ? key : `${prefix}.${key}`;
     if (!isMeaningfulValue(value)) {
       return [];
     }
@@ -737,6 +570,21 @@ export function isValidationSuccess(
   return validation.success;
 }
 
+function keyValueScalar(value: unknown): string {
+  if (value === undefined || value === null) {
+    return '';
+  }
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint'
+  ) {
+    return String(value);
+  }
+  throw new TypeError('Expected a scalar key-value entry; structured data requires a JSON or nested field.');
+}
+
 export function normalizeKeyValueEntries(value: unknown): Array<{ key: string; value: string }> {
   if (!Array.isArray(value)) {
     return [];
@@ -748,8 +596,8 @@ export function normalizeKeyValueEntries(value: unknown): Array<{ key: string; v
     }
 
     return {
-      key: entry.key === undefined || entry.key === null ? '' : String(entry.key),
-      value: entry.value === undefined || entry.value === null ? '' : String(entry.value),
+      key: keyValueScalar(entry['key']),
+      value: keyValueScalar(entry['value']),
     };
   });
 }
@@ -770,7 +618,7 @@ export function denormalizeKeyValueEntries(
 }
 
 function normalizeCollectionScalar(value: string, field: ParsedField | undefined): unknown {
-  if (!field) {
+  if (field === undefined) {
     return value;
   }
 
@@ -781,7 +629,10 @@ function normalizeCollectionScalar(value: string, field: ParsedField | undefined
   if (renderType === 'int64') {
     return value;
   }
-  if (renderType === 'select' && field.options?.every(([optionValue]) => NUMERIC_OPTION_PATTERN.test(optionValue))) {
+  if (
+    renderType === 'select' &&
+    field.options?.every(([optionValue]) => NUMERIC_OPTION_PATTERN.test(optionValue)) === true
+  ) {
     return value === '' ? undefined : Number(value);
   }
   return value;

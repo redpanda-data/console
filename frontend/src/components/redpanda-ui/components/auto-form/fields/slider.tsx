@@ -4,9 +4,9 @@ import React from 'react';
 import { Input } from '../../input';
 import { Slider } from '../../slider';
 import type { AutoFormFieldProps } from '../core-types';
-import { getFieldUiConfig } from '../helpers';
-import type { FieldTypeDefinition } from '../registry';
-import { normalizeNumberValue, parseNumericProp, resolveNumericStep, useFieldTestIds } from './shared';
+import { getFieldUiConfig } from '../ui-config';
+import { normalizeNumberValue, parseNumericProp, resolveNumericStep } from './field-values';
+import { useFieldTestIds } from './use-field-test-ids';
 
 // Track + companion numeric input bound to the same value: the track for
 // coarse drags, the input for precise entry below a drag's resolution.
@@ -38,14 +38,16 @@ function SliderFieldComponent({ error, field, id, inputProps }: AutoFormFieldPro
         disabled={inputProps.disabled}
         max={max}
         min={min}
-        onValueChange={(nextValues) => inputProps.onValueChange(nextValues[0] ?? min)}
+        onValueChange={(nextValues) => {
+          inputProps.onValueChange(nextValues[0] ?? min);
+        }}
         step={step}
         testId={testIds.controlPart('slider')}
         value={[clamped]}
       />
       <Input
         aria-invalid={Boolean(error)}
-        className={`w-24 ${error ? 'border-destructive' : ''}`}
+        className="w-24"
         disabled={inputProps.disabled}
         id={id}
         inputMode="decimal"
@@ -69,29 +71,3 @@ function SliderFieldComponent({ error, field, id, inputProps }: AutoFormFieldPro
 }
 
 export { SliderFieldComponent };
-
-export const sliderFieldDefinition: FieldTypeDefinition = {
-  name: 'slider',
-  priority: 15,
-  // Opt-in only: requires `customData.ui.control === 'slider'`. Numeric
-  // min/max alone must NOT promote to slider or it double-renders with the
-  // plain number field.
-  match: (field) => {
-    if (field.type !== 'number') {
-      return false;
-    }
-    const customData = field.fieldConfig?.customData;
-    if (!(customData && typeof customData === 'object')) {
-      return false;
-    }
-    const bag = customData as { control?: unknown; ui?: { control?: unknown } };
-    if (bag.control === 'slider') {
-      return true;
-    }
-    if (bag.ui && typeof bag.ui === 'object' && bag.ui.control === 'slider') {
-      return true;
-    }
-    return false;
-  },
-  component: SliderFieldComponent,
-};

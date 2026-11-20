@@ -11,7 +11,7 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, type RenderHookResult, renderHook, waitFor } from '@testing-library/react';
-import { toast } from 'sonner';
+import { aToast, spyOnToasts } from 'test-toasts';
 
 import { type MessageSearchParams, type MessageSearchResult, useMessageSearch } from './use-message-search';
 import { messageKey } from '../utils/message-key';
@@ -20,10 +20,6 @@ import { messageKey } from '../utils/message-key';
 // tests can use plain {partitionID, offset} stubs without building full proto payloads.
 rs.mock('../../../../../utils/message-converters', () => ({
   convertListMessageData: (value: unknown) => value,
-}));
-
-rs.mock('sonner', () => ({
-  toast: { error: rs.fn() },
 }));
 
 type Frame =
@@ -121,6 +117,8 @@ function renderWithRunningSearch() {
 
 /** The request the nth `listMessages` call was made with. */
 const requestAt = (index: number) => listMessagesMock.mock.calls[index][0];
+
+const toasts = spyOnToasts();
 
 describe('useMessageSearch', () => {
   beforeEach(() => {
@@ -283,7 +281,7 @@ describe('useMessageSearch', () => {
         await expect(result.current.start(baseParams)).resolves.toBeUndefined();
       });
       expect(result.current.error).toBeNull();
-      expect(toast.error).toHaveBeenCalledWith('Backend error', { description: 'N partitions offline' });
+      expect(toasts).toHaveBeenCalledWith(aToast('error', 'Backend error', { description: 'N partitions offline' }));
     });
 
     // Without a following `done`, the error frame was the last thing the stream said before

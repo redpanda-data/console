@@ -3,21 +3,23 @@
 // Copyright 2026 Redpanda Data, Inc.
 
 import { RadioGroup, RadioGroupItem } from '../../radio-group';
+import { hasSlotContent } from '../../../lib/has-slot-content';
 import type { AutoFormFieldProps } from '../core-types';
-import type { FieldTypeDefinition } from '../registry';
+import { getRenderableText } from '../field-utils';
 import {
   getControlLabel,
   getFlatOptions,
   getGroupedOptions,
   hasNumericOptions,
-  renderOptionLabel,
-  useFieldTestIds,
-} from './shared';
+  normalizeScalarInput,
+} from './field-values';
+import { OptionLabel } from './shared';
+import { useFieldTestIds } from './use-field-test-ids';
 
 function RadioFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
   const numericOptions = hasNumericOptions(field);
-  const value = inputProps.value === undefined || inputProps.value === null ? '' : String(inputProps.value);
+  const value = normalizeScalarInput(inputProps.value);
   const optionGroups = getGroupedOptions(field);
   const flatOptions = getFlatOptions(field);
 
@@ -25,17 +27,23 @@ function RadioFieldComponent({ error, field, id, inputProps, label }: AutoFormFi
     <RadioGroup
       aria-invalid={Boolean(error)}
       aria-label={getControlLabel(label, field)}
-      onValueChange={(nextValue) => inputProps.onValueChange(numericOptions ? Number(nextValue) : nextValue)}
+      onValueChange={(nextValue: unknown) => {
+        const scalar = normalizeScalarInput(nextValue);
+        inputProps.onValueChange(numericOptions ? Number(scalar) : scalar);
+      }}
       testId={testIds.control}
       value={value}
     >
-      {(optionGroups?.length ? optionGroups : [{ label: undefined, options: flatOptions }]).map((group) => (
+      {(optionGroups !== undefined && optionGroups.length > 0
+        ? optionGroups
+        : [{ label: undefined, options: flatOptions }]
+      ).map((group) => (
         <div
           className="space-y-2"
-          data-testid={testIds.group(String(group.label ?? 'options'))}
+          data-testid={testIds.group(getRenderableText(group.label, 'options'))}
           key={JSON.stringify(group.options.map((option) => option.value))}
         >
-          {group.label ? <div className="text-body-sm text-subtle">{group.label}</div> : null}
+          {hasSlotContent(group.label) ? <div className="text-body-sm text-subtle">{group.label}</div> : null}
           <div className="grid gap-2">
             {group.options.map((option) => (
               <label
@@ -49,7 +57,7 @@ function RadioFieldComponent({ error, field, id, inputProps, label }: AutoFormFi
                   testId={testIds.option(option.value)}
                   value={option.value}
                 />
-                {renderOptionLabel(option)}
+                <OptionLabel option={option} />
               </label>
             ))}
           </div>
@@ -60,16 +68,3 @@ function RadioFieldComponent({ error, field, id, inputProps, label }: AutoFormFi
 }
 
 export { RadioFieldComponent };
-
-export const radioFieldDefinition: FieldTypeDefinition = {
-  name: 'radio',
-  priority: 15,
-  match: (field) => {
-    if (field.type !== 'select') {
-      return false;
-    }
-    const optionCount = field.options?.length ?? 0;
-    return optionCount > 0 && optionCount <= 3;
-  },
-  component: RadioFieldComponent,
-};

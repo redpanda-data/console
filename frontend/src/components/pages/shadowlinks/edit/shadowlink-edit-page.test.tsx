@@ -57,14 +57,6 @@ rs.mock('config', () => {
   };
 });
 
-// Mock toast notifications
-rs.mock('sonner', () => ({
-  toast: {
-    success: rs.fn(),
-    error: rs.fn(),
-  },
-}));
-
 const SHADOW_LINK_NAME = 'test-shadow-link';
 
 rs.mock('@tanstack/react-router', () => {

@@ -15,7 +15,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from 'components/redpanda-ui/components/accordion';
-import { Badge, type BadgeEmphasis, type BadgeTone, type BadgeVariant } from 'components/redpanda-ui/components/badge';
+import { Badge, type BadgeEmphasis, type BadgeTone } from 'components/redpanda-ui/components/badge';
 import { CardContent, CardTitle } from 'components/redpanda-ui/components/card';
 import { CollapsibleContent } from 'components/redpanda-ui/components/collapsible';
 import { FormControl, FormField, FormItem, FormLabel } from 'components/redpanda-ui/components/form';
@@ -38,7 +38,7 @@ import { CollapsibleSectionCard } from '../create/collapsible-section-card';
 import type { FormValues } from '../create/model';
 
 /** Tone + emphasis for a status badge. `optional` carries no tone, so it stays a plain outline. */
-const getBadgeStyle = (status: ShadowingStatus): { tone?: BadgeTone; variant: BadgeEmphasis | BadgeVariant } => {
+const getBadgeStyle = (status: ShadowingStatus): { tone?: BadgeTone; variant: BadgeEmphasis } => {
   switch (status) {
     case 'always':
       return { tone: 'success', variant: 'subtle' };

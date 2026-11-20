@@ -4,17 +4,15 @@
 
 import type { RowData } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
-
 import { Button } from '../button';
 import { ButtonGroup } from '../button-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../select';
 import type { SharedProps } from '../../lib/utils';
-
-import type { DataTableRenderInstance } from './data-table-features';
+import type { DataTableInstance } from './data-table-features';
 
 interface DataTablePaginationProps<TData extends RowData> extends SharedProps {
-  pageSizeOptions?: number[];
-  table: DataTableRenderInstance<TData>;
+  pageSizeOptions?: number[] | undefined;
+  table: Omit<DataTableInstance<TData>, 'state'>;
 }
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 20, 25, 30, 40, 50];
@@ -33,16 +31,16 @@ export function DataTablePagination<TData extends RowData>({
       })}
     >
       {({ pagination, selectedRowCount, filteredRowCount }) => (
-        <div className="flex items-center justify-between px-2" data-testid={testId}>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-2" data-testid={testId}>
           {table.options.enableRowSelection !== false && (
             <div className="flex-1 text-body text-subtle">
               {selectedRowCount} of {filteredRowCount} row(s) selected.
             </div>
           )}
           {/* ml-auto holds the controls right when the selection count is not rendered. */}
-          <div className="ml-auto flex items-center space-x-6 lg:space-x-8">
-            <div className="flex items-center space-x-2">
-              <div className="font-medium text-body">Rows per page</div>
+          <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-x-6 gap-y-3 lg:gap-x-8">
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="text-body font-medium">Rows per page</div>
               <Select
                 onValueChange={(value) => {
                   table.setPageSize(Number(value));
@@ -61,14 +59,16 @@ export function DataTablePagination<TData extends RowData>({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex w-[100px] items-center justify-center text-label">
+            <div className="flex shrink-0 items-center justify-center text-label whitespace-nowrap">
               Page {table.getPageCount() === 0 ? 0 : pagination.pageIndex + 1} of {table.getPageCount()}
             </div>
             <ButtonGroup aria-label="Pagination">
               <Button
                 className="size-8"
                 disabled={!table.getCanPreviousPage()}
-                onClick={() => table.setPageIndex(0)}
+                onClick={() => {
+                  table.setPageIndex(0);
+                }}
                 size="icon"
                 variant="outline"
               >
@@ -78,7 +78,9 @@ export function DataTablePagination<TData extends RowData>({
               <Button
                 className="size-8"
                 disabled={!table.getCanPreviousPage()}
-                onClick={() => table.previousPage()}
+                onClick={() => {
+                  table.previousPage();
+                }}
                 size="icon"
                 variant="outline"
               >
@@ -88,7 +90,9 @@ export function DataTablePagination<TData extends RowData>({
               <Button
                 className="size-8"
                 disabled={!table.getCanNextPage()}
-                onClick={() => table.nextPage()}
+                onClick={() => {
+                  table.nextPage();
+                }}
                 size="icon"
                 variant="outline"
               >
@@ -98,7 +102,9 @@ export function DataTablePagination<TData extends RowData>({
               <Button
                 className="size-8"
                 disabled={!table.getCanLastPage()}
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                onClick={() => {
+                  table.setPageIndex(table.getPageCount() - 1);
+                }}
                 size="icon"
                 variant="outline"
               >

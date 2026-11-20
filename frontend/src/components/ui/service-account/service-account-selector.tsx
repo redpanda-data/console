@@ -29,9 +29,8 @@ import { CreateSecretRequestSchema as CreateSecretRequestSchemaConsole } from 'p
 import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { forwardRef, useEffect, useImperativeHandle } from 'react';
 import { useCreateServiceAccountMutation } from 'react-query/api/controlplane/service-account';
-import { toast } from 'sonner';
 import { generateServiceAccountSecretId } from 'utils/secret.utils';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
 type ServiceAccountSelectorProps = {
@@ -133,13 +132,11 @@ const ServiceAccountSelectorComponent = forwardRef<ServiceAccountSelectorRef, Se
 
         throw new Error('Service account credentials not provided');
       } catch (error) {
-        toast.error(
-          formatToastErrorMessageGRPC({
+        showToast({ status: 'error', title: formatToastErrorMessageGRPC({
             error: error as ConnectError,
             action: 'create',
             entity: 'service account',
-          })
-        );
+          }) });
         return null;
       }
     };

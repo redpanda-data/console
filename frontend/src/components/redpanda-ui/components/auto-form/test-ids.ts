@@ -16,11 +16,18 @@ function normalizeSegment(value: string | number | null | undefined): string {
 }
 
 export function resolveAutoFormTestIdPrefix(testId?: string): string {
-  return normalizeSegment(testId) || DEFAULT_AUTOFORM_TEST_ID_PREFIX;
+  const prefix = normalizeSegment(testId);
+  return prefix === '' ? DEFAULT_AUTOFORM_TEST_ID_PREFIX : prefix;
 }
 
 export function buildAutoFormTestId(prefix: string, ...segments: Array<string | number | null | undefined>): string {
-  const normalizedSegments = segments.map(normalizeSegment).filter(Boolean);
+  const normalizedSegments: string[] = [];
+  for (const segment of segments) {
+    const normalized = normalizeSegment(segment);
+    if (normalized !== '') {
+      normalizedSegments.push(normalized);
+    }
+  }
   return [resolveAutoFormTestIdPrefix(prefix), ...normalizedSegments].join('-');
 }
 

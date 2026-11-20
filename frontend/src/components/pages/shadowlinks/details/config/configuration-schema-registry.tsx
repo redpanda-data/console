@@ -373,7 +373,7 @@ export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchema
   const mode = syncOptions?.schemaRegistryShadowingMode;
 
   return (
-    <Card size="full" testId="schema-registry-card">
+    <Card testId="schema-registry-card">
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-heading-md">Schema Registry</h3>

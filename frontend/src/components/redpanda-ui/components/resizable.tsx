@@ -9,13 +9,12 @@ import {
   Separator as PanelSeparator,
   type SeparatorProps,
 } from 'react-resizable-panels';
-
 import { cn } from '../lib/utils';
 
 function ResizablePanelGroup({ className, ...props }: GroupProps) {
   return (
     <Group
-      className={cn('flex h-full w-full aria-[orientation=vertical]:flex-col', className)}
+      className={cn('flex size-full aria-[orientation=vertical]:flex-col', className)}
       data-slot="resizable-panel-group"
       {...props}
     />
@@ -31,18 +30,18 @@ function ResizableHandle({
   className,
   ...props
 }: SeparatorProps & {
-  withHandle?: boolean;
+  withHandle?: boolean | undefined;
 }) {
   return (
     <PanelSeparator
       className={cn(
-        'group/resizable-handle relative flex w-px items-center justify-center bg-border transition-colors after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2 hover:bg-border-hover focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-ring/50 active:bg-border-pressed aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:after:left-0 aria-[orientation=horizontal]:after:h-1 aria-[orientation=horizontal]:after:w-full aria-[orientation=horizontal]:after:translate-x-0 aria-[orientation=horizontal]:after:-translate-y-1/2 motion-reduce:transition-none [&[aria-orientation=horizontal]>div]:rotate-90',
+        'group/resizable-handle relative flex w-px items-center justify-center bg-border transition-colors after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2 hover:bg-border-hover focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-hidden active:bg-border-pressed aria-[orientation=horizontal]:h-px aria-[orientation=horizontal]:w-full aria-[orientation=horizontal]:after:left-0 aria-[orientation=horizontal]:after:h-1 aria-[orientation=horizontal]:after:w-full aria-[orientation=horizontal]:after:translate-x-0 aria-[orientation=horizontal]:after:-translate-y-1/2 motion-reduce:transition-none [&[aria-orientation=horizontal]>div]:rotate-90',
         className
       )}
       data-slot="resizable-handle"
       {...props}
     >
-      {withHandle ? (
+      {withHandle === true ? (
         <div className="z-10 flex h-4 w-3 items-center justify-center rounded-xs border bg-border transition-colors group-hover/resizable-handle:bg-border-hover motion-reduce:transition-none">
           <GripVerticalIcon className="size-2.5" />
         </div>

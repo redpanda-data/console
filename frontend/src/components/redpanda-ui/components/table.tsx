@@ -1,91 +1,39 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
+import { tableCellVariants, tableHeadVariants, tablePinnedVariants, tableVariants } from './table/variants';
 
-const tableVariants = cva(
-  'relative w-full min-w-0 overflow-x-auto rounded-lg border border-border border-solid bg-card p-0 shadow-elevated',
-  {
-    variants: {
-      variant: {
-        standard: '',
-        simple: 'border-0 bg-transparent shadow-none',
-        bordered: 'border-2',
-        card: 'shadow-lg',
-      },
-      size: {
-        sm: '[&_table]:text-body-sm',
-        md: '[&_table]:text-body',
-        lg: '[&_table]:text-body-lg',
-      },
-    },
-    defaultVariants: {
-      variant: 'standard',
-      size: 'md',
-    },
+interface TableProps extends React.ComponentProps<'table'>, VariantProps<typeof tableVariants>, SharedProps {
+  /** Scroll events from the table's actual viewport, not the native table element. */
+  onViewportScroll?: React.UIEventHandler<HTMLElement> | undefined;
+}
+
+function Table({ className, variant, size, stickyHeader, onViewportScroll, testId, ...props }: TableProps) {
+  const table = <table className={cn('w-full caption-bottom', className)} data-slot="table" {...props} />;
+  if (stickyHeader === true) {
+    return (
+      <section
+        aria-label={props['aria-label'] ?? 'Scrollable table'}
+        aria-labelledby={props['aria-labelledby']}
+        className={cn(tableVariants({ variant, size, stickyHeader }))}
+        data-slot="table-container"
+        data-testid={testId}
+        onScroll={onViewportScroll}
+        tabIndex={0}
+      >
+        {table}
+      </section>
+    );
   }
-);
-
-const tableHeadVariants = cva(
-  'h-10 whitespace-nowrap px-4 align-middle font-medium text-foreground selection:bg-selection selection:text-selection-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
-  {
-    variants: {
-      align: {
-        left: 'text-left',
-        center: 'text-center',
-        right: 'text-right',
-      },
-      width: {
-        auto: '',
-        sm: 'w-[100px]',
-        md: 'w-[150px]',
-        lg: 'w-[200px]',
-        xl: 'w-[250px]',
-        fit: 'w-fit',
-        full: 'w-full',
-      },
-    },
-    defaultVariants: {
-      align: 'left',
-      width: 'auto',
-    },
-  }
-);
-
-const tableCellVariants = cva(
-  'whitespace-nowrap p-4 align-middle selection:bg-selection selection:text-selection-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
-  {
-    variants: {
-      align: {
-        left: 'text-left',
-        center: 'text-center',
-        right: 'text-right',
-      },
-      weight: {
-        normal: 'font-normal',
-        medium: 'font-medium',
-        semibold: 'font-semibold',
-        bold: 'font-bold',
-      },
-      truncate: {
-        none: '',
-        truncate: 'max-w-0 truncate',
-      },
-    },
-    defaultVariants: {
-      align: 'left',
-      weight: 'normal',
-      truncate: 'none',
-    },
-  }
-);
-
-interface TableProps extends React.ComponentProps<'table'>, VariantProps<typeof tableVariants>, SharedProps {}
-
-function Table({ className, variant, size, testId, ...props }: TableProps) {
   return (
-    <div className={cn(tableVariants({ variant, size }))} data-slot="table-container" data-testid={testId}>
-      <table className={cn('w-full caption-bottom', className)} data-slot="table" {...props} />
+    <div
+      className={cn(tableVariants({ variant, size }))}
+      data-slot="table-container"
+      data-testid={testId}
+      onScroll={onViewportScroll}
+    >
+      {table}
     </div>
   );
 }
@@ -103,7 +51,7 @@ function TableBody({ className, testId, ...props }: React.ComponentProps<'tbody'
         // No `active:` step here, unlike other rows: dragging across a table to
         // select text holds the pointer down, and a pressed fill would flash
         // through the whole selection.
-        '[&_tr:last-child]:border-0 [&_tr]:hover:bg-accent',
+        '[&_tr]:hover:bg-accent [&_tr]:hover:[--table-row-wash:var(--color-accent)] [&_tr:last-child]:border-0',
         className
       )}
       data-slot="table-body"
@@ -124,15 +72,23 @@ function TableFooter({ className, testId, ...props }: React.ComponentProps<'tfoo
   );
 }
 
-function TableRow({ className, testId, ...props }: React.ComponentProps<'tr'> & SharedProps) {
+interface TableRowProps extends React.ComponentProps<'tr'>, SharedProps {
+  /** Mark a caller-ordered pinned row; this does not add sticky positioning or reorder data. */
+  pinned?: 'top' | 'bottom' | undefined;
+}
+
+function TableRow({ className, pinned, testId, ...props }: TableRowProps) {
   return (
     <tr
       className={cn(
         // `selected-wash`, not a `-pressed` step: selection is a rest state, and a state token as a
         // rest value moves whenever that ramp is retuned.
-        'border-b transition-colors has-aria-expanded:bg-accent data-[state=selected]:bg-selected-wash motion-reduce:transition-none',
+        // WebKit does not paint collapsed table-row shadows; a non-layout pseudo paints one continuous ring.
+        'border-b transition-colors [--table-row-wash:transparent] focus-visible:relative focus-visible:outline-none focus-visible:after:pointer-events-none focus-visible:after:absolute focus-visible:after:inset-0 focus-visible:after:z-20 focus-visible:after:ring-3 focus-visible:after:ring-primary focus-visible:after:ring-inset has-aria-expanded:bg-accent has-aria-expanded:[--table-row-wash:var(--color-accent)] data-[state=selected]:bg-selected-wash data-[state=selected]:[--table-row-wash:var(--color-selected-wash)] motion-reduce:transition-none',
+        '[&[data-pinned]:not(:hover):not([data-state=selected]):not(:has([aria-expanded=true]))]:bg-surface-recess [&[data-pinned]:not(:hover):not([data-state=selected]):not(:has([aria-expanded=true]))]:[--table-row-wash:var(--color-surface-recess)]',
         className
       )}
+      data-pinned={pinned}
       data-slot="table-row"
       data-testid={testId}
       {...props}
@@ -143,12 +99,24 @@ function TableRow({ className, testId, ...props }: React.ComponentProps<'tr'> & 
 interface TableHeadProps
   extends Omit<React.ComponentProps<'th'>, 'align'>,
     VariantProps<typeof tableHeadVariants>,
-    SharedProps {}
+    VariantProps<typeof tablePinnedVariants>,
+    SharedProps {
+  /** Dim the active sortable column; supply DnD geometry through --sortable-transform/transition. */
+  dragging?: boolean | undefined;
+}
 
-function TableHead({ className, align, width, testId, ...props }: TableHeadProps) {
+function TableHead({ className, align, width, variant, pinned, dragging, testId, ...props }: TableHeadProps) {
   return (
     <th
-      className={cn(tableHeadVariants({ align, width }), className)}
+      className={cn(
+        tableHeadVariants({ align, width, variant }),
+        tablePinnedVariants({ pinned }),
+        pinned !== undefined && pinned !== null && 'z-20',
+        'transform-(--sortable-transform) transition-sortable data-[dragging]:opacity-60',
+        className
+      )}
+      data-dragging={dragging === true || undefined}
+      data-pinned={pinned ?? undefined}
       data-slot="table-head"
       data-testid={testId}
       {...props}
@@ -159,12 +127,32 @@ function TableHead({ className, align, width, testId, ...props }: TableHeadProps
 interface TableCellProps
   extends Omit<React.ComponentProps<'td'>, 'align'>,
     VariantProps<typeof tableCellVariants>,
+    VariantProps<typeof tablePinnedVariants>,
     SharedProps {}
 
-function TableCell({ className, align, weight, truncate, testId, ...props }: TableCellProps) {
+function TableCell({
+  className,
+  align,
+  pinned,
+  weight,
+  truncate,
+  numeric,
+  density,
+  font,
+  size,
+  tone,
+  variant,
+  testId,
+  ...props
+}: TableCellProps) {
   return (
     <td
-      className={cn(tableCellVariants({ align, weight, truncate }), className)}
+      className={cn(
+        tableCellVariants({ align, weight, truncate, numeric, density, font, size, tone, variant }),
+        tablePinnedVariants({ pinned }),
+        className
+      )}
+      data-pinned={pinned ?? undefined}
       data-slot="table-cell"
       data-testid={testId}
       {...props}
@@ -186,16 +174,4 @@ function TableCaption({ className, testId, ...props }: React.ComponentProps<'cap
   );
 }
 
-export {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-  tableCellVariants,
-  tableHeadVariants,
-  tableVariants,
-};
+export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow };

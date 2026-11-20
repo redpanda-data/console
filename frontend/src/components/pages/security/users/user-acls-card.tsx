@@ -12,7 +12,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Eye, EyeOff, Pencil } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { Button } from '../../../redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
@@ -52,7 +52,7 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
                 params: { aclName: parsePrincipal(acl.sharedConfig.principal).name },
                 search: { host: acl.sharedConfig.host },
               }).catch((error: unknown) => {
-                toast.error('Failed to navigate', { description: String(error) });
+                showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
               });
             }}
             size="sm"
@@ -101,7 +101,7 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
 
   if (!acls || acls.length === 0) {
     return (
-      <Card size="full">
+      <Card>
         <CardHeader className="flex items-center justify-between">
           <CardTitle>ACLs (0)</CardTitle>
           <CardAction>
@@ -111,7 +111,7 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
                   to: '/security/acls/create',
                   search: { principalType: undefined, principalName: undefined },
                 }).catch((error: unknown) => {
-                  toast.error('Failed to navigate', { description: String(error) });
+                  showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
                 });
               }}
               testId="create-acl-button"
@@ -129,7 +129,7 @@ export const UserAclsCard = ({ acls }: UserAclsCardProps) => {
   }
 
   return (
-    <Card size="full">
+    <Card>
       <CardHeader className="flex items-center justify-between">
         <CardTitle>ACLs ({acls.length})</CardTitle>
       </CardHeader>

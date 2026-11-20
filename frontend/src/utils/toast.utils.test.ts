@@ -1,6 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { toast } from 'components/redpanda-ui/components/toast';
+import { toast } from 'components/redpanda-ui/components/toast/manager';
 import {
   BadRequest_FieldViolationSchema,
   BadRequestSchema,
@@ -14,7 +14,7 @@ import {
 } from 'protogen/google/rpc/error_details_pb';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
-import { closeToast, formatToastErrorMessageGRPC, showToast, updateToast } from './toast.utils';
+import { closeToast, failureSummary, formatToastErrorMessageGRPC, showToast, updateToast } from './toast.utils';
 import { afterAll, afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 
 // Spies on the real manager: the unit project shares module caches across files, so a module mock
@@ -275,6 +275,27 @@ describe('showToast', () => {
     showToast({ status: 'success' });
     const ids = add.mock.calls.map(([options]) => options.id);
     expect(ids).toEqual(['secret-update_db-password', 'secret-update', 'db-password', undefined]);
+  });
+
+  test('an action renders as the toast button', () => {
+    const onClick = () => undefined;
+    showToast({ title: 'Removed', action: { label: 'Undo', onClick } });
+    expect(add).toHaveBeenCalledWith(expect.objectContaining({ actionProps: { children: 'Undo', onClick } }));
+  });
+});
+
+describe('failureSummary', () => {
+  test('a single failure keeps its message as the title', () => {
+    expect(failureSummary(['Failed to delete ACL: denied'], 'Failed to delete 1 ACLs')).toEqual({
+      title: 'Failed to delete ACL: denied',
+    });
+  });
+
+  test('a batch is one title with each distinct message', () => {
+    expect(failureSummary(['denied', 'denied', 'not found'], 'Failed to delete 3 ACLs')).toEqual({
+      title: 'Failed to delete 3 ACLs',
+      description: 'denied; not found',
+    });
   });
 });
 

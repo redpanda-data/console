@@ -4,9 +4,9 @@
 
 import { Input } from '../../input';
 import type { AutoFormFieldProps } from '../core-types';
-import { getFieldUiConfig } from '../helpers';
-import type { FieldTypeDefinition } from '../registry';
-import { normalizeNumberValue, resolveNumericStep, useFieldTestIds } from './shared';
+import { getFieldUiConfig } from '../ui-config';
+import { normalizeNumberValue, resolveNumericStep } from './field-values';
+import { useFieldTestIds } from './use-field-test-ids';
 
 function NumberFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -15,12 +15,11 @@ function NumberFieldComponent({ error, field, id, inputProps }: AutoFormFieldPro
   return (
     <Input
       aria-invalid={Boolean(error)}
-      className={error ? 'border-destructive' : ''}
       disabled={inputProps.disabled}
       id={id}
       inputMode="decimal"
-      max={inputProps.max as number | undefined}
-      min={inputProps.min as number | undefined}
+      max={inputProps.max}
+      min={inputProps.min}
       onBlur={inputProps.onBlur}
       onChange={(event) => {
         const nextValue = event.target.value;
@@ -36,17 +35,3 @@ function NumberFieldComponent({ error, field, id, inputProps }: AutoFormFieldPro
 }
 
 export { NumberFieldComponent };
-
-export const numberFieldDefinition: FieldTypeDefinition = {
-  name: 'number',
-  priority: 10,
-  match: (field) => {
-    if (field.type !== 'number') {
-      return false;
-    }
-    const min = Number(field.fieldConfig?.inputProps?.min);
-    const max = Number(field.fieldConfig?.inputProps?.max);
-    return !(Number.isFinite(min) && Number.isFinite(max));
-  },
-  component: NumberFieldComponent,
-};

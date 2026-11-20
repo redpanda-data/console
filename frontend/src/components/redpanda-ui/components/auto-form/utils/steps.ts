@@ -1,6 +1,6 @@
 import type { ParsedField } from '../core-types';
-import { getFieldUiConfig } from '../helpers';
 import type { AutoFormStepConfig } from '../types';
+import { getFieldUiConfig } from '../ui-config';
 
 function humanizeStepId(stepId: string): string {
   return stepId
@@ -20,12 +20,12 @@ export function collectFieldAssignedSteps(
     const nextPath = [...path, field.key];
     const stepId = getFieldUiConfig(field).step;
 
-    if (stepId) {
+    if (stepId !== undefined && stepId !== '') {
       const existing = groups.get(stepId) ?? [];
       groups.set(stepId, [...existing, nextPath.join('.')]);
     }
 
-    if (field.schema?.length) {
+    if (field.schema !== undefined && field.schema.length > 0) {
       collectFieldAssignedSteps(field.schema, nextPath, groups);
     }
   }
@@ -42,11 +42,11 @@ export function resolveStepConfig(
   explicitSteps: AutoFormStepConfig[] | undefined,
   protoSteps: AutoFormStepConfig[] | undefined
 ): AutoFormStepConfig[] {
-  if (explicitSteps?.length) {
+  if (explicitSteps !== undefined && explicitSteps.length > 0) {
     return explicitSteps;
   }
 
-  if (protoSteps?.length) {
+  if (protoSteps !== undefined && protoSteps.length > 0) {
     return protoSteps;
   }
 

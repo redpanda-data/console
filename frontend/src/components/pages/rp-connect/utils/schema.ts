@@ -4,9 +4,8 @@ import {
   type ComponentSpec,
   ComponentStatus,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { toast } from 'sonner';
 import { rpcnWizardStore } from 'state/rpcn-wizard-store';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { isConsumerGroupField, isPasswordField, isSchemaRegistryUrlField, isTopicField, isUserField } from './wizard';
 import {
@@ -108,13 +107,14 @@ export function parseSchema(componentList: ComponentList): ConnectComponentSpec[
       }))
     );
   } catch (error) {
-    toast.error(
-      formatToastErrorMessageGRPC({
+    showToast({
+      status: 'error',
+      title: formatToastErrorMessageGRPC({
         error: ConnectError.from(error),
         action: 'Parse component schema',
         entity: 'Component list',
-      })
-    );
+      }),
+    });
     return [];
   }
 }

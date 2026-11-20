@@ -1,28 +1,8 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 import type React from 'react';
 
 import { cn, type SharedProps } from '../lib/utils';
-
-const kbdVariants = cva(
-  'pointer-events-none inline-flex select-none items-center justify-center rounded-md font-mono',
-  {
-    variants: {
-      variant: {
-        filled: '!border-border border bg-accent text-accent-foreground',
-        outline: '!border-input border text-accent-foreground',
-      },
-      size: {
-        xs: 'h-5 min-w-5 px-1 text-2xs leading-[0.75rem] [&_svg]:size-3',
-        sm: 'h-6 min-w-6 px-1 text-body-sm leading-[0.75rem] [&_svg]:size-3',
-        md: 'h-7 min-w-7 px-1.5 text-body-sm [&_svg]:size-3.5',
-      },
-    },
-    defaultVariants: {
-      variant: 'filled',
-      size: 'md',
-    },
-  }
-);
+import { kbdVariants } from './kbd/variants';
 
 function Kbd({
   className,
@@ -40,4 +20,4 @@ function KbdGroup({ className, ...props }: React.ComponentProps<'div'>) {
   return <kbd className={cn('inline-flex items-center gap-1', className)} data-slot="kbd-group" {...props} />;
 }
 
-export { Kbd, KbdGroup, kbdVariants };
+export { Kbd, KbdGroup };

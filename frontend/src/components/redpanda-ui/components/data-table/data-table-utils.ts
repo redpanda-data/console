@@ -35,7 +35,7 @@ export const isInteractiveTarget = (target: EventTarget | null, boundary?: Eleme
     return false;
   }
   const interactive = target.closest(INTERACTIVE_TARGET_SELECTOR);
-  return interactive !== null && (boundary ? boundary.contains(interactive) : true);
+  return interactive !== null && (boundary !== undefined && boundary !== null ? boundary.contains(interactive) : true);
 };
 
 // Containment drops portaled content (menus, popovers) and targets already unmounted; the

@@ -12,7 +12,8 @@
 import { ConnectError } from '@connectrpc/connect';
 import { useLocation } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
-import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
+import { buttonVariants } from 'components/redpanda-ui/components/button/variants';
 import {
   Dialog,
   DialogBody,

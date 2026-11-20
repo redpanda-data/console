@@ -1,31 +1,30 @@
 import type { Resolver } from 'react-hook-form';
-
+import { createProtoResolver, isProtoMessageDescriptor, isProtoProvider, ProtoProvider } from '../../lib/protobuf-provider';
+import { omitUndefined } from '../../lib/utils/omit-undefined';
 import type { ParsedField, SchemaProvider } from './core-types';
 import { sortFieldsByOrder } from './field-utils';
-import { createProtoResolver, isProtoMessageDescriptor, isProtoProvider, ProtoProvider } from './proto';
-import type { AutoFormSchemaInput, FieldConfigMap, RenderFieldConfig, ResolvedSchema } from './types';
+import type { AutoFormSchemaInput, FieldConfigMap, ResolvedSchema } from './types';
 
-function isSchemaProvider(value: unknown): value is SchemaProvider<Record<string, unknown>> {
-  return Boolean(
-    value &&
-      typeof value === 'object' &&
-      'parseSchema' in value &&
-      typeof (value as SchemaProvider<Record<string, unknown>>).parseSchema === 'function' &&
-      'validateSchema' in value &&
-      typeof (value as SchemaProvider<Record<string, unknown>>).validateSchema === 'function' &&
-      'getDefaultValues' in value &&
-      typeof (value as SchemaProvider<Record<string, unknown>>).getDefaultValues === 'function'
+function isSchemaProvider<T extends Record<string, unknown>>(
+  value: AutoFormSchemaInput<T>
+): value is SchemaProvider<T> {
+  return (
+    typeof value === 'object' &&
+    'parseSchema' in value &&
+    typeof value.parseSchema === 'function' &&
+    'validateSchema' in value &&
+    typeof value.validateSchema === 'function' &&
+    'getDefaultValues' in value &&
+    typeof value.getDefaultValues === 'function'
   );
 }
-
-export { normalizeProtoInitialValues } from './proto';
 
 export function resolveSchema<T extends Record<string, unknown>>(
   schemaInput: AutoFormSchemaInput<T>,
   resolverOverride?: Resolver<Record<string, unknown>, unknown, T>
 ): ResolvedSchema<T> {
   if (isSchemaProvider(schemaInput)) {
-    const provider = schemaInput as SchemaProvider<Record<string, unknown>>;
+    const provider = schemaInput;
     const parsedSchema = provider.parseSchema();
 
     if (isProtoProvider(provider)) {
@@ -33,9 +32,7 @@ export function resolveSchema<T extends Record<string, unknown>>(
       return {
         provider,
         parsedSchema,
-        resolver:
-          resolverOverride ??
-          (createProtoResolver(protoDesc) as unknown as Resolver<Record<string, unknown>, unknown, T>),
+        resolver: resolverOverride ?? provider.getResolver(),
         isProto: true,
         protoDesc,
       };
@@ -44,7 +41,7 @@ export function resolveSchema<T extends Record<string, unknown>>(
     return {
       provider,
       parsedSchema,
-      resolver: resolverOverride,
+      ...omitUndefined({ resolver: resolverOverride }),
       isProto: false,
     };
   }
@@ -54,9 +51,7 @@ export function resolveSchema<T extends Record<string, unknown>>(
     return {
       provider,
       parsedSchema: provider.parseSchema(),
-      resolver:
-        resolverOverride ??
-        (createProtoResolver(schemaInput) as unknown as Resolver<Record<string, unknown>, unknown, T>),
+      resolver: resolverOverride ?? createProtoResolver(schemaInput),
       isProto: true,
       protoDesc: schemaInput,
     };
@@ -70,7 +65,7 @@ export function mergeFieldOverrides(
   overrides: FieldConfigMap | undefined,
   path: string[] = []
 ): ParsedField[] {
-  if (!fields) {
+  if (fields === undefined) {
     return [];
   }
 
@@ -78,30 +73,31 @@ export function mergeFieldOverrides(
     fields.map((field) => {
       const fieldPath = [...path, field.key].join('.');
       const override = overrides?.[fieldPath];
-      const existingConfig = (field.fieldConfig ?? {}) as RenderFieldConfig;
-      const mergedFieldConfig: ParsedField['fieldConfig'] = override
-        ? ({
-            ...existingConfig,
-            ...override,
-            inputProps: {
-              ...(existingConfig.inputProps ?? {}),
-              ...(override.inputProps ?? {}),
-            },
-            customData: {
-              ...(existingConfig.customData ?? {}),
-              ...(override.customData ?? {}),
-            },
-          } as ParsedField['fieldConfig'])
-        : field.fieldConfig;
+      const existingConfig = field.fieldConfig ?? {};
+      const mergedFieldConfig: ParsedField['fieldConfig'] =
+        override === undefined
+          ? field.fieldConfig
+          : {
+              ...existingConfig,
+              ...override,
+              inputProps: {
+                ...existingConfig.inputProps,
+                ...override.inputProps,
+              },
+              customData: {
+                ...existingConfig.customData,
+                ...override.customData,
+              },
+            };
 
-      const nextSchema = field.schema?.length
-        ? mergeFieldOverrides(field.schema, overrides, [...path, field.key])
-        : field.schema;
+      const nextSchema =
+        (field.schema?.length ?? 0) > 0
+          ? mergeFieldOverrides(field.schema, overrides, [...path, field.key])
+          : field.schema;
 
       return {
         ...field,
-        fieldConfig: mergedFieldConfig,
-        schema: nextSchema,
+        ...omitUndefined({ fieldConfig: mergedFieldConfig, schema: nextSchema }),
       };
     })
   );

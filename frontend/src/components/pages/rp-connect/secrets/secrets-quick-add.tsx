@@ -11,7 +11,6 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
-import { Text } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
 
 import { CreateSecretRequestSchema, Scope } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -129,7 +128,9 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
         </DialogHeader>
         <DialogBody>
           <div className="flex w-[300px] flex-col gap-5">
-            <Text>Select an existing secret or create a new one. Secrets are available across all pipelines.</Text>
+            <div className="text-body">
+              Select an existing secret or create a new one. Secrets are available across all pipelines.
+            </div>
             {/* The Combobox exposes no `id`, so this label cannot be wired with `htmlFor`. */}
             <Field data-invalid={hasNameError}>
               <FieldLabel>Secret name</FieldLabel>

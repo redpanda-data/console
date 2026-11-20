@@ -25,7 +25,7 @@ import { render, screen, waitFor } from 'test-utils';
 
 import { PipelineCommandMenu } from './pipeline-command-menu';
 
-// cmdk calls scrollIntoView on selected items — JSDOM does not implement it
+// Command scrolls the selected item into view — Happy DOM does not implement it
 Element.prototype.scrollIntoView = rs.fn();
 
 // ---------------------------------------------------------------------------
@@ -201,7 +201,7 @@ describe('the PipelineCommandMenu', () => {
       { transport }
     );
 
-    // The popover renders a cmdk input for filtering
+    // The popover renders a Command input for filtering
     expect(await screen.findByPlaceholderText('Filter...')).toBeInTheDocument();
   });
 

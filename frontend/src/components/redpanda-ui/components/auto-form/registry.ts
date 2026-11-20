@@ -1,8 +1,7 @@
 import type React from 'react';
-
+import { getProtoFieldCustomData } from '../../lib/protobuf-provider';
 import type { AutoFormFieldProps, ParsedField } from './core-types';
-import { getLabel } from './field-utils';
-import { getProtoFieldCustomData } from './proto';
+import { getLabel, getRenderableText } from './field-utils';
 
 export interface FieldTypeDefinition {
   component: React.ComponentType<AutoFormFieldProps>;
@@ -44,9 +43,11 @@ export class FieldTypeRegistry {
 }
 
 export function buildFieldMatchContext(field: ParsedField): FieldMatchContext {
-  const label = String(field.fieldConfig?.label ?? getLabel(field));
+  const label = getRenderableText(getLabel(field), field.key);
   const identity = `${field.key} ${label}`.toLowerCase();
-  const inputType = String(field.fieldConfig?.inputProps?.type ?? getProtoFieldCustomData(field)?.inputType ?? '');
-  const maxLength = Number(field.fieldConfig?.inputProps?.maxLength ?? 0);
+  const configuredType = field.fieldConfig?.inputProps?.['type'] ?? getProtoFieldCustomData(field)?.inputType;
+  const inputType = typeof configuredType === 'string' ? configuredType : '';
+  const configuredMaxLength = field.fieldConfig?.inputProps?.['maxLength'];
+  const maxLength = typeof configuredMaxLength === 'number' ? configuredMaxLength : 0;
   return { identity, inputType, maxLength };
 }

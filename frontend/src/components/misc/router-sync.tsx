@@ -11,7 +11,7 @@
 
 import { useLocation, useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { config as appConfig, isEmbedded } from '../../config';
 import { trackHubspotPage } from '../../hubspot/hubspot.helper';
@@ -36,7 +36,7 @@ export const RouterSync = () => {
   useEffect(() => {
     appGlobal.setNavigate((to: string, options?: { replace?: boolean }) => {
       navigate({ to, replace: options?.replace }).catch((error: unknown) => {
-        toast.error('Failed to navigate', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
       });
     });
     appGlobal.setRouter(router);

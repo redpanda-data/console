@@ -1,53 +1,42 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 import React from 'react';
-
 import type { BadgeEmphasis, BadgeProps, BadgeSize, BadgeTone } from './badge';
 import { Badge } from './badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
+import { requireUniqueItemIds } from '../lib/identified-items';
 import { cn, type SharedProps } from '../lib/utils';
+import { badgeGroupVariants } from './badge-group/variants';
 
-const badgeGroupVariants = cva('flex items-center', {
-  variants: {
-    gap: {
-      none: '',
-      xs: 'gap-0.5',
-      sm: 'gap-1',
-      md: 'gap-1.5',
-      lg: 'gap-2',
-    },
-    wrap: {
-      true: 'flex-wrap',
-      false: '',
-    },
-  },
-  defaultVariants: {
-    gap: 'sm',
-    wrap: false,
-  },
-});
-
-export interface BadgeGroupProps
-  extends React.ComponentProps<'div'>,
-    VariantProps<typeof badgeGroupVariants>,
-    SharedProps {
-  /** Maximum number of children to show before overflow (default: 3) */
-  maxVisible?: number;
-  /** Custom render function for overflow tooltip content. Receives the overflow children as an array. If omitted, no tooltip is rendered. */
-  renderOverflowContent?: (overflowChildren: React.ReactNode[]) => React.ReactNode;
-  /** Size of the overflow badge */
-  size?: BadgeSize;
-  /** Semantic color (tone) for the overflow badge */
-  tone?: BadgeTone;
-  /** Emphasis for the overflow badge. */
-  variant?: BadgeEmphasis;
+export interface BadgeGroupItem {
+  content: React.ReactNode;
+  id: string;
+  /** Plain-text equivalent, also available when an item is hidden in overflow. */
+  textValue: string;
 }
 
-const BadgeGroup = ({
+export interface BadgeGroupProps<Item extends BadgeGroupItem = BadgeGroupItem>
+  extends Omit<React.ComponentProps<'div'>, 'children'>,
+    VariantProps<typeof badgeGroupVariants>,
+    SharedProps {
+  items: readonly Item[];
+  /** Maximum number of items to show before overflow (default: 3). */
+  maxVisible?: number | undefined;
+  /** Receives the exact hidden items, including their caller-owned IDs. Omit for a passive overflow badge. */
+  renderOverflowContent?: ((overflowItems: readonly Item[]) => React.ReactNode) | undefined;
+  /** Size of the overflow badge */
+  size?: BadgeSize | undefined;
+  /** Semantic color (tone) for the overflow badge */
+  tone?: BadgeTone | undefined;
+  /** Emphasis for the overflow badge. */
+  variant?: BadgeEmphasis | undefined;
+}
+
+function BadgeGroup<Item extends BadgeGroupItem>({
   className,
   gap,
   wrap,
   testId,
-  children,
+  items,
   maxVisible = 3,
   size = 'sm',
   tone,
@@ -55,16 +44,25 @@ const BadgeGroup = ({
   renderOverflowContent,
   ref,
   ...props
-}: BadgeGroupProps & { ref?: React.Ref<HTMLDivElement> }) => {
-  const childArray = React.Children.toArray(children);
-  const visibleChildren = childArray.slice(0, maxVisible);
-  const overflowChildren = childArray.slice(maxVisible);
-  const hasOverflow = overflowChildren.length > 0;
+}: BadgeGroupProps<Item> & { ref?: React.Ref<HTMLDivElement> | undefined }) {
+  const descriptionId = React.useId();
+  requireUniqueItemIds(items);
+  for (const item of items) {
+    if (typeof item.textValue !== 'string' || item.textValue.trim() === '') {
+      throw new TypeError('BadgeGroup items require a nonempty textValue.');
+    }
+  }
+  if (!Number.isInteger(maxVisible) || maxVisible < 0) {
+    throw new RangeError('BadgeGroup maxVisible must be a nonnegative integer.');
+  }
+  const visibleItems = items.slice(0, maxVisible);
+  const overflowItems = items.slice(maxVisible);
+  const hasOverflow = overflowItems.length > 0;
 
   /** `+N`, as a plain chip or — given `render` — as the tooltip's trigger. */
   const overflowBadge = (overrides?: Partial<BadgeProps>) => (
-    <Badge size={size} tone={tone} variant={variant} {...overrides}>
-      +{overflowChildren.length}
+    <Badge aria-describedby={descriptionId} size={size} tone={tone} variant={variant} {...overrides}>
+      +{overflowItems.length}
     </Badge>
   );
 
@@ -76,10 +74,19 @@ const BadgeGroup = ({
       ref={ref}
       {...props}
     >
-      {visibleChildren}
+      {visibleItems.map((item) => (
+        <React.Fragment key={item.id}>{item.content}</React.Fragment>
+      ))}
+      {hasOverflow && (
+        <span className="sr-only" id={descriptionId}>
+          {overflowItems.map((item) => item.textValue).join(', ')}
+        </span>
+      )}
 
-      {hasOverflow === true &&
-        (renderOverflowContent ? (
+      {hasOverflow &&
+        (renderOverflowContent === undefined ? (
+          overflowBadge()
+        ) : (
           <TooltipProvider>
             <Tooltip>
               {/* A real <button>, for two reasons: Base UI's Trigger defaults to
@@ -92,19 +99,17 @@ const BadgeGroup = ({
               <TooltipTrigger
                 render={overflowBadge({
                   className: 'cursor-pointer appearance-none',
-                  render: <button aria-label={`Show ${overflowChildren.length} more`} type="button" />,
+                  render: <button aria-label={`Show ${overflowItems.length} more`} type="button" />,
                 })}
               />
-              <TooltipContent>{renderOverflowContent(overflowChildren)}</TooltipContent>
+              <TooltipContent>{renderOverflowContent(overflowItems)}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
-        ) : (
-          overflowBadge()
         ))}
     </div>
   );
-};
+}
 
 BadgeGroup.displayName = 'BadgeGroup';
 
-export { BadgeGroup, badgeGroupVariants };
+export { BadgeGroup };

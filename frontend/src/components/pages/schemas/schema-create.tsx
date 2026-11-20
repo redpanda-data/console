@@ -32,7 +32,7 @@ import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { AlertCircle, InfoIcon, X } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import { SwitchSchemaFormatDialog, ValidationErrorsDialog } from './modals';
@@ -304,7 +304,7 @@ const SchemaPageButtons = (p: {
             if (r.isValid && r.isCompatible !== false) {
               // Clear any previous validation errors on successful validation
               setPersistentValidationError(null);
-              toast.success('Schema validated');
+              showToast({ status: 'success', title: 'Schema validated' });
             } else {
               // Persist error only after user closes the modal
               setValidationDialogResult(r);
@@ -380,7 +380,7 @@ async function createSchemaAndOpen(
     // success: navigate to details with "latest" so it picks up the new version
     appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
   } catch (err) {
-    toast.error('Error creating schema', { description: String(err) });
+    showToast({ status: 'error', title: 'Error creating schema', description: String(err) });
   }
 }
 
@@ -998,7 +998,7 @@ const ReferencesEditor = (p: {
 };
 
 const MetadataPropertiesEditor = (p: { state: SchemaEditorStateHelper; onStateChange: SetSchemaState }) => {
-  const pairs = p.state.metadataProperties.map(({ key, value }) => ({ key, value }));
+  const rows = p.state.metadataProperties.map(({ id, key, value }) => ({ id, pair: { key, value } }));
 
   return (
     <div className="w-1/2">
@@ -1008,14 +1008,11 @@ const MetadataPropertiesEditor = (p: { state: SchemaEditorStateHelper; onStateCh
         onChange={(updated) => {
           p.onStateChange((prev) => ({
             ...prev,
-            metadataProperties: updated.map((pair, i) => ({
-              id: prev.metadataProperties[i]?.id ?? crypto.randomUUID(),
-              ...pair,
-            })),
+            metadataProperties: updated.map(({ id, pair }) => ({ id, key: pair.key, value: pair.value })),
           }));
         }}
         testId="schema-create-metadata"
-        value={pairs}
+        value={rows}
         valueFieldProps={{ placeholder: 'e.g. team-platform' }}
       />
     </div>

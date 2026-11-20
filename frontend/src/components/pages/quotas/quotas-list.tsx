@@ -32,8 +32,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'compon
 import { Link } from 'components/redpanda-ui/components/typography';
 import { ArrowDown, ArrowUp, ChevronsUpDown, InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { useMemo } from 'react';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
+import { showToast } from 'utils/toast.utils';
 
 import {
   clampPageIndex,
@@ -184,7 +184,7 @@ const toQuotaRow = (quota: ListQuotasResponse_QuotaEntry): QuotaRow => {
 };
 
 const reportSearchUpdateFailure = (error: unknown) => {
-  toast.error('Failed to update the quotas view', { description: String(error) });
+  showToast({ status: 'error', title: 'Failed to update the quotas view', description: String(error) });
 };
 
 /** Pagination and sorting live in the URL, so a reload or a shared link reopens the same view. */

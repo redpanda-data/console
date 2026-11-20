@@ -57,13 +57,6 @@ rs.mock('../../../config', () => {
   };
 });
 
-rs.mock('sonner', () => ({
-  toast: {
-    success: rs.fn(),
-    error: rs.fn(),
-  },
-}));
-
 // ── Component import (after mocks) ────────────────────────────────────────────
 
 import { CreateTopicDialog } from './create-topic-dialog';

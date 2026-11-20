@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
 import { Empty, EmptyDescription } from 'components/redpanda-ui/components/empty';
-import { Group } from 'components/redpanda-ui/components/group';
 import { Input, InputEnd } from 'components/redpanda-ui/components/input';
 import {
   InputGroup,
@@ -34,11 +33,13 @@ import {
 import { Slider } from 'components/redpanda-ui/components/slider';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { Pencil as EditIcon, Search, X as XIcon } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
+import { attachedFirstClassName, attachedLastClassName } from 'utils/attached-controls';
+import { showToast } from 'utils/toast.utils';
 
 import { isServerless } from '../../../config';
 import { api, useApiStoreHook } from '../../../state/backend-api';
@@ -203,7 +204,7 @@ const ConfigEditorForm: FC<{
           value: configValue,
         },
       ]);
-      toast.success(`Config ${editedEntry.name} updated`);
+      showToast({ status: 'success', title: `Config ${editedEntry.name} updated` });
       onSuccess();
       onClose();
     } catch (err) {
@@ -338,7 +339,7 @@ function useConfigSearchParams() {
   const setFilter = (value: string) => {
     navigate({ search: (prev) => ({ ...prev, configFilter: value || undefined }), replace: true }).catch(
       (error: unknown) => {
-        toast.error('Failed to update configuration filter', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to update configuration filter', description: String(error) });
       }
     );
   };
@@ -348,7 +349,7 @@ function useConfigSearchParams() {
       search: (prev) => ({ ...prev, configScope: value === 'all' ? undefined : value }),
       replace: true,
     }).catch((error: unknown) => {
-      toast.error('Failed to update configuration scope', { description: String(error) });
+      showToast({ status: 'error', title: 'Failed to update configuration scope', description: String(error) });
     });
   };
 
@@ -810,7 +811,7 @@ function NumInput(p: {
 
   const input = (
     <Input
-      className={p.addonAfter ? 'flex-1' : undefined}
+      className={p.addonAfter ? cn(attachedFirstClassName, 'flex-1') : undefined}
       disabled={p.disabled}
       id={p.id}
       onBlur={() => {
@@ -846,12 +847,12 @@ function NumInput(p: {
   if (!p.addonAfter) {
     return input;
   }
-  // An attached group joins the input and its addon into one control.
+  // The input and its addon read as one control; the addon takes `attachedLastClassName`.
   return (
-    <Group attached>
+    <div className="flex w-full items-stretch">
       {input}
       {p.addonAfter}
-    </Group>
+    </div>
   );
 }
 
@@ -880,7 +881,7 @@ function UnitInput<U extends string>({
     <NumInput
       addonAfter={
         <Select onValueChange={(u) => setUnit(u as U)} value={unit}>
-          <SelectTrigger className="w-[100px]">
+          <SelectTrigger className={cn(attachedLastClassName, 'w-[100px]')}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

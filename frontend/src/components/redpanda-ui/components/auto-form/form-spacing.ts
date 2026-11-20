@@ -20,5 +20,3 @@ export const formSpacing = {
   /** Gap between a oneof selector and the field it reveals. */
   oneofStack: 'space-y-4',
 } as const;
-
-export type FormSpacingToken = keyof typeof formSpacing;

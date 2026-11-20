@@ -8,7 +8,7 @@ export function useAnimatedAutoHeight<T extends HTMLElement>(enabled: boolean) {
   const [node, setNode] = useState<T | null>(null);
 
   useLayoutEffect(() => {
-    if (!(enabled && node)) {
+    if (!enabled || node === null) {
       return;
     }
 

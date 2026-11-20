@@ -60,9 +60,10 @@ import {
   listComponents,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline-PipelineService_connectquery';
 import * as React from 'react';
-import { toast } from 'sonner';
 import { rpcnEditorAutosave, useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
+import { anyToast, aToast, spyOnToasts } from 'test-toasts';
 import { act, fireEvent, render, screen, waitFor } from 'test-utils';
+import type { ToastStatus } from 'utils/toast.utils';
 
 import {
   DRAFT_UNSUPPORTED_MESSAGE,
@@ -317,16 +318,6 @@ rs.mock('state/rpcn-wizard-store', () => ({
   ),
   getWizardConnectionData: () => ({ input: undefined, output: undefined }),
 }));
-
-// Only the emitters are spied, so the rest of sonner stays real. Copy is covered in save-actions.test.ts;
-// what matters here is which toasts a save fires, because two contradicting each other is the bug.
-rs.mock('sonner', () => {
-  const actual = rs.requireActual<typeof import('sonner')>('sonner');
-  return {
-    ...actual,
-    toast: { ...actual.toast, success: rs.fn(), error: rs.fn(), warning: rs.fn(), info: rs.fn() },
-  };
-});
 
 // Import after all mocks are set up.
 import PipelinePage from '.';
@@ -603,11 +594,13 @@ const confirmStart = async (user: ReturnType<typeof userEvent.setup>) => {
 
 type UserSession = ReturnType<typeof userEvent.setup>;
 
+// Copy is covered in save-actions.test.ts; what matters here is which toasts a save fires, because two
+// contradicting each other is the bug.
+const toasts = spyOnToasts();
+
 /** Clears the toasts and the router mocks a test may have driven. */
 function resetToastAndRouterMocks() {
-  rs.mocked(toast.success).mockClear();
-  rs.mocked(toast.error).mockClear();
-  rs.mocked(toast.warning).mockClear();
+  toasts.mockClear();
   mockNavigate.mockClear();
   mockBack.mockClear();
   mockSearch.mockReturnValue({});
@@ -671,9 +664,9 @@ const chooseSaveAndStart = async (user: UserSession) => {
 };
 
 /** The save reported `expected` through `emit`, and never claimed success. */
-const expectToastInsteadOfSuccess = async (emit: typeof toast.error, expected: unknown) => {
-  await waitFor(() => expect(emit).toHaveBeenCalledWith(expected));
-  expect(toast.success).not.toHaveBeenCalled();
+const expectToastInsteadOfSuccess = async (status: ToastStatus, expected: unknown) => {
+  await waitFor(() => expect(toasts).toHaveBeenCalledWith(aToast(status, expected)));
+  expect(toasts).not.toHaveBeenCalledWith(anyToast('success'));
 };
 
 /** A CreatePipeline that comes back already starting, and the StopPipeline the editor may follow it with. */
@@ -1536,7 +1529,7 @@ describe('the PipelinePage', () => {
         await screen.findByTestId('flow-canvas');
         await user.click(screen.getByTestId('save-pipeline'));
 
-        await waitFor(() => expect(toast.error).toHaveBeenCalledWith(MISSING_SERVICE_ACCOUNT_MESSAGE));
+        await waitFor(() => expect(toasts).toHaveBeenCalledWith(aToast('error', MISSING_SERVICE_ACCOUNT_MESSAGE)));
         expect(updatePipelineMock).not.toHaveBeenCalled();
       });
 
@@ -1720,7 +1713,7 @@ describe('pipelinePage saving and recovering work', () => {
         await nameAndConfigure(user, 'my-pipeline', SERVICE_ACCOUNT_LOGIN_YAML);
 
         await chooseSaveAndStart(user);
-        await waitFor(() => expect(toast.error).toHaveBeenCalledWith(MISSING_SERVICE_ACCOUNT_MESSAGE));
+        await waitFor(() => expect(toasts).toHaveBeenCalledWith(aToast('error', MISSING_SERVICE_ACCOUNT_MESSAGE)));
         expect(createPipelineMock).not.toHaveBeenCalled();
 
         const sent = await saveAndCapturePipeline(user, createPipelineMock);
@@ -1799,7 +1792,7 @@ describe('pipelinePage saving and recovering work', () => {
         // The crux: the pipeline the user asked to park does not stay running.
         await waitFor(() => expect(stopPipelineMock).toHaveBeenCalled());
         expect(stopPipelineMock.mock.calls[0][0].request.id).toBe('new-pipeline');
-        await expectToastInsteadOfSuccess(toast.error, DRAFT_UNSUPPORTED_STOPPED_MESSAGE);
+        await expectToastInsteadOfSuccess('error', DRAFT_UNSUPPORTED_STOPPED_MESSAGE);
         // Sent to the pipeline's page, not the draft editor: it is a deployed pipeline now.
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
         expect(mockNavigate).not.toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' });
@@ -1817,7 +1810,7 @@ describe('pipelinePage saving and recovering work', () => {
         await user.click(screen.getByTestId('save-pipeline'));
 
         await waitFor(() => expect(stopPipelineMock).toHaveBeenCalled());
-        await expectToastInsteadOfSuccess(toast.error, DRAFT_UNSUPPORTED_MESSAGE);
+        await expectToastInsteadOfSuccess('error', DRAFT_UNSUPPORTED_MESSAGE);
       });
 
       // No id to aim the stop at, so it never runs — the copy must not claim the deployment was parked.
@@ -1830,7 +1823,7 @@ describe('pipelinePage saving and recovering work', () => {
 
         await waitFor(() => expect(createPipelineMock).toHaveBeenCalled());
         expect(stopPipelineMock).not.toHaveBeenCalled();
-        await expectToastInsteadOfSuccess(toast.error, DRAFT_UNSUPPORTED_MESSAGE);
+        await expectToastInsteadOfSuccess('error', DRAFT_UNSUPPORTED_MESSAGE);
       });
     });
 
@@ -1860,7 +1853,7 @@ describe('pipelinePage saving and recovering work', () => {
         const { sent, title } = await renameWhileSaveInFlight(Pipeline_State.DRAFT);
         expect(sent.displayName).toBe('submitted-name');
 
-        await waitFor(() => expect(toast.success).toHaveBeenCalled());
+        await waitFor(() => expect(toasts).toHaveBeenCalledWith(anyToast('success')));
         expect(title).toHaveValue('newer-unsaved-name');
         await waitFor(() => expect(lastShouldBlockFn()()).toBe(true));
         expect(autosaveEntry('test-pipeline')?.name).toBe('newer-unsaved-name');
@@ -1910,9 +1903,13 @@ describe('pipelinePage saving and recovering work', () => {
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: '' } });
         await user.click(screen.getByTestId('save-pipeline'));
 
-        await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/nothing to save yet/i)));
+        await waitFor(() =>
+          expect(toasts).toHaveBeenCalledWith(aToast('error', expect.stringMatching(/nothing to save yet/i)))
+        );
         // Names the way out, rather than only refusing.
-        expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/add a name or some configuration/i));
+        expect(toasts).toHaveBeenCalledWith(
+          aToast('error', expect.stringMatching(/add a name or some configuration/i))
+        );
         expect(createPipelineMock).not.toHaveBeenCalled();
       });
 
@@ -2104,9 +2101,11 @@ describe('pipelinePage saving and recovering work', () => {
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  stdin: {}');
         await user.click(screen.getByTestId('save-pipeline'));
 
-        await waitFor(() => expect(toast.warning).toHaveBeenCalledWith(expect.stringMatching(/may be running/i)));
+        await waitFor(() =>
+          expect(toasts).toHaveBeenCalledWith(aToast('warning', expect.stringMatching(/may be running/i)))
+        );
         expect(stopPipelineMock).not.toHaveBeenCalled();
-        expect(toast.success).not.toHaveBeenCalled();
+        expect(toasts).not.toHaveBeenCalledWith(anyToast('success'));
       });
 
       // Create first, stop second, so the stop can fail on its own.
@@ -2122,7 +2121,7 @@ describe('pipelinePage saving and recovering work', () => {
         await user.click(screen.getByTestId('save-pipeline'));
 
         await waitFor(() => expect(stopPipelineMock).toHaveBeenCalled());
-        await expectToastInsteadOfSuccess(toast.warning, expect.stringMatching(/may be running/i));
+        await expectToastInsteadOfSuccess('warning', expect.stringMatching(/may be running/i));
         // Still routed to the pipeline's page, which is where it can be stopped by hand.
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
       });
@@ -2171,7 +2170,7 @@ describe('pipelinePage saving and recovering work', () => {
         typeConfig('input:\n  edited: {}');
         await user.click(saveButton);
 
-        await expectToastInsteadOfSuccess(toast.error, DRAFT_UPDATE_UNSUPPORTED_MESSAGE);
+        await expectToastInsteadOfSuccess('error', DRAFT_UPDATE_UNSUPPORTED_MESSAGE);
         // Not a draft any more, so the editor's next save would deploy too.
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
       });
@@ -2219,7 +2218,7 @@ describe('pipelinePage saving and recovering work', () => {
 
         // The rejection lands in the issues panel, and nothing was deployed.
         expect(await screen.findByText(/not a draft/i)).toBeInTheDocument();
-        expect(toast.error).toHaveBeenCalledWith(NO_LONGER_DRAFT_MESSAGE);
+        expect(toasts).toHaveBeenCalledWith(aToast('error', NO_LONGER_DRAFT_MESSAGE));
         expect(mockNavigate).not.toHaveBeenCalledWith(expect.objectContaining({ to: '/rp-connect/test-pipeline' }));
       });
 
@@ -2242,9 +2241,9 @@ describe('pipelinePage saving and recovering work', () => {
 
         // Only a draft save asserts `draft`, so only a draft save can be refused for that reason. Saying
         // otherwise would send the user looking for a teammate who started something.
-        await waitFor(() => expect(toast.error).toHaveBeenCalled());
-        expect(toast.error).not.toHaveBeenCalledWith(NO_LONGER_DRAFT_MESSAGE);
-        expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/suspended/i));
+        await waitFor(() => expect(toasts).toHaveBeenCalledWith(anyToast('error')));
+        expect(toasts).not.toHaveBeenCalledWith(aToast('error', NO_LONGER_DRAFT_MESSAGE));
+        expect(toasts).toHaveBeenCalledWith(aToast('error', expect.stringMatching(/suspended/i)));
       });
 
       it('a refused start keeps the saved draft and shows the issues on their lines', async () => {

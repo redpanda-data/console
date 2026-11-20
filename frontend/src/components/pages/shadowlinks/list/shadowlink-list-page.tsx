@@ -27,9 +27,9 @@ import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/c
 import React, { useEffect } from 'react';
 import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { showToast } from 'utils/toast.utils';
 
 import {
   ShadowLinkEmptyState,
@@ -131,7 +131,11 @@ const useShadowLinksErrorToast = (error: ShadowLinksQueryError) => {
       error.code !== Code.Unavailable &&
       error.code !== Code.PermissionDenied
     ) {
-      toast.error('Failed to load shadowlinks', {
+      // Each refetch brings a new error; the id keeps one toast up.
+      showToast({
+        id: 'shadowlinks-load-error',
+        status: 'error',
+        title: 'Failed to load shadowlinks',
         description: error.message,
       });
     }
@@ -362,7 +366,7 @@ const useDefaultTabInUrl = (
   useEffect(() => {
     if (onThisPage && fenceTab && defaultTab && !requestedTab) {
       navigate({ to: '/shadowlinks', search: { tab: defaultTab }, replace: true }).catch((error: unknown) => {
-        toast.error('Failed to open the shadow links tab', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to open the shadow links tab', description: String(error) });
       });
     }
   }, [onThisPage, fenceTab, requestedTab, defaultTab, navigate]);
@@ -398,7 +402,7 @@ export const ShadowLinkListPage = () => {
       onValueChange={(value) => {
         navigate({ to: '/shadowlinks', search: { tab: value as ShadowLinksTab }, replace: true }).catch(
           (error: unknown) => {
-            toast.error('Failed to open the shadow links tab', { description: String(error) });
+            showToast({ status: 'error', title: 'Failed to open the shadow links tab', description: String(error) });
           }
         );
       }}

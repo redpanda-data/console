@@ -10,12 +10,24 @@ import { Input } from './input';
 import { Textarea } from './textarea';
 import { cn, type SharedProps } from '../lib/utils';
 
-function InputGroup({ className, testId, ...props }: React.ComponentProps<'div'> & SharedProps) {
+interface InputGroupProps extends React.ComponentProps<'fieldset'>, SharedProps {
+  /** A pill URL field or the standard grouped-control corners. */
+  shape?: 'default' | 'pill' | undefined;
+}
+
+function InputGroup({ className, shape = 'default', testId, ...props }: InputGroupProps) {
   return (
-    <div
+    <fieldset
       className={cn(
-        'group/input-group !border-input relative flex w-full items-center rounded-md border bg-input-fill shadow-xs outline-none transition-[color,box-shadow] motion-reduce:transition-none',
+        'group/input-group relative flex w-full items-center border !border-input bg-input-fill shadow-xs transition-[color,background-color,border-color,box-shadow] outline-none motion-reduce:transition-none',
         'h-9 min-w-0 has-[>textarea]:h-auto',
+
+        // The group owns the hover fill, so it spans the addons; embedded controls stay transparent.
+        // The border yields to the focus and invalid borders instead of outranking them. Match the
+        // control's slot, so a hidden input inside an addon (a Switch, a Select) can't switch hover off;
+        // `input-group-control` is the slot the docs give a custom control.
+        'hover:not-has-[:is([data-slot=input],[data-slot=textarea],[data-slot=input-group-control]):disabled]:bg-input-fill-hover',
+        'hover:not-has-[:is([data-slot=input],[data-slot=textarea],[data-slot=input-group-control]):is(:disabled,:focus-visible,[aria-invalid=true])]:!border-input-hover',
 
         // <Input> wraps its control in a container div, so target the descendant input via [&_input]/has-[input].
         'has-[>[data-align=inline-start]]:[&_input]:pl-2',
@@ -24,56 +36,78 @@ function InputGroup({ className, testId, ...props }: React.ComponentProps<'div'>
         'has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-end]]:items-stretch has-[>[data-align=block-end]]:[&_input]:pt-3',
 
         // Target element selectors directly: Input/Textarea overwrite data-slot with their own.
-        'has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-ring/50',
-        'has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring/50',
+        // State borders are `!important` like the rest border, or `!border-input` outranks them.
+        'has-[input:focus-visible]:!border-ring has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/50',
+        'has-[textarea:focus-visible]:!border-ring has-[textarea:focus-visible]:ring-3 has-[textarea:focus-visible]:ring-ring/50',
 
-        'has-[[data-slot][aria-invalid=true]]:border-destructive has-[[data-slot][aria-invalid=true]]:ring-invalid',
+        'has-[[data-slot][aria-invalid=true]]:!border-destructive has-[[data-slot][aria-invalid=true]]:ring-invalid',
 
+        // A disabled fieldset or `data-disabled` dims the whole group once; its control doesn't dim again.
+        'disabled:opacity-50 data-[disabled=true]:opacity-50',
+        '[&:is(:disabled,[data-disabled=true])_:is([data-slot=input],[data-slot=textarea],[data-slot=input-group-control])]:opacity-100',
+        // A disabled control dims itself, the frame and the text addons, but not enabled buttons: one of them
+        // may be what re-enables the control. Match the control's slot, as hover does, not hidden inputs inside an addon.
+        // A disabled group's controls match `:disabled` as well, so these wait for an enabled group, or it dims twice.
+        'not-disabled:not-data-[disabled=true]:has-[:is([data-slot=input],[data-slot=textarea],[data-slot=input-group-control]):disabled]:!border-input/50 not-disabled:not-data-[disabled=true]:has-[:is([data-slot=input],[data-slot=textarea],[data-slot=input-group-control]):disabled]:bg-input-fill/50',
+
+        shape === 'pill' ? 'rounded-full' : 'rounded-md',
         className
       )}
+      data-shape={shape}
       data-slot="input-group"
       data-testid={testId}
-      role="group"
       {...props}
     />
   );
 }
 
 const inputGroupAddonVariants = cva(
-  "flex h-auto cursor-text select-none items-center gap-2 py-1.5 font-medium text-body text-subtle group-data-[disabled=true]/input-group:opacity-50 [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-4",
+  "flex h-auto cursor-text items-center gap-2 py-1.5 text-body font-medium text-subtle select-none group-[:not(:disabled,[data-disabled=true]):has(:is([data-slot=input],[data-slot=textarea],[data-slot=input-group-control]):disabled)]/input-group:text-disabled [&>kbd]:rounded-[calc(var(--radius)-5px)] [&>svg:not([class*='size-'])]:size-4",
   {
     variants: {
       align: {
         'inline-start': 'order-first justify-start pl-3 has-[>button]:ml-[-0.45rem] has-[>kbd]:ml-[-0.35rem]',
         'inline-end': 'order-last justify-end pr-3 has-[>button]:mr-[-0.45rem] has-[>kbd]:mr-[-0.35rem]',
-        'block-start':
-          'order-first w-full justify-start px-3 pt-3 group-has-[input]/input-group:pt-2.5 [.border-b]:pb-3',
-        'block-end': 'order-last w-full justify-start px-3 pb-3 group-has-[input]/input-group:pb-2.5 [.border-t]:pt-3',
+        'block-start': 'order-first w-full justify-start px-3 pt-3 group-has-[input]/input-group:pt-2.5',
+        'block-end': 'order-last w-full justify-start px-3 pb-3 group-has-[input]/input-group:pb-2.5',
       },
+      separator: { false: '', true: '' },
     },
+    compoundVariants: [
+      { align: 'block-start', separator: true, className: 'border-b pb-3' },
+      { align: 'block-end', separator: true, className: 'border-t pt-3' },
+    ],
     defaultVariants: {
       align: 'inline-start',
+      separator: false,
     },
   }
 );
 
-function InputGroupAddon({
-  className,
-  align = 'inline-start',
-  ...props
-}: React.ComponentProps<'div'> & VariantProps<typeof inputGroupAddonVariants>) {
+type InputGroupAddonProps = React.ComponentProps<'div'> &
+  Omit<VariantProps<typeof inputGroupAddonVariants>, 'separator'> &
+  ({ separator?: false | undefined } | { align: 'block-start' | 'block-end'; separator: true });
+
+function InputGroupAddon({ className, align = 'inline-start', separator = false, ...props }: InputGroupAddonProps) {
   return (
     <div
-      className={cn(inputGroupAddonVariants({ align }), className)}
+      className={cn(inputGroupAddonVariants({ align, separator }), className)}
       data-align={align}
+      data-separator={separator || undefined}
       data-slot="input-group-addon"
       onClick={(e) => {
-        if ((e.target as HTMLElement).closest('button')) {
+        if (!(e.target instanceof Node && e.currentTarget.contains(e.target))) {
           return;
         }
-        e.currentTarget.parentElement?.querySelector('input')?.focus();
+        if (e.target instanceof Element && e.target.closest('button') !== null) {
+          return;
+        }
+        const control = e.currentTarget.parentElement?.querySelector('input, textarea');
+        if (control instanceof HTMLElement) {
+          control.focus();
+        }
       }}
-      role="group"
+      role="presentation"
       {...props}
     />
   );
@@ -87,9 +121,11 @@ const inputGroupButtonVariants = cva('flex items-center gap-2 text-body shadow-n
       'icon-xs': 'size-6 rounded-[calc(var(--radius)-5px)] p-0 has-[>svg]:p-0',
       'icon-sm': 'size-8 p-0 has-[>svg]:p-0',
     },
+    shape: { default: '', pill: 'rounded-full' },
   },
   defaultVariants: {
     size: 'xs',
+    shape: 'default',
   },
 });
 
@@ -98,13 +134,15 @@ function InputGroupButton({
   type = 'button',
   variant = 'ghost',
   size = 'xs',
+  shape = 'default',
   testId,
   ...props
 }: Omit<React.ComponentProps<typeof Button>, 'size'> & VariantProps<typeof inputGroupButtonVariants> & SharedProps) {
   return (
     <Button
-      className={cn(inputGroupButtonVariants({ size }), className)}
+      className={cn(inputGroupButtonVariants({ size, shape }), className)}
       data-size={size}
+      shape={shape}
       testId={testId}
       type={type}
       variant={variant}
@@ -117,7 +155,7 @@ function InputGroupText({ className, ...props }: React.ComponentProps<'span'>) {
   return (
     <span
       className={cn(
-        "flex items-center gap-2 text-body text-subtle [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none",
+        "flex items-center gap-2 text-body text-subtle group-[:not(:disabled,[data-disabled=true]):has(:is([data-slot=input],[data-slot=textarea],[data-slot=input-group-control]):disabled)]/input-group:text-disabled [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -126,27 +164,12 @@ function InputGroupText({ className, ...props }: React.ComponentProps<'span'>) {
 }
 
 function InputGroupInput({ className, testId, ...props }: Omit<React.ComponentProps<'input'>, 'size'> & SharedProps) {
-  return (
-    <Input
-      className={cn('rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0', className)}
-      containerClassName="flex-1"
-      testId={testId}
-      {...props}
-    />
-  );
+  return <Input appearance="embedded" className={className} containerClassName="flex-1" testId={testId} {...props} />;
 }
 
 function InputGroupTextarea({ className, testId, ...props }: React.ComponentProps<'textarea'> & SharedProps) {
-  return (
-    <Textarea
-      className={cn(
-        'flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0',
-        className
-      )}
-      testId={testId}
-      {...props}
-    />
-  );
+  return <Textarea appearance="embedded" className={cn('flex-1', className)} testId={testId} {...props} />;
 }
 
+export type { InputGroupAddonProps, InputGroupProps };
 export { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText, InputGroupTextarea };

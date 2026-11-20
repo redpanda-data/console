@@ -3,8 +3,8 @@
 import { AlertDialog as AlertDialogPrimitive } from '@base-ui/react/alert-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
-
-import { type ButtonVariants, buttonVariants } from './button';
+import type { ButtonVariants } from './button';
+import { buttonVariants } from './button/variants';
 import { usePortalContainer } from '../lib/use-portal-container';
 import { useScrollShadow } from '../lib/use-scroll-shadow';
 import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
@@ -37,7 +37,7 @@ function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdr
     <AlertDialogPrimitive.Backdrop
       className={cn(
         // fill-mode-forwards holds the exit keyframe until Base UI unmounts (else a one-frame flash).
-        'data-[closed]:fade-out-0 data-[open]:fade-in-0 fixed inset-0 z-50 bg-modal-overlay fill-mode-forwards data-[closed]:animate-out data-[open]:animate-in',
+        'data-[closed]:fade-out-0 data-[open]:fade-in-0 fill-mode-forwards data-[closed]:animate-out data-[open]:animate-in fixed inset-0 z-50 bg-modal-overlay',
         className
       )}
       data-slot="alert-dialog-overlay"
@@ -58,7 +58,7 @@ function AlertDialogContent({ className, testId, container, showOverlay = true, 
       <AlertDialogPrimitive.Popup
         aria-modal="true"
         className={cn(
-          'data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-lg border bg-background fill-mode-forwards shadow-lg duration-200 data-[closed]:animate-out data-[open]:animate-in sm:max-w-lg',
+          'data-[closed]:fade-out-0 data-[open]:fade-in-0 data-[closed]:zoom-out-95 data-[open]:zoom-in-95 fill-mode-forwards data-[closed]:animate-out data-[open]:animate-in fixed top-[50%] left-[50%] z-50 flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] translate-[-50%] flex-col overflow-hidden rounded-lg border bg-background shadow-lg duration-200 sm:max-w-lg',
           className
         )}
         data-slot="alert-dialog-content"
@@ -124,7 +124,7 @@ interface AlertDialogBodyProps
   extends React.ComponentProps<'div'>,
     VariantProps<typeof alertDialogBodyContentVariants> {
   /** Show fading top/bottom shadows when the body overflows. Defaults to `true`. */
-  scrollShadow?: boolean;
+  scrollShadow?: boolean | undefined;
 }
 
 function AlertDialogBody({

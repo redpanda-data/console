@@ -1,50 +1,77 @@
-import { cva } from 'class-variance-authority';
-import React from 'react';
-
-import { cn, type DotSize, type SharedProps } from '../lib/utils';
+import type React from 'react';
+import { CountDot, type CountDotSize } from './count-dot';
+import { StatusDot } from './status-dot';
+import { hasSlotContent } from '../lib/has-slot-content';
+import { requireUniqueItemIds } from '../lib/identified-items';
+import { cn, type DotSize, type SemanticVariant, type SharedProps } from '../lib/utils';
+import { dotGroupPositionVariants, dotGroupSpacingVariants } from './dot-group/variants';
 
 type DotGroupPosition = 'top' | 'top-right' | 'top-left' | 'right' | 'bottom-right' | 'bottom' | 'bottom-left' | 'left';
 
-type DotGroupProps = Omit<React.ComponentProps<'div'>, 'content'> &
+interface DotGroupStatusItem {
+  id: string;
+  kind: 'status';
+  label?: string | undefined;
+  pulsing?: boolean | undefined;
+  variant?: SemanticVariant | undefined;
+}
+
+interface DotGroupCountItem {
+  count: number;
+  id: string;
+  kind: 'count';
+  label?: string | undefined;
+  max?: number | undefined;
+  variant?: SemanticVariant | undefined;
+}
+
+type DotGroupItem = DotGroupStatusItem | DotGroupCountItem;
+
+type DotGroupProps = Omit<React.ComponentProps<'div'>, 'content' | 'children'> &
   SharedProps & {
-    size?: DotSize;
-    content?: React.ReactNode;
-    position?: DotGroupPosition;
-    maxVisible?: number;
-  };
+    content?: React.ReactNode | undefined;
+    position?: DotGroupPosition | undefined;
+    maxVisible?: number | undefined;
+  } & (
+    | { items: readonly DotGroupStatusItem[]; size?: DotSize | undefined }
+    | { items: readonly DotGroupItem[]; size?: CountDotSize | undefined }
+  );
 
-const dotGroupSpacingVariants = cva('inline-flex items-center', {
-  variants: {
-    size: {
-      xxs: '-space-x-px',
-      xs: '-space-x-px',
-      sm: '-space-x-px',
-      md: '-space-x-0.5',
-      lg: '-space-x-0.5',
-    },
-  },
-  defaultVariants: {
-    size: 'md',
-  },
-});
-
-const dotGroupPositionVariants = cva('absolute', {
-  variants: {
-    position: {
-      top: 'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2',
-      'top-right': 'top-0 right-0 translate-x-1/3 -translate-y-1/2',
-      'top-left': 'top-0 left-0 -translate-x-1/3 -translate-y-1/2',
-      right: 'top-1/2 left-full -translate-y-1/2',
-      'bottom-right': 'right-0 bottom-0 translate-x-1/3 translate-y-1/2',
-      bottom: 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2',
-      'bottom-left': 'bottom-0 left-0 -translate-x-1/3 translate-y-1/2',
-      left: 'top-1/2 right-full -translate-y-1/2',
-    },
-  },
-  defaultVariants: {
-    position: 'top-right',
-  },
-});
+function renderDot(item: DotGroupItem, size: DotSize, index: number) {
+  const style: React.CSSProperties & { '--dot-group-index': number } = { '--dot-group-index': index };
+  if (item.kind === 'count') {
+    if (size === 'xxs' || size === 'xs') {
+      throw new RangeError('Count indicators require a DotGroup size of sm, md, or lg.');
+    }
+    return (
+      <CountDot
+        aria-label={item.label}
+        className="z-(--dot-group-index)"
+        count={item.count}
+        key={item.id}
+        max={item.max}
+        role={item.label === undefined ? undefined : 'img'}
+        size={size}
+        stacked
+        style={style}
+        variant={item.variant}
+      />
+    );
+  }
+  return (
+    <StatusDot
+      aria-label={item.label}
+      className="z-(--dot-group-index)"
+      key={item.id}
+      pulsing={item.pulsing}
+      role={item.label === undefined ? undefined : 'img'}
+      size={size}
+      stacked
+      style={style}
+      variant={item.variant}
+    />
+  );
+}
 
 const overflowIconSize: Record<DotSize, { size: number; stroke: number }> = {
   xxs: { size: 8, stroke: 1.5 },
@@ -57,12 +84,15 @@ const overflowIconSize: Record<DotSize, { size: number; stroke: number }> = {
 function DotGroupOverflow({ size, zIndex }: { size: DotSize; zIndex: number }) {
   const { size: s, stroke } = overflowIconSize[size];
   const pad = s * 0.25;
+  const stackingStyle: React.CSSProperties & { '--dot-group-overflow-index': number } = {
+    '--dot-group-overflow-index': zIndex,
+  };
   return (
     <svg
       aria-hidden="true"
-      className="shrink-0 text-secondary drop-shadow-[0_0_2px_var(--color-background)]"
+      className="z-(--dot-group-overflow-index) shrink-0 text-secondary drop-shadow-[0_0_2px_var(--color-background)]"
       height={s}
-      style={{ zIndex }}
+      style={stackingStyle}
       viewBox={`0 0 ${s} ${s}`}
       width={s}
     >
@@ -95,39 +125,33 @@ function DotGroup({
   maxVisible,
   className,
   testId,
-  children,
+  items,
   ...props
 }: DotGroupProps) {
-  const childArray = React.Children.toArray(children).filter(React.isValidElement);
-  const visibleChildren = maxVisible === undefined ? childArray : childArray.slice(0, maxVisible);
-  const overflowCount = maxVisible === undefined ? 0 : childArray.length - visibleChildren.length;
+  requireUniqueItemIds(items);
+  if (maxVisible !== undefined && (!Number.isInteger(maxVisible) || maxVisible < 0)) {
+    throw new RangeError('DotGroup maxVisible must be a nonnegative integer.');
+  }
+  const visibleItems = maxVisible === undefined ? items : items.slice(0, maxVisible);
+  const overflowCount = items.length - visibleItems.length;
 
   const dots = (
     <div
       className={cn(
         dotGroupSpacingVariants({ size }),
-        content && dotGroupPositionVariants({ position }),
-        !content && className
+        hasSlotContent(content) && dotGroupPositionVariants({ position }),
+        !hasSlotContent(content) && className
       )}
       data-slot="dot-group"
-      data-testid={content ? undefined : testId}
-      {...(content ? {} : props)}
+      data-testid={hasSlotContent(content) ? undefined : testId}
+      {...(hasSlotContent(content) ? {} : props)}
     >
-      {visibleChildren.map((child, index) => {
-        if (!React.isValidElement<{ stacked?: boolean; size?: DotSize; style?: React.CSSProperties }>(child)) {
-          return child;
-        }
-        return React.cloneElement(child, {
-          stacked: true,
-          size,
-          style: { ...child.props.style, zIndex: index },
-        });
-      })}
-      {overflowCount > 0 ? <DotGroupOverflow size={size} zIndex={visibleChildren.length} /> : null}
+      {visibleItems.map((item, index) => renderDot(item, size, index))}
+      {overflowCount > 0 ? <DotGroupOverflow size={size} zIndex={visibleItems.length} /> : null}
     </div>
   );
 
-  if (content) {
+  if (hasSlotContent(content)) {
     return (
       // `w-fit` as in StatusDot: the dots are positioned against this wrapper, so one
       // stretched by its parent moves them off the content's corner.
@@ -146,4 +170,11 @@ function DotGroup({
   return dots;
 }
 
-export { DotGroup, type DotGroupPosition, type DotGroupProps, dotGroupPositionVariants, dotGroupSpacingVariants };
+export {
+  DotGroup,
+  type DotGroupCountItem,
+  type DotGroupItem,
+  type DotGroupPosition,
+  type DotGroupProps,
+  type DotGroupStatusItem,
+};

@@ -1,9 +1,9 @@
 'use client';
 
 import type { AutoFormFieldProps } from '../core-types';
-import { getFieldUiConfig } from '../helpers';
-import type { FieldTypeDefinition } from '../registry';
-import { StringLikeInput, useFieldTestIds } from './shared';
+import { getFieldUiConfig } from '../ui-config';
+import { StringLikeInput } from './shared';
+import { useFieldTestIds } from './use-field-test-ids';
 
 function StringFieldComponent(props: AutoFormFieldProps) {
   const testIds = useFieldTestIds(props.id);
@@ -20,10 +20,3 @@ function StringFieldComponent(props: AutoFormFieldProps) {
 }
 
 export { StringFieldComponent };
-
-export const stringFieldDefinition: FieldTypeDefinition = {
-  name: 'string',
-  priority: 10,
-  match: (field) => field.type === 'string',
-  component: StringFieldComponent,
-};

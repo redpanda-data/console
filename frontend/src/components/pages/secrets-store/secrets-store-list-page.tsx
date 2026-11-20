@@ -38,9 +38,8 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import React, { useEffect } from 'react';
 import { useDeleteSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { SecretScopeBadge } from './secret-scope-badge';
 import { SecretsStoreActionsCell } from './secrets-store-actions';
@@ -267,16 +266,17 @@ const useDeleteSecretHandler = () => {
     async (secretId: string) => {
       try {
         await deleteSecret({ request: { id: secretId } });
-        toast.success('Secret deleted');
+        showToast({ status: 'success', title: 'Secret deleted' });
       } catch (deleteError) {
         const connectError = ConnectError.from(deleteError);
-        toast.error(
-          formatToastErrorMessageGRPC({
+        showToast({
+          status: 'error',
+          title: formatToastErrorMessageGRPC({
             error: connectError,
             action: 'delete',
             entity: 'secret',
-          })
-        );
+          }),
+        });
       }
     },
     [deleteSecret]
@@ -310,7 +310,7 @@ export const SecretsStoreListPage = () => {
   const handleEdit = React.useCallback(
     (secretId: string) => {
       navigate({ to: `/secrets/${secretId}/edit` }).catch((navigationError: unknown) => {
-        toast.error('Failed to navigate', { description: String(navigationError) });
+        showToast({ status: 'error', title: 'Failed to navigate', description: String(navigationError) });
       });
     },
     [navigate]

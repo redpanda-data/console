@@ -1,4 +1,4 @@
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -28,18 +28,18 @@ export function findDuplicateIndices<T>(items: T[], getKey: (item: T) => string)
 
   for (const [index, item] of items.entries()) {
     const key = getKey(item);
-    if (!key) {
+    if (key === '') {
       continue;
     }
 
     const existing = seen.get(key);
-    if (existing) {
+    if (existing === undefined) {
+      seen.set(key, [index]);
+    } else {
       existing.push(index);
       for (const i of existing) {
         duplicates.add(i);
       }
-    } else {
-      seen.set(key, [index]);
     }
   }
 
@@ -55,7 +55,7 @@ function collectPairIssues(
   const issues: { message: string; path: [number, string] }[] = [];
   const { allowedPattern, maxKeyLength, maxValueLength } = options;
 
-  if (pair.value && !pair.key.trim()) {
+  if (pair.value !== '' && pair.key.trim() === '') {
     issues.push({ message: 'Key is required when a value is provided', path: [index, 'key'] });
   }
 
@@ -63,19 +63,29 @@ function collectPairIssues(
     issues.push({ message: `Duplicate key: "${pair.key}"`, path: [index, 'key'] });
   }
 
-  if (maxKeyLength && pair.key.length > maxKeyLength) {
+  if (
+    maxKeyLength !== undefined &&
+    maxKeyLength !== 0 &&
+    !Number.isNaN(maxKeyLength) &&
+    pair.key.length > maxKeyLength
+  ) {
     issues.push({ message: `Key exceeds maximum length of ${maxKeyLength}`, path: [index, 'key'] });
   }
 
-  if (maxValueLength && pair.value.length > maxValueLength) {
+  if (
+    maxValueLength !== undefined &&
+    maxValueLength !== 0 &&
+    !Number.isNaN(maxValueLength) &&
+    pair.value.length > maxValueLength
+  ) {
     issues.push({ message: `Value exceeds maximum length of ${maxValueLength}`, path: [index, 'value'] });
   }
 
-  if (allowedPattern && pair.key && !allowedPattern.test(pair.key)) {
+  if (allowedPattern !== undefined && pair.key !== '' && !allowedPattern.test(pair.key)) {
     issues.push({ message: 'Key contains invalid characters', path: [index, 'key'] });
   }
 
-  if (allowedPattern && pair.value && !allowedPattern.test(pair.value)) {
+  if (allowedPattern !== undefined && pair.value !== '' && !allowedPattern.test(pair.value)) {
     issues.push({ message: 'Value contains invalid characters', path: [index, 'value'] });
   }
 
@@ -123,14 +133,14 @@ export function getKeyValueDiff(
 ): KeyValueDiffResult {
   const initialMap = new Map<string, string>();
   for (const { key, value } of initial) {
-    if (key) {
+    if (key !== '') {
       initialMap.set(key, value);
     }
   }
 
   const currentMap = new Map<string, string>();
   for (const { key, value } of current) {
-    if (key) {
+    if (key !== '') {
       currentMap.set(key, value);
     }
   }
@@ -168,20 +178,20 @@ export function getKeyValueDiff(
 export function useInputListFocus(containerRef: RefObject<HTMLElement | null>) {
   const pendingRef = useRef<'add' | { type: 'remove'; index: number } | null>(null);
 
-  const onAdd = useCallback(() => {
+  const onAdd = () => {
     pendingRef.current = 'add';
-  }, []);
+  };
 
-  const onRemove = useCallback((deletedIndex: number) => {
+  const onRemove = (deletedIndex: number) => {
     pendingRef.current = { type: 'remove', index: deletedIndex };
-  }, []);
+  };
 
   // Runs after every render to apply any pending focus action.
   // The ref check is cheap and clears immediately, so subsequent
   // renders are no-ops.
   useEffect(() => {
     const event = pendingRef.current;
-    if (!(event && containerRef.current)) {
+    if (event === null || containerRef.current === null) {
       return;
     }
     pendingRef.current = null;
@@ -189,8 +199,11 @@ export function useInputListFocus(containerRef: RefObject<HTMLElement | null>) {
     const rows = containerRef.current.querySelectorAll<HTMLElement>('[data-row]');
 
     if (event === 'add') {
+      if (rows.length === 0) {
+        return;
+      }
       const lastRow = rows.item(rows.length - 1);
-      const input = lastRow?.querySelector<HTMLElement>('input, [role="combobox"]');
+      const input = lastRow.querySelector<HTMLElement>('input, [role="combobox"]');
       input?.focus();
     } else {
       const targetIndex = Math.min(event.index, rows.length - 1);
@@ -210,40 +223,6 @@ export function useInputListFocus(containerRef: RefObject<HTMLElement | null>) {
 }
 
 /**
- * Preserves object references for array items that have not changed
- * between renders, reducing unnecessary child re-renders.
- */
-export function useMemoizedArray<T>(items: T[], isEqual: (a: T, b: T) => boolean = Object.is): T[] {
-  'use no memo';
-
-  const prevRef = useRef(items);
-  const prev = prevRef.current;
-
-  if (prev === items) {
-    return prev;
-  }
-
-  let changed = prev.length !== items.length;
-  const result: T[] = [];
-
-  for (const [i, item] of items.entries()) {
-    if (i < prev.length && isEqual(prev[i], item)) {
-      result.push(prev[i]);
-    } else {
-      result.push(item);
-      changed = true;
-    }
-  }
-
-  if (!changed) {
-    return prev;
-  }
-
-  prevRef.current = result;
-  return result;
-}
-
-/**
  * Provides soft-delete behaviour with timed auto-confirm. Call
  * `markForRemoval` with a unique identifier and a callback that
  * performs the actual removal — the callback fires after `timeout` ms
@@ -253,33 +232,30 @@ export function useUndoRemoval(timeout = 5000) {
   const [pending, setPending] = useState<Set<string>>(() => new Set());
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
-  const markForRemoval = useCallback(
-    (id: string, onConfirm: () => void) => {
-      setPending((prev) => new Set([...prev, id]));
+  const markForRemoval = (id: string, onConfirm: () => void) => {
+    setPending((prev) => new Set([...prev, id]));
 
-      const existing = timersRef.current.get(id);
-      if (existing) {
-        clearTimeout(existing);
-      }
+    const existing = timersRef.current.get(id);
+    if (existing !== undefined) {
+      clearTimeout(existing);
+    }
 
-      const timer = setTimeout(() => {
-        timersRef.current.delete(id);
-        setPending((prev) => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
-        onConfirm();
-      }, timeout);
+    const timer = setTimeout(() => {
+      timersRef.current.delete(id);
+      setPending((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      onConfirm();
+    }, timeout);
 
-      timersRef.current.set(id, timer);
-    },
-    [timeout]
-  );
+    timersRef.current.set(id, timer);
+  };
 
-  const undoRemoval = useCallback((id: string) => {
+  const undoRemoval = (id: string) => {
     const timer = timersRef.current.get(id);
-    if (timer) {
+    if (timer !== undefined) {
       clearTimeout(timer);
       timersRef.current.delete(id);
     }
@@ -288,9 +264,9 @@ export function useUndoRemoval(timeout = 5000) {
       next.delete(id);
       return next;
     });
-  }, []);
+  };
 
-  const isPending = useCallback((id: string) => pending.has(id), [pending]);
+  const isPending = (id: string) => pending.has(id);
 
   useEffect(() => {
     const timers = timersRef.current;

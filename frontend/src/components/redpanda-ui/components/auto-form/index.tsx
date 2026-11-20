@@ -3,12 +3,12 @@
 // Copyright 2026 Redpanda Data, Inc.
 
 import React from 'react';
-import { FormProvider, type Resolver, type UseFormReturn, useForm } from 'react-hook-form';
-
+import { FormProvider, useForm } from 'react-hook-form';
 import { Alert, AlertDescription, AlertTitle } from '../alert';
 import { TooltipProvider } from '../tooltip';
-
-import type { SchemaProvider } from './core-types';
+import { getProtoMessageUiConfig, PROTO_FORM_ROOT_ERROR_KEY } from '../../lib/protobuf-provider';
+import { omitUndefined } from '../../lib/utils/omit-undefined';
+import { AutoFormErrorBoundary } from './error-boundary';
 import {
   ArrayElementWrapper,
   ArrayWrapper,
@@ -18,20 +18,23 @@ import {
   ObjectWrapper,
   SubmitButton,
 } from './field-wrapper';
-import { AutoFormFieldComponentRegistry } from './fields';
-import { applyValidationErrors, deriveSimpleFields, getRootErrorMessage } from './helpers';
+import { defaultFieldComponents } from './fields/built-ins';
+import { deriveSimpleFields, getRootErrorMessage } from './helpers';
 import { AutoFormModeShell } from './mode-shell';
-import { getProtoMessageUiConfig, PROTO_FORM_ROOT_ERROR_KEY } from './proto';
+import { normalizeProtoInitialValues } from './proto/conversion';
 import { AutoFormFields } from './renderers';
+import { AutoFormRootHeader } from './root-header';
 import { AutoFormRuntimeProvider } from './runtime-provider';
-import { mergeFieldOverrides, normalizeProtoInitialValues, resolveSchema } from './schema';
+import { mergeFieldOverrides, resolveSchema } from './schema';
+import { type AutoFormSlotDescriptor, EMPTY_AUTO_FORM_SLOTS, validateAutoFormSlots } from './slots';
 import { AutoFormStepperShell } from './stepper-shell';
+import { AutoFormSubmissionContext, useAutoFormSubmit } from './submission';
 import { buildAutoFormTestId, resolveAutoFormTestIdPrefix } from './test-ids';
 import type { AutoFormMode, AutoFormProps, AutoFormStepConfig } from './types';
-import { normalizeModes, resolveInitialMode } from './utils/modes';
+import { useAutoFormMode } from './use-auto-form-mode';
 import { resolveStepConfig } from './utils/steps';
 
-const noopOnSubmit = async () => undefined;
+const noopOnSubmit = () => undefined;
 const ShadcnUIComponents = {
   Form,
   FieldWrapper,
@@ -42,10 +45,8 @@ const ShadcnUIComponents = {
   ArrayElementWrapper,
 };
 
-export const ShadcnAutoFormFieldComponents = AutoFormFieldComponentRegistry;
-
 export { useAutoForm } from './context';
-export { defaultRegistry } from './fields';
+export { defaultRegistry } from './fields/built-ins';
 export {
   type SecretSelectorAdapter,
   type SecretSelectorAdapterProps,
@@ -53,7 +54,8 @@ export {
 } from './fields/secret-selector';
 export { defaultClassifyField } from './helpers';
 export { type FieldMatchContext, type FieldTypeDefinition, FieldTypeRegistry } from './registry';
-export { AutoFormSlot } from './slot';
+export type { AutoFormSlotDescriptor } from './slots';
+export { useAutoFormSubmitting } from './submission';
 export type { AutoFormMode, AutoFormProps, AutoFormStepConfig, FieldTypes } from './types';
 
 function renderModeContent({
@@ -63,17 +65,19 @@ function renderModeContent({
   withSubmit,
   children,
   SubmitButtonComponent,
+  slots,
 }: {
   fields: ReturnType<typeof mergeFieldOverrides>;
   steps: AutoFormStepConfig[];
   testIdPrefix: string;
   withSubmit: boolean;
   children: React.ReactNode;
-  SubmitButtonComponent: React.ComponentType<{ children: React.ReactNode; testId?: string }>;
+  slots: readonly AutoFormSlotDescriptor[];
+  SubmitButtonComponent: React.ComponentType<{ children: React.ReactNode; testId?: string | undefined }>;
 }) {
   if (steps.length > 0) {
     return (
-      <AutoFormStepperShell fields={fields} steps={steps} withSubmit={withSubmit}>
+      <AutoFormStepperShell fields={fields} slots={slots} steps={steps} withSubmit={withSubmit}>
         {children}
       </AutoFormStepperShell>
     );
@@ -81,13 +85,17 @@ function renderModeContent({
 
   return (
     <>
-      <AutoFormFields fields={fields}>{children}</AutoFormFields>
+      <AutoFormFields fields={fields} slots={slots}>
+        {children}
+      </AutoFormFields>
       {withSubmit ? (
         <SubmitButtonComponent testId={buildAutoFormTestId(testIdPrefix, 'submit')}>Submit</SubmitButtonComponent>
       ) : null}
     </>
   );
 }
+
+const EMPTY_FORM_PROPS: React.ComponentProps<'form'> = {};
 
 function AutoFormInner<T extends Record<string, unknown> = Record<string, unknown>>({
   schema,
@@ -96,11 +104,12 @@ function AutoFormInner<T extends Record<string, unknown> = Record<string, unknow
   defaultValues,
   values,
   children,
+  slots = EMPTY_AUTO_FORM_SLOTS,
   uiComponents,
   formComponents,
   withSubmit = false,
-  onFormInit,
-  formProps = {},
+  formRef,
+  formProps = EMPTY_FORM_PROPS,
   fieldConfig: fieldConfigOverrides,
   formOptions,
   resolver,
@@ -118,287 +127,127 @@ function AutoFormInner<T extends Record<string, unknown> = Record<string, unknow
   payloadParser,
   onFieldChange,
 }: AutoFormProps<T>) {
-  const testIdPrefix = React.useMemo(() => resolveAutoFormTestIdPrefix(testId), [testId]);
-  const resolvedSchema = React.useMemo(() => resolveSchema(schema, resolver), [schema, resolver]);
-  const onFormInitRef = React.useRef(onFormInit);
-
-  React.useEffect(() => {
-    onFormInitRef.current = onFormInit;
-  }, [onFormInit]);
-
-  const advancedFields = React.useMemo(
-    () => mergeFieldOverrides(resolvedSchema.parsedSchema.fields, fieldConfigOverrides),
-    [fieldConfigOverrides, resolvedSchema.parsedSchema.fields]
-  );
-
-  const simpleFields = React.useMemo(
-    () => deriveSimpleFields(advancedFields, classifyField),
-    [advancedFields, classifyField]
-  );
-  const protoMessageUi = React.useMemo(
-    () => (resolvedSchema.protoDesc ? getProtoMessageUiConfig(resolvedSchema.protoDesc) : undefined),
-    [resolvedSchema.protoDesc]
-  );
+  const testIdPrefix = resolveAutoFormTestIdPrefix(testId);
+  const resolvedSchema = resolveSchema(schema, resolver);
+  const advancedFields = mergeFieldOverrides(resolvedSchema.parsedSchema.fields, fieldConfigOverrides);
+  validateAutoFormSlots(slots, advancedFields);
+  const simpleFields = deriveSimpleFields(advancedFields, classifyField);
+  const protoMessageUi =
+    resolvedSchema.protoDesc === undefined ? undefined : getProtoMessageUiConfig(resolvedSchema.protoDesc);
   const protoSteps = protoMessageUi?.steps;
   const shouldUseStepper = Boolean(stepper || steps?.length);
-  const resolvedSteps = React.useMemo(
-    () => (shouldUseStepper ? resolveStepConfig(advancedFields, steps, protoSteps) : []),
-    [advancedFields, protoSteps, shouldUseStepper, steps]
-  );
-
-  const mergedUiComponents = React.useMemo(() => ({ ...ShadcnUIComponents, ...uiComponents }), [uiComponents]);
-  const mergedFormComponents = React.useMemo(
-    () => ({ ...ShadcnAutoFormFieldComponents, ...formComponents }),
-    [formComponents]
-  );
-
-  const initialDefaultValues = React.useMemo(() => {
-    const providerDefaults = resolvedSchema.provider.getDefaultValues();
-    if (resolvedSchema.isProto && resolvedSchema.protoDesc) {
-      return {
-        ...providerDefaults,
-        ...(normalizeProtoInitialValues(resolvedSchema.protoDesc, defaultValues) ?? {}),
-      };
-    }
-    return {
-      ...providerDefaults,
-      ...(defaultValues ?? {}),
-    };
-  }, [defaultValues, resolvedSchema.isProto, resolvedSchema.protoDesc, resolvedSchema.provider]);
-
-  const controlledValues = React.useMemo(() => {
-    if (!values) {
-      return;
-    }
-    if (resolvedSchema.isProto && resolvedSchema.protoDesc) {
-      return normalizeProtoInitialValues(resolvedSchema.protoDesc, values);
-    }
-    return values;
-  }, [resolvedSchema.isProto, resolvedSchema.protoDesc, values]);
-
-  const methods = useForm<Record<string, unknown>, unknown, T>({
-    ...(formOptions ?? {}),
-    defaultValues: initialDefaultValues,
-    resolver: resolvedSchema.resolver as Resolver<Record<string, unknown>, unknown, T> | undefined,
-    values: controlledValues,
-  });
-  const methodsRef = React.useRef(methods);
-
-  React.useEffect(() => {
-    methodsRef.current = methods;
-  }, [methods]);
-
-  React.useEffect(() => {
-    onFormInitRef.current?.(methodsRef.current as UseFormReturn<Record<string, unknown>, unknown, T>);
-  }, []);
-
-  const availableModes = React.useMemo(() => normalizeModes(modes), [modes]);
-  const preferredMode = React.useMemo(
-    () => resolveInitialMode(availableModes, defaultMode),
-    [availableModes, defaultMode]
-  );
-  const [modeState, setModeState] = React.useState(() => ({ defaultMode, value: preferredMode }));
-  const mode =
-    modeState.defaultMode === defaultMode && availableModes.includes(modeState.value) ? modeState.value : preferredMode;
-
-  const handleModeChange = (nextMode: AutoFormMode) => {
-    setModeState({ defaultMode, value: nextMode });
+  const resolvedSteps = shouldUseStepper ? resolveStepConfig(advancedFields, steps, protoSteps) : [];
+  const mergedUiComponents = { ...ShadcnUIComponents, ...uiComponents };
+  const mergedFormComponents = { ...defaultFieldComponents, ...formComponents };
+  const providerDefaults = resolvedSchema.provider.getDefaultValues();
+  const initialDefaultValues = {
+    ...providerDefaults,
+    ...(resolvedSchema.isProto && resolvedSchema.protoDesc !== undefined
+      ? normalizeProtoInitialValues(resolvedSchema.protoDesc, defaultValues)
+      : defaultValues),
   };
+  const controlledValues =
+    resolvedSchema.isProto && resolvedSchema.protoDesc !== undefined && values !== undefined
+      ? normalizeProtoInitialValues(resolvedSchema.protoDesc, values)
+      : values;
 
-  const validateWithProvider = React.useCallback(
-    async (
-      submittedValues: Record<string, unknown>
-    ): Promise<ReturnType<SchemaProvider<Record<string, unknown>>['validateSchema']>> => {
-      try {
-        return await Promise.resolve(resolvedSchema.provider.validateSchema(submittedValues));
-      } catch (error) {
-        return {
-          success: false,
-          errors: [
-            {
-              path: [] as Array<string | number>,
-              message: error instanceof Error ? error.message : 'Failed to validate form values.',
-            },
-          ],
-        };
-      }
-    },
-    [resolvedSchema.provider]
+  const methods = useForm<Record<string, unknown>, unknown, T>(
+    omitUndefined({
+      ...formOptions,
+      defaultValues: initialDefaultValues,
+      resolver: resolvedSchema.resolver,
+      values: controlledValues,
+    })
   );
+  const { handleSubmit, isSubmitting } = useAutoFormSubmit(methods, resolvedSchema, onSubmit);
+  React.useImperativeHandle(formRef, () => methods, [methods]);
 
-  const handleValidSubmit = React.useCallback(
-    async (submittedValues: T) => {
-      methods.clearErrors(['root', PROTO_FORM_ROOT_ERROR_KEY]);
-      try {
-        await onSubmit(submittedValues, methods as UseFormReturn<Record<string, unknown>, unknown, T>);
-      } catch (error) {
-        methods.setError('root', {
-          type: 'submit',
-          message: error instanceof Error ? error.message : 'Submission failed.',
-        });
-      }
-    },
-    [methods, onSubmit]
-  );
-
-  const handleProviderSubmit = React.useCallback(
-    async (submittedValues: Record<string, unknown>) => {
-      const validationResult = await validateWithProvider(submittedValues);
-      if (validationResult.success) {
-        try {
-          await onSubmit(validationResult.data as T, methods as UseFormReturn<Record<string, unknown>, unknown, T>);
-        } catch (error) {
-          methods.setError('root', {
-            type: 'submit',
-            message: error instanceof Error ? error.message : 'Submission failed.',
-          });
-        }
-        return;
-      }
-      applyValidationErrors(methods, validationResult.errors);
-    },
-    [methods, onSubmit, validateWithProvider]
-  );
+  const { availableModes, mode, handleModeChange } = useAutoFormMode(modes, defaultMode);
 
   const rootError =
-    getRootErrorMessage(methods.formState.errors.root) ||
-    getRootErrorMessage((methods.formState.errors as Record<string, unknown>)[PROTO_FORM_ROOT_ERROR_KEY]);
+    getRootErrorMessage(methods.formState.errors.root) ??
+    getRootErrorMessage(methods.formState.errors[PROTO_FORM_ROOT_ERROR_KEY]);
 
-  const renderFormForMode = React.useCallback(
-    (targetMode: Exclude<AutoFormMode, 'json'>) => {
-      const fields = targetMode === 'simple' ? simpleFields : advancedFields;
-      return renderModeContent({
-        fields,
-        steps: resolvedSteps,
-        testIdPrefix,
-        withSubmit,
-        children,
-        SubmitButtonComponent: mergedUiComponents.SubmitButton as React.ComponentType<{
-          children: React.ReactNode;
-          testId?: string;
-        }>,
-      });
-    },
-    [advancedFields, children, mergedUiComponents.SubmitButton, resolvedSteps, simpleFields, testIdPrefix, withSubmit]
-  );
+  function renderFormForMode(targetMode: Exclude<AutoFormMode, 'json'>) {
+    const fields = targetMode === 'simple' ? simpleFields : advancedFields;
+    const content = renderModeContent({
+      fields,
+      steps: resolvedSteps,
+      testIdPrefix,
+      withSubmit,
+      children,
+      slots,
+      SubmitButtonComponent: mergedUiComponents.SubmitButton,
+    });
+    return content;
+  }
 
   return (
-    <TooltipProvider delayDuration={150} skipDelayDuration={0}>
+    <TooltipProvider>
       <FormProvider {...methods}>
-        <AutoFormRuntimeProvider<T>
-          advancedFields={advancedFields}
-          dataProviders={dataProviders}
-          fieldRegistry={fieldRegistry}
-          formComponents={mergedFormComponents}
-          mode={mode}
-          onFieldChange={onFieldChange}
-          payloadBuilder={payloadBuilder}
-          payloadParser={payloadParser}
-          payloadSchema={payloadSchema}
-          renderContent={(bag) => (
-            <mergedUiComponents.Form
-              onSubmit={methods.handleSubmit(resolvedSchema.resolver ? handleValidSubmit : handleProviderSubmit)}
-              testId={testIdPrefix}
-              {...formProps}
-            >
-              {rootError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Form validation failed</AlertTitle>
-                  <AlertDescription className="whitespace-pre-wrap">{rootError}</AlertDescription>
-                </Alert>
-              ) : null}
+        <AutoFormSubmissionContext value={isSubmitting}>
+          <AutoFormRuntimeProvider<T>
+            advancedFields={advancedFields}
+            dataProviders={dataProviders}
+            fieldRegistry={fieldRegistry}
+            formComponents={mergedFormComponents}
+            mode={mode}
+            onFieldChange={onFieldChange}
+            payloadBuilder={payloadBuilder}
+            payloadParser={payloadParser}
+            payloadSchema={payloadSchema}
+            renderContent={(bag) => (
+              <mergedUiComponents.Form onSubmit={handleSubmit} testId={testIdPrefix} {...formProps}>
+                {rootError !== undefined && rootError !== '' ? (
+                  <Alert variant="destructive">
+                    <AlertTitle>Form validation failed</AlertTitle>
+                    <AlertDescription className="whitespace-pre-wrap">{rootError}</AlertDescription>
+                  </Alert>
+                ) : null}
 
-              {protoMessageUi?.title || protoMessageUi?.description ? (
-                <header
-                  className="space-y-1 border-border-subtle border-b pb-4"
-                  data-testid={`${testIdPrefix}-root-header`}
-                >
-                  {protoMessageUi.title ? <h2 className="text-heading-lg">{protoMessageUi.title}</h2> : null}
-                  {protoMessageUi.description ? (
-                    <div className="text-body-sm text-subtle">{protoMessageUi.description}</div>
-                  ) : null}
-                </header>
-              ) : null}
+                <AutoFormRootHeader
+                  description={protoMessageUi?.description}
+                  testId={`${testIdPrefix}-root-header`}
+                  title={protoMessageUi?.title}
+                />
 
-              <AutoFormModeShell
-                bestEffort={bag.payloadState.bestEffort}
-                jsonEditorError={bag.jsonEditorError}
-                jsonText={bag.jsonEditorText}
-                mode={mode}
-                modes={availableModes}
-                onFormatJson={bag.handleFormatJson}
-                onJsonTextChange={bag.handleJsonTextChange}
-                onModeChange={handleModeChange}
-                onResetJson={bag.handleResetJson}
-                payload={bag.payloadState.payload}
-                renderFormMode={renderFormForMode}
-                renderSummary={renderSummary}
-                showSummary={showSummary}
-                summaryContext={bag.summaryContext}
-                testIdPrefix={testIdPrefix}
-              />
-            </mergedUiComponents.Form>
-          )}
-          resolvedSchema={resolvedSchema}
-          simpleFields={simpleFields}
-          testIdPrefix={testIdPrefix}
-          uiComponents={mergedUiComponents}
-        >
-          {null}
-        </AutoFormRuntimeProvider>
+                <AutoFormModeShell
+                  bestEffort={bag.payloadState.bestEffort}
+                  jsonEditorError={bag.jsonEditorError}
+                  jsonText={bag.jsonEditorText}
+                  mode={mode}
+                  modes={availableModes}
+                  onFormatJson={bag.handleFormatJson}
+                  onJsonTextChange={bag.handleJsonTextChange}
+                  onModeChange={handleModeChange}
+                  onResetJson={bag.handleResetJson}
+                  payload={bag.payloadState.payload}
+                  renderFormMode={renderFormForMode}
+                  renderSummary={renderSummary}
+                  showSummary={showSummary}
+                  summaryContext={bag.summaryContext}
+                  testIdPrefix={testIdPrefix}
+                />
+              </mergedUiComponents.Form>
+            )}
+            resolvedSchema={resolvedSchema}
+            simpleFields={simpleFields}
+            testIdPrefix={testIdPrefix}
+            uiComponents={mergedUiComponents}
+          >
+            {null}
+          </AutoFormRuntimeProvider>
+        </AutoFormSubmissionContext>
       </FormProvider>
     </TooltipProvider>
   );
 }
 
-interface AutoFormErrorBoundaryProps {
-  children: React.ReactNode;
-  resetKey: unknown;
-}
-
-interface AutoFormErrorBoundaryState {
-  error: Error | null;
-  resetKey: unknown;
-  schemaGeneration: number;
-}
-
-class AutoFormErrorBoundary extends React.Component<AutoFormErrorBoundaryProps, AutoFormErrorBoundaryState> {
-  constructor(props: AutoFormErrorBoundaryProps) {
-    super(props);
-    this.state = { error: null, resetKey: props.resetKey, schemaGeneration: 0 };
-  }
-
-  static getDerivedStateFromError(error: Error): Partial<AutoFormErrorBoundaryState> {
-    return { error };
-  }
-
-  static getDerivedStateFromProps(
-    props: AutoFormErrorBoundaryProps,
-    state: AutoFormErrorBoundaryState
-  ): AutoFormErrorBoundaryState | null {
-    return props.resetKey === state.resetKey
-      ? null
-      : { error: null, resetKey: props.resetKey, schemaGeneration: state.schemaGeneration + 1 };
-  }
-
-  override render() {
-    if (this.state.error) {
-      return (
-        <Alert variant="destructive">
-          <AlertTitle>AutoForm failed to render</AlertTitle>
-          <AlertDescription className="whitespace-pre-wrap">{this.state.error.message}</AlertDescription>
-        </Alert>
-      );
-    }
-    return <React.Fragment key={this.state.schemaGeneration}>{this.props.children}</React.Fragment>;
-  }
-}
-
-// Note: `schema` must be a stable reference (module-level constant or useMemo).
+// Note: `schema` must be a stable reference, such as a module-level constant.
 // Passing an inline `z.object({...})` will remount the form on every parent render.
 export function AutoForm<T extends Record<string, unknown> = Record<string, unknown>>(props: AutoFormProps<T>) {
   return (
-    <AutoFormErrorBoundary resetKey={props.schema}>
+    <AutoFormErrorBoundary resetKey={props.schema} slotsKey={props.slots}>
       <AutoFormInner {...props} />
     </AutoFormErrorBoundary>
   );

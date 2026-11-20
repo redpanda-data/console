@@ -82,7 +82,8 @@ const renderTrackingFormValues = () => {
 };
 
 const uploadToDropzone = async (user: ReturnType<typeof userEvent.setup>, dropzoneTestId: string, file: File) => {
-  const input = screen.getByTestId(dropzoneTestId).querySelector('input[type="file"]');
+  // The file input is the upload action's sibling inside the Dropzone wrapper.
+  const input = screen.getByTestId(dropzoneTestId).parentElement?.querySelector('input[type="file"]');
   await user.upload(input as HTMLInputElement, file);
 };
 

@@ -9,7 +9,7 @@ import {
   CreateACLRequestSchema,
   type ListACLsResponse,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { toast } from 'sonner';
+import { failureSummary, showToast } from 'utils/toast.utils';
 
 const UNDERSCORE_REGEX = /_/g;
 const FIRST_CHAR_REGEX = /^\w/;
@@ -613,17 +613,20 @@ export function calculateACLDifference(currentRules: ACLWithId[], newRules: ACLW
 }
 
 export const handleResponses = (errors: ConnectError[], created: boolean) => {
-  if (errors.length > 0 && created) {
-    for (const er of errors) {
-      toast.warning('Some ACLs were created, but there were errors', { description: er.message });
-    }
-  } else if (errors.length > 0 && !created) {
-    for (const er of errors) {
-      toast.error(er.message);
-    }
-  } else {
-    toast.success('ACLs created');
+  if (errors.length === 0) {
+    showToast({ status: 'success', title: 'ACLs created' });
+    return;
   }
+  const messages = errors.map((er) => er.message);
+  if (created) {
+    showToast({
+      status: 'warning',
+      title: 'Some ACLs were created, but there were errors',
+      description: [...new Set(messages)].join('; '),
+    });
+    return;
+  }
+  showToast({ status: 'error', ...failureSummary(messages, `Failed to create ${errors.length} ACLs`) });
 };
 
 export const handleUrlWithHost = (baseUrl: string, host?: string): string =>

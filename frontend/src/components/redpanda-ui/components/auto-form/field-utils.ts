@@ -1,4 +1,6 @@
-import type { ParsedField } from '../../lib/form-types';
+import { isValidElement } from 'react';
+import type { ParsedField, Renderable } from '../../lib/form-types';
+import { hasSlotContent } from '../../lib/has-slot-content';
 
 // Canonical casing for acronyms title-casing would otherwise mangle ("Api"
 // → "API"). gRPC is intentionally lower-case `g`. Matched as whole words.
@@ -35,7 +37,7 @@ function applyAcronyms(label: string): string {
 }
 
 function beautifyLabel(label: string): string {
-  if (!label) {
+  if (label === '') {
     return '';
   }
   let output = label.replace(/([A-Z])/g, ' $1');
@@ -49,16 +51,41 @@ function beautifyLabel(label: string): string {
   return applyAcronyms(output);
 }
 
-export function getLabel(field: ParsedField): string {
-  return (field.fieldConfig?.label as string) || (field.description as string) || beautifyLabel(field.key);
+export function getLabel(field: ParsedField): Renderable {
+  for (const label of [field.fieldConfig?.label, field.description]) {
+    if (hasSlotContent(label)) {
+      return label;
+    }
+  }
+  return beautifyLabel(field.key);
+}
+
+/** Textual labels for matching, search and ARIA; never coerce a React element to an object string. */
+export function getRenderableText(value: unknown, fallback = ''): string {
+  const text = renderedText(value).trim();
+  return text === '' ? fallback : text;
+}
+
+function renderedText(value: unknown): string {
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((child: unknown) => renderedText(child)).join('');
+  }
+  if (isValidElement(value)) {
+    const props: unknown = value.props;
+    return typeof props === 'object' && props !== null && 'children' in props ? renderedText(props.children) : '';
+  }
+  return '';
 }
 
 export function sortFieldsByOrder(fields: ParsedField[] | undefined): ParsedField[] {
-  if (!fields) {
+  if (fields === undefined) {
     return [];
   }
   return fields
-    .map((field) => (field.schema ? { ...field, schema: sortFieldsByOrder(field.schema) } : field))
+    .map((field) => (field.schema === undefined ? field : { ...field, schema: sortFieldsByOrder(field.schema) }))
     .sort((a, b) => (a.fieldConfig?.order ?? 0) - (b.fieldConfig?.order ?? 0));
 }
 

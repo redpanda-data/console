@@ -2,6 +2,7 @@
 
 import type React from 'react';
 import type { ReactNode } from 'react';
+import type { ParsedField, Renderable } from '../../lib/form-types';
 
 // Re-exported from the shared lib so consumers can keep importing from here.
 export type {
@@ -14,11 +15,9 @@ export type {
   SchemaValidationError,
 } from '../../lib/form-types';
 
-import type { ParsedField, Renderable } from '../../lib/form-types';
-
 export interface FieldWrapperProps {
   children: ReactNode;
-  error?: Renderable;
+  error?: Renderable | undefined;
   field: ParsedField;
   id: string;
   label: Renderable;
@@ -27,7 +26,7 @@ export interface FieldWrapperProps {
 export interface ObjectWrapperProps {
   children: ReactNode;
   field: ParsedField;
-  hasError?: boolean;
+  hasError?: boolean | undefined;
   label: Renderable;
 }
 
@@ -51,7 +50,7 @@ export interface AutoFormUIComponents {
   FieldWrapper: React.ComponentType<FieldWrapperProps>;
   Form: React.ComponentType<React.ComponentProps<'form'>>;
   ObjectWrapper: React.ComponentType<ObjectWrapperProps>;
-  SubmitButton: React.ComponentType<{ children: ReactNode }>;
+  SubmitButton: React.ComponentType<{ children: ReactNode; testId?: string | undefined }>;
 }
 
 export type AutoFormValue = boolean | number | object | string | null | undefined;
@@ -60,25 +59,25 @@ type AutoFormValueChangeHandler = {
 }['bivarianceHack'];
 
 export interface AutoFormInputProps {
-  disabled?: boolean;
-  max?: number | string;
-  maxLength?: number;
-  min?: number | string;
-  name?: string;
+  disabled?: boolean | undefined;
+  max?: number | string | undefined;
+  maxLength?: number | undefined;
+  min?: number | string | undefined;
+  name?: string | undefined;
   onBlur: () => void;
   onValueChange: AutoFormValueChangeHandler;
-  pattern?: string;
-  placeholder?: string;
-  required?: boolean;
-  step?: number | string;
-  testId?: string;
-  type?: string;
-  value?: AutoFormValue;
+  pattern?: string | undefined;
+  placeholder?: string | undefined;
+  required?: boolean | undefined;
+  step?: number | string | undefined;
+  testId?: string | undefined;
+  type?: string | undefined;
+  value?: AutoFormValue | undefined;
   [key: string]: unknown;
 }
 
 export interface AutoFormFieldProps {
-  error?: string;
+  error?: string | undefined;
   field: ParsedField;
   id: string;
   inputProps: AutoFormInputProps;

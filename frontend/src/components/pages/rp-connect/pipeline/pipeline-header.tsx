@@ -24,7 +24,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
-import { Group } from 'components/redpanda-ui/components/group';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
@@ -45,6 +44,7 @@ import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
+import { attachedFirstClassName, attachedLastClassName } from 'utils/attached-controls';
 import { docsLinks } from 'utils/docs-links';
 
 import { UNSAVED_CHANGES_PILL_TOOLTIP } from './changes-summary';
@@ -60,6 +60,7 @@ import {
 } from './save-actions';
 import { useStartDraftConfirm } from './start-draft-dialog';
 import { cpuToTasks } from '../tasks';
+import { toBadgeGroupItems } from '../utils/badge-group-items';
 import { type PipelineEndSummary, summarizePipelineEndYaml } from '../utils/input-end-behavior';
 import { extractAllTopics } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
@@ -177,23 +178,26 @@ const tagLabel = (t: TagEntry) => (t.value ? `${t.key}: ${t.value}` : t.key);
 const TagBadges = ({ tags }: { tags: TagEntry[] }) => (
   <BadgeGroup
     className="flex-wrap"
+    items={toBadgeGroupItems(tags, {
+      id: (t) => t.key,
+      text: tagLabel,
+      content: (t) => (
+        <Badge tone="default" variant="outline">
+          {tagLabel(t)}
+        </Badge>
+      ),
+    })}
     maxVisible={4}
     renderOverflowContent={(overflow) => (
       <List>
-        {tags.slice(-overflow.length).map((t) => (
-          <ListItem key={t.key}>{tagLabel(t)}</ListItem>
+        {overflow.map((item) => (
+          <ListItem key={item.id}>{item.textValue}</ListItem>
         ))}
       </List>
     )}
     tone="default"
     variant="outline"
-  >
-    {tags.map((t) => (
-      <Badge key={t.key} tone="default" variant="outline">
-        {tagLabel(t)}
-      </Badge>
-    ))}
-  </BadgeGroup>
+  />
 );
 
 const BackButton = ({ onClick }: { onClick: () => void }) => (
@@ -389,9 +393,14 @@ const SaveActions = ({
   const primary = primaryRunIntent(context);
   const alternates = alternateRunIntents(context).filter((intent) => intent !== primary);
   return (
-    // Positions come from JSX order, not DOM siblings: the open menu's focus guards land inside this div.
-    <Group attached className="w-auto">
-      <Button disabled={isSaving || disabled} onClick={() => onSave({ run: primary })} testId="save-pipeline">
+    // Attached by explicit classes, not :first-child/:last-child: the open menu's focus guards land inside this div.
+    <div className="flex items-stretch">
+      <Button
+        className={alternates.length > 0 ? attachedFirstClassName : undefined}
+        disabled={isSaving || disabled}
+        onClick={() => onSave({ run: primary })}
+        testId="save-pipeline"
+      >
         {runIntentLabel(primary, context)}
         {isSaving ? <Spinner /> : null}
       </Button>
@@ -401,6 +410,7 @@ const SaveActions = ({
             render={
               <Button
                 aria-label="More save options"
+                className={attachedLastClassName}
                 disabled={isSaving || disabled}
                 size="icon"
                 testId="save-pipeline-options"
@@ -418,7 +428,7 @@ const SaveActions = ({
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
-    </Group>
+    </div>
   );
 };
 

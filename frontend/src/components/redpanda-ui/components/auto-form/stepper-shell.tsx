@@ -1,16 +1,18 @@
 'use client';
+import { omitUndefined } from '../../lib/utils/omit-undefined';
 
 // Copyright 2026 Redpanda Data, Inc.
 
-import React from 'react';
+import type React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Button } from '../button';
 import { type DefineStepperProps, defineStepper } from '../stepper';
-import { useAutoFormRenderContext, useAutoFormRuntimeContext } from './context';
+import { useAutoForm } from './context';
 import type { ParsedField } from './core-types';
 import { formSpacing } from './form-spacing';
 import { filterFieldsByPaths, projectValuesToFields } from './helpers';
 import { AutoFormFields } from './renderers';
+import type { AutoFormSlotDescriptor } from './slots';
 import { buildAutoFormTestId } from './test-ids';
 import type { AutoFormStepConfig } from './types';
 
@@ -40,14 +42,14 @@ function getStepperConfig(visibleSteps: ResolvedStep[]): StepperConfig | null {
   const definitions: StepperDefinition[] = visibleSteps.map(({ id, title, description }) => ({
     id,
     title,
-    description,
+    ...omitUndefined({ description }),
   }));
   if (!isNonEmpty(definitions)) {
     return null;
   }
   const cacheKey = JSON.stringify(definitions);
   const cached = stepperConfigCache.get(cacheKey);
-  if (cached) {
+  if (cached !== undefined) {
     return cached;
   }
   const config = defineStepper(...definitions);
@@ -64,47 +66,38 @@ function getStepperConfig(visibleSteps: ResolvedStep[]): StepperConfig | null {
 export function AutoFormStepperShell({
   children,
   fields,
+  slots,
   steps,
   withSubmit,
 }: {
-  children?: React.ReactNode;
+  children?: React.ReactNode | undefined;
   fields: ParsedField[];
+  slots: readonly AutoFormSlotDescriptor[];
   steps: AutoFormStepConfig[];
   withSubmit: boolean;
 }) {
-  const { uiComponents } = useAutoFormRenderContext();
-  const { formValues, evaluateRules, testIdPrefix } = useAutoFormRuntimeContext();
+  const { uiComponents, formValues, evaluateRules, testIdPrefix } = useAutoForm();
   const form = useFormContext<Record<string, unknown>>();
-  const SubmitButtonComponent = uiComponents.SubmitButton as React.ComponentType<{
-    children: React.ReactNode;
-    testId?: string;
-  }>;
+  const SubmitButtonComponent = uiComponents.SubmitButton;
 
-  const visibleSteps = React.useMemo<ResolvedStep[]>(
-    () =>
-      steps
-        .map((step) => {
-          const fieldsForRender = filterFieldsByPaths(fields, step.fields);
-          const stepPayload = projectValuesToFields(formValues, fieldsForRender);
-
-          return {
-            ...step,
-            fieldsForRender,
-            stepPayload,
-          } satisfies ResolvedStep;
-        })
-        .filter((step) => step.fieldsForRender.length > 0)
-        .filter((step) => evaluateRules(step.visibleWhen, step.stepPayload)),
-    [evaluateRules, fields, formValues, steps]
-  );
+  const visibleSteps: ResolvedStep[] = steps.flatMap((step) => {
+    const fieldsForRender = filterFieldsByPaths(fields, step.fields);
+    if (fieldsForRender.length === 0) {
+      return [];
+    }
+    const stepPayload = projectValuesToFields(formValues, fieldsForRender);
+    return evaluateRules(step.visibleWhen, stepPayload)
+      ? [{ ...step, fieldsForRender, stepPayload } satisfies ResolvedStep]
+      : [];
+  });
 
   const stepperKey = visibleSteps.map((step) => step.id).join('|');
   const stepperConfig = getStepperConfig(visibleSteps);
 
-  if (!(stepperConfig && visibleSteps.length > 0)) {
+  if (!(stepperConfig !== null && visibleSteps.length > 0)) {
     return (
       <>
-        <AutoFormFields fields={fields} />
+        <AutoFormFields fields={fields} slots={slots} />
         {children}
       </>
     );
@@ -120,13 +113,11 @@ export function AutoFormStepperShell({
     >
       {({ methods }) => {
         const currentStep = visibleSteps.find((step) => step.id === methods.current.id) ?? visibleSteps[0];
-        if (!currentStep) {
+        if (currentStep === undefined) {
           return null;
         }
 
-        const completionSatisfied = currentStep.completeWhen?.length
-          ? evaluateRules(currentStep.completeWhen, currentStep.stepPayload)
-          : true;
+        const completionSatisfied = evaluateRules(currentStep.completeWhen, currentStep.stepPayload);
 
         const blockingMessage = currentStep.completeWhen?.find(
           (rule) => !evaluateRules([rule], currentStep.stepPayload)
@@ -140,12 +131,25 @@ export function AutoFormStepperShell({
 
         const handleStepClick = async (stepId: string, stepIndex: number) => {
           if (stepIndex <= currentStepIndex) {
-            methods.goTo(stepId as never);
+            await methods.goTo(stepId);
             return;
           }
           const isValid = await form.trigger(currentStep.fields, { shouldTouch: true });
           if (isValid && completionSatisfied) {
-            methods.goTo(stepId as never);
+            await methods.goTo(stepId);
+          }
+        };
+
+        const reportNavigationError = (error: unknown) => {
+          form.setError('root', {
+            type: 'navigation',
+            message: error instanceof Error ? error.message : 'Could not change form steps.',
+          });
+        };
+        const handleNext = async () => {
+          const isValid = await form.trigger(currentStep.fields, { shouldTouch: true });
+          if (isValid && completionSatisfied) {
+            await methods.next();
           }
         };
 
@@ -154,14 +158,19 @@ export function AutoFormStepperShell({
             <Stepper.Navigation testId={buildAutoFormTestId(testIdPrefix, 'stepper-navigation')}>
               {visibleSteps.map((step, stepIndex) => (
                 <Stepper.Step
+                  description={
+                    (step.description ?? '') === '' ? null : (
+                      <Stepper.Description>{step.description}</Stepper.Description>
+                    )
+                  }
                   key={step.id}
-                  of={step.id as never}
-                  onClick={() => handleStepClick(step.id, stepIndex)}
+                  of={step.id}
+                  onClick={() => {
+                    handleStepClick(step.id, stepIndex).catch(reportNavigationError);
+                  }}
                   testId={buildAutoFormTestId(testIdPrefix, `step-${step.id}`)}
-                >
-                  <Stepper.Title>{step.title}</Stepper.Title>
-                  {step.description ? <Stepper.Description>{step.description}</Stepper.Description> : null}
-                </Stepper.Step>
+                  title={<Stepper.Title>{step.title}</Stepper.Title>}
+                />
               ))}
             </Stepper.Navigation>
 
@@ -171,11 +180,11 @@ export function AutoFormStepperShell({
                   step.id,
                   () => (
                     <Stepper.Panel className={formSpacing.field}>
-                      <AutoFormFields fields={step.fieldsForRender} />
+                      <AutoFormFields fields={step.fieldsForRender} slots={slots} />
                     </Stepper.Panel>
                   ),
                 ])
-              ) as never
+              )
             )}
 
             <div className="space-y-3">
@@ -184,7 +193,9 @@ export function AutoFormStepperShell({
                   <div />
                 ) : (
                   <Button
-                    onClick={() => methods.prev()}
+                    onClick={() => {
+                      methods.prev().catch(reportNavigationError);
+                    }}
                     testId={buildAutoFormTestId(testIdPrefix, 'previous')}
                     type="button"
                     variant="default"
@@ -198,11 +209,8 @@ export function AutoFormStepperShell({
                 ) : (
                   <Button
                     disabled={!completionSatisfied}
-                    onClick={async () => {
-                      const isValid = await form.trigger(currentStep.fields, { shouldTouch: true });
-                      if (isValid && completionSatisfied) {
-                        methods.next();
-                      }
+                    onClick={() => {
+                      handleNext().catch(reportNavigationError);
                     }}
                     testId={buildAutoFormTestId(testIdPrefix, 'next')}
                     type="button"
@@ -212,7 +220,9 @@ export function AutoFormStepperShell({
                 )}
               </Stepper.Controls>
 
-              {blockingMessage ? <div className="text-body-sm text-destructive">{blockingMessage}</div> : null}
+              {blockingMessage !== undefined && blockingMessage !== '' ? (
+                <div className="text-body-sm text-destructive">{blockingMessage}</div>
+              ) : null}
             </div>
             {children}
           </>

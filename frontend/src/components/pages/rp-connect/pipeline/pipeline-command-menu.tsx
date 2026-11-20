@@ -39,7 +39,7 @@ import { createPortal } from 'react-dom';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { useListUsersQuery } from 'react-query/api/user';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import { AddTopicStep } from '../onboarding/add-topic-step';
@@ -332,7 +332,7 @@ function CommandMenuContent({
   );
 }
 
-// On mount, steal focus from Monaco into the cmdk input, deferred past Monaco's keystroke processing.
+// On mount, steal focus from Monaco into the Command input, deferred past Monaco's keystroke processing.
 function useCmdkInputAutoFocus(clickOutsideRef: ReturnType<typeof useClickOutside>) {
   const abortFocusRef = useRef(false);
   return useCallback(
@@ -534,12 +534,12 @@ function settleTopicCreation(
 ) {
   if (!result.success) {
     if (result.error) {
-      toast.error(result.error);
+      showToast({ status: 'error', title: result.error });
     }
     return;
   }
   if (result.message) {
-    toast.success(result.message);
+    showToast({ status: 'success', title: result.message });
   }
   close();
   if (result.data?.topicName) {

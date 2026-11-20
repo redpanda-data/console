@@ -20,9 +20,8 @@ import {
   type QueryOptions,
   TOPIC_CONFIG_CACHE_STALE_TIME,
 } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
 import type { GetTopicsResponse, TopicDescription } from 'state/rest-interfaces';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { api } from '../../state/backend-api';
 
@@ -139,13 +138,14 @@ export const useCreateTopicMutation = () => {
       ]);
     },
     onError: (error) => {
-      toast.error(
-        formatToastErrorMessageGRPC({
+      showToast({
+        status: 'error',
+        title: formatToastErrorMessageGRPC({
           error,
           action: 'create',
           entity: 'topic',
-        })
-      );
+        }),
+      });
     },
   });
 };

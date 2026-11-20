@@ -20,7 +20,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from 'components/redpanda-ui/components/alert-dialog';
-import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
+import { buttonVariants } from 'components/redpanda-ui/components/button/variants';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import {
   Dialog,

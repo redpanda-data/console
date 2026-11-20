@@ -5,7 +5,8 @@
 import type { DescMessage } from '@bufbuild/protobuf';
 import React from 'react';
 import { type UseFormReturn, useFormContext, useWatch } from 'react-hook-form';
-
+import { Alert, AlertDescription, AlertTitle } from '../alert';
+import { protoFormValuesToPayload } from '../../lib/protobuf-provider/form-values';
 import { AutoFormContext, type AutoFormContextValue } from './context';
 import type {
   AutoFormFieldComponents,
@@ -15,11 +16,12 @@ import type {
   SchemaProvider,
 } from './core-types';
 import type { DataProviderRegistry } from './data-providers';
-import { getFieldUiConfig, isRecord, isValidationSuccess } from './helpers';
-import { protoFormValuesToPayload, protoPayloadToFormValues } from './proto';
+import { isValidationSuccess } from './helpers';
 import type { FieldTypeRegistry } from './registry';
 import type { AutoFormMode, AutoFormPayloadBuilderContext, AutoFormStepConfig, AutoFormSummaryContext } from './types';
+import { getFieldUiConfig } from './ui-config';
 import { evaluateUiRules } from './ui-rules';
+import { usePayloadEditor } from './use-payload-editor';
 import { isPromiseLike, safeStringify } from './utils/serialization';
 
 interface PayloadBag<T extends Record<string, unknown>> {
@@ -36,29 +38,40 @@ interface PayloadBag<T extends Record<string, unknown>> {
 interface AutoFormRuntimeProviderProps<T extends Record<string, unknown>> {
   advancedFields: ParsedField[];
   children: React.ReactNode;
-  dataProviders?: DataProviderRegistry;
-  fieldRegistry?: FieldTypeRegistry;
+  dataProviders?: DataProviderRegistry | undefined;
+  fieldRegistry?: FieldTypeRegistry | undefined;
   formComponents: AutoFormFieldComponents;
   mode: AutoFormMode;
-  onFieldChange?: (
-    fieldPath: string,
-    value: unknown,
-    form: UseFormReturn<Record<string, unknown>, unknown, T>
-  ) => void | Promise<void>;
-  payloadBuilder?: (values: Record<string, unknown>, context: AutoFormPayloadBuilderContext<T>) => unknown;
-  payloadParser?: (
-    payload: unknown,
-    context: AutoFormPayloadBuilderContext<T>
-  ) => Record<string, unknown> | undefined | Promise<Record<string, unknown> | undefined>;
-  payloadSchema?: {
-    safeParse: (data: unknown) => { success: boolean; error?: { issues: Array<{ path: unknown[]; message: string }> } };
-  };
+  onFieldChange?:
+    | ((
+        fieldPath: string,
+        value: unknown,
+        form: UseFormReturn<Record<string, unknown>, unknown, T>
+      ) => void | Promise<void>)
+    | undefined;
+  payloadBuilder?:
+    | ((values: Record<string, unknown>, context: AutoFormPayloadBuilderContext<T>) => unknown)
+    | undefined;
+  payloadParser?:
+    | ((
+        payload: unknown,
+        context: AutoFormPayloadBuilderContext<T>
+      ) => Record<string, unknown> | undefined | Promise<Record<string, unknown> | undefined>)
+    | undefined;
+  payloadSchema?:
+    | {
+        safeParse: (data: unknown) => {
+          success: boolean;
+          error?: { issues: Array<{ path: unknown[]; message: string }> } | undefined;
+        };
+      }
+    | undefined;
   renderContent: (bag: PayloadBag<T>) => React.ReactNode;
   resolvedSchema: {
-    provider: SchemaProvider<Record<string, unknown>>;
+    provider: SchemaProvider;
     parsedSchema: ParsedSchema;
     isProto: boolean;
-    protoDesc?: DescMessage;
+    protoDesc?: DescMessage | undefined;
     resolver?: unknown;
   };
   simpleFields: ParsedField[];
@@ -96,7 +109,7 @@ function buildCustomPayload<T extends RuntimeFormValues>(
   values: RuntimeFormValues,
   context: AutoFormPayloadBuilderContext<T>
 ): { failed: boolean; payload: unknown } {
-  if (!builder) {
+  if (builder === undefined) {
     return { failed: false, payload: undefined };
   }
   try {
@@ -125,7 +138,7 @@ function createPayloadState<T extends RuntimeFormValues>({
   let { payload } = customPayload;
 
   if (payload === undefined) {
-    if (context.isProto && context.protoDesc) {
+    if (context.isProto && context.protoDesc !== undefined) {
       payload = protoFormValuesToPayload(context.protoDesc, values);
       bestEffort = bestEffort || !validation.success;
     } else if (validation.success) {
@@ -136,7 +149,7 @@ function createPayloadState<T extends RuntimeFormValues>({
     }
   }
 
-  if (payloadSchema && payload !== undefined && !payloadSchema.safeParse(payload).success) {
+  if (payloadSchema !== undefined && payload !== undefined && !payloadSchema.safeParse(payload).success) {
     bestEffort = true;
   }
 
@@ -168,149 +181,41 @@ function AutoFormPayloadController<T extends Record<string, unknown>>({
   payloadSchema: AutoFormRuntimeProviderProps<T>['payloadSchema'];
   renderContent: AutoFormRuntimeProviderProps<T>['renderContent'];
 }) {
-  // The renderContent contract is an opaque render prop that receives callbacks
-  // backed by a latest-request ref. Compiling across that boundary would let the
-  // compiler treat those event callbacks as render-time ref reads.
-  'use no memo';
-
   const deferredValues = React.useDeferredValue(watchedValues);
 
-  const payloadContextBase = React.useMemo<AutoFormPayloadBuilderContext<T>>(
-    () => ({
-      form: methods,
-      schema: resolvedSchema.parsedSchema,
-      isProto: resolvedSchema.isProto,
-      mode,
-      simpleFields,
-      advancedFields,
-      ...(resolvedSchema.protoDesc ? { protoDesc: resolvedSchema.protoDesc } : {}),
-    }),
-    [
-      advancedFields,
-      methods,
-      mode,
-      resolvedSchema.isProto,
-      resolvedSchema.parsedSchema,
-      resolvedSchema.protoDesc,
-      simpleFields,
-    ]
-  );
+  const payloadContextBase: AutoFormPayloadBuilderContext<T> = {
+    form: methods,
+    schema: resolvedSchema.parsedSchema,
+    isProto: resolvedSchema.isProto,
+    mode,
+    simpleFields,
+    advancedFields,
+    ...(resolvedSchema.protoDesc === undefined ? {} : { protoDesc: resolvedSchema.protoDesc }),
+  };
+  const payloadState = createPayloadState({
+    context: payloadContextBase,
+    payloadBuilder,
+    payloadSchema,
+    provider: resolvedSchema.provider,
+    values: deferredValues,
+  });
+  const payloadText = safeStringify(payloadState.payload);
+  const editor = usePayloadEditor({
+    context: payloadContextBase,
+    parser: payloadParser,
+    payloadText,
+    protoDesc: resolvedSchema.isProto ? resolvedSchema.protoDesc : undefined,
+  });
+  const summaryContext: AutoFormSummaryContext<T> = {
+    ...payloadContextBase,
+    payload: payloadState.payload,
+    bestEffort: payloadState.bestEffort,
+  };
 
-  const payloadState = React.useMemo(
-    () =>
-      createPayloadState({
-        context: payloadContextBase,
-        payloadBuilder,
-        payloadSchema,
-        provider: resolvedSchema.provider,
-        values: deferredValues,
-      }),
-    [deferredValues, payloadBuilder, payloadContextBase, payloadSchema, resolvedSchema.provider]
-  );
-
-  const payloadText = React.useMemo(() => safeStringify(payloadState.payload), [payloadState.payload]);
-  const [jsonEditorText, setJsonEditorText] = React.useState(payloadText);
-  const [jsonEditorError, setJsonEditorError] = React.useState<string>();
-
-  React.useEffect(() => {
-    if (!jsonEditorError) {
-      setJsonEditorText(payloadText);
-    }
-  }, [jsonEditorError, payloadText]);
-
-  const applySeqRef = React.useRef(0);
-
-  const applyPayloadToForm = React.useCallback(
-    async (incoming: unknown) => {
-      const seq = ++applySeqRef.current;
-      try {
-        let nextValues: Record<string, unknown> | undefined;
-
-        if (payloadParser) {
-          const parsed = payloadParser(incoming, payloadContextBase);
-          nextValues = isPromiseLike(parsed) ? await parsed : parsed;
-        } else if (resolvedSchema.isProto && resolvedSchema.protoDesc) {
-          nextValues = protoPayloadToFormValues(resolvedSchema.protoDesc, incoming);
-        } else if (isRecord(incoming)) {
-          nextValues = incoming;
-        }
-
-        if (applySeqRef.current !== seq) {
-          return;
-        }
-
-        if (!nextValues) {
-          setJsonEditorError('AutoForm could not map this JSON payload back into the form.');
-          return;
-        }
-
-        methods.reset(nextValues, { keepDefaultValues: true });
-        setJsonEditorError(undefined);
-      } catch (error) {
-        if (applySeqRef.current !== seq) {
-          return;
-        }
-        setJsonEditorError(error instanceof Error ? error.message : 'AutoForm could not apply this payload.');
-      }
-    },
-    [methods, payloadContextBase, payloadParser, resolvedSchema.isProto, resolvedSchema.protoDesc]
-  );
-
-  const handleJsonTextChange = React.useCallback(
-    async (value: string) => {
-      setJsonEditorText(value);
-      try {
-        const parsed = JSON.parse(value);
-        setJsonEditorError(undefined);
-        await applyPayloadToForm(parsed);
-      } catch (error) {
-        setJsonEditorError(error instanceof Error ? error.message : 'Invalid JSON');
-      }
-    },
-    [applyPayloadToForm]
-  );
-
-  const handleResetJson = React.useCallback(() => {
-    setJsonEditorError(undefined);
-    setJsonEditorText(payloadText);
-  }, [payloadText]);
-
-  const handleFormatJson = React.useCallback(async () => {
-    try {
-      const parsed = JSON.parse(jsonEditorText);
-      const formatted = JSON.stringify(parsed, null, 2);
-      setJsonEditorText(formatted);
-      setJsonEditorError(undefined);
-      await applyPayloadToForm(parsed);
-    } catch (error) {
-      setJsonEditorError(error instanceof Error ? error.message : 'Invalid JSON');
-    }
-  }, [applyPayloadToForm, jsonEditorText]);
-
-  const summaryContext = React.useMemo<AutoFormSummaryContext<T>>(
-    () => ({
-      ...payloadContextBase,
-      payload: payloadState.payload,
-      bestEffort: payloadState.bestEffort,
-    }),
-    [payloadContextBase, payloadState.bestEffort, payloadState.payload]
-  );
-
-  return (
-    <>
-      {renderContent({
-        payloadState,
-        jsonEditorText,
-        jsonEditorError,
-        payloadText,
-        summaryContext,
-        handleJsonTextChange,
-        handleResetJson,
-        handleFormatJson,
-      })}
-    </>
-  );
+  return renderContent({ ...editor, payloadState, payloadText, summaryContext });
 }
+
+const EMPTY_FORM_VALUES: Record<string, unknown> = {};
 
 export function AutoFormRuntimeProvider<T extends Record<string, unknown>>({
   children: _children,
@@ -329,44 +234,60 @@ export function AutoFormRuntimeProvider<T extends Record<string, unknown>>({
   renderContent,
   onFieldChange,
 }: AutoFormRuntimeProviderProps<T>) {
-  const methods = useFormContext<Record<string, unknown>>() as UseFormReturn<Record<string, unknown>, unknown, T>;
-  const watchedValues = (useWatch({ control: methods.control }) as Record<string, unknown> | undefined) ?? {};
+  const methods = useFormContext<Record<string, unknown>, unknown, T>();
+  const watchedValues =
+    (useWatch({ control: methods.control }) as Record<string, unknown> | undefined) ?? EMPTY_FORM_VALUES;
 
   const prevValuesRef = React.useRef<Record<string, unknown>>(watchedValues);
+  const [fieldChangeErrors, setFieldChangeErrors] = React.useState<Record<string, string>>({});
 
   React.useEffect(() => {
     // Only fires for root-level keys; nested changes surface as onFieldChange("address", ...) when the parent ref changes.
-    if (!onFieldChange) {
+    if (onFieldChange === undefined) {
       return;
     }
     const prev = prevValuesRef.current;
     for (const key of Object.keys(watchedValues)) {
       if (watchedValues[key] !== prev[key]) {
-        Promise.resolve(onFieldChange(key, watchedValues[key], methods)).catch((error: unknown) => {
-          globalThis.reportError(error);
-        });
+        Promise.resolve()
+          .then(() => onFieldChange(key, watchedValues[key], methods))
+          .catch((error: unknown) => {
+            const message = error instanceof Error ? error.message : 'A field update callback failed.';
+            setFieldChangeErrors((current) => ({ ...current, [key]: message }));
+          });
       }
     }
     prevValuesRef.current = { ...watchedValues };
   }, [watchedValues, onFieldChange, methods]);
 
-  const contextValue = React.useMemo<AutoFormContextValue>(
-    () => ({
-      uiComponents,
-      formComponents,
-      formValues: watchedValues,
-      evaluateRules: (rules: AutoFormStepConfig['visibleWhen'], fieldValue?: unknown) =>
-        evaluateUiRules(rules, { form: watchedValues, thisValue: fieldValue }),
-      getFieldUiConfig,
-      testIdPrefix,
-      fieldRegistry,
-      dataProviders,
-    }),
-    [dataProviders, fieldRegistry, formComponents, uiComponents, testIdPrefix, watchedValues]
-  );
+  const contextValue: AutoFormContextValue = {
+    uiComponents,
+    formComponents,
+    formValues: watchedValues,
+    evaluateRules: (rules: AutoFormStepConfig['visibleWhen'], fieldValue?: unknown) =>
+      evaluateUiRules(rules, { form: watchedValues, thisValue: fieldValue }),
+    getFieldUiConfig,
+    testIdPrefix,
+    fieldRegistry,
+    dataProviders,
+  };
 
   return (
     <AutoFormContext.Provider value={contextValue}>
+      {Object.keys(fieldChangeErrors).length > 0 && (
+        <Alert variant="destructive">
+          <AlertTitle>Field update failed</AlertTitle>
+          <AlertDescription>
+            <ul>
+              {Object.entries(fieldChangeErrors).map(([path, message]) => (
+                <li key={path}>
+                  {path}: {message}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
       <AutoFormPayloadController<T>
         advancedFields={advancedFields}
         methods={methods}

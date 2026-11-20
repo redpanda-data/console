@@ -28,7 +28,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from 'components/redpanda-ui/components/alert-dialog';
-import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
+import { buttonVariants } from 'components/redpanda-ui/components/button/variants';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
   Field,
@@ -42,12 +43,13 @@ import { Label } from 'components/redpanda-ui/components/label';
 import {
   MultiSelect,
   MultiSelectContent,
+  MultiSelectControl,
   MultiSelectEmpty,
   MultiSelectList,
+  MultiSelectOptions,
   MultiSelectSearch,
   MultiSelectTrigger,
   MultiSelectValue,
-  renderMultiSelectOptions,
 } from 'components/redpanda-ui/components/multi-select';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DateTimeInput } from 'components/ui/date-time-input';
@@ -103,17 +105,20 @@ const LabelledMultiSelect = ({
 
   return (
     <MultiSelect onValueChange={onValueChange} value={value}>
-      <MultiSelectTrigger
-        aria-describedby={errorId}
-        aria-invalid={invalid || undefined}
-        aria-labelledby={labelId}
-        className="w-full"
-      >
-        <MultiSelectValue placeholder="Select items..." />
-      </MultiSelectTrigger>
+      <MultiSelectControl className="w-full">
+        <MultiSelectValue />
+        <MultiSelectTrigger
+          aria-describedby={errorId}
+          aria-invalid={invalid || undefined}
+          aria-labelledby={labelId}
+          placeholder="Select items..."
+        />
+      </MultiSelectControl>
       <MultiSelectContent>
         <MultiSelectSearch placeholder="Search..." />
-        <MultiSelectList>{renderMultiSelectOptions(options.map((o) => ({ value: o, label: o })))}</MultiSelectList>
+        <MultiSelectList>
+          <MultiSelectOptions options={options.map((o) => ({ value: o, label: o }))} />
+        </MultiSelectList>
         <MultiSelectEmpty>No items found</MultiSelectEmpty>
       </MultiSelectContent>
     </MultiSelect>

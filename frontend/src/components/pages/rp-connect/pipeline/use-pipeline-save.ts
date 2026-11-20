@@ -39,11 +39,10 @@ import {
   useStopPipelineMutation,
   useUpdatePipelineMutation,
 } from 'react-query/api/pipeline';
-import { toast } from 'sonner';
 import { type AttachedServiceAccount, autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
 import { useRpcnWizardStore } from 'state/rpcn-wizard-store';
 import { addServiceAccountTags } from 'utils/service-account.utils';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import {
   DRAFT_UNSUPPORTED_MESSAGE,
@@ -78,7 +77,7 @@ import { navigateToConnectClusters } from '../utils/navigation';
 import { usesServiceAccountLogin } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
-// Sonner's default is 4s.
+// The toast default is 5s.
 const SAVE_SUCCESS_TOAST_MS = 6000;
 
 type PipelineForm = UseFormReturn<PipelineFormValues>;
@@ -150,7 +149,7 @@ function warnIfResized(form: PipelineForm, cpuShares: string | undefined) {
   const retUnits = cpuToTasks(cpuShares);
   const currentUnits = form.getValues('computeUnits');
   if (retUnits && currentUnits !== retUnits) {
-    toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
+    showToast({ status: 'warning', title: `Pipeline has been resized to use ${retUnits} compute units` });
   }
 }
 
@@ -318,7 +317,10 @@ async function stopCreatedPipeline(
   }
   const stopped = newPipelineId ? await stopQuietly(flow.stopPipeline, newPipelineId) : false;
   if (!(stopped || draftWasIgnored)) {
-    toast.warning('Pipeline created, but stopping it failed — it may be running. Stop it from its page.');
+    showToast({
+      status: 'warning',
+      title: 'Pipeline created, but stopping it failed — it may be running. Stop it from its page.',
+    });
   }
   return { stopped, stopFailed: !stopped };
 }
@@ -326,9 +328,16 @@ async function stopCreatedPipeline(
 function toastCreateOutcome(flow: SaveFlow, attempt: SaveAttempt, draftWasIgnored: boolean, outcome: StopOutcome) {
   if (draftWasIgnored) {
     // Both messages name the deployment; only one of them still needs a human.
-    toast.error(outcome.stopped ? DRAFT_UNSUPPORTED_STOPPED_MESSAGE : DRAFT_UNSUPPORTED_MESSAGE);
+    showToast({
+      status: 'error',
+      title: outcome.stopped ? DRAFT_UNSUPPORTED_STOPPED_MESSAGE : DRAFT_UNSUPPORTED_MESSAGE,
+    });
   } else if (!outcome.stopFailed) {
-    toast.success(saveSuccessMessage(flow.saveContext, attempt.run), { duration: SAVE_SUCCESS_TOAST_MS });
+    showToast({
+      status: 'success',
+      title: saveSuccessMessage(flow.saveContext, attempt.run),
+      duration: SAVE_SUCCESS_TOAST_MS,
+    });
   }
 }
 
@@ -379,15 +388,16 @@ function reportRunFailure(flow: SaveFlow, run: SaveRunIntent, runError: ConnectE
   if (run === 'start' && isInvalidConfigError(runError)) {
     const hints = extractLintHintsFromError(runError);
     flow.setErrorLintHints(hints);
-    toast.warning(startBlockedMessage(Object.keys(hints).length));
+    showToast({ status: 'warning', title: startBlockedMessage(Object.keys(hints).length) });
   } else {
-    toast.warning(
-      formatToastErrorMessageGRPC({
+    showToast({
+      status: 'warning',
+      title: formatToastErrorMessageGRPC({
         error: runError,
         action: run === 'start' ? 'start' : 'stop',
         entity: 'pipeline',
-      })
-    );
+      }),
+    });
   }
 }
 
@@ -412,9 +422,13 @@ async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: st
 function toastUpdateOutcome(flow: SaveFlow, attempt: SaveAttempt, draftWasIgnored: boolean) {
   if (draftWasIgnored) {
     // No longer a draft, so the editor's next save would deploy too: hand over to the pipeline's page.
-    toast.error(DRAFT_UPDATE_UNSUPPORTED_MESSAGE);
+    showToast({ status: 'error', title: DRAFT_UPDATE_UNSUPPORTED_MESSAGE });
   } else {
-    toast.success(saveSuccessMessage(flow.saveContext, attempt.run), { duration: SAVE_SUCCESS_TOAST_MS });
+    showToast({
+      status: 'success',
+      title: saveSuccessMessage(flow.saveContext, attempt.run),
+      duration: SAVE_SUCCESS_TOAST_MS,
+    });
   }
 }
 
@@ -456,16 +470,17 @@ function reportSaveFailure(flow: SaveFlow, err: unknown, isDraftSave: boolean): 
   const connectError = ConnectError.from(err);
   flow.setErrorLintHints(extractLintHintsFromError(connectError));
   if (isDraftSave && isNoLongerDraftError(connectError)) {
-    toast.error(NO_LONGER_DRAFT_MESSAGE);
+    showToast({ status: 'error', title: NO_LONGER_DRAFT_MESSAGE });
     return false;
   }
-  toast.error(
-    formatToastErrorMessageGRPC({
+  showToast({
+    status: 'error',
+    title: formatToastErrorMessageGRPC({
       error: connectError,
       action: flow.mode === 'create' ? 'create' : 'update',
       entity: 'pipeline',
-    })
-  );
+    }),
+  });
   return false;
 }
 
@@ -488,7 +503,7 @@ async function savePipeline(flow: SaveFlow, intent?: SaveIntent): Promise<boolea
   const { yamlContent } = flow.editorStore.getState();
   const blocker = await saveBlockerMessage(flow, run === 'draft', yamlContent);
   if (blocker) {
-    toast.error(blocker);
+    showToast({ status: 'error', title: blocker });
     return false;
   }
   return submitSave(flow, saveAttempt(flow, run, yamlContent, intent));
@@ -637,14 +652,15 @@ function usePipelineDelete(pipeline: Pipeline | undefined, onBeforeGuardedNaviga
       deleteMutation(deleteRequest, {
         onSuccess: () => {
           rpcnEditorAutosave.clear(autosaveTargetKey(id));
-          toast.success(wasDraft ? 'Draft deleted' : 'Pipeline deleted');
+          showToast({ status: 'success', title: wasDraft ? 'Draft deleted' : 'Pipeline deleted' });
           onBeforeGuardedNavigate?.();
           navigateToConnectClusters(navigate);
         },
         onError: (err) => {
-          toast.error(
-            formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'delete', entity: 'pipeline' })
-          );
+          showToast({
+            status: 'error',
+            title: formatToastErrorMessageGRPC({ error: ConnectError.from(err), action: 'delete', entity: 'pipeline' }),
+          });
         },
       });
     },

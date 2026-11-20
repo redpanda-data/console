@@ -75,7 +75,7 @@ const NameFilterSection = ({
   emptyMessage: string;
   resourceType: string;
 }) => (
-  <Card size="full" testId={`${testId}-card`}>
+  <Card testId={`${testId}-card`}>
     <CardHeader>
       <h3 className="text-heading-md">{title}</h3>
     </CardHeader>
@@ -83,13 +83,9 @@ const NameFilterSection = ({
       {filters.length > 0 ? (
         <ItemGroup>
           {filters.map((filter, index) => (
-            <NameFilterDisplay
-              filter={filter}
-              index={index}
-              key={`${testId}-${index}-${filter.name}-${filter.patternType}-${filter.filterType}`}
-              resourceType={resourceType}
-              testId={testId}
-            />
+            <li key={`${testId}-${index}-${filter.name}-${filter.patternType}-${filter.filterType}`}>
+              <NameFilterDisplay filter={filter} index={index} resourceType={resourceType} testId={testId} />
+            </li>
           ))}
         </ItemGroup>
       ) : (
@@ -162,7 +158,7 @@ const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
   const hasAllACLs = filters.length === 0;
 
   return (
-    <Card size="full" testId="acl-replication-card">
+    <Card testId="acl-replication-card">
       <CardHeader>
         <h3 className="text-heading-md">ACL replication</h3>
       </CardHeader>

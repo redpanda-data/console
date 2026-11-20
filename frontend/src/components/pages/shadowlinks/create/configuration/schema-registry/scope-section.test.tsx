@@ -104,7 +104,7 @@ describe('the ScopeSection', () => {
 
     // Removing a chip updates form state
     const chip = screen.getByTestId('sr-contexts-input-chip-.prod');
-    await user.click(within(chip).getByRole('button', { name: 'Remove tag' }));
+    await user.click(within(chip).getByRole('button', { name: 'Remove .prod' }));
     await waitFor(() => {
       expect(latest.values?.schemaRegistry?.contexts).toEqual([]);
     });

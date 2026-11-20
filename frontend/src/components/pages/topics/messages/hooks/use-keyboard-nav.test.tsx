@@ -15,8 +15,6 @@ import userEvent from '@testing-library/user-event';
 
 import { useKeyboardNav } from './use-keyboard-nav';
 
-rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
-
 const renderNav = (overrides: Partial<Parameters<typeof useKeyboardNav>[0]> = {}) => {
   const onSelect = rs.fn();
   const getCopyText = rs.fn((key: string) => `copy-text-for-${key}`);

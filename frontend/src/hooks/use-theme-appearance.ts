@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react';
  * Which appearance the active theme paints. Themes are named, and a name says nothing about its
  * ground — there can be several dark ones — so this reads the ground the theme actually painted.
  * For surfaces that can't read a CSS variable and need the binary answer: react-flow's `colorMode`,
- * Sonner's `theme`, CodeMirror's `dark` flag.
+ * CodeMirror's `dark` flag.
  */
 export type ThemeAppearance = 'light' | 'dark';
 

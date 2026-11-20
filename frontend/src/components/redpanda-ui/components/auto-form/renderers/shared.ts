@@ -1,9 +1,8 @@
-import React from 'react';
-
-import { useAutoFormRuntimeContext } from '../context';
-import type { ParsedField } from '../core-types';
+import { useAutoForm } from '../context';
+import type { ParsedField, Renderable } from '../core-types';
 import { getLabel, getPathInObject } from '../field-utils';
-import { getFieldUiConfig, resolveRenderFieldType } from '../helpers';
+import { resolveRenderFieldType } from '../helpers';
+import { getFieldUiConfig, isRecord } from '../ui-config';
 
 export function cloneFieldWithDisabled(field: ParsedField, disabled: boolean): ParsedField {
   if (!disabled) {
@@ -13,9 +12,9 @@ export function cloneFieldWithDisabled(field: ParsedField, disabled: boolean): P
   return {
     ...field,
     fieldConfig: {
-      ...(field.fieldConfig ?? {}),
+      ...field.fieldConfig,
       inputProps: {
-        ...(field.fieldConfig?.inputProps ?? {}),
+        ...field.fieldConfig?.inputProps,
         disabled: true,
       },
     },
@@ -23,16 +22,17 @@ export function cloneFieldWithDisabled(field: ParsedField, disabled: boolean): P
 }
 
 export function useFieldPresentation(field: ParsedField, path: string[], inheritedDisabled = false) {
-  const { formValues, evaluateRules } = useAutoFormRuntimeContext();
+  const { formValues, evaluateRules } = useAutoForm();
   const fieldValue = getPathInObject(formValues, path);
   const uiConfig = getFieldUiConfig(field);
-  const customData = (field.fieldConfig?.customData ?? {}) as Record<string, unknown>;
-  const isHidden = Boolean(customData.hidden);
-  const isImmutable = Boolean(customData.immutable);
+  const customData = field.fieldConfig?.customData ?? {};
+  const isHidden = Boolean(customData['hidden']);
+  const isImmutable = Boolean(customData['immutable']);
   const isVisible = !isHidden && evaluateRules(uiConfig.visibleWhen, fieldValue);
-  const isDisabledByRule = uiConfig.disabledWhen?.length ? evaluateRules(uiConfig.disabledWhen, fieldValue) : false;
+  const isDisabledByRule =
+    (uiConfig.disabledWhen?.length ?? 0) > 0 ? evaluateRules(uiConfig.disabledWhen, fieldValue) : false;
   const isDisabled = inheritedDisabled || isDisabledByRule || isImmutable;
-  const renderField = React.useMemo(() => cloneFieldWithDisabled(field, isDisabled), [field, isDisabled]);
+  const renderField = cloneFieldWithDisabled(field, isDisabled);
 
   return {
     fieldValue,
@@ -45,14 +45,17 @@ export function useFieldPresentation(field: ParsedField, path: string[], inherit
 
 export function cloneFieldForCompactRow(field: ParsedField): ParsedField {
   const label = getLabel(field);
+  const fallbackPlaceholder =
+    field.type === 'select' || field.type === 'boolean' || typeof label !== 'string' ? undefined : label;
 
-  const existingCustomData = (field.fieldConfig?.customData ?? {}) as Record<string, unknown>;
-  const existingUi = (existingCustomData.ui ?? {}) as Record<string, unknown>;
+  const placeholder = field.fieldConfig?.inputProps?.['placeholder'];
+  const existingCustomData = field.fieldConfig?.customData ?? {};
+  const existingUi = isRecord(existingCustomData['ui']) ? existingCustomData['ui'] : {};
 
   return {
     ...field,
     fieldConfig: {
-      ...(field.fieldConfig ?? {}),
+      ...field.fieldConfig,
       label: '',
       description: '',
       customData: {
@@ -65,16 +68,14 @@ export function cloneFieldForCompactRow(field: ParsedField): ParsedField {
         },
       },
       inputProps: {
-        ...(field.fieldConfig?.inputProps ?? {}),
-        placeholder:
-          (field.fieldConfig?.inputProps?.placeholder as string | undefined) ||
-          (field.type === 'select' || field.type === 'boolean' ? undefined : label),
+        ...field.fieldConfig?.inputProps,
+        placeholder: typeof placeholder === 'string' && placeholder !== '' ? placeholder : fallbackPlaceholder,
       },
     },
   };
 }
 
-export function getRenderedLabel(field: ParsedField): string {
+export function getRenderedLabel(field: ParsedField): Renderable {
   if (typeof field.fieldConfig?.label === 'string') {
     return field.fieldConfig.label;
   }
@@ -83,7 +84,7 @@ export function getRenderedLabel(field: ParsedField): string {
 }
 
 export function isComplexCollectionField(field: ParsedField | undefined): boolean {
-  if (!field) {
+  if (field === undefined) {
     return false;
   }
 

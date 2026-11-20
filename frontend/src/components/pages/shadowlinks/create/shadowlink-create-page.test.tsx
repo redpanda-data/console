@@ -17,7 +17,7 @@ import userEvent from '@testing-library/user-event';
 import { ListShadowLinksResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { toast } from 'sonner';
+import { aToast, spyOnToasts } from 'test-toasts';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { ShadowLinkCreatePage } from './shadowlink-create-page';
@@ -50,14 +50,6 @@ rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
     pageBreadcrumbs: [],
-  },
-}));
-
-// Mock toast notifications
-rs.mock('sonner', () => ({
-  toast: {
-    success: rs.fn(),
-    error: rs.fn(),
   },
 }));
 
@@ -197,7 +189,8 @@ const uploadCertificatePem = async (
     { timeout: 200 }
   );
 
-  const input = scr.getByTestId(`add-${certType}-button`).querySelector('input[type="file"]');
+  // The file input is the upload action's sibling inside the Dropzone wrapper.
+  const input = scr.getByTestId(`add-${certType}-button`).parentElement?.querySelector('input[type="file"]');
   const file = new File([pemContent], `${certType}.pem`, { type: 'application/x-pem-file' });
 
   if (input) {
@@ -314,14 +307,14 @@ const submitCreateForm = async (
 
 /**
  * The submit succeeds asynchronously: after mutateAsync resolves, the
- * onSuccess callback fires toast.success and navigate(). Those land as a
+ * onSuccess callback fires a success toast and navigate(). Those land as a
  * late RHF/router re-render of the still-mounted form fields. Await the
  * settled side effect so any final update is flushed inside act() before
  * the test ends.
  */
 const waitForCreateSuccess = async () => {
   await waitFor(() => {
-    expect(toast.success).toHaveBeenCalledWith('Shadow link created');
+    expect(toasts).toHaveBeenCalledWith(aToast('success', 'Shadow link created'));
   });
 };
 
@@ -553,6 +546,8 @@ const testCases: CreateTestCase[] = [
   },
 ];
 
+const toasts = spyOnToasts();
+
 describe('the ShadowLinkCreatePage', () => {
   const mockMutateAsync = rs.fn();
 
@@ -628,6 +623,16 @@ describe('the ShadowLinkCreatePage', () => {
     expect(createRequest.shadowLink.configurations.roleSyncOptions).toBeUndefined();
 
     await waitForCreateSuccess();
+  });
+
+  test('heads each step with its title and marks the current one', async () => {
+    const user = userEvent.setup();
+
+    await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
+
+    expect(screen.getByRole('heading', { name: 'Connection' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Configuration' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configuration' })).toHaveAttribute('aria-current', 'step');
   });
 });
 

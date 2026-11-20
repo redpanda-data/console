@@ -39,7 +39,7 @@ export function resolveDataProvider(
   registry: DataProviderRegistry | undefined,
   id: string | undefined
 ): DataProvider | undefined {
-  if (!(registry && id)) {
+  if (!(registry !== undefined && id !== undefined && id !== '')) {
     return;
   }
   return registry[id];

@@ -14,8 +14,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@tanstack/react-router';
 import type React from 'react';
 import { type FC, useEffect, useState } from 'react';
-import { type Control, Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
+import { type Control, Controller, type SubmitHandler, useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { applyKeyValueRowChange, keyValueRowsFromFieldArray } from 'utils/key-value-rows';
+import { showToast } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import {
@@ -327,6 +328,34 @@ function buildPublishRequest(topicName: string, data: Inputs): PublishMessageReq
   return req;
 }
 
+/** Header rows keep `useFieldArray` ids, so editing one never remounts its inputs. */
+function ProduceHeadersField({ control }: { control: Control<Inputs> }) {
+  const headerFields = useFieldArray({ control, name: 'headers' });
+  return (
+    <Controller
+      control={control}
+      name="headers"
+      render={({ field }) => {
+        const rows = keyValueRowsFromFieldArray(headerFields.fields, field.value);
+        return (
+          <KeyValueField
+            addButtonLabel="Add row"
+            onChange={(next) =>
+              applyKeyValueRowChange(rows, next, {
+                append: headerFields.append,
+                remove: headerFields.remove,
+                edit: field.onChange,
+              })
+            }
+            testId="produce-headers"
+            value={rows}
+          />
+        );
+      }}
+    />
+  );
+}
+
 const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
   const {
     control,
@@ -378,7 +407,10 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
     });
 
     if (result) {
-      toast.success(`Record published on partition ${result.partitionId} with offset ${Number(result.offset)}`);
+      showToast({
+        status: 'success',
+        title: `Record published on partition ${result.partitionId} with offset ${Number(result.offset)}`,
+      });
       appGlobal.historyPush(`/topics/${encodeURIComponent(topicName)}`);
     }
   };
@@ -412,18 +444,7 @@ const PublishTopicForm: FC<{ topicName: string }> = ({ topicName }) => {
 
       <FieldSet>
         <FieldLegend>Headers</FieldLegend>
-        <Controller
-          control={control}
-          name="headers"
-          render={({ field }) => (
-            <KeyValueField
-              addButtonLabel="Add row"
-              onChange={field.onChange}
-              testId="produce-headers"
-              value={field.value}
-            />
-          )}
-        />
+        <ProduceHeadersField control={control} />
       </FieldSet>
 
       <FieldSeparator />

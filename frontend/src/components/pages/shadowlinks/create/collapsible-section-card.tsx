@@ -30,7 +30,7 @@ export const CollapsibleSectionCard = ({
   children,
 }: CollapsibleSectionCardProps) => (
   <Collapsible onOpenChange={onOpenChange} open={open}>
-    <Card size="full">
+    <Card>
       <div>
         <CardHeader>
           {heading}

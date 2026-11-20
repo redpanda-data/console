@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { ErrorIcon, WarningIcon } from 'components/icons';
-import { buttonVariants } from 'components/redpanda-ui/components/button';
+import { buttonVariants } from 'components/redpanda-ui/components/button/variants';
 import { cn } from 'components/redpanda-ui/lib/utils';
 
 import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';

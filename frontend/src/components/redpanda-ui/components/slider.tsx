@@ -3,43 +3,33 @@
 'use client';
 
 import { Slider as SliderPrimitive } from '@base-ui/react/slider';
-import React from 'react';
-
+import type React from 'react';
 import { cn, type SharedProps } from '../lib/utils';
 
 type SliderProps = Omit<React.ComponentProps<typeof SliderPrimitive.Root>, 'value' | 'defaultValue' | 'onValueChange'> &
   SharedProps & {
-    value?: number | readonly number[];
-    defaultValue?: number | readonly number[];
-    onValueChange?: (value: number[], eventDetails?: SliderPrimitive.Root.ChangeEventDetails) => void;
+    value?: number | readonly number[] | undefined;
+    defaultValue?: number | readonly number[] | undefined;
+    onValueChange?: ((value: number[], eventDetails?: SliderPrimitive.Root.ChangeEventDetails) => void) | undefined;
   };
 
 function Slider({ className, defaultValue, value, min = 0, max = 100, testId, onValueChange, ...props }: SliderProps) {
-  const values = React.useMemo(() => {
-    if (Array.isArray(value)) {
-      return value;
-    }
-    if (Array.isArray(defaultValue)) {
-      return defaultValue;
-    }
-    return [min, max];
-  }, [value, defaultValue, min, max]);
+  const suppliedValue = value ?? defaultValue;
+  const values = typeof suppliedValue === 'number' ? [suppliedValue] : (suppliedValue ?? [min, max]);
 
-  const handleValueChange = React.useMemo(() => {
-    if (!onValueChange) {
-      return;
-    }
-    return (nextValue: number | readonly number[], eventDetails: SliderPrimitive.Root.ChangeEventDetails) => {
-      const asArray = Array.isArray(nextValue) ? [...nextValue] : [nextValue as number];
-      onValueChange(asArray, eventDetails);
-    };
-  }, [onValueChange]);
+  function handleValueChange(
+    nextValue: number | readonly number[],
+    eventDetails: SliderPrimitive.Root.ChangeEventDetails
+  ) {
+    const asArray = typeof nextValue === 'number' ? [nextValue] : [...nextValue];
+    onValueChange?.(asArray, eventDetails);
+  }
   const thumbKeys = values.map((_thumbValue, position) => `thumb-${position}`);
 
   return (
     <SliderPrimitive.Root
       className={cn(
-        'relative flex w-full touch-none select-none items-center data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col data-[disabled]:opacity-50',
+        'relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col',
         className
       )}
       data-slot="slider"
@@ -47,14 +37,14 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, testId, on
       defaultValue={defaultValue}
       max={max}
       min={min}
-      onValueChange={handleValueChange}
+      onValueChange={onValueChange === undefined ? undefined : handleValueChange}
       value={value}
       {...props}
     >
-      <SliderPrimitive.Control className="relative flex w-full grow touch-none select-none items-center data-[orientation=vertical]:h-full data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col">
+      <SliderPrimitive.Control className="relative flex w-full grow touch-none items-center select-none data-[orientation=vertical]:h-full data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col">
         <SliderPrimitive.Track
           className={cn(
-            'relative grow overflow-hidden rounded-full bg-surface-subtle data-[orientation=horizontal]:h-1.5 data-[orientation=vertical]:h-full data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-1.5'
+            'relative grow overflow-hidden rounded-full bg-surface-subtle data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5'
           )}
           data-slot="slider-track"
         >
@@ -67,10 +57,9 @@ function Slider({ className, defaultValue, value, min = 0, max = 100, testId, on
         </SliderPrimitive.Track>
         {thumbKeys.map((thumbKey, index) => (
           <SliderPrimitive.Thumb
-            /* A 4px ring rather than the registry's usual 3px, for both hover and
-               focus: the thumb is a 16px drag target, so the halo is the whole
-               affordance rather than a hint next to a label. Deliberate exception. */
-            className="block size-4 shrink-0 rounded-full border border-selected bg-background shadow-sm ring-selected/50 transition-[color,box-shadow] hover:ring-4 focus-visible:outline-hidden focus-visible:ring-4 active:ring-4 active:ring-selected/70 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none"
+            /* The 16px thumb keeps its 4px pointer halo. Keyboard focus belongs to
+               the native range input inside it and paints the standard 3px ring. */
+            className="block size-4 shrink-0 rounded-full border border-selected bg-background shadow-sm ring-selected/50 transition-[color,box-shadow] hover:ring-4 active:ring-4 active:ring-selected/70 disabled:pointer-events-none disabled:opacity-50 has-focus-visible:ring-3 has-focus-visible:outline-hidden motion-reduce:transition-none"
             data-slot="slider-thumb"
             index={index}
             key={thumbKey}

@@ -4,26 +4,33 @@
 
 import React from 'react';
 
-export function useCopyToClipboard({ timeout = 2000, onCopy }: { timeout?: number; onCopy?: () => void } = {}) {
+export function useCopyToClipboard({
+  timeout = 2000,
+  onCopy,
+}: {
+  timeout?: number | undefined;
+  onCopy?: (() => void) | undefined;
+} = {}) {
   const [isCopied, setIsCopied] = React.useState(false);
   const [error, setError] = React.useState<string>();
 
   const copyToClipboard = async (value: string) => {
-    if (typeof window === 'undefined' || !navigator?.clipboard?.writeText) {
+    const clipboard = typeof navigator === 'undefined' ? undefined : navigator.clipboard;
+    if (typeof clipboard?.writeText !== 'function') {
       setError('Clipboard access is unavailable.');
       return;
     }
 
-    if (!value) {
+    if (value === '') {
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(value);
+      await clipboard.writeText(value);
       setError(undefined);
       setIsCopied(true);
 
-      if (onCopy) {
+      if (onCopy !== undefined) {
         onCopy();
       }
 

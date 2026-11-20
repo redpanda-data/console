@@ -1,9 +1,9 @@
 'use client';
 
 import type { AutoFormFieldProps } from '../core-types';
-import { getFieldUiConfig, SECRET_FIELD_PATTERN } from '../helpers';
-import type { FieldTypeDefinition } from '../registry';
-import { StringLikeInput, useFieldTestIds } from './shared';
+import { getFieldUiConfig } from '../ui-config';
+import { StringLikeInput } from './shared';
+import { useFieldTestIds } from './use-field-test-ids';
 
 function PasswordFieldComponent(props: AutoFormFieldProps) {
   const testIds = useFieldTestIds(props.id);
@@ -21,11 +21,3 @@ function PasswordFieldComponent(props: AutoFormFieldProps) {
 }
 
 export { PasswordFieldComponent };
-
-export const passwordFieldDefinition: FieldTypeDefinition = {
-  name: 'password',
-  priority: 20,
-  match: (field, context) =>
-    field.type === 'string' && (SECRET_FIELD_PATTERN.test(context.identity) || context.inputType === 'password'),
-  component: PasswordFieldComponent,
-};

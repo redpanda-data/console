@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { config as appConfig } from '../../../../../config';
 import type { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
@@ -296,7 +296,13 @@ const onDoneFrame = (done: ListMessagesResponse_StreamCompletedMessage, run: Str
 const onErrorFrame = (value: ListMessagesResponse_ErrorMessage, run: StreamRun) => {
   // Doesn't necessarily mean the whole request failed (e.g. "N partitions
   // offline") — the stream can still reach `done` normally afterwards.
-  toast.error('Backend error', { description: value.message });
+  // One toast across searches and frames: a repeated id updates it in place.
+  showToast({
+    id: 'message-search-backend-error',
+    status: 'error',
+    title: 'Backend error',
+    description: value.message,
+  });
   run.pendingBackendError = new Error(value.message);
 };
 

@@ -87,6 +87,7 @@ export const TagChipInput = ({
           <TagsValue
             key={item}
             onRemove={() => onChange(value.filter((existing) => existing !== item))}
+            removeLabel={`Remove ${item}`}
             testId={`${testId}-chip-${item}`}
           >
             {mono ? <code>{item}</code> : <span>{item}</span>}

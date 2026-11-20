@@ -21,7 +21,6 @@ import {
 } from 'components/redpanda-ui/components/data-table';
 import { RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { toast as sonnerToast } from 'sonner';
 import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
@@ -480,7 +479,10 @@ function executeMessageSearch(search: MessageSearch, topicName: string, pipeline
     return search.startSearch(request);
   } catch (error) {
     const connectError = ConnectError.from(error);
-    sonnerToast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'search', entity: 'pipeline logs' }));
+    showToast({
+      status: 'error',
+      title: formatToastErrorMessageGRPC({ error: connectError, action: 'search', entity: 'pipeline logs' }),
+    });
     return Promise.resolve([]);
   }
 }

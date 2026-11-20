@@ -5,7 +5,9 @@ export function useMediaQuery(query: string) {
     (onStoreChange) => {
       const result = matchMedia(query);
       result.addEventListener('change', onStoreChange);
-      return () => result.removeEventListener('change', onStoreChange);
+      return () => {
+        result.removeEventListener('change', onStoreChange);
+      };
     },
     () => matchMedia(query).matches,
     () => false

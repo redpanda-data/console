@@ -31,7 +31,7 @@ const SIBLING_FAMILY: Record<string, string> = {
 /** The family a rest rung belongs to — by the map above, or by a `-wash` suffix naming its tone. */
 const familyOf = (token: string, declared: ReadonlySet<string>): string | null => {
   const explicit = SIBLING_FAMILY[token];
-  if (explicit) {
+  if (explicit !== undefined && explicit !== '') {
     return declared.has(explicit) ? explicit : null;
   }
   if (!token.endsWith(WASH)) {
@@ -71,7 +71,7 @@ export const findOverrideHoles = (declared: ReadonlySet<string>, overridden: Rea
   for (const token of declared) {
     const family = familyOf(token, declared);
     // A rest sibling is not a state of its family, so the loop above cannot see it.
-    if (family && recolours(family, overridden) && !overridden.has(token)) {
+    if (family !== null && family !== '' && recolours(family, overridden) && !overridden.has(token)) {
       holes.push({ token, because: family, kind: 'sibling' });
     }
   }

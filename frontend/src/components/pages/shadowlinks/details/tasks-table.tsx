@@ -69,7 +69,7 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
   });
 
   return (
-    <Card size="full" testId="tasks-table-card">
+    <Card testId="tasks-table-card">
       <CardHeader>
         <CardTitle>Tasks</CardTitle>
         {Boolean(onRefresh) && (

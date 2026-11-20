@@ -42,8 +42,8 @@ import {
   X,
 } from 'lucide-react';
 import { type ReactNode, type RefObject, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { pluralizeWithNumber } from 'utils/string';
+import { showToast } from 'utils/toast.utils';
 import { LineCounter, parseDocument, parse as parseYaml, stringify as yamlStringify } from 'yaml';
 
 import { type FieldLintErrors, mapLintHintsToFields, type UnmappedLintHint } from './lint-field-mapping';
@@ -192,7 +192,10 @@ function flushConditionDraft(draftRef: DraftRef, yaml: string, caseTarget?: Edit
   const applied = setComponentAt(yaml, caseTarget, cond);
   if (applied === null) {
     // Surgical editor couldn't rewrite this YAML; keep the draft (next flush retries) and warn.
-    toast.error('Couldn’t apply the condition edit to the YAML — edit it in the YAML view instead.');
+    showToast({
+      status: 'error',
+      title: 'Couldn’t apply the condition edit to the YAML — edit it in the YAML view instead.',
+    });
     return yaml;
   }
   draftRef.current = null;
@@ -730,7 +733,10 @@ function applyComponentDraft(
   if (applied === null) {
     // Surgical editor couldn't rewrite this YAML (e.g. an anchor referenced elsewhere). Return null
     // so the caller keeps the draft (next flush retries) instead of consuming an edit that never landed.
-    toast.error('Couldn’t apply this edit to the YAML — edit the component in the YAML view instead.');
+    showToast({
+      status: 'error',
+      title: 'Couldn’t apply this edit to the YAML — edit the component in the YAML view instead.',
+    });
     return null;
   }
   const refKind = resourceRefKindForTarget(target);

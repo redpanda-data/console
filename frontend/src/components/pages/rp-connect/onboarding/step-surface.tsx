@@ -18,7 +18,7 @@ export function StepSurface({ inline, className, hideTitle, title, description, 
   }
 
   return (
-    <Card className={className} size="full" variant="ghost">
+    <Card className={className} variant="ghost">
       {!hideTitle && (
         <CardHeader className="max-w-2xl">
           <CardTitle>

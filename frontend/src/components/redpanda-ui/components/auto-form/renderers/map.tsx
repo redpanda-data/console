@@ -1,16 +1,18 @@
 'use client';
 
+import { clsx } from 'clsx';
 import { TrashIcon } from 'lucide-react';
 import type React from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 import { Button } from '../../button';
-import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
+import { useAutoForm } from '../context';
 import type { ParsedField } from '../core-types';
 import { formSpacing } from '../form-spacing';
 import { createEmptyFieldValue, getFieldErrorMessage } from '../helpers';
 import { getAutoFormCollectionRemoveTestId, getAutoFormCollectionRowTestId, getAutoFormFieldTestId } from '../test-ids';
 import type { NestedFieldRenderer } from './renderer-types';
 import { cloneFieldForCompactRow, getRenderedLabel, isComplexCollectionField, useFieldPresentation } from './shared';
+import { useFormCollection } from './use-form-collection';
 
 const COMPACT_PAIR_GRID = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3';
 const KEY_REMOVE_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3';
@@ -24,27 +26,26 @@ export function MapFieldRenderer({
   NestedField: NestedFieldRenderer;
   field: ParsedField;
   path: string[];
-  inheritedDisabled?: boolean;
+  inheritedDisabled?: boolean | undefined;
 }) {
-  const { uiComponents } = useAutoFormRenderContext();
+  const { uiComponents, testIdPrefix } = useAutoForm();
   const form = useFormContext<Record<string, unknown>>();
-  const { testIdPrefix } = useAutoFormRuntimeContext();
   const fullPath = path.join('.');
-  const { fields: rhfFields, append, remove } = useFieldArray({ control: form.control, name: fullPath as never });
+  const { fields: rhfFields, append, remove } = useFormCollection(fullPath);
   const keyField = field.schema?.[0];
   const valueField = field.schema?.[1];
-  const error = getFieldErrorMessage(form.formState.errors, path);
+  const error = getFieldErrorMessage(form.formState.errors, path, field.type);
   const label = getRenderedLabel(field);
   const { isDisabled, isVisible, renderField } = useFieldPresentation(field, path, inheritedDisabled);
-  const FieldWrapperComponent = field.fieldConfig?.fieldWrapper || uiComponents.FieldWrapper;
+  const FieldWrapperComponent = field.fieldConfig?.fieldWrapper ?? uiComponents.FieldWrapper;
   const ArrayWrapperComponent = uiComponents.ArrayWrapper as React.ComponentType<
     React.ComponentProps<typeof uiComponents.ArrayWrapper> & {
       addButtonTestId?: string;
-      testId?: string;
+      testId?: string | undefined;
     }
   >;
-  const compactKeyField = keyField ? cloneFieldForCompactRow(keyField) : undefined;
-  const compactValueField = valueField ? cloneFieldForCompactRow(valueField) : undefined;
+  const compactKeyField = keyField === undefined ? undefined : cloneFieldForCompactRow(keyField);
+  const compactValueField = valueField === undefined ? undefined : cloneFieldForCompactRow(valueField);
   const valueIsComplex = isComplexCollectionField(valueField);
 
   if (!isVisible) {
@@ -61,7 +62,7 @@ export function MapFieldRenderer({
           if (isDisabled) {
             return;
           }
-          append({ key: '', value: createEmptyFieldValue(valueField) } as never);
+          append({ key: '', value: createEmptyFieldValue(valueField) });
         }}
         testId={getAutoFormFieldTestId(testIdPrefix, fullPath, 'items')}
       >
@@ -75,10 +76,10 @@ export function MapFieldRenderer({
             remove(index);
           };
 
-          if (compactKeyField && compactValueField && !valueIsComplex) {
+          if (compactKeyField !== undefined && compactValueField !== undefined && !valueIsComplex) {
             return (
               <div
-                className={index > 0 ? `${COMPACT_PAIR_GRID} ${formSpacing.arrayItemSeparator}` : COMPACT_PAIR_GRID}
+                className={index > 0 ? clsx(COMPACT_PAIR_GRID, formSpacing.arrayItemSeparator) : COMPACT_PAIR_GRID}
                 data-testid={rowTestId}
                 key={rhfField.id}
               >
@@ -101,7 +102,7 @@ export function MapFieldRenderer({
                   type="button"
                   variant="ghost"
                 >
-                  <TrashIcon className="h-4 w-4" />
+                  <TrashIcon className="size-4" />
                 </Button>
               </div>
             );
@@ -110,19 +111,19 @@ export function MapFieldRenderer({
           return (
             <div
               className={
-                index > 0 ? `${formSpacing.collectionRow} ${formSpacing.arrayItemSeparator}` : formSpacing.collectionRow
+                index > 0 ? clsx(formSpacing.collectionRow, formSpacing.arrayItemSeparator) : formSpacing.collectionRow
               }
               data-testid={rowTestId}
               key={rhfField.id}
             >
               <div className={KEY_REMOVE_GRID}>
-                {compactKeyField ? (
+                {compactKeyField === undefined ? null : (
                   <NestedField
                     field={compactKeyField}
                     inheritedDisabled={isDisabled}
                     path={[...path, String(index), 'key']}
                   />
-                ) : null}
+                )}
                 <Button
                   aria-label="Remove item"
                   disabled={isDisabled}
@@ -132,16 +133,16 @@ export function MapFieldRenderer({
                   type="button"
                   variant="ghost"
                 >
-                  <TrashIcon className="h-4 w-4" />
+                  <TrashIcon className="size-4" />
                 </Button>
               </div>
-              {valueField ? (
+              {valueField === undefined ? null : (
                 <NestedField
                   field={compactValueField ?? valueField}
                   inheritedDisabled={isDisabled}
                   path={[...path, String(index), 'value']}
                 />
-              ) : null}
+              )}
             </div>
           );
         })}

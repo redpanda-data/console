@@ -5,10 +5,11 @@
 import { Toast as ToastPrimitive } from '@base-ui/react/toast';
 import { AlertTriangle, CheckCircle, Info, Loader, X, XCircle } from 'lucide-react';
 import type React from 'react';
-
 import { Button } from './button';
 import { usePortalContainer } from '../lib/use-portal-container';
+import { hasSlotContent } from '../lib/has-slot-content';
 import { cn, type SharedProps } from '../lib/utils';
+import { toast } from './toast/manager';
 
 export interface ToastProviderProps extends ToastPrimitive.Provider.Props {}
 
@@ -22,13 +23,14 @@ export interface ToastContentProps extends ToastPrimitive.Content.Props, SharedP
 
 export interface ToastTitleProps extends ToastPrimitive.Title.Props, SharedProps {}
 
-export interface ToastDescriptionProps extends ToastPrimitive.Description.Props, SharedProps {}
+export interface ToastDescriptionProps
+  extends Omit<React.ComponentPropsWithRef<'div'>, 'className' | 'style'>,
+    Pick<ToastPrimitive.Description.Props, 'className' | 'style' | 'render'>,
+    SharedProps {}
 
 export interface ToastActionProps extends ToastPrimitive.Action.Props, SharedProps {}
 
 export interface ToastCloseProps extends ToastPrimitive.Close.Props, SharedProps {}
-
-const toast = ToastPrimitive.createToastManager();
 
 function ToastProvider(props: ToastProviderProps) {
   return <ToastPrimitive.Provider {...props} />;
@@ -56,7 +58,7 @@ function Toast({ className, testId, ...props }: ToastProps) {
   return (
     <ToastPrimitive.Root
       className={cn(
-        'group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom select-none rounded-lg border border-border bg-popover text-popover-foreground shadow-lg outline-none will-change-transform focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom rounded-lg border border-border bg-popover text-popover-foreground shadow-lg will-change-transform outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
         '[--gap:0.75rem] [--height:var(--toast-frontmost-height,var(--toast-height))] [--offset-y:calc(var(--toast-offset-y)*-1+calc(var(--toast-index)*var(--gap)*-1)+var(--toast-swipe-movement-y))] [--peek:0.75rem] [--scale:calc(max(0,1-(var(--toast-index)*0.1)))] [--shrink:calc(1-var(--scale))]',
         'h-(--height) [transform:translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-swipe-movement-y)-(var(--toast-index)*var(--peek))-(var(--shrink)*var(--height))))_scale(var(--scale))] [transition:transform_500ms_cubic-bezier(0.22,1,0.36,1),opacity_500ms,height_150ms]',
         "after:absolute after:top-full after:left-0 after:h-[calc(var(--gap)+1px)] after:w-full after:content-['']",
@@ -98,7 +100,7 @@ function ToastContent({ className, testId, ...props }: ToastContentProps) {
 function ToastTitle({ className, testId, ...props }: ToastTitleProps) {
   return (
     <ToastPrimitive.Title
-      className={cn('font-medium text-body', className)}
+      className={cn('text-body font-medium', className)}
       data-slot="toast-title"
       data-testid={testId}
       {...props}
@@ -106,12 +108,14 @@ function ToastTitle({ className, testId, ...props }: ToastTitleProps) {
   );
 }
 
-function ToastDescription({ className, testId, ...props }: ToastDescriptionProps) {
+/** A block-content description. Use render to choose another appropriate semantic container. */
+function ToastDescription({ className, render, testId, ...props }: ToastDescriptionProps) {
   return (
     <ToastPrimitive.Description
       className={cn('text-body-sm text-subtle', className)}
       data-slot="toast-description"
       data-testid={testId}
+      render={render ?? <div />}
       {...props}
     />
   );
@@ -147,22 +151,23 @@ function ToastClose({ children, className, render, testId, ...props }: ToastClos
   );
 }
 
-function ToastIcon({ type }: { type: string | undefined }) {
-  const iconByType: Record<string, React.ReactNode> = {
-    success: <CheckCircle aria-hidden="true" className="text-success" />,
-    info: <Info aria-hidden="true" className="text-informative" />,
-    warning: <AlertTriangle aria-hidden="true" className="text-warning" />,
-    error: <XCircle aria-hidden="true" className="text-destructive" />,
-    loading: <Loader aria-hidden="true" className="animate-spin text-subtle" />,
-  };
-  const icon = type ? iconByType[type] : undefined;
+const iconByType: Record<string, React.ReactNode> = {
+  success: <CheckCircle aria-hidden="true" className="text-success" />,
+  info: <Info aria-hidden="true" className="text-informative" />,
+  warning: <AlertTriangle aria-hidden="true" className="text-warning" />,
+  error: <XCircle aria-hidden="true" className="text-destructive" />,
+  loading: <Loader aria-hidden="true" className="text-subtle motion-safe:animate-spin" />,
+};
 
-  if (!icon) {
+function ToastIcon({ type }: { type: string | undefined }) {
+  const icon = type !== undefined && type !== '' ? iconByType[type] : undefined;
+
+  if (!hasSlotContent(icon)) {
     return null;
   }
 
   return (
-    <span className="shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none" data-slot="toast-icon">
+    <span className="shrink-0 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4" data-slot="toast-icon">
       {icon}
     </span>
   );
@@ -187,7 +192,7 @@ function ToastList() {
 }
 
 export interface ToasterProps extends ToastProviderProps, SharedProps {
-  container?: ToastPortalProps['container'];
+  container?: ToastPortalProps['container'] | undefined;
 }
 
 function Toaster({ children, container, testId, toastManager = toast, ...props }: ToasterProps) {
@@ -205,11 +210,9 @@ function Toaster({ children, container, testId, toastManager = toast, ...props }
   );
 }
 
-const createToastManager = ToastPrimitive.createToastManager;
 const useToastManager = ToastPrimitive.useToastManager;
 
 export {
-  createToastManager,
   Toast,
   ToastAction,
   ToastClose,
@@ -220,6 +223,5 @@ export {
   ToastProvider,
   ToastTitle,
   ToastViewport,
-  toast,
   useToastManager,
 };

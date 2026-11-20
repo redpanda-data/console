@@ -14,6 +14,7 @@ import { FormDescription, FormField, FormItem, FormLabel, FormMessage } from 'co
 import {
   MultiSelect,
   MultiSelectContent,
+  MultiSelectControl,
   MultiSelectEmpty,
   MultiSelectItem,
   MultiSelectList,
@@ -84,11 +85,13 @@ export function EgressGatewayField({ readonly }: { readonly?: boolean }) {
           <FormItem>
             <FormLabel>Egress gateways</FormLabel>
             <MultiSelect onValueChange={field.onChange} value={field.value ?? []}>
-              <MultiSelectTrigger className="w-full">
-                <MultiSelectValue
+              <MultiSelectControl className="w-full">
+                <MultiSelectValue />
+                <MultiSelectTrigger
+                  aria-label="Egress gateways"
                   placeholder={isLoading ? 'Loading egress gateways...' : 'Select egress gateways...'}
                 />
-              </MultiSelectTrigger>
+              </MultiSelectControl>
               <MultiSelectContent>
                 <MultiSelectList>
                   {options.map((option) => (

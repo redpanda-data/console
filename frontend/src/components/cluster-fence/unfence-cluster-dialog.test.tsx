@@ -22,7 +22,6 @@ rs.mock('react-query/api/cluster-fence', () => {
   const actual = rs.requireActual<typeof import('react-query/api/cluster-fence')>('react-query/api/cluster-fence');
   return { ...actual, useClusterFenceStatusQuery: rs.fn(), useUnfenceClusterMutation: rs.fn(() => mutation) };
 });
-rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
 import { useState } from 'react';
 import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';

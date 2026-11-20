@@ -12,7 +12,8 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
+import { buttonVariants } from 'components/redpanda-ui/components/button/variants';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
@@ -28,8 +29,8 @@ import {
   useClusterFenceStatusQuery,
 } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { showToast } from 'utils/toast.utils';
 
 import {
   type BrokerProgress,
@@ -163,7 +164,7 @@ const ExemptValue = ({ summary }: { summary: FenceSummary }) => {
 const SettingsCard = ({ summary, onEdit }: { summary: FenceSummary; onEdit: () => void }) => {
   const warnings = getReadPolicyWarnings(summary.exemptPrincipals, summary.allowAllReads);
   return (
-    <Card size="full" testId="cluster-fence-settings-card" variant="standard">
+    <Card testId="cluster-fence-settings-card">
       <CardContent>
         <div className="flex flex-col gap-7">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -226,7 +227,7 @@ const ReadersCard = ({
   const settledEmpty = readers.length === 0 && !resolving && !incomplete;
 
   return (
-    <Card size="full" testId="cluster-fence-readers" variant="standard">
+    <Card testId="cluster-fence-readers">
       <CardContent>
         <div className="flex flex-col gap-7">
           <h3 className="text-heading-xs">Links reading from this cluster</h3>
@@ -421,7 +422,7 @@ const FenceStatusCard = ({
   const changedAt = summary.stateChangedAt;
   const held = describeHeldMove(summary, brokers, now);
   return (
-    <Card size="full" testId="cluster-fence-status-card" variant="standard">
+    <Card testId="cluster-fence-status-card">
       <CardContent>
         <div className="flex flex-col gap-8">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -507,7 +508,7 @@ const useDialogFromUrl = (phase: FencePhase, setDialog: (dialog: SourceDialog | 
       setDialog(open ? dialog : null);
       if (!open && action) {
         navigate({ to: '/shadowlinks', search: { tab: 'source' }, replace: true }).catch((error: unknown) => {
-          toast.error('Failed to navigate', { description: String(error) });
+          showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
         });
       }
     },

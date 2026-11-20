@@ -4,7 +4,8 @@ import { getLegacyAiDestination } from './legacy-ai-route';
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 import rocketPanda from '../../assets/redpanda/RocketPanda.svg';
 import { config } from '../../config';
-import { Button, buttonVariants } from '../redpanda-ui/components/button';
+import { Button } from '../redpanda-ui/components/button';
+import { buttonVariants } from '../redpanda-ui/components/button/variants';
 import { cn } from '../redpanda-ui/lib/utils';
 
 export const NotFoundPage = () => {

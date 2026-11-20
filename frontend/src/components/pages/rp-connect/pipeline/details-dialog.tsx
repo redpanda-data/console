@@ -28,6 +28,7 @@ import { useMemo } from 'react';
 import { useEgressGatewayNames } from './egress-gateway-field';
 import { isEgressGatewayPickerEnabled } from './egress-gateways';
 import { cpuToTasks } from '../tasks';
+import { toBadgeGroupItems } from '../utils/badge-group-items';
 import { extractAllTopics } from '../utils/yaml';
 
 type DetailsDialogProps = {
@@ -124,23 +125,26 @@ const ReferenceList = ({ items }: { items: string[] }) => {
   return (
     <BadgeGroup
       className="flex-wrap"
+      items={toBadgeGroupItems(items, {
+        id: (item) => item,
+        text: (item) => item,
+        content: (item) => (
+          <Badge tone="default" variant="outline">
+            {item}
+          </Badge>
+        ),
+      })}
       maxVisible={3}
       renderOverflowContent={(overflow) => (
         <List>
-          {items.slice(-overflow.length).map((item) => (
-            <ListItem key={item}>{item}</ListItem>
+          {overflow.map((item) => (
+            <ListItem key={item.id}>{item.textValue}</ListItem>
           ))}
         </List>
       )}
       tone="default"
       variant="outline"
-    >
-      {items.map((item) => (
-        <Badge key={item} tone="default" variant="outline">
-          {item}
-        </Badge>
-      ))}
-    </BadgeGroup>
+    />
   );
 };
 

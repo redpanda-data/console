@@ -121,12 +121,12 @@ const ThroughputContent: FC<ThroughputContentProps> = ({
       <AreaChart data={chartData}>
         <defs>
           <linearGradient id={`${id}-ingress`} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="5%" stopColor="var(--color-ingress)" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="var(--color-ingress)" stopOpacity={0.05} />
+            <stop offset="5%" stopColor={chartConfig.ingress.color} stopOpacity={0.8} />
+            <stop offset="95%" stopColor={chartConfig.ingress.color} stopOpacity={0.05} />
           </linearGradient>
           <linearGradient id={`${id}-egress`} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="5%" stopColor="var(--color-egress)" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="var(--color-egress)" stopOpacity={0.05} />
+            <stop offset="5%" stopColor={chartConfig.egress.color} stopOpacity={0.8} />
+            <stop offset="95%" stopColor={chartConfig.egress.color} stopOpacity={0.05} />
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} />
@@ -158,14 +158,14 @@ const ThroughputContent: FC<ThroughputContentProps> = ({
         <Area
           dataKey="ingress"
           fill={`url(#${id}-ingress)`}
-          stroke="var(--color-ingress)"
+          stroke={chartConfig.ingress.color}
           strokeWidth={2}
           type="monotone"
         />
         <Area
           dataKey="egress"
           fill={`url(#${id}-egress)`}
-          stroke="var(--color-egress)"
+          stroke={chartConfig.egress.color}
           strokeWidth={2}
           type="monotone"
         />

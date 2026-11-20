@@ -3,13 +3,16 @@
 import React from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../select';
-import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
+import { readOneofValue } from '../../../lib/protobuf-provider/oneof-value';
+import { useAutoForm } from '../context';
 import type { ParsedField } from '../core-types';
 import { getLabel } from '../field-utils';
+import { getControlLabel } from '../fields/field-values';
 import { formSpacing } from '../form-spacing';
-import { createEmptyFieldValue, getFieldErrorMessage, getFieldUiConfig, UNSET_SELECT_VALUE } from '../helpers';
+import { createEmptyFieldValue, getFieldErrorMessage, UNSET_SELECT_VALUE } from '../helpers';
 import { FormDepthProvider, useFormDepth } from '../layout-context';
 import { getAutoFormFieldTestId } from '../test-ids';
+import { getFieldUiConfig } from '../ui-config';
 import type { NestedFieldRenderer } from './renderer-types';
 import { getRenderedLabel, useFieldPresentation } from './shared';
 
@@ -18,8 +21,8 @@ function renderOneofSelectedValue(value: unknown, fields: ParsedField[], require
     return required ? null : 'Not set';
   }
 
-  const selectedField = fields.find((candidate) => candidate.key === String(value));
-  return selectedField ? getLabel(selectedField) : null;
+  const selectedField = fields.find((candidate) => candidate.key === value);
+  return selectedField === undefined ? null : getLabel(selectedField);
 }
 
 function SelectedOneofField({
@@ -35,10 +38,10 @@ function SelectedOneofField({
   isDisabled: boolean;
   path: string[];
 }) {
-  if (!field) {
+  if (field === undefined) {
     return null;
   }
-  if (field.type === 'object' && (!field.schema || field.schema.length === 0)) {
+  if (field.type === 'object' && (field.schema === undefined || field.schema.length === 0)) {
     return (
       <div className="rounded-lg border border-dashed bg-surface-recess px-4 py-3">
         <p className="text-body text-subtle">{getLabel(field)} selected. No additional configuration needed.</p>
@@ -61,21 +64,16 @@ export function OneofFieldRenderer({
   NestedField: NestedFieldRenderer;
   field: ParsedField;
   path: string[];
-  inheritedDisabled?: boolean;
+  inheritedDisabled?: boolean | undefined;
 }) {
-  const { uiComponents } = useAutoFormRenderContext();
-  const { evaluateRules } = useAutoFormRuntimeContext();
+  const { uiComponents, testIdPrefix, evaluateRules } = useAutoForm();
   const form = useFormContext<Record<string, unknown>>();
   const fullPath = path.join('.');
-  const oneofValue = (useWatch({ name: fullPath }) as { case?: string; value?: unknown } | undefined) ?? {
-    case: undefined,
-    value: undefined,
-  };
+  const oneofValue = readOneofValue(useWatch({ name: fullPath, control: form.control }));
   const error = getFieldErrorMessage(form.formState.errors, path);
   const label = getRenderedLabel(field);
   const { isDisabled, isVisible, renderField } = useFieldPresentation(field, path, inheritedDisabled);
-  const FieldWrapperComponent = field.fieldConfig?.fieldWrapper || uiComponents.FieldWrapper;
-  const { testIdPrefix } = useAutoFormRuntimeContext();
+  const FieldWrapperComponent = field.fieldConfig?.fieldWrapper ?? uiComponents.FieldWrapper;
   const controlTestId = getAutoFormFieldTestId(testIdPrefix, fullPath, 'control');
   const depth = useFormDepth();
 
@@ -88,7 +86,7 @@ export function OneofFieldRenderer({
   const selectedField = availableFields.find((candidate) => candidate.key === oneofValue.case);
 
   React.useEffect(() => {
-    if (!oneofValue.case) {
+    if ((oneofValue.case ?? '') === '') {
       return;
     }
 
@@ -135,7 +133,12 @@ export function OneofFieldRenderer({
           }}
           value={oneofValue.case ?? UNSET_SELECT_VALUE}
         >
-          <SelectTrigger aria-label={label} disabled={isDisabled} id={fullPath} testId={controlTestId}>
+          <SelectTrigger
+            aria-label={getControlLabel(label, field)}
+            disabled={isDisabled}
+            id={fullPath}
+            testId={controlTestId}
+          >
             <SelectValue placeholder="Choose a field">
               {(value) => renderOneofSelectedValue(value, availableFields, field.required)}
             </SelectValue>
