@@ -6,7 +6,17 @@ import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 
 service SignupService {
+  // LicenseSignup starts a 30-day Enterprise trial. When Redpanda issues the
+  // license straight away, Console installs it and returns it in license.
+  // Otherwise the trial belongs to a Redpanda Cloud account, and the response
+  // says how the user gets the license: verification_required after a
+  // set-password email, or sign_in_required when the email already has an
+  // account. The user then applies the license with LicenseService.SetLicense.
   rpc LicenseSignup(LicenseSignupRequest) returns (LicenseSignupResponse) {}
+  // ResendPasswordSetupEmail sends the set-password link again. It succeeds
+  // for any well-formed address, so it does not reveal which emails have
+  // accounts.
+  rpc ResendPasswordSetupEmail(ResendPasswordSetupEmailRequest) returns (ResendPasswordSetupEmailResponse) {}
 }
 
 message LicenseSignupRequest {
@@ -45,5 +55,36 @@ message LicenseSignupResponse {
     string license_key = 1;
     google.protobuf.Timestamp expiration = 2;
   }
+  // license is set when Redpanda issued the license straight away. Console
+  // has already installed it on the cluster.
   License license = 2;
+
+  // VerificationRequired means Redpanda emailed a link to set a password for
+  // the user's new Redpanda Cloud account. After setting it, the user signs
+  // in at claim_url to get the license.
+  message VerificationRequired {
+    string email = 1;
+    // claim_url opens the license page for this cluster.
+    string claim_url = 2;
+  }
+  VerificationRequired verification_required = 3;
+
+  // SignInRequired means the email already has a Redpanda Cloud account. No
+  // email was sent. The user signs in at claim_url to get the license.
+  message SignInRequired {
+    string email = 1;
+    // claim_url opens the license page for this cluster. Empty when Redpanda
+    // did not return one.
+    string claim_url = 2;
+  }
+  SignInRequired sign_in_required = 4;
 }
+
+message ResendPasswordSetupEmailRequest {
+  string email = 1 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.email = true
+  ];
+}
+
+message ResendPasswordSetupEmailResponse {}

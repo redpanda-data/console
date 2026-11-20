@@ -5,6 +5,22 @@
 import { SignupService } from "./signup_pb";
 
 /**
+ * LicenseSignup starts a 30-day Enterprise trial. When Redpanda issues the
+ * license straight away, Console installs it and returns it in license.
+ * Otherwise the trial belongs to a Redpanda Cloud account, and the response
+ * says how the user gets the license: verification_required after a
+ * set-password email, or sign_in_required when the email already has an
+ * account. The user then applies the license with LicenseService.SetLicense.
+ *
  * @generated from rpc redpanda.api.console.v1alpha1.SignupService.LicenseSignup
  */
 export const licenseSignup = SignupService.method.licenseSignup;
+
+/**
+ * ResendPasswordSetupEmail sends the set-password link again. It succeeds
+ * for any well-formed address, so it does not reveal which emails have
+ * accounts.
+ *
+ * @generated from rpc redpanda.api.console.v1alpha1.SignupService.ResendPasswordSetupEmail
+ */
+export const resendPasswordSetupEmail = SignupService.method.resendPasswordSetupEmail;
