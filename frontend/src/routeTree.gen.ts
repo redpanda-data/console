@@ -25,6 +25,7 @@ import { Route as LoginIndexRouteImport } from './routes/login/index';
 import { Route as ObservabilityIndexRouteImport } from './routes/observability/index';
 import { Route as OverviewIndexRouteImport } from './routes/overview/index';
 import { Route as OverviewBrokerIdRouteImport } from './routes/overview/$brokerId';
+import { Route as RpConnectIndexRouteImport } from './routes/rp-connect/index';
 import { Route as RpConnectCreateRouteImport } from './routes/rp-connect/create';
 import { Route as SchemaRegistryIndexRouteImport } from './routes/schema-registry/index';
 import { Route as SchemaRegistryCreateRouteImport } from './routes/schema-registry/create';
@@ -152,6 +153,11 @@ const OverviewIndexRoute = OverviewIndexRouteImport.update({
 const OverviewBrokerIdRoute = OverviewBrokerIdRouteImport.update({
   id: '/overview/$brokerId',
   path: '/overview/$brokerId',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const RpConnectIndexRoute = RpConnectIndexRouteImport.update({
+  id: '/rp-connect/',
+  path: '/rp-connect/',
   getParentRoute: () => rootRouteImport,
 } as any);
 const RpConnectCreateRoute = RpConnectCreateRouteImport.update({
@@ -442,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/login/': typeof LoginIndexRoute;
   '/observability/': typeof ObservabilityIndexRoute;
   '/overview/': typeof OverviewIndexRoute;
+  '/rp-connect/': typeof RpConnectIndexRoute;
   '/schema-registry/': typeof SchemaRegistryIndexRoute;
   '/secrets/': typeof SecretsIndexRoute;
   '/security/': typeof SecurityIndexRoute;
@@ -507,6 +514,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginIndexRoute;
   '/observability': typeof ObservabilityIndexRoute;
   '/overview': typeof OverviewIndexRoute;
+  '/rp-connect': typeof RpConnectIndexRoute;
   '/schema-registry': typeof SchemaRegistryIndexRoute;
   '/secrets': typeof SecretsIndexRoute;
   '/security': typeof SecurityIndexRoute;
@@ -574,6 +582,7 @@ export interface FileRoutesById {
   '/login/': typeof LoginIndexRoute;
   '/observability/': typeof ObservabilityIndexRoute;
   '/overview/': typeof OverviewIndexRoute;
+  '/rp-connect/': typeof RpConnectIndexRoute;
   '/schema-registry/': typeof SchemaRegistryIndexRoute;
   '/secrets/': typeof SecretsIndexRoute;
   '/security/': typeof SecurityIndexRoute;
@@ -642,6 +651,7 @@ export interface FileRouteTypes {
     | '/login/'
     | '/observability/'
     | '/overview/'
+    | '/rp-connect/'
     | '/schema-registry/'
     | '/secrets/'
     | '/security/'
@@ -707,6 +717,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/observability'
     | '/overview'
+    | '/rp-connect'
     | '/schema-registry'
     | '/secrets'
     | '/security'
@@ -773,6 +784,7 @@ export interface FileRouteTypes {
     | '/login/'
     | '/observability/'
     | '/overview/'
+    | '/rp-connect/'
     | '/schema-registry/'
     | '/secrets/'
     | '/security/'
@@ -840,6 +852,7 @@ export interface RootRouteChildren {
   LoginIndexRoute: typeof LoginIndexRoute;
   ObservabilityIndexRoute: typeof ObservabilityIndexRoute;
   OverviewIndexRoute: typeof OverviewIndexRoute;
+  RpConnectIndexRoute: typeof RpConnectIndexRoute;
   SchemaRegistryIndexRoute: typeof SchemaRegistryIndexRoute;
   SecretsIndexRoute: typeof SecretsIndexRoute;
   ShadowlinksIndexRoute: typeof ShadowlinksIndexRoute;
@@ -980,6 +993,13 @@ declare module '@tanstack/react-router' {
       path: '/overview/$brokerId';
       fullPath: '/overview/$brokerId';
       preLoaderRoute: typeof OverviewBrokerIdRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/rp-connect/': {
+      id: '/rp-connect/';
+      path: '/rp-connect';
+      fullPath: '/rp-connect/';
+      preLoaderRoute: typeof RpConnectIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/rp-connect/create': {
@@ -1385,6 +1405,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginIndexRoute: LoginIndexRoute,
   ObservabilityIndexRoute: ObservabilityIndexRoute,
   OverviewIndexRoute: OverviewIndexRoute,
+  RpConnectIndexRoute: RpConnectIndexRoute,
   SchemaRegistryIndexRoute: SchemaRegistryIndexRoute,
   SecretsIndexRoute: SecretsIndexRoute,
   ShadowlinksIndexRoute: ShadowlinksIndexRoute,
