@@ -39,8 +39,8 @@ const STALE_TIME_MEDIUM = 30_000; // 30 seconds
 
 export type SchemaRegistryContextResponse = {
   name: string;
-  mode: SchemaRegistryModeWithDefault;
-  compatibility: SchemaRegistryCompatibilityModeWithDefault;
+  mode: SchemaRegistrySubjectDetails['mode'];
+  compatibility: SchemaRegistrySubjectDetails['compatibility'];
 };
 
 export const useSchemaRegistryContextsQuery = (enabled = true) =>

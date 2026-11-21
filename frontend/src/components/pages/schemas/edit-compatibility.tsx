@@ -215,7 +215,7 @@ function useSaveCompatibility({ subjectName, contextName }: SchemaEditTarget, on
 function EditSchemaCompatibility(p: {
   subjectName?: string;
   contextName?: string;
-  contextCompatibility?: SchemaRegistryCompatibilityModeWithDefault;
+  contextCompatibility?: SchemaRegistrySubjectDetails['compatibility'];
   schemaMode: string | null | undefined;
   schemaCompatibility: SchemaRegistryCompatibilityMode | null | undefined;
   schemaDetails: SchemaRegistrySubjectDetails | undefined;
@@ -228,7 +228,7 @@ function EditSchemaCompatibility(p: {
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
   );
 
-  const getInitialCompatibility = (): SchemaRegistryCompatibilityModeWithDefault => {
+  const getInitialCompatibility = (): SchemaRegistrySubjectDetails['compatibility'] => {
     if (contextName !== null && contextName !== undefined && contextName !== '') {
       return contextCompatibility ?? SchemaRegistryCompatibilityModes.DEFAULT;
     }
@@ -238,7 +238,7 @@ function EditSchemaCompatibility(p: {
         : schemaCompatibility;
     return source ?? SchemaRegistryCompatibilityModes.DEFAULT;
   };
-  const [configMode, setConfigMode] = useState<SchemaRegistryCompatibilityModeWithDefault>(getInitialCompatibility);
+  const [configMode, setConfigMode] = useState<SchemaRegistrySubjectDetails['compatibility']>(getInitialCompatibility);
 
   if (subjectName !== null && subjectName !== undefined && subjectName !== '' && !schema) {
     return (
@@ -307,8 +307,16 @@ function EditSchemaCompatibility(p: {
                 render={
                   <Button
                     data-testid="edit-compatibility-save-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false || Boolean(fencedReason)}
-                    onClick={() => saveCompatibility(configMode)}
+                    disabled={
+                      configMode === 'UNKNOWN' ||
+                      api.userData?.canManageSchemaRegistry === false ||
+                      Boolean(fencedReason)
+                    }
+                    onClick={() => {
+                      if (configMode !== 'UNKNOWN') {
+                        saveCompatibility(configMode);
+                      }
+                    }}
                     variant="primary"
                   >
                     Save

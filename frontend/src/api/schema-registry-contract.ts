@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { isUnknownArray } from '../utils/type-guards';
 
 export const registryModeSchema = z.enum(['READWRITE', 'READONLY', 'IMPORT']);
-export const registryModeWithDefaultSchema = registryModeSchema.or(z.literal('DEFAULT'));
+// The backend distinguishes inherited settings from ones it could not read.
+const registryModeReadSchema = registryModeSchema.or(z.enum(['DEFAULT', 'UNKNOWN']));
 export const registryCompatibilitySchema = z.enum([
   'NONE',
   'BACKWARD',
@@ -13,12 +14,12 @@ export const registryCompatibilitySchema = z.enum([
   'FULL',
   'FULL_TRANSITIVE',
 ]);
-export const registryCompatibilityWithDefaultSchema = registryCompatibilitySchema.or(z.literal('DEFAULT'));
+const registryCompatibilityReadSchema = registryCompatibilitySchema.or(z.enum(['DEFAULT', 'UNKNOWN']));
 
 const contextSchema = z.looseObject({
   name: z.string(),
-  mode: registryModeWithDefaultSchema.default('DEFAULT'),
-  compatibility: registryCompatibilityWithDefaultSchema.default('DEFAULT'),
+  mode: registryModeReadSchema.default('DEFAULT'),
+  compatibility: registryCompatibilityReadSchema.default('DEFAULT'),
 });
 const subjectSchema = z.looseObject({ name: z.string(), isSoftDeleted: z.boolean() });
 const referenceSchema = z.looseObject({ name: z.string(), subject: z.string(), version: z.number() });
@@ -41,8 +42,8 @@ const versionSchema = z.looseObject({
 export const subjectDetailsSchema = z.looseObject({
   name: z.string(),
   type: z.enum(['AVRO', 'JSON', 'PROTOBUF']),
-  compatibility: registryCompatibilityWithDefaultSchema,
-  mode: registryModeWithDefaultSchema,
+  compatibility: registryCompatibilityReadSchema,
+  mode: registryModeReadSchema,
   versions: z.array(z.looseObject({ version: z.number(), isSoftDeleted: z.boolean() })),
   latestActiveVersion: z.number(),
   schemas: z.array(versionSchema),
@@ -52,7 +53,10 @@ export const referencedBySchema = z.array(
   z.looseObject({
     schemaId: z.number(),
     error: z.string().optional(),
-    usages: z.array(usageSchema).optional().default([]),
+    usages: z
+      .array(usageSchema)
+      .nullish()
+      .transform((usages) => usages ?? []),
   })
 );
 export const createdSchemaSchema = z.looseObject({ id: z.number() });

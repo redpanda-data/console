@@ -164,7 +164,7 @@ function EditSchemaMode({
   onClose: () => void;
   subjectName?: string;
   contextName?: string;
-  contextMode?: SchemaRegistryModeWithDefault;
+  contextMode?: SchemaRegistrySubjectDetails['mode'];
   schemaDetails?: SchemaRegistrySubjectDetails;
 }) {
   const fencedReason = useClusterFenceGuard().reasonFor('editSchemas');
@@ -175,7 +175,7 @@ function EditSchemaMode({
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
   );
 
-  const getInitialMode = (): SchemaRegistryModeWithDefault => {
+  const getInitialMode = (): SchemaRegistrySubjectDetails['mode'] => {
     if (contextName !== null && contextName !== undefined && contextName !== '') {
       return contextMode ?? SchemaRegistryModes.DEFAULT;
     }
@@ -184,7 +184,7 @@ function EditSchemaMode({
     }
     return schemaMode ?? SchemaRegistryModes.READWRITE;
   };
-  const [selectedMode, setSelectedMode] = useState<SchemaRegistryModeWithDefault>(getInitialMode);
+  const [selectedMode, setSelectedMode] = useState<SchemaRegistrySubjectDetails['mode']>(getInitialMode);
 
   const allOptions: {
     value: SchemaRegistryModeWithDefault;
@@ -198,6 +198,9 @@ function EditSchemaMode({
       : MODE_OPTIONS;
 
   const onSave = () => {
+    if (selectedMode === 'UNKNOWN') {
+      return;
+    }
     const callbacks = {
       onSuccess: () => {
         toast.success(`Mode updated to ${selectedMode}`);
@@ -267,7 +270,11 @@ function EditSchemaMode({
                 render={
                   <Button
                     data-testid="edit-mode-save-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false || Boolean(fencedReason)}
+                    disabled={
+                      selectedMode === 'UNKNOWN' ||
+                      api.userData?.canManageSchemaRegistry === false ||
+                      Boolean(fencedReason)
+                    }
                     onClick={onSave}
                     variant="primary"
                   >

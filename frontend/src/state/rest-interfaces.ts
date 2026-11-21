@@ -796,8 +796,8 @@ export type SchemaRegistrySchemaTypesResponse = {
 export type SchemaRegistrySubjectDetails = {
   name: string;
   type: SchemaTypeType;
-  compatibility: SchemaRegistryCompatibilityModeWithDefault;
-  mode: SchemaRegistryModeWithDefault;
+  compatibility: SchemaRegistryCompatibilityModeWithDefault | 'UNKNOWN';
+  mode: SchemaRegistryModeWithDefault | 'UNKNOWN';
   versions: SchemaRegistrySubjectDetailsVersion[];
   latestActiveVersion: number;
   schemas: SchemaRegistryVersionedSchema[];

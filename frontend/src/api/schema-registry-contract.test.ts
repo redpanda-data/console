@@ -6,6 +6,7 @@ import {
   parseRegistryMode,
   parseRegistrySubjects,
   parseRegistryUsages,
+  referencedBySchema,
   subjectDetailsSchema,
 } from './schema-registry-contract';
 import { expect, test } from 'bun:test';
@@ -53,4 +54,26 @@ test('preserves reference metadata and protobuf message information while reject
   expect(() =>
     subjectDetailsSchema.parse({ ...details, schemas: [{ ...details.schemas[0], references: 'common' }] })
   ).toThrow();
+});
+
+test('preserves unknown subject and context settings reported by the backend', () => {
+  const unavailable = { mode: 'UNKNOWN', compatibility: 'UNKNOWN' } as const;
+  const subject = {
+    name: 'orders',
+    type: 'AVRO',
+    latestActiveVersion: 1,
+    versions: [],
+    schemas: [],
+    ...unavailable,
+  } satisfies z.input<typeof subjectDetailsSchema>;
+  expect(subjectDetailsSchema.parse(subject)).toEqual(subject);
+  expect(parseRegistryContexts([{ name: '.orders', ...unavailable }])).toEqual([{ name: '.orders', ...unavailable }]);
+});
+
+test('keeps valid references when a failed lookup returns null usages', () => {
+  const valid = { schemaId: 2, usages: [{ subject: 'orders', version: 1 }] };
+  expect(referencedBySchema.parse([{ schemaId: 0, error: 'lookup failed', usages: null }, valid])).toEqual([
+    { schemaId: 0, error: 'lookup failed', usages: [] },
+    valid,
+  ]);
 });

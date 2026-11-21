@@ -774,10 +774,7 @@ async function deletePartitionAtTimestamp(
   const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
 
   if (partitionOffset !== null && partitionOffset !== undefined && specifiedPartition !== null) {
-    const result = await api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition);
-    if (result) {
-      onResponse(result);
-    }
+    onResponse(await api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition));
     return;
   }
   setErrors(['No partition offset was specified. Contact your administrator.']);
