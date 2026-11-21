@@ -62,6 +62,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
+    "@buf/redpandadata_cloud.bufbuild_es": "2.13.0-20261111184952-2f2746a84de9.1",
     "@buf/redpandadata_cloud.connectrpc_query-es": "^2.3.1-20261111184952-2f2746a84de9.2",
     "@buf/redpandadata_common.bufbuild_es": "^2.16.0-20260323171043-6e06f84ad823.1",
     "@bufbuild/cel": "^0.6.1",
@@ -75,6 +76,7 @@
     "@codemirror/view": "^6.43.14",
     "@connectrpc/connect": "^2.2.0",
     "@connectrpc/connect-query": "^2.3.1",
+    "@connectrpc/connect-query-core": "^2.3.1",
     "@connectrpc/connect-web": "^2.2.0",
     "@dagrejs/dagre": "^3.1.1",
     "@fontsource/geist-mono": "^5.3.0",
@@ -102,6 +104,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
+    "dompurify": "3.4.17",
     "dotenv": "^18.0.8",
     "es-cookie": "^1.5.0",
     "hast": "^1.0.0",
@@ -168,6 +171,7 @@
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",
     "@types/bun": "1.4.0",
+    "@types/hast": "^3.0.4",
     "@types/json-bigint": "^1.0.4",
     "@types/node": "^22.20.5",
     "@types/react": "^19.3.0",
@@ -191,6 +195,13 @@
   "packageManager": "bun@1.4.4",
   "engines": {
     "node": ">=22.22"
+  },
+  "packageExtensions": {
+    "monaco-types@0.1.0": {
+      "peerDependencies": {
+        "monaco-editor": "*"
+      }
+    }
   },
   "patchedDependencies": {
     "ultracite@8.0.2": "patches/ultracite@8.0.2.patch"

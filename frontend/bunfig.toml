@@ -1,4 +1,6 @@
 [install]
+linker = "isolated"
+globalStore = true
 minimumReleaseAge = 259200 # 72h supply-chain publish delay
 # BSR-generated packages from Redpanda's own protos; exempt from the publish
 # delay so proto updates can be consumed as soon as they are published
