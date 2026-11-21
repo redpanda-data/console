@@ -3,10 +3,13 @@
 // Copyright 2026 Redpanda Data, Inc.
 
 import { Button as ButtonPrimitive } from '@base-ui/react/button';
+import { type ChangeDetails } from '@ui-sdk/core';
+import { mergeProps, usePart } from '@ui-sdk/react/primitive';
 import { cva, type VariantProps } from 'class-variance-authority';
-import type React from 'react';
+import React from 'react';
 import type { ElementType } from 'react';
 
+import { useBasePressAgent } from '../lib/use-base-press-agent';
 import { groupItemClasses, useGroup } from './group';
 import { Spinner } from './spinner';
 import { cn, type SharedProps } from '../lib/utils';
@@ -265,8 +268,11 @@ function renderButtonChildren(children: React.ReactNode, icon: React.ReactNode, 
   );
 }
 
-export type ButtonProps = ButtonPrimitive.Props &
-  ButtonVariants & {
+export type ButtonProps = Omit<ButtonPrimitive.Props, 'onClick'> & {
+  onClick?: {
+    bivarianceHack(event: React.MouseEvent<HTMLButtonElement>, details: ChangeDetails<'press'>): unknown;
+  }['bivarianceHack'];
+} & ButtonVariants & {
     /** Render the button as a different element (e.g. a router `Link` or `"a"`). */
     as?: ElementType;
     /** Router destination, forwarded to the element rendered via `as`. */
@@ -293,6 +299,7 @@ function Button({
   focusableWhenDisabled = false,
   render,
   nativeButton,
+  onClick,
   children,
   ...props
 }: ButtonProps) {
@@ -312,23 +319,47 @@ function Button({
       ? className
       : cn(buttonVariants({ variant, size }), positionClasses, icon && 'gap-2', isLoading && 'relative', className);
 
-  return (
-    <ButtonPrimitive
-      aria-busy={isLoading || undefined}
-      className={resolvedClassName}
-      data-focusable={focusableWhenDisabled || undefined}
-      data-loading={isLoading || undefined}
-      data-slot="button"
-      data-testid={testId}
-      disabled={isDisabled}
-      focusableWhenDisabled={focusableWhenDisabled}
-      nativeButton={resolvedNativeButton}
-      render={resolvedRender}
-      {...props}
-    >
-      {renderedChildren}
-    </ButtonPrimitive>
+  const { handle, ref: element, onClick: press } = useBasePressAgent(onClick, isDisabled);
+  return usePart(
+    handle,
+    'root',
+    {},
+    {
+      render: (partProps, state) => (
+        <ButtonPrimitive
+          aria-busy={isLoading || state.pending || undefined}
+          className={resolvedClassName}
+          data-focusable={focusableWhenDisabled || undefined}
+          data-loading={isLoading || undefined}
+          data-pending={state.pending ? '' : undefined}
+          data-testid={testId}
+          disabled={isDisabled || state.pending}
+          focusableWhenDisabled={focusableWhenDisabled}
+          nativeButton={resolvedNativeButton}
+          onClick={press}
+          render={resolvedRender}
+          role={
+            as === 'a' || href || to || (React.isValidElement(resolvedRender) && resolvedRender.type === 'a')
+              ? 'link'
+              : undefined
+          }
+          {...mergeProps(partProps, props, { ref: element })}
+        >
+          {renderedChildren}
+        </ButtonPrimitive>
+      ),
+    },
+    'button'
   );
 }
 
-export { Button, buttonVariants };
+// Preserve existing icon/inline action styling without repeating the SDK adapter at call sites.
+function PlainButton(props: Omit<ButtonProps, 'variant'>) {
+  return <Button {...props} variant="unstyled" />;
+}
+
+function PlainAnchor(props: Omit<ButtonProps, 'as' | 'render' | 'variant'>) {
+  return <Button {...props} as="a" variant="unstyled" />;
+}
+
+export { Button, buttonVariants, PlainAnchor, PlainButton };

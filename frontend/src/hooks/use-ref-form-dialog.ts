@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { toast } from 'components/redpanda-ui/components/toast';
 import type { RefObject } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { toast } from 'sonner';
 
 /** Minimal contract a ref-based form must satisfy. */
 type RefFormSubmittable<TData> = {

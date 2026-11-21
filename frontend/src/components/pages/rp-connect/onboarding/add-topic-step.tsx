@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { ChevronDown, XIcon } from 'lucide-react';
 import { type MotionProps, motion } from 'motion/react';
@@ -35,7 +36,6 @@ import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { useGetKafkaInfoQuery } from 'react-query/api/cluster-status';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
 import { isFalsy } from 'utils/falsy';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';

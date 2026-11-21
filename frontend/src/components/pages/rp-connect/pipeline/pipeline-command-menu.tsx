@@ -30,6 +30,7 @@ import {
 } from 'components/redpanda-ui/components/dialog';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
@@ -39,7 +40,6 @@ import { createPortal } from 'react-dom';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { useListUsersQuery } from 'react-query/api/user';
-import { toast } from 'sonner';
 
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import { AddTopicStep } from '../onboarding/add-topic-step';
@@ -353,7 +353,7 @@ function useCmdkInputAutoFocus(clickOutsideRef: ReturnType<typeof useClickOutsid
           if (abortFocusRef.current) {
             return;
           }
-          const input = node.querySelector('input[cmdk-input]') as HTMLInputElement | null;
+          const input = node.querySelector('input[data-slot=command-input]') as HTMLInputElement | null;
           if (input && document.activeElement !== input) {
             input.focus();
           }
@@ -438,7 +438,7 @@ function handlePopoverKeyDown(e: React.KeyboardEvent<HTMLDivElement>, close: () 
   }
   if (e.key === 'Tab') {
     e.preventDefault();
-    const selected = (e.currentTarget as HTMLElement).querySelector('[cmdk-item][aria-selected="true"]');
+    const selected = (e.currentTarget as HTMLElement).querySelector('[data-slot=command-item][aria-selected="true"]');
     if (selected) {
       (selected as HTMLElement).click();
     }
@@ -473,7 +473,6 @@ function PipelineCommandPopover({
             onKeyDown={(e) => handlePopoverKeyDown(e, () => onOpenChange(false))}
             size="sm"
             variant="elevated"
-            vimBindings={false}
           >
             <CommandInput placeholder="Filter..." />
             {children}

@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@tanstack/react-router';
 import type { ColumnFiltersState, FilterFn, PaginationState, Updater } from '@tanstack/react-table';
 import { FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
@@ -34,17 +33,18 @@ import {
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Stat, StatGroup } from 'components/redpanda-ui/components/stat';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { SearchIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { sortingParser } from 'utils/sorting-parser';
 
@@ -374,7 +374,7 @@ function useSchemaListColumns(
           return (
             <div className="wrap-break-word whitespace-break-spaces">
               <div className="flex items-center gap-2">
-                <Link
+                <PlainLink
                   data-testid="schema-registry-table-name"
                   params={{ subjectName: encodeURIComponentPercents(name) }}
                   search={{ version: 'latest' }}
@@ -384,7 +384,7 @@ function useSchemaListColumns(
                     <span className="text-muted-foreground">:.{parsed.context}:</span>
                   )}
                   {isAllContext || isNamedContext(selectedContext) ? parsed.displayName : name}
-                </Link>
+                </PlainLink>
                 {isSoftDeleted && (
                   <Tooltip>
                     <TooltipTrigger
@@ -879,8 +879,8 @@ const SchemaList: FC = () => {
             <div data-testid="schema-list-search-field">
               <ListLayoutSearchInput
                 aria-label="Filter by subject name or schema ID"
-                onChange={(e) => {
-                  setQuickSearch(e.target.value);
+                onValueChange={(value) => {
+                  setQuickSearch(value);
                   tableState.setPageIndex(0);
                 }}
                 placeholder="Filter by subject name or schema ID..."

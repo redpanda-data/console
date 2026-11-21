@@ -48,7 +48,7 @@ import {
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useCreateSecretMutation } from "react-query/api/secret";
-import { toast } from "sonner";
+import { toast } from "components/redpanda-ui/components/toast";
 import { formatToastErrorMessageGRPC } from "utils/toast.utils";
 import { base64ToUInt8Array, encodeBase64 } from "utils/utils";
 import { z } from "zod";
@@ -260,8 +260,8 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 									id="secret-name"
 									placeholder={customText.secretNamePlaceholder}
 									{...form.register("name")}
-									onChange={(e) =>
-										form.setValue("name", e.target.value.toUpperCase())
+									onValueChange={(inputText) =>
+										form.setValue("name", inputText.toUpperCase(), { shouldDirty: true, shouldValidate: true })
 									}
 								/>
 								<FieldDescription>
@@ -279,6 +279,9 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 									placeholder={customText.secretValuePlaceholder}
 									type="password"
 									{...form.register("value")}
+									onValueChange={(value) =>
+									  form.setValue("value", value, { shouldDirty: true, shouldValidate: true })
+									}
 								/>
 								<FieldDescription>
 									{customText.secretValueDescription}

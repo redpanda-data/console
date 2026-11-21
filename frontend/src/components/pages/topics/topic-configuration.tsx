@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
   DialogBody,
@@ -32,13 +32,13 @@ import {
   SelectValue,
 } from 'components/redpanda-ui/components/select';
 import { Slider } from 'components/redpanda-ui/components/slider';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { Pencil as EditIcon, Search, X as XIcon } from 'lucide-react';
 import type { FC, ReactNode } from 'react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Controller, type SubmitHandler, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import { isServerless } from '../../../config';
 import { api, useApiStoreHook } from '../../../state/backend-api';
@@ -464,7 +464,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
           {sidebarCategories.map((c) => {
             const active = c.name === activeCategory;
             return (
-              <button
+              <PlainButton
                 aria-current={active ? 'true' : undefined}
                 className={clsx(
                   'flex items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-body transition-colors',
@@ -484,7 +484,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
                     {c.count}
                   </Badge>
                 )}
-              </button>
+              </PlainButton>
             );
           })}
         </nav>
@@ -499,7 +499,7 @@ const ConfigurationEditor: FC<ConfigurationEditorProps> = (props) => {
               </InputGroupAddon>
               <InputGroupInput
                 aria-label="Filter configuration"
-                onChange={(e) => setFilter(e.target.value)}
+                onValueChange={setFilter}
                 placeholder="Filter"
                 value={configFilter}
               />
@@ -586,7 +586,7 @@ const ConfigRow: FC<{
   const defaultValue = defaultSynonym ? formatConfigValue(entry.name, defaultSynonym.value, 'friendly') : null;
 
   const valueButton = (
-    <button
+    <PlainButton
       className={
         canEdit
           ? 'inline-flex cursor-pointer items-center gap-1.5 rounded-sm px-1.5 py-0.5 hover:bg-muted hover:text-primary'
@@ -601,7 +601,7 @@ const ConfigRow: FC<{
     >
       <span className="font-mono text-body">{friendlyValue}</span>
       <EditIcon className="size-4" />
-    </button>
+    </PlainButton>
   );
 
   return (
@@ -612,12 +612,12 @@ const ConfigRow: FC<{
             <Popover>
               <PopoverTrigger
                 render={
-                  <button
+                  <PlainButton
                     className="cursor-pointer font-mono text-body underline decoration-dotted underline-offset-4 hover:text-primary"
                     type="button"
                   >
                     {entry.name}
-                  </button>
+                  </PlainButton>
                 }
               />
               <PopoverContent className="w-80">

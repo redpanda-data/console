@@ -10,7 +10,7 @@
  */
 
 import { CloseIcon, CopyAllIcon } from 'components/icons';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainAnchor } from 'components/redpanda-ui/components/button';
 import React, { type FC } from 'react';
 import StackTrace from 'stacktrace-js';
 
@@ -133,9 +133,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
           <h1>Rendering Error!</h1>
           <p>
             Please report this at{' '}
-            <a className="font-bold underline" href="https://github.com/redpanda-data/console/issues">
+            <PlainAnchor className="font-bold underline" href="https://github.com/redpanda-data/console/issues">
               our GitHub Repo
-            </a>
+            </PlainAnchor>
           </p>
           <div className="mb-2">
             <Button className="w-64" onClick={this.dismiss} size="lg" variant="primary">

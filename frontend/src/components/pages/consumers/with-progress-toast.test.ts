@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { toast } from 'sonner';
+import { toast } from 'components/redpanda-ui/components/toast';
 
 import { withProgressToast } from './with-progress-toast';
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';

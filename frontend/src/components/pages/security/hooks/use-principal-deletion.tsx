@@ -1,4 +1,5 @@
 import { create } from '@bufbuild/protobuf';
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   ACL_Operation,
   ACL_PermissionType,
@@ -6,7 +7,6 @@ import {
   ACL_ResourceType,
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { toast } from 'sonner';
 
 import type { PrincipalPermissionGroup } from './use-principal-permissions';
 import { useDeleteAclMutation } from '../../../../react-query/api/acl';

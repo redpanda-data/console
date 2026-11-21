@@ -4,6 +4,11 @@
 
 import { Toggle as TogglePrimitive } from '@base-ui/react/toggle';
 import { ToggleGroup as ToggleGroupPrimitive } from '@base-ui/react/toggle-group';
+import { useFieldControl } from '@ui-sdk/react/field';
+import { usePart, usePrimitive, mergeProps } from '@ui-sdk/react/primitive';
+import { agentItems } from '../lib/agent-items';
+import { commitAgentChange } from '../lib/commit-agent-change';
+import { baseToggleGroupAgent, type BaseValueDetails } from '../lib/primitives/base-value-agent';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
@@ -90,13 +95,17 @@ const useToggleGroup = (): ToggleGroupContextProps => {
   return context;
 };
 
-type ToggleGroupProps = Omit<React.ComponentProps<typeof ToggleGroupPrimitive>, 'value' | 'defaultValue'> &
+type ToggleGroupProps = Omit<
+  React.ComponentProps<typeof ToggleGroupPrimitive>,
+  'value' | 'defaultValue' | 'onValueChange'
+> &
   VariantProps<typeof toggleVariants> &
   SharedProps & {
     variant?: Variant;
     attached?: boolean;
     value?: string[];
     defaultValue?: string[];
+    onValueChange?: (value: string[], details: BaseValueDetails) => void;
   };
 
 function ToggleGroup({
@@ -108,8 +117,22 @@ function ToggleGroup({
   attached = true,
   disabled,
   orientation = 'horizontal',
+  value,
+  defaultValue,
+  onValueChange,
   ...props
 }: ToggleGroupProps) {
+  const field = useFieldControl({ id: props.id });
+  disabled = disabled || field?.disabled;
+  const handle = usePrimitive(baseToggleGroupAgent, {
+    value,
+    defaultValue,
+    disabled,
+    items: agentItems(children),
+    valid: (value) =>
+      Array.isArray(value) && value.every((item) => typeof item === 'string') && (props.multiple || value.length <= 1),
+    onValueChange: (next, details) => commitAgentChange(onValueChange, next, details),
+  });
   const isVertical = orientation === 'vertical';
   const segments = React.Children.toArray(children).filter(React.isValidElement);
 
@@ -123,33 +146,45 @@ function ToggleGroup({
     return index === segments.length - 1 ? 'last' : 'middle';
   };
 
-  return (
-    <ToggleGroupPrimitive
-      className={cn(
-        'flex items-center justify-center',
-        isVertical && 'flex-col',
-        isVertical && attached && 'items-stretch',
-        variant === 'outline' && '!border-border rounded-md border p-0.5',
-        !attached && 'gap-1',
-        className
-      )}
-      data-attached={attached || undefined}
-      data-slot="toggle-group"
-      data-testid={testId}
-      data-variant={variant}
-      disabled={disabled}
-      orientation={orientation}
-      {...props}
-    >
-      {segments.map((segment, index) => (
-        <ToggleGroupContext.Provider
-          key={segment.key}
-          value={{ variant, size, attached, disabled, position: positionOf(index), orientation }}
+  return usePart(
+    handle,
+    'root',
+    {},
+    {
+      render: (partProps, state) => (
+        <ToggleGroupPrimitive
+          className={cn(
+            'flex items-center justify-center',
+            isVertical && 'flex-col',
+            isVertical && attached && 'items-stretch',
+            variant === 'outline' && '!border-border rounded-md border p-0.5',
+            !attached && 'gap-1',
+            className
+          )}
+          data-attached={attached || undefined}
+          data-slot="toggle-group"
+          data-testid={testId}
+          data-variant={variant}
+          disabled={disabled}
+          orientation={orientation}
+          {...mergeProps(partProps, field ? field.props(props) : props)}
+          value={state.value}
+          onValueChange={(next, details) => {
+            if (!handle.api.setValue(next as string[], details.event)) details.cancel();
+          }}
         >
-          {segment}
-        </ToggleGroupContext.Provider>
-      ))}
-    </ToggleGroupPrimitive>
+          {segments.map((segment, index) => (
+            <ToggleGroupContext.Provider
+              key={segment.key}
+              value={{ variant, size, attached, disabled, position: positionOf(index), orientation }}
+            >
+              {segment}
+            </ToggleGroupContext.Provider>
+          ))}
+        </ToggleGroupPrimitive>
+      ),
+    },
+    'div'
   );
 }
 

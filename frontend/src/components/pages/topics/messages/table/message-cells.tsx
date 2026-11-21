@@ -109,7 +109,7 @@ export const PayloadCell = ({
 }) => {
   const { text, muted, error } = payloadText(payload, json, hexPreview);
   return (
-    <span className={clsx('flex min-w-0 flex-col', className ?? '')}>
+    <span className={clsx('flex min-w-0 flex-col', className ?? '')} data-agent-hidden="true">
       <ElementTooltip
         content={
           muted ? undefined : <span className="font-mono break-all">{truncate(text, PAYLOAD_HINT_MAX_CHARS)}</span>
@@ -159,7 +159,7 @@ export const ValueCell = ({
       chips = chips.slice(0, 1);
     }
     return (
-      <span className="flex min-w-0 flex-col">
+      <span className="flex min-w-0 flex-col" data-agent-hidden="true">
         <span
           className={clsx('previewTags font-mono text-body-sm', {
             'previewTags-single': preview.displayMode === 'single',

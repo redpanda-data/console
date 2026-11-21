@@ -25,13 +25,13 @@ import {
   MultiSelectTrigger,
   MultiSelectValue,
 } from 'components/redpanda-ui/components/multi-select';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { Loader2 } from 'lucide-react';
 import { CreateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
 import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';

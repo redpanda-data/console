@@ -16,7 +16,6 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from 'components
 import { useHotKey } from 'hooks/use-hot-key';
 import { DownloadIcon, Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react';
 import { Fragment, type FragmentInstance, type RefObject, useEffect, useRef, useState } from 'react';
-import type { PanelSize } from 'react-resizable-panels';
 import type { TopicMessage } from 'state/rest-interfaces';
 import { toJson } from 'utils/json-utils';
 
@@ -160,7 +159,11 @@ export const MessageDetailPanel = ({
   // Initial width for the expanded surface; live width is owned by the
   // resizable group and persisted from onResize.
   const [initialSheetWidth] = useState(() => readDetailViewState().sheetWidth);
-  const handleSheetResize = (size: PanelSize) => patchDetailViewState({ sheetWidth: size.inPixels });
+  const handleSheetResize = (layout: number[]) => {
+    if (layout[1] !== undefined) {
+      patchDetailViewState({ sheetWidth: (layout[1] * window.innerWidth) / 100 });
+    }
+  };
 
   // Section expansion is shared across messages and both presentations; every
   // toggle persists into the consolidated detail view state.
@@ -190,15 +193,14 @@ export const MessageDetailPanel = ({
       // (clicking another row swaps the record shown in place); the right
       // panel is the detail surface, resized via the registry handle.
       <div className="pointer-events-none fixed inset-0 z-50">
-        <ResizablePanelGroup>
+        <ResizablePanelGroup onLayoutCommit={handleSheetResize}>
           <ResizablePanel />
           <ResizableHandle className="pointer-events-auto" data-testid="detail-sheet-resize" withHandle />
           <ResizablePanel
             className="pointer-events-auto"
-            defaultSize={initialSheetWidth}
+            defaultSize={`${initialSheetWidth}px`}
             maxSize="95%"
             minSize="480px"
-            onResize={handleSheetResize}
           >
             <div className="flex h-full min-h-0 flex-col bg-background shadow-lg" data-testid="message-detail-sheet">
               <div className="flex shrink-0 items-center gap-1 border-b px-4 py-2.5">

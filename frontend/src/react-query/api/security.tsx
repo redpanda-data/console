@@ -3,6 +3,7 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv1';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
 import type { InfiniteData } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'components/redpanda-ui/components/toast';
 import {
   type GetRoleRequest,
   GetRoleRequestSchema,
@@ -26,7 +27,6 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit, type QueryOptions } from 'react-query/react-query.utils';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
-import { toast } from 'sonner';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 export const useListRolesQuery = (

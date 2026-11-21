@@ -6,7 +6,7 @@ import { AlertCircle, ChevronDown, CircleHelp, ExternalLink, PlusIcon, TrashIcon
 import React from 'react';
 import type { SharedProps } from '../../lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '../alert';
-import { Button } from '../button';
+import { Button, PlainAnchor } from '../button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../collapsible';
 import { Field, FieldDescription, FieldError, FieldLabel } from '../field';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../tooltip';
@@ -114,7 +114,7 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, children, id,
         {docsUrl ? (
           <>
             {helpText ? ' ' : null}
-            <a
+            <PlainAnchor
               className="link-inline inline-flex items-center gap-1 text-primary transition-colors motion-reduce:transition-none"
               data-testid={getAutoFormFieldTestId(testIdPrefix, id, 'docs-link')}
               href={docsUrl}
@@ -123,7 +123,7 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({ label, children, id,
             >
               Open documentation for {fallbackLabel}
               <ExternalLink aria-hidden className="h-3 w-3" />
-            </a>
+            </PlainAnchor>
           </>
         ) : null}
       </FieldDescription>

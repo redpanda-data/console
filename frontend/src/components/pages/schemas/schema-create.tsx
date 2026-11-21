@@ -28,11 +28,11 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Separator } from 'components/redpanda-ui/components/separator';
 import { Switch } from 'components/redpanda-ui/components/switch';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { AlertCircle, InfoIcon, X } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 
 import { ContextsNotSupportedPage } from './contexts-not-supported-page';
 import { SwitchSchemaFormatDialog, ValidationErrorsDialog } from './modals';

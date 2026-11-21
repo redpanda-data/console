@@ -9,54 +9,29 @@ tags: registry, upgrade, tokens, sync, design-system
 
 ## Explanation
 
-`src/components/redpanda-ui/` is vendored from the registry — it is synced, not edited (see
-`use-ui-registry.md`). An upgrade is therefore two jobs, and the second one has no safety net:
-**a removed token compiles to nothing.** No error, no warning, just a colour that stops painting.
+`src/components/redpanda-ui/` uses the Redpanda shadcn registry, with local Base UI
+and SDK adapters. Registry updates need a source diff and a token migration: a removed
+Tailwind token can compile to nothing without an error.
 
-## 1. Pull only what this app installed
+## 1. Preview and apply individual registry items
 
-The item name is the vendored filename, so derive the list from disk rather than guessing:
+Use the shadcn config in `frontend/components.json` and the `@redpanda/<name>` namespace.
+Use the CLI’s dry-run or diff mode before applying changes. Do not bulk-overwrite the
+component directory: checked-in wrappers may include `[upstream]` fixes, Base UI
+composition, and SDK agent bindings.
 
-```bash
-git rev-parse HEAD > /tmp/sha; BASE=src/components/redpanda-ui
-curl -fsSL https://redpanda-ui-registry.netlify.app/r/registry.json \
-  | python3 -c "import json;[print(i['name']) for i in json.load(open(0))['items'] if i['type'][9:] in('ui','hook','lib')]" \
-  | sort > /tmp/reg.txt
-ls $BASE/components $BASE/lib | sed -E 's/\.(tsx|ts)$//' | grep -vE '^$|^__|:$|\.test$' | sort -u > /tmp/disk.txt
-comm -12 /tmp/disk.txt /tmp/reg.txt > /tmp/upd.txt   # update these
-comm -23 /tmp/disk.txt /tmp/reg.txt                  # not registry items → triage each one
-bunx shadcn@latest add --overwrite --yes @redpanda/theme $(sed 's|^|@redpanda/|' /tmp/upd.txt | tr '\n' ' ')
-```
-
-`--yes` matters: without it the CLI stops on an interactive "install a new style?" prompt.
-`sed -E` matters: BSD sed lacks `\?`. A handful of items means the pipeline failed — check before pulling.
-
-Triage every non-item: renamed upstream (`use-copy` → `use-copy-to-clipboard`), deleted, or an
-app-owned file parked in that directory. App-owned files are **not** overwritten but still need step 2.
-
-### Check what the pull took away
-
-The CLI overwrites whole files, so any local change to a registry component is gone. Find them first:
-
-```bash
-git grep -n '\[upstream\]' $(cat /tmp/sha) -- src/components/redpanda-ui
-```
-
-Every `[upstream]` marker is a deliberate local addition pending upstream. Re-apply each one onto the
-new file and keep the marker. These are easy to miss because they fail as *behaviour*, not as a build
-error — a dropped `role="button"` or a swallowed clipboard rejection typechecks perfectly.
-
-Verify the pull landed cleanly by diffing each vendored file against the published payload
-(`files[].content` / `files[].target` in each item's JSON). Anything differing beyond a leading comment
-is either a local change you need to account for or a pull that didn't apply.
+Compare published item files with the local component; keep intentional local changes
+and add coverage where behavior changes. Keep Base UI and Redpanda tokens in place.
+The existing Frontend UI Audit workflow reports drift and token issues, not instructions
+to overwrite local adapters.
 
 ## 2. Migrate app code
 
-Derive the removed set — never work from a changelog:
+From `frontend/`, substitute the recorded pre-update commit and derive the removed set:
 
 ```bash
 CSS=src/components/redpanda-ui/style/theme.css
-git show $(cat /tmp/sha):./$CSS | grep -oE -- '--color-[a-z0-9-]+' | sort -u > /tmp/old.txt
+git show "${PRE_UPDATE_SHA}:./$CSS" | grep -oE -- '--color-[a-z0-9-]+' | sort -u > /tmp/old.txt
 grep -oE -- '--color-[a-z0-9-]+' $CSS | sort -u > /tmp/new.txt
 RE=$(comm -23 /tmp/old.txt /tmp/new.txt | sed 's/--color-//' | sort -r | paste -sd'|' -)
 grep -rInP "(?<![-a-z0-9])(bg|text|border|ring|from|via|to|fill|stroke|divide|shadow|outline)-($RE)(?![-a-z0-9])|--color-($RE)(?![-a-z0-9])" src tests
@@ -102,3 +77,9 @@ survive via Tailwind's defaults, but check rather than assume.
 - Every `[upstream]` local addition is re-applied; every non-item triaged.
 - `bun run theme:check && bun run type:check && bun run lint && bun run build && bun run test`.
 - Rest / hover / pressed / focus checked in **both** themes.
+
+## UI SDK updates
+
+Keep `@ui-sdk/core` and `@ui-sdk/react` pinned together. Use the installed version’s docs
+and preserve Base UI’s interaction ownership, SDK source/cancel callbacks, host opt-in,
+redaction, approval and draft history. Run the browser and bundle suites for these paths.

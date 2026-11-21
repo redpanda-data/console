@@ -20,13 +20,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from 'components/redpanda-ui/components/dialog';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { TriangleAlertIcon } from 'lucide-react';
 import {
   isStaleRevisionError,
   useClusterFenceStatusQuery,
   useUnfenceClusterMutation,
 } from 'react-query/api/cluster-fence';
-import { toast } from 'sonner';
 
 import { FENCE_PHASE_LABEL, isBlockingPhase } from './cluster-fence-model';
 import { FenceChangedNotice, FenceWriteErrorAlert, useOpenedFence } from './fence-dialog-parts';

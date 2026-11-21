@@ -16,6 +16,7 @@ const { mockConfig, mockLocation, mockRouter } = rs.hoisted(() => ({
 
 rs.mock('@tanstack/react-router', () => ({
   Link: MockLink,
+  createLink: () => MockLink,
   useLocation: () => mockLocation,
   useRouter: () => mockRouter,
 }));

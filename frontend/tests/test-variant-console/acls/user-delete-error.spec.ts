@@ -25,7 +25,7 @@ const deleteUserFromDetails = async (page: Page, username: string) => {
 
   await page.getByRole('button', { name: 'Delete user' }).click();
   await page.getByTestId('txt-confirmation-delete').fill(username);
-  await page.getByRole('button', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
 };
 
 test.describe('user deletion - error paths', () => {

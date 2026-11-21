@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useCallback, useEffect } from 'react';
-import { toast } from 'sonner';
 
 import { type BreadcrumbEntry, uiState } from '../../../state/ui-state';
 

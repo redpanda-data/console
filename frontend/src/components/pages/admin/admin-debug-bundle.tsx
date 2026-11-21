@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@tanstack/react-router';
 import { type FC, useEffect, useRef, useState } from 'react';
 
 import '../../../utils/array-extensions';
@@ -30,13 +29,7 @@ import {
 } from 'components/redpanda-ui/components/alert-dialog';
 import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-  useFieldContext,
-} from 'components/redpanda-ui/components/field';
+import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import {
@@ -49,6 +42,7 @@ import {
   MultiSelectValue,
   renderMultiSelectOptions,
 } from 'components/redpanda-ui/components/multi-select';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { DateTimeInput } from 'components/ui/date-time-input';
 import { CircleAlertIcon, InfoIcon } from 'lucide-react';
@@ -82,10 +76,6 @@ const TIME_UNITS = [
   { value: 60, label: 'Minutes' },
 ];
 
-/**
- * A labelled multi-select: the trigger is a div with a hardcoded aria-label, so the visible label
- * reaches it through aria-labelledby (which wins). Click-to-focus is not wired.
- */
 const LabelledMultiSelect = ({
   labelId,
   options,
@@ -98,27 +88,18 @@ const LabelledMultiSelect = ({
   value: string[];
   onValueChange: (next: string[]) => void;
   invalid?: boolean;
-}) => {
-  const { errorId } = useFieldContext();
-
-  return (
-    <MultiSelect onValueChange={onValueChange} value={value}>
-      <MultiSelectTrigger
-        aria-describedby={errorId}
-        aria-invalid={invalid || undefined}
-        aria-labelledby={labelId}
-        className="w-full"
-      >
-        <MultiSelectValue placeholder="Select items..." />
-      </MultiSelectTrigger>
-      <MultiSelectContent>
-        <MultiSelectSearch placeholder="Search..." />
-        <MultiSelectList>{renderMultiSelectOptions(options.map((o) => ({ value: o, label: o })))}</MultiSelectList>
-        <MultiSelectEmpty>No items found</MultiSelectEmpty>
-      </MultiSelectContent>
-    </MultiSelect>
-  );
-};
+}) => (
+  <MultiSelect onValueChange={onValueChange} value={value}>
+    <MultiSelectTrigger aria-invalid={invalid || undefined} aria-labelledby={labelId} className="w-full">
+      <MultiSelectValue placeholder="Select items..." />
+    </MultiSelectTrigger>
+    <MultiSelectContent>
+      <MultiSelectSearch placeholder="Search..." />
+      <MultiSelectList>{renderMultiSelectOptions(options.map((o) => ({ value: o, label: o })))}</MultiSelectList>
+      <MultiSelectEmpty>No items found</MultiSelectEmpty>
+    </MultiSelectContent>
+  </MultiSelect>
+);
 
 /** A number paired with its unit. An empty field reads NaN; the input renders '' to stay controlled. */
 const NumberWithUnitField = ({
@@ -149,7 +130,7 @@ const NumberWithUnitField = ({
       <Input
         containerClassName="min-w-0 flex-1"
         id={id}
-        onChange={(e) => onValueChange(e.target.valueAsNumber)}
+        onValueChange={(value) => onValueChange(value === '' ? Number.NaN : Number(value))}
         testId={id}
         type="number"
         value={value === undefined || Number.isNaN(value) ? '' : value}
@@ -250,13 +231,13 @@ const DebugBundleInProgress: FC<{ status?: DebugBundleStatus }> = ({ status }) =
       {/* debug-bundle-page.ts looks this up with getByRole('link'), so it must not become a button.
           Rendered only with a job id: `$jobId` needs a segment, and an empty one routes nowhere. */}
       {jobId ? (
-        <Link
+        <PlainLink
           className={cn(buttonVariants({ variant: 'link' }), 'mt-4')}
           params={{ jobId }}
           to="/debug-bundle/progress/$jobId"
         >
           Bundle generation in progress...
-        </Link>
+        </PlainLink>
       ) : (
         <div className="mt-4">Generating bundle...</div>
       )}

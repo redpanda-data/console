@@ -11,6 +11,8 @@
 
 'use client';
 
+import { useAsyncOptions } from '@ui-sdk/react/async-options';
+import { Button } from 'components/redpanda-ui/components/button';
 import {
   MultiSelect,
   MultiSelectContent,
@@ -18,76 +20,91 @@ import {
   MultiSelectItem,
   MultiSelectList,
   MultiSelectSearch,
+  MultiSelectStatus,
   MultiSelectTrigger,
   MultiSelectValue,
 } from 'components/redpanda-ui/components/multi-select';
-import { useMemo, useState } from 'react';
-import { useListTopicsQuery } from 'react-query/api/topic';
+import { useTopicOptionsLoader } from 'react-query/api/topic-options';
 
 type TopicSelectorProps = {
   selectedTopics: string[];
   onTopicsChange: (topics: string[]) => void;
   isReadOnly?: boolean;
+  'aria-label'?: string;
 };
 
-export const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = false }: TopicSelectorProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Fetch all topics (hideInternalTopics filters out topic.internal and topics starting with '_')
-  // Disable the query in read-only mode since we don't need to fetch topics when just displaying
-  const { data: topicsData, isLoading } = useListTopicsQuery(
-    undefined,
-    { enabled: !isReadOnly },
-    { hideInternalTopics: true }
+function TopicTrigger({ label, loading = false }: { label: string; loading?: boolean }) {
+  return (
+    <MultiSelectTrigger aria-label={label} className="w-full">
+      <MultiSelectValue placeholder={loading ? 'Loading topics...' : 'Select topics...'} />
+    </MultiSelectTrigger>
   );
+}
 
-  // Additional filtering for topics starting with '__redpanda' (double underscore)
-  // Note: Single underscore prefixes (_schemas, _internal, _redpanda) are already filtered by hideInternalTopics
-  const allTopics = (topicsData?.topics || [])
-    .map((topic) => topic.name)
-    .filter((name) => !name.startsWith('__redpanda'));
-
-  // Filter topics based on search term
-  const filteredTopics = useMemo(() => {
-    if (!searchTerm) {
-      return allTopics;
-    }
-    const lowerSearch = searchTerm.toLowerCase();
-    return allTopics.filter((topic) => topic.toLowerCase().includes(lowerSearch));
-  }, [allTopics, searchTerm]);
-
-  // Handle selecting items (both from list and custom patterns via Enter key)
-  const handleValueChange = (values: string[]) => {
-    onTopicsChange(values);
-  };
-
+function SearchableTopicSelector({
+  selectedTopics,
+  onTopicsChange,
+  'aria-label': label = 'Topics',
+}: TopicSelectorProps) {
+  const load = useTopicOptionsLoader();
+  const search = useAsyncOptions(load, { immediate: true });
+  const loading = search.status === 'loading';
   return (
     <MultiSelect
-      disabled={isReadOnly}
-      onSearch={(keyword) => setSearchTerm(keyword || '')}
-      onValueChange={handleValueChange}
+      filter={false}
+      items={search.items.map((name) => ({ value: name, label: name }))}
+      onSearch={(query) => search.setQuery(query ?? '')}
+      onValueChange={onTopicsChange}
+      query={search.query}
+      status={search.status}
       value={selectedTopics}
     >
-      <MultiSelectTrigger className="w-full">
-        <MultiSelectValue placeholder={isLoading ? 'Loading topics...' : 'Select topics...'} />
-      </MultiSelectTrigger>
-      <MultiSelectContent>
-        <MultiSelectSearch placeholder="Search topics..." />
+      <TopicTrigger label={label} loading={loading} />
+      <MultiSelectContent keepMounted={false}>
+        <MultiSelectSearch placeholder="Search topics (case-sensitive)..." />
         <MultiSelectList>
-          {filteredTopics.length > 0 &&
-            filteredTopics.map((topic) => (
-              <MultiSelectItem key={topic} value={topic}>
-                {topic}
-              </MultiSelectItem>
-            ))}
-          {filteredTopics.length === 0 && searchTerm && (
-            <div className="flex min-h-32 items-center justify-center px-2 py-6">
-              <div className="text-body text-muted-foreground">No topics found matching "{searchTerm}"</div>
-            </div>
-          )}
-          <MultiSelectEmpty>No topics found</MultiSelectEmpty>
+          {search.items.map((topic) => (
+            <MultiSelectItem key={topic} value={topic}>
+              {topic}
+            </MultiSelectItem>
+          ))}
         </MultiSelectList>
+        {search.status === 'idle' && !search.hasMore ? <MultiSelectEmpty>No topics found</MultiSelectEmpty> : null}
+        <MultiSelectStatus>
+          {search.status === 'error' && (
+            <>
+              Could not load topics.
+              <Button aria-label="Retry topic search" onClick={search.reload} size="sm" type="button" variant="ghost">
+                Retry
+              </Button>
+            </>
+          )}
+          {loading && 'Searching topics...'}
+        </MultiSelectStatus>
+        {search.hasMore && search.status !== 'error' ? (
+          <Button disabled={loading} onClick={search.loadMore} size="sm" type="button" variant="ghost">
+            Load more topics
+          </Button>
+        ) : null}
       </MultiSelectContent>
     </MultiSelect>
   );
-};
+}
+
+export function TopicSelector({
+  selectedTopics,
+  onTopicsChange,
+  isReadOnly,
+  'aria-label': label = 'Topics',
+}: TopicSelectorProps) {
+  if (!isReadOnly) {
+    return (
+      <SearchableTopicSelector aria-label={label} onTopicsChange={onTopicsChange} selectedTopics={selectedTopics} />
+    );
+  }
+  return (
+    <MultiSelect disabled onValueChange={onTopicsChange} value={selectedTopics}>
+      <TopicTrigger label={label} />
+    </MultiSelect>
+  );
+}

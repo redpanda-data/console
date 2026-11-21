@@ -168,8 +168,8 @@ function CodeBlockCopyButton({
         // Held still while the write is pending, without dropping keyboard focus.
         disabled={disabled || state === 'pending'}
         focusableWhenDisabled={state === 'pending'}
-        onClick={(event) => {
-          onClick?.(event);
+        onClick={(event, details) => {
+          onClick?.(event, details);
           if (!event.defaultPrevented) {
             copy();
           }

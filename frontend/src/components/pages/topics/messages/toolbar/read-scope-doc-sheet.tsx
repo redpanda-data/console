@@ -9,6 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  type DrawerProps,
+  DrawerTitle,
+} from 'components/redpanda-ui/components/drawer';
 import {
   Sheet,
   SheetContent,
@@ -16,9 +26,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from 'components/redpanda-ui/components/sheet';
+import { useIsMobile } from 'components/redpanda-ui/lib/use-mobile';
 import { cn } from 'components/redpanda-ui/lib/utils';
-import { RadioIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { RadioIcon, XIcon } from 'lucide-react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import { READ_SCOPE_META } from './read-scope-popover';
 import { TonedIcon } from '../../../shared/toned-icon';
@@ -29,6 +40,9 @@ type AxisMode = ReadScopeMode | 'live';
 /** The illustrated partition: cells 0–4 already aged out, 5–14 retained, 15–17 future. */
 const CELL_COUNT = 18;
 const AGED_END = 5;
+const COMPACT_SNAP = 0.52;
+const FULL_SNAP = 0.86;
+const SNAP_POINTS = [COMPACT_SNAP, FULL_SNAP];
 const RETAINED_END = 14;
 
 const AXIS_CONFIGS: Record<
@@ -154,6 +168,65 @@ const MiniAxis = ({ mode }: { mode: AxisMode }) => {
   );
 };
 
+const DESCRIPTION = (
+  <>
+    A partition is an append-only log. Each mode is a rule for <em>where to drop the needle</em>.
+  </>
+);
+
+function MobileReadScopeDrawer({
+  children,
+  onOpenChange,
+  open,
+}: Pick<DrawerProps, 'open' | 'onOpenChange'> & { children: ReactNode }) {
+  const [snapPoint, setSnapPoint] = useState<DrawerProps['snapPoint']>(COMPACT_SNAP);
+  const expanded = snapPoint === FULL_SNAP;
+  return (
+    <Drawer
+      onOpenChange={(nextOpen, details) => {
+        if (!nextOpen) {
+          setSnapPoint(COMPACT_SNAP);
+        }
+        onOpenChange?.(nextOpen, details);
+      }}
+      onSnapPointChange={setSnapPoint}
+      open={open}
+      snapPoint={snapPoint}
+      snapPoints={SNAP_POINTS}
+      snapToSequentialPoints
+    >
+      <DrawerContent className="h-dvh max-h-dvh">
+        <div className="flex min-h-0 flex-1 flex-col pb-[var(--drawer-snap-point-offset,0px)]">
+          <DrawerHeader>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <DrawerTitle>How reading starts</DrawerTitle>
+              <div className="flex items-center gap-1">
+                <Button
+                  className="h-11"
+                  onClick={() => setSnapPoint(expanded ? COMPACT_SNAP : FULL_SNAP)}
+                  size="sm"
+                  variant="outline"
+                >
+                  {expanded ? 'Collapse' : 'Expand'}
+                </Button>
+                <DrawerClose
+                  render={
+                    <Button aria-label="Close" className="size-11" size="icon" variant="ghost">
+                      <XIcon />
+                    </Button>
+                  }
+                />
+              </div>
+            </div>
+            <DrawerDescription>{DESCRIPTION}</DrawerDescription>
+          </DrawerHeader>
+          {children}
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
 export const ReadScopeDocSheet = ({
   open,
   onOpenChange,
@@ -166,6 +239,7 @@ export const ReadScopeDocSheet = ({
   mode?: ReadScopeMode;
   liveTail?: boolean;
 }) => {
+  const isMobile = useIsMobile();
   const [previewMode, setPreviewMode] = useState<AxisMode>(liveTail ? 'live' : mode);
 
   // Every open starts on the mode the user is actually reading with
@@ -176,49 +250,58 @@ export const ReadScopeDocSheet = ({
   }, [open, mode, liveTail]);
 
   const previewTitle = MODE_DESCRIPTIONS.find((m) => m.mode === previewMode)?.title ?? '';
+  const content = (
+    <div className={cn('flex min-h-0 flex-col overflow-y-auto pb-2', isMobile && 'overscroll-contain px-4')}>
+      <div className="mb-2 text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">
+        Where {previewTitle} lands
+      </div>
+      <div className="rounded-md border bg-card px-3 pt-3 pb-3.5">
+        <MiniAxis mode={previewMode} />
+      </div>
+
+      <div className="mt-4 mb-1 border-t pt-3 text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">
+        Every mode — tap to preview
+      </div>
+      {MODE_DESCRIPTIONS.map(({ mode: m, title, description }) => {
+        const Icon = m === 'live' ? RadioIcon : READ_SCOPE_META[m].icon;
+        return (
+          <PlainButton
+            className={cn(
+              '-mx-3 flex items-start gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-muted',
+              previewMode === m && 'bg-muted'
+            )}
+            data-testid={`read-scope-doc-mode-${m}`}
+            key={m}
+            onClick={() => setPreviewMode(m)}
+            type="button"
+          >
+            <TonedIcon className="mt-0.5 size-4 shrink-0" icon={Icon} tone={m === 'live' ? 'live' : 'primary'} />
+            <span className="min-w-0">
+              <span className="block text-body-sm font-semibold">{title}</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{description}</span>
+            </span>
+          </PlainButton>
+        );
+      })}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <MobileReadScopeDrawer onOpenChange={onOpenChange} open={open}>
+        {content}
+      </MobileReadScopeDrawer>
+    );
+  }
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
       <SheetContent className="w-[400px] sm:max-w-[400px]" side="right">
         <SheetHeader>
           <SheetTitle>How reading starts</SheetTitle>
-          <SheetDescription>
-            A partition is an append-only log. Each mode is a rule for <em>where to drop the needle</em>.
-          </SheetDescription>
+          <SheetDescription>{DESCRIPTION}</SheetDescription>
         </SheetHeader>
-        <div className="flex flex-col overflow-y-auto pb-2">
-          <div className="mb-2 text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">
-            Where {previewTitle} lands
-          </div>
-          <div className="rounded-md border bg-card px-3 pt-3 pb-3.5">
-            <MiniAxis mode={previewMode} />
-          </div>
-
-          <div className="mt-4 mb-1 border-t pt-3 text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">
-            Every mode — tap to preview
-          </div>
-          {MODE_DESCRIPTIONS.map(({ mode: m, title, description }) => {
-            const Icon = m === 'live' ? RadioIcon : READ_SCOPE_META[m].icon;
-            return (
-              <button
-                className={cn(
-                  '-mx-3 flex items-start gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-muted',
-                  previewMode === m && 'bg-muted'
-                )}
-                data-testid={`read-scope-doc-mode-${m}`}
-                key={m}
-                onClick={() => setPreviewMode(m)}
-                type="button"
-              >
-                <TonedIcon className="mt-0.5 size-4 shrink-0" icon={Icon} tone={m === 'live' ? 'live' : 'primary'} />
-                <span className="min-w-0">
-                  <span className="block text-body-sm font-semibold">{title}</span>
-                  <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{description}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        {content}
       </SheetContent>
     </Sheet>
   );

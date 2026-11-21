@@ -125,7 +125,7 @@ function InputGroupText({ className, ...props }: React.ComponentProps<'span'>) {
   );
 }
 
-function InputGroupInput({ className, testId, ...props }: Omit<React.ComponentProps<'input'>, 'size'> & SharedProps) {
+function InputGroupInput({ className, testId, ...props }: React.ComponentProps<typeof Input>) {
   return (
     <Input
       className={cn('rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0', className)}
@@ -136,7 +136,7 @@ function InputGroupInput({ className, testId, ...props }: Omit<React.ComponentPr
   );
 }
 
-function InputGroupTextarea({ className, testId, ...props }: React.ComponentProps<'textarea'> & SharedProps) {
+function InputGroupTextarea({ className, testId, ...props }: React.ComponentProps<typeof Textarea>) {
   return (
     <Textarea
       className={cn(

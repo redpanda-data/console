@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { PlainButton } from 'components/redpanda-ui/components/button';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
@@ -102,7 +103,7 @@ function CertificateDropzone({ certType }: { certType: CertificateType }) {
           testId={hasCert ? `${certType}-status` : `add-${certType}-button`}
         />
         {hasCert && (
-          <button
+          <PlainButton
             aria-label={`Remove ${label}`}
             className="absolute top-1/2 right-2 z-10 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
             data-testid={`remove-${certType}-button`}
@@ -113,7 +114,7 @@ function CertificateDropzone({ certType }: { certType: CertificateType }) {
             type="button"
           >
             <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          </PlainButton>
         )}
       </div>
     </div>

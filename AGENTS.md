@@ -34,11 +34,10 @@ task proto:generate         # regenerate backend + frontend protogen
 
 Frontend commands run **from `frontend/`** via `bun run <script>`.
 
-## Never edit (generated or vendored)
+## Never edit (generated)
 
 - `backend/pkg/protogen/` and `frontend/src/protogen/` (regenerate with `task proto:generate`)
 - `frontend/src/routeTree.gen.ts` (TanStack Router)
-- `frontend/src/components/redpanda-ui/` (UI Registry, sourced from `redpanda-data/ui-registry`)
 - `build/` (pinned toolchain)
 
 ## Enterprise boundary

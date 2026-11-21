@@ -18,6 +18,7 @@ import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/comp
 import { Button } from 'components/redpanda-ui/components/button';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Tabs, TabsContent, TabsContents, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { AlertTriangle, Edit, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { isGuidedFailoverEnabled } from 'react-query/api/cluster-fence';
@@ -26,7 +27,6 @@ import {
   useFailoverShadowLinkMutation,
   useGetShadowLinkUnified,
 } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
 import { ShadowLinkConfiguration } from './config/shadow-link-configuration';

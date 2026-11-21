@@ -2,6 +2,11 @@
 
 import { Radio as RadioPrimitive } from '@base-ui/react/radio';
 import { RadioGroup as RadioGroupPrimitive } from '@base-ui/react/radio-group';
+import { usePart, usePrimitive, mergeProps } from '@ui-sdk/react/primitive';
+import { useFieldControl } from '@ui-sdk/react/field';
+import { commitAgentChange } from '../lib/commit-agent-change';
+import { agentItems } from '../lib/agent-items';
+import { baseRadioGroupAgent, type BaseValueDetails } from '../lib/primitives/base-value-agent';
 import { Circle } from 'lucide-react';
 
 import { cn, type SharedProps } from '../lib/utils';
@@ -9,28 +14,61 @@ import { cn, type SharedProps } from '../lib/utils';
 // Base UI's RadioGroup has no `orientation`; forward it as aria/data attrs to switch layout.
 type RadioGroupOrientation = 'vertical' | 'horizontal';
 
-type RadioGroupProps = RadioGroupPrimitive.Props &
-  SharedProps & {
+type RadioGroupProps = Omit<RadioGroupPrimitive.Props, 'onValueChange'> & {
+  onValueChange?: (value: string, details: BaseValueDetails) => void;
+} & SharedProps & {
     orientation?: RadioGroupOrientation;
   };
 
 function RadioGroup(allProps: RadioGroupProps) {
-  const { className, orientation = 'vertical', testId, value, ...props } = allProps;
+  const {
+    className,
+    orientation = 'vertical',
+    testId,
+    value,
+    defaultValue,
+    onValueChange,
+    children,
+    ...props
+  } = allProps;
 
   // Keep an explicitly provided `value` controlled while form state initializes.
   const hasValueProp = 'value' in allProps;
   const valueOverride = hasValueProp && value === undefined ? '' : value;
 
-  return (
-    <RadioGroupPrimitive
-      aria-orientation={orientation}
-      className={cn('gap-2.5', orientation === 'horizontal' ? 'flex flex-row flex-wrap' : 'grid', className)}
-      data-orientation={orientation}
-      data-slot="radio-group"
-      data-testid={testId}
-      value={valueOverride}
-      {...props}
-    />
+  const field = useFieldControl({ id: props.id });
+  const disabled = props.disabled || field?.disabled;
+  const handle = usePrimitive(baseRadioGroupAgent, {
+    value: valueOverride as string | undefined,
+    defaultValue: defaultValue as string | undefined,
+    disabled,
+    items: agentItems(children),
+    valid: (value) => typeof value === 'string',
+    onValueChange: (next, details) => commitAgentChange(onValueChange, next, details),
+  });
+  return usePart(
+    handle,
+    'root',
+    {},
+    {
+      render: (partProps, state) => (
+        <RadioGroupPrimitive
+          aria-orientation={orientation}
+          className={cn('gap-2.5', orientation === 'horizontal' ? 'flex flex-row flex-wrap' : 'grid', className)}
+          data-orientation={orientation}
+          data-slot="radio-group"
+          data-testid={testId}
+          value={state.value}
+          {...mergeProps(partProps, field ? field.props(props) : props)}
+          disabled={disabled}
+          onValueChange={(next, details) => {
+            if (!handle.api.setValue(next as string, details.event)) details.cancel();
+          }}
+          children={children}
+        />
+      ),
+    },
+    'div'
   );
 }
 

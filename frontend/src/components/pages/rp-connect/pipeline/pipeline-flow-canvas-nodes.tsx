@@ -13,7 +13,7 @@ import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getSmoothStepPath, Handle,
 import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
   AlertCircle,
@@ -386,7 +386,7 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
     );
   }
   return (
-    <button
+    <PlainButton
       className="nodrag nopan group flex h-full w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-3 py-4 text-muted-foreground shadow-sm transition-colors hover:border-primary hover:text-primary hover:shadow-md"
       onClick={() => onAdd(data.section ?? '')}
       type="button"
@@ -395,7 +395,7 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
         <PlusIcon className="size-4" />
       </span>
       <span className="text-body font-medium">Add {section}</span>
-    </button>
+    </PlainButton>
   );
 };
 
@@ -551,7 +551,7 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
     <>
       <Handle className={invisibleHandle} id="l" position={Position.Left} style={handlePin} type="target" />
       <Handle className={invisibleHandle} id="r" position={Position.Right} style={handlePin} type="source" />
-      <button
+      <PlainButton
         aria-label={data.label ?? 'Add'}
         className={cn(
           'nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 px-2 text-body-sm font-medium text-primary transition-colors',
@@ -564,7 +564,7 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
       >
         <PlusIcon className="size-3" />
         {data.label}
-      </button>
+      </PlainButton>
     </>
   );
 };
@@ -625,9 +625,9 @@ const LinkLabel = ({
     <EdgeLabelRenderer>
       {onClick ? (
         <ElementTooltip content={d.label}>
-          <button className={className} onClick={onClick} style={style} type="button">
+          <PlainButton className={className} onClick={onClick} style={style} type="button">
             {d.label}
-          </button>
+          </PlainButton>
         </ElementTooltip>
       ) : (
         <ElementTooltip content={d.label}>
@@ -738,7 +738,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
         <InputStopRow data={data} isGroup />
         {/* "Add case / Add input" footer row. Edit mode only. */}
         {data.addAction && data.onAddChild ? (
-          <button
+          <PlainButton
             className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-t border-dashed border-border/70 px-3 py-1.5 text-body-sm font-medium text-primary transition-colors hover:bg-primary/5"
             onClick={(e) => {
               e.stopPropagation();
@@ -748,7 +748,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           >
             <PlusIcon className="size-3.5" />
             {data.addAction.label}
-          </button>
+          </PlainButton>
         ) : null}
       </div>
     </div>
@@ -801,7 +801,7 @@ const EdgeInsertButton = ({
   zIndex?: number;
 }) => (
   <EdgeLabelRenderer>
-    <button
+    <PlainButton
       aria-label="Insert a step"
       className="nodrag nopan pointer-events-auto absolute flex size-6 cursor-pointer items-center justify-center rounded-full border border-primary bg-background text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
       onClick={onInsert}
@@ -809,7 +809,7 @@ const EdgeInsertButton = ({
       type="button"
     >
       <PlusIcon className="size-3.5" />
-    </button>
+    </PlainButton>
   </EdgeLabelRenderer>
 );
 

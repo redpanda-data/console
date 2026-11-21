@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@tanstack/react-router';
 import { CheckIcon, CloseIcon, TrashIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -17,6 +16,7 @@ import {
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 import { Link as ExternalLink } from 'components/redpanda-ui/components/typography';
 import type { FC } from 'react';
 import { docsLinks } from 'utils/docs-links';
@@ -100,13 +100,13 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
     accessorKey: 'name',
     cell: ({ row: { original: r } }) => (
       <div className="wrap-break-word whitespace-break-spaces">
-        <Link
+        <PlainLink
           params={{ transformName: encodeURIComponentPercents(r.name) }}
           search={{} as never}
           to="/transforms/$transformName"
         >
           {r.name}
-        </Link>
+        </PlainLink>
       </div>
     ),
   },
@@ -225,9 +225,9 @@ const TransformsListContent: FC = () => {
       </p>
 
       <div className="mb-6 flex flex-row gap-2">
-        <Link to="/transforms-setup">
+        <PlainLink to="/transforms-setup">
           <Button variant="outline">Create transform</Button>
-        </Link>
+        </PlainLink>
 
         <Button disabled variant="outline">
           Export metrics

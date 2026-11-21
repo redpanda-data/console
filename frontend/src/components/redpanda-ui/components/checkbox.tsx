@@ -1,6 +1,10 @@
 'use client';
 
 import { Checkbox as CheckboxPrimitive } from '@base-ui/react/checkbox';
+import { mergeProps, usePart, usePrimitive } from '@ui-sdk/react/primitive';
+import { useFieldControl } from '@ui-sdk/react/field';
+import { commitAgentChange } from '../lib/commit-agent-change';
+import { baseCheckboxAgent, type BaseCheckedDetails } from '../lib/primitives/base-checked-agent';
 import { cva, type VariantProps } from 'class-variance-authority';
 import React from 'react';
 
@@ -47,10 +51,7 @@ type CheckboxProps = Omit<
   SharedProps & {
     checked?: boolean | 'indeterminate';
     defaultChecked?: boolean | 'indeterminate';
-    onCheckedChange?: (
-      checked: boolean | 'indeterminate',
-      eventDetails: CheckboxPrimitive.Root.ChangeEventDetails
-    ) => void;
+    onCheckedChange?: (checked: boolean | 'indeterminate', eventDetails: BaseCheckedDetails) => void;
     ref?: React.Ref<HTMLButtonElement>;
   };
 
@@ -70,19 +71,26 @@ function Checkbox({
   // Base UI treats `indeterminate` as a plain prop, so the wrapper tracks the
   // uncontrolled mixed state itself (cleared on first interaction).
   const [uncontrolledIndeterminate, setUncontrolledIndeterminate] = React.useState(defaultChecked === 'indeterminate');
-
-  const handleCheckedChange = React.useCallback(
-    (nextChecked: boolean, eventDetails: CheckboxPrimitive.Root.ChangeEventDetails) => {
-      setUncontrolledIndeterminate(false);
-      onCheckedChange?.(nextChecked, eventDetails);
-    },
-    [onCheckedChange]
-  );
-
-  // Translate Radix `checked='indeterminate'` to Base UI `indeterminate` + `checked=false`.
   const isIndeterminate = indeterminate ?? (isControlled ? checked === 'indeterminate' : uncontrolledIndeterminate);
-  const baseChecked = isControlled ? checked === true : undefined;
-  const baseDefaultChecked = defaultChecked === 'indeterminate' ? false : defaultChecked;
+
+  const field = useFieldControl({ id: props.id });
+  const disabled = props.disabled || field?.disabled;
+  const handle = usePrimitive(baseCheckboxAgent, {
+    checked: checked === undefined ? undefined : checked === true,
+    defaultChecked: defaultChecked === true,
+    indeterminate: isIndeterminate,
+    disabled,
+    readOnly: props.readOnly,
+    onCheckedChange: (next, details) =>
+      commitAgentChange(
+        (next, details) => {
+          onCheckedChange?.(next, details);
+          if (!details.canceled) setUncontrolledIndeterminate(false);
+        },
+        next,
+        details
+      ),
+  });
 
   const renderRoot = React.useCallback(
     (rootProps: React.ComponentProps<'button'>, state: CheckboxPrimitive.Root.State) => {
@@ -137,17 +145,26 @@ function Checkbox({
     [className, testId, variant]
   );
 
-  return (
-    <CheckboxPrimitive.Root
-      {...(props as React.ComponentProps<typeof CheckboxPrimitive.Root>)}
-      checked={baseChecked}
-      defaultChecked={baseDefaultChecked}
-      indeterminate={isIndeterminate}
-      nativeButton
-      onCheckedChange={handleCheckedChange}
-      ref={ref as React.Ref<HTMLElement>}
-      render={renderRoot}
-    />
+  return usePart(
+    handle,
+    'root',
+    {},
+    {
+      render: (partProps, state) => (
+        <CheckboxPrimitive.Root
+          {...mergeProps(partProps, field ? field.props(props) : props, { ref: ref as React.Ref<HTMLElement> })}
+          checked={state.checked === true}
+          disabled={disabled}
+          indeterminate={isIndeterminate}
+          nativeButton
+          onCheckedChange={(next, details) => {
+            if (!handle.api.setChecked(next, details.event)) details.cancel();
+          }}
+          render={renderRoot}
+        />
+      ),
+    },
+    'button'
   );
 }
 
