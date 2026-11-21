@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -19,7 +20,7 @@ import type { PreviewTagV2 } from '../../../../../state/ui';
 import { cullText, prettyBytes } from '../../../../../utils/utils';
 import { EmptyBadge } from '../common/empty-badge';
 
-function isPrimitivePayload(payload: unknown): boolean {
+function isPrimitivePayload(payload: unknown): payload is string | number | boolean {
   return typeof payload === 'string' || typeof payload === 'number' || typeof payload === 'boolean';
 }
 
@@ -32,13 +33,13 @@ function isObjectKey(key: Payload): boolean {
 function getKeyPreviewText(msg: TopicMessage): ReactNode {
   const key = msg.key;
   if (key.encoding === 'binary') {
-    return cullText(msg.keyBinHexPreview as string, 44);
+    return msg.keyBinHexPreview === undefined ? 'Raw bytes unavailable' : cullText(msg.keyBinHexPreview, 44);
   }
   if (key.encoding === 'utf8WithControlChars') {
-    return highlightControlChars(key.payload as string);
+    return highlightControlChars(String(key.payload));
   }
   if (isPrimitivePayload(key.payload)) {
-    return cullText(key.payload as string, 44);
+    return cullText(String(key.payload), 44);
   }
   // Normal display (json, no filters). Reuse the cached JSON string.
   return cullText(msg.keyJson, 44);
@@ -59,17 +60,17 @@ function renderKeyPreview(
 
   // Preview tags replace the whole cell for an object key.
   const tagsPreview = isObjectKey(key) ? renderPreviewTags(key.payload, previewFields, previewDisplayMode) : null;
-  if (tagsPreview) {
+  if (tagsPreview !== null) {
     return tagsPreview;
   }
 
   return (
     <div className="flex flex-col">
-      <span className="cellDiv" style={{ minWidth: '10ch', width: 'auto', maxWidth: '45ch' }}>
-        <code style={{ fontSize: '95%' }}>{getKeyPreviewText(msg)}</code>
+      <span className="cellDiv w-auto max-w-[45ch] min-w-[10ch]">
+        <code className="console-message-preview">{getKeyPreviewText(msg)}</code>
       </span>
       <span className="text-muted-foreground">
-        {key.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(key.size)}
+        {(key.encoding?.toUpperCase() ?? '') || 'UNKNOWN'} - {prettyBytes(key.size)}
       </span>
     </div>
   );
@@ -98,7 +99,11 @@ export const MessageKeyPreview = ({
 
   try {
     return renderKeyPreview(msg, previewFields, previewDisplayMode);
-  } catch (e) {
-    return <span className="text-destructive">Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
+  } catch (error) {
+    return (
+      <span className="text-destructive">
+        Error in RenderPreview: {error instanceof Error ? error.message : String(error)}
+      </span>
+    );
   }
 };

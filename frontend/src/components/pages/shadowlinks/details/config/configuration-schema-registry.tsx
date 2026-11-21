@@ -47,10 +47,10 @@ const hasCustomCa = (tlsSettings?: UnifiedTLSSettings): boolean => {
 
 const hasClientCertificate = (tlsSettings?: UnifiedTLSSettings): boolean => {
   if (tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
-    return Boolean(tlsSettings.tlsSettings.value.certPath || tlsSettings.tlsSettings.value.keyPath);
+    return Boolean((tlsSettings.tlsSettings.value.certPath ?? '') || tlsSettings.tlsSettings.value.keyPath);
   }
   if (tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
-    return Boolean(tlsSettings.tlsSettings.value.cert || tlsSettings.tlsSettings.value.key);
+    return Boolean((tlsSettings.tlsSettings.value.cert ?? '') || tlsSettings.tlsSettings.value.key);
   }
   return false;
 };
@@ -98,11 +98,13 @@ const ConfigRow = ({
   testId: string;
   value: React.ReactNode;
 }) => (
-  <div className={cn('grid items-baseline gap-x-4', narrow ? 'grid-cols-[120px_1fr]' : 'grid-cols-[200px_1fr]')}>
+  <div
+    className={cn('grid items-baseline gap-x-4', narrow === true ? 'grid-cols-[120px_1fr]' : 'grid-cols-[200px_1fr]')}
+  >
     <div className="text-body text-muted-foreground" data-testid={`${testId}-label`}>
       {label}
     </div>
-    <div className={cn('text-body', 'break-all', mono && 'font-mono')} data-testid={`${testId}-value`}>
+    <div className={cn('text-body', 'break-all', mono === true && 'font-mono')} data-testid={`${testId}-value`}>
       {value}
     </div>
   </div>
@@ -340,6 +342,7 @@ const SchemaRegistryBadges = ({ mode }: { mode: SchemaRegistryShadowingMode | un
           </Badge>
         </>
       );
+    case undefined:
     default:
       return (
         <Badge testId="schema-registry-status-badge" tone="default" variant="subtle">
@@ -359,6 +362,7 @@ const SchemaRegistryBody = ({ mode }: { mode: SchemaRegistryShadowingMode | unde
           Replicate the source cluster's _schemas topic, which replaces the shadow cluster's Schema Registry.
         </div>
       );
+    case undefined:
     default:
       return (
         <div className="text-body text-muted-foreground" data-testid="schema-registry-disabled-description">

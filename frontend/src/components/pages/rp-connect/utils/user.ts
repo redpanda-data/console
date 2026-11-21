@@ -22,6 +22,8 @@ import {
   type ListACLsResponse_Resource,
 } from '../../../../protogen/redpanda/api/dataplane/v1/acl_pb';
 import { CreateUserRequestSchema, SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { isPresent } from '../../../../utils/type-guards';
 import { userSecretIds } from '../types/constants';
 import type { AddUserFormData, OperationResult } from '../types/wizard';
 
@@ -68,6 +70,10 @@ export const getACLOperationName = (operation: ACL_Operation): string => {
       return 'CLUSTER_ACTION';
     case ACL_Operation.IDEMPOTENT_WRITE:
       return 'IDEMPOTENT_WRITE';
+    case ACL_Operation.UNSPECIFIED:
+    case ACL_Operation.ANY:
+    case ACL_Operation.CREATE_TOKENS:
+    case ACL_Operation.DESCRIBE_TOKENS:
     default:
       return 'UNKNOWN';
   }
@@ -88,6 +94,8 @@ const doesPatternMatchTopic = (
       return topicName.startsWith(resourceName);
     case ACL_ResourcePatternType.ANY:
       return true;
+    case ACL_ResourcePatternType.UNSPECIFIED:
+    case ACL_ResourcePatternType.MATCH:
     default:
       return false;
   }
@@ -104,11 +112,13 @@ const allowedOperations = (
 
   for (const resource of resources) {
     for (const acl of resource.acls) {
-      if (acl.principal === principal && acl.permissionType === ACL_PermissionType.ALLOW) {
-        const isWildcard = acl.operation === ACL_Operation.ALL || acl.operation === ACL_Operation.ANY;
-        for (const operation of isWildcard ? impliedByAll : [acl.operation]) {
-          allowed.add(operation);
-        }
+      if (acl.principal !== principal || acl.permissionType !== ACL_PermissionType.ALLOW) {
+        continue;
+      }
+      const grantedOperations =
+        acl.operation === ACL_Operation.ALL || acl.operation === ACL_Operation.ANY ? impliedByAll : [acl.operation];
+      for (const operation of grantedOperations) {
+        allowed.add(operation);
       }
     }
   }
@@ -216,7 +226,7 @@ const createACLsInOrder = async (
   [config, ...rest]: ReturnType<typeof createConsumerGroupACLs>,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
 ): Promise<void> => {
-  if (!config) {
+  if (!isPresent(config)) {
     return;
   }
   await createACLMutation.mutateAsync(create(CreateACLRequestSchema, config));
@@ -332,9 +342,7 @@ const saslMechanismToProtoMapping: Record<SaslMechanism, SASLMechanism> = {
 
 /** The SCRAM mechanism a user was created with, if it is one. */
 export const saslMechanismFromProto = (mechanism: SASLMechanism | undefined): SaslMechanism | undefined =>
-  (Object.keys(saslMechanismToProtoMapping) as SaslMechanism[]).find(
-    (name) => saslMechanismToProtoMapping[name] === mechanism
-  );
+  (['SCRAM-SHA-256', 'SCRAM-SHA-512'] as const).find((name) => saslMechanismToProtoMapping[name] === mechanism);
 
 const createKafkaUser = async (
   userData: AddUserFormData,
@@ -377,9 +385,9 @@ type CreateUserWithSecretsParams = {
 };
 
 const handleOperationResult = (result: OperationResult) => {
-  if (result.success && result.message) {
+  if (result.success && isNonEmptyString(result.message)) {
     toast.success(result.message);
-  } else if (!result.success && result.error) {
+  } else if (!result.success && isNonEmptyString(result.error)) {
     toast.error(result.error);
   }
 };
@@ -387,10 +395,10 @@ const handleOperationResult = (result: OperationResult) => {
 // Toasts a required step's outcome; false when it failed, so the flow stops there.
 const reportRequiredStep = (result: OperationResult, failureMessage: string, successMessage: string): boolean => {
   if (!result.success) {
-    toast.error(result.error || failureMessage);
+    toast.error((result.error ?? '') || failureMessage);
     return false;
   }
-  toast.success(result.message || successMessage);
+  toast.success((result.message ?? '') || successMessage);
   return true;
 };
 
@@ -414,7 +422,7 @@ const grantTopicAccess = async (
   topicName: string | undefined,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
 ): Promise<boolean> => {
-  if (!(topicName && userData.grantTopicPermissions)) {
+  if (!(topicName !== null && topicName !== undefined && topicName !== '' && userData.grantTopicPermissions)) {
     return true;
   }
   const aclResult = await configureUserPermissions(topicName, userData.username, createACLMutation);
@@ -428,7 +436,7 @@ const grantConsumerGroupAccess = async (
   createACLMutation: ReturnType<typeof useCreateACLMutation>,
   queryClient: QueryClient
 ): Promise<boolean> => {
-  if (!consumerGroup) {
+  if (!(consumerGroup !== null && consumerGroup !== undefined && consumerGroup !== '')) {
     return true;
   }
   const consumerGroupACLResult = await configureConsumerGroupPermissions(

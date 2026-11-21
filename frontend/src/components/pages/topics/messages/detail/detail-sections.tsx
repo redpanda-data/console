@@ -1,3 +1,12 @@
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from 'components/redpanda-ui/components/table';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -54,8 +63,8 @@ const DetailSection = ({
       // (a button inside the trigger button), so it overlays the header row instead.
       // The simple accordion variant already draws the item's `border-b`.
       'relative shrink-0',
-      fill &&
-        open &&
+      fill === true &&
+        open === true &&
         'flex min-h-0 flex-1 flex-col [&>[data-slot=accordion-content]]:h-auto [&>[data-slot=accordion-content]]:min-h-0 [&>[data-slot=accordion-content]]:flex-1'
     )}
     testId={testId}
@@ -65,7 +74,7 @@ const DetailSection = ({
       chevron={false}
       className="select-none"
       end={
-        meta ? (
+        meta !== null && meta !== undefined && meta !== '' ? (
           <span
             className={cn(
               'font-mono text-caption whitespace-nowrap text-muted-foreground',
@@ -93,7 +102,9 @@ const DetailSection = ({
         variant="ghost"
       />
     )}
-    <AccordionContent className={fill ? 'flex h-full min-h-0 flex-col' : undefined}>{children}</AccordionContent>
+    <AccordionContent className={fill === true ? 'flex h-full min-h-0 flex-col' : undefined}>
+      {children}
+    </AccordionContent>
   </AccordionItem>
 );
 
@@ -182,40 +193,49 @@ const headerValueText = (value: Payload) => {
 };
 
 /** Compact key/value table (the design mock's header list — no table chrome or pagination). */
+function keyedHeaders(headers: TopicMessage['headers']) {
+  const counts = new Map<string, number>();
+  return headers.map((header) => {
+    const occurrence = counts.get(header.key) ?? 0;
+    counts.set(header.key, occurrence + 1);
+    return { header, rowKey: `${header.key}:${occurrence}` };
+  });
+}
+
 const HeaderGrid = ({ headers }: { headers: TopicMessage['headers'] }) => (
   <div className="overflow-hidden rounded-md border bg-card">
-    <table className="w-full table-fixed border-collapse">
-      <caption className="sr-only">Message headers</caption>
-      <thead>
-        <tr className="border-b">
-          <th
-            className="w-[42%] px-2.5 py-1 text-left text-caption font-semibold tracking-wide text-muted-foreground uppercase"
-            scope="col"
-          >
-            Key
-          </th>
-          <th
-            className="border-l px-2.5 py-1 text-left text-caption font-semibold tracking-wide text-muted-foreground uppercase"
-            scope="col"
-          >
-            Value
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {headers.map((header, i) => {
+    <Table className="table-fixed" size="sm" variant="simple">
+      <colgroup>
+        <col className="w-[42%]" />
+        <col />
+      </colgroup>
+      <TableCaption className="sr-only">Message headers</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead scope="col">Key</TableHead>
+          <TableHead scope="col">Value</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {keyedHeaders(headers).map(({ header, rowKey }) => {
           const text = headerValueText(header.value);
           return (
-            <tr className="border-b font-mono text-body-sm last:border-b-0" key={`${header.key}-${i}`}>
-              <td className="px-2.5 py-1.5 align-top break-all text-primary">{header.key}</td>
-              <td className="border-l px-2.5 py-1.5 align-top break-all">
-                {text === null ? <span className="sr-only">null</span> : <span>{text}</span>}
-              </td>
-            </tr>
+            <TableRow key={rowKey}>
+              <TableCell>
+                <span className="font-mono break-all text-primary">{header.key}</span>
+              </TableCell>
+              <TableCell>
+                {text === null ? (
+                  <span className="sr-only">null</span>
+                ) : (
+                  <span className="font-mono break-all">{text}</span>
+                )}
+              </TableCell>
+            </TableRow>
           );
         })}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   </div>
 );
 
@@ -256,11 +276,11 @@ export const ValueSection = ({
     testId="detail-value-section"
     value="value"
   >
-    <div className={cn('font-mono text-body-sm leading-relaxed', fill && 'min-h-0 flex-1')}>
+    <div className={cn('font-mono text-body-sm leading-relaxed', fill === true && 'min-h-0 flex-1')}>
       <PayloadComponent
         loadLargeMessage={loadLargeMessage}
         payload={msg.value}
-        viewerStyle={fill ? { height: '100%', maxHeight: 'none' } : undefined}
+        viewerClassName={fill === true ? 'h-full max-h-none' : undefined}
       />
     </div>
     <TroubleshootNote payload={msg.value} />

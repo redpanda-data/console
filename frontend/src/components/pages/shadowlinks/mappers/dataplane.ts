@@ -35,6 +35,7 @@ import {
   mapSchemaRegistrySyncOptionsToFormValues,
   mapTLSSettings,
 } from './schema-registry';
+import { nonzeroNumber } from '../../../../utils/number-utils';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, TLS_MODE } from '../create/model';
 import {
@@ -339,13 +340,13 @@ const extractAuthSettings = (
 const extractAdvancedClientOptions = (
   clientOptions: ShadowLinkClientOptions | undefined
 ): FormValues['advanceClientOptions'] => ({
-  metadataMaxAgeMs: clientOptions?.metadataMaxAgeMs || 10_000,
-  connectionTimeoutMs: clientOptions?.connectionTimeoutMs || 1000,
-  retryBackoffMs: clientOptions?.retryBackoffMs || 100,
-  fetchWaitMaxMs: clientOptions?.fetchWaitMaxMs || 500,
-  fetchMinBytes: clientOptions?.fetchMinBytes || 5_242_880,
-  fetchMaxBytes: clientOptions?.fetchMaxBytes || 20_971_520,
-  fetchPartitionMaxBytes: clientOptions?.fetchPartitionMaxBytes || 1_048_576,
+  metadataMaxAgeMs: nonzeroNumber(clientOptions?.metadataMaxAgeMs) ?? 10_000,
+  connectionTimeoutMs: nonzeroNumber(clientOptions?.connectionTimeoutMs) ?? 1000,
+  retryBackoffMs: nonzeroNumber(clientOptions?.retryBackoffMs) ?? 100,
+  fetchWaitMaxMs: nonzeroNumber(clientOptions?.fetchWaitMaxMs) ?? 500,
+  fetchMinBytes: nonzeroNumber(clientOptions?.fetchMinBytes) ?? 5_242_880,
+  fetchMaxBytes: nonzeroNumber(clientOptions?.fetchMaxBytes) ?? 20_971_520,
+  fetchPartitionMaxBytes: nonzeroNumber(clientOptions?.fetchPartitionMaxBytes) ?? 1_048_576,
 });
 
 /**
@@ -436,7 +437,7 @@ export const buildDefaultTopicsValues = (
           filterType: filter.filterType,
         })),
     // Use the computed list from shadowLink which includes defaults merged with custom properties
-    topicProperties: shadowLink.syncedShadowTopicProperties || [],
+    topicProperties: shadowLink.syncedShadowTopicProperties ?? [],
     excludeDefault: topicMetadataSyncOptions?.excludeDefault ?? false,
   };
 };

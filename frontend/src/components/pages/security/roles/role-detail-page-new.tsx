@@ -11,6 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { useParams } from '@tanstack/react-router';
+import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
 import { Trash2, Users2Icon } from 'lucide-react';
 import {
   ListRoleMembersRequestSchema,
@@ -19,13 +20,14 @@ import {
 import { ListUsersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useLayoutEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
 import { docsLinks } from 'utils/docs-links';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { useListUsersQuery } from '../../../../react-query/api/user';
 import { setPageHeader } from '../../../../state/ui-state';
-import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
 import {
@@ -45,7 +47,7 @@ type RoleMember = { principal: string };
 
 const getUnassignedUserOptions = (users: { name: string }[], members: RoleMember[]) => {
   const assignedPrincipals = new Set(members.map((m) => m.principal));
-  return users.filter((u) => !assignedPrincipals.has(`User:${u.name}`)).map((u) => ({ value: u.name, label: u.name }));
+  return users.flatMap((u) => (assignedPrincipals.has(`User:${u.name}`) ? [] : [{ value: u.name, label: u.name }]));
 };
 
 type RolePrincipalRowsProps = {
@@ -111,7 +113,7 @@ const RolePrincipalRows = ({ isLoading, members, isRemoveDisabled, onRemove }: R
             size="icon-sm"
             variant="destructive-ghost"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="size-4" />
           </FenceGuardedButton>
         </TableCell>
       </TableRow>
@@ -176,7 +178,7 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
             creatable
             createLabel="principal"
             disabled={isSubmitting}
-            onChange={addMember}
+            onChange={asyncEvent(addMember, reportActionError)}
             options={getUnassignedUserOptions(usersData?.users ?? [], allMembers)}
             placeholder="Select or type a principal..."
             testId="add-principal-combobox"
@@ -199,7 +201,7 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
               isLoading={membersLoading}
               isRemoveDisabled={(memberPrincipal) => deletingPrincipal === memberPrincipal || isSubmitting}
               members={allMembers}
-              onRemove={handleRemoveMember}
+              onRemove={asyncEvent(handleRemoveMember, reportActionError)}
             />
           </TableBody>
         </Table>

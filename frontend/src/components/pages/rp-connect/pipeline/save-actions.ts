@@ -13,6 +13,8 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { STARTABLE_STATES, STOPPABLE_STATES } from 'components/ui/pipeline/constants';
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
+import { isObject } from '../../../../utils/type-guards';
+
 /** `draft` stores unvalidated; `keep` leaves the run state (restarts a running pipeline); `start`/`stopped` transition after the write. */
 export type SaveRunIntent = 'draft' | 'keep' | 'start' | 'stopped';
 
@@ -34,16 +36,14 @@ const INVALID_CONFIG_REASON = 'REASON_CONNECT_INVALID_PIPELINE_CONFIGURATION';
 
 // Wire details are `{ type, debug }`; locally attached ones are `{ desc, value }`.
 function detailTypeAndPayload(detail: unknown): { typeName: string; payload: unknown } | null {
-  if (detail === null || typeof detail !== 'object') {
+  if (!isObject(detail)) {
     return null;
   }
-  const incoming = detail as { type?: string; debug?: unknown };
-  if (typeof incoming.type === 'string') {
-    return { typeName: incoming.type, payload: incoming.debug };
+  if (typeof detail.type === 'string') {
+    return { typeName: detail.type, payload: detail.debug };
   }
-  const outgoing = detail as { desc?: { typeName?: string }; value?: unknown };
-  if (typeof outgoing.desc?.typeName === 'string') {
-    return { typeName: outgoing.desc.typeName, payload: outgoing.value };
+  if (isObject(detail.desc) && typeof detail.desc.typeName === 'string') {
+    return { typeName: detail.desc.typeName, payload: detail.value };
   }
   return null;
 }
@@ -63,7 +63,7 @@ export function isInvalidConfigError(error: unknown): boolean {
     if (parsed.typeName !== ERROR_INFO_TYPE) {
       return false;
     }
-    return (parsed.payload as { reason?: string } | undefined)?.reason === INVALID_CONFIG_REASON;
+    return isObject(parsed.payload) && parsed.payload.reason === INVALID_CONFIG_REASON;
   });
 }
 
@@ -130,6 +130,7 @@ export function runIntentLabel(intent: SaveRunIntent, context: SaveContext): str
       return 'Save and start';
     case 'stopped':
       return context.mode === 'create' ? 'Save' : 'Save and stop';
+    case 'keep':
     default:
       return isStoppableState(context.state) ? 'Apply and restart' : 'Save';
   }

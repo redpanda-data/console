@@ -2,7 +2,9 @@ import { afterEach, rs } from '@rstest/core';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import ConfigurationEditor from './topic-configuration';
+import { ConfigEntryEditorController } from './config-entry-inputs';
+import { ConfigurationEditor } from './topic-configuration';
+import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
 
 const PRECISE_VALUE_LABEL = /Precise value:/;
 
@@ -11,30 +13,32 @@ rs.mock('@tanstack/react-router', () => {
   return {
     ...actual,
     useSearch: () => ({}),
-    useNavigate: () => rs.fn(),
+    useNavigate: () => rs.fn(() => Promise.resolve()),
   };
 });
 
-rs.mock('../../../config', () => {
-  const actual = rs.requireActual<typeof import('../../../config')>('../../../config');
+rs.mock('../../../runtime-config', () => {
+  const actual = rs.requireActual<typeof import('../../../runtime-config')>('../../../runtime-config');
   return {
     ...actual,
     isServerless: () => false,
   };
 });
 
-const guard = rs.hoisted(() => ({ reason: undefined as string | undefined }));
+const guard = rs.hoisted((): { reason: string | undefined } => ({ reason: undefined }));
 
 rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
-  // Which topics the fence covers is the guard's rule, tested there; this only checks the editor passes its topic.
+  // Topic coverage belongs to the guard; verify the editor passes its target topic.
   useClusterFenceGuard: () => ({
     reasonFor: (_action: string, topic?: string) => (topic === '_schemas' ? undefined : guard.reason),
   }),
 }));
 
-import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
-
-const makeEntry = (overrides: Partial<ConfigEntryExtended> & { category: string }): ConfigEntryExtended => ({
+const makeEntry = (
+  overrides: Partial<ConfigEntryExtended> & {
+    category: string;
+  }
+): ConfigEntryExtended => ({
   name: 'test.option',
   value: '',
   source: '',
@@ -68,7 +72,11 @@ function renderEditor(targetTopic = 'my-topic') {
 }
 
 function getSection(name: string) {
-  return screen.getByRole('heading', { name }).closest('section') as HTMLElement;
+  const section = screen.getByRole('heading', { name }).closest('section');
+  if (section === null) {
+    throw new Error(`Missing configuration section ${name}`);
+  }
+  return section;
 }
 
 describe('the TopicConfiguration', () => {
@@ -162,4 +170,35 @@ describe('the TopicConfiguration', () => {
       );
     });
   });
+});
+
+describe('configuration unit inputs', () => {
+  test.each([
+    { format: 'BYTE_SIZE', value: 1024, unit: 'Bytes', next: 2 },
+    { format: 'DURATION', value: 3000, unit: 'minutes', next: 120_000 },
+  ] as const)(
+    'keeps the base value on a $format unit change and emits edits in base units',
+    async ({ format, value, unit, next }) => {
+      const user = userEvent.setup();
+      const onChange = rs.fn();
+      render(
+        <>
+          <label htmlFor="numeric-setting">Setting value</label>
+          <ConfigEntryEditorController
+            entry={makeEntry({ category: 'Retention', frontendFormat: format })}
+            id="numeric-setting"
+            onChange={onChange}
+            value={value}
+          />
+        </>
+      );
+      const input = screen.getByLabelText('Setting value');
+      await user.click(screen.getByRole('combobox'));
+      await user.click(await screen.findByRole('option', { name: unit }));
+      expect(onChange).not.toHaveBeenCalled();
+      await user.clear(input);
+      await user.type(input, '2');
+      expect(onChange).toHaveBeenLastCalledWith(next);
+    }
+  );
 });

@@ -30,7 +30,6 @@ import { FileText, History, Play, Plus, Terminal, Wand2, X } from 'lucide-react'
 import {
   type Dispatch,
   type ForwardedRef,
-  forwardRef,
   type MouseEvent,
   type RefObject,
   type SetStateAction,
@@ -493,127 +492,126 @@ function useSqlExtensions(
   }, [catalogs, appearance, runRef, setHasSel]);
 }
 
-export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
-  function SqlEditorComponent(editorProps, forwardedRef) {
-    const { onRun: runQuery, catalogs, initialQuery } = editorProps;
-    const editorRef = useRef<ReactCodeMirrorRef | null>(null);
-    const { tabs, active, setActiveId, updateSql, addTab, closeTab } = useEditorTabs(
-      initialQuery,
-      editorRef,
-      forwardedRef
-    );
-    const { history, runRef, doRun, runSelection } = useEditorRun(editorRef, active.sql, runQuery);
-    const [histOpen, setHistOpen] = useState(false);
-    const [hasSel, setHasSel] = useState(false);
-    const appearance = useThemeAppearance();
-    const extensions = useSqlExtensions(catalogs, appearance, runRef, setHasSel);
+export function SqlEditor({
+  ref: forwardedRef,
+  ...editorProps
+}: SqlEditorProps & { ref?: React.Ref<SqlEditorHandle> }) {
+  const { onRun: runQuery, catalogs, initialQuery } = editorProps;
+  const editorRef = useRef<ReactCodeMirrorRef | null>(null);
+  const { tabs, active, setActiveId, updateSql, addTab, closeTab } = useEditorTabs(
+    initialQuery,
+    editorRef,
+    forwardedRef ?? null
+  );
+  const { history, runRef, doRun, runSelection } = useEditorRun(editorRef, active.sql, runQuery);
+  const [histOpen, setHistOpen] = useState(false);
+  const [hasSel, setHasSel] = useState(false);
+  const appearance = useThemeAppearance();
+  const extensions = useSqlExtensions(catalogs, appearance, runRef, setHasSel);
 
-    return (
-      <div className="flex min-h-0 flex-1 flex-col bg-background">
-        <div className="flex shrink-0 items-stretch">
-          <Tabs className="min-w-0 flex-1" onValueChange={(v) => setActiveId(Number(v))} value={String(active.id)}>
-            <TabsList className="overflow-x-auto" variant="underline">
-              {tabs.map((t) => (
-                <TabsTrigger
-                  className="w-auto shrink-0"
-                  key={t.id}
-                  render={<div />}
-                  value={String(t.id)}
-                  variant="underline"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <FileText size={13} />
-                    <span>{t.name}</span>
-                    <Button
-                      aria-label={`Close ${t.name}`}
-                      onClick={(e) => closeTab(t.id, e)}
-                      size="icon-xs"
-                      variant="ghost"
-                    >
-                      <X />
-                    </Button>
-                  </span>
-                </TabsTrigger>
-              ))}
-              <ElementTooltip content="New query">
-                <Button aria-label="New query" onClick={addTab} size="icon-sm" variant="ghost">
-                  <Plus />
-                </Button>
-              </ElementTooltip>
-            </TabsList>
-          </Tabs>
-          <div className="flex shrink-0 items-center gap-1.5 border-b pr-2">
-            <Popover onOpenChange={setHistOpen} open={histOpen}>
-              <ElementTooltip content="Query history (this browser)">
-                <PopoverTrigger
-                  render={
-                    <Button size="sm" variant="ghost">
-                      <History /> History
-                    </Button>
-                  }
-                />
-              </ElementTooltip>
-              <PopoverContent align="end" className="max-h-96 w-96 overflow-y-auto">
-                <div className="px-2 py-1.5 text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">
-                  Recent queries · this browser
-                </div>
-                {history.length === 0 ? (
-                  <div className="p-2 text-body text-muted-foreground">No queries yet</div>
-                ) : null}
-                {history.map((h, i) => (
+  return (
+    <div className="flex min-h-0 flex-1 flex-col bg-background">
+      <div className="flex shrink-0 items-stretch">
+        <Tabs className="min-w-0 flex-1" onValueChange={(v) => setActiveId(Number(v))} value={String(active.id)}>
+          <TabsList className="overflow-x-auto" variant="underline">
+            {tabs.map((t) => (
+              <TabsTrigger
+                className="w-auto shrink-0"
+                key={t.id}
+                render={<div />}
+                value={String(t.id)}
+                variant="underline"
+              >
+                <span className="flex items-center gap-1.5">
+                  <FileText size={13} />
+                  <span>{t.name}</span>
                   <Button
-                    className="w-full justify-start"
-                    key={`${h.at}-${i}`}
-                    onClick={() => {
-                      updateSql(h.sql);
-                      setHistOpen(false);
-                    }}
-                    size="sm"
+                    aria-label={`Close ${t.name}`}
+                    onClick={(e) => closeTab(t.id, e)}
+                    size="icon-xs"
                     variant="ghost"
                   >
-                    <Terminal />
-                    <span className="truncate font-mono">{h.sql.replace(/\s+/g, ' ').slice(0, 60)}</span>
+                    <X />
                   </Button>
-                ))}
-              </PopoverContent>
-            </Popover>
-            <ElementTooltip content="Format SQL">
-              <Button
-                onClick={() => {
-                  const view = editorRef.current?.view;
-                  if (view) {
-                    formatDocument(view).catch(() => undefined);
-                  }
-                }}
-                size="sm"
-                variant="ghost"
-              >
-                <Wand2 /> Format
+                </span>
+              </TabsTrigger>
+            ))}
+            <ElementTooltip content="New query">
+              <Button aria-label="New query" onClick={addTab} size="icon-sm" variant="ghost">
+                <Plus />
               </Button>
             </ElementTooltip>
-            <Button disabled={!hasSel} onClick={runSelection} size="sm" variant="outline">
-              Run selection
+          </TabsList>
+        </Tabs>
+        <div className="flex shrink-0 items-center gap-1.5 border-b pr-2">
+          <Popover onOpenChange={setHistOpen} open={histOpen}>
+            <ElementTooltip content="Query history (this browser)">
+              <PopoverTrigger
+                render={
+                  <Button size="sm" variant="ghost">
+                    <History /> History
+                  </Button>
+                }
+              />
+            </ElementTooltip>
+            <PopoverContent align="end" className="max-h-96 w-96 overflow-y-auto">
+              <div className="px-2 py-1.5 text-body-sm font-semibold tracking-wider text-muted-foreground uppercase">
+                Recent queries · this browser
+              </div>
+              {history.length === 0 ? <div className="p-2 text-body text-muted-foreground">No queries yet</div> : null}
+              {history.map((h) => (
+                <Button
+                  className="w-full justify-start"
+                  key={`${h.at}-${h.sql}`}
+                  onClick={() => {
+                    updateSql(h.sql);
+                    setHistOpen(false);
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Terminal />
+                  <span className="truncate font-mono">{h.sql.replace(/\s+/g, ' ').slice(0, 60)}</span>
+                </Button>
+              ))}
+            </PopoverContent>
+          </Popover>
+          <ElementTooltip content="Format SQL">
+            <Button
+              onClick={() => {
+                const view = editorRef.current?.view;
+                if (view) {
+                  formatDocument(view).catch(() => undefined);
+                }
+              }}
+              size="sm"
+              variant="ghost"
+            >
+              <Wand2 /> Format
             </Button>
-            <Button onClick={doRun} size="sm" variant="primary">
-              <Play /> Run
-              {/* Inline hint, not boxed keys: the registry chip's chrome is for on-surface use. */}
-              <span className="-ml-1 font-mono text-body-sm opacity-70">{isMacOS() ? '⌘↵' : 'Ctrl+↵'}</span>
-            </Button>
-          </div>
-        </div>
-        <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
-          <CodeMirror
-            basicSetup={{ foldGutter: false }}
-            className="h-full min-w-0 flex-1"
-            extensions={extensions}
-            height="100%"
-            onChange={updateSql}
-            ref={editorRef}
-            theme="none"
-            value={active.sql}
-          />
+          </ElementTooltip>
+          <Button disabled={!hasSel} onClick={runSelection} size="sm" variant="outline">
+            Run selection
+          </Button>
+          <Button onClick={doRun} size="sm" variant="primary">
+            <Play /> Run
+            {/* Inline hint, not boxed keys: the registry chip's chrome is for on-surface use. */}
+            <span className="-ml-1 font-mono text-body-sm opacity-70">{isMacOS() ? '⌘↵' : 'Ctrl+↵'}</span>
+          </Button>
         </div>
       </div>
-    );
-  }
-);
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-background">
+        <CodeMirror
+          basicSetup={{ foldGutter: false }}
+          className="h-full min-w-0 flex-1"
+          extensions={extensions}
+          height="100%"
+          onChange={updateSql}
+          ref={editorRef}
+          theme="none"
+          value={active.sql}
+        />
+      </div>
+    </div>
+  );
+}

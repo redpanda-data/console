@@ -12,7 +12,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 
-import RoleDetailPage from '../../../../components/pages/security/roles/role-detail-page';
+import { RoleDetailPageNew as RoleDetailPage } from '../../../../components/pages/security/roles/role-detail-page-new';
 
 const searchSchema = z.object({
   host: z.string().optional().catch(undefined),

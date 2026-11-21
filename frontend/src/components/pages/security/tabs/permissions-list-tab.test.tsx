@@ -14,6 +14,11 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import type { ReactNode } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
+
+import { PermissionsListTabNew as PermissionsListTab } from './permissions-list-tab-new';
+import { SecurityQueryProvider } from '../__fixtures__/query-provider';
 
 /**
  * Tests for the Permissions List tab delete dropdown behavior.
@@ -28,7 +33,11 @@ const { deleteAclMock, deleteUserMock } = rs.hoisted(() => ({ deleteAclMock: rs.
 // A refetch can fail after data loaded; tests flip this to drive the error screen.
 const { aclsQuery } = rs.hoisted(() => ({ aclsQuery: { failed: false } }));
 
-const NuqsWrapper = ({ children }: { children: ReactNode }) => <NuqsTestingAdapter>{children}</NuqsTestingAdapter>;
+const NuqsWrapper = ({ children }: { children: ReactNode }) => (
+  <NuqsTestingAdapter>
+    <SecurityQueryProvider>{children}</SecurityQueryProvider>
+  </NuqsTestingAdapter>
+);
 
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
@@ -49,7 +58,7 @@ rs.mock('../shared/delete-user-confirm-modal', () => ({
 }));
 
 rs.mock('../../../../components/misc/error-result', () => ({
-  default: () => null,
+  ErrorResult: () => null,
 }));
 
 rs.mock('../../../../state/app-global', () => ({
@@ -60,7 +69,10 @@ rs.mock('../../../../state/backend-api', () => {
   const store = {
     ACLs: { isAuthorizerEnabled: true },
     userData: { canCreateRoles: true, canListAcls: true, canManageUsers: true, canViewPermissionsList: true },
-    enterpriseFeaturesUsed: [] as { name: string; enabled: boolean }[],
+    enterpriseFeaturesUsed: [] as {
+      name: string;
+      enabled: boolean;
+    }[],
     isAdminApiConfigured: true,
   };
   return {
@@ -97,15 +109,6 @@ rs.mock('../../../../state/supported-features', () => {
 rs.mock('../../../../state/rest-interfaces', () => ({
   AclRequestDefault: {},
 }));
-
-rs.mock('../../../../config', () => {
-  const actual = rs.requireActual<typeof import('../../../../config')>('../../../../config');
-  return {
-    ...actual,
-    isFeatureFlagEnabled: (flag: string) =>
-      flag === 'enableNewSecurityPage' ? true : actual.isFeatureFlagEnabled(flag),
-  };
-});
 
 rs.mock('../../../../react-query/api/acl', () => ({
   useCreateACLMutation: () => ({ mutateAsync: rs.fn() }),
@@ -162,13 +165,6 @@ rs.mock('../hooks/use-principal-permissions', () => ({
     usersError: null,
   }),
 }));
-
-rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
-  useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
-}));
-
-import { PermissionsListTab } from './permissions-list-tab';
-
 describe('the Permissions List - delete dropdown for different principal types', () => {
   beforeEach(() => {
     rs.clearAllMocks();
@@ -340,7 +336,7 @@ function MockDeleteUserConfirmModal({
   };
   return open ? (
     <div data-testid={`delete-user-modal-${userName}`}>
-      <button data-testid="confirm-delete" onClick={handleConfirm} type="button">
+      <button data-testid="confirm-delete" onClick={asyncEvent(handleConfirm, reportActionError)} type="button">
         Confirm
       </button>
     </div>

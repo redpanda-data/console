@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -9,6 +10,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import {
   Sheet,
   SheetContent,
@@ -88,8 +90,6 @@ const MODE_DESCRIPTIONS: { mode: AxisMode; title: string; description: string }[
   { mode: 'live', title: 'Live tail', description: 'Stream new messages as they arrive' },
 ];
 
-const AGED_STRIPES = 'repeating-linear-gradient(45deg, var(--color-muted) 0 3px, transparent 3px 6px)';
-
 const DIRECTION_ARROWS: Record<'backward' | 'forward' | 'live', string> = {
   backward: '←',
   forward: '→',
@@ -112,8 +112,8 @@ const MiniAxis = ({ mode }: { mode: AxisMode }) => {
           return (
             <div
               className={cn(
-                'h-[22px] min-w-0 flex-1 rounded-sm border-[1.5px] border-border bg-background transition-all',
-                aged && 'opacity-70',
+                'h-[22px] min-w-0 flex-1 rounded-sm border-2 border-border bg-background transition-all',
+                aged && 'console-aged-record opacity-70',
                 future && 'border-dashed bg-transparent',
                 inWindow && 'border-primary bg-primary/15',
                 isAnchor && 'border-primary bg-primary',
@@ -122,7 +122,6 @@ const MiniAxis = ({ mode }: { mode: AxisMode }) => {
               )}
               // biome-ignore lint/suspicious/noArrayIndexKey: fixed-size illustration
               key={i}
-              style={aged ? { backgroundImage: AGED_STRIPES } : undefined}
             />
           );
         })}
@@ -133,18 +132,15 @@ const MiniAxis = ({ mode }: { mode: AxisMode }) => {
         </span>
         <span className="flex items-center gap-2.5 text-body-sm tracking-wide text-muted-foreground uppercase">
           <span className="inline-flex items-center gap-1">
-            <span
-              className="inline-block size-[9px] rounded-xs border-[1.5px] border-border"
-              style={{ backgroundImage: AGED_STRIPES }}
-            />
+            <span className="console-aged-record inline-block size-[9px] rounded-xs border-2 border-border" />
             aged
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block size-[9px] rounded-xs border-[1.5px] border-border bg-background" />
+            <span className="inline-block size-[9px] rounded-xs border-2 border-border bg-background" />
             retained
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block size-[9px] rounded-xs border-[1.5px] border-dashed border-success-line" />
+            <span className="inline-block size-[9px] rounded-xs border-2 border-dashed border-success-line" />
             future
           </span>
         </span>
@@ -200,22 +196,26 @@ export const ReadScopeDocSheet = ({
           {MODE_DESCRIPTIONS.map(({ mode: m, title, description }) => {
             const Icon = m === 'live' ? RadioIcon : READ_SCOPE_META[m].icon;
             return (
-              <button
+              <Button
                 className={cn(
+                  // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                   '-mx-3 flex items-start gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-muted',
-                  previewMode === m && 'bg-muted'
+                  previewMode === m &&
+                    // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                    'bg-muted'
                 )}
                 data-testid={`read-scope-doc-mode-${m}`}
                 key={m}
                 onClick={() => setPreviewMode(m)}
                 type="button"
+                variant="unstyled"
               >
                 <TonedIcon className="mt-0.5 size-4 shrink-0" icon={Icon} tone={m === 'live' ? 'live' : 'primary'} />
                 <span className="min-w-0">
                   <span className="block text-body-sm font-semibold">{title}</span>
                   <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{description}</span>
                 </span>
-              </button>
+              </Button>
             );
           })}
         </div>

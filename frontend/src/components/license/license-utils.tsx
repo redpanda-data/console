@@ -10,6 +10,7 @@ import {
   type ListEnterpriseFeaturesResponse_Feature,
 } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api } from '../../state/backend-api';
+import { arrayGroupBy, arrayOrderBy } from '../../utils/array-utils';
 import { AppFeatures } from '../../utils/env';
 
 const Platform = {
@@ -238,11 +239,9 @@ export const licensesToSimplifiedPreview = (
   expiresAt: string;
   isExpired: boolean;
 }> => {
-  const groupedLicenses = licenses.groupBy((x) => x.type);
-
+  const groupedLicenses = arrayGroupBy(licenses, (x) => x.type);
   return [...groupedLicenses.values()].map((licensesGroup) => {
-    const [firstLicenseToExpire] = licensesGroup.orderBy((x) => Number(x.expiresAt));
-
+    const [firstLicenseToExpire] = arrayOrderBy(licensesGroup, (x) => Number(x.expiresAt));
     if (licensesGroup.length === 1) {
       return {
         name: prettyLicenseType(firstLicenseToExpire, true),

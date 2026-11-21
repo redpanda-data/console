@@ -15,12 +15,22 @@ import userEvent from '@testing-library/user-event';
 
 import { MessagesFooter, type MessagesFooterProps } from './messages-footer';
 
-class MockIntersectionObserver {
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin = '0px';
+  readonly scrollMargin = '0px';
+  readonly thresholds = [0];
+  takeRecords = () => [];
+  target: Element = document.body;
   static instances: MockIntersectionObserver[] = [];
   callback: IntersectionObserverCallback;
-  observe = rs.fn();
+  observe = rs.fn((target: Element) => {
+    this.target = target;
+  });
   disconnect = rs.fn();
-  unobserve = rs.fn();
+  unobserve = rs.fn((target: Element) => {
+    this.target = target;
+  });
 
   constructor(callback: IntersectionObserverCallback) {
     this.callback = callback;
@@ -28,7 +38,21 @@ class MockIntersectionObserver {
   }
 
   trigger(isIntersecting: boolean) {
-    this.callback([{ isIntersecting } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+    const rect = new DOMRect(0, 0, 100, 100);
+    this.callback(
+      [
+        {
+          isIntersecting,
+          target: this.target,
+          time: 0,
+          boundingClientRect: rect,
+          intersectionRect: rect,
+          rootBounds: null,
+          intersectionRatio: isIntersecting ? 1 : 0,
+        },
+      ],
+      this
+    );
   }
 }
 

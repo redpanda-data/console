@@ -30,14 +30,17 @@ type NotFoundContentProps = {
  * Used by route notFoundComponent handlers when a specific resource is not found.
  */
 export const NotFoundContent = ({ resourceType, resourceId, backLink, backLinkText }: NotFoundContentProps) => {
-  const message = resourceId ? `${resourceType} "${resourceId}" not found.` : `${resourceType} not found.`;
+  const message =
+    resourceId !== null && resourceId !== undefined && resourceId !== ''
+      ? `${resourceType} "${resourceId}" not found.`
+      : `${resourceType} not found.`;
 
   return (
     <div className="flex h-[80vh] items-center justify-center" data-testid="not-found-content">
       <div className="flex flex-col items-center gap-4 text-center">
         <img alt="Error" className="h-[180px]" src={errorBananaSlip} />
         <h1 className="text-heading-xl font-semibold">{message}</h1>
-        {backLink ? (
+        {backLink !== null && backLink !== undefined && backLink !== '' ? (
           <Link as={RouterLink} data-testid="back-link" to={backLink}>
             {backLinkText ?? 'Go back'}
           </Link>

@@ -11,6 +11,8 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import React from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import styles from './Wizard.module.scss';
 
@@ -22,7 +24,12 @@ export function Wizard<State extends WizardState>({ state }: { state: State }) {
       <div className={styles.content}>{currentStep.content}</div>
       <div className={styles.footer}>
         {currentStep.nextButtonLabel !== null && (
-          <Button disabled={!state.canContinue()} onClick={state.next} size="lg" variant="primary">
+          <Button
+            disabled={!state.canContinue()}
+            onClick={asyncEvent(state.next, reportActionError)}
+            size="lg"
+            variant="primary"
+          >
             {currentStep.nextButtonLabel ?? 'Next'}
           </Button>
         )}

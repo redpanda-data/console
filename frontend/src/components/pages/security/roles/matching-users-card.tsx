@@ -16,6 +16,8 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Check, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useGbacEnabled } from '../hooks/use-gbac-enabled';
 import { useNonMemberUserNames, useRoleMembership } from '../hooks/use-role-membership';
@@ -39,7 +41,7 @@ type RoleMemberRowProps = {
 const RoleMemberRow = ({ member, testIdPrefix, isDeleting, onRemove }: RoleMemberRowProps) => {
   const displayName = parsePrincipal(member.principal).name || member.principal;
   return (
-    <div className="group flex items-center justify-between gap-2 rounded-lg border border-border bg-card/40 px-[10px] py-2 text-body font-normal text-strong transition-colors hover:bg-card/60">
+    <div className="group flex items-center justify-between gap-2 rounded-lg border border-border bg-card/40 px-2.5 py-2 text-body font-normal text-strong transition-colors hover:bg-card/60">
       <span className="flex-1 text-left">{displayName}</span>
       <Button
         aria-label={`Remove ${displayName}`}
@@ -49,7 +51,7 @@ const RoleMemberRow = ({ member, testIdPrefix, isDeleting, onRemove }: RoleMembe
         size="icon-xs"
         variant="destructive-ghost"
       >
-        <Trash2 className="h-4 w-4" />
+        <Trash2 className="size-4" />
       </Button>
     </div>
   );
@@ -115,7 +117,7 @@ const AddRoleMember = ({ gbacEnabled, isSubmitting, userSuggestions, onAdd }: Ad
         size="sm"
         variant="ghost"
       >
-        <Plus className="mr-2 h-4 w-4" />
+        <Plus className="mr-2 size-4" />
         Add user/principal
       </Button>
     );
@@ -167,14 +169,14 @@ const AddRoleMember = ({ gbacEnabled, isSubmitting, userSuggestions, onAdd }: Ad
           aria-label="Add member"
           data-testid="confirm-add-user-button"
           disabled={isSubmitting || !name.trim()}
-          onClick={handleAdd}
+          onClick={asyncEvent(handleAdd, reportActionError)}
           size="icon-sm"
           variant="primary-ghost"
         >
-          <Check className="h-4 w-4" />
+          <Check className="size-4" />
         </Button>
         <Button aria-label="Cancel" disabled={isSubmitting} onClick={reset} size="icon-sm" variant="destructive-ghost">
-          <X className="h-4 w-4" />
+          <X className="size-4" />
         </Button>
       </div>
     </div>
@@ -206,7 +208,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                   deletingPrincipal={membership.deletingPrincipal}
                   emptyTitle="No user members"
                   members={membership.userMembers}
-                  onRemove={membership.removeMember}
+                  onRemove={asyncEvent(membership.removeMember, reportActionError)}
                   testIdPrefix="user"
                 />
 
@@ -220,7 +222,7 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                       deletingPrincipal={membership.deletingPrincipal}
                       emptyTitle="No group members"
                       members={membership.groupMembers}
-                      onRemove={membership.removeMember}
+                      onRemove={asyncEvent(membership.removeMember, reportActionError)}
                       testIdPrefix="group"
                     />
                   </>

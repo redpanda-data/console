@@ -23,7 +23,7 @@ import { ListTopicsRequestSchema } from 'protogen/redpanda/api/dataplane/v1/topi
 import { listTopics } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import {
   type Dispatch,
-  forwardRef,
+  type Ref,
   type SetStateAction,
   useCallback,
   useEffect,
@@ -118,7 +118,7 @@ function useAddTopicForm(defaultTopicName?: string) {
     () => ({
       ...TOPIC_FORM_DEFAULTS,
       replicationFactor: defaultReplicationFactor,
-      topicName: defaultTopicName || TOPIC_FORM_DEFAULTS.topicName,
+      topicName: (defaultTopicName ?? '') || TOPIC_FORM_DEFAULTS.topicName,
     }),
     [defaultTopicName, defaultReplicationFactor]
   );
@@ -153,7 +153,7 @@ function useExistingTopicSync(form: TopicForm, topicList: TopicList) {
   }, [watchedTopicName, topicList]);
 
   const { data: topicConfig } = useTopicConfigQuery(
-    existingTopicSelected?.topicName || '',
+    (existingTopicSelected?.topicName ?? '') || '',
     !isFalsy(existingTopicSelected?.topicName)
   );
 
@@ -204,7 +204,10 @@ function useTopicSelectionType({
 
   const handleTopicSelectionTypeChange = useCallback(
     (value: string) => {
-      setTopicSelectionType(value as CreatableSelectionType);
+      if (value !== CreatableSelectionOptions.EXISTING && value !== CreatableSelectionOptions.CREATE) {
+        return;
+      }
+      setTopicSelectionType(value);
       form.setValue('topicName', '', { shouldDirty: true });
     },
     [form]
@@ -382,7 +385,7 @@ function TopicNameSection({
               if (!value) {
                 return;
               }
-              onTopicSelectionTypeChange(value as CreatableSelectionType);
+              onTopicSelectionTypeChange(value);
             }}
             value={[topicSelectionType]}
             variant="outline"
@@ -456,10 +459,10 @@ function AdvancedSettingsDisclosure({
       >
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
-          className="flex h-4 w-4 items-center justify-center"
+          className="flex size-4 items-center justify-center"
           transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
         >
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="size-4" />
         </motion.span>
         Show advanced settings
       </Button>
@@ -479,92 +482,88 @@ function AdvancedSettingsDisclosure({
 
 // ── Step ───────────────────────────────────────────────────────────────────────
 
-export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
-  (
-    {
-      defaultTopicName,
-      hideInternal = true,
-      onValidityChange,
-      selectionMode = 'both',
-      hideTitle,
-      className,
-      inline = false,
+export function AddTopicStep({
+  defaultTopicName,
+  hideInternal = true,
+  onValidityChange,
+  selectionMode = 'both',
+  hideTitle,
+  className,
+  inline = false,
+  ref,
+}: AddTopicStepProps & MotionProps & { ref?: Ref<BaseStepRef<AddTopicFormData>> }) {
+  const { topicList, topicOptions } = useTopicOptions(hideInternal);
+  const form = useAddTopicForm(defaultTopicName);
+  const { watchedTopicName, existingTopicSelected } = useExistingTopicSync(form, topicList);
+  const { handleSubmit, isPending } = useAddTopicSubmit(existingTopicSelected);
+  const { topicSelectionType, handleTopicSelectionTypeChange } = useTopicSelectionType({
+    form,
+    selectionMode,
+    topicList,
+  });
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+
+  useEffect(
+    function reportValidity() {
+      onValidityChange?.(form.formState.isValid);
     },
-    ref
-  ) => {
-    const { topicList, topicOptions } = useTopicOptions(hideInternal);
-    const form = useAddTopicForm(defaultTopicName);
-    const { watchedTopicName, existingTopicSelected } = useExistingTopicSync(form, topicList);
-    const { handleSubmit, isPending } = useAddTopicSubmit(existingTopicSelected);
-    const { topicSelectionType, handleTopicSelectionTypeChange } = useTopicSelectionType({
-      form,
-      selectionMode,
-      topicList,
-    });
-    const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+    [form.formState.isValid, onValidityChange]
+  );
 
-    useEffect(
-      function reportValidity() {
-        onValidityChange?.(form.formState.isValid);
-      },
-      [form.formState.isValid, onValidityChange]
-    );
+  useImperativeHandle(ref, () => ({
+    triggerSubmit: async (signal?: AbortSignal) => {
+      if (signal?.aborted ?? false) {
+        return { success: false };
+      }
+      const isValid = await form.trigger();
+      if (signal?.aborted ?? false) {
+        return { success: false };
+      }
+      if (isValid) {
+        const data = form.getValues();
+        return handleSubmit(data);
+      }
+      return {
+        success: false,
+        message: 'Fix the form errors before proceeding',
+        error: 'Form validation failed',
+      };
+    },
+    isPending,
+  }));
 
-    useImperativeHandle(ref, () => ({
-      triggerSubmit: async (signal?: AbortSignal) => {
-        if (signal?.aborted) {
-          return { success: false };
-        }
-        const isValid = await form.trigger();
-        if (signal?.aborted) {
-          return { success: false };
-        }
-        if (isValid) {
-          const data = form.getValues();
-          return handleSubmit(data);
-        }
-        return {
-          success: false,
-          message: 'Fix the form errors before proceeding',
-          error: 'Form validation failed',
-        };
-      },
-      isPending,
-    }));
+  return (
+    <StepSurface
+      className={className}
+      description="Select or create a topic to store data for this streaming pipeline. A topic can have multiple clients writing data to it (producers) and reading data from it (consumers)."
+      hideTitle={hideTitle}
+      inline={inline}
+      title="Read or write data from a topic"
+    >
+      <Form {...form}>
+        <div className={inline ? 'flex flex-col gap-5' : 'mt-4 max-w-2xl space-y-6'}>
+          <TopicNameSection
+            existingTopicSelected={existingTopicSelected}
+            form={form}
+            isPending={isPending}
+            onTopicSelectionTypeChange={handleTopicSelectionTypeChange}
+            selectionMode={selectionMode}
+            topicOptions={topicOptions}
+            topicSelectionType={topicSelectionType}
+            watchedTopicName={watchedTopicName}
+          />
 
-    return (
-      <StepSurface
-        className={className}
-        description="Select or create a topic to store data for this streaming pipeline. A topic can have multiple clients writing data to it (producers) and reading data from it (consumers)."
-        hideTitle={hideTitle}
-        inline={inline}
-        title="Read or write data from a topic"
-      >
-        <Form {...form}>
-          <div className={inline ? 'flex flex-col gap-5' : 'mt-4 max-w-2xl space-y-6'}>
-            <TopicNameSection
-              existingTopicSelected={existingTopicSelected}
+          {topicSelectionType === CreatableSelectionOptions.EXISTING && !existingTopicSelected ? null : (
+            <AdvancedSettingsDisclosure
               form={form}
+              isExistingTopic={Boolean(existingTopicSelected)}
               isPending={isPending}
-              onTopicSelectionTypeChange={handleTopicSelectionTypeChange}
-              selectionMode={selectionMode}
-              topicOptions={topicOptions}
-              topicSelectionType={topicSelectionType}
-              watchedTopicName={watchedTopicName}
+              onOpenChange={setShowAdvancedSettings}
+              open={showAdvancedSettings}
             />
-
-            {topicSelectionType === CreatableSelectionOptions.EXISTING && !existingTopicSelected ? null : (
-              <AdvancedSettingsDisclosure
-                form={form}
-                isExistingTopic={Boolean(existingTopicSelected)}
-                isPending={isPending}
-                onOpenChange={setShowAdvancedSettings}
-                open={showAdvancedSettings}
-              />
-            )}
-          </div>
-        </Form>
-      </StepSurface>
-    );
-  }
-);
+          )}
+        </div>
+      </Form>
+    </StepSurface>
+  );
+}

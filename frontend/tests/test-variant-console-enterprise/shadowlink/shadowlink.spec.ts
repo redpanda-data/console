@@ -1,9 +1,7 @@
-import { step } from '../../shared/e2e';
-
-/** biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
-
+import { isNonEmptyString } from '../../../src/utils/string-utils';
+import { expect, step } from '../../shared/e2e';
 import { generateShadowlinkName, ShadowlinkPage } from '../../test-variant-console/utils/shadowlink-page';
-import { expect, test } from '../fixtures';
+import { test } from '../fixtures';
 
 /** Fails over `owlshop-orders` alone, then every topic once all 7 have synced, and verifies the result. */
 const failOverOneTopicThenAll = async (shadowlinkPage: ShadowlinkPage, shadowlinkName: string) => {
@@ -109,7 +107,7 @@ test.describe('shadow Link E2E Tests', () => {
     });
   });
 
-  test.describe.skipIf(!!process.env.CI)('shadow Link Filter', () => {
+  test.describe.skipIf(isNonEmptyString(process.env.CI))('shadow Link Filter', () => {
     test('should create with exclude filter and verify it works', async ({ page, shadowBackendURL }) => {
       const shadowlinkPage = new ShadowlinkPage(page, shadowBackendURL);
       const shadowlinkName = generateShadowlinkName();

@@ -60,7 +60,11 @@ describe('useLiveTailLoop', () => {
       let calls = 0;
       const start = rs.fn().mockImplementation(() => {
         calls += 1;
-        return calls >= 3 ? new Promise<void>(() => {}) : Promise.resolve();
+        return calls >= 3
+          ? new Promise<void>(() => {
+              /* Simulate an open stream with no scheduled completion. */
+            })
+          : Promise.resolve();
       });
       renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop }));
 
@@ -129,7 +133,11 @@ describe('useLiveTailLoop', () => {
           return Promise.reject(new Error('boom'));
         }
         // Hang from the 2nd success onward so the immediate-restart chain has somewhere to stop.
-        return calls >= 3 ? new Promise<void>(() => {}) : Promise.resolve();
+        return calls >= 3
+          ? new Promise<void>(() => {
+              /* Simulate an open stream with no scheduled completion. */
+            })
+          : Promise.resolve();
       });
       renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop }));
 
@@ -173,7 +181,12 @@ describe('useLiveTailLoop', () => {
       expect(result.current.status).toBe('exhausted');
       expect(start).toHaveBeenCalledTimes(2); // 1 initial + 1 retry
 
-      start.mockImplementation(() => new Promise<void>(() => {})); // recovers: stream stays open
+      start.mockImplementation(
+        () =>
+          new Promise<void>(() => {
+            /* Simulate an open stream with no scheduled completion. */
+          })
+      ); // recovers: stream stays open
       act(() => {
         result.current.restart();
       });
@@ -194,7 +207,12 @@ describe('useLiveTailLoop', () => {
         await rs.advanceTimersByTimeAsync(0);
       });
 
-      start.mockImplementation(() => new Promise<void>(() => {})); // recovers: stream stays open
+      start.mockImplementation(
+        () =>
+          new Promise<void>(() => {
+            /* Simulate an open stream with no scheduled completion. */
+          })
+      ); // recovers: stream stays open
       act(() => result.current.restart());
       expect(stop).toHaveBeenCalledTimes(1);
       expect(start).toHaveBeenCalledTimes(2);

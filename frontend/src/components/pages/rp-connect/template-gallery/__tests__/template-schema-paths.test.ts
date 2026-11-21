@@ -9,31 +9,31 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-
 import { describe, expect, test } from 'bun:test';
-import schemaJson from '../../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
+import { isNonEmptyString } from '../../../../../utils/string-utils';
+import { componentList } from '../../utils/__fixtures__/schema-snapshot';
 import { findComponentByName, resolveFieldByPath } from '../../utils/schema';
 import { PIPELINE_TEMPLATES } from '../pipeline-templates';
 
 // Asserts each slot's schemaField resolves against the committed schema snapshot, so a renamed/removed
 // field fails here instead of silently dropping that slot's schema-driven description/required/default at runtime.
 describe('the PIPELINE_TEMPLATES schemaField paths resolve against the schema snapshot', () => {
-  const componentList = schemaJson as unknown as ComponentList;
-
-  const slotsWithSchemaField = PIPELINE_TEMPLATES.flatMap((t) =>
-    t.slots
-      .filter((s) => s.schemaField && (s.section === 'source' || s.section === 'sink'))
-      .map((s) => {
-        const endpoint = s.section === 'source' ? t.source : t.sink;
-        return {
-          templateId: t.id,
-          slotId: s.id,
-          schemaField: s.schemaField as string,
+  const slotsWithSchemaField = PIPELINE_TEMPLATES.flatMap((template) =>
+    template.slots.flatMap((slot) => {
+      if (!isNonEmptyString(slot.schemaField) || (slot.section !== 'source' && slot.section !== 'sink')) {
+        return [];
+      }
+      const endpoint = slot.section === 'source' ? template.source : template.sink;
+      return [
+        {
+          templateId: template.id,
+          slotId: slot.id,
+          schemaField: slot.schemaField,
           component: endpoint.component,
           type: endpoint.type,
-        };
-      })
+        },
+      ];
+    })
   );
 
   test.each(slotsWithSchemaField)(

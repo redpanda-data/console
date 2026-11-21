@@ -15,7 +15,10 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { CircleAlertIcon } from 'lucide-react';
 import { useState } from 'react';
-import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
+import { type Control, Controller, type FieldErrors, type SubmitHandler, useForm } from 'react-hook-form';
+import { asyncEvent } from 'utils/async-event';
+import { getRpcFieldErrors } from 'utils/rpc-field-errors';
+import { reportActionError } from 'utils/toast.utils';
 import { capitalizeFirst } from 'utils/utils';
 
 import { useLicenseSignupMutation } from '../../react-query/api/signup';
@@ -23,25 +26,6 @@ import { api } from '../../state/backend-api';
 
 const NAME_VALIDATION_REGEX = /^[\p{L}\p{M}\p{N} '_-]+$/u;
 const EMAIL_VALIDATION_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
-
-type FieldViolation = {
-  field: string;
-  description: string;
-};
-
-type BadRequest = {
-  fieldViolations: FieldViolation[];
-};
-
-function isBadRequest(obj: unknown): obj is { type: string; debug: BadRequest } {
-  return (
-    obj !== null &&
-    obj !== undefined &&
-    typeof obj === 'object' &&
-    'type' in obj &&
-    obj.type === 'google.rpc.BadRequest'
-  );
-}
 
 type RegisterFormData = {
   givenName: string;
@@ -75,7 +59,6 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
     },
   });
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
     setIsSubmitting(true);
     setFieldErrors({}); // Clear previous field errors
@@ -85,17 +68,17 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
         givenName: data.givenName,
         familyName: data.familyName,
         email: data.email,
-        companyName: data.companyName || 'unknown',
+        companyName: (data.companyName ?? '') || 'unknown',
       });
 
       // Refresh licenses after successful registration
-      api.listLicenses();
+      api.listLicenses().catch(reportActionError);
 
       // Show success state
       setIsSuccess(true);
     } catch (error) {
       if (error instanceof ConnectError) {
-        setFieldErrors(getRegistrationFieldErrors(error));
+        setFieldErrors(getRpcFieldErrors(error));
       }
 
       // biome-ignore lint/suspicious/noConsole: error logging for debugging registration failures
@@ -114,7 +97,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
 
     if (isSuccess) {
       // Refetch license data and enterprise features after successful registration
-      api.listLicenses();
+      api.listLicenses().catch(reportActionError);
     }
   };
 
@@ -156,93 +139,8 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                 </Alert>
               )}
 
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <div className="mb-4 flex gap-4">
-                  <Field data-invalid={Boolean(errors.givenName?.message || fieldErrors.givenName) || undefined}>
-                    <FieldLabel htmlFor="register-given-name">First name</FieldLabel>
-                    <Controller
-                      control={control}
-                      name="givenName"
-                      render={({ field }) => (
-                        <Input {...field} autoComplete="given-name" id="register-given-name" placeholder="First name" />
-                      )}
-                      rules={{
-                        required: 'First name is required',
-                        pattern: {
-                          value: NAME_VALIDATION_REGEX,
-                          message: 'First name contains invalid characters',
-                        },
-                        minLength: {
-                          value: 1,
-                          message: 'First name is required',
-                        },
-                        maxLength: {
-                          value: 255,
-                          message: 'First name is too long',
-                        },
-                      }}
-                    />
-                    <FieldError>{errors.givenName?.message || fieldErrors.givenName}</FieldError>
-                  </Field>
-
-                  <Field data-invalid={Boolean(errors.familyName?.message || fieldErrors.familyName) || undefined}>
-                    <FieldLabel htmlFor="register-family-name">Last name</FieldLabel>
-                    <Controller
-                      control={control}
-                      name="familyName"
-                      render={({ field }) => (
-                        <Input
-                          {...field}
-                          autoComplete="family-name"
-                          id="register-family-name"
-                          placeholder="Last name"
-                        />
-                      )}
-                      rules={{
-                        required: 'Last name is required',
-                        pattern: {
-                          value: NAME_VALIDATION_REGEX,
-                          message: 'Last name contains invalid characters',
-                        },
-                        minLength: {
-                          value: 1,
-                          message: 'Last name is required',
-                        },
-                        maxLength: {
-                          value: 255,
-                          message: 'Last name is too long',
-                        },
-                      }}
-                    />
-                    <FieldError>{errors.familyName?.message || fieldErrors.familyName}</FieldError>
-                  </Field>
-                </div>
-
-                <Field className="mb-4" data-invalid={Boolean(errors.email?.message || fieldErrors.email) || undefined}>
-                  <FieldLabel htmlFor="register-email">Email address</FieldLabel>
-                  <Controller
-                    control={control}
-                    name="email"
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        autoComplete="email"
-                        id="register-email"
-                        placeholder="Email address"
-                        type="email"
-                      />
-                    )}
-                    rules={{
-                      required: 'Email address is required',
-                      pattern: {
-                        value: EMAIL_VALIDATION_REGEX,
-                        message: 'Enter a valid email address',
-                      },
-                    }}
-                  />
-                  <FieldError>{errors.email?.message || fieldErrors.email}</FieldError>
-                </Field>
-
+              <form onSubmit={asyncEvent(handleSubmit(onSubmit), reportActionError)}>
+                <RegisterFields control={control} errors={errors} fieldErrors={fieldErrors} />
                 <div className="mb-4 text-body-sm text-subtle">
                   By registering you acknowledge having read and accepted our{' '}
                   <Link href="https://www.redpanda.com/legal/privacy-policy" rel="noopener noreferrer" target="_blank">
@@ -276,7 +174,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
               <Button
                 aria-label="Register"
                 isLoading={isSubmitting || signupMutation.isPending}
-                onClick={handleSubmit(onSubmit)}
+                onClick={asyncEvent(handleSubmit(onSubmit), reportActionError)}
               >
                 Register
               </Button>
@@ -288,14 +186,91 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
   );
 };
 
-function getRegistrationFieldErrors(error: ConnectError): Record<string, string> {
-  const fieldErrors: Record<string, string> = {};
-  for (const detail of error.details ?? []) {
-    if (isBadRequest(detail)) {
-      for (const violation of detail.debug.fieldViolations) {
-        fieldErrors[violation.field] = violation.description;
-      }
-    }
-  }
-  return fieldErrors;
+function RegisterFields({
+  control,
+  errors,
+  fieldErrors,
+}: {
+  control: Control<RegisterFormData>;
+  errors: FieldErrors<RegisterFormData>;
+  fieldErrors: Record<string, string>;
+}) {
+  return (
+    <>
+      {' '}
+      <div className="mb-4 flex gap-4">
+        <Field data-invalid={Boolean((errors.givenName?.message ?? '') || fieldErrors.givenName) || undefined}>
+          <FieldLabel htmlFor="register-given-name">First name</FieldLabel>
+          <Controller
+            control={control}
+            name="givenName"
+            render={({ field }) => (
+              <Input {...field} autoComplete="given-name" id="register-given-name" placeholder="First name" />
+            )}
+            rules={{
+              required: 'First name is required',
+              pattern: {
+                value: NAME_VALIDATION_REGEX,
+                message: 'First name contains invalid characters',
+              },
+              minLength: {
+                value: 1,
+                message: 'First name is required',
+              },
+              maxLength: {
+                value: 255,
+                message: 'First name is too long',
+              },
+            }}
+          />
+          <FieldError>{(errors.givenName?.message ?? '') || fieldErrors.givenName}</FieldError>
+        </Field>
+
+        <Field data-invalid={Boolean((errors.familyName?.message ?? '') || fieldErrors.familyName) || undefined}>
+          <FieldLabel htmlFor="register-family-name">Last name</FieldLabel>
+          <Controller
+            control={control}
+            name="familyName"
+            render={({ field }) => (
+              <Input {...field} autoComplete="family-name" id="register-family-name" placeholder="Last name" />
+            )}
+            rules={{
+              required: 'Last name is required',
+              pattern: {
+                value: NAME_VALIDATION_REGEX,
+                message: 'Last name contains invalid characters',
+              },
+              minLength: {
+                value: 1,
+                message: 'Last name is required',
+              },
+              maxLength: {
+                value: 255,
+                message: 'Last name is too long',
+              },
+            }}
+          />
+          <FieldError>{(errors.familyName?.message ?? '') || fieldErrors.familyName}</FieldError>
+        </Field>
+      </div>
+      <Field className="mb-4" data-invalid={Boolean((errors.email?.message ?? '') || fieldErrors.email) || undefined}>
+        <FieldLabel htmlFor="register-email">Email address</FieldLabel>
+        <Controller
+          control={control}
+          name="email"
+          render={({ field }) => (
+            <Input {...field} autoComplete="email" id="register-email" placeholder="Email address" type="email" />
+          )}
+          rules={{
+            required: 'Email address is required',
+            pattern: {
+              value: EMAIL_VALIDATION_REGEX,
+              message: 'Enter a valid email address',
+            },
+          }}
+        />
+        <FieldError>{(errors.email?.message ?? '') || fieldErrors.email}</FieldError>
+      </Field>
+    </>
+  );
 }

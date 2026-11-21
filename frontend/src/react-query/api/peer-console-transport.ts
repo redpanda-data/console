@@ -36,7 +36,11 @@ const consoleErrorsOnly =
   (fetchImpl: Fetch): Fetch =>
   async (input, init) => {
     const response = await fetchImpl(input, init);
-    if (response.status === 200 || response.status === 404 || !response.headers.get('content-type')?.includes('json')) {
+    if (
+      response.status === 200 ||
+      response.status === 404 ||
+      response.headers.get('content-type')?.includes('json') !== true
+    ) {
       return response;
     }
     const body: unknown = await response
@@ -56,8 +60,8 @@ export const createPeerConsoleTransport = (
 ): Transport =>
   createConnectTransport({
     baseUrl: consoleUrl,
-    /** Bun's `fetch` type adds `preconnect`, which Connect never calls. */
-    fetch: consoleErrorsOnly(fetchImpl) as typeof globalThis.fetch,
+    /** Keep runtime-specific fetch properties (including Bun's preconnect). */
+    fetch: Object.assign(consoleErrorsOnly(fetchImpl), globalThis.fetch),
     interceptors: [addBearerTokenInterceptor],
     jsonOptions: { registry: protobufRegistry },
   });

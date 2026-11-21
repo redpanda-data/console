@@ -1,3 +1,4 @@
+import { cn } from 'components/redpanda-ui/lib/utils';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -9,9 +10,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
-import KowlEditor, { type IStandaloneCodeEditor } from './kowl-editor';
+import { JsonViewEditor } from './json-view-editor';
+import type { IStandaloneCodeEditor } from './kowl-editor';
 
 const READ_ONLY_EDITOR_OPTIONS = {
   readOnly: true,
@@ -50,7 +52,7 @@ const READ_ONLY_EDITOR_OPTIONS = {
 
 export const KowlJsonView = (props: {
   srcObj: object | string | null | undefined;
-  style?: CSSProperties;
+  className?: string;
   // escapeLatin1 re-escapes code points in 0x80-0xFF as \u00XX so bytes from
   // Avro's JSON bytes encoding survive copy-paste out of the viewer. Without
   // this, JSON.stringify emits the code point as a literal glyph and the
@@ -58,12 +60,12 @@ export const KowlJsonView = (props: {
   escapeLatin1?: boolean;
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const editorRef = useRef<IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<Pick<IStandaloneCodeEditor, 'layout'> | null>(null);
   const frameRef = useRef<number | null>(null);
   const lastSizeRef = useRef({ width: 0, height: 0 });
   const str = useMemo(() => {
     const raw = typeof props.srcObj === 'string' ? props.srcObj : JSON.stringify(props.srcObj, undefined, 4);
-    if (!props.escapeLatin1) {
+    if (!(props.escapeLatin1 === true)) {
       return raw;
     }
     return raw.replace(/[\u0080-\u00ff]/g, (c) => `\\u00${c.charCodeAt(0).toString(16).padStart(2, '0')}`);
@@ -94,7 +96,7 @@ export const KowlJsonView = (props: {
   }, []);
 
   const handleMount = useCallback(
-    (editor: IStandaloneCodeEditor) => {
+    (editor: Pick<IStandaloneCodeEditor, 'layout'>) => {
       editorRef.current = editor;
       lastSizeRef.current = { width: 0, height: 0 };
       scheduleLayout();
@@ -133,15 +135,20 @@ export const KowlJsonView = (props: {
   }, [scheduleLayout]);
 
   return (
-    <div className="relative h-96 max-h-180 min-h-40" style={props.style}>
+    <div className={cn('relative h-96 max-h-180 min-h-40', props.className)}>
       <div className="absolute inset-0" ref={containerRef}>
-        <KowlEditor language="json" onMount={handleMount} options={READ_ONLY_EDITOR_OPTIONS} value={str} />
+        <JsonViewEditor onMount={handleMount} options={READ_ONLY_EDITOR_OPTIONS} value={str} />
       </div>
     </div>
   );
 };
-
-function getChangedEditorSize(container: HTMLElement, previousSize: { width: number; height: number }) {
+function getChangedEditorSize(
+  container: HTMLElement,
+  previousSize: {
+    width: number;
+    height: number;
+  }
+) {
   const { width, height } = container.getBoundingClientRect();
   if (width === 0 || height === 0) {
     return null;

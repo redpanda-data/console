@@ -1,3 +1,5 @@
+import { isPresent } from './type-guards';
+
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -56,7 +58,7 @@ export function insertGapMarkers(points: MergedPoint[]): MergedPoint[] {
   for (let i = 0; i < points.length; i++) {
     result.push(points[i]);
     const next = points[i + 1];
-    if (next && next.timestamp - points[i].timestamp > step * 1.5) {
+    if (isPresent(next) && next.timestamp - points[i].timestamp > step * 1.5) {
       result.push({ timestamp: points[i].timestamp + step, ingress: null, egress: null });
     }
   }

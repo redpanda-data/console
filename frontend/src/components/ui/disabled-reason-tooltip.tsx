@@ -17,6 +17,7 @@ import {
 } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { ReactElement } from 'react';
+import { isNonEmptyString } from 'utils/string-utils';
 
 type DisabledReasonTooltipProps = {
   reason?: string;
@@ -35,7 +36,7 @@ export const hoverableWhenDisabled = (
   /** Layout the control has in its row, such as `ml-auto`, which the span then has to carry. */
   className?: string
 ): ReactElement =>
-  reason ? (
+  isNonEmptyString(reason) ? (
     <span
       className={cn(
         'inline-flex rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
@@ -53,7 +54,7 @@ export const hoverableWhenDisabled = (
 
 /** Explains why the wrapped control is disabled. Without a reason, the control renders untouched. */
 export const DisabledReasonTooltip = ({ reason, side, children }: DisabledReasonTooltipProps) => {
-  if (!reason) {
+  if (!isNonEmptyString(reason)) {
     return children;
   }
 

@@ -1,4 +1,5 @@
 import { create } from '@bufbuild/protobuf';
+import type { Interceptor } from '@connectrpc/connect';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { GetSecretRequestSchema, GetSecretResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
@@ -9,22 +10,20 @@ import {
   Scope,
   SecretSchema,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+
+import { SecretEditPage } from './secret-edit-page';
+import { renderWithFileRoutes, screen, waitFor } from '../../../../test-utils';
 
 rs.mock('config', () => ({
+  addBearerTokenInterceptor: rs.fn<Interceptor>((next) => next),
+}));
+
+rs.mock('runtime-config', () => ({
   config: {
     jwt: 'test-jwt-token',
     controlplaneUrl: 'http://localhost:9090',
   },
   isFeatureFlagEnabled: rs.fn(() => false),
-  addBearerTokenInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
-}));
-
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
 }));
 
 const SECRET_ID = 'TEST_SECRET';
@@ -52,8 +51,6 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 Element.prototype.scrollIntoView = rs.fn();
-
-import { SecretEditPage } from './secret-edit-page';
 
 const UPDATE_SECRET_BUTTON_REGEX = /update secret/i;
 

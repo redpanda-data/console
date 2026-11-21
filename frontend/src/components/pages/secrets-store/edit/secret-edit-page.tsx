@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -12,9 +13,6 @@ import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getRouteApi, useNavigate } from '@tanstack/react-router';
-
-const routeApi = getRouteApi('/secrets/$id/edit');
-
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
@@ -32,15 +30,19 @@ import { TagsFieldList } from 'components/ui/tag/tags-field-list';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { type Secret, UpdateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect } from 'react';
-import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useGetSecretQuery, useUpdateSecretMutation } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { asyncEvent } from 'utils/async-event';
+import { formatToastErrorMessageGRPC, reportActionError } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
 import { SecretUpdateFormSchema, type SecretUpdateFormValues } from './secret-edit-form-schema';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { labelsToMap, SCOPE_OPTIONS } from '../secret-form-shared';
+
+const routeApi = getRouteApi('/secrets/$id/edit');
 
 /** The console-managed `owner: console` label is hidden from the form. */
 const toFormValues = (secret: Secret): SecretUpdateFormValues => ({
@@ -56,8 +58,8 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
   const navigate = useNavigate();
   const { mutateAsync: updateSecret, isPending: isUpdating } = useUpdateSecretMutation();
 
-  const form = useForm<SecretUpdateFormValues>({
-    resolver: zodResolver(SecretUpdateFormSchema) as Resolver<SecretUpdateFormValues>,
+  const form = useForm<z.input<typeof SecretUpdateFormSchema>, unknown, SecretUpdateFormValues>({
+    resolver: zodResolver(SecretUpdateFormSchema),
     defaultValues: {
       id: '',
       value: '',
@@ -81,7 +83,9 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
   }, [secret, form]);
 
   const onSubmit = async (values: SecretUpdateFormValues) => {
-    const encodedSecretData = values.value ? base64ToUInt8Array(encodeBase64(values.value)) : new Uint8Array(0);
+    const encodedSecretData = isNonEmptyString(values.value)
+      ? base64ToUInt8Array(encodeBase64(values.value))
+      : new Uint8Array(0);
 
     const request = create(UpdateSecretRequestSchema, {
       id: values.id,
@@ -112,7 +116,7 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
         </div>
       </header>
 
-      <form className="max-w-full space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+      <form className="max-w-full space-y-6" onSubmit={asyncEvent(form.handleSubmit(onSubmit), reportActionError)}>
         <Controller
           control={form.control}
           name="id"
@@ -177,6 +181,7 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
         <TagsFieldList
           appendTag={appendLabel}
           fieldName="labels"
+          fieldNames={(index) => ({ key: `labels.${index}.key`, value: `labels.${index}.value` })}
           form={form}
           removeTag={removeLabel}
           tagFields={labelFields}
@@ -190,7 +195,7 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
           >
             {isUpdating ? (
               <>
-                <TonedIcon className="h-4 w-4" icon={Loader2} spin />
+                <TonedIcon className="size-4" icon={Loader2} spin />
                 Updating...
               </>
             ) : (
@@ -199,7 +204,7 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
           </Button>
           <Button
             data-testid="secret-edit-cancel-button"
-            onClick={() => navigate({ to: '/secrets' })}
+            onClick={asyncEvent(() => navigate({ to: '/secrets' }), reportActionError)}
             type="button"
             variant="ghost"
           >
@@ -229,7 +234,7 @@ export const SecretEditPage = () => {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex items-center gap-2">
-          <TonedIcon className="h-6 w-6" icon={Loader2} spin />
+          <TonedIcon className="size-6" icon={Loader2} spin />
           <div className="text-body">Loading secret...</div>
         </div>
       </div>
@@ -240,9 +245,9 @@ export const SecretEditPage = () => {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex flex-col items-center gap-4">
-          <TonedIcon className="h-12 w-12" icon={AlertCircle} tone="destructive" />
+          <TonedIcon className="size-12" icon={AlertCircle} tone="destructive" />
           <div className="text-center text-body">Secret not found or could not be loaded.</div>
-          <Button onClick={() => navigate({ to: '/secrets' })} variant="outline">
+          <Button onClick={asyncEvent(() => navigate({ to: '/secrets' }), reportActionError)} variant="outline">
             Go Back to Secrets
           </Button>
         </div>

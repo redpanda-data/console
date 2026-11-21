@@ -12,7 +12,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 
-import AclDetailPage from '../../../../components/pages/security/acls/acl-detail-page';
+import { AclDetailPage } from '../../../../components/pages/security/acls/acl-detail-page';
 
 const searchSchema = z.object({
   host: z.string().optional().catch(undefined),

@@ -1,3 +1,4 @@
+import { parseSerializedEnvironmentState } from './test-environment-state.mjs';
 import { exec } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -17,7 +18,7 @@ const SASL_FLAGS = '-X user=e2euser -X pass=very-secret -X sasl.mechanism=SCRAM-
  */
 export function getRedpandaContainerId(variantName = 'console'): string {
   const stateFilePath = resolve(__dirname, `../.testcontainers-state-${variantName}.json`);
-  const state = JSON.parse(readFileSync(stateFilePath, 'utf-8'));
+  const state = parseSerializedEnvironmentState(JSON.parse(readFileSync(stateFilePath, 'utf-8')));
   return state.redpandaId;
 }
 

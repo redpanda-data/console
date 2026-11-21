@@ -15,8 +15,9 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
 import { toast } from 'sonner';
 
+import { LIVE_INITIAL_STATE, liveReducer, MAX_LIVE_LOG_MESSAGES, useLogSearch } from './logs';
 import type { TopicMessage } from '../../state/rest-interfaces';
-import { PartitionOffsetOrigin } from '../../state/ui';
+import { PartitionOffsetOrigin } from '../../types/topic-settings';
 
 // Track messages returned by convertListMessageData
 let convertCallIndex = 0;
@@ -40,15 +41,13 @@ rs.mock('sonner', () => ({
 
 // Mock config with a fake consoleClient
 const mockListMessages = rs.fn();
-rs.mock('../../config', () => ({
+rs.mock('../../runtime-config', () => ({
   config: {
     get consoleClient() {
       return { listMessages: mockListMessages };
     },
   },
 }));
-
-import { LIVE_INITIAL_STATE, liveReducer, MAX_LIVE_LOG_MESSAGES, useLogSearch } from './logs';
 
 function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
   return {
@@ -64,7 +63,7 @@ function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
     valueBinHexPreview: '',
     keyJson,
     keyBinHexPreview: '',
-  } as TopicMessage;
+  };
 }
 
 function createWrapper({ retry = false }: { retry?: boolean | number } = {}) {
@@ -218,9 +217,14 @@ describe('useLogSearch live mode', () => {
     });
     mockStreams({
       history,
-      async *live({ signal }) {
-        await untilAborted(signal);
-      },
+      live: ({ signal }) => ({
+        [Symbol.asyncIterator]: () => ({
+          next: async () => {
+            await untilAborted(signal);
+            return { done: true, value: undefined };
+          },
+        }),
+      }),
     });
 
     const { result, rerender } = renderHook(

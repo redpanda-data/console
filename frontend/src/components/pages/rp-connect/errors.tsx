@@ -2,6 +2,8 @@ import { type LintHint, LintHintSchema } from '@buf/redpandadata_common.bufbuild
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 
+import { isObject } from '../../../utils/type-guards';
+
 /**
  * Extracts lint hints from a ConnectError for display in LintResults component.
  * Converts all errors (validation errors, field violations, and generic errors) to lint hints.
@@ -38,7 +40,7 @@ export function formatPipelineError(err: unknown): React.ReactNode {
       <span className="text-body">{message}</span>
       <ul>
         {details.map((detail) => (
-          <li key={detail} style={{ listStylePosition: 'inside' }}>
+          <li className="list-inside" key={detail}>
             {detail}
           </li>
         ))}
@@ -71,7 +73,7 @@ function lintHintsFromDetails(details: ConnectError['details']): LintHint[] {
 /** The error message, prefixed with the error code when the message doesn't already mention it. */
 function connectErrorHintText(err: ConnectError): string {
   const code = String(err.code);
-  if (err.code && !err.message.toLowerCase().includes(code.toLowerCase())) {
+  if (Boolean(err.code) && !err.message.toLowerCase().includes(code.toLowerCase())) {
     return `[${code}] ${err.message}`;
   }
   return err.message || err.rawMessage || String(err);
@@ -91,9 +93,9 @@ type FieldViolation = {
 };
 
 function isLintHint(obj: unknown): obj is { type: string; debug: LintHint } {
-  return obj !== null && typeof obj === 'object' && 'type' in obj && obj.type === LintHintSchema.typeName;
+  return isObject(obj) && 'type' in obj && obj.type === LintHintSchema.typeName;
 }
 
 function isBadRequest(obj: unknown): obj is { type: string; debug: BadRequest } {
-  return obj !== null && typeof obj === 'object' && 'type' in obj && obj.type === 'google.rpc.BadRequest';
+  return isObject(obj) && 'type' in obj && obj.type === 'google.rpc.BadRequest';
 }

@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { InfoIcon, WarningIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -47,8 +48,8 @@ import {
 import { api } from '../../../state/backend-api';
 import type { SchemaRegistrySubjectDetails, SchemaRegistryVersionedSchema } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
-import { useClusterFenceGuard } from '../../cluster-fence/use-cluster-fence-guard';
-import PageContent from '../../misc/page-content';
+import { isNonEmptyString } from '../../../utils/string-utils';
+import { PageContent } from '../../misc/page-content';
 import { TonedIcon } from '../shared/toned-icon';
 
 const DEFAULT_OPTION = {
@@ -92,12 +93,17 @@ const EDIT_MODE_PAGE: SchemaEditPageKind = { pageTitle: 'Edit Mode', crumbTitle:
 function useEditModeData({ subjectName, contextName }: SchemaEditTarget) {
   const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
   const { data: schemaDetails, isLoading: isDetailsLoading } = useSchemaDetailsQuery(subjectName, {
-    enabled: !!subjectName,
+    enabled: subjectName !== null && subjectName !== undefined && subjectName !== '',
   });
-  const { data: contexts, isLoading: isContextsLoading } = useSchemaRegistryContextsQuery(!!contextName);
+  const { data: contexts, isLoading: isContextsLoading } = useSchemaRegistryContextsQuery(
+    contextName !== null && contextName !== undefined && contextName !== ''
+  );
 
   const contextMode = useMemo(
-    () => (contextName ? contexts?.find((c) => c.name === contextName)?.mode : undefined),
+    () =>
+      contextName !== null && contextName !== undefined && contextName !== ''
+        ? contexts?.find((c) => c.name === contextName)?.mode
+        : undefined,
     [contexts, contextName]
   );
 
@@ -105,14 +111,16 @@ function useEditModeData({ subjectName, contextName }: SchemaEditTarget) {
     schemaMode,
     schemaDetails,
     contextMode,
-    isLoading: Boolean(isModeLoading || (subjectName && isDetailsLoading) || (contextName && isContextsLoading)),
+    isLoading:
+      isModeLoading ||
+      (isNonEmptyString(subjectName) && isDetailsLoading) ||
+      (isNonEmptyString(contextName) && isContextsLoading),
   };
 }
-
-const EditSchemaModePage: FC<{ subjectName?: string; contextName?: string }> = ({
-  subjectName: subjectNameEncoded,
-  contextName: contextNameEncoded,
-}) => {
+const EditSchemaModePage: FC<{
+  subjectName?: string;
+  contextName?: string;
+}> = ({ subjectName: subjectNameEncoded, contextName: contextNameEncoded }) => {
   const target = decodeSchemaEditTarget(subjectNameEncoded, contextNameEncoded);
   const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
   const { schemaMode, schemaDetails, contextMode, isLoading } = useEditModeData(target);
@@ -142,7 +150,7 @@ const EditSchemaModePage: FC<{ subjectName?: string; contextName?: string }> = (
   );
 };
 
-export default EditSchemaModePage;
+export { EditSchemaModePage };
 
 function EditSchemaMode({
   schemaMode,
@@ -152,41 +160,47 @@ function EditSchemaMode({
   contextMode,
   schemaDetails,
 }: {
-  schemaMode: string | null | undefined;
+  schemaMode: SchemaRegistryMode | null | undefined;
   onClose: () => void;
   subjectName?: string;
   contextName?: string;
-  contextMode?: SchemaRegistryModeWithDefault;
+  contextMode?: SchemaRegistrySubjectDetails['mode'];
   schemaDetails?: SchemaRegistrySubjectDetails;
 }) {
   const fencedReason = useClusterFenceGuard().reasonFor('editSchemas');
   const updateGlobalMutation = useUpdateGlobalModeMutation();
   const updateSubjectMutation = useUpdateSubjectModeMutation();
   const updateContextMutation = useUpdateContextModeMutation();
-
-  const schema = schemaDetails?.schemas.first(
+  const schema = schemaDetails?.schemas.find(
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
   );
 
-  const getInitialMode = (): SchemaRegistryModeWithDefault => {
-    if (contextName) {
+  const getInitialMode = (): SchemaRegistrySubjectDetails['mode'] => {
+    if (contextName !== null && contextName !== undefined && contextName !== '') {
       return contextMode ?? SchemaRegistryModes.DEFAULT;
     }
-    if (subjectName) {
+    if (subjectName !== null && subjectName !== undefined && subjectName !== '') {
       return schemaDetails?.mode ?? SchemaRegistryModes.READWRITE;
     }
-    return (schemaMode as SchemaRegistryModeWithDefault) ?? SchemaRegistryModes.READWRITE;
+    return schemaMode ?? SchemaRegistryModes.READWRITE;
   };
-  const [selectedMode, setSelectedMode] = useState<SchemaRegistryModeWithDefault>(getInitialMode);
+  const [selectedMode, setSelectedMode] = useState<SchemaRegistrySubjectDetails['mode']>(getInitialMode);
 
   const allOptions: {
     value: SchemaRegistryModeWithDefault;
     title: string;
     description: string;
     warning: string | null;
-  }[] = subjectName || contextName ? [DEFAULT_OPTION, ...MODE_OPTIONS] : MODE_OPTIONS;
+  }[] =
+    (subjectName !== null && subjectName !== undefined && subjectName !== '') ||
+    (contextName !== null && contextName !== undefined && contextName !== '')
+      ? [DEFAULT_OPTION, ...MODE_OPTIONS]
+      : MODE_OPTIONS;
 
   const onSave = () => {
+    if (selectedMode === 'UNKNOWN') {
+      return;
+    }
     const callbacks = {
       onSuccess: () => {
         toast.success(`Mode updated to ${selectedMode}`);
@@ -197,19 +211,19 @@ function EditSchemaMode({
       },
     };
 
-    if (contextName) {
+    if (contextName !== null && contextName !== undefined && contextName !== '') {
       updateContextMutation.mutate({ contextName, mode: selectedMode }, callbacks);
-    } else if (subjectName) {
+    } else if (subjectName !== null && subjectName !== undefined && subjectName !== '') {
       updateSubjectMutation.mutate({ subjectName, mode: selectedMode }, callbacks);
-    } else {
-      updateGlobalMutation.mutate(selectedMode as SchemaRegistryMode, callbacks);
+    } else if (selectedMode !== 'DEFAULT') {
+      updateGlobalMutation.mutate(selectedMode, callbacks);
     }
   };
 
   return (
     <div className="flex gap-16">
       <div className="flex-1">
-        {contextName && (
+        {isNonEmptyString(contextName) && (
           <div className="mb-4 flex items-center gap-2" data-testid="edit-mode-context-name">
             <TonedIcon aria-hidden="true" className="size-4" icon={InfoIcon} tone="muted" />
             <div className="text-heading-md font-bold">
@@ -226,7 +240,12 @@ function EditSchemaMode({
             aria-label="Schema Registry mode"
             className="w-full"
             data-testid="edit-mode-radio"
-            onValueChange={(v) => setSelectedMode(v as SchemaRegistryModeWithDefault)}
+            onValueChange={(v) => {
+              const selected = allOptions.find((option) => option.value === v);
+              if (selected) {
+                setSelectedMode(selected.value);
+              }
+            }}
             value={selectedMode}
           >
             {allOptions.map((option) => (
@@ -234,7 +253,7 @@ function EditSchemaMode({
                 <ChoiceboxItemHeader>
                   <ChoiceboxItemTitle>{option.title}</ChoiceboxItemTitle>
                   <ChoiceboxItemDescription>{option.description}</ChoiceboxItemDescription>
-                  {option.warning && (
+                  {isNonEmptyString(option.warning) && (
                     <div className="mt-2 flex items-start gap-2 text-body text-warning">
                       <WarningIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                       <span>{option.warning}</span>
@@ -251,7 +270,11 @@ function EditSchemaMode({
                 render={
                   <Button
                     data-testid="edit-mode-save-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false || Boolean(fencedReason)}
+                    disabled={
+                      selectedMode === 'UNKNOWN' ||
+                      api.userData?.canManageSchemaRegistry === false ||
+                      Boolean(fencedReason)
+                    }
                     onClick={onSave}
                     variant="primary"
                   >
@@ -262,9 +285,9 @@ function EditSchemaMode({
               {api.userData?.canManageSchemaRegistry === false && (
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
-              {api.userData?.canManageSchemaRegistry !== false && fencedReason ? (
+              {api.userData?.canManageSchemaRegistry !== false && Boolean(fencedReason) && (
                 <TooltipContent side="top">{fencedReason}</TooltipContent>
-              ) : null}
+              )}
             </Tooltip>
             <Button data-testid="edit-mode-cancel-btn" onClick={onClose} variant="ghost">
               Cancel
@@ -272,7 +295,7 @@ function EditSchemaMode({
           </div>
         </div>
       </div>
-      {subjectName && schema && (
+      {isNonEmptyString(subjectName) && schema && (
         <div className="flex-1">
           <div
             className="text-heading-md font-bold wrap-break-word whitespace-pre-wrap"

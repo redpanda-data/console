@@ -1,4 +1,5 @@
 import { afterEach, expect, test } from '@rstest/core';
+import { z } from 'zod';
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -11,8 +12,11 @@ afterEach(() => {
   }
 });
 
-type CoverageMetric = 'lines' | 'functions' | 'statements' | 'branches';
-type CoverageSummary = { total: Record<CoverageMetric, { total: number; covered: number; pct: number }> };
+const metricSchema = z.object({ total: z.number(), covered: z.number(), pct: z.number() });
+const coverageSummarySchema = z.object({
+  total: z.object({ lines: metricSchema, functions: metricSchema, statements: metricSchema, branches: metricSchema }),
+});
+type CoverageSummary = z.infer<typeof coverageSummarySchema>;
 
 function writeCoverageSources(directory: string) {
   writeFileSync(
@@ -79,7 +83,9 @@ function coverageProject(include = ['example.ts', 'untested.ts']) {
 type CoverageRun = ReturnType<typeof coverageProject>['run'];
 
 function readCoverageSummary(directory: string, report: string): CoverageSummary {
-  return JSON.parse(readFileSync(resolve(directory, `${report}/coverage-summary.json`), 'utf8'));
+  return coverageSummarySchema.parse(
+    JSON.parse(readFileSync(resolve(directory, `${report}/coverage-summary.json`), 'utf8'))
+  );
 }
 
 // Simulates a Bun lcov report in the project that must not leak into Rstest's denominators.

@@ -11,11 +11,11 @@
 
 import { jumpableNodes, searchKeywords, searchValue } from './pipeline-canvas-command-palette-utils';
 import { describe, expect, test } from 'bun:test';
-import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
-import type { EditTarget } from '../utils/yaml';
+import type { PipelineFlowNode } from '../utils/pipeline-flow-nodes';
+import type { EditTarget } from '../utils/yaml-edit-target';
 
 const ZWSP = '\u200B';
-const TARGET = { kind: 'component', section: 'input', path: ['input'] } as unknown as EditTarget;
+const TARGET: EditTarget = { kind: 'input' };
 
 const node = (overrides: Partial<PipelineFlowNode>): PipelineFlowNode => ({
   id: 'n',

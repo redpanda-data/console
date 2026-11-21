@@ -13,6 +13,8 @@ import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import { z } from 'zod';
 
+import { isNonEmptyString } from '../../../../utils/string-utils';
+
 // TLS mode: either file paths or PEM content
 export const TLS_MODE = {
   FILE_PATH: 'file_path',
@@ -286,14 +288,14 @@ const refineCredentialPair = (
   mechanism: string,
   ctx: z.RefinementCtx
 ) => {
-  if (!credentials?.username?.trim()) {
+  if (!isNonEmptyString(credentials?.username?.trim())) {
     ctx.addIssue({
       code: 'custom',
       message: `Username is required when ${mechanism} is enabled`,
       path: [field, 'username'],
     });
   }
-  if (!credentials?.password) {
+  if (!isNonEmptyString(credentials?.password)) {
     ctx.addIssue({
       code: 'custom',
       message: `Password is required when ${mechanism} is enabled`,
@@ -372,7 +374,7 @@ const SR_MAX_REQUEST_RATE = 2_147_483_647;
 const SR_CONTEXT_MESSAGE = 'Context must start with a dot, e.g. . or .prod';
 
 // Schema Registry contexts are dot-prefixed (the default context is `.`).
-const isValidSchemaRegistryContext = (value: string): boolean => value.trim().startsWith('.');
+const isValidSchemaRegistryContext = (value: string): boolean => value.trimStart().startsWith('.');
 
 const addSrContextIssue = (value: string, path: (string | number)[], ctx: z.RefinementCtx) => {
   if (!isValidSchemaRegistryContext(value)) {
@@ -435,7 +437,7 @@ const srSourceUrlIssue = (sourceUrl: string, useTls: boolean): string | null => 
 
 const addSrSourceUrlIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx) => {
   const message = srSourceUrlIssue(sr.sourceUrl, sr.useTls);
-  if (message) {
+  if (message !== null && message !== undefined && message !== '') {
     ctx.addIssue({ code: 'custom', message, path: ['schemaRegistry', 'sourceUrl'] });
   }
 };
@@ -538,7 +540,7 @@ const addSrMappingField = (value: string, path: (string | number)[], requiredMes
 };
 
 const addSrMappingRowIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx) => {
-  sr.contextMappings.forEach((mapping, index) => {
+  for (const [index, mapping] of sr.contextMappings.entries()) {
     addSrMappingField(
       mapping.source,
       ['schemaRegistry', 'contextMappings', index, 'source'],
@@ -551,36 +553,35 @@ const addSrMappingRowIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCt
       'Destination context is required',
       ctx
     );
-  });
+  }
 };
 
 // The proto requires each source context to map exactly once, to a distinct
 // destination.
 const addSrMappingUniquenessIssues = (sr: SchemaRegistryFormValues, ctx: z.RefinementCtx) => {
-  const seenSources = new Set<string>();
-  const seenDestinations = new Set<string>();
+  const seen = { source: new Set<string>(), destination: new Set<string>() };
 
-  sr.contextMappings.forEach((mapping, index) => {
+  for (const [index, mapping] of sr.contextMappings.entries()) {
     const source = mapping.source.trim();
-    if (source && seenSources.has(source)) {
+    if (source && seen.source.has(source)) {
       ctx.addIssue({
         code: 'custom',
         message: 'Each source context can be mapped only once',
         path: ['schemaRegistry', 'contextMappings', index, 'source'],
       });
     }
-    seenSources.add(source);
+    seen.source.add(source);
 
     const destination = mapping.destination.trim();
-    if (destination && seenDestinations.has(destination)) {
+    if (destination && seen.destination.has(destination)) {
       ctx.addIssue({
         code: 'custom',
         message: 'Destination contexts must be distinct',
         path: ['schemaRegistry', 'contextMappings', index, 'destination'],
       });
     }
-    seenDestinations.add(destination);
-  });
+    seen.destination.add(destination);
+  }
 };
 
 // The proto requires every source context in the effective scope to have
@@ -595,7 +596,7 @@ const addSrMappingCompletenessIssues = (sr: SchemaRegistryFormValues, ctx: z.Ref
   const mappedSources = new Set(sr.contextMappings.map((mapping) => mapping.source.trim()).filter(Boolean));
   const missing = sr.contexts
     .map((context) => context.trim())
-    .filter((context) => context && !mappedSources.has(context));
+    .filter((context) => context !== '' && !mappedSources.has(context));
 
   if (missing.length > 0) {
     ctx.addIssue({

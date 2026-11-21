@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { deepParseJson, tryParseJson } from './json-utils';
+import { deepParseJson, getValueAtPath, type JsonValue, tryParseJson, updateValueAtPath } from './json-utils';
 import { describe, expect, test } from 'bun:test';
 
 describe('tryParseJson', () => {
@@ -233,5 +233,45 @@ describe('deepParseJson', () => {
       const result = deepParseJson('[1,2,3]');
       expect(result).toEqual([1, 2, 3]);
     });
+  });
+});
+
+test('rejects non-integer array indices when updating JSON paths', () => {
+  expect(() => updateValueAtPath([null], ['1.5'], 'value')).toThrow(RangeError);
+});
+
+const JSON_PATH_CASES: { input: JsonValue; path: string[]; expected: JsonValue }[] = [
+  { input: { a: [{ b: 'found' }] }, path: ['a', '0', 'b'], expected: 'found' },
+  { input: { a: undefined }, path: ['a'], expected: undefined },
+  { input: { a: null }, path: ['a'], expected: null },
+  { input: { a: null }, path: ['a', 'b'], expected: 'fallback' },
+  { input: [undefined], path: ['0'], expected: undefined },
+  { input: [1], path: ['-1'], expected: 'fallback' },
+  { input: [1], path: ['1'], expected: 'fallback' },
+  { input: [1], path: ['NaN'], expected: 'fallback' },
+];
+
+describe('getValueAtPath', () => {
+  test.each(JSON_PATH_CASES)('preserves found, missing and nullish path values: %j', ({ input, path, expected }) => {
+    expect(getValueAtPath(input, path, 'fallback')).toEqual(expected);
+  });
+
+  test('preserves returned identity and reads an existing fractional array property', () => {
+    const values: JsonValue[] = [1, 2];
+    values[1.5] = 3;
+    expect(getValueAtPath(values, [])).toBe(values);
+    expect(getValueAtPath(values, ['1.5'])).toBe(3);
+  });
+
+  test('snapshots the remaining path before invoking a property getter', () => {
+    const path = ['first', 'target'];
+    const input = {
+      get first() {
+        path[1] = 'replacement';
+        return { target: 'found', replacement: 'wrong' };
+      },
+    };
+    expect(getValueAtPath(input, path)).toBe('found');
+    expect(path[1]).toBe('replacement');
   });
 });

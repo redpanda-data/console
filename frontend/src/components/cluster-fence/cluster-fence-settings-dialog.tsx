@@ -29,6 +29,8 @@ import {
   useUpdateClusterFenceSettingsMutation,
 } from 'react-query/api/cluster-fence';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import { type FenceSummary, isBlockingPhase, toExemptName } from './cluster-fence-model';
@@ -115,7 +117,7 @@ const ClusterFenceSettingsForm = ({ onClose, addPrincipal }: { onClose: () => vo
   });
 
   return (
-    <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
+    <form className="flex min-h-0 flex-1 flex-col" onSubmit={asyncEvent(handleSubmit, reportActionError)}>
       <DialogHeader align="left">
         <DialogTitle>Cluster fence settings</DialogTitle>
         <DialogDescription>

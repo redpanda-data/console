@@ -20,7 +20,26 @@ import type {
   GetRedpandaInfoResponse,
   GetSchemaRegistryInfoResponse,
 } from '../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
-import type { TroubleshootReport } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+
+export type {
+  DeleteRecordsResponseData,
+  GetTopicConsumersResponse,
+  GetTopicMessagesResponse,
+  GetTopicOffsetsByTimestampRequest,
+  GetTopicOffsetsByTimestampRequestTopic,
+  GetTopicOffsetsByTimestampResponse,
+  ListMessageResponse,
+  MessageDataType,
+  PartitionOffset,
+  Payload,
+  ProduceRecordResponse,
+  ProduceRecordsResponse,
+  PublishRecord,
+  PublishRecordsRequest,
+  TopicConsumer,
+  TopicMessage,
+  TopicOffset,
+} from '../types/kafka-messages';
 
 export type ApiError = {
   statusCode: number;
@@ -33,9 +52,9 @@ export function isApiError(obj: unknown): obj is ApiError {
     obj !== undefined &&
     typeof obj === 'object' &&
     'statusCode' in obj &&
-    typeof (obj as { statusCode: unknown }).statusCode === 'number' &&
+    typeof obj.statusCode === 'number' &&
     'message' in obj &&
-    typeof (obj as { message: unknown }).message === 'string'
+    typeof obj.message === 'string'
   );
 }
 
@@ -141,45 +160,6 @@ export type GetAllPartitionsResponse = {
     partitions: Partition[];
   }[];
 };
-
-export type DeleteRecordsResponseData = {
-  topicName: string;
-  partitions: [
-    {
-      partitionId: number;
-      lowWaterMark: number;
-      error: string;
-    },
-  ];
-};
-
-export type TopicConsumer = {
-  groupId: string;
-  summedLag: number;
-};
-
-export type GetTopicConsumersResponse = {
-  topicName: string;
-  topicConsumers: TopicConsumer[];
-};
-
-export type MessageDataType =
-  | 'null'
-  | 'avro'
-  | 'protobuf'
-  | 'protobufSchema'
-  | 'protobufBSR'
-  | 'json'
-  | 'jsonSchema'
-  | 'xml'
-  | 'text'
-  | 'utf8WithControlChars'
-  | 'consumerOffsets'
-  | 'binary'
-  | 'msgpack'
-  | 'uint'
-  | 'smile'
-  | 'cbor';
 export const CompressionType = {
   Unknown: 'unknown',
 
@@ -191,52 +171,6 @@ export const CompressionType = {
 } as const;
 
 export type CompressionTypeType = (typeof CompressionType)[keyof typeof CompressionType];
-
-export type Payload = {
-  payload: unknown; // json obj
-  isPayloadNull: boolean;
-  encoding: MessageDataType; // actual format of the message (before the backend converted it to json)
-  schemaId: number;
-  size: number;
-
-  troubleshootReport?: TroubleshootReport[];
-  isPayloadTooLarge?: boolean;
-  normalizedPayload?: Uint8Array; // used to show hex bytes if payload couldn't be decoded
-  rawBytes?: Uint8Array;
-};
-
-export type TopicMessage = {
-  partitionID: number;
-  offset: number;
-  timestamp: number;
-
-  compression: CompressionTypeType;
-  isTransactional: boolean;
-
-  headers: {
-    key: string;
-    value: Payload;
-  }[];
-  key: Payload;
-  value: Payload;
-
-  // Added by the frontend
-  valueJson: string; // Value json is what is used for (local) filtering
-  valueBinHexPreview: string;
-  keyJson: string;
-  keyBinHexPreview: string;
-};
-
-export type ListMessageResponse = {
-  elapsedMs: number;
-  fetchedMessages: number;
-  isCancelled: boolean;
-  messages: TopicMessage[];
-};
-
-export type GetTopicMessagesResponse = {
-  kafkaMessages: ListMessageResponse;
-};
 
 export type KafkaError = {
   code: number;
@@ -314,155 +248,6 @@ export type TopicDocumentationResponse = {
   documentation: TopicDocumentation;
 };
 
-export type GroupMemberAssignment = {
-  topicName: string;
-  partitionIds: number[];
-};
-export type GroupMemberDescription = {
-  id: string; // unique ID assigned to the member after login
-  instanceId?: string;
-  clientId: string; // custom id reported by the member
-  clientHost: string; // address/host of the connection
-  assignments: GroupMemberAssignment[]; // topics+partitions that the worker is assigned to
-
-  // consumer (KIP-848) groups only
-  memberEpoch?: number;
-  targetAssignments?: GroupMemberAssignment[];
-  subscribedTopics?: string[];
-
-  // added by frontend:
-  hasMissingPartitionIds: boolean;
-  hasMissingAssignments: boolean;
-};
-
-export const GroupActions = ['seeConsumerGroup', 'editConsumerGroup', 'deleteConsumerGroup'] as const;
-export type GroupAction = 'all' | (typeof GroupActions)[number];
-
-export type GroupType = 'classic' | 'consumer';
-
-export type GroupDescription = {
-  groupId: string; // name of the group
-  groupType: GroupType;
-  state: string;
-  protocol: string; // balancer of a classic group, assignor of a consumer group
-  protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
-  // consumer (KIP-848) groups only; missing when the broker could not describe the group
-  groupEpoch?: number;
-  targetAssignmentEpoch?: number;
-  members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
-  coordinatorId: number;
-  topicOffsets: GroupTopicOffsets[];
-  allowedActions: GroupAction[] | null;
-
-  // Added by frontend
-  lagSum: number; // sum of lag for all topic offsets
-
-  // reasons for why the group can't be editted
-  isInUse: boolean;
-  noEditPerms: boolean;
-  noDeletePerms: boolean;
-};
-
-export type GroupTopicOffsets = {
-  topic: string;
-  summedLag: number; // summed lag of all partitions (non consumed partitions are not considered)
-  partitionCount: number;
-  partitionsWithOffset: number; // number of partitions that have an active group offset
-  partitionOffsets: GroupPartitionOffset[];
-};
-
-// PartitionOffset describes the kafka lag for a partition for a single consumer group
-export type GroupPartitionOffset = {
-  partitionId: number;
-  groupOffset: number | null; // null when no committed offset exists for this partition
-
-  error: string | undefined; // Error will be set when the high water mark could not be fetched
-  highWaterMark: number;
-  lag: number;
-};
-
-export type EditConsumerGroupOffsetsRequest = {
-  groupId: string;
-  topics: EditConsumerGroupOffsetsTopic[];
-};
-
-export type EditConsumerGroupOffsetsTopic = {
-  topicName: string;
-  partitions: {
-    partitionId: number;
-    offset: number; // -1 latest, -2 earliest
-  }[];
-};
-
-export type EditConsumerGroupOffsetsResponse = {
-  error: string | undefined;
-  topics: EditConsumerGroupOffsetsResponseTopic[];
-};
-
-export type EditConsumerGroupOffsetsResponseTopic = {
-  topicName: string;
-  partitions: {
-    partitionID: number;
-    error: string;
-  }[];
-};
-
-export type DeleteConsumerGroupRequest = {
-  groupId: string;
-};
-export type DeleteConsumerGroupOffsetsRequest = {
-  groupId: string;
-  topics: DeleteConsumerGroupOffsetsTopic[];
-};
-export type DeleteConsumerGroupOffsetsTopic = {
-  topicName: string;
-  partitions: {
-    partitionId: number;
-  }[];
-};
-
-export type DeleteConsumerGroupOffsetsResponse = {
-  topics: DeleteConsumerGroupOffsetsResponseTopic[];
-};
-
-export type DeleteConsumerGroupOffsetsResponseTopic = {
-  topicName: string;
-  partitions: {
-    partitionID: number;
-    error: string | undefined;
-  }[];
-};
-
-export type GetTopicOffsetsByTimestampRequest = {
-  topics: GetTopicOffsetsByTimestampRequestTopic[];
-  timestamp: number; // unix ms
-};
-export type GetTopicOffsetsByTimestampRequestTopic = {
-  topicName: string;
-  partitionIds: number[];
-};
-
-export type GetTopicOffsetsByTimestampResponse = {
-  topicOffsets: TopicOffset[];
-};
-export type TopicOffset = {
-  topicName: string;
-  partitions: PartitionOffset[];
-};
-
-export type PartitionOffset = {
-  error: string | undefined;
-  partitionId: number;
-
-  // will return the first message after the given timestamp
-  // if there is no message at or after this timestamp, the offset will be -1
-  offset: number;
-
-  // unix ms
-  // if offset is not -1, this will tell us the timestamp of that message
-  timestamp: number;
-};
-
 export type TopicLag = {
   topic: string; // name
   summedLag: number;
@@ -478,13 +263,6 @@ export type PartitionLag = {
   partitionId: number;
   offset: number;
   lag: number;
-};
-
-export type GetConsumerGroupsResponse = {
-  consumerGroups: GroupDescription[];
-};
-export type GetConsumerGroupResponse = {
-  consumerGroup: GroupDescription;
 };
 
 export type ClusterInfoResponse = {
@@ -514,10 +292,8 @@ export type EndpointCompatibilityResponse = {
 };
 
 export type RedpandaLicense = {
-  // Source is where the license is used (e.g. Redpanda Cluster, Console)
-  source: 'console' | 'cluster' | string;
-  // Type is the type of license (free, trial, enterprise)
-  type: 'free_trial' | 'open_source' | 'enterprise' | string;
+  source: 'console' | 'cluster' | (string & {});
+  type: 'free_trial' | 'open_source' | 'enterprise' | (string & {});
   // unix seconds
   expiresAt: number;
 };
@@ -679,9 +455,10 @@ export type AclStrResourceType =
   | 'Cluster'
   | 'TransactionalID'
   | 'DelegationToken'
-  | 'RedpandaRole';
+  | 'RedpandaRole'
+  | (string & {});
 
-export type AclStrResourcePatternType = 'Unknown' | 'Any' | 'Match' | 'Literal' | 'Prefixed';
+export type AclStrResourcePatternType = 'Unknown' | 'Any' | 'Match' | 'Literal' | 'Prefixed' | (string & {});
 
 export type AclStrOperation =
   | 'Unknown'
@@ -696,9 +473,10 @@ export type AclStrOperation =
   | 'ClusterAction'
   | 'DescribeConfigs'
   | 'AlterConfigs'
-  | 'IdempotentWrite';
+  | 'IdempotentWrite'
+  | (string & {});
 
-export type AclStrPermission = 'Unknown' | 'Any' | 'Deny' | 'Allow';
+export type AclStrPermission = 'Unknown' | 'Any' | 'Deny' | 'Allow' | (string & {});
 
 export type GetAclOverviewResponse = {
   aclResources: AclResource[];
@@ -845,223 +623,6 @@ export type PatchTopicConfigsRequest = {
   configs: PatchTopicConfigsEntry[];
 };
 
-// GET "/kafka-connect/clusters"
-export type ConnectClusters = {
-  // response
-  clusterShards: ConnectClusterShard[];
-  filtered: {
-    clusterCount: number;
-    connectorCount: number;
-  };
-};
-export type ConnectClusterShard = {
-  // GetClusterShard
-  clusterName: string;
-  clusterAddress: string;
-  clusterInfo: {
-    // RootResource
-    version: string;
-    commit: string;
-    kafka_cluster_id: string;
-  };
-
-  runningConnectors: number;
-  totalConnectors: number;
-  runningTasks: number;
-  totalTasks: number;
-
-  error?: string;
-};
-
-// GET "/kafka-connect/connectors"
-export type KafkaConnectors = {
-  // response
-  clusters: ClusterConnectors[] | null; // only null when isConfigured=false
-  isConfigured: boolean;
-};
-
-export const ConnectClusterActions = ['viewConnectCluster', 'editConnectCluster', 'deleteConnectCluster'] as const;
-export type ConnectClusterAction = 'all' | (typeof ConnectClusterActions)[number];
-
-export type ClusterConnectors = {
-  // ClusterConnectors
-  clusterName: string;
-  clusterAddress: string;
-  clusterInfo: {
-    version: string;
-    commit: string;
-    kafka_cluster_id: string;
-  };
-
-  totalConnectors: number;
-  runningConnectors: number;
-  connectors: ClusterConnectorInfo[];
-  allowedActions: ConnectClusterAction[] | undefined;
-
-  error?: string;
-
-  // Added by frontend
-  canViewCluster: boolean;
-  canEditCluster: boolean;
-  canDeleteCluster: boolean;
-};
-
-// https://docs.confluent.io/home/connect/monitoring.html#connector-and-task-status
-export const ConnectorState = {
-  Unassigned: 'UNASSIGNED',
-  Running: 'RUNNING',
-  Paused: 'PAUSED',
-  Failed: 'FAILED',
-} as const;
-
-export type ConnectorStateType = (typeof ConnectorState)[keyof typeof ConnectorState];
-
-export type ConnectorStatus = 'HEALTHY' | 'UNHEALTHY' | 'DEGRADED' | 'PAUSED' | 'RESTARTING';
-
-export type ConnectorError = {
-  type: 'ERROR' | 'WARNING';
-  title: string;
-  content: string;
-};
-
-export type TaskState = ConnectorStateType;
-
-export type ConnectorPossibleStatesLiteral = `${ConnectorStateType}`;
-
-export type ClusterConnectorInfo = {
-  name: string;
-  class: string; // java class name
-  config: object; // map[string]string
-  type: string; // Source or Sink
-  topic: string; // Kafka Topic name
-  state: ConnectorStateType;
-  status: ConnectorStatus;
-  errors: ConnectorError[];
-
-  totalTasks: number;
-  runningTasks: number;
-  trace?: string;
-  tasks: ClusterConnectorTaskInfo[];
-
-  // added by frontend
-  jsonConfig: string;
-};
-
-export type ClusterConnectorTaskInfo = {
-  taskId: number;
-  state: TaskState;
-  workerId: string;
-  trace?: string; // error message
-};
-
-// GET "/kafka-connect/clusters/{clusterName}"
-export type ClusterAdditionalInfo = {
-  clusterName: string;
-  host: string;
-  clusterVersion: string;
-  plugins: {
-    class: string;
-    type: 'sink' | 'source';
-    version?: string;
-  }[];
-  enabledFeatures?: string[];
-};
-
-// DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
-// PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)
-// PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
-// POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
-// all 4 return either nothing (code 200), or an ApiError
-
-export type ConnectorValidationResult = {
-  name: string;
-  configs: ConnectorProperty[];
-  steps: ConnectorStep[];
-};
-
-export type ConnectorStep = {
-  name: string;
-  description?: string;
-  groups: ConnectorGroup[];
-
-  // added by frontend:
-  stepIndex: number;
-};
-
-export type ConnectorGroup = {
-  name?: string;
-  description?: string;
-  documentation_link?: string;
-  config_keys: string[];
-};
-
-type ConnectorRecommendedValueEntry = {
-  value: string;
-  display_name: string;
-};
-
-export type ConnectorProperty = {
-  definition: {
-    name: string;
-    type: DataTypeType;
-    required: boolean;
-    default_value: null | string;
-    importance: PropertyImportanceType;
-    documentation: string;
-    // group: null | string;
-    width: PropertyWidthType;
-    display_name: string;
-    dependents: string[];
-    order: number;
-
-    // added by backend
-    custom_default_value?: string;
-  };
-  value: {
-    name: string;
-    value: null | string;
-    recommended_values: string[];
-    errors: string[];
-    visible: boolean;
-  };
-  metadata: {
-    component_type?: 'RADIO_GROUP';
-    recommended_values?: ConnectorRecommendedValueEntry[];
-  };
-};
-
-export const PropertyImportance = {
-  Low: 'LOW',
-  Medium: 'MEDIUM',
-  High: 'HIGH',
-} as const;
-
-export type PropertyImportanceType = (typeof PropertyImportance)[keyof typeof PropertyImportance];
-
-export const DataType = {
-  Boolean: 'BOOLEAN',
-  Class: 'CLASS',
-  Int: 'INT',
-  List: 'LIST',
-  Long: 'LONG',
-  Float: 'FLOAT',
-  Double: 'DOUBLE',
-  Short: 'SHORT',
-  String: 'STRING',
-  Password: 'PASSWORD',
-} as const;
-
-export type DataTypeType = (typeof DataType)[keyof typeof DataType];
-
-export const PropertyWidth = {
-  None: 'NONE',
-  Short: 'SHORT',
-  Medium: 'MEDIUM',
-  Long: 'LONG',
-} as const;
-
-export type PropertyWidthType = (typeof PropertyWidth)[keyof typeof PropertyWidth];
-
 export const CompressionTypeNum = {
   None: 0,
   GZip: 1,
@@ -1082,51 +643,12 @@ export function compressionTypeToNum(type: CompressionTypeType) {
       return CompressionTypeNum.LZ4;
     case CompressionType.ZStd:
       return CompressionTypeNum.ZStd;
+    case 'uncompressed':
+    case 'unknown':
     default:
       return CompressionTypeNum.None;
   }
 }
-export type PublishRecordsRequest = {
-  // TopicNames is a list of topic names into which the records shall be produced to.
-  topicNames: string[];
-
-  // CompressionType that shall be used when producing the records to Kafka.
-  compressionType: CompressionTypeNumType;
-
-  // UseTransactions indicates whether we should produce the records transactional. If only one record shall
-  // be produced this option should always be false.
-  useTransactions: boolean;
-
-  // Records contains one or more records (key, value, headers) that shall be produced.
-  records: PublishRecord[];
-};
-
-export type PublishRecord = {
-  key: string; // base64
-  value: null | string; // base64
-
-  headers: {
-    key: string; // base64
-    value: string; // base64
-  }[];
-
-  partitionId: number; // -1 for automatic
-};
-
-export type ProduceRecordsResponse = {
-  records: ProduceRecordResponse[];
-  // Error indicates that producing for all records have failed. E.g. because creating a transaction has failed
-  // when transactions were enabled. Another option could be that the Kafka client creation has failed because
-  // brokers are temporarily offline.
-  error?: string;
-};
-
-export type ProduceRecordResponse = {
-  topicName: string;
-  partitionId: number;
-  offset: number;
-  error?: string;
-};
 
 type WellKnownTopicConfigEntries =
   | { name: 'cleanup.policy'; value: 'compact' | 'delete' }
@@ -1274,8 +796,8 @@ export type SchemaRegistrySchemaTypesResponse = {
 export type SchemaRegistrySubjectDetails = {
   name: string;
   type: SchemaTypeType;
-  compatibility: SchemaRegistryCompatibilityModeWithDefault;
-  mode: SchemaRegistryModeWithDefault;
+  compatibility: SchemaRegistryCompatibilityModeWithDefault | 'UNKNOWN';
+  mode: SchemaRegistryModeWithDefault | 'UNKNOWN';
   versions: SchemaRegistrySubjectDetailsVersion[];
   latestActiveVersion: number;
   schemas: SchemaRegistryVersionedSchema[];

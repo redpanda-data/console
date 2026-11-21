@@ -37,11 +37,22 @@ import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core'
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import {
+  type CloudSource,
+  getFailoverReadiness,
+  getSourceFenceStep,
+} from 'components/pages/shadowlinks/details/failover-model';
+import { config } from 'config';
+import {
   ClusterFenceState,
   GetClusterFenceStatusResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import { getClusterFenceStatus } from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
+import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { connectQueryWrapper } from 'test-utils';
+
+import { PeerFenceReadError, readPeerClusterFence } from './peer-cluster-fence';
+import { createPeerConsoleTransport } from './peer-console-transport';
+import { useShadowLinkTopology } from './shadow-link-topology';
 
 const flags = rs.hoisted(() => ({ enableClusterFencing: true }));
 const host = rs.hoisted(() => ({ embedded: true }));
@@ -56,7 +67,7 @@ rs.mock('config', () => {
   return {
     ...actual,
     isEmbedded: rs.fn(() => host.embedded),
-    isFeatureFlagEnabled: rs.fn((key: string) => flags[key as keyof typeof flags] ?? false),
+    isFeatureFlagEnabled: rs.fn((key: string) => key === 'enableClusterFencing' && flags.enableClusterFencing),
     isServerless: rs.fn(() => false),
   };
 });
@@ -76,18 +87,6 @@ rs.mock('./peer-console-transport', () => ({
     return transport;
   },
 }));
-
-import {
-  type CloudSource,
-  getFailoverReadiness,
-  getSourceFenceStep,
-} from 'components/pages/shadowlinks/details/failover-model';
-import { config } from 'config';
-import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-
-import { PeerFenceReadError, readPeerClusterFence } from './peer-cluster-fence';
-import { createPeerConsoleTransport } from './peer-console-transport';
-import { useShadowLinkTopology } from './shadow-link-topology';
 
 const PROD_CONSOLE = 'https://console-prod.example.com';
 
@@ -137,7 +136,7 @@ const controlplane = ({ links = LINKS, clusters = CLUSTERS, failList, failDetail
   transports.controlplane = createRouterTransport(({ rpc }) => {
     rpc(listShadowLinks, () => {
       calls.push('ListShadowLinks');
-      if (failList) {
+      if (failList === true) {
         throw new ConnectError('nope', Code.Unavailable);
       }
       return create(ListShadowLinksResponseSchema, {
@@ -404,7 +403,7 @@ describe('useShadowLinkTopology', () => {
       await settled(result);
       await waitFor(() => expect(result.current?.clusterName).toBe('prod-us-east-1'));
       expect(result.current).toMatchObject({ readers: [], sources: {}, readersIncomplete: false });
-      expect([...calls].sort()).toEqual(['GetCluster prod', 'ListShadowLinks']);
+      expect([...calls].sort((a, b) => a.localeCompare(b))).toEqual(['GetCluster prod', 'ListShadowLinks']);
     });
   });
 });
@@ -442,9 +441,9 @@ describe('readPeerClusterFence', () => {
     [Code.Internal, 'error'],
   ] as const)('fails a %s read for the query to try again: %s', async (code, reason) => {
     failingWith(code);
-    const failure = await readPeerClusterFence(PROD_CONSOLE).catch((error: unknown) => error);
-    expect(failure).toBeInstanceOf(PeerFenceReadError);
-    expect((failure as PeerFenceReadError).reason).toBe(reason);
+    const read = readPeerClusterFence(PROD_CONSOLE);
+    await expect(read).rejects.toBeInstanceOf(PeerFenceReadError);
+    await expect(read).rejects.toMatchObject({ reason });
   });
 
   /** The transport the read really uses, answered by a stand-in for the network. */
@@ -466,8 +465,7 @@ describe('readPeerClusterFence', () => {
     'reads a gateway’s own %s %s answer as a failed read, not as an answer from the Console',
     async (status, type, body) => {
       answeringWith(status, type, body);
-      const failure = await readPeerClusterFence(PROD_CONSOLE).catch((error: unknown) => error);
-      expect((failure as PeerFenceReadError).reason).toBe('error');
+      await expect(readPeerClusterFence(PROD_CONSOLE)).rejects.toMatchObject({ reason: 'error' });
     }
   );
 
@@ -500,8 +498,7 @@ describe('readPeerClusterFence', () => {
         );
       })
     );
-    const failure = await readPeerClusterFence(PROD_CONSOLE, undefined, 5).catch((error: unknown) => error);
-    expect((failure as PeerFenceReadError).reason).toBe('timeout');
+    await expect(readPeerClusterFence(PROD_CONSOLE, undefined, 5)).rejects.toMatchObject({ reason: 'timeout' });
   });
 
   test('has nothing to read without a Console URL', async () => {

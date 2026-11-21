@@ -12,7 +12,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
-import { useForm } from 'react-hook-form';
+import { type DeepPartial, useForm } from 'react-hook-form';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 import { render, screen, waitFor } from 'test-utils';
 
@@ -25,7 +25,7 @@ const TestWrapper = ({
   onFormChange,
 }: {
   defaultValues?: FormValues;
-  onFormChange?: (values: FormValues) => void;
+  onFormChange?: (values: DeepPartial<FormValues>) => void;
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
@@ -34,7 +34,7 @@ const TestWrapper = ({
 
   if (onFormChange) {
     form.watch((values) => {
-      onFormChange(values as FormValues);
+      onFormChange(values);
     });
   }
 
@@ -72,7 +72,7 @@ describe('the SchemaRegistryStep', () => {
 
     test('should toggle enableSchemaRegistrySync value when switch is clicked', async () => {
       const user = userEvent.setup();
-      let formValues: FormValues | undefined;
+      let formValues: DeepPartial<FormValues> | undefined;
 
       render(
         <TestWrapper
@@ -102,7 +102,7 @@ describe('the SchemaRegistryStep', () => {
     });
 
     test('should reset stale redesigned values and keep topic mode as the switch being on', async () => {
-      let formValues: FormValues | undefined;
+      let formValues: DeepPartial<FormValues> | undefined;
 
       render(
         <TestWrapper
@@ -130,7 +130,7 @@ describe('the SchemaRegistryStep', () => {
     });
 
     test('should turn the switch off when a stale api mode falls back', async () => {
-      let formValues: FormValues | undefined;
+      let formValues: DeepPartial<FormValues> | undefined;
 
       render(
         <TestWrapper

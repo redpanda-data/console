@@ -10,51 +10,51 @@
  */
 
 import { getConnectorDocsUrl, getFieldDocsUrl, getNodeDocsUrl } from './connector-docs';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 const DOCS = 'https://docs.redpanda.com/cloud-data-platform/develop/connect/components';
 
 describe('getConnectorDocsUrl', () => {
-  it('builds correct URL for input connectors', () => {
+  test('builds correct URL for input connectors', () => {
     expect(getConnectorDocsUrl('input', 'aws_cloudwatch_logs')).toBe(
       'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/aws_cloudwatch_logs/'
     );
   });
 
-  it('builds correct URL for output connectors', () => {
+  test('builds correct URL for output connectors', () => {
     expect(getConnectorDocsUrl('output', 'redpanda')).toBe(
       'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/outputs/redpanda/'
     );
   });
 
-  it('builds correct URL for processor connectors', () => {
+  test('builds correct URL for processor connectors', () => {
     expect(getConnectorDocsUrl('processor', 'mapping')).toBe(
       'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/processors/mapping/'
     );
   });
 
-  it('builds correct URL for cache resources', () => {
+  test('builds correct URL for cache resources', () => {
     expect(getConnectorDocsUrl('cache', 'memory')).toBe(
       'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/caches/memory/'
     );
   });
 
-  it('builds correct URL for rate limit resources', () => {
+  test('builds correct URL for rate limit resources', () => {
     expect(getConnectorDocsUrl('rate_limit', 'local')).toBe(
       'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/rate_limits/local/'
     );
   });
 
-  it('returns undefined for sections whose docs path is not the naive plural', () => {
+  test('returns undefined for sections whose docs path is not the naive plural', () => {
     expect(getConnectorDocsUrl('metrics', 'prometheus')).toBeUndefined();
     expect(getConnectorDocsUrl('tracer', 'jaeger')).toBeUndefined();
   });
 
-  it('returns undefined for unknown section', () => {
+  test('returns undefined for unknown section', () => {
     expect(getConnectorDocsUrl('unknown', 'foo')).toBeUndefined();
   });
 
-  it('returns undefined for empty section', () => {
+  test('returns undefined for empty section', () => {
     expect(getConnectorDocsUrl('', 'kafka')).toBeUndefined();
   });
 });
@@ -62,7 +62,7 @@ describe('getConnectorDocsUrl', () => {
 describe('getFieldDocsUrl', () => {
   const REDPANDA_INPUT = `${DOCS}/inputs/redpanda/`;
 
-  it.each([
+  test.each([
     ['a top-level field by its name', ['consumer_group'], `${REDPANDA_INPUT}#consumer_group`],
     // Documented as `sasl[].aws.credentials.role`, anchored `#sasl-aws-credentials-role`.
     [
@@ -75,25 +75,25 @@ describe('getFieldDocsUrl', () => {
     expect(getFieldDocsUrl('input', 'redpanda', path)).toBe(expected);
   });
 
-  it('returns undefined when the component itself has no docs page', () => {
+  test('returns undefined when the component itself has no docs page', () => {
     expect(getFieldDocsUrl('metrics', 'prometheus', ['use_histogram_timing'])).toBeUndefined();
   });
 });
 
 describe('getNodeDocsUrl', () => {
-  it('links a component node through its section', () => {
+  test('links a component node through its section', () => {
     expect(getNodeDocsUrl({ kind: 'leaf', label: 'kafka_franz', section: 'input' })).toBe(
       'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/inputs/kafka_franz/'
     );
   });
 
-  it('links a container group, which is a component too', () => {
+  test('links a container group, which is a component too', () => {
     expect(getNodeDocsUrl({ kind: 'group', label: 'switch', section: 'processor' })).toBe(
       'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/processors/switch/'
     );
   });
 
-  it('links a resource node through the *_resources key it was defined under', () => {
+  test('links a resource node through the *_resources key it was defined under', () => {
     expect(getNodeDocsUrl({ kind: 'leaf', label: 'memory', section: 'resource', resourceKey: 'cache_resources' })).toBe(
       'https://docs.redpanda.com/cloud-data-platform/develop/connect/components/caches/memory/'
     );
@@ -102,13 +102,13 @@ describe('getNodeDocsUrl', () => {
     ).toBe('https://docs.redpanda.com/cloud-data-platform/develop/connect/components/rate_limits/local/');
   });
 
-  it('returns undefined for structural nodes that name no component', () => {
+  test('returns undefined for structural nodes that name no component', () => {
     expect(getNodeDocsUrl({ kind: 'section', label: 'input', section: 'input' })).toBeUndefined();
     expect(getNodeDocsUrl({ kind: 'group', label: 'case 1', section: 'processor', isCase: true })).toBeUndefined();
     expect(getNodeDocsUrl({ kind: 'leaf', label: 'none', section: 'output' })).toBeUndefined();
   });
 
-  it('returns undefined for resource nodes labelled by their YAML key, not an implementation', () => {
+  test('returns undefined for resource nodes labelled by their YAML key, not an implementation', () => {
     expect(getNodeDocsUrl({ kind: 'leaf', label: 'buffer', section: 'resource' })).toBeUndefined();
     expect(
       getNodeDocsUrl({ kind: 'leaf', label: 'cache_resources', section: 'resource', resourceKey: 'cache_resources' })

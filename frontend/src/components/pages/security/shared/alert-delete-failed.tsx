@@ -41,7 +41,7 @@ export const AlertDeleteFailed: FC<{
         })()}
       </AlertDescription>
       <Button className="absolute top-2 right-2" onClick={onClose} size="icon-sm" variant="ghost">
-        <X className="h-4 w-4" />
+        <X className="size-4" />
       </Button>
     </Alert>
   );

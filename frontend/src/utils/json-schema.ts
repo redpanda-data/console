@@ -51,7 +51,6 @@ export type JsonSchemaType = {
  * @param parentSchema Optional parent schema to check required array
  * @returns A default value matching the schema type
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
 export function generateDefaultFromJsonSchema(
   schema: JsonSchemaType,
   propertyName?: string,
@@ -62,7 +61,10 @@ export function generateDefaultFromJsonSchema(
   }
 
   // Check if this property is required in the parent schema
-  const isRequired = propertyName && parentSchema ? isPropertyRequired(propertyName, parentSchema) : false;
+  const isRequired =
+    propertyName !== null && propertyName !== undefined && propertyName !== '' && parentSchema
+      ? isPropertyRequired(propertyName, parentSchema)
+      : false;
 
   switch (schema.type) {
     case 'string':
@@ -78,6 +80,7 @@ export function generateDefaultFromJsonSchema(
       return generateObjectDefault(schema);
     case 'null':
       return null;
+    case undefined:
     default:
       return;
   }
@@ -95,7 +98,8 @@ export function isPropertyRequired(propertyName: string, schema: JsonSchemaType)
 
 function generateObjectDefault(schema: JsonSchemaType): JsonObject {
   const result: JsonObject = {};
-  for (const [key, property] of Object.entries(schema.properties ?? {})) {
+  const schemaProperties = Object.entries(schema.properties ?? {});
+  for (const [key, property] of schemaProperties) {
     if (isPropertyRequired(key, schema)) {
       const value = generateDefaultFromJsonSchema(property, key, schema);
       if (value !== undefined) {

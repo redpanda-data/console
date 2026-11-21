@@ -5,16 +5,44 @@ import { waitFor } from '@testing-library/react';
 
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
+import { isObject } from '../utils/type-guards';
 
 const require = createRequire(resolve('package.json'));
-const container: {
-  init: (scope: object) => Promise<void>;
-  get: <T>(name: string) => Promise<() => T>;
-} = require('./tests/federation/remote-adapter.cjs');
+const container: unknown = require('./tests/federation/remote-adapter.cjs');
+
+// A built CJS remote is runtime input: validate the callable exports we consume,
+// retaining unknown results rather than claiming get<T> can prove arbitrary T.
+function remoteObject(value: unknown): Record<string, unknown> {
+  if (!isObject(value)) {
+    throw new Error('Federation export must be an object');
+  }
+  return value;
+}
+
+function callRemote(value: unknown, receiver: unknown, args: unknown[]): unknown {
+  if (typeof value !== 'function') {
+    throw new Error('Federation export must be callable');
+  }
+  return Reflect.apply(value, receiver, args);
+}
+
+function remoteMethod(value: unknown, name: string) {
+  const owner = remoteObject(value);
+  return (...args: unknown[]): unknown => callRemote(owner[name], owner, args);
+}
+
+async function getRemoteFactory(name: string) {
+  return await remoteMethod(container, 'get')(name);
+}
+
+async function getRemoteModule(name: string) {
+  const factory = await getRemoteFactory(name);
+  return callRemote(factory, undefined, []);
+}
 
 test('keeps legacy exports isolated from a React 18 host share scope', async () => {
   const host = createLegacyHost();
-  await container.init(host.scope);
+  await remoteMethod(container, 'init')(host.scope);
   const getAccessToken = rs.fn(
     () =>
       new Promise<string>(() => {
@@ -33,28 +61,28 @@ test('keeps legacy exports isolated from a React 18 host share scope', async () 
 });
 
 async function verifyLegacyApis() {
-  const config = (await container.get<typeof import('../config')>('./config'))();
-  expect(config.getGrpcBasePath('https://example.com/redpanda.api.console.v1alpha1')).toBe(
+  const config = await getRemoteModule('./config');
+  expect(remoteMethod(config, 'getGrpcBasePath')('https://example.com/redpanda.api.console.v1alpha1')).toBe(
     'https://example.com/redpanda.api.console.v1alpha1'
   );
-  await expect(container.get('./injectApp')).resolves.toBeTypeOf('function');
-  await expect(container.get('./EmbeddedApp')).resolves.toBeTypeOf('function');
+  expect(remoteObject(await getRemoteModule('./injectApp')).default).toBeTypeOf('function');
+  expect(remoteObject(await getRemoteModule('./EmbeddedApp')).default).toBeTypeOf('function');
 }
 
 async function mountLegacyEntries(getAccessToken: () => Promise<string>) {
-  const bridge = (await container.get<typeof import('./console-federated-bridge')>('./BridgeApp'))().default();
-  const { default: createLegacyElement } = (await container.get<typeof import('./console-legacy-app')>('./App'))();
+  const bridge = remoteMethod(await getRemoteModule('./BridgeApp'), 'default')();
+  const createLegacyElement = remoteMethod(await getRemoteModule('./App'), 'default');
   const nodes = { bridge: document.createElement('div'), legacy: document.createElement('div') };
   const props = { clusterId: 'legacy-federation-test', config: {}, getAccessToken };
   const legacyElement = createLegacyElement(props);
   document.body.append(nodes.bridge, nodes.legacy);
-  await bridge.render({ dom: nodes.bridge, ...props });
-  legacyElement.ref(nodes.legacy);
+  await remoteMethod(bridge, 'render')({ dom: nodes.bridge, ...props });
+  remoteMethod(legacyElement, 'ref')(nodes.legacy);
   return {
-    legacyElement,
+    legacyElement: remoteObject(legacyElement),
     async dispose() {
-      bridge.destroy({ dom: nodes.bridge, moduleName: 'legacy-federation-test' });
-      legacyElement.ref(null);
+      remoteMethod(bridge, 'destroy')({ dom: nodes.bridge, moduleName: 'legacy-federation-test' });
+      remoteMethod(legacyElement, 'ref')(null);
       await Promise.resolve();
       nodes.bridge.remove();
       nodes.legacy.remove();

@@ -20,7 +20,10 @@ async function teardownAfterAuthenticationFailure(error: unknown, teardown: Tear
   try {
     await teardown();
   } catch (cleanupError) {
-    throw new AggregateError([error, cleanupError], 'Enterprise authentication and environment cleanup failed');
+    // biome-ignore lint/style/useErrorCause: Biome 2.6.7 does not recognize AggregateError\'s third-argument cause; both failures are retained.
+    throw new AggregateError([error, cleanupError], 'Enterprise authentication and environment cleanup failed', {
+      cause: cleanupError,
+    });
   }
 }
 

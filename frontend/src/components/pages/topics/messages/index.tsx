@@ -10,7 +10,7 @@
  */
 
 import { TopicMessagesView } from './topic-messages-view';
-import { isFeatureFlagEnabled } from '../../../../config';
+import { isFeatureFlagEnabled } from '../../../../runtime-config';
 import type { Topic } from '../../../../state/rest-interfaces';
 import { TopicMessageView } from '../Tab.Messages';
 

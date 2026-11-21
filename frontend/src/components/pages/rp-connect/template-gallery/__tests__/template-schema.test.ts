@@ -10,15 +10,13 @@
  */
 
 import { describe, expect, test } from 'bun:test';
-import type { ConnectComponentSpec } from '../../types/schema';
+import { createComponentFixture } from '../../utils/__fixtures__/component-spec';
 import type { PipelineTemplate, TemplateSlot } from '../pipeline-template-types';
 import { applySchemaToSlots } from '../template-schema';
 
-// Minimal stand-in for parsed (and optionally enriched) component specs.
-// `applySchemaToSlots` only reads `type`/`name` and each component's `config`
-// field tree, so plain objects cast to the spec type are enough.
+// Complete component fixtures retain the parsed RPC message shape.
 const components = [
-  {
+  createComponentFixture({
     name: 'postgres_cdc',
     type: 'input',
     config: {
@@ -42,8 +40,8 @@ const components = [
         },
       ],
     },
-  },
-  {
+  }),
+  createComponentFixture({
     name: 'redpanda',
     type: 'output',
     config: {
@@ -51,12 +49,10 @@ const components = [
         { name: 'topic', type: 'string', kind: 'scalar', description: 'Target topic', defaultValue: 'orders' },
       ],
     },
-  },
-] as unknown as ConnectComponentSpec[];
+  }),
+];
 
-const slot = (
-  overrides: Partial<TemplateSlot> & Pick<TemplateSlot, 'id' | 'kind' | 'section' | 'label'>
-): TemplateSlot => ({ ...overrides }) as TemplateSlot;
+const slot = (overrides: TemplateSlot): TemplateSlot => overrides;
 
 const buildTemplate = (slots: TemplateSlot[]): PipelineTemplate => ({
   id: 'postgres-cdc-to-redpanda',

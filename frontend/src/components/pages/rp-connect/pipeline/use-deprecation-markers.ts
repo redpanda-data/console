@@ -9,16 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import type { Monaco } from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 
+import type { MarkerMonaco, PipelineEditor } from './pipeline-editor-port';
 import type { ConnectComponentSpec } from '../types/schema';
 import { deprecationMessage, findDeprecatedUsages } from '../utils/deprecation';
 
 const MARKER_OWNER = 'rpcn-deprecation';
 
-type MountedEditor = { instance: editor.IStandaloneCodeEditor; monaco: Monaco };
+type MountedEditor = { instance: Pick<PipelineEditor, 'getModel'>; monaco: MarkerMonaco };
 
 /** The deprecated components `yaml` uses, marked as warnings in the editor `attach` is given. */
 export function useDeprecationMarkers(yaml: string, components: readonly ConnectComponentSpec[] | undefined) {
@@ -45,7 +44,7 @@ export function useDeprecationMarkers(yaml: string, components: readonly Connect
   }, [mounted, usages]);
 
   const attach = useCallback(
-    (instance: editor.IStandaloneCodeEditor, monaco: Monaco) => setMounted({ instance, monaco }),
+    (instance: Pick<PipelineEditor, 'getModel'>, monaco: MarkerMonaco) => setMounted({ instance, monaco }),
     []
   );
   return { usages, attach };

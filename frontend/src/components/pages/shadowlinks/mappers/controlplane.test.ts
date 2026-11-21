@@ -10,11 +10,19 @@
  */
 
 import { ShadowLinkSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
-import { create, type MessageInitShape } from '@bufbuild/protobuf';
-import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import {
+  NameFilterSchema as CpNameFilterSchema,
+  ScramMechanism as CpScramMechanism,
+  UnsupportedSchemaFeaturePolicy as CpUnsupportedSchemaFeaturePolicy,
   FilterType,
   PatternType,
+} from '@buf/redpandadata_core.bufbuild_es/redpanda/core/admin/v2/shadow_link_pb';
+import { create, fromJson, type MessageInitShape } from '@bufbuild/protobuf';
+import { timestampFromDate } from '@bufbuild/protobuf/wkt';
+import {
+  FilterType as FormFilterType,
+  PatternType as FormPatternType,
+  ScramMechanism,
   UnsupportedSchemaFeaturePolicy,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
@@ -48,7 +56,7 @@ const mapApiOptions = (
   const mode =
     fromControlplaneShadowLink(shadowLink).configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
   if (mode?.case !== 'shadowSchemaRegistryApi') {
-    throw new Error(`expected shadowSchemaRegistryApi, got ${mode?.case}`);
+    throw new Error(`expected shadowSchemaRegistryApi, got ${mode?.case ?? 'unset'}`);
   }
   return mode.value;
 };
@@ -99,7 +107,7 @@ describe('fromControlplaneShadowLink schema registry sync options', () => {
         destination: {
           mapping: { case: 'exact', value: { mappings: [{ source: '.prod', destination: '.dr' }] } },
         },
-        unsupportedSchemaFeaturePolicy: UnsupportedSchemaFeaturePolicy.REMOVE,
+        unsupportedSchemaFeaturePolicy: CpUnsupportedSchemaFeaturePolicy.REMOVE,
         paused: true,
       },
     });
@@ -204,7 +212,7 @@ describe('buildDefaultFormValuesFromControlplane role hydration', () => {
       },
       expected: {
         rolesMode: 'specify',
-        roles: [{ name: 'ops', patternType: PatternType.LITERAL, filterType: FilterType.EXCLUDE }],
+        roles: [{ name: 'ops', patternType: FormPatternType.LITERAL, filterType: FormFilterType.EXCLUDE }],
       },
     },
   ])('hydrates $description', ({ roleSyncOptions, expected }) => {
@@ -266,4 +274,86 @@ describe('buildDefaultFormValuesFromControlplane schema registry hydration', () 
     expect(noneValues.schemaRegistry).toEqual(initialValues.schemaRegistry);
     expect(FormSchema.safeParse(noneValues).success).toBe(true);
   });
+});
+
+test('preserves unknown open-enum filter values when hydrating another generated package', () => {
+  const filter = fromJson(CpNameFilterSchema, { name: 'future', patternType: 101, filterType: 102 });
+  const shadowLink = create(ShadowLinkSchema, {
+    name: 'test-link',
+    clientOptions: { bootstrapServers: ['localhost:9092'] },
+    topicMetadataSyncOptions: { autoCreateShadowTopicFilters: [filter] },
+    consumerOffsetSyncOptions: { groupFilters: [filter] },
+    roleSyncOptions: { roleNameFilters: [filter] },
+  });
+  const form = buildDefaultFormValuesFromControlplane(shadowLink);
+  for (const hydratedFilter of [form.topics[0], form.consumers[0], form.roles[0]]) {
+    expect(hydratedFilter?.name).toBe('future');
+    // Compare the numeric wire identities, including values absent from today's generated enum.
+    expect(Number(hydratedFilter?.patternType)).toBe(101);
+    expect(Number(hydratedFilter?.filterType)).toBe(102);
+  }
+});
+
+test('hydrates both decoded authentication oneofs without asserting the SDK shape', () => {
+  const scram = create(ShadowLinkSchema, {
+    clientOptions: {
+      authenticationConfiguration: {
+        authentication: {
+          case: 'scramConfiguration',
+          value: {
+            username: 'test-user',
+            password: 'test-password',
+            scramMechanism: CpScramMechanism.SCRAM_SHA_512,
+          },
+        },
+      },
+    },
+  });
+  const plain = create(ShadowLinkSchema, {
+    clientOptions: {
+      authenticationConfiguration: {
+        authentication: {
+          case: 'plainConfiguration',
+          value: {
+            username: 'plain-user',
+            password: 'plain-password',
+          },
+        },
+      },
+    },
+  });
+  expect(buildDefaultFormValuesFromControlplane(scram).scramCredentials).toEqual({
+    username: 'test-user',
+    password: 'test-password',
+    mechanism: ScramMechanism.SCRAM_SHA_512,
+  });
+  expect(buildDefaultFormValuesFromControlplane(plain).plainCredentials).toEqual({
+    username: 'plain-user',
+    password: 'plain-password',
+  });
+});
+
+// Deliberate wire-format injection: old callers have not decoded the protobuf oneof yet.
+const legacyAuthLink = (authenticationConfiguration: unknown) => {
+  const link = create(ShadowLinkSchema, { clientOptions: {} });
+  if (!link.clientOptions) {
+    throw new Error('Expected initialized client options');
+  }
+  Object.defineProperty(link.clientOptions, 'authenticationConfiguration', { value: authenticationConfiguration });
+  return link;
+};
+
+test('retains legacy JSON credentials and the absent-SCRAM-mechanism default', () => {
+  const scram = buildDefaultFormValuesFromControlplane(legacyAuthLink({ scramConfiguration: { username: 'legacy' } }));
+  const plain = buildDefaultFormValuesFromControlplane(
+    legacyAuthLink({ plainConfiguration: { username: 'legacy-plain', password: 'test' } })
+  );
+  expect(scram.scramCredentials).toEqual({ username: 'legacy', password: '', mechanism: ScramMechanism.SCRAM_SHA_256 });
+  expect(plain.plainCredentials).toEqual({ username: 'legacy-plain', password: 'test' });
+});
+
+test('rejects malformed wire credentials instead of passing objects into authentication inputs', () => {
+  expect(() =>
+    buildDefaultFormValuesFromControlplane(legacyAuthLink({ plainConfiguration: { username: { invalid: true } } }))
+  ).toThrow();
 });

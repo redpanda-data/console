@@ -4,6 +4,8 @@ import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nu
 import { useEffect } from 'react';
 
 import { useQueryStateWithCallback } from './use-query-state-with-callback';
+import { nonzeroNumber } from '../utils/number-utils';
+import { reportActionError } from '../utils/toast.utils';
 
 /**
  * Shape of the per-list ui settings slice this hook reads defaults from and
@@ -36,7 +38,7 @@ type UseUrlTableStateResult = {
   onPaginationChange: OnChangeFn<PaginationState>;
 };
 
-type SetPageIndex = (pageIndex: number) => unknown;
+type SetPageIndex = (pageIndex: number) => Promise<URLSearchParams>;
 
 /** Sorting in `?{prefix}SortId=` / `?{prefix}SortDesc=`, mirrored to the settings slice; a re-sort returns to the first page. */
 function useUrlSorting(
@@ -70,14 +72,10 @@ function useUrlSorting(
 
   const onSortingChange: OnChangeFn<SortingState> = (updater: Updater<SortingState>) => {
     const next = typeof updater === 'function' ? updater(sorting) : updater;
-    if (next.length > 0) {
-      setSortId(next[0].id);
-      setSortDesc(next[0].desc);
-    } else {
-      setSortId('');
-      setSortDesc(false);
-    }
-    setPageIndex(0);
+    // Table's change callback is synchronous; these independent Nuqs writes share one URL flush.
+    Promise.all([setSortId(next[0]?.id ?? ''), setSortDesc(next[0]?.desc ?? false), setPageIndex(0)]).catch(
+      reportActionError
+    );
   };
 
   return { sorting, onSortingChange };
@@ -103,7 +101,7 @@ function useClampedPageIndex({
 
   useEffect(() => {
     if (enabled && clampedPageIndex !== pageIndex) {
-      setPageIndex(clampedPageIndex);
+      setPageIndex(clampedPageIndex).catch(reportActionError);
     }
   }, [enabled, clampedPageIndex, pageIndex, setPageIndex]);
 
@@ -133,7 +131,7 @@ export function useUrlTableState({
       getDefaultValue: () => settings.pageSize,
     },
     `${keyPrefix}PageSize`,
-    parseAsInteger.withDefault(settings.pageSize || DEFAULT_TABLE_PAGE_SIZE)
+    parseAsInteger.withDefault(nonzeroNumber(settings.pageSize) ?? DEFAULT_TABLE_PAGE_SIZE)
   );
 
   const { sorting, onSortingChange } = useUrlSorting(keyPrefix, settings, setPageIndex);
@@ -143,8 +141,7 @@ export function useUrlTableState({
 
   const onPaginationChange: OnChangeFn<PaginationState> = (updater: Updater<PaginationState>) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater;
-    setPageIndex(next.pageIndex);
-    setPageSize(next.pageSize);
+    Promise.all([setPageIndex(next.pageIndex), setPageSize(next.pageSize)]).catch(reportActionError);
   };
 
   return { sorting, pagination, onSortingChange, onPaginationChange };

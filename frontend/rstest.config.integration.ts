@@ -7,6 +7,7 @@ import { pluginYaml } from '@rsbuild/plugin-yaml';
 import { defineConfig } from '@rstest/core';
 
 import coverageConfig from './coverage.config.json' with { type: 'json' };
+import { isNonEmptyString } from './src/utils/string-utils';
 import { fromHere, sharedAliases, sharedCoverage } from './test.shared';
 
 const { publicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
@@ -28,7 +29,7 @@ export default defineConfig({
   exclude: ['src/**/*.federation.test.tsx'],
   setupFiles: './rstest.setup.ts',
   testTimeout: 30_000,
-  reporters: [['md', { preset: 'compact' }], ...(process.env.CI ? ['github-actions' as const] : [])],
+  reporters: [['md', { preset: 'compact' }], ...(isNonEmptyString(process.env.CI) ? ['github-actions' as const] : [])],
   plugins: [pluginReact(), pluginSass(), pluginYaml()],
   performance: {
     buildCache: true,

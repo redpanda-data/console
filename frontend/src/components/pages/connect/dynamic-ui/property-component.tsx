@@ -19,7 +19,7 @@ import { ErrorWrapper } from './forms/error-wrapper';
 import { SecretInput } from './forms/secret-input';
 import { CommaSeparatedStringList } from './list';
 import type { Property } from '../../../../state/connect/state';
-import { PropertyWidth } from '../../../../state/rest-interfaces';
+import { PropertyWidth } from '../../../../types/kafka-connect';
 import { SingleSelect } from '../../../misc/select';
 
 const updatePropertyValue = (property: Property, value: Property['value']) => {
@@ -32,7 +32,7 @@ function recommendedRadioOptions(p: Property) {
   const recValues = p.entry.value.recommended_values;
   return metadata?.recommended_values && metadata.recommended_values?.length > 0
     ? metadata.recommended_values.map(({ value, display_name: label }) => ({ value, label }))
-    : recValues.map((recValue) => ({ value: recValue, label: String(recValue).toUpperCase() }));
+    : recValues.map((recValue) => ({ value: recValue, label: recValue.toUpperCase() }));
 }
 
 function renderRadioGroupInput(p: Property, fieldId: string) {
@@ -43,11 +43,13 @@ function renderRadioGroupInput(p: Property, fieldId: string) {
       aria-labelledby={`${fieldId}-label`}
       aria-required={def.required || undefined}
       name={p.name}
-      onValueChange={(next) => {
-        updatePropertyValue(p, next as Property['value']);
+      onValueChange={(next: unknown) => {
+        if (typeof next === 'string') {
+          updatePropertyValue(p, next);
+        }
       }}
       orientation="horizontal"
-      value={String(p.value || def.default_value)}
+      value={String(Boolean(p.value) ? p.value : def.default_value)}
     >
       {recommendedRadioOptions(p).map((option) => {
         const id = `${p.name}-${option.value}`;
@@ -71,7 +73,7 @@ function renderStringInput(p: Property, fieldId: string) {
     return renderRadioGroupInput(p, fieldId);
   }
 
-  if (recValues?.length) {
+  if (Boolean(recValues?.length)) {
     // Enum (recommended_values)
     const options = recValues.map((x: string) => ({ label: x, value: x }));
     return (

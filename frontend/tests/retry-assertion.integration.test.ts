@@ -56,6 +56,7 @@ describe('e2E assertion retries', () => {
   });
 
   test('reports non-Error failures in the step message', async () => {
+    // biome-ignore lint/nursery/usePromiseRejectErrors: This regression exercises an external non-Error rejection and must preserve its original cause.
     await expect(step('Load topics', () => Promise.reject('connection closed'))).rejects.toMatchObject({
       message: 'Step failed: Load topics: connection closed',
       cause: 'connection closed',

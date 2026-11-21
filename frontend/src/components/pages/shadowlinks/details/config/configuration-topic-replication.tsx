@@ -75,7 +75,7 @@ const groupPropertiesByCategory = (properties: string[]) => {
 export const ConfigurationTopicReplication = ({ shadowLink }: ConfigurationTopicReplicationProps) => {
   const topicSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const excludeDefault = topicSyncOptions?.excludeDefault ?? false;
-  const syncedProperties = shadowLink.syncedShadowTopicProperties || [];
+  const syncedProperties = shadowLink.syncedShadowTopicProperties ?? [];
 
   // Combine default properties (if not excluded) with synced properties
   const allProperties = excludeDefault ? syncedProperties : [...new Set([...DEFAULT_PROPERTIES, ...syncedProperties])];

@@ -4,7 +4,6 @@
 import { afterEach, beforeEach, expect, rs } from '@rstest/core';
 import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
-import './src/utils/array-extensions';
 import './tests/mock-document';
 
 import { cleanupTestHarness } from './tests/harness-cleanup';
@@ -31,12 +30,12 @@ Object.defineProperty(window, 'localStorage', {
 // images, and fetch calls. Disable external loading + same-origin policy
 // to suppress AbortError / ECONNREFUSED noise from unmocked endpoints.
 if (typeof window !== 'undefined' && 'happyDOM' in window) {
-  const happyDOM = Reflect.get(window, 'happyDOM');
+  const happyDOM: unknown = Reflect.get(window, 'happyDOM');
   if (typeof happyDOM === 'object' && happyDOM !== null) {
-    const settings = Reflect.get(happyDOM, 'settings');
+    const settings: unknown = Reflect.get(happyDOM, 'settings');
     if (typeof settings === 'object' && settings !== null) {
-      const navigation = Reflect.get(settings, 'navigation');
-      const fetchSettings = Reflect.get(settings, 'fetch');
+      const navigation: unknown = Reflect.get(settings, 'navigation');
+      const fetchSettings: unknown = Reflect.get(settings, 'fetch');
       Reflect.set(settings, 'navigation', {
         ...(typeof navigation === 'object' && navigation !== null ? navigation : {}),
         disableMainFrameNavigation: true,
@@ -99,7 +98,7 @@ if (typeof Animation !== 'undefined') {
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: rs.fn().mockImplementation((query) => ({
+    value: rs.fn().mockImplementation((query: string) => ({
       matches: false,
       media: query,
       onchange: null,
@@ -168,9 +167,7 @@ afterEach(() => {
 // pollute CI logs. Each pattern maps to a specific upstream issue or
 // migration-in-progress; removing a pattern requires fixing the source
 // component, not silencing here.
-// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
 const originalWarn = console.warn;
-// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
 const originalError = console.error;
 
 const SUPPRESSED_PATTERNS = [

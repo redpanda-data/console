@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ChevronDown } from 'lucide-react';
 import type React from 'react';
@@ -25,7 +26,7 @@ function useChipDismissal(open: boolean, setOpen: (next: boolean) => void) {
       return;
     }
     const onPointerDown = (e: PointerEvent) => {
-      if (e.target instanceof Node && !containerRef.current?.contains(e.target)) {
+      if (e.target instanceof Node && !(containerRef.current?.contains(e.target) === true)) {
         setOpen(false);
       }
     };
@@ -81,22 +82,24 @@ export function FloatingChipPanel({
 
   return (
     <div className="flex flex-col items-end gap-1.5" ref={containerRef}>
-      <button
+      <Button
         aria-expanded={open}
         className={cn(
+          // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
           'flex cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 py-1.5 text-body-sm font-medium shadow-sm backdrop-blur-sm transition-colors',
           chipClassName
         )}
         data-testid={chipTestId}
         onClick={() => setOpen((o) => !o)}
         type="button"
+        variant="unstyled"
       >
         {leading}
         {label}
         <span className={cn('inline-flex transition-transform', open && 'rotate-180')}>
           <ChevronDown className="size-3.5" />
         </span>
-      </button>
+      </Button>
 
       {open ? (
         <div

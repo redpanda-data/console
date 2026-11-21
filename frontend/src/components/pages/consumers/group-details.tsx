@@ -14,6 +14,9 @@ import { EditIcon, SkipIcon, TrashIcon } from 'components/icons';
 import { Search, Users, X } from 'lucide-react';
 import { type ReactNode, useId, useMemo, useState } from 'react';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
+import { isNonEmptyString } from 'utils/string-utils';
+
+import './group-details.css';
 
 import {
   formatAssignment,
@@ -24,12 +27,13 @@ import {
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupDeletingMode, type GroupOffset } from './modals';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
-import type { GroupDescription, GroupMemberAssignment, GroupMemberDescription } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
+import type { GroupDescription, GroupMemberAssignment, GroupMemberDescription } from '../../../types/consumer-groups';
+import { arrayFilterNull, arrayGroupInto, arraySum } from '../../../utils/array-utils';
 import { DefaultSkeleton, numberToThousandsString } from '../../../utils/tsx-utils';
 import { useClusterFenceGuard } from '../../cluster-fence/use-cluster-fence-guard';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 import { ShortNum } from '../../misc/short-num';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../redpanda-ui/components/accordion';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
@@ -54,7 +58,7 @@ import { formatGroupType } from '../../ui/consumer-group/consumer-group-type';
 import { DisabledReasonButton } from '../../ui/disabled-reason-button';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
-import AclList from '../topics/Tab.Acl/acl-list';
+import { AclList } from '../topics/Tab.Acl/acl-list';
 
 type GroupTab = 'topics' | 'members' | 'acl';
 
@@ -75,7 +79,7 @@ function getQuickSearchRegex(pattern: string): RegExp {
   let regExp = DEFAULT_MATCH_ALL_REGEX; // match everything by default
   try {
     regExp = new RegExp(pattern, 'i');
-  } catch (_e) {
+  } catch {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('Invalid expression');
   }
@@ -148,7 +152,10 @@ const useEditOffsetsState = () => {
 
 /** Which offsets the delete modal is open for, and whether it deletes a group, topic or partition. */
 const useDeleteOffsetsState = () => {
-  const [deletingState, setDeletingState] = useState<{ mode: GroupDeletingMode; offsets: GroupOffset[] | null }>({
+  const [deletingState, setDeletingState] = useState<{
+    mode: GroupDeletingMode;
+    offsets: GroupOffset[] | null;
+  }>({
     mode: 'group',
     offsets: null,
   });
@@ -166,20 +173,19 @@ const useDeleteOffsetsState = () => {
 /** Every committed partition offset of the group, as the modals expect them. */
 const toGroupOffsets = (group: GroupDescription): GroupOffset[] =>
   group.topicOffsets.flatMap((x) =>
-    x.partitionOffsets.map(
-      (p) =>
-        ({
-          topicName: x.topic,
-          partitionId: p.partitionId,
-          offset: p.groupOffset,
-        }) as GroupOffset
-    )
+    x.partitionOffsets.map((p) => ({
+      topicName: x.topic,
+      partitionId: p.partitionId,
+      offset: p.groupOffset ?? undefined,
+    }))
   );
 
 const GroupStatisticsCard = ({ group }: { group: GroupDescription }) => {
-  const totalPartitions = group.members.flatMap((m) => m.assignments).sum((a) => a.partitionIds?.length ?? 0);
+  const totalPartitions = arraySum(
+    group.members.flatMap((m) => m.assignments),
+    (a) => a.partitionIds?.length ?? 0
+  );
   const isConsumerGroup = group.groupType === 'consumer';
-
   return (
     // The small card carries px-6 py-4; max-w-none lifts its width cap. Its single child makes the gap moot.
     <Card className="max-w-none" size="sm" variant="standard">
@@ -220,12 +226,13 @@ const GroupStatisticsCard = ({ group }: { group: GroupDescription }) => {
 };
 
 const AssignmentCell = ({ assignments }: { assignments: GroupMemberAssignment[] | undefined }) => {
-  if (!assignments?.length) {
+  const topicAssignments = assignments ?? [];
+  if (topicAssignments.length === 0) {
     return <span className="text-muted-foreground">—</span>;
   }
   return (
     <div className="flex flex-col gap-0.5 font-mono text-xs">
-      {assignments.map((a) => (
+      {topicAssignments.map((a) => (
         <span key={a.topicName}>{formatAssignment(a)}</span>
       ))}
     </div>
@@ -321,11 +328,12 @@ const GroupMembersTable = ({ group, members }: { group: GroupDescription; member
         <TableBody>
           {members.map((m) => {
             const behind = isBehindGroupEpoch(group, m);
+            const subscribedTopics = m.subscribedTopics?.join(', ');
             return (
               <TableRow
+                className="console-group-member-row"
                 data-behind={behind || undefined}
                 key={m.id}
-                style={behind ? { backgroundColor: 'var(--color-warning-wash)' } : undefined}
                 testId={`group-member-${m.id}`}
               >
                 <TableCell>
@@ -342,7 +350,9 @@ const GroupMembersTable = ({ group, members }: { group: GroupDescription; member
                     <AssignmentCell assignments={m.targetAssignments} />
                   </TableCell>
                 )}
-                {isConsumerGroup && <TableCell>{m.subscribedTopics?.join(', ') || '—'}</TableCell>}
+                {isConsumerGroup && (
+                  <TableCell>{isNonEmptyString(subscribedTopics) ? subscribedTopics : '—'}</TableCell>
+                )}
               </TableRow>
             );
           })}
@@ -367,7 +377,14 @@ const GroupDetailsTabs = ({ group, search, onSearchChange, onEditOffsets, onDele
   const filteredMembers = useFilteredMembers(group, quickSearch);
 
   return (
-    <Tabs onValueChange={(value) => onSearchChange({ tab: value as GroupTab })} value={activeTab}>
+    <Tabs
+      onValueChange={(value: unknown) => {
+        if (value === 'topics' || value === 'members' || value === 'acl') {
+          onSearchChange({ tab: value });
+        }
+      }}
+      value={activeTab}
+    >
       <TabsList className="w-fit" variant="underline">
         <TabsTrigger value="topics" variant="underline">
           Topics
@@ -437,7 +454,9 @@ const GroupDetailsContent = ({
   group,
   search,
   onSearchChange,
-}: Omit<GroupDetailsProps, 'groupId'> & { group: GroupDescription }) => {
+}: Omit<GroupDetailsProps, 'groupId'> & {
+  group: GroupDescription;
+}) => {
   const featurePatchGroup = useSupportedFeaturesStore((s) => s.patchGroup);
   const featureDeleteGroup = useSupportedFeaturesStore((s) => s.deleteGroup);
   const { reasonFor } = useClusterFenceGuard();
@@ -739,8 +758,8 @@ const toPartitionRows = (group: GroupDescription): PartitionRow[] => {
         topicName: topicLag.topic,
         partitionId: partLag.partitionId,
         groupOffset: partLag.groupOffset,
-        highWaterMark: partLag.highWaterMark as number | null,
-        lag: isUnconsumed ? null : (partLag.lag as number | null),
+        highWaterMark: partLag.highWaterMark,
+        lag: isUnconsumed ? null : partLag.lag,
         assignedMember: assignedMember?.member,
         id: assignedMember?.member.id,
         clientId: assignedMember?.member.clientId,
@@ -753,9 +772,10 @@ const toPartitionRows = (group: GroupDescription): PartitionRow[] => {
 
 /** Rows whose member matches the quick search (unassigned rows always pass), grouped by topic in name order. */
 const groupPartitionRowsByTopic = (rows: PartitionRow[], quickSearchRegExp: RegExp) =>
-  rows
-    .filter((x) => !x.assignedMember || x.assignedMember?.id.match(quickSearchRegExp))
-    .groupInto((e) => e.topicName)
+  arrayGroupInto(
+    rows.filter((x) => !x.assignedMember || x.assignedMember.id.match(quickSearchRegExp) !== null),
+    (e) => e.topicName
+  )
     .sort((a, b) => a.key.localeCompare(b.key))
     .map((x) => ({ topicName: x.key, partitions: x.items }));
 
@@ -764,9 +784,9 @@ const toTopicEntries = (
   lagGroupsByTopic: ReturnType<typeof groupPartitionRowsByTopic>,
   onlyShowPartitionsWithLag: boolean
 ) =>
-  lagGroupsByTopic
-    .map((g) => {
-      const totalLagAll = g.partitions.sum((c) => c.lag ?? 0);
+  arrayFilterNull(
+    lagGroupsByTopic.map((g) => {
+      const totalLagAll = arraySum(g.partitions, (c) => c.lag ?? 0);
       const partitionsAssigned = g.partitions.filter((c) => c.assignedMember).length;
 
       const partitions = onlyShowPartitionsWithLag
@@ -781,8 +801,7 @@ const toTopicEntries = (
 
       return { topicName: g.topicName, partitions, totalLagAll, partitionsAssigned, consumedPartitions };
     })
-    .filterNull();
-
+  );
 const GroupByTopics = (groupProps: {
   group: GroupDescription;
   onlyShowPartitionsWithLag: boolean;
@@ -887,9 +906,9 @@ const GroupByTopics = (groupProps: {
 };
 
 const renderMergedID = (id?: string, clientId?: string) => {
-  if (clientId && id?.startsWith(clientId)) {
+  if (clientId !== null && clientId !== undefined && clientId !== '' && id?.startsWith(clientId) === true) {
     // should always be true...
-    const suffix = id.substring(clientId.length);
+    const suffix = id.slice(clientId.length);
 
     return (
       <span className="consumerGroupCompleteID">
@@ -899,7 +918,7 @@ const renderMergedID = (id?: string, clientId?: string) => {
     );
   }
   // A client might be connected but it hasn't any assignments yet because it just joined the group
-  if (clientId) {
+  if (clientId !== null && clientId !== undefined && clientId !== '') {
     return <span className="consumerGroupCompleteID">{clientId ?? id ?? ''}</span>;
   }
 
@@ -965,4 +984,4 @@ function cannotDeleteGroupOffsetsReason(
   return fencedReason;
 }
 
-export default GroupDetails;
+export { GroupDetails };

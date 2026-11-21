@@ -16,8 +16,8 @@ import { api } from '../../../state/backend-api';
 import type { BrokerWithConfigAndStorage, ClusterOverview } from '../../../state/rest-interfaces';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { prettyBytes, prettyBytesOrNA, titleCase } from '../../../utils/utils';
-import PageContent from '../../misc/page-content';
-import Section from '../../misc/section';
+import { PageContent } from '../../misc/page-content';
+import { Section } from '../../misc/section';
 import { PageComponent, type PageInitHelper } from '../page';
 import './Overview.scss';
 import { Link } from '@tanstack/react-router';
@@ -31,10 +31,14 @@ import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import React, { type FC, type ReactNode } from 'react';
 
-import ClusterHealthOverview from './cluster-health-overview';
+import { ClusterHealthOverview } from './cluster-health-overview';
 import { ShadowLinkSection } from './shadow-link-overview-card';
 import { type ComponentStatus, StatusType } from '../../../protogen/redpanda/api/console/v1alpha1/cluster_status_pb';
-import NurturePanel from '../../builder-io/nurture-panel';
+import { arraySum } from '../../../utils/array-utils';
+import { isNonzeroNumber } from '../../../utils/number-utils';
+import { isNonEmptyString } from '../../../utils/string-utils';
+import { isPresent } from '../../../utils/type-guards';
+import { NurturePanel } from '../../builder-io/nurture-panel';
 import {
   getEnterpriseCTALink,
   isLicenseWithEnterpriseAccess,
@@ -61,8 +65,9 @@ const clusterStatusOf = (status?: StatusType) => {
 
 const formatBrokersOnline = (online?: number, expected?: number) =>
   online === undefined || expected === undefined ? NOT_AVAILABLE : `${online} of ${expected}`;
-
-const BrokerIdCell: FC<{ broker: BrokerWithConfigAndStorage }> = ({ broker }) => {
+const BrokerIdCell: FC<{
+  broker: BrokerWithConfigAndStorage;
+}> = ({ broker }) => {
   const text = `${broker.brokerId}`;
   if (!broker.isController) {
     return text;
@@ -112,7 +117,7 @@ class Overview extends PageComponent {
   }
 
   render() {
-    if (!api.clusterOverview) {
+    if (!isPresent(api.clusterOverview)) {
       return DefaultSkeleton;
     }
 
@@ -124,8 +129,9 @@ class Overview extends PageComponent {
     // null forever, so there is no storage to report — fall back to the same N/A
     // placeholder as every other stat rather than a "..." that never resolves.
     const brokerSize =
-      api.brokers && brokers.length > 0 ? prettyBytes(brokers.sum((x) => x.totalLogDirSizeBytes ?? 0)) : NOT_AVAILABLE;
-
+      api.brokers && brokers.length > 0
+        ? prettyBytes(arraySum(brokers, (x) => x.totalLogDirSizeBytes ?? 0))
+        : NOT_AVAILABLE;
     const version = overview.redpanda?.version ?? overview.kafka?.version ?? NOT_AVAILABLE;
     const brokersOnlineText = formatBrokersOnline(overview.kafka?.brokersOnline, overview.kafka?.brokersExpected);
 
@@ -185,7 +191,7 @@ class Overview extends PageComponent {
                       header: 'Status',
                       cell: ({ row: { original: broker } }) => (
                         <div className="flex gap-2">
-                          {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) ? (
+                          {api.clusterHealth?.offlineBrokerIds.includes(broker.brokerId) === true ? (
                             <>
                               <TonedIcon icon={ErrorIcon} size={18} tone="destructive" />
                               Down
@@ -221,7 +227,7 @@ class Overview extends PageComponent {
                         </Button>
                       ),
                     },
-                    ...(api.brokers?.sum((b) => (b.rack ? 1 : 0))
+                    ...(isNonzeroNumber(arraySum(api.brokers, (b) => (isNonEmptyString(b.rack) ? 1 : 0)))
                       ? [
                           {
                             id: 'rack',
@@ -265,10 +271,12 @@ class Overview extends PageComponent {
   }
 }
 
-export default Overview;
+export { Overview };
 
-type DetailsBlockProps = { title: string; children?: React.ReactNode };
-
+type DetailsBlockProps = {
+  title: string;
+  children?: React.ReactNode;
+};
 const DetailsBlock: FC<DetailsBlockProps> = ({ title, children }) => (
   <>
     <div className="col-span-1 lg:col-span-3">
@@ -279,9 +287,10 @@ const DetailsBlock: FC<DetailsBlockProps> = ({ title, children }) => (
     <div className="col-span-1 my-4 h-px bg-border lg:col-span-3" />
   </>
 );
-
-type DetailsProps = { title: string; content: ([left?: React.ReactNode, right?: React.ReactNode] | undefined)[] };
-
+type DetailsProps = {
+  title: string;
+  content: ([left?: React.ReactNode, right?: React.ReactNode] | undefined)[];
+};
 const Details: FC<DetailsProps> = ({ title, content }) => {
   const [[firstLeft, firstRight] = [], ...rest] = content;
   return (
@@ -331,8 +340,8 @@ const kafkaConnectLines = (kafkaConnect: ClusterOverview['kafkaConnect']): Detai
 const storageSummaryOf = (brokers: BrokerWithConfigAndStorage[] | null) => {
   const storageOrNA = (bytes: number) => (brokers == null ? NOT_AVAILABLE : prettyBytesOrNA(bytes));
   const brokerList = brokers ?? [];
-  const totalStorageBytes = brokerList.sum((x) => x.totalLogDirSizeBytes ?? 0);
-  const totalPrimaryStorageBytes = brokerList.sum((x) => x.totalPrimaryLogDirSizeBytes ?? 0);
+  const totalStorageBytes = arraySum(brokerList, (x) => x.totalLogDirSizeBytes ?? 0);
+  const totalPrimaryStorageBytes = arraySum(brokerList, (x) => x.totalPrimaryLogDirSizeBytes ?? 0);
   return {
     total: storageOrNA(totalStorageBytes),
     primary: storageOrNA(totalPrimaryStorageBytes),
@@ -348,7 +357,7 @@ function ClusterDetails() {
   // Only the cluster overview gates the skeleton. `brokers` can stay null on an
   // unreachable cluster (the request fails and never resolves), so waiting for it
   // would spin this panel forever — render what we have and mark the rest N/A.
-  if (!overview) {
+  if (!isPresent(overview)) {
     return <SkeletonText className="mt-5" lines={13} width="full" />;
   }
 

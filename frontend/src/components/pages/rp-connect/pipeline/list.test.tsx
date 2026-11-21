@@ -14,9 +14,13 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
 import {
+  type DeletePipelineRequest,
+  type DeletePipelineResponse,
   DeletePipelineResponseSchema,
   type ListPipelinesRequest,
   ListPipelinesResponseSchema,
+  type StartPipelineRequest,
+  type StartPipelineResponse,
   StartPipelineResponseSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import {
@@ -33,20 +37,20 @@ import { appGlobal } from 'state/app-global';
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
 import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
+import { PipelineListPage } from './list';
+
 const mockIsFeatureFlagEnabled = rs.fn((_flag: string) => false);
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
+rs.mock('runtime-config', () => {
+  const actual = rs.requireActual<typeof import('runtime-config')>('runtime-config');
   return {
     ...actual,
     config: { jwt: 'test-jwt-token' },
     isEmbedded: rs.fn(() => false),
-    isFeatureFlagEnabled: (...args: unknown[]) => mockIsFeatureFlagEnabled(...(args as [string])),
+    isFeatureFlagEnabled: (flag: string) => mockIsFeatureFlagEnabled(flag),
   };
 });
 
 type ListRequest = ListPipelinesRequest;
-
-import { PipelineListPage } from './list';
 
 const yamlFor = ({ inputs, outputs }: { inputs: string[]; outputs: string[] }) => `
 input:
@@ -132,7 +136,7 @@ const buildTransport = (opts?: {
       opts?.onRequest?.(req);
       const pageToken = req.request?.pageToken ?? '';
       const pipelines = opts?.pipelines ?? FIXTURES;
-      const drafts = opts?.withDraft ? [DRAFT_FIXTURE, ...(opts.extraDrafts ?? [])] : [];
+      const drafts = opts?.withDraft === true ? [DRAFT_FIXTURE, ...(opts.extraDrafts ?? [])] : [];
       const first = [...drafts, ...pipelines.slice(0, 2)];
       const page = pageToken === '' ? first : pipelines.slice(2);
       return create(ListPipelinesResponseSchema, {
@@ -187,7 +191,7 @@ const visibleLinkNames = () =>
 
 describe('the PipelineListPage', () => {
   describe('rows', () => {
-    it('renders every drained page and skips agent pipelines', async () => {
+    test('renders every drained page and skips agent pipelines', async () => {
       renderList();
 
       await waitFor(() => {
@@ -200,21 +204,25 @@ describe('the PipelineListPage', () => {
     });
 
     // The page header's refresh button routes through `appGlobal.onRefresh`.
-    it('refetches the list from the header refresh button', async () => {
+    test('refetches the list from the header refresh button', async () => {
       const requests: ListRequest[] = [];
       renderWithFileRoutes(<PipelineListPage />, {
-        transport: buildTransport({ onRequest: (req) => requests.push(req) }),
+        transport: buildTransport({
+          onRequest: (req) => {
+            requests.push(req);
+          },
+        }),
       });
 
       expect(await screen.findByText('nightly-export')).toBeInTheDocument();
       const drained = requests.length;
 
-      appGlobal.onRefresh();
+      await appGlobal.onRefresh();
 
       await waitFor(() => expect(requests.length).toBeGreaterThan(drained));
     });
 
-    it('labels the status from the pipeline state, not the badge variant', async () => {
+    test('labels the status from the pipeline state, not the badge variant', async () => {
       renderList();
 
       await waitFor(() => {
@@ -226,7 +234,7 @@ describe('the PipelineListPage', () => {
       expect(within(rowFor('nightly-export')).getByText('Stopped')).toBeInTheDocument();
     });
 
-    it('collapses repeated connectors into a single badge with a multiplier', async () => {
+    test('collapses repeated connectors into a single badge with a multiplier', async () => {
       renderList();
 
       await waitFor(() => {
@@ -241,7 +249,7 @@ describe('the PipelineListPage', () => {
   });
 
   describe('status tabs', () => {
-    it('counts each status tab over the drained rows', async () => {
+    test('counts each status tab over the drained rows', async () => {
       renderList();
 
       await waitFor(() => {
@@ -254,7 +262,7 @@ describe('the PipelineListPage', () => {
       expect(tab('Error')).toHaveTextContent('1');
     });
 
-    it('narrows rows to the selected status tab', async () => {
+    test('narrows rows to the selected status tab', async () => {
       const user = userEvent.setup();
       renderList();
 
@@ -275,7 +283,7 @@ describe('the PipelineListPage', () => {
       });
     });
 
-    it('shows the tab-specific empty message when a status has no pipelines', async () => {
+    test('shows the tab-specific empty message when a status has no pipelines', async () => {
       const user = userEvent.setup();
       renderList();
 
@@ -291,7 +299,7 @@ describe('the PipelineListPage', () => {
       });
     });
 
-    it('points every status tab at the table region, labelled by the active tab', async () => {
+    test('points every status tab at the table region, labelled by the active tab', async () => {
       const user = userEvent.setup();
       renderList();
 
@@ -316,7 +324,7 @@ describe('the PipelineListPage', () => {
   });
 
   describe('search and row clicks', () => {
-    it('filters on name or id, and the tab counts follow the search', async () => {
+    test('filters on name or id, and the tab counts follow the search', async () => {
       const user = userEvent.setup();
       renderList();
 
@@ -340,7 +348,7 @@ describe('the PipelineListPage', () => {
       });
     });
 
-    it('leaves modified clicks to the browser and navigates on a plain one', async () => {
+    test('leaves modified clicks to the browser and navigates on a plain one', async () => {
       const user = userEvent.setup();
       const { router } = renderList();
 
@@ -385,16 +393,16 @@ describe('the PipelineListPage', () => {
 
     const renderManyPipelines = async () => {
       renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport({ pipelines: MANY_PIPELINES }) });
-      expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
+      await screen.findByText('Page 1 of 2');
     };
 
     const expectPage = async (page: 1 | 2) => {
       await waitFor(() => {
         expect(screen.getByText(`Page ${page} of 2`)).toBeInTheDocument();
+        expect(visibleLinkNames()).toHaveLength(page === 1 ? 20 : 15);
+        expect(visibleLinkNames().includes('first-error')).toBe(page === 1);
+        expect(visibleLinkNames().includes('last-stopped')).toBe(page === 2);
       });
-      expect(visibleLinkNames()).toHaveLength(page === 1 ? 20 : 15);
-      expect(visibleLinkNames().includes('first-error')).toBe(page === 1);
-      expect(visibleLinkNames().includes('last-stopped')).toBe(page === 2);
     };
 
     const goToPage = async (user: ReturnType<typeof userEvent.setup>, control: string, page: 1 | 2) => {
@@ -402,7 +410,7 @@ describe('the PipelineListPage', () => {
       await expectPage(page);
     };
 
-    it('moves between pages from the footer controls', async () => {
+    test('moves between pages from the footer controls', async () => {
       const user = userEvent.setup();
       await renderManyPipelines();
       await expectPage(1);
@@ -413,7 +421,7 @@ describe('the PipelineListPage', () => {
       await goToPage(user, 'Go to previous page', 1);
     });
 
-    it('shows more rows per page when asked', async () => {
+    test('shows more rows per page when asked', async () => {
       const user = userEvent.setup();
       await renderManyPipelines();
 
@@ -424,7 +432,7 @@ describe('the PipelineListPage', () => {
       expect(screen.getByRole('combobox', { name: 'Rows per page' })).toHaveTextContent('50');
     });
 
-    it('goes back to page 1 when the filters change', async () => {
+    test('goes back to page 1 when the filters change', async () => {
       const user = userEvent.setup();
       await renderManyPipelines();
 
@@ -438,7 +446,7 @@ describe('the PipelineListPage', () => {
       });
     });
 
-    it('goes back to page 1 when the sort changes', async () => {
+    test('goes back to page 1 when the sort changes', async () => {
       const user = userEvent.setup();
       await renderManyPipelines();
 
@@ -453,7 +461,7 @@ describe('the PipelineListPage', () => {
     });
   });
 
-  it('says whether each pipeline stops on its own, and filters on it', async () => {
+  test('says whether each pipeline stops on its own, and filters on it', async () => {
     const user = userEvent.setup();
     renderList();
     await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
@@ -477,7 +485,7 @@ describe('the PipelineListPage', () => {
     });
 
     describe('listing drafts', () => {
-      it('hides the Drafts tab when there are none', async () => {
+      test('hides the Drafts tab when there are none', async () => {
         renderList();
 
         await waitFor(() => expect(screen.getByText('orders-enrichment')).toBeInTheDocument());
@@ -487,28 +495,36 @@ describe('the PipelineListPage', () => {
       // The flag gates making drafts, not seeing them. Turning it back off would otherwise strand a
       // draft that still counts against the cluster's pipeline quota with no row to delete it from —
       // and the request is inert against a pre-drafts dataplane, which drops the field.
-      it('asks for drafts whether or not the feature is enabled', async () => {
-        const requests: unknown[] = [];
+      test('asks for drafts whether or not the feature is enabled', async () => {
+        const requests: ListRequest[] = [];
         renderWithFileRoutes(<PipelineListPage />, {
-          transport: buildTransport({ onRequest: (r) => requests.push(r) }),
+          transport: buildTransport({
+            onRequest: (r) => {
+              requests.push(r);
+            },
+          }),
         });
 
         await waitFor(() => expect(screen.getByText('orders-enrichment')).toBeInTheDocument());
-        expect(requests.every((r) => (r as ListRequest).request?.filter?.includeDrafts === true)).toBe(true);
+        expect(requests.every((r) => r.request?.filter?.includeDrafts === true)).toBe(true);
 
         requests.length = 0;
         mockIsFeatureFlagEnabled.mockImplementation(() => false);
         renderWithFileRoutes(<PipelineListPage />, {
-          transport: buildTransport({ onRequest: (r) => requests.push(r) }),
+          transport: buildTransport({
+            onRequest: (r) => {
+              requests.push(r);
+            },
+          }),
         });
 
         await waitFor(() => expect(requests.length).toBeGreaterThan(0));
-        expect(requests.every((r) => (r as ListRequest).request?.filter?.includeDrafts === true)).toBe(true);
+        expect(requests.every((r) => r.request?.filter?.includeDrafts === true)).toBe(true);
       });
 
       // The stranded-draft case the request above exists for: flag off, draft still there, still
       // deletable from its row.
-      it('shows and can delete a leftover draft with the feature disabled', async () => {
+      test('shows and can delete a leftover draft with the feature disabled', async () => {
         mockIsFeatureFlagEnabled.mockImplementation(() => false);
         renderList({ withDraft: true });
 
@@ -516,7 +532,7 @@ describe('the PipelineListPage', () => {
         expect(screen.getByRole('tab', { name: /^Drafts/ })).toBeInTheDocument();
       });
 
-      it('lists a draft alongside deployed pipelines, marked as a draft', async () => {
+      test('lists a draft alongside deployed pipelines, marked as a draft', async () => {
         renderList({ withDraft: true });
 
         await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
@@ -535,7 +551,7 @@ describe('the PipelineListPage', () => {
       });
 
       // Age, not the author: what decides whether to pick a draft up or bin it.
-      it('says when a draft was last edited, and nothing about who', async () => {
+      test('says when a draft was last edited, and nothing about who', async () => {
         renderList({ withDraft: true });
 
         await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
@@ -547,7 +563,7 @@ describe('the PipelineListPage', () => {
       });
 
       // The one edited last is the one being worked on.
-      it('puts the most recently edited draft first', async () => {
+      test('puts the most recently edited draft first', async () => {
         renderWithFileRoutes(<PipelineListPage />, {
           transport: buildTransport({
             withDraft: true,
@@ -570,7 +586,7 @@ describe('the PipelineListPage', () => {
         expect(names.indexOf('half-built-pipeline')).toBeLessThan(names.indexOf('older-draft'));
       });
 
-      it('counts drafts in their own tab and narrows to them', async () => {
+      test('counts drafts in their own tab and narrows to them', async () => {
         const user = userEvent.setup();
         renderList({ withDraft: true });
 
@@ -586,7 +602,7 @@ describe('the PipelineListPage', () => {
     });
 
     describe('draft row actions', () => {
-      it('opens a draft on its own page, like any other pipeline', async () => {
+      test('opens a draft on its own page, like any other pipeline', async () => {
         renderList({ withDraft: true });
 
         await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
@@ -595,9 +611,11 @@ describe('the PipelineListPage', () => {
         expect(link).toHaveAttribute('href', expect.stringContaining('/rp-connect/draft777'));
       });
 
-      it('starts a draft from its row', async () => {
+      test('starts a draft from its row', async () => {
         const user = userEvent.setup();
-        const startPipelineMock = rs.fn().mockReturnValue(create(StartPipelineResponseSchema, {}));
+        const startPipelineMock = rs
+          .fn<(request: StartPipelineRequest) => StartPipelineResponse>()
+          .mockReturnValue(create(StartPipelineResponseSchema, {}));
         renderWithFileRoutes(<PipelineListPage />, {
           transport: buildTransport({ withDraft: true, startPipelineMock }),
         });
@@ -610,13 +628,17 @@ describe('the PipelineListPage', () => {
         expect(await screen.findByText(/can't go back to being a draft/)).toBeInTheDocument();
         await user.click(screen.getByTestId('confirm-start-draft'));
 
-        await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
-        expect(startPipelineMock.mock.calls[0][0].request.id).toBe('draft777');
+        await waitFor(() =>
+          expect(startPipelineMock.mock.calls[0]?.[0]).toMatchObject({ request: { id: 'draft777' } })
+        );
+        expect(startPipelineMock.mock.calls[0]?.[0].request?.id).toBe('draft777');
       });
 
-      it('deletes a draft from its row, after a confirmation', async () => {
+      test('deletes a draft from its row, after a confirmation', async () => {
         const user = userEvent.setup();
-        const deletePipelineMock = rs.fn().mockReturnValue(create(DeletePipelineResponseSchema, {}));
+        const deletePipelineMock = rs
+          .fn<(request: DeletePipelineRequest) => DeletePipelineResponse>()
+          .mockReturnValue(create(DeletePipelineResponseSchema, {}));
         renderWithFileRoutes(<PipelineListPage />, {
           transport: buildTransport({ withDraft: true, deletePipelineMock }),
         });
@@ -631,12 +653,14 @@ describe('the PipelineListPage', () => {
 
         await user.click(screen.getByTestId('confirm-delete-draft'));
 
-        await waitFor(() => expect(deletePipelineMock).toHaveBeenCalled());
-        expect(deletePipelineMock.mock.calls[0][0].request.id).toBe('draft777');
+        await waitFor(() =>
+          expect(deletePipelineMock.mock.calls[0]?.[0]).toMatchObject({ request: { id: 'draft777' } })
+        );
+        expect(deletePipelineMock.mock.calls[0]?.[0].request?.id).toBe('draft777');
       });
 
       // The dialog's line about unsaved edits is only true when this browser holds a buffer for the draft.
-      it('says when deleting the draft also drops edits this browser was keeping', async () => {
+      test('says when deleting the draft also drops edits this browser was keeping', async () => {
         const user = userEvent.setup();
         localStorage.clear();
         useRpcnEditorAutosaveStore.getState().save({
@@ -657,7 +681,7 @@ describe('the PipelineListPage', () => {
       });
 
       // Nothing is running, so there is nothing to stop.
-      it('offers no Stop on a draft', async () => {
+      test('offers no Stop on a draft', async () => {
         const user = userEvent.setup();
         renderList({ withDraft: true });
 
@@ -673,7 +697,7 @@ describe('the PipelineListPage', () => {
 });
 
 describe('the PipelineListPage view in the URL', () => {
-  it('restores a linked view: its tab, search and facets', async () => {
+  test('restores a linked view: its tab, search and facets', async () => {
     renderWithFileRoutes(<PipelineListPage />, {
       transport: buildTransport(),
       initialLocation: `/?tab=running&q=orders&input=${encodeURIComponent(JSON.stringify(['redpanda']))}`,
@@ -684,7 +708,7 @@ describe('the PipelineListPage view in the URL', () => {
     expect(screen.getByRole('button', { name: CLEAR_FILTERS_RE })).toBeInTheDocument();
   });
 
-  it('writes the tab to the URL', async () => {
+  test('writes the tab to the URL', async () => {
     const user = userEvent.setup();
     const { router } = renderList();
     await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());
@@ -693,7 +717,7 @@ describe('the PipelineListPage view in the URL', () => {
     expect(router.state.location.search).toMatchObject({ tab: 'stopped' });
   });
 
-  it('writes the search to the URL, and drops the default tab and a cleared search', async () => {
+  test('writes the search to the URL, and drops the default tab and a cleared search', async () => {
     const user = userEvent.setup();
     const { router } = renderList();
     await waitFor(() => expect(screen.getByText('nightly-export')).toBeInTheDocument());

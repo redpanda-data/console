@@ -11,8 +11,7 @@
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
 
-import CreateConnector from '../../../components/pages/connect/create-connector';
-
+import { CreateConnector } from '../../../components/pages/connect/create-connector';
 export const Route = createFileRoute('/connect-clusters/$clusterName/create-connector')({
   staticData: {
     title: 'Create Connector',

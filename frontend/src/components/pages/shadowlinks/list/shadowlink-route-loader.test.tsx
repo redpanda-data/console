@@ -10,10 +10,11 @@
  */
 
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
-import { describe, expect, test } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import { QueryClient } from '@tanstack/react-query';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
-import { Route } from 'routes/shadowlinks/index';
+
+import { loadShadowlinks } from './load-shadowlinks';
 
 // A transport whose listShadowLinks RPC always fails with the given code, so we
 // can drive the route loader's error handling.
@@ -26,10 +27,7 @@ const failingTransport = (code: Code, message: string) =>
 
 const runLoader = (code: Code, message: string) => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  // biome-ignore lint/suspicious/noExplicitAny: the loader only reads queryClient + dataplaneTransport off context.
-  return (Route.options.loader as any)({
-    context: { queryClient, dataplaneTransport: failingTransport(code, message) },
-  });
+  return loadShadowlinks({ queryClient, dataplaneTransport: failingTransport(code, message) });
 };
 
 describe('shadowlinks route loader', () => {
@@ -60,12 +58,10 @@ describe('shadowlinks route loader', () => {
     await expect(runLoader(Code.Internal, 'boom')).resolves.toBeUndefined();
   });
   test('still rethrows non-Connect errors (so the router error boundary is shown)', async () => {
-    const queryClient = { ensureQueryData: () => Promise.reject(new TypeError('unexpected programming error')) };
-    // biome-ignore lint/suspicious/noExplicitAny: the loader only reads queryClient + dataplaneTransport off context.
+    const queryClient = new QueryClient();
+    rs.spyOn(queryClient, 'ensureQueryData').mockRejectedValueOnce(new TypeError('unexpected programming error'));
     await expect(
-      (Route.options.loader as any)({
-        context: { queryClient, dataplaneTransport: failingTransport(Code.Internal, 'unused') },
-      })
+      loadShadowlinks({ queryClient, dataplaneTransport: failingTransport(Code.Internal, 'unused') })
     ).rejects.toThrow('unexpected programming error');
   });
 });

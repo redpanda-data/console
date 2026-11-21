@@ -22,7 +22,6 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { SecretSelector, type SecretSelectorCustomText } from 'components/ui/secret/secret-selector';
-import { isEmbedded } from 'config';
 import { ExternalLink } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -32,6 +31,7 @@ import { useListSecretsQuery } from 'react-query/api/secret';
 import { docsLinks } from 'utils/docs-links';
 
 import { extractSecretId, toSecretReference } from './secret-reference';
+import { isEmbedded } from '../../../../../runtime-config';
 import { AUTH_METHOD, type AuthMethod, type FormValues } from '../model';
 
 const SHADOW_LINK_DOCS_URL = docsLinks.selfManaged.shadowingReplicationPermissions;
@@ -143,7 +143,7 @@ export const AuthenticationSection = () => {
                   target="_blank"
                 >
                   View required ACLs
-                  <ExternalLink className="h-3 w-3" />
+                  <ExternalLink className="size-3" />
                 </a>
               </p>
             </AlertDescription>

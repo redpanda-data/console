@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
+import { z } from 'zod';
 
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -13,7 +14,7 @@ const execute = promisify(execFile);
 const frontendDirectory = fileURLToPath(new URL('../', import.meta.url));
 const fixture = fileURLToPath(new URL('./fixtures/rsdoctor-build.mjs', import.meta.url));
 const bunExecutable = process.env.npm_execpath;
-if (!bunExecutable) {
+if (!(bunExecutable !== null && bunExecutable !== undefined && bunExecutable !== '')) {
   throw new Error('Run these integration tests through bun run');
 }
 
@@ -22,21 +23,19 @@ function expectNoReportsInDist(directory: string) {
   expect(existsSync(join(directory, 'dist/rsdoctor-data.json'))).toBe(false);
 }
 
+const rsdoctorAssetsSchema = z.object({
+  data: z.object({
+    chunkGraph: z.object({
+      assets: z.array(z.object({ path: z.string(), gzipSize: z.unknown(), brotliSize: z.unknown() })),
+    }),
+  }),
+});
+
 async function expectCompressedAssetSizes(dataFile: string) {
-  const report: unknown = JSON.parse(await readFile(dataFile, 'utf8'));
-  expect(report).toMatchObject({
-    data: {
-      chunkGraph: {
-        assets: expect.arrayContaining([
-          expect.objectContaining({
-            path: 'fixture.js',
-            gzipSize: expect.any(Number),
-            brotliSize: expect.any(Number),
-          }),
-        ]),
-      },
-    },
-  });
+  const report = rsdoctorAssetsSchema.parse(JSON.parse(await readFile(dataFile, 'utf8')));
+  const fixtureAsset = report.data.chunkGraph.assets.find((asset) => asset.path === 'fixture.js');
+  expect(fixtureAsset?.gzipSize).toBeTypeOf('number');
+  expect(fixtureAsset?.brotliSize).toBeTypeOf('number');
 }
 
 async function listChunksWithAgent(executable: string, dataFile: string, signal: AbortSignal) {
@@ -61,13 +60,17 @@ describe('console build analysis', () => {
   });
 
   const build = (enabled: boolean, signal: AbortSignal, config?: string) =>
-    execute(process.execPath, [fixture, directory, ...(config ? [config] : [])], {
-      cwd: tmpdir(),
-      // Rsdoctor's own test mode overrides disableClientServer.
-      env: { ...process.env, RSDOCTOR: enabled ? 'true' : '', RSTEST: undefined },
-      signal,
-      maxBuffer: 10 * 1024 * 1024,
-    });
+    execute(
+      process.execPath,
+      [fixture, directory, ...(config !== null && config !== undefined && config !== '' ? [config] : [])],
+      {
+        cwd: tmpdir(),
+        // Rsdoctor's own test mode overrides disableClientServer.
+        env: { ...process.env, RSDOCTOR: enabled ? 'true' : '', RSTEST: undefined },
+        signal,
+        maxBuffer: 10 * 1024 * 1024,
+      }
+    );
 
   test('preserves separate main-app and React 19 analysis reports', async ({ signal }) => {
     await build(true, signal);

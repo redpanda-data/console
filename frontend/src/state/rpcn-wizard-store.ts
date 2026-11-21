@@ -1,3 +1,4 @@
+import { onboardingWizardFormSchema } from '../components/pages/rp-connect/types/wizard';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -19,6 +20,8 @@ import type {
   MinimalUserData,
   OnboardingWizardFormData,
 } from '../components/pages/rp-connect/types/wizard';
+
+const wizardConnectionsSchema = onboardingWizardFormSchema.pick({ input: true, output: true });
 
 export const CONNECT_WIZARD_CONNECTOR_KEY = 'connect-wizard-connections';
 
@@ -69,7 +72,7 @@ export const useRpcnWizardStore = create<RpcnWizardStore>()(
     }),
     {
       name: CONNECT_WIZARD_CONNECTOR_KEY,
-      storage: createFlatStorage<Pick<OnboardingWizardFormData, 'input' | 'output'>>(),
+      storage: createFlatStorage((value) => wizardConnectionsSchema.parse(value)),
       // Only input/output connections persist; topic/user/yaml are transient.
       partialize: (state) => ({
         input: state.input,
@@ -127,7 +130,7 @@ export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input
 // What CloudV2 wrote to session storage, or null when it wrote nothing; throws on malformed JSON.
 function readStoredConnectionData(): Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>> | null {
   const raw = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
-  return raw ? (JSON.parse(raw) as Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>>) : null;
+  return raw !== null && raw !== undefined && raw !== '' ? wizardConnectionsSchema.parse(JSON.parse(raw)) : null;
 }
 
 /** Imperative API for non-hook contexts (class components, utility functions). */

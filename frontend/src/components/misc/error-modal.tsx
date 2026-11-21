@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -61,7 +62,9 @@ class ErrorModal extends Component<ErrorModalProps> {
                 <div className="self-center">{this.subTitle}</div>
               </div>
 
-              {this.content ? <div className="max-h-[300px] self-stretch overflow-y-auto">{this.content}</div> : null}
+              {Boolean(this.content) ? (
+                <div className="max-h-[300px] self-stretch overflow-y-auto">{this.content}</div>
+              ) : null}
             </div>
           </DialogBody>
           <DialogFooter>
@@ -104,19 +107,7 @@ export function showErrorModal(title: string, subTitle: React.ReactNode, content
   // keep formatting for strings
   let formattedContent = content;
   if (typeof content === 'string') {
-    formattedContent = (
-      <div
-        style={{
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-all',
-          lineHeight: 1.6,
-          fontFamily: 'monospace',
-          fontSize: 'small',
-        }}
-      >
-        {content}
-      </div>
-    );
+    formattedContent = <div className="console-error-detail">{content}</div>;
   }
 
   errorModals.push({

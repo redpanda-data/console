@@ -3,7 +3,7 @@ import { DynamicCodeBlock, SyncCodeBlock } from 'components/redpanda-ui/componen
 import { InlineCode, Link, List, ListItem } from 'components/redpanda-ui/components/typography';
 import { docsLinks } from 'utils/docs-links';
 
-import Tabs from '../../misc/tabs/tabs';
+import { Tabs } from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
 
 const rpkInitTransform = 'rpk transform init --language=tinygo';

@@ -12,7 +12,7 @@
 import type { EditorTheme } from 'components/redpanda-ui/lib/editor-theme';
 
 import { type DiffBase, diffColors, diffTheme } from './changes-diff-theme';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 // Shape, not values: pinning the palette would break on every registry change. What is guarded is
 // the reading order the design needs, which Monaco's own defaults get wrong.
@@ -31,7 +31,7 @@ const SIDES = [
 
 describe('diffColors', () => {
   // Monaco's colour registry requires it: an opaque fill hides the syntax highlighting.
-  it('never paints an opaque fill over the code', () => {
+  test('never paints an opaque fill over the code', () => {
     const all = [...Object.values(COLORS.removed), ...Object.values(COLORS.inserted), COLORS.neutral];
     for (const color of all) {
       expect(color, `${color} must be #rrggbbaa`).toMatch(RGBA_HEX);
@@ -40,22 +40,22 @@ describe('diffColors', () => {
     }
   });
 
-  it.each(SIDES)('weights %s words above its gutter above its line', (_name, side) => {
+  test.each(SIDES)('weights %s words above its gutter above its line', (_name, side) => {
     expect(alphaOf(side.text)).toBeGreaterThan(alphaOf(side.gutter));
     expect(alphaOf(side.gutter)).toBeGreaterThan(alphaOf(side.line));
   });
 
-  it.each(SIDES)('keeps %s to a single hue across its tiers', (_name, side) => {
+  test.each(SIDES)('keeps %s to a single hue across its tiers', (_name, side) => {
     expect(new Set([hueOf(side.line), hueOf(side.gutter), hueOf(side.text)]).size).toBe(1);
   });
 
-  it('gives removals and additions the same weight', () => {
+  test('gives removals and additions the same weight', () => {
     expect(alphaOf(COLORS.removed.line)).toBe(alphaOf(COLORS.inserted.line));
     expect(alphaOf(COLORS.removed.gutter)).toBe(alphaOf(COLORS.inserted.gutter));
     expect(alphaOf(COLORS.removed.text)).toBe(alphaOf(COLORS.inserted.text));
   });
 
-  it('paints with the hues it was handed, so a dark palette reaches the diff', () => {
+  test('paints with the hues it was handed, so a dark palette reaches the diff', () => {
     expect(hueOf(COLORS.removed.line)).toBe(BASE.removed);
     expect(hueOf(COLORS.inserted.line)).toBe(BASE.inserted);
     expect(hueOf(COLORS.neutral)).toBe(BASE.neutral);
@@ -72,18 +72,18 @@ describe('diffTheme', () => {
   const theme = diffTheme(editor, BASE);
 
   // The ground decides light/dark, so the diff must not pin a base of its own.
-  it('keeps the editor theme base, syntax rules, and chrome', () => {
+  test('keeps the editor theme base, syntax rules, and chrome', () => {
     expect(theme.base).toBe(editor.base);
     expect(theme.inherit).toBe(editor.inherit);
     expect(theme.rules).toEqual(editor.rules);
     expect(theme.colors).toMatchObject(editor.colors);
   });
 
-  it('lets the panel surface show through the unchanged regions', () => {
+  test('lets the panel surface show through the unchanged regions', () => {
     expect(theme.colors['diffEditor.unchangedRegionBackground']).toBe('#00000000');
   });
 
-  it('layers every diff tier on the editor theme', () => {
+  test('layers every diff tier on the editor theme', () => {
     expect(theme.colors['diffEditor.removedLineBackground']).toBe(COLORS.removed.line);
     expect(theme.colors['diffEditorGutter.removedLineBackground']).toBe(COLORS.removed.gutter);
     expect(theme.colors['diffEditor.removedTextBackground']).toBe(COLORS.removed.text);

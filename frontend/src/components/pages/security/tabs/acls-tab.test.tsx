@@ -14,6 +14,8 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 
+import { compareStrings } from '../../../../utils/string-utils';
+
 // The Playwright spec cannot reach the row menu — a fresh cluster has no ACLs — so it is covered
 // here, along with the delete-option enablement.
 
@@ -28,7 +30,7 @@ rs.mock('@tanstack/react-router', () => {
 });
 
 rs.mock('../../../misc/section', () => ({
-  default: ({ children }: { children?: ReactNode }) => <section>{children}</section>,
+  Section: ({ children }: { children?: ReactNode }) => <section>{children}</section>,
 }));
 
 rs.mock('../shared/security-tabs-nav', () => ({
@@ -36,7 +38,7 @@ rs.mock('../shared/security-tabs-nav', () => ({
 }));
 
 rs.mock('../../../../components/misc/error-result', () => ({
-  default: () => null,
+  ErrorResult: () => null,
 }));
 
 rs.mock('../../../../state/backend-api', () => ({
@@ -111,7 +113,10 @@ describe('the AclsTab', () => {
     render(<AclsTab />);
 
     const row = screen.getByTestId('acl-list-item-engineering-*').closest('a');
-    expect(within(row as HTMLElement).getByText('Group')).toBeInTheDocument();
+    if (!row) {
+      throw new Error('Expected the Group principal row to be a link');
+    }
+    expect(within(row).getByText('Group')).toBeInTheDocument();
   });
 
   test('opens the row delete menu with all three options', async () => {
@@ -148,7 +153,7 @@ describe('the AclsTab', () => {
     await user.click(await screen.findByRole('menuitem', { name: SORT_ASC }));
 
     const names = screen.getAllByTestId(ACL_ROW_TESTID).map((el) => el.textContent);
-    expect(names).toEqual([...names].sort());
+    expect(names).toEqual([...names].sort(compareStrings));
   });
 
   test('keeps the name filter when a failed refetch recovers', async () => {

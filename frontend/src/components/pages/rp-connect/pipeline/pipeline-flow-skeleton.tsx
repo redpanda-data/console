@@ -12,26 +12,20 @@
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 
 const SKELETON_SECTIONS = [
-  { label: 'INPUT', leaves: 1 },
-  { label: 'PROCESSORS', leaves: 2 },
-  { label: 'OUTPUT', leaves: 1 },
+  { label: 'INPUT', leaves: ['component'] },
+  { label: 'PROCESSORS', leaves: ['first-processor', 'second-processor'] },
+  { label: 'OUTPUT', leaves: ['component'] },
 ] as const;
 
 export function PipelineFlowSkeleton() {
   return (
-    <div className="relative h-full w-full">
+    <div className="relative size-full">
       <div aria-hidden="true" className="pointer-events-none flex flex-col gap-4 p-4 pl-3">
         {SKELETON_SECTIONS.map((section) => (
           <div className="flex flex-col gap-2" key={section.label}>
             <Skeleton variant="text" width="xs" />
-            {Array.from({ length: section.leaves }, (_, leafIndex) => (
-              <Skeleton
-                className="ml-10"
-                key={`${section.label}-leaf-${leafIndex}`}
-                size="lg"
-                variant="rounded"
-                width="md"
-              />
+            {section.leaves.map((leaf) => (
+              <Skeleton className="ml-10" key={`${section.label}-${leaf}`} size="lg" variant="rounded" width="md" />
             ))}
           </div>
         ))}

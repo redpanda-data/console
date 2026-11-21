@@ -11,7 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import { RolesTab } from '../../../components/pages/security/tabs/roles-tab';
+import { RolesTabNew as RolesTab } from '../../../components/pages/security/tabs/roles-tab-new';
 
 export const Route = createFileRoute('/security/roles/')({
   staticData: {

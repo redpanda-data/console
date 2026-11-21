@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -9,14 +10,6 @@
  * by the Apache License, Version 2.0
  */
 
-import React, { type JSX, lazy, useState } from 'react';
-
-import { appGlobal } from '../../../state/app-global';
-import { api, useApiStoreHook } from '../../../state/backend-api';
-import type { ConfigEntry, Topic, TopicAction } from '../../../state/rest-interfaces';
-import { uiSettings } from '../../../state/ui';
-import { uiState } from '../../../state/ui-state';
-import '../../../utils/array-extensions';
 import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
 import { ErrorIcon, LockIcon, WarningIcon } from 'components/icons';
 import { ErrorBoundary } from 'components/misc/error-boundary';
@@ -36,19 +29,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
+import React, { type JSX, lazy, useState } from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
-import DeleteRecordsModal from './DeleteRecordsModal/delete-records-modal';
+import { DeleteRecordsModal } from './DeleteRecordsModal/delete-records-modal';
 import { TopicMessagesTab } from './messages';
 import { TopicQuickInfoStatistic } from './quick-info';
-import AclList from './Tab.Acl/acl-list';
+import { AclList } from './Tab.Acl/acl-list';
 import { deleteRecordsMenuItem } from './Tab.Messages/common/delete-records-menu-item';
 import { TopicConfiguration } from './tab-config';
 import { TopicConsumers } from './tab-consumers';
 import { TopicPartitions } from './tab-partitions';
-import { isServerless } from '../../../config';
+import { isServerless } from '../../../runtime-config';
+import { appGlobal } from '../../../state/app-global';
+import { api, useApiStoreHook } from '../../../state/backend-api';
+import type { ConfigEntry, Topic, TopicAction } from '../../../state/rest-interfaces';
+import { uiSettings } from '../../../state/ui';
+import { uiState } from '../../../state/ui-state';
+import { arrayPushDistinct } from '../../../utils/array-utils';
 import { AppFeatures } from '../../../utils/env';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -68,6 +69,10 @@ const documentationError = (
 const TopicTabIds = ['messages', 'consumers', 'partitions', 'configuration', 'documentation', 'topicacl'] as const;
 export type TopicTabId = (typeof TopicTabIds)[number];
 
+function isTopicTabId(value: unknown): value is TopicTabId {
+  return new Set<unknown>(TopicTabIds).has(value);
+}
+
 type TopicTabProps = {
   topic: Topic;
   id: TopicTabId;
@@ -86,9 +91,10 @@ type TabDisableHook = (topic: Topic) => React.ReactNode | undefined;
 
 // The first disable hook that returns a title wins; it replaces the tab title and disables the tab.
 function findCustomTitle(topic: Topic, disableHooks: TabDisableHook[] | undefined): React.ReactNode | undefined {
-  for (const h of disableHooks ?? []) {
+  const tabDisableHooks = disableHooks ?? [];
+  for (const h of tabDisableHooks) {
     const result = h(topic);
-    if (result) {
+    if (Boolean(result)) {
       return result;
     }
   }
@@ -133,7 +139,12 @@ const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titl
 
   if (mode === 'trigger') {
     return (
-      <TabsTrigger className="aria-disabled:cursor-not-allowed" disabled={!!customTitle} value={id} variant="underline">
+      <TabsTrigger
+        className="aria-disabled:cursor-not-allowed"
+        disabled={Boolean(customTitle)}
+        value={id}
+        variant="underline"
+      >
         {customTitle ??
           (hasPermission ? (
             titleText
@@ -166,17 +177,17 @@ const mkDocuTip = (text: string, icon?: JSX.Element) => (
   </TooltipProvider>
 );
 const warnIcon = (
-  <span style={{ fontSize: '15px', marginRight: '5px', transform: 'translateY(1px)', display: 'inline-block' }}>
+  <span className="console-documentation-warning">
     <WarningIcon />
   </span>
 );
 
 function refreshTopicData(topicName: string, force: boolean) {
   // must know what distribution we're working with; redpanda has some differences
-  api.refreshClusterOverview();
+  api.refreshClusterOverview().catch(reportActionError);
 
   // there is no single endpoint to refresh a single topic
-  api.refreshTopics(force);
+  api.refreshTopics(force).catch(reportActionError);
 
   const activeTab = resolveActiveTab();
 
@@ -189,7 +200,7 @@ function refreshTopicData(topicName: string, force: boolean) {
   api.refreshPartitionsForTopic(topicName, force);
 
   // configuration is always required for the statistics bar
-  api.refreshTopicConfig(topicName, force);
+  api.refreshTopicConfig(topicName, force).catch(reportActionError);
 
   api.refreshClusterHealth().catch(() => {
     // Error handling managed by API layer
@@ -202,8 +213,8 @@ function refreshTopicData(topicName: string, force: boolean) {
 // unlike appGlobal.location which is synced asynchronously via RouterSync's useEffect),
 // fall back to stored setting.
 function resolveActiveTab(): TopicTabId | undefined {
-  const urlHash = window.location.hash.replace('#', '') as TopicTabId;
-  return TopicTabIds.includes(urlHash) ? urlHash : uiSettings.topicDetailsActiveTabKey;
+  const urlHash = window.location.hash.replace('#', '');
+  return isTopicTabId(urlHash) ? urlHash : uiSettings.topicDetailsActiveTabKey;
 }
 
 function refreshLazyTabData(activeTab: TopicTabId | undefined, topicName: string, force: boolean) {
@@ -217,8 +228,9 @@ function refreshLazyTabData(activeTab: TopicTabId | undefined, topicName: string
     api.refreshTopicAcls(topicName, force);
   }
 }
-
-class TopicDetails extends PageComponent<{ topicName: string }> {
+class TopicDetails extends PageComponent<{
+  topicName: string;
+}> {
   initPage(p: PageInitHelper): void {
     const topicName = this.props.topicName;
     uiState.currentTopicName = topicName;
@@ -259,9 +271,10 @@ function useModifiedConfigCount(topicName: string): number {
 
   return topicConfig?.filter((e) => e.isExplicitlySet).length ?? 0;
 }
-
-type TopicPartitionIds = { topicName: string; partitionIds: number[] };
-
+type TopicPartitionIds = {
+  topicName: string;
+  partitionIds: number[];
+};
 function findTopicPartitionIds(entries: TopicPartitionIds[] | undefined, topicName: string): number[] | undefined {
   return (entries ?? []).find(({ topicName: tn }) => tn === topicName)?.partitionIds;
 }
@@ -299,16 +312,14 @@ const docuDisableHooks: TabDisableHook[] = [
 ];
 
 function getEnabledTabIds(topic: Topic): Set<TopicTabId> {
-  return new Set<TopicTabId>(
-    [
-      'messages',
-      'consumers',
-      'partitions',
-      'configuration',
-      !findCustomTitle(topic, aclDisableHooks) && 'topicacl',
-      !(isServerless() || findCustomTitle(topic, docuDisableHooks)) && 'documentation',
-    ].filter(Boolean) as TopicTabId[]
-  );
+  const ids = new Set<TopicTabId>(['messages', 'consumers', 'partitions', 'configuration']);
+  if (findCustomTitle(topic, aclDisableHooks) === undefined) {
+    ids.add('topicacl');
+  }
+  if (!isServerless() && findCustomTitle(topic, docuDisableHooks) === undefined) {
+    ids.add('documentation');
+  }
+  return ids;
 }
 
 const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: string }) => {
@@ -425,10 +436,12 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
   );
 
   const setTabPage = (activeKey: string): void => {
-    uiSettings.topicDetailsActiveTabKey = activeKey as TopicTabId;
+    if (isTopicTabId(activeKey)) {
+      uiSettings.topicDetailsActiveTabKey = activeKey;
+    }
 
     const loc = appGlobal.location;
-    loc.hash = String(activeKey);
+    loc.hash = activeKey;
     // Preserve the search string so URL-backed tab state (e.g. Configuration's
     // configFilter/configScope) survives switching tabs and coming back.
     appGlobal.historyReplace(`${loc.pathname}${loc.searchStr}#${loc.hash}`);
@@ -496,38 +509,38 @@ function addBaseFavs(topicConfig: ConfigEntry[]): void {
 
   switch (cleanupPolicy) {
     case 'delete':
-      favs.pushDistinct('retention.ms', 'retention.bytes');
+      arrayPushDistinct(favs, 'retention.ms', 'retention.bytes');
       break;
     case 'compact':
-      favs.pushDistinct('min.cleanable.dirty.ratio', 'delete.retention.ms');
+      arrayPushDistinct(favs, 'min.cleanable.dirty.ratio', 'delete.retention.ms');
       break;
     case 'compact,delete':
-      favs.pushDistinct('retention.ms', 'retention.bytes', 'min.cleanable.dirty.ratio', 'delete.retention.ms');
+      arrayPushDistinct(favs, 'retention.ms', 'retention.bytes', 'min.cleanable.dirty.ratio', 'delete.retention.ms');
       break;
+    case undefined:
+    case null:
     default:
       break;
   }
 }
 
 function hasTopicPermission(topic: Topic, requiredPermission: TopicAction): boolean {
-  return (
-    !topic.allowedActions || topic.allowedActions[0] === 'all' || topic.allowedActions.includes(requiredPermission)
-  );
+  const actions = topic.allowedActions;
+  return actions === undefined || actions[0] === 'all' || actions.includes(requiredPermission);
 }
 
 function getSelectedTabId(enabledTabIds: Set<TopicTabId>): TopicTabId {
   function computeTabId() {
     // use url anchor if possible
-    let key = appGlobal.location.hash.replace('#', '');
-    if (TopicTabIds.includes(key as TopicTabId)) {
-      return key as TopicTabId;
+    const key = appGlobal.location.hash.replace('#', '');
+    if (isTopicTabId(key)) {
+      return key;
     }
 
     // use settings (last visited tab)
-    // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-    key = uiSettings.topicDetailsActiveTabKey!;
-    if (TopicTabIds.includes(key as TopicTabId)) {
-      return key as TopicTabId;
+    const storedKey = uiSettings.topicDetailsActiveTabKey;
+    if (isTopicTabId(storedKey)) {
+      return storedKey;
     }
 
     return 'messages';
@@ -558,4 +571,4 @@ function topicNotFound(name: string) {
   );
 }
 
-export default TopicDetails;
+export { TopicDetails };

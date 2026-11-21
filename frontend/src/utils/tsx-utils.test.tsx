@@ -2,7 +2,7 @@ import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { render, screen } from 'test-utils';
 
-import { Label, OptionGroup } from './tsx-utils';
+import { Label, OptionGroup, quickTable } from './tsx-utils';
 
 describe('label', () => {
   test('associates the caption with its child control when no htmlFor is given', () => {
@@ -61,5 +61,35 @@ describe('optionGroup', () => {
     const group = screen.getByRole('group', { name: 'Line mode' });
     expect(group).toBeVisible();
     expect(group).toHaveAttribute('aria-labelledby', screen.getByText('Line mode').id);
+  });
+});
+
+describe('quick table', () => {
+  test('renders dictionary, tuple and key/value input without losing falsy values', () => {
+    const { rerender } = render(quickTable({ 'Zero count': 0, Disabled: false }));
+    expect(screen.getByRole('cell', { name: '0' })).toBeVisible();
+    expect(screen.getByRole('cell', { name: 'false' })).toBeVisible();
+    rerender(
+      quickTable([
+        [
+          'Topic',
+          <a href="/topics/orders" key="orders">
+            Orders
+          </a>,
+        ],
+      ])
+    );
+    expect(screen.getByRole('link', { name: 'Orders' })).toHaveAttribute('href', '/topics/orders');
+    rerender(
+      quickTable(
+        [
+          { key: 'Status', value: 'Running' },
+          { key: 'Status', value: 'Stopped' },
+        ],
+        { gapHeight: '.5rem' }
+      )
+    );
+    expect(screen.getAllByRole('cell', { name: 'Status' })).toHaveLength(2);
+    expect(screen.getByRole('cell', { name: 'Stopped' })).toBeVisible();
   });
 });

@@ -29,9 +29,9 @@ describe('a link that failed over, or whose failover stopped', () => {
   });
 
   test.each([
-    [3, UnifiedShadowLinkState.FAILING_OVER, 'Failing over'],
-    [4, UnifiedShadowLinkState.FAILED_OVER, 'Failed over'],
-    [5, UnifiedShadowLinkState.FAILOVER_FAULTED, 'Failover stopped'],
+    [ShadowLinkState.FAILING_OVER, UnifiedShadowLinkState.FAILING_OVER, 'Failing over'],
+    [ShadowLinkState.FAILED_OVER, UnifiedShadowLinkState.FAILED_OVER, 'Failed over'],
+    [ShadowLinkState.FAILOVER_FAULTED, UnifiedShadowLinkState.FAILOVER_FAULTED, 'Failover stopped'],
   ] as const)('keeps its state on the details page (core state %s)', (core, unified, label) => {
     expect(mapConsoleStateToUnified(core)).toBe(unified);
     expect(UnifiedShadowLinkStateLabel[unified]).toBe(label);

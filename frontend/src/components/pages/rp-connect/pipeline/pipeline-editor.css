@@ -1,0 +1,169 @@
+.pipeline-stop-row {
+  block-size: var(--pipeline-stop-row-height);
+}
+
+.pipeline-transition-padding {
+  transition-property: padding;
+}
+
+.pipeline-transition-border {
+  transition-property: border-radius, border-color;
+}
+
+.pipeline-command-anchor {
+  position: fixed;
+  inset-block-start: var(--pipeline-menu-top);
+  inset-inline-start: var(--pipeline-menu-left);
+  z-index: 50;
+  visibility: var(--pipeline-menu-visibility);
+}
+
+.pipeline-minimap {
+  inset-block-end: 12px;
+  inset-inline-end: 52px;
+  inline-size: var(--pipeline-minimap-width);
+  block-size: var(--pipeline-minimap-height);
+}
+
+.pipeline-legend-line {
+  border-block-start: 2px var(--pipeline-legend-line) var(--pipeline-legend-color);
+}
+
+.pipeline-legend-chip {
+  background-color: color-mix(in srgb, var(--pipeline-legend-color) 18%, transparent);
+  border: 1px solid var(--pipeline-legend-color);
+}
+
+.pipeline-palette-accent {
+  background-color: var(--pipeline-palette-accent);
+}
+
+.pipeline-tree-indent {
+  padding-inline-start: var(--pipeline-tree-indent);
+}
+
+.pipeline-tree-selected[data-selected='true'] {
+  background-color: var(--color-muted);
+}
+
+.pipeline-tree-selected[data-selected='true'][data-accent='true'] {
+  background-color: color-mix(in srgb, var(--pipeline-tree-accent) 16%, transparent);
+}
+
+.pipeline-tree-section {
+  color: var(--pipeline-tree-section-color);
+}
+
+.pipeline-region-fill,
+.pipeline-region-border,
+.pipeline-region-position {
+  transform: translate(var(--pipeline-region-x), var(--pipeline-region-y));
+}
+
+.pipeline-region-fill {
+  z-index: 0;
+  inline-size: var(--pipeline-region-width);
+  block-size: var(--pipeline-region-height);
+  background-color: color-mix(
+    in srgb,
+    var(--pipeline-region-accent) calc(var(--pipeline-region-fill-opacity) * 1%),
+    transparent
+  );
+}
+
+.pipeline-region-border {
+  z-index: 0;
+  overflow: visible;
+}
+
+.pipeline-region-path {
+  transition: stroke 200ms;
+}
+
+.pipeline-region-label {
+  color: var(--pipeline-region-accent);
+  background-color: var(--color-background);
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--pipeline-region-accent) calc(var(--pipeline-region-label-border-opacity) * 1%),
+      transparent
+    );
+  opacity: var(--pipeline-region-label-opacity);
+}
+
+.pipeline-end-chip[data-status='finite'] {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+}
+
+.pipeline-end-chip[data-status='invalid'] {
+  color: var(--color-destructive);
+  border-color: color-mix(in srgb, var(--color-destructive) 50%, transparent);
+}
+
+.pipeline-end-chip[data-status='continuous'],
+.pipeline-end-chip[data-status='unknown'] {
+  color: var(--color-foreground);
+  border-color: var(--color-border);
+}
+
+.pipeline-runs-cell[data-status='finite'] {
+  color: var(--color-success);
+}
+
+.pipeline-runs-cell[data-status='continuous'] {
+  color: var(--color-foreground);
+}
+
+.pipeline-runs-cell[data-status='invalid'] {
+  color: var(--color-destructive);
+}
+
+.pipeline-runs-cell[data-status='unknown'] {
+  color: var(--color-muted-foreground);
+}
+
+.pipeline-invalid-notice {
+  inline-size: auto;
+}
+
+.pipeline-invalid-notice[data-notice-variant='floating'] {
+  padding-block: calc(var(--spacing) * 1.5);
+  padding-inline: calc(var(--spacing) * 3);
+  font-size: var(--text-body);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(var(--blur-sm));
+}
+
+.pipeline-invalid-notice[data-notice-variant='compact'] {
+  padding-block: calc(var(--spacing) * 2);
+  padding-inline: calc(var(--spacing) * 2.5);
+  font-size: var(--text-body-sm);
+}
+
+/* Inline title keeps the settings field's validation and ref behavior, without input chrome. */
+input.pipeline-editable-title {
+  inline-size: auto;
+  min-inline-size: 12rem;
+  max-inline-size: 100%;
+  block-size: auto;
+  padding-block: calc(var(--spacing) * 0.5);
+  padding-inline: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--text-heading-xl);
+  line-height: 1;
+  letter-spacing: var(--tracking-heading);
+  background: transparent;
+  border: 0;
+  border-block-end: 1px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+@supports (field-sizing: content) {
+  input.pipeline-editable-title {
+    field-sizing: content;
+  }
+}

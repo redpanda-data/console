@@ -12,6 +12,8 @@
 import type { SortingState } from '@tanstack/react-table';
 import { createParser } from 'nuqs';
 
+import { isPresent } from './type-guards';
+
 /**
  * Custom parser for SortingState to serialize/deserialize table sorting in URL
  * Format: "column1:asc,column2:desc"
@@ -35,7 +37,7 @@ export const sortingParser = createParser<SortingState>({
     }
   },
   serialize(value) {
-    if (!value || value.length === 0) {
+    if (!isPresent(value) || value.length === 0) {
       return '';
     }
 

@@ -1,5 +1,7 @@
 import type { Reporter, TestInfo } from '@rstest/core';
 
+import { isNonEmptyString } from '../../src/utils/string-utils';
+
 export function forbidFocusedTests(): Reporter {
   const check = (tests: TestInfo[]) => {
     for (const test of tests) {
@@ -13,7 +15,7 @@ export function forbidFocusedTests(): Reporter {
   };
   return {
     onTestFileReady: ({ tests }) => {
-      if (process.env.CI) {
+      if (isNonEmptyString(process.env.CI)) {
         check(tests);
       }
     },

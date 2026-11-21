@@ -13,6 +13,7 @@ import { Button, type ButtonProps } from 'components/redpanda-ui/components/butt
 import { DropdownMenuItem, DropdownMenuShortcut } from 'components/redpanda-ui/components/dropdown-menu';
 import { DisabledReasonTooltip } from 'components/ui/disabled-reason-tooltip';
 import type { ComponentProps } from 'react';
+import { isNonEmptyString } from 'utils/string-utils';
 
 import { type FencedAction, useClusterFenceGuard } from './use-cluster-fence-guard';
 
@@ -26,7 +27,7 @@ export const FenceGuardedButton = ({
   const reason = useClusterFenceGuard().reasonFor(action, topic);
   return (
     <DisabledReasonTooltip reason={reason}>
-      <Button disabled={disabled || Boolean(reason)} {...props} />
+      <Button disabled={disabled === true || isNonEmptyString(reason)} {...props} />
     </DisabledReasonTooltip>
   );
 };
@@ -44,11 +45,11 @@ export const FenceGuardedMenuItem = ({
   ...props
 }: ComponentProps<typeof DropdownMenuItem> & { action: FencedAction; topic?: string }) => {
   const fenceReason = useClusterFenceGuard().reasonFor(action, topic);
-  const reason = disabled ? undefined : fenceReason;
+  const reason = disabled === true ? undefined : fenceReason;
   return (
-    <DropdownMenuItem disabled={disabled || Boolean(reason)} {...props}>
+    <DropdownMenuItem disabled={disabled === true || isNonEmptyString(reason)} {...props}>
       {children}
-      {reason ? (
+      {isNonEmptyString(reason) ? (
         <DropdownMenuShortcut>
           <span aria-hidden="true">Fenced</span>
           <span className="sr-only">{reason}</span>

@@ -1,10 +1,15 @@
 import { expect, test } from '@rstest/core';
+import { z } from 'zod';
 
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-type LintReport = { summary: { errors: number }; diagnostics: { category: string; severity: string }[] };
+const lintReportSchema = z.object({
+  summary: z.object({ errors: z.number() }),
+  diagnostics: z.array(z.object({ category: z.string(), severity: z.string() })),
+});
+type LintReport = z.infer<typeof lintReportSchema>;
 
 function writeLintFixture(directory: string, source: string) {
   const fixture = resolve(directory, 'example.test.ts');
@@ -64,9 +69,9 @@ test.each([
     const fixture = writeLintFixture(directory, source);
     const result = lintRunnerPolicy(fixture);
     expect(result.error).toBeUndefined();
-    expect(result.status, result.stdout + result.stderr).toBe(violations ? 1 : 0);
+    expect(result.status, result.stdout + result.stderr).toBe(Boolean(violations) ? 1 : 0);
     expect(result.stdout, result.stderr).not.toBe('');
-    expectRuleViolations(JSON.parse(result.stdout), rule, violations);
+    expectRuleViolations(lintReportSchema.parse(JSON.parse(result.stdout)), rule, violations);
   } finally {
     rmSync(directory, { recursive: true });
   }

@@ -6,6 +6,7 @@ import { capitalizeFirst } from 'utils/utils';
 
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 import type { WrappedApiError } from '../../state/rest-interfaces';
+import { isObject } from '../../utils/type-guards';
 
 type ErrorResultProps = {
   error?: ConnectError | WrappedApiError | null;
@@ -15,19 +16,11 @@ type ErrorResultProps = {
 
 // Type guard for ConnectError
 const isConnectError = (err: unknown): err is ConnectError =>
-  err !== null &&
-  typeof err === 'object' &&
-  'code' in err &&
-  typeof (err as { code: unknown }).code === 'number' &&
-  'details' in err;
+  isObject(err) && 'code' in err && typeof err.code === 'number' && 'details' in err;
 
 // Type guard for WrappedApiError
 const isWrappedApiError = (err: unknown): err is WrappedApiError =>
-  err !== null &&
-  typeof err === 'object' &&
-  'statusCode' in err &&
-  typeof (err as { statusCode: unknown }).statusCode === 'number';
-
+  isObject(err) && 'statusCode' in err && typeof err.statusCode === 'number';
 // HTTP status codes
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
@@ -59,6 +52,13 @@ const getStatusCode = (code: Code): number => {
       return HTTP_SERVICE_UNAVAILABLE;
     case Code.Internal:
       return HTTP_INTERNAL_ERROR;
+    case Code.Canceled:
+    case Code.Unknown:
+    case Code.ResourceExhausted:
+    case Code.Aborted:
+    case Code.OutOfRange:
+    case Code.Unimplemented:
+    case Code.DataLoss:
     default:
       return HTTP_INTERNAL_ERROR;
   }
@@ -70,8 +70,8 @@ function getErrorData(error: ConnectError | WrappedApiError) {
     : isWrappedApiError(error)
       ? error.statusCode
       : HTTP_INTERNAL_ERROR;
-  const detail = isConnectError(error) ? (error.details?.[0] as { debug?: unknown } | undefined) : undefined;
-  const errorDetails = detail?.debug ? JSON.stringify(detail.debug, null, 2) : null;
+  const detail: unknown = isConnectError(error) ? error.details[0] : undefined;
+  const errorDetails = isObject(detail) && Boolean(detail.debug) ? JSON.stringify(detail.debug, null, 2) : null;
   return { statusCode, errorDetails };
 }
 
@@ -83,15 +83,15 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
 
   const { statusCode, errorDetails } = getErrorData(error);
 
-  const errorTitle = title || `Error ${statusCode}`;
-  const errorMessage = message || error.message;
+  const errorTitle = (title ?? '') || `Error ${statusCode}`;
+  const errorMessage = (message ?? '') || error.message;
 
   return (
     <div className="flex w-full flex-wrap items-center justify-center gap-8 p-4 md:flex-nowrap">
       <div className="flex max-w-[700px] flex-col gap-4 p-5">
         <h2 className="text-heading-xl font-semibold">{errorTitle}</h2>
         <p className="text-body-lg">{capitalizeFirst(errorMessage)}</p>
-        {errorDetails ? (
+        {errorDetails !== null && errorDetails !== undefined && errorDetails !== '' ? (
           <SimpleCodeBlock
             className="my-0 max-w-[50vw]"
             code={errorDetails}
@@ -118,4 +118,4 @@ const ErrorResult: React.FC<ErrorResultProps> = ({ error, title, message }) => {
   );
 };
 
-export default ErrorResult;
+export { ErrorResult };

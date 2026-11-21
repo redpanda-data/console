@@ -68,7 +68,7 @@ export const ExplicitConfirmModal = (p: {
 };
 
 export function openDeleteModal(pipelineId: string, onConfirm: () => void) {
-  openModal(ExplicitConfirmModal, {
+  openModal<Parameters<typeof ExplicitConfirmModal>[0]>(ExplicitConfirmModal, {
     title: <>Permanently delete pipeline {pipelineId}</>,
     body: <>Deleting a pipeline cannot be undone.</>,
     primaryButtonContent: <>Delete</>,

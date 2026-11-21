@@ -1,3 +1,7 @@
+import { installUISettingsSideEffects, useUISettingsStore } from '../state/ui';
+import { createTopicDetailsSettings, decodeTopicSettings } from '../types/topic-settings';
+import { decodeUiSettings } from '../types/ui-settings';
+
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -9,14 +13,22 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  DEFAULT_MESSAGE_COLUMNS,
-  DEFAULT_ROW_DENSITY,
-  MAX_PER_TOPIC_SETTINGS,
-  useTopicSettingsStore,
-} from './topic-settings-store';
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+import { MAX_PER_TOPIC_SETTINGS, useTopicSettingsStore } from './topic-settings-store';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
+import { DEFAULT_MESSAGE_COLUMNS, DEFAULT_ROW_DENSITY } from '../types/topic-settings';
+import { compareStrings } from '../utils/string-utils';
 
 describe('useTopicSettingsStore perTopicSettings cap', () => {
   beforeEach(() => {
@@ -74,7 +86,9 @@ describe('useTopicSettingsStore messages view settings', () => {
     const result = useTopicSettingsStore.getState().getMessageColumns('topic-a');
     expect(result.slice(0, 2)).toEqual(columns);
     // columns absent from the stored value come back so they stay reachable in settings
-    expect(result.map((c) => c.id).sort()).toEqual(DEFAULT_MESSAGE_COLUMNS.map((c) => c.id).sort());
+    expect(result.map((c) => c.id).sort(compareStrings)).toEqual(
+      DEFAULT_MESSAGE_COLUMNS.map((c) => c.id).sort(compareStrings)
+    );
   });
 
   test('getMessageColumns heals persisted duplicates and restores lost columns', () => {
@@ -130,7 +144,10 @@ describe('useTopicSettingsStore messages view settings', () => {
 
 function moveFirstColumn(current: ReturnType<ReturnType<typeof useTopicSettingsStore.getState>['getMessageColumns']>) {
   const next = [...current];
-  const [moved] = next.splice(0, 1);
+  const moved = next.shift();
+  if (moved === undefined) {
+    throw new Error('Cannot reorder an empty column list');
+  }
   next.splice(3, 0, moved);
   return next;
 }
@@ -153,3 +170,109 @@ function configureCustomMessageView(store: ReturnType<typeof useTopicSettingsSto
     valueDeserializer: PayloadEncoding.JSON,
   });
 }
+
+describe('persisted topic and global preferences', () => {
+  test('upgrades partial v1 topic entries without losing current view preferences', () => {
+    const topic = decodeTopicSettings({
+      topicName: 'legacy',
+      searchParams: { pageSize: 37 },
+      rowDensity: 'compact',
+      messageColumns: [{ id: 'key', visible: false }],
+      previewTags: [{ id: 'old-tag', text: 'customer.id', isActive: true }],
+    });
+    expect(topic?.searchParams.pageSize).toBe(37);
+    expect(topic?.searchParams.continuousPaginationEnabled).toBe(false);
+    expect(topic?.previewTags).toEqual([
+      {
+        id: 'old-tag',
+        isActive: true,
+        pattern: '**.customer.id',
+        customName: undefined,
+        searchInMessageHeaders: false,
+        searchInMessageKey: false,
+        searchInMessageValue: true,
+      },
+    ]);
+    expect(topic?.rowDensity).toBe('compact');
+    expect(topic?.messageColumns).toEqual([{ id: 'key', visible: false }]);
+  });
+
+  test('rejects malformed roots and topic entries instead of asserting their shape', () => {
+    expect(decodeUiSettings([])).toBeUndefined();
+    expect(decodeUiSettings(null)).toBeUndefined();
+    expect(decodeTopicSettings({ topicName: 10 })).toBeUndefined();
+  });
+
+  test('keeps valid settings and current siblings when one persisted leaf is malformed', () => {
+    const base = decodeUiSettings({ brokerList: { pageSize: 73 }, kafkaConnect: { tasks: { pageSize: 42 } } });
+    const decoded = decodeUiSettings(
+      { brokerList: { quickSearch: 'brokers', pageSize: 'broken' }, kafkaConnect: { tasks: { quickSearch: 'tasks' } } },
+      base
+    );
+    expect(decoded?.brokerList.pageSize).toBe(73);
+    expect(decoded?.brokerList.quickSearch).toBe('brokers');
+    expect(decoded?.kafkaConnect.tasks).toEqual({ pageSize: 42, quickSearch: 'tasks' });
+  });
+
+  test('creates independent mutable defaults for every topic', () => {
+    const first = createTopicDetailsSettings('first');
+    const second = createTopicDetailsSettings('second');
+    first.searchParams.sorting.push({ id: 'key', desc: false });
+    const column = first.messageColumns?.[0];
+    if (!column) {
+      throw new Error('Expected a default message column');
+    }
+    column.visible = false;
+    expect(second.searchParams.sorting).toEqual([]);
+    expect(second.messageColumns?.[0]?.visible).toBe(true);
+  });
+
+  test('hydrates both stores with the same upgraded topic contract and preserves global settings on save', async () => {
+    localStorage.setItem(
+      'uiSettings-v3',
+      JSON.stringify({
+        brokerList: { quickSearch: 'retained' },
+        perTopicSettings: [
+          { topicName: 'old', searchParams: { continuousPaginationEnabled: true }, rowDensity: 'compact' },
+        ],
+      })
+    );
+    // Match startup: the topic store imports (and therefore initializes) the legacy UI store first.
+    await useUISettingsStore.persist.rehydrate();
+    await useTopicSettingsStore.persist.rehydrate();
+    expect(useTopicSettingsStore.getState().getSearchParams('old')?.continuousPaginationEnabled).toBe(true);
+    expect(useUISettingsStore.getState().perTopicSettings[0]?.searchParams.continuousPaginationEnabled).toBe(true);
+    useTopicSettingsStore.getState().setRowDensity('old', 'detailed');
+    const saved = decodeUiSettings(JSON.parse(localStorage.getItem('uiSettings-v3') ?? '{}'));
+    expect(saved?.brokerList.quickSearch).toBe('retained');
+    expect(saved?.perTopicSettings[0]?.rowDensity).toBe('detailed');
+  });
+
+  test('cross-tab partial updates retain unrelated current preferences', () => {
+    useUISettingsStore.getState().updateSettings({
+      brokerList: {
+        hideEmptyColumns: false,
+        pageSize: 64,
+        quickSearch: 'before',
+        valueDisplay: 'raw',
+        propsFilter: 'all',
+        propsOrder: 'default',
+        configTable: { pageSize: 80, quickSearch: 'config' },
+      },
+    });
+    const uninstall = installUISettingsSideEffects();
+    try {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'uiSettings-v3',
+          newValue: JSON.stringify({ brokerList: { quickSearch: 'from another tab' } }),
+        })
+      );
+      expect(useUISettingsStore.getState().brokerList.quickSearch).toBe('from another tab');
+      expect(useUISettingsStore.getState().brokerList.pageSize).toBe(64);
+      expect(useUISettingsStore.getState().brokerList.configTable.pageSize).toBe(80);
+    } finally {
+      uninstall();
+    }
+  });
+});

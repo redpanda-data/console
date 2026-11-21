@@ -2,8 +2,6 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator';
 
 import { afterEach, describe, expect, it, mock, test } from 'bun:test';
 
-import './src/utils/array-extensions';
-
 // Pure tests import UI modules without rendering them; their import-time browser reads still need a host.
 const nativeNetworking = {
   fetch,

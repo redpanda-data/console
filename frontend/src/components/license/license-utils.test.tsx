@@ -17,7 +17,6 @@ import {
   prettyLicenseType,
   resolveEnterpriseCTALink,
 } from './license-utils';
-import '../../utils/array-extensions';
 import { create } from '@bufbuild/protobuf';
 import { rs } from '@rstest/core';
 import { api } from '../../state/backend-api';
@@ -99,8 +98,6 @@ rs.mock('../../state/backend-api', () => {
   };
 });
 
-const origDate = Date.prototype.toLocaleDateString;
-
 const mockLicenseCommunity = create(LicenseSchema, {
   type: License_Type.COMMUNITY,
   expiresAt: 20_413_210_650n,
@@ -120,22 +117,6 @@ const expiredLicense = create(LicenseSchema, {
 });
 
 describe('licenseUtils', () => {
-  beforeAll(() => {
-    Object.defineProperty(Date.prototype, 'toLocaleDateString', {
-      value() {
-        return origDate.call(this, 'en-US');
-      },
-    });
-  });
-
-  afterAll(() => {
-    Object.defineProperty(Date.prototype, 'toLocaleDateString', {
-      value() {
-        return origDate.call(this);
-      },
-    });
-  });
-
   beforeEach(() => {
     rs.setSystemTime(NOW);
     mockLocation.pathname = '/overview';

@@ -13,8 +13,8 @@
 
 import { parse as parseYaml } from 'yaml';
 
+import { configRecord } from './__fixtures__/config-value';
 import { classifyInputSlot, summarizePipelineEndYaml } from './input-end-behavior';
-import type { ParsedYamlConfig } from './yaml';
 import { describe, expect, test } from 'bun:test';
 import schemaJson from '../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
 
@@ -170,7 +170,8 @@ broker:
   });
 
   test('resource and batched inputs end as what they run does', () => {
-    const config = parseYaml(`
+    const config = configRecord(
+      parseYaml(`
 input:
   resource: drain
 input_resources:
@@ -178,7 +179,8 @@ input_resources:
     read_until: { idle_timeout: 5s, input: { kafka: {} } }
   - label: forever
     kafka: {}
-`) as ParsedYamlConfig;
+`)
+    );
     const viaResource = classifyInputSlot(config.input, config);
     // The resource's own stop condition makes it end on its own from this input's point of view.
     expect(viaResource.kind).toBe('natural');
@@ -190,13 +192,15 @@ input_resources:
   });
 
   test('resource chains are followed and loops are named', () => {
-    const config = parseYaml(`
+    const config = configRecord(
+      parseYaml(`
 input_resources:
   - { label: a, resource: b }
   - { label: b, sql_select: {} }
   - { label: x, resource: y }
   - { label: y, resource: x }
-`) as ParsedYamlConfig;
+`)
+    );
     expect(classifyInputSlot({ resource: 'a' }, config).reason).toBe(
       'Runs the input resource `a` (through `b`). Reads every row its query returns, then stops.'
     );
@@ -208,7 +212,7 @@ input_resources:
   });
 
   test('an input that contains itself through an alias is invalid, not endless recursion', () => {
-    const config = parseYaml('input: &a\n  broker:\n    inputs:\n      - kafka: {}\n      - *a\n') as ParsedYamlConfig;
+    const config = configRecord(parseYaml('input: &a\n  broker:\n    inputs:\n      - kafka: {}\n      - *a\n'));
     expect(classifyInputSlot(config.input, config)).toMatchObject({
       kind: 'invalid',
       reason: '1 of 2 inputs needs fixing.',

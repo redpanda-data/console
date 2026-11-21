@@ -1,8 +1,10 @@
 import type { Transport } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
-import { addBearerTokenInterceptor, config } from 'config';
+import { addBearerTokenInterceptor } from 'config';
 import { protobufRegistry } from 'protobuf-registry';
 import { useMemo } from 'react';
+
+import { config } from '../runtime-config';
 
 /**
  * Custom hook to create and memoize a Connect transport for controlplane API calls

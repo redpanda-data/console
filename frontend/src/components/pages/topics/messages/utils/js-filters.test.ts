@@ -11,7 +11,7 @@
 
 import { buildFilterInterpreterCode, visibleJsFilters } from './js-filters';
 import { describe, expect, test } from 'bun:test';
-import { createFilterEntry } from '../../../../../state/ui';
+import { createFilterEntry } from '../../../../../types/topic-settings';
 import { decodeBase64 } from '../../../../../utils/utils';
 
 describe('visibleJsFilters', () => {

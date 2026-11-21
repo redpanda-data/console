@@ -7,6 +7,7 @@ import noRealTimeWaitInTests from './rules/no-real-time-wait-in-tests.ts';
 import noTestTimeoutOrUnreasonedSkip from './rules/no-test-timeout-or-unreasoned-skip.ts';
 import noWallClockInTests from './rules/no-wall-clock-in-tests.ts';
 import requireSuppressionReason from './rules/require-suppression-reason.ts';
+import unstyledButtonException from './rules/unstyled-button-exception.ts';
 
 export default definePlugin({
   meta: { name: 'console' },
@@ -18,5 +19,6 @@ export default definePlugin({
     'no-test-timeout-or-unreasoned-skip': noTestTimeoutOrUnreasonedSkip,
     'no-wall-clock-in-tests': noWallClockInTests,
     'require-suppression-reason': requireSuppressionReason,
+    'unstyled-button-exception': unstyledButtonException,
   },
 });

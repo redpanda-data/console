@@ -1,5 +1,6 @@
 import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { getInitialSharedConfig } from '../acls/acl-rule-editing';
 import { parsePrincipal, type SharedConfig } from '../shared/acl-model';
 
@@ -17,7 +18,7 @@ function useAdoptChangedSharedConfigProps(
   });
   if (syncedProps.principal !== propSharedConfig?.principal || syncedProps.host !== propSharedConfig?.host) {
     setSyncedProps({ principal: propSharedConfig?.principal, host: propSharedConfig?.host });
-    if (propSharedConfig?.principal) {
+    if (isNonEmptyString(propSharedConfig?.principal)) {
       const { principal, host } = propSharedConfig;
       setSharedConfig((prev) => ({ principal, host: host ?? prev.host }));
     }
@@ -42,12 +43,11 @@ export function useAclSharedConfig(propSharedConfig: Partial<SharedConfig> | und
     [sharedConfig.principal]
   );
 
-  const submitIfPrincipalNamed = (submit: () => void) => {
+  const submitIfPrincipalNamed = (submit: () => void | Promise<void>) => {
     if (parsePrincipal(sharedConfig.principal).name) {
-      submit();
-    } else {
-      setPrincipalError('Principal is required');
+      return submit();
     }
+    setPrincipalError('Principal is required');
   };
 
   return { sharedConfig, setSharedConfig, principalError, submitIfPrincipalNamed };

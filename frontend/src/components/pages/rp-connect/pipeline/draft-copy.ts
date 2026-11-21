@@ -9,10 +9,21 @@
  * by the Apache License, Version 2.0
  */
 
-import { isFeatureFlagEnabled } from 'config';
 import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { pluralize } from 'utils/string';
 import { prettyMilliseconds } from 'utils/utils';
+
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+import { isFeatureFlagEnabled } from '../../../../runtime-config';
 
 export const areDraftsEnabled = (): boolean => isFeatureFlagEnabled('enableRpcnPipelineDrafts');
 
@@ -108,7 +119,7 @@ export function formatTopicList(topics: string[]): string {
   if (topics.length < 2) {
     return topics[0] ?? '';
   }
-  return `${topics.slice(0, -1).join(', ')} and ${topics.at(-1)}`;
+  return `${topics.slice(0, -1).join(', ')} and ${topics.at(-1) ?? ''}`;
 }
 
 export function startDraftConfirmBody(topics: string[], computeUnits: number): string {

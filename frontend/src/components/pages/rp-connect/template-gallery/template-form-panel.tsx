@@ -10,13 +10,15 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
+import { getComponentLogo } from 'assets/connectors/component-logo-map';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Form, SimpleFormField } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Waypoints } from 'lucide-react';
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
-import { type Resolver, useForm } from 'react-hook-form';
+import { type Ref, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import type { PipelineTemplate, TemplateEndpoint, TemplateSlot, TemplateSlotSection } from './pipeline-template-types';
@@ -49,14 +51,14 @@ const endpointFor = (section: TemplateSlotSection, template: PipelineTemplate): 
 
 const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
   const resolvedName = endpoint.logoOverride ?? endpoint.component;
-  const Logo = componentLogoMap[resolvedName as ComponentName];
+  const Logo = getComponentLogo(resolvedName);
   return (
     <span className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-0.5 font-mono text-body-sm font-normal tracking-normal text-foreground normal-case">
-      <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+      <span className="flex size-4 shrink-0 items-center justify-center">
         {Logo ? (
-          <ConnectorLogo className="h-4 w-4" name={resolvedName as ComponentName} />
+          <ConnectorLogo className="size-4" name={resolvedName} />
         ) : (
-          <TonedIcon aria-hidden className="h-3.5 w-3.5" icon={Waypoints} tone="muted" />
+          <TonedIcon aria-hidden className="size-3.5" icon={Waypoints} tone="muted" />
         )}
       </span>
       {endpoint.component}
@@ -68,8 +70,8 @@ const PIPELINE_NAME_FIELD = '__pipelineName';
 
 // A slot's presence check. Optional slots accept anything; a comma-separated list needs one
 // non-blank entry (",," must not pass).
-const requiredSlotSchema = (slot: TemplateSlot, isList: boolean): z.ZodType<string> => {
-  if (!slot.required) {
+const requiredSlotSchema = (slot: TemplateSlot, isList: boolean): z.ZodType<string, string> => {
+  if (!(slot.required === true)) {
     return z.string();
   }
   if (isList) {
@@ -78,7 +80,7 @@ const requiredSlotSchema = (slot: TemplateSlot, isList: boolean): z.ZodType<stri
   return z.string().min(1, `${slot.label} is required`);
 };
 
-const slotSchema = (slot: TemplateSlot): z.ZodTypeAny => {
+const slotSchema = (slot: TemplateSlot): z.ZodType<string, string | undefined> => {
   const isList = slot.kind === 'string' && Boolean(slot.list);
   const entryPattern = slot.kind === 'string' ? slot.entryPattern : undefined;
 
@@ -88,12 +90,12 @@ const slotSchema = (slot: TemplateSlot): z.ZodTypeAny => {
     const entriesOf = (v: string) => (isList ? v.split(',') : [v]).map((part) => part.trim()).filter(Boolean);
     field = field.refine((v) => entriesOf(v).every((entry) => entryPattern.regex.test(entry)), entryPattern.message);
   }
-  return slot.required ? field : field.optional().default('');
+  return slot.required === true ? field : field.optional().default('');
 };
 
 // Exported for tests: slot validation rules (required, list entries, entryPattern) live here.
 export const buildSchema = (slots: TemplateSlot[]) => {
-  const shape: Record<string, z.ZodTypeAny> = {
+  const shape: Record<string, z.ZodType<string, string | undefined>> = {
     [PIPELINE_NAME_FIELD]: z.string().min(1, 'Pipeline name is required'),
   };
   for (const slot of slots) {
@@ -173,9 +175,9 @@ const useTemplateForm = (template: PipelineTemplate) => {
   const schema = useMemo(() => buildSchema(effectiveSlots), [effectiveSlots]);
   const defaultValues = useMemo(() => defaultValuesFor(template, effectiveSlots), [template, effectiveSlots]);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
-    defaultValues: defaultValues as FormValues,
+  const form = useForm<Record<string, string | undefined>, undefined, FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues,
     mode: 'onBlur',
   });
 
@@ -190,135 +192,145 @@ const useTemplateForm = (template: PipelineTemplate) => {
     }
     lastAppliedTemplateId.current = template.id;
     if (!form.formState.isDirty) {
-      form.reset(defaultValues as FormValues);
+      form.reset(defaultValues);
     }
   }, [isComponentsLoading, components, defaultValues, form, template.id]);
 
   return { form, effectiveSlots };
 };
 
-export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFormPanelProps>(
-  (
-    { template, formId, onSubmit, onRequestCreateSecret, onRequestCreateTopic, applySlotValue, onSlotValueApplied },
-    ref
-  ) => {
-    const { form, effectiveSlots } = useTemplateForm(template);
+export function TemplateFormPanel({
+  template,
+  formId,
+  onSubmit,
+  onRequestCreateSecret,
+  onRequestCreateTopic,
+  applySlotValue,
+  onSlotValueApplied,
+  ref,
+}: TemplateFormPanelProps & { ref?: Ref<TemplateFormPanelHandle> }) {
+  const { form, effectiveSlots } = useTemplateForm(template);
 
-    const stitchCurrentYaml = (values: FormValues): string => {
-      const { [PIPELINE_NAME_FIELD]: pipelineName, ...slotValues } = values;
-      return stitchTemplateYaml({
-        template,
-        values: slotValues as Record<string, string>,
-        pipelineName: pipelineName?.trim() || template.defaultPipelineName,
-      });
-    };
-
-    useImperativeHandle(ref, () => ({
-      getCurrentYaml: () => stitchCurrentYaml(form.getValues()),
-      isDirty: () => form.formState.isDirty,
-    }));
-
-    // Apply an externally-requested slot write (e.g. from the in-dialog secret step).
-    // biome-ignore lint/correctness/useExhaustiveDependencies: requestId is the intentional change detector; slotId/value are read fresh from applySlotValue and shouldn't refire repeats.
-    useEffect(() => {
-      if (!applySlotValue) {
-        return;
+  const stitchCurrentYaml = (values: Record<string, string | undefined>): string => {
+    const pipelineName = values[PIPELINE_NAME_FIELD];
+    const slotValues: FormValues = {};
+    for (const [name, value] of Object.entries(values)) {
+      if (name !== PIPELINE_NAME_FIELD) {
+        slotValues[name] = value ?? '';
       }
-      form.setValue(applySlotValue.slotId, applySlotValue.value, { shouldDirty: true, shouldValidate: true });
-      onSlotValueApplied?.();
-    }, [applySlotValue?.requestId, form, onSlotValueApplied]);
-
-    const sections = groupSlotsBySection(effectiveSlots);
-
-    const submitHandler = form.handleSubmit((values) => {
-      onSubmit({
-        pipelineName: values[PIPELINE_NAME_FIELD] ?? template.defaultPipelineName,
-        yaml: stitchCurrentYaml(values),
-      });
+    }
+    return stitchTemplateYaml({
+      template,
+      values: slotValues,
+      pipelineName: (pipelineName?.trim() ?? '') || template.defaultPipelineName,
     });
+  };
 
-    return (
-      <Form {...form}>
-        <form
-          className="flex flex-col gap-12 pb-4"
-          data-testid={`template-form-${template.id}`}
-          id={formId}
-          onSubmit={submitHandler}
+  useImperativeHandle(ref, () => ({
+    getCurrentYaml: () => stitchCurrentYaml(form.getValues()),
+    isDirty: () => form.formState.isDirty,
+  }));
+
+  // Apply an externally-requested slot write (e.g. from the in-dialog secret step).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: requestId is the intentional change detector; slotId/value are read fresh from applySlotValue and shouldn't refire repeats.
+  useEffect(() => {
+    if (!applySlotValue) {
+      return;
+    }
+    form.setValue(applySlotValue.slotId, applySlotValue.value, { shouldDirty: true, shouldValidate: true });
+    onSlotValueApplied?.();
+  }, [applySlotValue?.requestId, form, onSlotValueApplied]);
+
+  const sections = groupSlotsBySection(effectiveSlots);
+
+  const submitHandler = form.handleSubmit((values) => {
+    onSubmit({
+      pipelineName: values[PIPELINE_NAME_FIELD] ?? template.defaultPipelineName,
+      yaml: stitchCurrentYaml(values),
+    });
+  });
+
+  return (
+    <Form {...form}>
+      <form
+        className="flex flex-col gap-12 pb-4"
+        data-testid={`template-form-${template.id}`}
+        id={formId}
+        onSubmit={asyncEvent(submitHandler, reportActionError)}
+      >
+        <SimpleFormField
+          control={form.control}
+          description="Display name for the pipeline."
+          label="Pipeline name"
+          name={PIPELINE_NAME_FIELD}
+          required
         >
-          <SimpleFormField
-            control={form.control}
-            description="Display name for the pipeline."
-            label="Pipeline name"
-            name={PIPELINE_NAME_FIELD}
-            required
-          >
-            {(field) => (
-              <Input
-                data-testid="slot-pipeline-name"
-                onChange={field.onChange}
-                placeholder="my-pipeline"
-                value={field.value ?? ''}
-              />
-            )}
-          </SimpleFormField>
+          {(field) => (
+            <Input
+              data-testid="slot-pipeline-name"
+              onChange={field.onChange}
+              placeholder="my-pipeline"
+              value={field.value ?? ''}
+            />
+          )}
+        </SimpleFormField>
 
-          {SECTION_ORDER.map((section) => {
-            const slots = sections[section];
-            if (slots.length === 0) {
-              return null;
-            }
-            const endpoint = endpointFor(section, template);
-            return (
-              <section
-                aria-labelledby={`section-${section}`}
-                className="flex flex-col gap-4"
-                data-testid={`template-section-${section}`}
-                key={section}
-              >
-                <div className="flex flex-wrap items-center gap-2.5 border-b pb-2.5">
-                  <h5 className="text-heading-xs font-bold tracking-wider uppercase" id={`section-${section}`}>
-                    {SECTION_LABELS[section]}
-                  </h5>
-                  {endpoint ? <EndpointBadge endpoint={endpoint} /> : null}
-                </div>
-                {slots.map((slot) => {
-                  switch (slot.kind) {
-                    case 'string':
-                      return <StringSlotField control={form.control} key={slot.id} slot={slot} />;
-                    case 'select':
-                      return <SelectSlotField control={form.control} key={slot.id} slot={slot} />;
-                    case 'topic':
-                      return (
-                        <TopicSlotField
-                          control={form.control}
-                          key={slot.id}
-                          onRequestCreateTopic={onRequestCreateTopic}
-                          slot={slot}
-                        />
-                      );
-                    case 'secret':
-                      return (
-                        <SecretSlotField
-                          control={form.control}
-                          key={slot.id}
-                          onRequestCreateSecret={onRequestCreateSecret}
-                          onSecretCreated={(slotId, secretName) =>
-                            form.setValue(slotId, secretName, { shouldDirty: true, shouldValidate: true })
-                          }
-                          slot={slot}
-                        />
-                      );
-                    default:
-                      return null;
-                  }
-                })}
-              </section>
-            );
-          })}
-        </form>
-      </Form>
-    );
-  }
-);
+        {SECTION_ORDER.map((section) => {
+          const slots = sections[section];
+          if (slots.length === 0) {
+            return null;
+          }
+          const endpoint = endpointFor(section, template);
+          return (
+            <section
+              aria-labelledby={`section-${section}`}
+              className="flex flex-col gap-4"
+              data-testid={`template-section-${section}`}
+              key={section}
+            >
+              <div className="flex flex-wrap items-center gap-2.5 border-b pb-2.5">
+                <h5 className="text-heading-xs font-bold tracking-wider uppercase" id={`section-${section}`}>
+                  {SECTION_LABELS[section]}
+                </h5>
+                {endpoint ? <EndpointBadge endpoint={endpoint} /> : null}
+              </div>
+              {slots.map((slot) => {
+                switch (slot.kind) {
+                  case 'string':
+                    return <StringSlotField control={form.control} key={slot.id} slot={slot} />;
+                  case 'select':
+                    return <SelectSlotField control={form.control} key={slot.id} slot={slot} />;
+                  case 'topic':
+                    return (
+                      <TopicSlotField
+                        control={form.control}
+                        key={slot.id}
+                        onRequestCreateTopic={onRequestCreateTopic}
+                        slot={slot}
+                      />
+                    );
+                  case 'secret':
+                    return (
+                      <SecretSlotField
+                        control={form.control}
+                        key={slot.id}
+                        onRequestCreateSecret={onRequestCreateSecret}
+                        onSecretCreated={(slotId, secretName) =>
+                          form.setValue(slotId, secretName, { shouldDirty: true, shouldValidate: true })
+                        }
+                        slot={slot}
+                      />
+                    );
+                  default:
+                    return null;
+                }
+              })}
+            </section>
+          );
+        })}
+      </form>
+    </Form>
+  );
+}
 
 TemplateFormPanel.displayName = 'TemplateFormPanel';

@@ -10,6 +10,7 @@
  */
 
 import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { Button } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -35,17 +36,19 @@ export function TemplateGalleryCta({ show, onBrowseTemplates, className, hint }:
       {show ? (
         <motion.div
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className={cn('pointer-events-none absolute right-4 bottom-4 left-4 z-10', className)}
+          className={cn('pointer-events-none absolute inset-x-4 bottom-4 z-10', className)}
           exit={{ opacity: 0, y: 4, scale: 0.98, transition: { duration: 0.18, ease: 'easeIn' } }}
           initial={{ opacity: 0, y: 12, scale: 0.96 }}
           transition={{ duration: 0.3, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
         >
-          <button
+          <Button
             aria-label="Start from a template"
+            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
             className="nodrag nopan group pointer-events-auto flex w-full cursor-pointer items-center gap-2.5 rounded-lg border border-dashed border-border bg-card px-3 py-2.5 text-left shadow-sm transition-all hover:border-brand/50 hover:bg-muted/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             data-testid="browse-templates-cta"
             onClick={onBrowseTemplates}
             type="button"
+            variant="unstyled"
           >
             <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand transition-colors group-hover:bg-brand/20">
               <Sparkles className="size-3.5" />
@@ -57,8 +60,8 @@ export function TemplateGalleryCta({ show, onBrowseTemplates, className, hint }:
             <span className="inline-flex shrink-0 transition-transform group-hover:translate-x-0.5">
               <TonedIcon aria-hidden className="size-4" icon={ArrowRight} tone="muted" />
             </span>
-          </button>
-          {hint ? (
+          </Button>
+          {Boolean(hint) ? (
             <p className="pointer-events-none mt-2 flex items-center justify-center gap-1.5 text-center text-body-sm text-muted-foreground">
               {hint}
             </p>

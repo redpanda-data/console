@@ -1,0 +1,28 @@
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+@use 'sass:color';
+
+@mixin tlrb {
+  inset-block: 0;
+  inset-inline: 0;
+}
+
+@mixin beforeAfter {
+  @include tlrb;
+  position: absolute;
+  content: ' ';
+}
+
+// Linear interpolation between colours $a ($t=0) and $b ($t=1).
+@function lerp($a, $b, $t) {
+  @return color.mix($b, $a, $t * 100);
+}

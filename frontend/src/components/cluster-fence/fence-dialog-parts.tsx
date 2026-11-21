@@ -66,7 +66,7 @@ export const FenceWriteErrorAlert = ({
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (error) {
+    if (Boolean(error)) {
       ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
   }, [error]);

@@ -10,6 +10,8 @@
  */
 
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
+import { isNonEmptyString } from '../../../../../utils/string-utils';
+import { isPresent } from '../../../../../utils/type-guards';
 import type { FilterOp } from '../types';
 import { distinctFieldValues, matchesFieldFilter, valuePaths } from '../utils/client-match';
 import { looksLikeJs, looksLikeJsCode, NUMERIC_FIELDS, parseFilterInput, stripJsPrefix } from '../utils/filter-token';
@@ -88,7 +90,10 @@ const fieldValueItems = (messages: TopicMessage[], field: string, query: string)
 };
 
 const pendingValueItems = ({ query, pendingField, messages }: SuggestionsInput): SuggestionItem[] => {
-  const field = pendingField as string;
+  if (pendingField === null) {
+    return [];
+  }
+  const field = pendingField;
   return field === 'offset' && query ? offsetComparisonItems(messages, query) : fieldValueItems(messages, field, query);
 };
 
@@ -238,7 +243,7 @@ const explicitJsPrefixItems = (input: SuggestionsInput): Suggestions | null => {
 };
 
 const pendingFieldSuggestions = (input: SuggestionsInput): Suggestions | null => {
-  if (!input.pendingField) {
+  if (!isNonEmptyString(input.pendingField)) {
     return null;
   }
   const label = input.pendingField === 'partition' ? 'Partition' : input.pendingField;
@@ -311,7 +316,7 @@ const pendingValueGhost = (messages: TopicMessage[], pendingField: string, query
   const [first] = distinctFieldValues(messages, pendingField, '', 100).filter(({ value }) =>
     value.toLowerCase().startsWith(query.toLowerCase())
   );
-  if (first && first.value.length > query.length) {
+  if (isPresent(first) && first.value.length > query.length) {
     return {
       rest: first.value.slice(query.length),
       action: {
@@ -344,5 +349,7 @@ export function computeGhost(input: SuggestionsInput): Ghost | null {
   if (!query) {
     return null;
   }
-  return input.pendingField ? pendingValueGhost(input.messages, input.pendingField, query) : fieldNameGhost(query);
+  return isNonEmptyString(input.pendingField)
+    ? pendingValueGhost(input.messages, input.pendingField, query)
+    : fieldNameGhost(query);
 }

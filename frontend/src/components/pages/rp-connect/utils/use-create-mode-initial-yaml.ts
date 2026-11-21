@@ -73,7 +73,13 @@ export function useCreateModeInitialYaml(opts: {
 
   // Non-serverless path: restore persisted YAML from in-memory store
   useEffect(() => {
-    if (!enabled || isServerlessMode || isPipelineDiagramsEnabled || resolved || !persistedYamlContent) {
+    if (
+      !enabled ||
+      isServerlessMode ||
+      isPipelineDiagramsEnabled ||
+      resolved ||
+      !(persistedYamlContent !== null && persistedYamlContent !== undefined && persistedYamlContent !== '')
+    ) {
       return;
     }
     onResolvedRef.current(persistedYamlContent);

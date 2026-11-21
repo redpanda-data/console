@@ -10,7 +10,6 @@
  */
 
 import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getSmoothStepPath, Handle, Position } from '@xyflow/react';
-import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -36,19 +35,25 @@ import {
   Workflow,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useEffect, useRef } from 'react';
+import { type CSSProperties, useEffect, useRef } from 'react';
+import './pipeline-flow-canvas-nodes.css';
 import { pluralize, pluralizeWithNumber } from 'utils/string';
 
 import { StopRow } from './stop-condition';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { isPresent } from '../../../../utils/type-guards';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type { InputEndBehavior } from '../utils/input-end-behavior';
 import { FLOW_CARD_WIDTH, FLOW_SPINE_HANDLE_LEFT, type FlowInsertPayload } from '../utils/pipeline-flow-layout';
 import type { NodeMetaEntry } from '../utils/pipeline-flow-meta';
-import { hasStopSlot, type StopSlot, sectionLabel } from '../utils/pipeline-flow-parser';
+import { hasStopSlot, type StopSlot, sectionLabel } from '../utils/pipeline-flow-nodes';
 import type { StopConditionDraft } from '../utils/read-until';
-import type { EditTarget } from '../utils/yaml';
+import type { EditTarget } from '../utils/yaml-edit-target';
 
-const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
+const invisibleHandle = 'console-flow-handle !w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
+type FlowStyleVars = CSSProperties & { [key: `--flow-${string}`]: string | number | undefined };
+const FLOW_CARD_STYLE: FlowStyleVars = { '--flow-card-width': `${FLOW_CARD_WIDTH}px` };
+
 // Applied to the card body, never the RF node wrapper, whose `transform` drives positioning.
 const APPEAR_ANIM = 'fade-in zoom-in-95 animate-in duration-200';
 
@@ -65,7 +70,7 @@ function useStopPanOnControls() {
       return;
     }
     const handlePress = (event: Event) => {
-      if ((event.target as HTMLElement | null)?.closest(CONTROL_SELECTOR)) {
+      if (event.target instanceof Element && event.target.closest(CONTROL_SELECTOR)) {
         event.stopPropagation();
       }
     };
@@ -90,36 +95,38 @@ const SECTION_ACCENT: Record<string, string> = {
 };
 
 export function sectionAccent(section?: string): string | undefined {
-  return section ? SECTION_ACCENT[section] : undefined;
+  return section !== null && section !== undefined && section !== '' ? SECTION_ACCENT[section] : undefined;
 }
 
 // A tinted title band, not a border, so it doesn't compete with selection/error rings; opaque over the card colour.
-function headerTintStyle(accent?: string): React.CSSProperties | undefined {
-  return accent ? { backgroundColor: `color-mix(in srgb, ${accent} 10%, var(--color-card))` } : undefined;
+function headerTint(accent?: string): string | undefined {
+  return accent !== null && accent !== undefined && accent !== ''
+    ? `color-mix(in srgb, ${accent} 10%, var(--color-card))`
+    : undefined;
 }
 
 // The connector logo in a small elevated tile so it sits cleanly on the tinted header band.
 const LogoTile = ({ name }: { name: string }) => (
   <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background">
-    <ConnectorLogo className="size-5" fallback={Box} name={name as ComponentName} />
+    <ConnectorLogo className="size-5" fallback={Box} name={name} />
   </span>
 );
 
 function branchChipText(data: FlowCardData): string {
-  if (data.condition) {
+  if (isNonEmptyString(data.condition)) {
     return `if ${data.condition}`;
   }
-  if (data.isDefault) {
+  if (data.isDefault === true) {
     return 'default';
   }
   return 'on error';
 }
 
 function branchChipTone(data: FlowCardData): 'error' | 'muted' | 'condition' {
-  if (data.isErrorPath) {
+  if (data.isErrorPath === true) {
     return 'error';
   }
-  if (data.isDefault) {
+  if (data.isDefault === true) {
     return 'muted';
   }
   return 'condition';
@@ -127,7 +134,7 @@ function branchChipTone(data: FlowCardData): 'error' | 'muted' | 'condition' {
 
 // Routing semantics as a chip: `if <check>`, `default`, or `on error`. Display-only; edited in the inspector.
 const BranchConditionChip = ({ data, className }: { data: FlowCardData; className?: string }) => {
-  if (!(data.condition || data.isDefault || data.isErrorPath)) {
+  if (!((data.condition ?? '') || data.isDefault === true || data.isErrorPath === true)) {
     return null;
   }
   const text = branchChipText(data);
@@ -158,15 +165,15 @@ const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
 // A switch case's condition on its own full-width row. Display-only; inset ring when selected.
 const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boolean }) => {
   let tone: 'condition' | 'muted' | 'error' = 'condition';
-  if (data.isErrorPath) {
+  if (data.isErrorPath === true) {
     tone = 'error';
-  } else if (data.isDefault && !data.condition) {
+  } else if (data.isDefault === true && !isNonEmptyString(data.condition)) {
     tone = 'muted';
   }
   let eyebrow = 'on error';
-  if (data.condition) {
+  if (isNonEmptyString(data.condition)) {
     eyebrow = 'when';
-  } else if (data.isDefault) {
+  } else if (data.isDefault === true) {
     eyebrow = 'default';
   }
   return (
@@ -174,14 +181,14 @@ const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boole
       className={cn(
         'flex w-full items-center gap-1.5 border-b px-3 py-1.5 text-left',
         CONDITION_ROW_TONE[tone],
-        selected && 'ring-2 ring-primary ring-inset'
+        selected === true && 'ring-2 ring-primary ring-inset'
       )}
     >
       <span className="inline-flex shrink-0 opacity-80">
         <Split className="size-3.5" />
       </span>
       <span className="shrink-0 text-2xs font-semibold tracking-wide uppercase opacity-70">{eyebrow}</span>
-      {data.condition ? (
+      {isNonEmptyString(data.condition) ? (
         <ElementTooltip content={data.condition}>
           <span className="min-w-0 flex-1 truncate font-mono text-body-sm">{data.condition}</span>
         </ElementTooltip>
@@ -192,6 +199,9 @@ const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boole
 
 export type FlowCardData = {
   label: string;
+  payload?: FlowInsertPayload;
+  ghost?: boolean;
+  onInsert?: (payload: FlowInsertPayload) => void;
   section?: string;
   collapsible?: boolean;
   collapsed?: boolean;
@@ -273,9 +283,17 @@ const NodeHandles = () => (
       const horizontal = h.id === 'l' || h.id === 'r';
       // l/r handles keep RF's default centering so a same-rank spine reads straight; t/b pin to a
       // fixed left offset so stacked cards of differing widths connect on a straight line.
-      const style = horizontal ? undefined : { left: FLOW_SPINE_HANDLE_LEFT, transform: 'none' };
+      const style: FlowStyleVars = { '--flow-handle-x': `${FLOW_SPINE_HANDLE_LEFT}px` };
       return (
-        <Handle className={invisibleHandle} id={h.id} key={h.id} position={h.position} style={style} type={h.type} />
+        <Handle
+          className={invisibleHandle}
+          data-flow-pin={horizontal ? undefined : 'spine'}
+          id={h.id}
+          key={h.id}
+          position={h.position}
+          style={horizontal ? undefined : style}
+          type={h.type}
+        />
       );
     })}
   </>
@@ -284,7 +302,7 @@ const NodeHandles = () => (
 // Topics as scannable chips, capped so a long list doesn't blow out the card.
 const TOPIC_CHIP_LIMIT = 4;
 const TopicChips = ({ topics }: { topics?: string[] }) => {
-  if (!topics?.length) {
+  if (!(isPresent(topics) && topics.length > 0)) {
     return null;
   }
   const shown = topics.slice(0, TOPIC_CHIP_LIMIT);
@@ -305,7 +323,12 @@ const TopicChips = ({ topics }: { topics?: string[] }) => {
 };
 
 function cardHasMeta(data: FlowCardData): boolean {
-  return Boolean(data.meta?.length || data.topics?.length || data.missingTopic || data.missingSasl);
+  return Boolean(
+    (isPresent(data.meta) && data.meta.length > 0) ||
+      (isPresent(data.topics) && data.topics.length > 0) ||
+      data.missingTopic === true ||
+      data.missingSasl
+  );
 }
 
 const MetaRows = ({ data }: { data: FlowCardData }) => {
@@ -323,16 +346,16 @@ const MetaRows = ({ data }: { data: FlowCardData }) => {
           </ElementTooltip>
         </div>
       ))}
-      {data.missingTopic || data.missingSasl ? (
+      {data.missingTopic === true || data.missingSasl === true ? (
         <div className="flex flex-wrap gap-1">
-          {data.missingTopic ? (
+          {data.missingTopic === true ? (
             <MissingChip
               addLabel="Topic"
               missingLabel="No topic"
               onAdd={data.onAddTopic ? () => data.onAddTopic?.(data.section ?? '', data.label) : undefined}
             />
           ) : null}
-          {data.missingSasl ? (
+          {data.missingSasl === true ? (
             <MissingChip
               addLabel="User"
               missingLabel="No user"
@@ -380,22 +403,24 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
   // Read-only (no handler): plain text, not a disabled button that reads as broken permissions.
   if (!onAdd) {
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-3 py-4 text-muted-foreground shadow-sm">
+      <div className="flex size-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-3 py-4 text-muted-foreground shadow-sm">
         <span className="text-body">No {section} configured</span>
       </div>
     );
   }
   return (
-    <button
-      className="nodrag nopan group flex h-full w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-3 py-4 text-muted-foreground shadow-sm transition-colors hover:border-primary hover:text-primary hover:shadow-md"
+    <Button
+      // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+      className="nodrag nopan group flex size-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-3 py-4 text-muted-foreground shadow-sm transition-colors hover:border-primary hover:text-primary hover:shadow-md"
       onClick={() => onAdd(data.section ?? '')}
       type="button"
+      variant="unstyled"
     >
       <span className="flex size-8 items-center justify-center rounded-full border border-current/40 bg-background/70 transition-colors group-hover:border-primary group-hover:bg-primary/10">
         <PlusIcon className="size-4" />
       </span>
       <span className="text-body font-medium">Add {section}</span>
-    </button>
+    </Button>
   );
 };
 
@@ -405,7 +430,11 @@ const SELECTED_RING = 'ring-2 ring-primary ring-offset-1 ring-offset-background'
 const ERROR_RING = 'ring-2 ring-destructive ring-offset-1 ring-offset-background';
 
 function cardRing(data: FlowCardData): string {
-  return data.lintErrors?.length ? ERROR_RING : data.selected ? SELECTED_RING : '';
+  return isPresent(data.lintErrors) && data.lintErrors.length > 0
+    ? ERROR_RING
+    : data.selected === true
+      ? SELECTED_RING
+      : '';
 }
 
 // A brief double-pulse ring after an undo/redo touched a node — the `brand` token, distinct from
@@ -437,7 +466,7 @@ const LintBadge = ({ errors }: { errors?: string[] }) =>
 
 // A warning-toned badge on a node that uses a deprecated component; the warnings are its tooltip.
 const DeprecatedBadge = ({ messages }: { messages?: string[] }) =>
-  messages?.length ? (
+  isPresent(messages) && messages.length > 0 ? (
     <ElementTooltip content={<span className="whitespace-pre-line">{messages.join('\n')}</span>}>
       <span className="inline-flex shrink-0 items-center gap-1 rounded border border-warning/50 bg-warning-wash px-1.5 py-0.5 text-2xs font-medium text-warning">
         <TriangleAlert className="size-3" />
@@ -448,7 +477,7 @@ const DeprecatedBadge = ({ messages }: { messages?: string[] }) =>
 
 // An info-toned dot marking a node whose config differs from the last-saved pipeline.
 const UnsavedDot = ({ show }: { show?: boolean }) =>
-  show ? (
+  show === true ? (
     <ElementTooltip content="Unsaved changes on this node">
       <span className="size-2 shrink-0 rounded-full bg-informative">
         <span className="sr-only">Unsaved changes</span>
@@ -458,7 +487,7 @@ const UnsavedDot = ({ show }: { show?: boolean }) =>
 
 // The component's `label:` — shown on every node (leaf, container) when set.
 const LabelBadge = ({ label, className }: { label?: string; className?: string }) =>
-  label ? (
+  label !== null && label !== undefined && label !== '' ? (
     <Badge
       className={cn('max-w-full min-w-0 shrink-0', className)}
       size="sm"
@@ -474,21 +503,20 @@ const LabelBadge = ({ label, className }: { label?: string; className?: string }
 const ComponentCard = ({ data }: { data: FlowCardData }) => {
   const kindLabel = sectionLabel(data.section);
   const accent = SECTION_ACCENT[data.section ?? ''];
+  const style: FlowStyleVars = { '--flow-accent': accent, '--flow-header-tint': headerTint(accent) };
   return (
     <div
       className={cn(
         'cursor-pointer overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
         cardRing(data)
       )}
+      style={style}
     >
       {/* Routing condition at the TOP — the editable condition is the first, most obvious click target. */}
       {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
-      <div className="border-b border-border/60" style={headerTintStyle(accent)}>
+      <div className="console-flow-title border-b border-border/60">
         <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
-          <span
-            className="shrink-0 text-body-sm font-medium tracking-wide uppercase"
-            style={accent ? { color: accent } : undefined}
-          >
+          <span className="console-flow-accent shrink-0 text-body-sm font-medium tracking-wide uppercase">
             {kindLabel}
           </span>
           {/* Non-case condition info stays an inline chip; a switch case's condition uses the row above. */}
@@ -504,7 +532,7 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
           </ElementTooltip>
         </div>
       </div>
-      {data.labelText ? (
+      {isNonEmptyString(data.labelText) ? (
         // When no meta rows follow, the label badge is the last row — bottom inset so it isn't flush.
         <div className={cn('px-3 pt-2', cardHasMeta(data) ? '' : 'pb-3')}>
           <LabelBadge label={data.labelText} />
@@ -522,10 +550,14 @@ const FlowCardNode = ({ data }: { data: FlowCardData }) => {
   const card = isPlaceholder ? <PlaceholderCard data={data} /> : <ComponentCard data={data} />;
 
   return (
-    <div className={cn('group relative', data.appeared && APPEAR_ANIM)} ref={ref} style={{ width: FLOW_CARD_WIDTH }}>
+    <div
+      className={cn('console-flow-card group relative', data.appeared === true && APPEAR_ANIM)}
+      ref={ref}
+      style={FLOW_CARD_STYLE}
+    >
       <NodeHandles />
       {card}
-      {data.flash ? <FlashPulse token={data.flashToken} /> : null}
+      {data.flash === true ? <FlashPulse token={data.flashToken} /> : null}
     </div>
   );
 };
@@ -546,25 +578,28 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
     return null;
   }
   const payload = data.payload;
-  const handlePin = { top: 12, transform: 'none' } as const;
   return (
     <>
-      <Handle className={invisibleHandle} id="l" position={Position.Left} style={handlePin} type="target" />
-      <Handle className={invisibleHandle} id="r" position={Position.Right} style={handlePin} type="source" />
-      <button
+      <Handle className={invisibleHandle} data-flow-pin="insert" id="l" position={Position.Left} type="target" />
+      <Handle className={invisibleHandle} data-flow-pin="insert" id="r" position={Position.Right} type="source" />
+      <Button
         aria-label={data.label ?? 'Add'}
         className={cn(
-          'nodrag nopan flex h-full w-full cursor-pointer items-center gap-1.5 px-2 text-body-sm font-medium text-primary transition-colors',
-          data.ghost
-            ? 'justify-center rounded-full border border-dashed border-primary/40 bg-background hover:border-primary hover:bg-primary/10'
-            : 'rounded-md hover:bg-primary/10'
+          // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+          'nodrag nopan flex size-full cursor-pointer items-center gap-1.5 px-2 text-body-sm font-medium text-primary transition-colors',
+          data.ghost === true
+            ? // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+              'justify-center rounded-full border border-dashed border-primary/40 bg-background hover:border-primary hover:bg-primary/10'
+            : // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+              'rounded-md hover:bg-primary/10'
         )}
         onClick={() => data.onInsert?.(payload)}
         type="button"
+        variant="unstyled"
       >
         <PlusIcon className="size-3" />
         {data.label}
-      </button>
+      </Button>
     </>
   );
 };
@@ -611,23 +646,27 @@ const LinkLabel = ({
 }) => {
   const className = cn(
     // Condition labels are Bloblang code: mono, not uppercased, matching the card's condition chips.
-    'nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-mono text-2xs font-medium shadow-sm',
-    LINK_LABEL_STYLE[tone],
+    'console-flow-label nodrag nopan absolute max-w-[200px] truncate rounded border bg-background px-1.5 py-0.5 font-mono text-2xs font-medium shadow-sm',
+    tone === 'primary' && LINK_LABEL_STYLE.primary,
+    tone === 'error' && LINK_LABEL_STYLE.error,
+    tone === 'muted' && LINK_LABEL_STYLE.muted,
+    tone === 'condition' && LINK_LABEL_STYLE.condition,
     // A condition label is clickable to edit its case — make that obvious.
     onClick && 'pointer-events-auto cursor-pointer transition-colors hover:bg-muted'
   );
-  const style = {
-    transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
-    opacity: d.dimmed ? 0.25 : 1,
-    zIndex: LINK_LABEL_Z,
-  } as const;
+  const style: FlowStyleVars = {
+    '--flow-label-x': `${x}px`,
+    '--flow-label-y': `${y}px`,
+    '--flow-label-opacity': d.dimmed === true ? 0.25 : 1,
+    '--flow-label-z': LINK_LABEL_Z,
+  };
   return (
     <EdgeLabelRenderer>
       {onClick ? (
         <ElementTooltip content={d.label}>
-          <button className={className} onClick={onClick} style={style} type="button">
+          <Button className={className} onClick={onClick} style={style} type="button" variant="unstyled">
             {d.label}
-          </button>
+          </Button>
         </ElementTooltip>
       ) : (
         <ElementTooltip content={d.label}>
@@ -670,31 +709,30 @@ function controlFlowPresentation(data: FlowCardData): ControlFlowPresentation {
   // A broker/sequence counts its sinks or sources, per section.
   if (data.label === 'broker' || data.label === 'sequence') {
     const noun = data.section === 'output' ? 'output' : 'input';
-    return { Icon: Network, descriptor: count ? plural(count, noun) : 'broker' };
+    return { Icon: Network, descriptor: Boolean(count) ? plural(count, noun) : 'broker' };
   }
   const spec = CONTROL_FLOW_SPECS[data.label];
-  if (!spec) {
-    return { Icon: GitFork, descriptor: count ? plural(count, 'step') : 'routes' };
+  if (!isPresent(spec)) {
+    return { Icon: GitFork, descriptor: Boolean(count) ? plural(count, 'step') : 'routes' };
   }
-  if (!(spec.noun && count)) {
+  if (!(isNonEmptyString(spec.noun) && Boolean(count))) {
     return { Icon: spec.icon, descriptor: spec.zero };
   }
   return { Icon: spec.icon, descriptor: `${spec.prefix ?? ''}${plural(count, spec.noun)}` };
 }
 
 // Filled accent tile — distinct from the white `LogoTile` so a router marker never reads as a data card.
-const ControlFlowIconTile = ({ Icon, accent }: { Icon: LucideIcon; accent: string }) => (
-  <span
-    className="flex size-7 shrink-0 items-center justify-center rounded-md border"
-    style={{
-      borderColor: `color-mix(in srgb, ${accent} 40%, transparent)`,
-      backgroundColor: `color-mix(in srgb, ${accent} 14%, var(--color-card))`,
-      color: accent,
-    }}
-  >
-    <Icon className="size-4" />
-  </span>
-);
+const ControlFlowIconTile = ({ Icon, accent }: { Icon: LucideIcon; accent: string }) => {
+  const style: FlowStyleVars = { '--flow-accent': accent };
+  return (
+    <span
+      className="console-flow-icon flex size-7 shrink-0 items-center justify-center rounded-md border"
+      style={style}
+    >
+      <Icon className="size-4" />
+    </span>
+  );
+};
 
 // A control-flow processor as a compact card. It never wraps children — in the Dagre graph its
 // branches fan out as labelled edges and reconverge at a merge node. This card is the fan-out marker.
@@ -703,10 +741,19 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
   const isError = Boolean(data.isErrorPath);
   const accent = isError ? 'var(--color-destructive)' : (SECTION_ACCENT[data.section ?? ''] ?? 'var(--color-primary)');
   const { Icon, descriptor } = controlFlowPresentation(data);
+  const style: FlowStyleVars = {
+    ...FLOW_CARD_STYLE,
+    '--flow-accent': accent,
+    '--flow-header-tint': headerTint(accent),
+  };
   return (
-    <div className={cn('group relative', data.appeared && APPEAR_ANIM)} ref={ref} style={{ width: FLOW_CARD_WIDTH }}>
+    <div
+      className={cn('console-flow-card group relative', data.appeared === true && APPEAR_ANIM)}
+      ref={ref}
+      style={style}
+    >
       <NodeHandles />
-      {data.flash ? <FlashPulse token={data.flashToken} /> : null}
+      {data.flash === true ? <FlashPulse token={data.flashToken} /> : null}
       <div
         className={cn(
           'flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
@@ -715,14 +762,11 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
       >
         {/* Routing condition at the TOP, as on leaf cards. */}
         {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
-        <div className="flex cursor-pointer items-center gap-2.5 px-3 py-2" style={headerTintStyle(accent)}>
+        <div className="console-flow-title flex cursor-pointer items-center gap-2.5 px-3 py-2">
           <ControlFlowIconTile accent={accent} Icon={Icon} />
           <span className="flex min-w-0 flex-1 flex-col">
             <ElementTooltip content={descriptor}>
-              <span
-                className="truncate text-caption leading-none font-medium tracking-wide uppercase"
-                style={{ color: accent }}
-              >
+              <span className="console-flow-accent truncate text-caption leading-none font-medium tracking-wide uppercase">
                 {descriptor}
               </span>
             </ElementTooltip>
@@ -730,7 +774,7 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
               <span className="min-w-0 truncate text-body leading-tight font-semibold">{data.label}</span>
             </ElementTooltip>
           </span>
-          {data.labelText ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
+          {isNonEmptyString(data.labelText) ? <LabelBadge className="max-w-[32%]" label={data.labelText} /> : null}
           <LintBadge errors={data.lintErrors} />
           <DeprecatedBadge messages={data.deprecations} />
           <UnsavedDot show={data.unsaved} />
@@ -738,17 +782,19 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
         <InputStopRow data={data} isGroup />
         {/* "Add case / Add input" footer row. Edit mode only. */}
         {data.addAction && data.onAddChild ? (
-          <button
+          <Button
+            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
             className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-t border-dashed border-border/70 px-3 py-1.5 text-body-sm font-medium text-primary transition-colors hover:bg-primary/5"
             onClick={(e) => {
               e.stopPropagation();
               data.onAddChild?.();
             }}
             type="button"
+            variant="unstyled"
           >
             <PlusIcon className="size-3.5" />
             {data.addAction.label}
-          </button>
+          </Button>
         ) : null}
       </div>
     </div>
@@ -758,35 +804,22 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
 const JOIN_HINT = 'Join — branches reconverge here';
 
 // The join point where a fan's branches reconverge; a filled primary-tint disc so it reads as a deliberate "join".
-const FlowMergeNode = () => {
-  const handle = { top: 16, transform: 'none' } as const;
-  return (
-    <div className="relative flex h-8 items-center justify-center" style={{ width: 48 }}>
-      <Handle className={invisibleHandle} id="l" position={Position.Left} style={handle} type="target" />
-      <Handle className={invisibleHandle} id="r" position={Position.Right} style={handle} type="source" />
-      <Handle
-        className={invisibleHandle}
-        id="t"
-        position={Position.Top}
-        style={{ left: 24, transform: 'none' }}
-        type="target"
-      />
-      <ElementTooltip content={JOIN_HINT}>
-        <span
-          aria-label={JOIN_HINT}
-          className="flex size-8 items-center justify-center rounded-full border-2 text-primary shadow-sm"
-          role="img"
-          style={{
-            borderColor: 'var(--color-primary)',
-            backgroundColor: 'color-mix(in srgb, var(--color-primary) 12%, var(--color-background))',
-          }}
-        >
-          <GitMerge className="size-4" />
-        </span>
-      </ElementTooltip>
-    </div>
-  );
-};
+const FlowMergeNode = () => (
+  <div className="relative flex h-8 w-12 items-center justify-center">
+    <Handle className={invisibleHandle} data-flow-pin="merge" id="l" position={Position.Left} type="target" />
+    <Handle className={invisibleHandle} data-flow-pin="merge" id="r" position={Position.Right} type="source" />
+    <Handle className={invisibleHandle} data-flow-pin="merge-top" id="t" position={Position.Top} type="target" />
+    <ElementTooltip content={JOIN_HINT}>
+      <span
+        aria-label={JOIN_HINT}
+        className="console-flow-join flex size-8 items-center justify-center rounded-full border-2 text-primary shadow-sm"
+        role="img"
+      >
+        <GitMerge className="size-4" />
+      </span>
+    </ElementTooltip>
+  </div>
+);
 
 // A "+" button at an edge's midpoint (edit mode) for inserting a step there.
 const EdgeInsertButton = ({
@@ -799,26 +832,34 @@ const EdgeInsertButton = ({
   y: number;
   onInsert: () => void;
   zIndex?: number;
-}) => (
-  <EdgeLabelRenderer>
-    <button
-      aria-label="Insert a step"
-      className="nodrag nopan pointer-events-auto absolute flex size-6 cursor-pointer items-center justify-center rounded-full border border-primary bg-background text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
-      onClick={onInsert}
-      style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`, zIndex }}
-      type="button"
-    >
-      <PlusIcon className="size-3.5" />
-    </button>
-  </EdgeLabelRenderer>
-);
+}) => {
+  const style: FlowStyleVars = { '--flow-label-x': `${x}px`, '--flow-label-y': `${y}px`, '--flow-label-z': zIndex };
+  return (
+    <EdgeLabelRenderer>
+      <Button
+        aria-label="Insert a step"
+        // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+        className="console-flow-position nodrag nopan pointer-events-auto absolute flex size-6 cursor-pointer items-center justify-center rounded-full border border-primary bg-background text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
+        onClick={onInsert}
+        style={style}
+        type="button"
+        variant="unstyled"
+      >
+        <PlusIcon className="size-3.5" />
+      </Button>
+    </EdgeLabelRenderer>
+  );
+};
 
-type FlowGraphEdgeData = {
+export type FlowGraphEdgeData = {
   tone?: LinkTone;
   dashed?: boolean;
   label?: string;
   points?: { x: number; y: number }[];
   insertIndex?: number;
+  slotPayload?: FlowInsertPayload;
+  selectId?: string;
+  selectTarget?: EditTarget;
   dimmed?: boolean;
   emphasized?: boolean;
   faint?: boolean;
@@ -841,24 +882,25 @@ const lerpPoint = (a: FlowPoint, b: FlowPoint, f: number): FlowPoint => ({
 // The point at fraction `t` (0–1) of the polyline's arc length — so an edge label / "+" sits ON
 // the line (a raw middle waypoint can sit well off a curved edge). t=0.5 = midpoint.
 function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: number; y: number } {
-  if (points.length === 0) {
+  const last = points.at(-1);
+  if (last === undefined) {
     return { x: 0, y: 0 };
   }
   const segLen = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
-  const total = segLen.reduce((a, b) => a + b, 0);
-  let dist = total * Math.min(Math.max(t, 0), 1);
+  let dist = segLen.reduce((a, b) => a + b, 0) * Math.min(Math.max(t, 0), 1);
   for (let i = 0; i < segLen.length; i += 1) {
     if (dist <= segLen[i]) {
       return lerpPoint(points[i], points[i + 1], segLen[i] === 0 ? 0 : dist / segLen[i]);
     }
     dist -= segLen[i];
   }
-  return points.at(-1) as { x: number; y: number };
+  return last;
 }
 
 // Smooth a polyline through Dagre's node-avoiding waypoints (quadratic segments via midpoints).
 function smoothGraphPath(points: { x: number; y: number }[]): string {
-  if (points.length < 2) {
+  const last = points.at(-1);
+  if (points.length < 2 || last === undefined) {
     return '';
   }
   if (points.length === 2) {
@@ -869,16 +911,15 @@ function smoothGraphPath(points: { x: number; y: number }[]): string {
     const mid = { x: (points[i].x + points[i + 1].x) / 2, y: (points[i].y + points[i + 1].y) / 2 };
     d += ` Q ${points[i].x} ${points[i].y} ${mid.x} ${mid.y}`;
   }
-  const last = points.at(-1) as { x: number; y: number };
   return `${d} L ${last.x} ${last.y}`;
 }
 
 // An emphasized edge takes the highlight stroke — except error edges, which keep their own tone.
 function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone): string {
-  if (d?.emphasized && tone !== 'error') {
+  if (d?.emphasized === true && tone !== 'error') {
     return HIGHLIGHT_STROKE;
   }
-  if (d?.faint) {
+  if (d?.faint === true) {
     return 'var(--color-muted-foreground)';
   }
   return LINK_STROKE[tone];
@@ -886,7 +927,7 @@ function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone): string {
 
 // Opacity tiers: dimmed (unrelated to selection) < ghost (decorative) < faint (context line) < full strength.
 function edgeOpacity(d: FlowGraphEdgeData | undefined): number {
-  return d?.dimmed ? 0.25 : d?.ghost ? 0.4 : d?.faint ? 0.6 : 1;
+  return d?.dimmed === true ? 0.25 : d?.ghost === true ? 0.4 : d?.faint === true ? 0.6 : 1;
 }
 
 type EdgeEndpoints = Pick<
@@ -925,19 +966,17 @@ function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, tar
     d
   );
   const tone: LinkTone = d?.tone ?? 'muted';
-  const width = d?.emphasized ? 4 : 3;
+  const width = d?.emphasized === true ? 4 : 3;
+  const style: FlowStyleVars = {
+    '--flow-edge-stroke': edgeStroke(d, tone),
+    '--flow-edge-width': width,
+    '--flow-edge-dash': d?.dashed === true ? '6 5' : undefined,
+    '--flow-edge-opacity': edgeOpacity(d),
+  };
   return (
     <>
-      <BaseEdge
-        path={path}
-        style={{
-          stroke: edgeStroke(d, tone),
-          strokeWidth: width,
-          strokeDasharray: d?.dashed ? '6 5' : undefined,
-          opacity: edgeOpacity(d),
-        }}
-      />
-      {d?.label ? (
+      <BaseEdge className="console-flow-edge" path={path} style={style} />
+      {isNonEmptyString(d?.label) ? (
         <LinkLabel
           d={{ label: d.label, dimmed: d.dimmed }}
           onClick={d.onLabelClick}

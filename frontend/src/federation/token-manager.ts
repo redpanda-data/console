@@ -22,10 +22,13 @@ export class TokenManager {
    * @param getAccessToken - Async function that fetches a new access token and
    *   returns the token string. onToken commits it only while this manager is current.
    */
-  constructor(
-    private getAccessToken: () => Promise<string>,
-    private readonly onToken?: (token: string) => void
-  ) {}
+  private getAccessToken: () => Promise<string>;
+  private readonly onToken?: (token: string) => void;
+
+  constructor(getAccessToken: () => Promise<string>, onToken?: (token: string) => void) {
+    this.getAccessToken = getAccessToken;
+    this.onToken = onToken;
+  }
 
   /**
    * Refreshes the access token.

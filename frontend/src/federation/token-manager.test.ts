@@ -25,10 +25,7 @@ describe('the TokenManager', () => {
     });
 
     test('deduplicates concurrent refresh calls', async () => {
-      let resolveToken: (value: string) => void;
-      const tokenPromise = new Promise<string>((resolve) => {
-        resolveToken = resolve;
-      });
+      const { promise: tokenPromise, resolve: resolveToken } = Promise.withResolvers<string>();
       const mockGetToken = mock().mockReturnValue(tokenPromise);
       const tokenManager = new TokenManager(mockGetToken);
 
@@ -39,7 +36,7 @@ describe('the TokenManager', () => {
       expect(mockGetToken).toHaveBeenCalledTimes(1);
 
       // Resolve the token
-      resolveToken!('deduplicated-token');
+      resolveToken('deduplicated-token');
 
       // All promises should resolve to the same value
       const results = await Promise.all(promises);
@@ -137,17 +134,14 @@ describe('the TokenManager', () => {
     });
 
     test('returns true during refresh', async () => {
-      let resolveToken: (value: string) => void;
-      const tokenPromise = new Promise<string>((resolve) => {
-        resolveToken = resolve;
-      });
+      const { promise: tokenPromise, resolve: resolveToken } = Promise.withResolvers<string>();
       const mockGetToken = mock().mockReturnValue(tokenPromise);
       const tokenManager = new TokenManager(mockGetToken);
 
       const pending = tokenManager.refresh();
       expect(tokenManager.isRefreshing).toBe(true);
 
-      resolveToken!('token');
+      resolveToken('token');
       await pending;
       expect(tokenManager.isRefreshing).toBe(false);
     });

@@ -96,7 +96,8 @@ export type Suppression = { tool: 'biome' | 'lint' | 'ts'; directive: string; re
 /** Text after the first `:` outside the category list, so `noRestrictedImports(node:fs)` keeps its colon. */
 function biomeExplanation(rest: string) {
   let depth = 0;
-  for (const [index, character] of [...rest].entries()) {
+  for (let index = 0; index < rest.length; index += 1) {
+    const character = rest[index];
     depth += Number(character === '(') - Number(character === ')');
     if (character === ':' && depth === 0) {
       return rest.slice(index + 1);

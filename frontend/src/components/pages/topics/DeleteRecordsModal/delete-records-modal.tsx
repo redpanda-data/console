@@ -42,9 +42,13 @@ import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
 import { type JSX, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { api, useApiStoreHook } from '../../../../state/backend-api';
 import type { DeleteRecordsResponseData, Partition, Topic } from '../../../../state/rest-interfaces';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { isPresent } from '../../../../utils/type-guards';
 import { prettyNumber } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import { KowlTimePicker } from '../../../misc/kowl-time-picker';
@@ -75,14 +79,14 @@ function TrashIcon() {
       <circle cx="33" cy="33.6" fill="var(--color-destructive)" r="33" />
       <path
         d="M18.806 24.729h28.388M29.452 31.826V42.47M36.548 31.826V42.47M20.58 24.729l1.775 21.29a3.548 3.548 0 003.548 3.549h14.194a3.548 3.548 0 003.548-3.549l1.774-21.29"
-        stroke="#fff"
+        stroke="var(--color-destructive-foreground)"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="3.333"
       />
       <path
         d="M27.677 24.729v-5.322a1.774 1.774 0 011.775-1.775h7.096a1.774 1.774 0 011.774 1.774v5.323"
-        stroke="#fff"
+        stroke="var(--color-destructive-foreground)"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="3.333"
@@ -124,7 +128,9 @@ function DeleteOption({
           <ChoiceboxItemIndicator />
         </ChoiceboxItemContent>
       </ChoiceboxItem>
-      {isSelected && children ? <div className="mt-2 border-l-2 border-l-selected py-2 pl-5">{children}</div> : null}
+      {isSelected && Boolean(children) ? (
+        <div className="mt-2 border-l-2 border-l-selected py-2 pl-5">{children}</div>
+      ) : null}
     </div>
   );
 }
@@ -149,8 +155,11 @@ function SelectPartitionStep({
         step you can choose the new low water mark for your selected partitions.
       </DeleteRecordsIntro>
       <Choicebox
-        onValueChange={(v) => {
-          const option = v as PartitionOption;
+        onValueChange={(v: unknown) => {
+          if (v !== null && v !== 'allPartitions' && v !== 'specificPartition') {
+            return;
+          }
+          const option = v;
           if (option === 'allPartitions') {
             onSpecificPartitionSelected(null);
           } else if (option === 'specificPartition' && specificPartition === null) {
@@ -174,12 +183,14 @@ function SelectPartitionStep({
           value="specificPartition"
         >
           <Select
-            onValueChange={(v) => onSpecificPartitionSelected(Number(v))}
+            onValueChange={(v: unknown) => onSpecificPartitionSelected(Number(v))}
             value={specificPartition === null ? undefined : String(specificPartition)}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Choose Partition…">
-                {(raw) => (raw === undefined || raw === null || raw === '' ? 'Choose Partition…' : `Partition ${raw}`)}
+                {(raw) =>
+                  raw === undefined || raw === null || raw === '' ? 'Choose Partition…' : `Partition ${String(raw)}`
+                }
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -224,7 +235,14 @@ const SelectOffsetStep = ({
         Choose the new low offset for your selected partitions. Take note that this is a soft delete and that the actual
         data may still be on the hard drive but not visible for any clients, even if they request the data.
       </DeleteRecordsIntro>
-      <Choicebox onValueChange={(v) => selectValue(v as OffsetOption)} value={selectedValue ?? ''}>
+      <Choicebox
+        onValueChange={(v: unknown) => {
+          if (v === null || v === 'highWatermark' || v === 'manualOffset' || v === 'timestamp') {
+            selectValue(v);
+          }
+        }}
+        value={selectedValue ?? ''}
+      >
         {isAllPartitions ? (
           <DeleteOption
             isSelected={selectedValue === 'highWatermark'}
@@ -302,8 +320,16 @@ const PartitionErrorsAlert = ({
   topicWatermarksErrors,
 }: {
   topicName: string;
-  topicPartitionErrors: { partitionError: string }[] | undefined;
-  topicWatermarksErrors: { waterMarksError: string }[] | undefined;
+  topicPartitionErrors:
+    | {
+        partitionError: string;
+      }[]
+    | undefined;
+  topicWatermarksErrors:
+    | {
+        waterMarksError: string;
+      }[]
+    | undefined;
 }) => {
   const partitionErrors = topicPartitionErrors?.map(({ partitionError }) => (
     <li key={`${topicName}-${partitionError}`}>{partitionError}</li>
@@ -423,7 +449,7 @@ const ManualOffsetSlider = ({
 };
 
 function getMarks(partition: Partition) {
-  if (!partition) {
+  if (!isPresent(partition)) {
     return {
       min: 0,
       max: Number.POSITIVE_INFINITY,
@@ -455,15 +481,14 @@ function getMarks(partition: Partition) {
 }
 
 function formatMarks(marks: number[]) {
-  return marks.reduce(
-    (acc, it) => {
-      const key = it.toFixed(0);
-      const value = prettyNumber(it);
-      acc[key] = value;
-      return acc;
-    },
-    {} as { [index: string]: string }
-  );
+  return marks.reduce<{
+    [index: string]: string;
+  }>((acc, it) => {
+    const key = it.toFixed(0);
+    const value = prettyNumber(it);
+    acc[key] = value;
+    return acc;
+  }, {});
 }
 
 type DeleteRecordsModalProps = {
@@ -505,42 +530,39 @@ function useDeleteRecordsWizard() {
   };
 }
 
-function deleteRecordsByTimestamp(
+async function deleteRecordsByTimestamp(
   topicName: string,
   timestamp: number,
   { partitionOption, specifiedPartition }: WizardState,
   { onResponse, setErrors }: DeleteRecordsCallbacks
 ) {
-  api.getTopicOffsetsByTimestamp([topicName], timestamp).then((topicOffsets) => {
-    if (partitionOption === 'allPartitions') {
-      const pairs = topicOffsets[0].partitions.map(({ partitionId, offset }) => ({
-        partitionId,
-        offset,
-      }));
-      api.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, pairs)?.then(onResponse);
-    } else if (partitionOption === 'specificPartition') {
-      const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
-
-      if (partitionOffset !== null && partitionOffset !== undefined) {
-        // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-        api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition!)?.then(onResponse);
-      } else {
-        setErrors(['No partition offset was specified. Contact your administrator.']);
-      }
-    }
-  });
+  const topicOffsets = await api.getTopicOffsetsByTimestamp([topicName], timestamp);
+  if (partitionOption === 'allPartitions') {
+    const pairs = topicOffsets[0].partitions.map(({ partitionId, offset }) => ({
+      partitionId,
+      offset,
+    }));
+    onResponse(await api.deleteTopicRecordsFromMultiplePartitionOffsetPairs(topicName, pairs));
+    return;
+  }
+  if (partitionOption === 'specificPartition') {
+    await deletePartitionAtTimestamp(topicName, topicOffsets, specifiedPartition, { onResponse, setErrors });
+  }
 }
 
-function requestRecordDeletion(topicName: string, state: WizardState, callbacks: DeleteRecordsCallbacks) {
+async function requestRecordDeletion(topicName: string, state: WizardState, callbacks: DeleteRecordsCallbacks) {
   const { partitionOption, specifiedPartition, offsetOption, specifiedOffset, timestamp } = state;
 
   if (partitionOption === 'allPartitions' && offsetOption === 'highWatermark') {
-    api.deleteTopicRecordsFromAllPartitionsHighWatermark(topicName)?.then(callbacks.onResponse);
-  } else if (partitionOption === 'specificPartition' && offsetOption === 'manualOffset') {
-    // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-    api.deleteTopicRecords(topicName, specifiedOffset, specifiedPartition!)?.then(callbacks.onResponse);
+    callbacks.onResponse(await api.deleteTopicRecordsFromAllPartitionsHighWatermark(topicName));
+  } else if (
+    partitionOption === 'specificPartition' &&
+    offsetOption === 'manualOffset' &&
+    specifiedPartition !== null
+  ) {
+    callbacks.onResponse(await api.deleteTopicRecords(topicName, specifiedOffset, specifiedPartition));
   } else if (offsetOption === 'timestamp' && timestamp !== null) {
-    deleteRecordsByTimestamp(topicName, timestamp, state, callbacks);
+    await deleteRecordsByTimestamp(topicName, timestamp, state, callbacks);
   } else {
     callbacks.setErrors(['Something went wrong. Contact your administrator.']);
   }
@@ -569,7 +591,11 @@ function useDeleteRecordsSubmission(wizardState: WizardState, onFinish: () => vo
 
   const submitDelete = (topicName: string) => {
     setOkButtonLoading(true);
-    requestRecordDeletion(topicName, wizardState, { onResponse: handleFinish, setErrors });
+    requestRecordDeletion(topicName, wizardState, { onResponse: handleFinish, setErrors })
+      .catch((error: unknown) => {
+        setErrors([error instanceof Error ? error.message : 'Could not delete records. Try again.']);
+      })
+      .finally(() => setOkButtonLoading(false));
   };
 
   const resetSubmission = () => {
@@ -608,12 +634,11 @@ function getPrimaryLabel(hasErrors: boolean, isLast: boolean) {
   }
   return isLast ? 'Delete Records' : 'Choose End Offset';
 }
-
-export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
+export function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
   const { visible, topic, onCancel, onFinish } = props;
 
   useEffect(() => {
-    if (topic?.topicName) {
+    if (isNonEmptyString(topic?.topicName)) {
       api.refreshPartitionsForTopic(topic.topicName, true);
     }
   }, [topic?.topicName]);
@@ -704,7 +729,11 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                 </DialogBody>
                 <DialogFooter>
                   {hasErrors || methods.isFirst ? null : (
-                    <Button disabled={okButtonLoading} onClick={() => methods.prev()} variant="primary">
+                    <Button
+                      disabled={okButtonLoading}
+                      onClick={asyncEvent(() => methods.prev(), reportActionError)}
+                      variant="primary"
+                    >
                       Back
                     </Button>
                   )}
@@ -720,7 +749,7 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
                         submitDelete(topic.topicName);
                         return;
                       }
-                      methods.next();
+                      methods.next().catch(reportActionError);
                     }}
                     variant={hasErrors ? 'primary' : 'destructive'}
                   >
@@ -734,4 +763,19 @@ export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.
       </DialogContent>
     </Dialog>
   );
+}
+
+async function deletePartitionAtTimestamp(
+  topicName: string,
+  topicOffsets: Awaited<ReturnType<typeof api.getTopicOffsetsByTimestamp>>,
+  specifiedPartition: number | null,
+  { onResponse, setErrors }: DeleteRecordsCallbacks
+) {
+  const partitionOffset = topicOffsets[0].partitions.find((p) => specifiedPartition === p.partitionId)?.offset;
+
+  if (partitionOffset !== null && partitionOffset !== undefined && specifiedPartition !== null) {
+    onResponse(await api.deleteTopicRecords(topicName, partitionOffset, specifiedPartition));
+    return;
+  }
+  setErrors(['No partition offset was specified. Contact your administrator.']);
 }

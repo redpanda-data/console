@@ -21,10 +21,12 @@ import {
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { START_DRAFT_CONFIRM_IRREVERSIBLE, START_DRAFT_CONFIRM_TITLE, startDraftConfirmBody } from './draft-copy';
 import { useStartDraft } from './use-start-draft';
-import { extractAllTopics } from '../utils/yaml';
+import { extractAllTopics } from '../utils/yaml-redpanda';
 
 function StartDraftDialog({
   open,
@@ -60,7 +62,7 @@ function StartDraftDialog({
           </Button>
           <Button
             disabled={isStarting}
-            icon={isStarting ? <Spinner /> : <Play />}
+            icon={isStarting === true ? <Spinner /> : <Play />}
             onClick={onConfirm}
             testId="confirm-start-draft"
           >
@@ -96,10 +98,10 @@ export function useStartDraftConfirm({
         computeUnits={computeUnits}
         configYaml={configYaml}
         isStarting={isStartingDraft}
-        onConfirm={async () => {
+        onConfirm={asyncEvent(async () => {
           await startDraft(id);
           setIsOpen(false);
-        }}
+        }, reportActionError)}
         onOpenChange={setIsOpen}
         open={isOpen}
       />

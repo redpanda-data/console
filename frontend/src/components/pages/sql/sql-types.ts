@@ -81,7 +81,7 @@ export function withFetchedTables(catalog: Catalog, tables: FetchedTable[]): Cat
     tables: byNamespace.get(ns.name) ?? ns.tables,
   }));
   for (const [name, nsTables] of byNamespace) {
-    if (!namespaces.some((ns) => ns.name === name)) {
+    if (namespaces.every((ns) => ns.name !== name)) {
       namespaces.push({ id: `${catalog.name}.${name}`, name, tables: nsTables });
     }
   }
@@ -187,12 +187,16 @@ const SCALAR_KIND_MATCHERS: [ColumnKind, (upperType: string) => boolean][] = [
 // and render with the JSON tree viewer. Arrays map to their element kind;
 // anything unrecognized defaults to a string.
 export function columnKindForPgType(pgType: string): ColumnKind {
-  const element = arrayElementPgType(pgType);
-  if (element !== null) {
-    return columnKindForPgType(element);
+  let currentType = pgType;
+  while (true) {
+    const element = arrayElementPgType(currentType);
+    if (element === null) {
+      break;
+    }
+    currentType = element;
   }
-  const t = pgType.toUpperCase();
-  return SCALAR_KIND_MATCHERS.find(([, matches]) => matches(t))?.[0] ?? 'str';
+  const upperType = currentType.toUpperCase();
+  return SCALAR_KIND_MATCHERS.find(([, matches]) => matches(upperType))?.[0] ?? 'str';
 }
 
 // Structured hint from the Connect error's ErrorInfo metadata. undefined when absent.

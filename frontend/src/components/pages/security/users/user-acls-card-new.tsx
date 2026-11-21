@@ -19,5 +19,9 @@ type UserAclsCardNewProps = {
 };
 
 export const UserAclsCardNew = ({ acls, userName, isLoading }: UserAclsCardNewProps) => (
-  <AclsCard acls={acls} isLoading={isLoading} principal={userName ? `User:${userName}` : undefined} />
+  <AclsCard
+    acls={acls}
+    isLoading={isLoading}
+    principal={userName !== null && userName !== undefined && userName !== '' ? `User:${userName}` : undefined}
+  />
 );

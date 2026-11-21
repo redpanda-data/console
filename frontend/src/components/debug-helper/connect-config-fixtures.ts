@@ -2041,6 +2041,7 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   {
     id: 'simple-generate-to-redpanda-cloud',
     name: 'Generate to Redpanda (Cloud)',
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
     description: 'SCRAM-SHA-256 + TLS using ${secrets.X}. Canonical Cloud quickstart pattern.',
     yaml: generateToRedpanda,
     tags: ['simple'],
@@ -2122,6 +2123,7 @@ export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
     id: 'edge-secrets-heavy',
     name: 'Many secret references',
     description:
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
       'Stress-test the ${secrets.X} parser/detector with brokers, SASL, TLS, headers, and S3 creds all interpolated.',
     yaml: secretsHeavy,
     tags: ['edge-case'],

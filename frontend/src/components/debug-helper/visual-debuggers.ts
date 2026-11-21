@@ -101,7 +101,7 @@ function classFor(id: VisualDebuggerId): string {
 function readEnabled(): VisualDebuggerId[] {
   try {
     const raw = window.sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) {
+    if (!(raw !== null && raw !== undefined && raw !== '')) {
       return [];
     }
     const parsed: unknown = JSON.parse(raw);
@@ -123,7 +123,7 @@ function writeEnabled(ids: VisualDebuggerId[]): void {
 }
 
 function ensureStyles(): void {
-  if (document.getElementById(STYLE_ELEMENT_ID)) {
+  if (document.querySelector(`#${STYLE_ELEMENT_ID}`)) {
     return;
   }
   const el = document.createElement('style');
@@ -150,7 +150,10 @@ export function setVisualDebugger(id: VisualDebuggerId, enabled: boolean): void 
   } else {
     current.delete(id);
   }
-  const next = VISUAL_DEBUGGERS.map((d) => d.id).filter((d) => current.has(d));
+  const next = VISUAL_DEBUGGERS.flatMap((d) => {
+    const debuggerId = d.id;
+    return current.has(debuggerId) ? [debuggerId] : [];
+  });
   writeEnabled(next);
   applyDomState(next);
 }

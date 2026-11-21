@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -25,7 +26,16 @@ import { SelectionInfoBar } from './components/statistics-bar';
 import type { PartitionSelection } from './reassign-partitions';
 import { api } from '../../../state/backend-api';
 import type { Partition, PartitionReassignmentsPartition, Topic } from '../../../state/rest-interfaces';
+import {
+  arrayCount,
+  arrayDistinct,
+  arrayFirst,
+  arrayPushDistinct,
+  arrayRemove,
+  arrayToMap,
+} from '../../../utils/array-utils';
 import { DefaultSkeleton, InfoText, ZeroSizeWrapper } from '../../../utils/tsx-utils';
+import { isPresent } from '../../../utils/type-guards';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
@@ -121,7 +131,7 @@ export class StepSelectPartitions extends Component<{
         header: ({ column }) => <DataTableColumnHeader column={column} title="Partitions" />,
         accessorKey: 'partitionCount',
         cell: ({ row: { original: topic } }) => {
-          const errors = topic.partitions.count((p) => p.hasErrors);
+          const errors = arrayCount(topic.partitions, (p) => p.hasErrors);
           if (errors === 0) {
             return topic.partitionCount;
           }
@@ -160,7 +170,8 @@ export class StepSelectPartitions extends Component<{
         id: 'brokers',
         enableSorting: false,
         header: 'Brokers',
-        cell: ({ row: { original: record } }) => record.partitions?.map((p) => p.leader).distinct().length ?? 'N/A',
+        cell: ({ row: { original: record } }) =>
+          arrayDistinct(record.partitions?.map((p) => p.leader))?.length ?? 'N/A',
       },
       {
         id: 'totalSizeBytes',
@@ -177,7 +188,7 @@ export class StepSelectPartitions extends Component<{
     }
 
     return (
-      <div style={{ margin: '1em 1em 2em 1em' }}>
+      <div className="console-reassignment-partitions">
         {/* Current Selection */}
         <SelectionInfoBar margin="2em 0em 1em 0.3em" partitionSelection={this.props.partitionSelection} />
 
@@ -227,9 +238,9 @@ export class StepSelectPartitions extends Component<{
     const partitions = [...(newSelection[topic] ?? [])];
 
     if (isSelected) {
-      partitions.pushDistinct(partition);
+      arrayPushDistinct(partitions, partition);
     } else {
-      partitions.remove(partition);
+      arrayRemove(partitions, partition);
     }
 
     if (partitions.length === 0) {
@@ -243,7 +254,7 @@ export class StepSelectPartitions extends Component<{
 
   getSelectedPartitions(topic: string) {
     const partitions = this.props.partitionSelection[topic];
-    if (!partitions) {
+    if (!isPresent(partitions)) {
       return [];
     }
     return partitions;
@@ -251,24 +262,25 @@ export class StepSelectPartitions extends Component<{
 
   isSelected(topic: string, partition: number) {
     const partitions = this.props.partitionSelection[topic];
-    if (!partitions) {
+    if (!isPresent(partitions)) {
       return false;
     }
     return partitions.includes(partition);
   }
-
-  getTopicCheckState(topicName: string): { checked: boolean; indeterminate: boolean } {
-    const tp = this.topicPartitions.first((t) => t.topicName === topicName);
+  getTopicCheckState(topicName: string): {
+    checked: boolean;
+    indeterminate: boolean;
+  } {
+    const tp = arrayFirst(this.topicPartitions, (t) => t.topicName === topicName);
     if (!tp) {
       return { checked: false, indeterminate: false };
     }
 
     const selected = this.props.partitionSelection[topicName];
-    if (!selected || selected.length === 0) {
+    if (!isPresent(selected) || selected.length === 0) {
       return { checked: false, indeterminate: false };
     }
-
-    const validPartitions = tp.partitions.count((x) => !x.hasErrors);
+    const validPartitions = arrayCount(tp.partitions, (x) => !x.hasErrors);
     if (validPartitions > 0 && selected.length === validPartitions) {
       return { checked: true, indeterminate: false };
     }
@@ -295,7 +307,8 @@ export class StepSelectPartitions extends Component<{
 
   get inProgress() {
     const current = api.partitionReassignments ?? [];
-    return current.toMap(
+    return arrayToMap(
+      current,
       (x) => x.topicName,
       (x) => x.partitions
     );
@@ -338,7 +351,7 @@ export class SelectPartitionTable extends Component<{
       enableSorting: false,
       header: 'Brokers',
       cell: ({ row: { original: partition } }: { row: DataTableRow<Partition> }) =>
-        partition.replicas ? (
+        isPresent(partition.replicas) ? (
           <BrokerList brokerIds={partition.replicas} leaderId={partition.leader} />
         ) : (
           renderPartitionError(partition)
@@ -379,11 +392,11 @@ function renderPartitionError(partition: Partition) {
         delay={200}
         openOnHover
         render={
-          <button aria-label="Partition error" type="button">
+          <Button aria-label="Partition error" type="button" variant="unstyled">
             <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
               <TonedIcon icon={WarningIcon} size={19} tone="warning" />
             </ZeroSizeWrapper>
-          </button>
+          </Button>
         }
       />
       {/* PopoverContent is a fixed w-72; the error text needs the room. */}
@@ -403,11 +416,11 @@ function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
         delay={200}
         openOnHover
         render={
-          <button aria-label="Partition error" type="button">
+          <Button aria-label="Partition error" type="button" variant="unstyled">
             <ZeroSizeWrapper alignItems="center" height="18px" justifyContent="center" width="20px">
               <TonedIcon icon={WarningIcon} size={20} tone="warning" />
             </ZeroSizeWrapper>
-          </button>
+          </Button>
         }
       />
       {/* PopoverContent is a fixed w-72; the error text needs the room. */}

@@ -1,3 +1,5 @@
+/** @typedef {import('./discover-variants.mjs').Variant} Variant */
+/** @typedef {{variant: string, code: number|null}} VariantResult */
 import { discoverVariants } from './discover-variants.mjs';
 import { spawn } from 'node:child_process';
 import { createWriteStream, mkdirSync, readFileSync } from 'node:fs';
@@ -9,10 +11,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const reportsDir = resolve(__dirname, '..', '.rstest');
 
+/** @param {number|null} code
+ * @param {string[]} rstestArgs */
 function variantStatus(code, rstestArgs) {
   return code === 0 ? (rstestArgs.includes('list') ? 'COLLECTED' : 'PASSED') : 'FAILED';
 }
 
+/** @param {Variant} variant */
 function variantEnv(variant) {
   return {
     ...process.env,
@@ -22,6 +27,8 @@ function variantEnv(variant) {
   };
 }
 
+/** @param {Variant} variant
+ * @param {string[]} bunArgs */
 function spawnVariantWithLogFile(variant, bunArgs) {
   mkdirSync(reportsDir, { recursive: true });
   const logPath = join(reportsDir, `${variant.name}.log`);
@@ -38,6 +45,8 @@ function spawnVariantWithLogFile(variant, bunArgs) {
   return { child, logStream };
 }
 
+/** @param {Variant} variant
+ * @param {string[]} bunArgs */
 function spawnVariantWithInheritedOutput(variant, bunArgs) {
   const child = spawn('bun', bunArgs, {
     stdio: 'inherit',
@@ -47,27 +56,34 @@ function spawnVariantWithInheritedOutput(variant, bunArgs) {
   return { child, logStream: undefined };
 }
 
+/** @param {Variant} variant
+ * @param {{child: import('node:child_process').ChildProcess, logStream?: import('node:fs').WriteStream}} spawned
+ * @param {number} startTime
+ * @param {string[]} rstestArgs
+ * @returns {Promise<VariantResult>} */
 function waitForVariant(variant, { child, logStream }, startTime, rstestArgs) {
-  return new Promise((resolve) => {
-    child.on('close', (code) => {
+  return new Promise((settle) => {
+    child.on('close', (exitCode) => {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      const status = variantStatus(code, rstestArgs);
+      const status = variantStatus(exitCode, rstestArgs);
       console.log(`[${variant.name}] ${status} (${elapsed}s)`);
       if (logStream) {
         logStream.end();
       }
-      resolve({ variant: variant.name, code });
+      settle({ variant: variant.name, code: exitCode });
     });
     child.on('error', (error) => {
       console.error(`[${variant.name}] Error: ${error.message}`);
       if (logStream) {
         logStream.end();
       }
-      resolve({ variant: variant.name, code: 1 });
+      settle({ variant: variant.name, code: 1 });
     });
   });
 }
 
+/** @param {Variant} variant
+ * @param {string[]} rstestArgs */
 function runVariant(variant, rstestArgs = []) {
   const configPath = join(variant.path, 'rstest.config.ts');
   const startTime = Date.now();
@@ -79,7 +95,10 @@ function runVariant(variant, rstestArgs = []) {
   // In CI with parallel variants, pipe output to log files to avoid interleaving.
   // Locally or with a single variant, inherit stdio for immediate feedback.
   const isParallel = process.env.CI;
-  const spawned = isParallel ? spawnVariantWithLogFile(variant, args) : spawnVariantWithInheritedOutput(variant, args);
+  const spawned =
+    isParallel !== null && isParallel !== undefined && isParallel !== ''
+      ? spawnVariantWithLogFile(variant, args)
+      : spawnVariantWithInheritedOutput(variant, args);
 
   return waitForVariant(variant, spawned, startTime, rstestArgs);
 }
@@ -87,6 +106,7 @@ function runVariant(variant, rstestArgs = []) {
 // Pre-build backend Docker images once before launching variants in parallel.
 // This avoids race conditions where multiple variants try to copy frontend assets
 // and build the same Docker image concurrently.
+/** @param {Variant[]} variants */
 async function prebuildBackendImages(variants) {
   console.log('\nPre-building backend Docker image(s)...');
   const needsEnterprise = variants.some((v) => v.config.isEnterprise);
@@ -99,12 +119,15 @@ async function prebuildBackendImages(variants) {
   }
 }
 
+/** @param {string} title */
 function printBanner(title) {
   console.log(`\n${'='.repeat(60)}`);
   console.log(title);
   console.log(`${'='.repeat(60)}`);
 }
 
+/** @param {VariantResult[]} results
+ * @param {string[]} rstestArgs */
 function printSummary(results, rstestArgs) {
   printBanner('Summary');
 
@@ -117,6 +140,7 @@ function printSummary(results, rstestArgs) {
   console.log('');
 }
 
+/** @param {string} logContent */
 function printLogTail(logContent) {
   // Print last 200 lines to avoid overwhelming output
   const lines = logContent.split('\n');
@@ -127,6 +151,7 @@ function printLogTail(logContent) {
   console.log(tail);
 }
 
+/** @param {string} variantName */
 function printFailedVariantLog(variantName) {
   const logPath = join(reportsDir, `${variantName}.log`);
   printBanner(`Logs for failed variant: ${variantName}`);
@@ -138,6 +163,7 @@ function printFailedVariantLog(variantName) {
   }
 }
 
+/** @param {VariantResult[]} results */
 function printFailedVariantLogs(results) {
   for (const result of results) {
     if (result.code !== 0) {
@@ -146,6 +172,8 @@ function printFailedVariantLogs(results) {
   }
 }
 
+/** @param {Variant[]} variants
+ * @param {string[]} rstestArgs */
 function runVariantsInParallel(variants, rstestArgs) {
   console.log(`\nRunning ${variants.length} variant(s) in parallel...`);
 
@@ -153,12 +181,14 @@ function runVariantsInParallel(variants, rstestArgs) {
   return Promise.all(variants.map((variant) => runVariant(variant, rstestArgs)));
 }
 
+/** @param {VariantResult[]} results
+ * @param {string[]} rstestArgs */
 function reportResults(results, rstestArgs) {
   printSummary(results, rstestArgs);
   const hasFailures = results.some((result) => result.code !== 0);
 
   // On failure in CI, dump the log files for failed variants
-  if (hasFailures && process.env.CI) {
+  if (hasFailures && (process.env.CI ?? '') !== '') {
     printFailedVariantLogs(results);
   }
 
@@ -173,6 +203,7 @@ function reportResults(results, rstestArgs) {
   );
 }
 
+/** @param {string[]} rstestArgs */
 async function runAllVariants(rstestArgs = []) {
   const variants = discoverVariants();
 

@@ -10,42 +10,52 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { ConnectError, createRouterTransport } from '@connectrpc/connect';
-import { beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { CreateTopicResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import type { ComponentProps } from 'react';
 import { useRef } from 'react';
 import { render, screen, waitFor } from 'test-utils';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
-import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
+// Import component after mocks
+import { AddTopicStep } from './add-topic-step';
+import type { GetTopicsResponse } from '../../../../state/rest-interfaces';
+import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../types/wizard';
 
 // ── Mocks ──────────────────────────────────────────────────────────────
 
 // 1. Mock config module with a controllable fetch
-const mockFetch = rs.fn();
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
+const mockFetch = rs.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
+rs.mock('runtime-config', () => {
+  const actual = rs.requireActual<typeof import('runtime-config')>('runtime-config');
   return {
     ...actual,
     config: {
       ...actual.config,
       jwt: 'test-jwt',
       restBasePath: '/api',
-      fetch: (...args: unknown[]) => mockFetch(...args),
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => mockFetch(input, init),
     },
   };
 });
 
 // 2. Mock backend-api (used by useCreateTopicMutation onSuccess + useTopicConfigQuery)
-rs.mock('state/backend-api', () => ({
-  api: {
-    refreshTopics: rs.fn(() => Promise.resolve()),
-    refreshTopicConfig: rs.fn(() => Promise.resolve()),
-    topicConfig: new Map(),
-  },
-}));
+rs.mock('state/backend-api', () => {
+  const actual = rs.requireActual<typeof import('state/backend-api')>('state/backend-api');
+  return {
+    ...actual,
+    api: {
+      ...actual.api,
+      refreshTopics: rs.fn(() => Promise.resolve()),
+      refreshTopicConfig: rs.fn(() => Promise.resolve()),
+      topicConfig: new Map(),
+    },
+  };
+});
 
 // 3. Mock AdvancedTopicSettings sub-component (not under test)
 function MockAdvancedTopicSettings() {
@@ -59,13 +69,10 @@ rs.mock('./advanced-topic-settings', () => ({
 // 4. Polyfill scrollIntoView (not available in JSDOM, used by cmdk)
 Element.prototype.scrollIntoView = rs.fn();
 
-// Import component after mocks
-import { AddTopicStep } from './add-topic-step';
-
 // ── Helpers ────────────────────────────────────────────────────────────
 
 /** REST response for useLegacyListTopicsQuery */
-function createTopicsResponse(topicNames: string[]) {
+function createTopicsResponse(topicNames: string[]): GetTopicsResponse {
   return {
     topics: topicNames.map((name) => ({
       topicName: name,
@@ -73,11 +80,22 @@ function createTopicsResponse(topicNames: string[]) {
       partitionCount: 1,
       replicationFactor: 3,
       cleanupPolicy: 'delete',
-      documentation: 'UNKNOWN' as const,
-      logDirSummary: { totalSizeBytes: 0, partitionCount: 0, replicaErrors: [] },
+      documentation: 'UNKNOWN',
+      logDirSummary: { totalSizeBytes: 0, replicaErrors: [], hint: null },
       allowedActions: undefined,
     })),
   };
+}
+
+/** Each invalidation gets a fresh, readable body, just like separate HTTP responses. */
+function replyWithTopics(topicNames: string[]) {
+  mockFetch.mockImplementation((input) => {
+    const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url, window.location.href);
+    if (url.pathname !== '/api/topics') {
+      return Promise.reject(new Error(`Unexpected topic fixture request: ${url.pathname}`));
+    }
+    return Promise.resolve(Response.json(createTopicsResponse(topicNames)));
+  });
 }
 
 function createTransport(overrides?: { createTopicMock?: ReturnType<typeof rs.fn> }) {
@@ -97,7 +115,7 @@ function createTransport(overrides?: { createTopicMock?: ReturnType<typeof rs.fn
 }
 
 type HarnessProps = {
-  onResult: (r: unknown) => void;
+  onResult: (r: StepSubmissionResult<AddTopicFormData>) => void;
 } & Partial<ComponentProps<typeof AddTopicStep>>;
 
 function TestHarness({ onResult, ...props }: HarnessProps) {
@@ -105,7 +123,17 @@ function TestHarness({ onResult, ...props }: HarnessProps) {
   return (
     <>
       <AddTopicStep hideTitle ref={ref} selectionMode="new" {...props} />
-      <button data-testid="submit" onClick={async () => onResult(await ref.current!.triggerSubmit())} type="button">
+      <button
+        data-testid="submit"
+        onClick={asyncEvent(async () => {
+          const step = ref.current;
+          if (step === null) {
+            throw new Error('Expected the mounted topic step');
+          }
+          onResult(await step.triggerSubmit());
+        }, reportActionError)}
+        type="button"
+      >
         Submit
       </button>
     </>
@@ -128,21 +156,15 @@ describe('the AddTopicStep', () => {
   beforeEach(() => {
     mockFetch.mockReset();
     // Default: return empty topic list
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse([])),
-    });
+    replyWithTopics([]);
   });
 
   describe('submitting the step', () => {
-    it('existing topic returns name via triggerSubmit', async () => {
+    test('existing topic returns name via triggerSubmit', async () => {
       const user = userEvent.setup();
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(createTopicsResponse(['my-topic', 'other-topic'])),
-      });
+      replyWithTopics(['my-topic', 'other-topic']);
 
-      let result: unknown;
+      let result: StepSubmissionResult<AddTopicFormData> | undefined;
       const transport = createTransport();
 
       render(
@@ -157,7 +179,10 @@ describe('the AddTopicStep', () => {
 
       // Wait for topics to load so the combobox has options
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalled();
+        expect(mockFetch).toHaveBeenCalledWith('/api/topics', {
+          method: 'GET',
+          headers: { Authorization: 'Bearer test-jwt' },
+        });
       });
 
       // The component starts in "Existing" mode when topics exist.
@@ -171,16 +196,14 @@ describe('the AddTopicStep', () => {
       await user.click(submitBtn);
 
       await waitFor(() => {
-        expect(result).toEqual(
-          expect.objectContaining({
-            success: true,
-            data: expect.objectContaining({ topicName: 'my-topic' }),
-          })
-        );
+        expect(result).toMatchObject({
+          success: true,
+          data: { topicName: 'my-topic' },
+        });
       });
     });
 
-    it('new topic calls createTopic RPC', async () => {
+    test('new topic calls createTopic RPC', async () => {
       const user = userEvent.setup();
       const createTopicMock = rs.fn().mockReturnValue(
         create(CreateTopicResponseSchema, {
@@ -191,7 +214,7 @@ describe('the AddTopicStep', () => {
       );
       const transport = createTransport({ createTopicMock });
 
-      render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
+      render(<TestHarness onResult={() => undefined} selectionMode="new" />, { transport });
 
       const input = screen.getByPlaceholderText('Enter a topic name');
       await user.type(input, 'new-topic');
@@ -200,15 +223,22 @@ describe('the AddTopicStep', () => {
       await user.click(submitBtn);
 
       await waitFor(() => {
-        expect(createTopicMock).toHaveBeenCalled();
+        expect(createTopicMock.mock.calls[0]?.[0]).toMatchObject({
+          topic: {
+            name: 'new-topic',
+            partitionCount: 1,
+            replicationFactor: 3,
+            configs: [{ name: 'cleanup.policy', value: 'delete' }],
+          },
+        });
       });
     });
 
-    it('new topic returns success result', async () => {
+    test('new topic returns success result', async () => {
       const user = userEvent.setup();
       const transport = createTransport();
 
-      let result: unknown;
+      let result: StepSubmissionResult<AddTopicFormData> | undefined;
       render(
         <TestHarness
           onResult={(r) => {
@@ -226,20 +256,16 @@ describe('the AddTopicStep', () => {
       await user.click(submitBtn);
 
       await waitFor(() => {
-        expect(result).toEqual(
-          expect.objectContaining({
-            success: true,
-            message: expect.stringMatching(/Topic ".*" created/),
-          })
-        );
+        expect(result?.success).toBe(true);
+        expect(result?.message).toMatch(/Topic ".*" created/);
       });
     });
 
-    it('empty topic name rejected', async () => {
+    test('empty topic name rejected', async () => {
       const user = userEvent.setup();
       const transport = createTransport();
 
-      let result: unknown;
+      let result: StepSubmissionResult<AddTopicFormData> | undefined;
       render(
         <TestHarness
           onResult={(r) => {
@@ -255,15 +281,15 @@ describe('the AddTopicStep', () => {
       await user.click(submitBtn);
 
       await waitFor(() => {
-        expect(result).toEqual(expect.objectContaining({ success: false }));
+        expect(result).toMatchObject({ success: false });
       });
     });
 
-    it('invalid characters rejected', async () => {
+    test('invalid characters rejected', async () => {
       const user = userEvent.setup();
       const transport = createTransport();
 
-      let result: unknown;
+      let result: StepSubmissionResult<AddTopicFormData> | undefined;
       render(
         <TestHarness
           onResult={(r) => {
@@ -281,16 +307,16 @@ describe('the AddTopicStep', () => {
       await user.click(submitBtn);
 
       await waitFor(() => {
-        expect(result).toEqual(expect.objectContaining({ success: false }));
+        expect(result).toMatchObject({ success: false });
       });
     });
 
-    it('createTopic error returns failure result', async () => {
+    test('createTopic error returns failure result', async () => {
       const user = userEvent.setup();
-      const createTopicMock = rs.fn().mockRejectedValue(new ConnectError('topic creation failed', 13));
+      const createTopicMock = rs.fn().mockRejectedValue(new ConnectError('topic creation failed', Code.Internal));
       const transport = createTransport({ createTopicMock });
 
-      let result: unknown;
+      let result: StepSubmissionResult<AddTopicFormData> | undefined;
       render(
         <TestHarness
           onResult={(r) => {
@@ -308,57 +334,49 @@ describe('the AddTopicStep', () => {
       await user.click(submitBtn);
 
       await waitFor(() => {
-        expect(result).toEqual(
-          expect.objectContaining({
-            success: false,
-            message: 'Failed to save topic configuration',
-          })
-        );
+        expect(result).toMatchObject({
+          success: false,
+          message: 'Failed to save topic configuration',
+        });
       });
     });
   });
 
   describe('topic selection modes', () => {
-    it('selectionMode=new hides existing/new toggle', () => {
+    test('selectionMode=new hides existing/new toggle', () => {
       const transport = createTransport();
 
-      render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
+      render(<TestHarness onResult={() => undefined} selectionMode="new" />, { transport });
 
       expect(screen.queryByRole('button', { name: 'Existing' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'New' })).not.toBeInTheDocument();
     });
 
-    it('selectionMode=existing shows combobox', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(createTopicsResponse(['topic-a'])),
-      });
+    test('selectionMode=existing shows combobox', async () => {
+      replyWithTopics(['topic-a']);
       const transport = createTransport();
 
-      render(<TestHarness onResult={() => {}} selectionMode="existing" />, { transport });
+      render(<TestHarness onResult={() => undefined} selectionMode="existing" />, { transport });
 
       const combobox = await screen.findByPlaceholderText('Select a topic');
       expect(combobox).toBeInTheDocument();
     });
 
-    it('existing topic alert shown in create mode when name matches', async () => {
+    test('existing topic alert shown in create mode when name matches', async () => {
       const user = userEvent.setup();
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(createTopicsResponse(['existing-topic'])),
-      });
+      replyWithTopics(['existing-topic']);
       const transport = createTransport();
 
-      render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
+      render(<TestHarness onResult={() => undefined} selectionMode="both" />, { transport });
 
-      // Wait for topics to load
-      await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalled();
+      await selectComboboxOption(user, 'Select a topic', 'existing-topic');
+      expect(mockFetch).toHaveBeenCalledWith('/api/topics', {
+        method: 'GET',
+        headers: { Authorization: 'Bearer test-jwt' },
       });
 
       // Switch to "New" tab (single-select ToggleGroupItem renders as a Base UI toggle button (aria-pressed))
-      const newButton = await screen.findByRole('button', { name: 'New' });
-      await user.click(newButton);
+      await user.click(await screen.findByRole('button', { name: 'New' }));
 
       // Type a name matching an existing topic
       const input = screen.getByPlaceholderText('Enter a topic name');
@@ -370,14 +388,11 @@ describe('the AddTopicStep', () => {
       });
     });
 
-    it('selectionMode=both renders toggle group', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(createTopicsResponse(['t1'])),
-      });
+    test('selectionMode=both renders toggle group', async () => {
+      replyWithTopics(['t1']);
       const transport = createTransport();
 
-      render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
+      render(<TestHarness onResult={() => undefined} selectionMode="both" />, { transport });
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: 'Existing' })).toBeInTheDocument();

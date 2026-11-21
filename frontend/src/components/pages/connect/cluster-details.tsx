@@ -17,18 +17,19 @@ import {
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
 import { useCallback, useMemo, useState } from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
 import { ClusterStatisticsCard, ConnectorClass, NotConfigured, TaskState, TasksColumn } from './helper';
-import { isEmbedded } from '../../../config';
+import { isEmbedded } from '../../../runtime-config';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
-import type { ClusterAdditionalInfo, ClusterConnectorInfo } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
+import type { ClusterAdditionalInfo, ClusterConnectorInfo } from '../../../types/kafka-connect';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
-import PageContent from '../../misc/page-content';
-import SearchBar from '../../misc/search-bar';
-import Section from '../../misc/section';
+import { PageContent } from '../../misc/page-content';
+import { SearchBar } from '../../misc/search-bar';
+import { Section } from '../../misc/section';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
 // Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
@@ -38,11 +39,17 @@ const TABLE_OPTIONS = {
 };
 // Ten a page (the Registry default) is the legacy page size for this table.
 const CONNECTORS_TABLE_OPTIONS = { enableHiding: false };
-
-class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
+class KafkaClusterDetails extends PageComponent<{
+  clusterName: string;
+}> {
   placeholder = 5;
-
-  constructor(p: Readonly<PageProps<{ clusterName: string }>>) {
+  constructor(
+    p: Readonly<
+      PageProps<{
+        clusterName: string;
+      }>
+    >
+  ) {
     super(p);
   }
 
@@ -57,10 +64,10 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
   }
 
   refreshData(force: boolean) {
-    api.refreshConnectClusters();
+    api.refreshConnectClusters().catch(reportActionError);
 
     const clusterName = decodeURIComponent(this.props.clusterName);
-    api.refreshClusterAdditionalInfo(clusterName, force);
+    api.refreshClusterAdditionalInfo(clusterName, force).catch(reportActionError);
   }
 
   render() {
@@ -72,8 +79,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     if (api.connectConnectors?.isConfigured === false) {
       return <NotConfigured />;
     }
-
-    const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName === clusterName);
+    const cluster = api.connectConnectors?.clusters?.find((c) => c.clusterName === clusterName);
     const connectors = cluster?.connectors;
 
     const additionalInfo = api.connectAdditionalClusterInfo.get(clusterName);
@@ -88,7 +94,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
           <ConnectorsList clusterName={clusterName} connectors={connectors ?? []} />
 
           {/* Plugin List */}
-          <div style={{ marginTop: '2em', display: isEmbedded() ? 'none' : 'block' }}>
+          <div className={isEmbedded() ? 'hidden' : 'mt-8 block'}>
             <h3 className="ml-1 pb-2.5">Connector Types</h3>
 
             <DataTable<ClusterAdditionalInfo['plugins'][0]>
@@ -139,7 +145,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
         return true;
       }
       return classMatch;
-    } catch (_e) {
+    } catch {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.warn('Invalid expression');
       return item.name.toLowerCase().includes(filter.toLowerCase());
@@ -165,7 +171,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
               clusterName,
               connector: original.name,
             }}
-            search={{} as never}
+            search={{}}
             to="/connect-clusters/$clusterName/$connector"
           >
             <span className="wrap-break-word whitespace-break-spaces">{original.name}</span>
@@ -233,4 +239,4 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
   );
 };
 
-export default KafkaClusterDetails;
+export { KafkaClusterDetails };

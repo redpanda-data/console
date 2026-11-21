@@ -1,7 +1,11 @@
 import type { ColumnFiltersState, PaginationState, RowData, SortingState, Updater } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs';
 import { useState } from 'react';
+import { reportActionError } from 'utils/toast.utils';
+import { stringArrayValue, stringValue } from 'utils/type-guards';
 
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { isPresent } from '../../../../utils/type-guards';
 import { type DataTableColumnDef, useDataTable } from '../../../redpanda-ui/components/data-table';
 
 export type ColumnFiltersBinding = {
@@ -9,19 +13,21 @@ export type ColumnFiltersBinding = {
   onColumnFiltersChange: (updater: Updater<ColumnFiltersState>) => void;
 };
 
-const resolveUpdater = <T>(updater: Updater<T>, current: T): T =>
-  typeof updater === 'function' ? (updater as (old: T) => T)(current) : updater;
+const resolveUpdater = <T extends object>(updater: Updater<T>, current: T): T =>
+  typeof updater === 'function' ? updater(current) : updater;
 
 const findFilterValue = (filters: ColumnFiltersState, id: string) => filters.find((f) => f.id === id)?.value;
 
 /** Name filter of a Security list, kept in the `name` search param. */
 export function useNameColumnFilter(): ColumnFiltersBinding {
   const [urlFilterParams, setUrlFilterParams] = useQueryStates({ name: parseAsString });
-  const columnFilters: ColumnFiltersState = urlFilterParams.name ? [{ id: 'name', value: urlFilterParams.name }] : [];
+  const columnFilters: ColumnFiltersState = isNonEmptyString(urlFilterParams.name)
+    ? [{ id: 'name', value: urlFilterParams.name }]
+    : [];
 
   const onColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
     const next = resolveUpdater(updater, columnFilters);
-    setUrlFilterParams({ name: (findFilterValue(next, 'name') as string) || null });
+    setUrlFilterParams({ name: (stringValue(findFilterValue(next, 'name')) ?? '') || null }).catch(reportActionError);
   };
 
   return { columnFilters, onColumnFiltersChange };
@@ -34,17 +40,19 @@ export function useUserColumnFilters(): ColumnFiltersBinding {
     mechanism: parseAsArrayOf(parseAsString),
   });
   const columnFilters: ColumnFiltersState = [
-    ...(urlFilterParams.name ? [{ id: 'name', value: urlFilterParams.name }] : []),
-    ...(urlFilterParams.mechanism?.length ? [{ id: 'mechanism', value: urlFilterParams.mechanism }] : []),
+    ...(isNonEmptyString(urlFilterParams.name) ? [{ id: 'name', value: urlFilterParams.name }] : []),
+    ...(isPresent(urlFilterParams.mechanism) && urlFilterParams.mechanism.length > 0
+      ? [{ id: 'mechanism', value: urlFilterParams.mechanism }]
+      : []),
   ];
 
   const onColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
     const next = resolveUpdater(updater, columnFilters);
-    const mechanism = findFilterValue(next, 'mechanism') as string[] | undefined;
+    const mechanism = stringArrayValue(findFilterValue(next, 'mechanism'));
     setUrlFilterParams({
-      name: (findFilterValue(next, 'name') as string) || null,
-      mechanism: mechanism?.length ? mechanism : null,
-    });
+      name: (stringValue(findFilterValue(next, 'name')) ?? '') || null,
+      mechanism: isPresent(mechanism) && mechanism.length > 0 ? mechanism : null,
+    }).catch(reportActionError);
   };
 
   return { columnFilters, onColumnFiltersChange };

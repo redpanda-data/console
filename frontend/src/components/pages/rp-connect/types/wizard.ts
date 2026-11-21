@@ -1,5 +1,4 @@
-import { enumFromKeys } from 'utils/form';
-import { sizeFactors, timeFactors } from 'utils/topic-utils';
+import type { sizeFactors, timeFactors } from 'utils/topic-utils';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -53,8 +52,27 @@ export type UserStepRef = {
   isPending: boolean;
 };
 
-export const retentionTimeUnits = enumFromKeys(timeFactors);
-export const retentionSizeUnits = enumFromKeys(sizeFactors);
+// Persisted unit values are factor keys, never their numeric multipliers.
+export const retentionTimeUnits = [
+  'default',
+  'infinite',
+  'ms',
+  'seconds',
+  'minutes',
+  'hours',
+  'days',
+  'months',
+  'years',
+] as const satisfies readonly (keyof typeof timeFactors)[];
+export const retentionSizeUnits = [
+  'default',
+  'infinite',
+  'Bit',
+  'KiB',
+  'MiB',
+  'GiB',
+  'TiB',
+] as const satisfies readonly (keyof typeof sizeFactors)[];
 
 export const addTopicFormSchema = z.object({
   topicName: z
@@ -95,7 +113,7 @@ export const addUserFormSchema = z.object({
 
 export type AddUserFormData = z.infer<typeof addUserFormSchema>;
 
-const onboardingWizardFormSchema = z.object({
+export const onboardingWizardFormSchema = z.object({
   input: connectTilesListFormSchema.optional(),
   output: connectTilesListFormSchema.optional(),
   topicName: z.optional(addTopicFormSchema.shape.topicName),

@@ -17,7 +17,7 @@ import { StartPipelineRequestSchema } from 'protogen/redpanda/api/console/v1alph
 import { useCallback } from 'react';
 import { useStartPipelineMutation } from 'react-query/api/pipeline';
 import { toast } from 'sonner';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, reportActionError } from 'utils/toast.utils';
 
 import { startBlockedMessage } from './draft-copy';
 import { isInvalidConfigError } from './save-actions';
@@ -39,7 +39,7 @@ function reportStartDraftError(err: unknown, pipelineId: string, navigate: Retur
     const hints = extractLintHintsFromError(error);
     pendingStartLintHints.set(pipelineId, hints);
     toast.error(startBlockedMessage(Object.keys(hints).length));
-    navigate({ to: '/rp-connect/$pipelineId/edit', params: { pipelineId } });
+    navigate({ to: '/rp-connect/$pipelineId/edit', params: { pipelineId } }).catch(reportActionError);
     return;
   }
   toast.error(formatToastErrorMessageGRPC({ error, action: 'start', entity: 'pipeline' }));
@@ -55,8 +55,8 @@ export function useStartDraft() {
       try {
         await mutateAsync(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
         toast.success('Pipeline starting');
-      } catch (err) {
-        reportStartDraftError(err, pipelineId, navigate);
+      } catch (error) {
+        reportStartDraftError(error, pipelineId, navigate);
       }
     },
     [mutateAsync, navigate]

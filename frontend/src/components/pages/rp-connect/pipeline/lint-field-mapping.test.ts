@@ -9,13 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
-import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { type LintHint, LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { create } from '@bufbuild/protobuf';
 
 import { mapLintHintsToFields } from './lint-field-mapping';
 import { describe, expect, test } from 'bun:test';
-import type { EditTarget } from '../utils/yaml';
+import type { EditTarget } from '../utils/yaml-edit-target';
 
-const hint = (line: number, text: string) => ({ line, column: 1, hint: text }) as LintHint;
+const hint = (line: number, text: string) => create(LintHintSchema, { line, column: 1, hint: text });
 
 // Line numbers (1-based): 1 input:, 2 label, 3 redpanda:, 4 seed_brokers:, 5 list item,
 // 6 topics:, 7 tls:, 8 enabled.

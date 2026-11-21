@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -20,12 +21,13 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'co
 import { Component, useMemo } from 'react';
 
 import { BandwidthSlider } from './components/bandwidth-slider';
-import type ReassignPartitions from './reassign-partitions';
-import type { PartitionSelection } from './reassign-partitions';
+import type { PartitionSelection, ReassignPartitions } from './reassign-partitions';
 import { api } from '../../../state/backend-api';
 import type { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from '../../../state/rest-interfaces';
 import { uiSettings, useUISettingsStore } from '../../../state/ui';
+import { arrayDistinct, arrayExcept, arrayFirst, arraySum } from '../../../utils/array-utils';
 import { DefaultSkeleton, InfoText } from '../../../utils/tsx-utils';
+import { isPresent } from '../../../utils/type-guards';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
@@ -67,8 +69,11 @@ export function StepReview(props: StepReviewProps) {
 
   return <StepReviewContent {...props} maxReplicationTraffic={maxReplicationTraffic} />;
 }
-
-class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraffic: number | null }> {
+class StepReviewContent extends Component<
+  StepReviewProps & {
+    maxReplicationTraffic: number | null;
+  }
+> {
   // Built once: the page force-updates on every poll, and a fresh `header`/`cell` identity
   // remounts the header's sort menu out from under the pointer.
   private readonly columns: DataTableColumnDef<TopicWithMoves>[] = [
@@ -96,10 +101,9 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
     {
       header: 'Brokers Before',
       cell: ({ row: { original: topic } }) => {
-        const brokersBefore = topic.selectedPartitions
-          .flatMap((x) => x.brokersBefore)
-          .distinct()
-          .sort((a, b) => a - b);
+        const brokersBefore = arrayDistinct(topic.selectedPartitions.flatMap((x) => x.brokersBefore)).sort(
+          (a, b) => a - b
+        );
         return <BrokerList brokerIds={brokersBefore} />;
       },
     },
@@ -110,10 +114,9 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
       header: 'Brokers After',
       id: 'brokersAfter',
       cell: ({ row: { original: topic } }) => {
-        const plannedBrokers = topic.selectedPartitions
-          .flatMap((x) => x.brokersAfter)
-          .distinct()
-          .sort((a, b) => a - b);
+        const plannedBrokers = arrayDistinct(topic.selectedPartitions.flatMap((x) => x.brokersAfter)).sort(
+          (a, b) => a - b
+        );
         return <BrokerList brokerIds={plannedBrokers} />;
       },
     },
@@ -124,12 +127,12 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
           Reassignments
         </InfoText>
       ),
-      cell: ({ row: { original: topic } }) => topic.selectedPartitions.sum((p) => p.numAddedBrokers),
+      cell: ({ row: { original: topic } }) => arraySum(topic.selectedPartitions, (p) => p.numAddedBrokers),
     },
     {
       header: 'Estimated Traffic',
       cell: ({ row: { original: topic } }) =>
-        prettyBytesOrNA(topic.selectedPartitions.sum((p) => p.numAddedBrokers * p.replicaSize)),
+        prettyBytesOrNA(arraySum(topic.selectedPartitions, (p) => p.numAddedBrokers * p.replicaSize)),
     },
   ];
 
@@ -153,7 +156,7 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
 
     return (
       <>
-        <div style={{ margin: '2em 1em' }}>
+        <div className="console-reassignment-intro">
           <h2>Review Reassignment Plan</h2>
           <p>
             Kowl computed the following reassignment plan to distribute the selected partitions onto the selected
@@ -168,10 +171,10 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
           sorting
           subComponent={({ row: { original: topic } }) => (
             <div className="px-10 py-6">
-              {topic.selectedPartitions ? (
+              {isPresent(topic.selectedPartitions) ? (
                 <ReviewPartitionTable
                   // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-                  assignments={this.props.assignments.topics.first((t) => t.topicName === topic.topicName)!}
+                  assignments={arrayFirst(this.props.assignments.topics, (t) => t.topicName === topic.topicName)!}
                   topic={topic.topic}
                   topicPartitions={topic.selectedPartitions}
                 />
@@ -192,11 +195,11 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
 
   reassignmentOptions() {
     return (
-      <div style={{ margin: '4em 1em 3em 1em' }}>
+      <div className="console-reassignment-bandwidth">
         <h2>Bandwidth Throttle</h2>
         <p>Using throttling you can limit the network traffic for reassignments.</p>
 
-        <div style={{ marginTop: '2em', paddingBottom: '1em' }}>
+        <div className="console-reassignment-slider">
           <BandwidthSlider
             onSettingsChange={(x) => {
               // Whole-section assignment: only a top-level set goes through the `uiSettings`
@@ -207,7 +210,7 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
           />
         </div>
 
-        <ul style={{ marginTop: '0.5em' }}>
+        <ul className="mt-[0.5em]">
           <li>Throttling applies to all replication traffic, not just to active reassignments.</li>
           <li>
             Once the reassignment completes you'll have to remove the throttling configuration. <br />
@@ -256,10 +259,8 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
         partitionStats,
       };
     });
-    const estimatedTimeSec = trafficStats.sum((t) => t.partitionStats.sum((p) => p.estimatedTimeSec));
-
-    const totalTraffic = trafficStats.sum((t) => t.partitionStats.sum((p) => p.totalTraffic));
-
+    const estimatedTimeSec = arraySum(trafficStats, (t) => arraySum(t.partitionStats, (p) => p.estimatedTimeSec));
+    const totalTraffic = arraySum(trafficStats, (t) => arraySum(t.partitionStats, (p) => p.totalTraffic));
     const isThrottled = this.props.maxReplicationTraffic !== null && this.props.maxReplicationTraffic > 0;
     const trafficThrottle = isThrottled ? `${prettyBytesOrNA(maxReplicationTraffic)}/s` : 'disabled';
 
@@ -276,7 +277,7 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
     const data = [
       {
         title: 'Moved Replicas',
-        value: this.props.topicsWithMoves.sum((t) => t.selectedPartitions.sum((p) => p.numAddedBrokers)),
+        value: arraySum(this.props.topicsWithMoves, (t) => arraySum(t.selectedPartitions, (p) => p.numAddedBrokers)),
       },
       { title: 'Total Traffic', value: `~${prettyBytesOrNA(totalTraffic)}` },
       { title: 'Traffic Throttle', value: trafficThrottle },
@@ -284,21 +285,13 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
     ];
 
     return (
-      <div style={{ margin: '2em 1em 5em 1em' }}>
+      <div className="console-reassignment-summary">
         <h2>Summary</h2>
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '3em',
-            marginTop: '1em',
-            color: 'var(--color-foreground)',
-          }}
-        >
+        <div className="console-reassignment-summary-statistics">
           {data.map((item) => (
             <div key={item.title}>
-              <div style={{ opacity: 0.6 }}>{item.title}</div>
-              <div style={{ fontSize: 'calc(1em * 24 / 14)' }}>{item.value}</div>
+              <div className="opacity-60">{item.title}</div>
+              <div className="console-reassignment-statistic-value">{item.value}</div>
             </div>
           ))}
         </div>
@@ -326,7 +319,7 @@ const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[
       {
         header: 'Brokers After',
         cell: ({ row: { original: partition } }) => {
-          const partitionAssignments = props.assignments.partitions.first((p) => p.partitionId === partition.id);
+          const partitionAssignments = arrayFirst(props.assignments.partitions, (p) => p.partitionId === partition.id);
           if (
             partitionAssignments === null ||
             partitionAssignments === undefined ||
@@ -357,9 +350,8 @@ const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[
 function potentialTransferBandwidth(p: PartitionWithMoves, maxReplicationTraffic: number): number {
   // if there are 2 senders and 2 receivers, the bandwidth limit is effectively double
   // but for (1sender and 2receivers), or (2senders and 1receiver) it won't go any faster.
-  const senders = p.brokersBefore.except(p.brokersAfter);
-  const receivers = p.brokersAfter.except(p.brokersBefore);
-
+  const senders = arrayExcept(p.brokersBefore, p.brokersAfter);
+  const receivers = arrayExcept(p.brokersAfter, p.brokersBefore);
   const participatingTransferPairs = Math.min(senders.length, receivers.length);
   return participatingTransferPairs * maxReplicationTraffic;
 }

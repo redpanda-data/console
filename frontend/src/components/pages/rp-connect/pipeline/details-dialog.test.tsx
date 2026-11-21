@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import { Pipeline_State, PipelineSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type { ComponentProps } from 'react';
@@ -51,27 +51,27 @@ describe('the DetailsDialog', () => {
   });
 
   describe('general section', () => {
-    it('renders pipeline ID with copy button', () => {
+    test('renders pipeline ID with copy button', () => {
       renderDetailsDialog({ pipeline: createPipeline() });
       expect(screen.getByText('pipeline-123')).toBeInTheDocument();
     });
 
-    it('renders description', () => {
+    test('renders description', () => {
       renderDetailsDialog({ pipeline: createPipeline() });
       expect(screen.getByText('A test pipeline')).toBeInTheDocument();
     });
 
-    it('renders compute units', () => {
+    test('renders compute units', () => {
       renderDetailsDialog({ pipeline: createPipeline() });
       expect(screen.getByText('3')).toBeInTheDocument();
     });
 
-    it('renders URL with copy button', () => {
+    test('renders URL with copy button', () => {
       renderDetailsDialog({ pipeline: createPipeline() });
       expect(screen.getByText('https://pipeline.example.com/pipeline-123')).toBeInTheDocument();
     });
 
-    it('renders service account when present', () => {
+    test('renders service account when present', () => {
       renderDetailsDialog({
         pipeline: createPipeline({
           serviceAccount: { clientId: 'sa-client-id', clientSecret: '' },
@@ -82,7 +82,7 @@ describe('the DetailsDialog', () => {
   });
 
   describe('references section', () => {
-    it('renders user-visible tags in References card as key: value badges', () => {
+    test('renders user-visible tags in References card as key: value badges', () => {
       renderDetailsDialog({
         pipeline: createPipeline({
           tags: { env: 'production', team: 'platform' },
@@ -92,7 +92,7 @@ describe('the DetailsDialog', () => {
       expect(screen.getByText('team: platform')).toBeInTheDocument();
     });
 
-    it('hides system tags (__-prefixed)', () => {
+    test('hides system tags (__-prefixed)', () => {
       renderDetailsDialog({
         pipeline: createPipeline({
           tags: {
@@ -105,7 +105,7 @@ describe('the DetailsDialog', () => {
       expect(screen.queryByText('__redpanda_cloud_pipeline_type')).not.toBeInTheDocument();
     });
 
-    it('renders secrets in References card', () => {
+    test('renders secrets in References card', () => {
       renderDetailsDialog({
         pipeline: createPipeline({
           configYaml: [
@@ -121,7 +121,7 @@ describe('the DetailsDialog', () => {
       expect(screen.getByText('my_secret')).toBeInTheDocument();
     });
 
-    it('renders topics in References card', () => {
+    test('renders topics in References card', () => {
       renderDetailsDialog({
         pipeline: createPipeline({
           configYaml: 'input:\n  kafka_franz:\n    seed_brokers: []\n    topics: ["my-topic"]\noutput:\n  stdout: {}',
@@ -132,13 +132,13 @@ describe('the DetailsDialog', () => {
   });
 
   describe('danger zone', () => {
-    it('renders the Danger Zone section when onRequestDelete is provided', () => {
+    test('renders the Danger Zone section when onRequestDelete is provided', () => {
       renderDetailsDialog({ onRequestDelete: rs.fn(), pipeline: createPipeline() });
       expect(screen.getByText('Danger zone')).toBeInTheDocument();
       expect(screen.getByText('Delete pipeline')).toBeInTheDocument();
     });
 
-    it('does not render the Danger Zone section when onRequestDelete is undefined', () => {
+    test('does not render the Danger Zone section when onRequestDelete is undefined', () => {
       renderDetailsDialog({ pipeline: createPipeline() });
       expect(screen.queryByText('Danger zone')).not.toBeInTheDocument();
       expect(screen.queryByText('Delete pipeline')).not.toBeInTheDocument();

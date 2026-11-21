@@ -10,8 +10,13 @@ import { PageComponent } from '../page';
  * Formats a list of enabled enterprise feature names into a human-readable string.
  * Returns undefined if no features are enabled.
  */
-function formatEnabledFeatures(features: { name: string; enabled: boolean }[]): string | undefined {
-  const enabledFeatures = features.filter((f) => f.enabled).map((f) => f.name);
+function formatEnabledFeatures(
+  features: {
+    name: string;
+    enabled: boolean;
+  }[]
+): string | undefined {
+  const enabledFeatures = features.flatMap((f) => (f.enabled ? [f.name] : []));
 
   if (enabledFeatures.length === 0) {
     return;
@@ -25,10 +30,9 @@ function formatEnabledFeatures(features: { name: string; enabled: boolean }[]): 
     return `${enabledFeatures[0]} and ${enabledFeatures[1]}`;
   }
 
-  return `${enabledFeatures.slice(0, -1).join(', ')}, and ${enabledFeatures.at(-1)}`;
+  return `${enabledFeatures.slice(0, -1).join(', ')}, and ${String(enabledFeatures.at(-1))}`;
 }
-
-export default class LicenseExpiredPage extends PageComponent {
+export class LicenseExpiredPage extends PageComponent {
   initPage(): void {
     this.refreshData();
     appGlobal.onRefresh = () => this.refreshData();
@@ -56,7 +60,7 @@ export default class LicenseExpiredPage extends PageComponent {
 
             {/* Subtext */}
             <p className="text-body-lg">
-              {enabledFeaturesText
+              {enabledFeaturesText !== null && enabledFeaturesText !== undefined && enabledFeaturesText !== ''
                 ? `You were using ${enabledFeaturesText} and your license has expired. To continue using these features, you will need`
                 : 'Your license has expired. To continue using enterprise features, you will need'}{' '}
               an{' '}

@@ -15,7 +15,9 @@ function removeModal(id: number) {
 }
 
 export function openModal<P extends object>(
-  component: React.FunctionComponent<P> | React.ComponentClass<P, Record<string, never>>,
+  component:
+    | React.FunctionComponent<Omit<P, 'closeModal'> & { closeModal: () => void }>
+    | React.ComponentClass<Omit<P, 'closeModal'> & { closeModal: () => void }, Record<string, never>>,
   props: Omit<P, 'closeModal'>
 ) {
   const id = nextModalId;
@@ -25,7 +27,7 @@ export function openModal<P extends object>(
     closeModal: () => removeModal(id),
   };
 
-  const element = React.createElement(component, p as P, []);
+  const element = React.createElement(component, p, []);
   modals.push({ element, id });
   setModalsState?.([...modals]);
 }

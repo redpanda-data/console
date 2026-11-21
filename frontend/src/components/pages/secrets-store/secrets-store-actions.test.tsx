@@ -9,7 +9,10 @@ import {
   Scope,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { listResources } from 'protogen/redpanda/api/dataplane/v1/secret-SecretService_connectquery';
-import { render, screen, waitFor } from 'test-utils';
+
+import { SecretsStoreActionsCell } from './secrets-store-actions';
+import type { SecretTableRow } from './secrets-store-list-page';
+import { render, screen, waitFor } from '../../../test-utils';
 
 global.ResizeObserver = class ResizeObserver {
   observe() {
@@ -24,9 +27,6 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 Element.prototype.scrollIntoView = rs.fn();
-
-import { SecretsStoreActionsCell } from './secrets-store-actions';
-import type { SecretTableRow } from './secrets-store-list-page';
 
 const DELETE_TEXT_REGEX = /delete/i;
 const CONFIRMATION_PLACEHOLDER_REGEX = /type "delete" to confirm/i;

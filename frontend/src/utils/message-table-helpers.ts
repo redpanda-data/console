@@ -14,15 +14,18 @@ import type { TopicMessage } from '../state/rest-interfaces';
 /**
  * Case-insensitive substring match against a message's offset, key JSON, and value JSON.
  */
-export function isFilterMatch(str: string, m: TopicMessage): boolean {
+export function isFilterMatch(
+  str: string,
+  m: Pick<TopicMessage, 'offset'> & Partial<Pick<TopicMessage, 'keyJson' | 'valueJson'>>
+): boolean {
   const lowerStr = str.toLowerCase();
   if (m.offset.toString().toLowerCase().includes(lowerStr)) {
     return true;
   }
-  if (m.keyJson?.toLowerCase().includes(lowerStr)) {
+  if (m.keyJson?.toLowerCase().includes(lowerStr) === true) {
     return true;
   }
-  if (m.valueJson?.toLowerCase().includes(lowerStr)) {
+  if (m.valueJson?.toLowerCase().includes(lowerStr) === true) {
     return true;
   }
   return false;

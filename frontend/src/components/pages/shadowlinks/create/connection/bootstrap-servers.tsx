@@ -61,7 +61,7 @@ export const BootstrapServers = () => {
                 type="button"
                 variant="outline"
               >
-                <Trash className="h-4 w-4" />
+                <Trash className="size-4" />
               </Button>
             )}
           </div>

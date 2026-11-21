@@ -32,7 +32,7 @@ import { useUISettingsStore } from '../../../state/ui';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import { encodeURIComponentPercents } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 import { SearchInput } from '../../misc/search-input';
 import { PageComponent, type PageInitHelper } from '../page';
 
@@ -52,10 +52,9 @@ const statusIconToneVariants = cva('contents', {
 const StatusIconTone = ({
   tone,
   children,
-}: Required<VariantProps<typeof statusIconToneVariants>> & { children: ReactNode }) => (
-  <span className={statusIconToneVariants({ tone })}>{children}</span>
-);
-
+}: Required<VariantProps<typeof statusIconToneVariants>> & {
+  children: ReactNode;
+}) => <span className={statusIconToneVariants({ tone })}>{children}</span>;
 /**
  * Navigates to /rp-connect/create (legacy flow)
  */
@@ -140,6 +139,7 @@ export const PipelineStatus = (p: { status: Pipeline_State }) => {
           Error
         </div>
       );
+    case Pipeline_State.DRAFT:
     default:
       return (
         <div className="flex items-center gap-2">
@@ -180,11 +180,7 @@ const columns: DataTableColumnDef<Pipeline>[] = [
     id: 'id',
     enableSorting: false,
     cell: ({ row: { original } }) => (
-      <Link
-        params={{ pipelineId: encodeURIComponentPercents(original.id) }}
-        search={{} as never}
-        to="/rp-connect/$pipelineId"
-      >
+      <Link params={{ pipelineId: encodeURIComponentPercents(original.id) }} search={{}} to="/rp-connect/$pipelineId">
         <Text>{original.id}</Text>
       </Link>
     ),
@@ -196,11 +192,7 @@ const columns: DataTableColumnDef<Pipeline>[] = [
     // The Registry DataTable ignores column sizes.
     cell: ({ row: { original } }) => (
       <div className="w-screen max-w-full">
-        <Link
-          params={{ pipelineId: encodeURIComponentPercents(original.id) }}
-          search={{} as never}
-          to="/rp-connect/$pipelineId"
-        >
+        <Link params={{ pipelineId: encodeURIComponentPercents(original.id) }} search={{}} to="/rp-connect/$pipelineId">
           <Text className="wrap-break-word whitespace-break-spaces">{original.displayName}</Text>
         </Link>
       </div>
@@ -242,11 +234,11 @@ const columns: DataTableColumnDef<Pipeline>[] = [
                 });
                 await pipelinesApi.refreshPipelines(true);
               })
-              .catch((err) => {
+              .catch((error: unknown) => {
                 showToast({
                   status: 'error',
                   title: 'Failed to delete pipeline',
-                  description: String(err),
+                  description: String(error),
                 });
               });
           });
@@ -274,8 +266,8 @@ class RpConnectPipelinesList extends PageComponent<{}> {
       return;
     }
 
-    pipelinesApi.refreshPipelines(force).catch((err) => {
-      if (String(err).includes('404')) {
+    pipelinesApi.refreshPipelines(force).catch((error: unknown) => {
+      if (String(error).includes('404')) {
         // Hacky special handling for OSS version, it is possible for the /endpoints request to not complete in time for this to render
         // so in this case there would be an error shown because we were too fast (with rendering, or the req was too slow)
         // We don't want to show an error in that case
@@ -286,7 +278,7 @@ class RpConnectPipelinesList extends PageComponent<{}> {
         showToast({
           status: 'error',
           title: 'Failed to load pipelines',
-          description: String(err),
+          description: String(error),
         });
       }
     });
@@ -332,7 +324,7 @@ const RpConnectPipelinesListContent: FC = () => {
 
   return (
     <PageContent>
-      {pipelinesApi.pipelines.length !== 0 && (
+      {pipelinesApi.pipelines.length > 0 && (
         <div className="my-5 flex flex-col gap-2">
           <LegacyCreatePipelineButton />
           <SearchInput
@@ -359,4 +351,4 @@ const RpConnectPipelinesListContent: FC = () => {
   );
 };
 
-export default RpConnectPipelinesList;
+export { RpConnectPipelinesList };

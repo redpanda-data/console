@@ -43,6 +43,7 @@ import { type KeyboardEvent, type ReactElement, type ReactNode, type SyntheticEv
 import { type Control, useForm, useWatch } from 'react-hook-form';
 import { showToast } from 'utils/toast.utils';
 
+import type { PipelineStyle } from './pipeline-style';
 import {
   backstopHint,
   DEFAULT_IDLE,
@@ -53,12 +54,16 @@ import {
   stopFormSchema,
   stopFormState,
 } from './stop-form';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { getConnectorDocsUrl } from '../utils/connector-docs';
 import type { InputEndBehavior, InputEndKind } from '../utils/input-end-behavior';
 import { FLOW_STOP_ROW_H } from '../utils/pipeline-flow-layout';
-import { CHILDLESS_WRAPPER, type StopSlot } from '../utils/pipeline-flow-parser';
+import { CHILDLESS_WRAPPER, type StopSlot } from '../utils/pipeline-flow-nodes';
 import { CODE_SPAN_RE, type StopConditionDraft, stopRowText, stopSummary, withCaveat } from '../utils/read-until';
-import { isStopConditionSet, READ_UNTIL } from '../utils/yaml';
+import { isStopConditionSet, READ_UNTIL } from '../utils/yaml-values';
+import './pipeline-editor.css';
+
+const STOP_ROW_STYLE: PipelineStyle = { '--pipeline-stop-row-height': `${FLOW_STOP_ROW_H}px` };
 
 const IDLE_PRESETS = ['10s', '30s', '1m', '5m'] as const;
 
@@ -75,6 +80,8 @@ function endTone(kind: InputEndKind): EndTone {
       return 'natural';
     case 'invalid':
       return 'invalid';
+    case 'continuous':
+    case 'unknown':
     default:
       return 'open';
   }
@@ -161,7 +168,7 @@ const ModeOption = ({
       <Label className={cn('items-start', disabled ? 'cursor-not-allowed' : 'cursor-pointer')} htmlFor={id}>
         {/* mr-0.5 widens the label's gap to line the text up with the fields below. */}
         <RadioGroupItem
-          aria-describedby={description ? `${id}-description` : undefined}
+          aria-describedby={Boolean(description) ? `${id}-description` : undefined}
           aria-label={title}
           className="mt-0.5 mr-0.5"
           disabled={disabled}
@@ -170,14 +177,14 @@ const ModeOption = ({
         />
         <span className="flex min-w-0 flex-col gap-0.5">
           <span className="text-body leading-tight font-medium">{title}</span>
-          {description ? (
+          {Boolean(description) ? (
             <span className="text-body-sm font-normal text-muted-foreground" id={`${id}-description`}>
               {description}
             </span>
           ) : null}
         </span>
       </Label>
-      {selected && children ? (
+      {selected && Boolean(children) ? (
         // Arrow keys in these fields move the caret or focus, not the radio group's choice.
         // biome-ignore lint/a11y/noStaticElementInteractions: it only stops arrow keys bubbling up.
         // biome-ignore lint/a11y/noNoninteractiveElementInteractions: it only stops arrow keys bubbling up.
@@ -224,7 +231,7 @@ const IdleField = ({ control }: FormPartProps) => (
 );
 
 function noneOption(own: InputEndBehavior, isGroup?: boolean): { title: string; description: string } {
-  if (isGroup) {
+  if (isGroup === true) {
     const title = own.kind === 'natural' ? 'When all its inputs have stopped' : 'No stop condition of its own';
     return { title, description: 'Each input keeps its own stop condition.' };
   }
@@ -242,7 +249,7 @@ function noneOption(own: InputEndBehavior, isGroup?: boolean): { title: string; 
 
 // What happens today; `editing` adds the nudge to the form below.
 function currentBehavior(slot: StopSlot, effective: InputEndBehavior, editing = false): string {
-  if (slot.locked) {
+  if (isNonEmptyString(slot.locked)) {
     // A wrapper with no input says so in its lock; any other lock follows the input's own reason.
     return slot.locked === CHILDLESS_WRAPPER
       ? slot.locked
@@ -259,7 +266,8 @@ function currentBehavior(slot: StopSlot, effective: InputEndBehavior, editing = 
     return withCaveat(editing ? `${effective.reason} Choose how it should stop below.` : effective.reason, effective);
   }
   const own = slot.ownEnd;
-  const text = !slot.condition && own.finiteHint ? `${effective.reason} ${own.finiteHint}` : effective.reason;
+  const text =
+    !slot.condition && isNonEmptyString(own.finiteHint) ? `${effective.reason} ${own.finiteHint}` : effective.reason;
   return withCaveat(text, effective);
 }
 
@@ -333,13 +341,13 @@ const StopExtras = ({
     />
     {alsoIdle ? <IdleField control={control} /> : null}
     {restartOffered ? <RestartToggle control={control} /> : null}
-    {hint ? <WarningLine text={hint} /> : null}
+    {hint !== null && hint !== undefined && hint !== '' ? <WarningLine text={hint} /> : null}
   </div>
 );
 
 const DocsLink = () => {
   const docsUrl = getConnectorDocsUrl('input', READ_UNTIL);
-  return docsUrl ? (
+  return docsUrl !== null && docsUrl !== undefined && docsUrl !== '' ? (
     <a
       className="inline-flex items-center gap-1 text-body-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
       href={docsUrl}
@@ -356,7 +364,7 @@ const StopEditorFooter = ({ ownsEnd, onCancel }: { ownsEnd?: boolean; onCancel: 
   <div className="flex flex-col gap-3 border-t border-border px-4 py-3">
     <p className="flex gap-2 text-body-sm text-muted-foreground">
       <PowerOff className="mt-0.5 size-3.5 shrink-0" />
-      {ownsEnd
+      {ownsEnd === true
         ? 'This stops all of its inputs at once, whatever their own stop conditions. Once the pipeline’s inputs have stopped, it stops itself and uses no compute.'
         : 'Once every input has stopped, the pipeline stops itself and uses no compute until it’s started again.'}
     </p>
@@ -430,7 +438,7 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
                       />
                       <ModeOption
                         selected={mode === 'count'}
-                        title={batches ? 'After a number of batches' : 'After a number of messages'}
+                        title={batches === true ? 'After a number of batches' : 'After a number of messages'}
                         value="count"
                       >
                         <FormField
@@ -451,12 +459,12 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
                                   }
                                 />
                                 <span className="text-body-sm text-muted-foreground">
-                                  {batches ? 'batches' : 'messages'}
+                                  {batches === true ? 'batches' : 'messages'}
                                 </span>
                               </div>
                               <FormMessage role="alert" />
                               <FormDescription>
-                                {batches
+                                {batches === true
                                   ? 'This input reads in batches, and each counts once, so it can read many more messages.'
                                   : 'An input that batches counts each batch once.'}
                               </FormDescription>
@@ -473,7 +481,7 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
                       >
                         <IdleField control={control} />
                         {restartOffered ? <RestartToggle control={control} /> : null}
-                        {hint ? <WarningLine text={hint} /> : null}
+                        {hint !== null && hint !== undefined && hint !== '' ? <WarningLine text={hint} /> : null}
                       </ModeOption>
                       <ModeOption selected={mode === 'check'} title="When a message matches" value="check">
                         <FormField
@@ -498,7 +506,7 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
                               </div>
                               <FormMessage role="alert" />
                               <FormDescription>
-                                {batches
+                                {batches === true
                                   ? 'A Bloblang query on the first message of each batch this input reads; the matching batch is the last one read.'
                                   : 'A Bloblang query; the matching message is the last one read.'}
                               </FormDescription>
@@ -514,7 +522,7 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
             </FormItem>
           )}
         />
-        <StopEditorFooter onCancel={onClose} ownsEnd={isGroup && mode !== 'none'} />
+        <StopEditorFooter onCancel={onClose} ownsEnd={isGroup === true && mode !== 'none'} />
       </form>
     </Form>
   );
@@ -529,7 +537,7 @@ export function StopConditionEditor({
   onApply,
   onClose,
 }: StopConditionEditorProps) {
-  const editing = Boolean(onApply) && !(readOnly || slot.locked);
+  const editing = Boolean(onApply) && !(readOnly === true || isNonEmptyString(slot.locked));
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-1 border-b border-border px-4 py-3">
@@ -620,7 +628,7 @@ type StopRowProps = {
 export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProps & { isGroup?: boolean }) {
   const tone = endTone(effective.kind);
   const Icon = TONE_ICON[tone];
-  const editable = Boolean(onApply) && !slot.locked;
+  const editable = Boolean(onApply) && !isNonEmptyString(slot.locked);
   const { eyebrow, text } = stopRowText(name, slot, effective, { isGroup, editable });
   const sentence = stopSummary(slot, effective).long;
   return (
@@ -634,20 +642,27 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
       slot={slot}
       tooltip={sentence}
       trigger={
-        <button
+        <Button
           aria-label={`${eyebrow} ${text}: ${editable ? 'edit the stop condition' : 'stop condition'} for ${name}`}
           className={cn(
             // -mt-px folds its top rule into the header's when nothing sits between them.
-            'nodrag nopan -mt-px flex w-full cursor-pointer items-center gap-1.5 border-t border-border/60 px-3 text-left text-body-sm transition-colors hover:bg-muted/50',
-            tone === 'open' && 'text-muted-foreground',
-            tone === 'invalid' && 'text-destructive'
+
+            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+            'pipeline-stop-row nodrag nopan -mt-px flex w-full cursor-pointer items-center gap-1.5 border-t border-border/60 px-3 text-left text-body-sm transition-colors hover:bg-muted/50',
+            tone === 'open' &&
+              // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+              'text-muted-foreground',
+            tone === 'invalid' &&
+              // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+              'text-destructive'
           )}
           data-end={effective.kind}
           data-testid="stop-row"
           // A quick action: opening it must not also select the card it sits on.
           onClick={stopReactBubble}
-          style={{ height: FLOW_STOP_ROW_H }}
+          style={STOP_ROW_STYLE}
           type="button"
+          variant="unstyled"
         >
           <TonedIcon
             className="size-3.5 shrink-0"
@@ -660,7 +675,7 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
           <span className="min-w-0 flex-1 animate-in truncate duration-200 fade-in" key={text}>
             {text}
           </span>
-        </button>
+        </Button>
       }
     />
   );
@@ -700,7 +715,7 @@ export function StopConditionSection({
           <RichText text={sentence} />
         </span>
       </div>
-      {onApply && !slot.locked ? (
+      {onApply && !isNonEmptyString(slot.locked) ? (
         <StopConditionPopover
           align="end"
           effective={effective}

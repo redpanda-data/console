@@ -22,15 +22,16 @@ import type { FC } from 'react';
 import { createContext, useContext, useState } from 'react';
 import { toast } from 'sonner';
 
-import ErrorResult from '../../../../components/misc/error-result';
+import { ErrorResult } from '../../../../components/misc/error-result';
 import { type SimpleAcl, useListACLAsPrincipalGroups } from '../../../../react-query/api/acl';
 import { api } from '../../../../state/backend-api';
 import { AclRequestDefault } from '../../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
+import { isPresent } from '../../../../utils/type-guards';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../../constants';
 import { SearchInput } from '../../../misc/search-input';
-import Section from '../../../misc/section';
+import { Section } from '../../../misc/section';
 import { Alert, AlertDescription } from '../../../redpanda-ui/components/alert';
 import { Badge } from '../../../redpanda-ui/components/badge';
 import { Button } from '../../../redpanda-ui/components/button';
@@ -65,10 +66,10 @@ const succeedsOrReports = async (
   try {
     await action();
     return true;
-  } catch (err: unknown) {
+  } catch (error: unknown) {
     // biome-ignore lint/suspicious/noConsole: error logging
-    console.error(failureMessage, { error: err });
-    onFailure({ err });
+    console.error(failureMessage, { error });
+    onFailure({ err: error });
     return false;
   }
 };
@@ -91,8 +92,9 @@ const deleteAclRecord = async (ctx: AclRowActionsContextValue, record: SimpleAcl
   }
   await Promise.allSettled([api.refreshAcls(AclRequestDefault, true), invalidateUsers()]);
 };
-
-const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
+const AclRowActions: FC<{
+  record: SimpleAcl;
+}> = ({ record }) => {
   const ctx = useContext(AclRowActionsContext);
   if (!ctx) {
     return null;
@@ -115,7 +117,7 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
       <DropdownMenuTrigger
         render={
           <Button aria-label={`Delete ACL for ${record.principalName}`} size="icon-sm" variant="destructive-ghost">
-            <TrashIcon className="h-4 w-4" />
+            <TrashIcon className="size-4" />
           </Button>
         }
       />
@@ -198,7 +200,9 @@ const getAclPrincipals = (principalGroups: SimpleAcl[], searchQuery: string) =>
 type AclsTabBodyProps = {
   principalGroups: SimpleAcl[];
   rowActions: AclRowActionsContextValue;
-  aclFailed: { err: unknown } | null;
+  aclFailed: {
+    err: unknown;
+  } | null;
   onDismissFailure: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -274,12 +278,14 @@ const AclsTabBody = ({
 
 // Page state lives above the error and loading returns so a failed refetch does not reset it.
 const AclsTabContent: FC = () => {
-  const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
+  const [aclFailed, setAclFailed] = useState<{
+    err: unknown;
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const rowActions = useAclRowActions(setAclFailed);
   const { data: principalGroups, isLoading, isError, error } = useListACLAsPrincipalGroups();
 
-  if (isError && error) {
+  if (isError && isPresent(error)) {
     return <ErrorResult error={error} />;
   }
 

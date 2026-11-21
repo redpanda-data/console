@@ -37,7 +37,7 @@ export const StartOffsetDateTimePicker = ({ topicName, value, onChange, inline }
 
   // Initialize timestamp on mount if not set by user
   useEffect(() => {
-    if (!searchParams?.startTimestampWasSetByUser && value === -1) {
+    if (!(searchParams?.startTimestampWasSetByUser === true) && value === -1) {
       // so far, the user did not change the startTimestamp, so we set it to 'now'
       onChangeRef.current(Date.now());
     }

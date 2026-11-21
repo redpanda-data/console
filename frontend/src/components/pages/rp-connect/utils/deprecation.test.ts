@@ -9,21 +9,23 @@
  * by the Apache License, Version 2.0
  */
 
-import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { create } from '@bufbuild/protobuf';
+import { ComponentStatus, type FieldSpec, FieldSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
+import { createComponentFixture } from './__fixtures__/component-spec';
 import { deprecationMessage, deprecationNotice, findDeprecatedUsages } from './deprecation';
-import { describe, expect, it } from 'bun:test';
-import type { ConnectComponentSpec, ConnectComponentType, RawFieldSpec } from '../types/schema';
+import { describe, expect, test } from 'bun:test';
+import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
 
-const field = (name: string, type: string, kind = 'scalar', children?: RawFieldSpec[]) =>
-  ({ name, type, kind, children }) as RawFieldSpec;
+const field = (name: string, type: string, kind = 'scalar', children?: FieldSpec[]) =>
+  create(FieldSpecSchema, { name, type, kind, children });
 
 const spec = (
   name: string,
   type: ConnectComponentType,
   status = ComponentStatus.STABLE,
   config = field('', 'object')
-): ConnectComponentSpec => ({ name, type, status, config }) as ConnectComponentSpec;
+): ConnectComponentSpec => createComponentFixture({ name, type, status, config });
 
 const DEPRECATED = ComponentStatus.DEPRECATED;
 const KAFKA_FRANZ_INPUT = spec('kafka_franz', 'input', DEPRECATED);
@@ -49,32 +51,34 @@ const CATALOG = [
 ];
 
 describe('deprecationNotice', () => {
-  it('names the replacement and links its docs', () => {
-    expect(deprecationNotice(KAFKA_FRANZ_INPUT, CATALOG)).toEqual({
+  test('names the replacement and links its docs', () => {
+    const notice = deprecationNotice(KAFKA_FRANZ_INPUT, CATALOG);
+    const { docsUrl, ...ref } = notice;
+    expect(ref).toEqual({
       name: 'kafka_franz',
       type: 'input',
       replacement: { name: 'redpanda', type: 'input' },
-      docsUrl: expect.stringContaining('/inputs/redpanda/'),
     });
+    expect(docsUrl).toContain('/inputs/redpanda/');
   });
 
-  it('keeps a replacement of another component type', () => {
+  test('keeps a replacement of another component type', () => {
     expect(deprecationNotice(JIRA_PROCESSOR, CATALOG).replacement).toEqual({ name: 'jira', type: 'input' });
   });
 
-  it('drops a replacement this dataplane does not serve, and links the component’s own docs', () => {
+  test('drops a replacement this dataplane does not serve, and links the component’s own docs', () => {
     const notice = deprecationNotice(KAFKA_FRANZ_INPUT, [KAFKA_FRANZ_INPUT]);
     expect(notice.replacement).toBeUndefined();
     expect(notice.docsUrl).toContain('/inputs/kafka_franz/');
   });
 
-  it('drops a replacement that is itself deprecated', () => {
+  test('drops a replacement that is itself deprecated', () => {
     expect(deprecationNotice(KAFKA_FRANZ_INPUT, [spec('redpanda', 'input', DEPRECATED)]).replacement).toBeUndefined();
   });
 });
 
 describe('deprecationMessage', () => {
-  it('names the replacement and its type, or says it may be removed', () => {
+  test('names the replacement and its type, or says it may be removed', () => {
     expect(deprecationMessage(deprecationNotice(JIRA_PROCESSOR, CATALOG))).toBe(
       'jira is deprecated. Use the jira input instead.'
     );
@@ -88,20 +92,20 @@ const usagesIn = (yaml: string) =>
   findDeprecatedUsages(yaml, CATALOG).map((u) => `${u.notice.type}:${u.notice.name}@${u.range.startLineNumber}`);
 
 describe('findDeprecatedUsages', () => {
-  it('finds nothing when the config uses no deprecated component', () => {
+  test('finds nothing when the config uses no deprecated component', () => {
     expect(usagesIn('input:\n  generate:\n    mapping: root = {}\n')).toEqual([]);
   });
 
-  it('points at the component key, whatever keys come before it', () => {
+  test('points at the component key, whatever keys come before it', () => {
     const [usage] = findDeprecatedUsages('input:\n  label: source\n  kafka_franz:\n    topics: [a]\n', CATALOG);
     expect(usage.range).toEqual({ startLineNumber: 3, startColumn: 3, endLineNumber: 3, endColumn: 14 });
   });
 
-  it('matches by component type, not just name', () => {
+  test('matches by component type, not just name', () => {
     expect(usagesIn('input:\n  jira: {}\noutput:\n  kafka:\n    topic: a\n')).toEqual(['output:kafka@4']);
   });
 
-  it('follows component-typed fields into nested components', () => {
+  test('follows component-typed fields into nested components', () => {
     const yaml = [
       'input:',
       '  read_until:',
@@ -132,7 +136,7 @@ describe('findDeprecatedUsages', () => {
     ]);
   });
 
-  it('keeps flagging the key while its value is mid-edit', () => {
+  test('keeps flagging the key while its value is mid-edit', () => {
     expect(usagesIn('input:\n  kafka_franz: [\n')).toEqual(['input:kafka_franz@2']);
   });
 });

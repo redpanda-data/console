@@ -33,9 +33,9 @@ describe('topic-properties-config', () => {
 
       expect(retentionProps).toBeDefined();
       expect(retentionProps).toHaveLength(3);
-      expect(retentionProps?.map((p) => p.name)).toEqual(
-        expect.arrayContaining(['retention.bytes', 'retention.ms', 'delete.retention.ms'])
-      );
+      for (const expected of ['retention.bytes', 'retention.ms', 'delete.retention.ms']) {
+        expect(retentionProps?.map((p) => p.name)).toContain(expected);
+      }
     });
 
     test('should group Compaction properties correctly', () => {
@@ -44,9 +44,9 @@ describe('topic-properties-config', () => {
 
       expect(compactionProps).toBeDefined();
       expect(compactionProps?.length).toBeGreaterThan(0);
-      expect(compactionProps?.map((p) => p.name)).toEqual(
-        expect.arrayContaining(['cleanup.policy', 'min.compaction.lag.ms', 'max.compaction.lag.ms'])
-      );
+      for (const expected of ['cleanup.policy', 'min.compaction.lag.ms', 'max.compaction.lag.ms']) {
+        expect(compactionProps?.map((p) => p.name)).toContain(expected);
+      }
     });
 
     test('should return undefined for non-existent categories', () => {
@@ -67,17 +67,17 @@ describe('topic-properties-config', () => {
     test('should include expected default properties', () => {
       const result = getDefaultProperties();
 
-      expect(result).toEqual(
-        expect.arrayContaining([
-          'retention.bytes',
-          'retention.ms',
-          'delete.retention.ms',
-          'compression.type',
-          'replication.factor',
-          'min.compaction.lag.ms',
-          'max.compaction.lag.ms',
-        ])
-      );
+      for (const expected of [
+        'retention.bytes',
+        'retention.ms',
+        'delete.retention.ms',
+        'compression.type',
+        'replication.factor',
+        'min.compaction.lag.ms',
+        'max.compaction.lag.ms',
+      ]) {
+        expect(result).toContain(expected);
+      }
     });
 
     test('should only return property names as strings', () => {

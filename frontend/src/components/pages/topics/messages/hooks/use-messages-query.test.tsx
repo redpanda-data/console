@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core'
 import { act, renderHook } from '@testing-library/react';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
 import { appGlobal } from 'state/app-global';
-import { PartitionOffsetOrigin } from 'state/ui';
 
 import type { MessageSearchParams, MessageSearchResult } from './use-message-search';
 import { isContinuousPagingActive, useAutoSearch, useSearchRunner } from './use-messages-query';
+import { PartitionOffsetOrigin } from '../../../../../types/topic-settings';
 
 const baseParams: MessageSearchParams = {
   startOffset: PartitionOffsetOrigin.EndMinusResults,
@@ -80,7 +80,7 @@ describe('search runner hooks', () => {
       await advance(100);
 
       rerender({ searchParams: { ...baseParams, partitionId: 2 } });
-      expect(stop).toHaveBeenCalled();
+      expect(stop).toHaveBeenCalledWith();
       await advance(100);
       expect(start).toHaveBeenLastCalledWith({ ...baseParams, partitionId: 2 });
     });

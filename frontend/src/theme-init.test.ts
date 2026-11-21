@@ -17,7 +17,7 @@ import {
   isDarkModeAvailable,
   UNAVAILABLE_THEME_INIT,
 } from './theme-init';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
@@ -40,11 +40,11 @@ const bootTheme = (stored: Record<string, string>) => {
 };
 
 describe('index.html boot theme', () => {
-  it('inlines the registry theme script for each availability, so the first paint resolves the theme the app will', () => {
+  test('inlines the registry theme script for each availability, so the first paint resolves the theme the app will', () => {
     expect(indexHtml).toContain(`<script>${bootThemeScript}</script>`);
   });
 
-  it('follows the stored choice, else the OS, only while dark mode is available', () => {
+  test('follows the stored choice, else the OS, only while dark mode is available', () => {
     expect(bootTheme({ [DARK_MODE_AVAILABLE_KEY]: 'true', 'redpanda-ui-theme': 'light' })).toBe('light');
     expect(bootTheme({ [DARK_MODE_AVAILABLE_KEY]: 'true' })).toBe('dark');
     expect(bootTheme({ 'redpanda-ui-theme': 'dark' })).toBe('light');
@@ -52,7 +52,7 @@ describe('index.html boot theme', () => {
 });
 
 describe('dark-mode availability', () => {
-  it('records the flag now and again when the page is left, until torn down', () => {
+  test('records the flag now and again when the page is left, until torn down', () => {
     let enabled = true;
     const teardown = installDarkModeAvailabilitySync(() => enabled);
     expect(localStorage.getItem(DARK_MODE_AVAILABLE_KEY)).toBe('true');
@@ -67,7 +67,7 @@ describe('dark-mode availability', () => {
     expect(localStorage.getItem(DARK_MODE_AVAILABLE_KEY)).toBeNull();
   });
 
-  it('reads the recorded availability once per page load', () => {
+  test('reads the recorded availability once per page load', () => {
     localStorage.setItem(DARK_MODE_AVAILABLE_KEY, 'true');
     expect(isDarkModeAvailable()).toBe(true);
 

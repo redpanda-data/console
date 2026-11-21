@@ -12,16 +12,16 @@ test.describe('licenses', () => {
   });
 
   test('should be able to upload new license', async ({ page, skip }) => {
-    if (process.env.TEST_DATA_VALID_LICENSE === undefined) {
+    const licenseContent = process.env.TEST_DATA_VALID_LICENSE;
+    if (licenseContent === undefined) {
       skip();
+      return;
     }
-    const licenseContent = process.env.TEST_DATA_VALID_LICENSE as string;
 
     await page.goto('/overview', {
       waitUntil: 'domcontentloaded',
     });
-    const licensingEl = page.locator('a[href="/upload-license"]:has-text("Upload new license")');
-    licensingEl.click();
+    await page.locator('a[href="/upload-license"]:has-text("Upload new license")').click();
 
     await page.waitForURL('/upload-license');
 

@@ -9,25 +9,34 @@
  * by the Apache License, Version 2.0
  */
 
-import { Code, ConnectError } from '@connectrpc/connect';
-import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { Code, ConnectError, createClient, createRouterTransport, type MethodImpl } from '@connectrpc/connect';
+import { afterEach, beforeEach, describe, expect, type Mock, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { AuthenticationMethod, SASLMechanism } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
-import { act, renderWithFileRoutes, screen } from 'test-utils';
+import {
+  AuthenticationMethod,
+  AuthenticationService,
+  SASLMechanism,
+} from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
 
-import LoginPage from './login';
-import { config as appConfig } from '../../config';
+import { LoginPage } from './login';
+import { config as appConfig } from '../../runtime-config';
+import { act, renderWithFileRoutes, screen } from '../../test-utils';
 
 describe('the LoginPage', () => {
   const initialAuthClient = appConfig.authenticationClient;
-  const loginSaslScram = rs.fn();
+  const loginSaslScram = rs.fn<MethodImpl<typeof AuthenticationService.method.loginSaslScram>>();
 
   beforeEach(() => {
     loginSaslScram.mockReset();
-    appConfig.authenticationClient = {
-      listAuthenticationMethods: () => Promise.resolve({ methods: [AuthenticationMethod.BASIC] }),
-      loginSaslScram,
-    } as unknown as typeof appConfig.authenticationClient;
+    appConfig.authenticationClient = createClient(
+      AuthenticationService,
+      createRouterTransport((router) => {
+        router.rpc(AuthenticationService.method.listAuthenticationMethods, () => ({
+          methods: [AuthenticationMethod.BASIC],
+        }));
+        router.rpc(AuthenticationService.method.loginSaslScram, loginSaslScram);
+      })
+    );
   });
 
   afterEach(() => {
@@ -55,7 +64,7 @@ describe('the LoginPage', () => {
   });
 });
 
-function rejectNextLogin(login: ReturnType<typeof rs.fn>) {
+function rejectNextLogin(login: Mock<MethodImpl<typeof AuthenticationService.method.loginSaslScram>>) {
   let reject!: (reason: unknown) => void;
   login.mockImplementation(
     () =>
@@ -74,15 +83,16 @@ async function submitCredentials(user: ReturnType<typeof userEvent.setup>, usern
   return submit;
 }
 
-function expectSingleLoginRequest(login: ReturnType<typeof rs.fn>, submit: HTMLElement) {
+function expectSingleLoginRequest(
+  login: Mock<MethodImpl<typeof AuthenticationService.method.loginSaslScram>>,
+  submit: HTMLElement
+) {
   // In flight: one request went out and the button cannot fire a second one.
   expect(login).toHaveBeenCalledTimes(1);
-  expect(login).toHaveBeenCalledWith(
-    expect.objectContaining({
-      username: 'e2euser',
-      password: 'not-the-password',
-      mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
-    })
-  );
+  expect(login.mock.calls[0][0]).toMatchObject({
+    username: 'e2euser',
+    password: 'not-the-password',
+    mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+  });
   expect(submit).toBeDisabled();
 }

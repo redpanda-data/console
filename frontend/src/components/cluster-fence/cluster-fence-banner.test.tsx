@@ -13,17 +13,17 @@ import { createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { screen } from '@testing-library/react';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { renderWithFileRoutes } from 'test-utils';
+
+import { fenceStatusFixture } from './__fixtures__/queries';
+import { ClusterFenceBanner } from './cluster-fence-banner';
+import type { BrokerProgress, FencePhase, FenceSummary } from './cluster-fence-model';
 
 rs.mock('react-query/api/cluster-fence', () => {
   const actual = rs.requireActual<typeof import('react-query/api/cluster-fence')>('react-query/api/cluster-fence');
   return { ...actual, useClusterFenceStatusQuery: rs.fn() };
 });
-
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-
-import { ClusterFenceBanner } from './cluster-fence-banner';
-import type { BrokerProgress, FencePhase, FenceSummary } from './cluster-fence-model';
 
 // The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
 const routeLoaderTransport = createRouterTransport(({ rpc }) => {
@@ -34,20 +34,22 @@ const NOW = Date.UTC(2026, 5, 1, 12);
 const MINUTE = 60 * 1000;
 
 const mockStatus = (phase: FencePhase, overrides: Partial<FenceSummary> = {}, brokers: BrokerProgress[] = []) =>
-  rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-    known: true,
-    available: true,
-    summary: {
-      phase,
-      revision: 3n,
-      stateChangedAt: new Date(NOW - 12 * MINUTE),
-      exemptPrincipals: ['shadow-orders'],
-      allowAllReads: false,
-      ...overrides,
-    },
-    brokers,
-    ownCopies: [],
-  } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+  rs.mocked(useClusterFenceStatusQuery).mockReturnValue(
+    fenceStatusFixture({
+      known: true,
+      available: true,
+      summary: {
+        phase,
+        revision: 3n,
+        stateChangedAt: new Date(NOW - 12 * MINUTE),
+        exemptPrincipals: ['shadow-orders'],
+        allowAllReads: false,
+        ...overrides,
+      },
+      brokers,
+      ownCopies: [],
+    })
+  );
 
 const renderBanner = (initialLocation = '/topics') =>
   renderWithFileRoutes(<ClusterFenceBanner />, { initialLocation, transport: routeLoaderTransport });
@@ -103,16 +105,18 @@ describe('the ClusterFenceBanner', () => {
   });
 
   test('with no controller leader, reports each broker’s own copy and whether writes are rejected', () => {
-    rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-      known: false,
-      blocking: true,
-      summary: { phase: 'unfenced', revision: -1n, exemptPrincipals: [], allowAllReads: false },
-      brokers: [],
-      ownCopies: [
-        { nodeId: 1, phase: 'fenced', revision: 4n },
-        { nodeId: 2, errorMessage: 'timed out' },
-      ],
-    } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+    rs.mocked(useClusterFenceStatusQuery).mockReturnValue(
+      fenceStatusFixture({
+        known: false,
+        blocking: true,
+        summary: { phase: 'unfenced', revision: -1n, exemptPrincipals: [], allowAllReads: false },
+        brokers: [],
+        ownCopies: [
+          { nodeId: 1, phase: 'fenced', revision: 4n },
+          { nodeId: 2, errorMessage: 'timed out' },
+        ],
+      })
+    );
     renderBanner();
 
     const banner = screen.getByTestId('cluster-fence-banner');
@@ -122,13 +126,15 @@ describe('the ClusterFenceBanner', () => {
   });
 
   test('with no controller leader and no broker’s own copy yet, goes by the last status read', () => {
-    rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-      known: false,
-      blocking: true,
-      summary: { phase: 'fenced', revision: 3n, exemptPrincipals: ['shadow-orders'], allowAllReads: false },
-      brokers: [{ nodeId: 1, status: 'confirmed', copy: { phase: 'fenced', revision: 3n }, blocks: true }],
-      ownCopies: [{ nodeId: 1 }],
-    } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+    rs.mocked(useClusterFenceStatusQuery).mockReturnValue(
+      fenceStatusFixture({
+        known: false,
+        blocking: true,
+        summary: { phase: 'fenced', revision: 3n, exemptPrincipals: ['shadow-orders'], allowAllReads: false },
+        brokers: [{ nodeId: 1, status: 'confirmed', copy: { phase: 'fenced', revision: 3n }, blocks: true }],
+        ownCopies: [{ nodeId: 1 }],
+      })
+    );
     renderBanner();
 
     const banner = screen.getByTestId('cluster-fence-banner');

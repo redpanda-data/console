@@ -1,3 +1,5 @@
+import { createFilterEntry } from '../../../../../types/topic-settings';
+import { createTopicMessage } from '../message-test-helpers';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -19,20 +21,20 @@ import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { FieldFilterToken } from '../types';
 
 const makeMsg = (partitionID: number, offset: number, value: unknown): TopicMessage =>
-  ({
+  createTopicMessage({
     partitionID,
     offset,
     timestamp: 0,
     compression: 'uncompressed',
     isTransactional: false,
     headers: [],
-    key: { payload: `key-${offset}`, isPayloadNull: false, size: 1 },
-    value: { payload: value, isPayloadNull: false, size: 1 },
+    key: { payload: `key-${offset}`, isPayloadNull: false, size: 1, schemaId: 0 },
+    value: { payload: value, isPayloadNull: false, size: 1, schemaId: 0 },
     keyJson: `"key-${offset}"`,
     valueJson: JSON.stringify(value),
     keyBinHexPreview: '',
     valueBinHexPreview: '',
-  }) as TopicMessage;
+  });
 
 const messages = [makeMsg(0, 1, { type: 'INVOICE' }), makeMsg(1, 2, { type: 'ORDER' })];
 
@@ -127,7 +129,13 @@ const renderBar = (overrides: Partial<FilterBarProps> = {}) => {
   return spies;
 };
 
-const input = () => screen.getByTestId('messages-filter-input') as HTMLInputElement;
+const input = () => {
+  const element = screen.getByTestId('messages-filter-input');
+  if (!(element instanceof HTMLInputElement)) {
+    throw new Error('Filter input is missing');
+  }
+  return element;
+};
 
 describe('the FilterBar', () => {
   describe('suggestion popup', () => {
@@ -439,18 +447,18 @@ describe('the FilterBar', () => {
     });
 
     test('the JS filter chip: edit opens the dialog, remove removes it', async () => {
-      const jsFilter = { id: 'js-1', code: 'return true', name: 'always' };
+      const jsFilter = createFilterEntry({ id: 'js-1', code: 'return true', name: 'always' });
       const props = renderBar({ jsFilters: [jsFilter] });
       await userEvent.click(screen.getByText('ƒ always'));
       expect(props.onEditJsFilter).toHaveBeenCalledWith(jsFilter);
-      await userEvent.click(screen.getByTitle('Remove filter'));
+      await userEvent.click(screen.getByRole('button', { name: 'Remove filter' }));
       expect(props.onRemoveJsFilter).toHaveBeenCalledWith('js-1');
     });
 
     test('removing a JS filter chip does not bubble into the container and open the suggestion dropdown', async () => {
-      const jsFilter = { id: 'js-1', code: 'return true', name: 'always' };
+      const jsFilter = createFilterEntry({ id: 'js-1', code: 'return true', name: 'always' });
       const props = renderBar({ jsFilters: [jsFilter] });
-      await userEvent.click(screen.getByTitle('Remove filter'));
+      await userEvent.click(screen.getByRole('button', { name: 'Remove filter' }));
       expect(props.onRemoveJsFilter).toHaveBeenCalledWith('js-1');
       // the container's onClick focuses the input, which opens the dropdown — removing a chip
       // must not trigger that via a bubbled click.
@@ -458,7 +466,7 @@ describe('the FilterBar', () => {
     });
 
     test('clear-all resets the line and removes JS filters', async () => {
-      const jsFilter = { id: 'js-1', code: 'return true' };
+      const jsFilter = createFilterEntry({ id: 'js-1', code: 'return true' });
       const props = renderBar({
         fieldTokens: [{ kind: 'field', field: 'key', op: 'contains', value: 'abc' }],
         partitionId: 2,

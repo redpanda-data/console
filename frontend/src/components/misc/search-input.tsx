@@ -67,7 +67,7 @@ export function SearchInput({
         return;
       }
       const target = event.target instanceof HTMLElement ? event.target : null;
-      if (target?.isContentEditable || target?.closest(TYPING_TARGET)) {
+      if (target?.isContentEditable === true || target?.closest(TYPING_TARGET)) {
         return;
       }
       // Focus inside an open dialog stays there unless the field is in the same dialog.

@@ -11,7 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import { PermissionsListTab } from '../../../components/pages/security/tabs/permissions-list-tab';
+import { PermissionsListTabNew as PermissionsListTab } from '../../../components/pages/security/tabs/permissions-list-tab-new';
 
 export const Route = createFileRoute('/security/permissions-list/')({
   staticData: {

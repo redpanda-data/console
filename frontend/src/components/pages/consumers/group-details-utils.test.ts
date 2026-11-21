@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { GroupDescription, GroupMemberDescription } from 'state/rest-interfaces';
+import type { GroupDescription, GroupMemberDescription } from 'types/consumer-groups';
 
 import {
   formatAssignment,
@@ -67,7 +67,7 @@ describe('isBehindGroupEpoch', () => {
 describe('formatAssignment', () => {
   test('sorts the partitions and tolerates a missing partition list', () => {
     expect(formatAssignment({ topicName: 'orders', partitionIds: [3, 1, 2] })).toBe('orders: 1, 2, 3');
-    expect(formatAssignment({ topicName: 'orders', partitionIds: undefined as unknown as number[] })).toBe('orders: ');
+    expect(formatAssignment({ topicName: 'orders', partitionIds: undefined })).toBe('orders: ');
   });
 });
 

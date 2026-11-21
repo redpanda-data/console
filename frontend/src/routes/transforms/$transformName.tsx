@@ -13,7 +13,7 @@ import { createFileRoute, useParams } from '@tanstack/react-router';
 import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
 import { z } from 'zod';
 
-import TransformDetails from '../../components/pages/transforms/transform-details';
+import { TransformDetails } from '../../components/pages/transforms/transform-details';
 
 const searchSchema = z.object({
   pageSize: z.number().int().positive().optional().catch(DEFAULT_TABLE_PAGE_SIZE),

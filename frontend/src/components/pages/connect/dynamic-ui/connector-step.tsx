@@ -12,7 +12,8 @@
 import type { ConfigPageProps } from './components';
 import { PropertyGroupComponent } from './property-group';
 import type { PropertyGroup } from '../../../../state/connect/state';
-import type { ConnectorStep } from '../../../../state/rest-interfaces';
+import type { ConnectorStep } from '../../../../types/kafka-connect';
+import { arraySum } from '../../../../utils/array-utils';
 
 export const ConnectorStepComponent = (props: {
   step: ConnectorStep;
@@ -24,8 +25,7 @@ export const ConnectorStepComponent = (props: {
 }) => {
   const step = props.step;
   const groups = props.groups;
-
-  const totalVisibleProperties = groups.sum((x) => x.filteredProperties.length);
+  const totalVisibleProperties = arraySum(groups, (x) => x.filteredProperties.length);
   if (totalVisibleProperties === 0) {
     return null;
   }

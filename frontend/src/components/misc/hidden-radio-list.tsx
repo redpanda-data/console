@@ -1,3 +1,4 @@
+import { Input } from 'components/redpanda-ui/components/input';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -45,8 +46,9 @@ export function HiddenRadioList<ValueType>({
         return (
           <li key={String(option.value)}>
             <label>
-              <input
+              <Input
                 checked={checked}
+                containerClassName="sr-only"
                 disabled={disabled}
                 name={name}
                 onChange={() => onChange(option.value)}

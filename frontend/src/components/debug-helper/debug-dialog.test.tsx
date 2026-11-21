@@ -11,9 +11,9 @@
 
 import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { render, screen, within } from 'test-utils';
 
 import { DebugDialog } from './debug-dialog';
+import { render, screen, within } from '../../test-utils';
 
 const openConfigs = async () => {
   const user = userEvent.setup();

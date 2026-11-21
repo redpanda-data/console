@@ -11,6 +11,8 @@
 
 import type { FC } from 'react';
 import { useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { Button } from '../../../redpanda-ui/components/button';
 import {
@@ -77,7 +79,7 @@ export const DeleteRoleConfirmModal: FC<{
           <Button
             data-testid="confirm-role-delete-button"
             disabled={confirmText !== roleName}
-            onClick={handleConfirm}
+            onClick={asyncEvent(handleConfirm, reportActionError)}
             variant="destructive"
           >
             Delete

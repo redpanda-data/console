@@ -11,7 +11,7 @@
 
 import { Link as TanStackRouterLink, type useNavigate } from '@tanstack/react-router';
 import type { FilterFn } from '@tanstack/react-table';
-import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
+import { getComponentLogo } from 'assets/connectors/component-logo-map';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
@@ -28,7 +28,7 @@ import {
   PIPELINE_STATE_STATUS_VARIANT,
 } from 'components/ui/pipeline/constants';
 import { Box } from 'lucide-react';
-import { type ComponentType, type SVGProps, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { DRAFT_BADGE_TOOLTIP, relativeAgeLabel } from './draft-copy';
 import { ActionsCell, type DeleteMutate, type StartMutate, type StopMutate } from './list-actions';
@@ -57,7 +57,7 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
     >
       {connectors.map((c) => (
         <Badge key={c.name} tone="default" variant="subtle">
-          <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
+          <ConnectorLogo className="size-3.5" fallback={Box} name={c.name} />
           {/* One text node: as siblings, name and multiplier sit a pixel off each other's baseline. */}
           <span>
             {c.name}
@@ -73,7 +73,7 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
 // built-in array filters do: an empty selection means "no filter", not "match nothing".
 const inSelectionFilterFn: FilterFn<DataTableFeatures, PipelineRow> = (row, columnId, filterValue: string[]) =>
   filterValue.includes(row.getValue<string>(columnId));
-inSelectionFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
+inSelectionFilterFn.autoRemove = (value: unknown) => !Boolean(value) || (Array.isArray(value) && value.length === 0);
 
 const sortPriority = (row: PipelineRow): number => PIPELINE_STATE_SORT_PRIORITY[row.state] ?? Number.MAX_SAFE_INTEGER;
 
@@ -85,15 +85,13 @@ type CreateColumnsOptions = {
   isDeletingPipeline: boolean;
 };
 
-type LogoComponent = ComponentType<SVGProps<SVGSVGElement>>;
-
 // Facet options are rebuilt on every drain page and poll tick, so each option's icon is the connector's
 // own logo component: a stable type, where a fresh one per render would remount every logo in the open
 // popover. The facet list sizes it.
 export const connectorOption = (name: string) => ({
   value: name,
   label: name,
-  icon: (componentLogoMap[name as ComponentName] as LogoComponent | undefined) ?? Box,
+  icon: getComponentLogo(name) ?? Box,
 });
 
 // The wrapper owns the size and the ellipsis, so a long name truncates inside the cell.
@@ -115,7 +113,7 @@ const PipelineNameCell = ({ pipeline, name }: { pipeline: PipelineRow; name: str
   return (
     <div className="flex max-w-[300px] flex-col gap-0.5 overflow-hidden">
       <PipelineNameLink name={name} pipelineId={id} />
-      {isDraftRow && editedAt ? (
+      {isDraftRow && editedAt !== null && editedAt !== undefined && Boolean(editedAt) ? (
         <span className="truncate text-body-sm text-muted-foreground">Edited {relativeAgeLabel(editedAt)}</span>
       ) : null}
       {!isDraftRow && id !== name ? (
@@ -139,7 +137,7 @@ export const createColumns = ({
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,
     filterFn: (row, _columnId, filterValue: string) => matchesNameOrId(filterValue, row.original.name, row.original.id),
-    cell: ({ row }) => <PipelineNameCell name={row.getValue('name') as string} pipeline={row.original} />,
+    cell: ({ row }) => <PipelineNameCell name={row.getValue('name')} pipeline={row.original} />,
   },
   {
     accessorKey: 'inputs',
@@ -148,14 +146,14 @@ export const createColumns = ({
     // Without this, faceting keys on the array itself and the per-option counts never resolve.
     // Deduplicated per row, or two `redpanda` inputs would count 2 against a single row.
     getUniqueValues: (row) => [...new Set(row.inputs)],
-    cell: ({ row }) => <ConnectorBadges names={row.getValue('inputs') as string[]} />,
+    cell: ({ row }) => <ConnectorBadges names={row.getValue('inputs')} />,
   },
   {
     accessorKey: 'outputs',
     header: 'Output',
     filterFn: 'arrIncludesSome',
     getUniqueValues: (row) => [...new Set(row.outputs)],
-    cell: ({ row }) => <ConnectorBadges names={row.getValue('outputs') as string[]} />,
+    cell: ({ row }) => <ConnectorBadges names={row.getValue('outputs')} />,
   },
   {
     id: 'end',

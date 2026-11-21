@@ -1,3 +1,4 @@
+import { isObject } from 'utils/type-guards';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -10,7 +11,7 @@
  */
 
 import { FEATURE_FLAGS } from '../../components/constants';
-import { config } from '../../config';
+import { config } from '../../runtime-config';
 import { IsDev } from '../../utils/env';
 
 export type FeatureFlagKey = keyof typeof FEATURE_FLAGS;
@@ -22,14 +23,11 @@ export type FeatureFlagOverrides = Partial<Record<FeatureFlagKey, boolean>>;
 export function getOverrides(): FeatureFlagOverrides {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
+    if (!(raw !== null && raw !== undefined && raw !== '')) {
       return {};
     }
-    const parsed = JSON.parse(raw) as unknown;
-    if (parsed && typeof parsed === 'object') {
-      return parsed as FeatureFlagOverrides;
-    }
-    return {};
+    const parsed: unknown = JSON.parse(raw);
+    return parseOverrides(parsed);
   } catch {
     return {};
   }
@@ -61,8 +59,8 @@ export function clearOverrides(): void {
 
 export function getEffectiveFlags(): Record<FeatureFlagKey, boolean> {
   const overrides = getOverrides();
-  const result = { ...baseFlags } as Record<FeatureFlagKey, boolean>;
-  for (const k of Object.keys(overrides) as FeatureFlagKey[]) {
+  const result = { ...baseFlags };
+  for (const k of getAllFlagKeys()) {
     const v = overrides[k];
     if (typeof v === 'boolean') {
       result[k] = v;
@@ -72,7 +70,9 @@ export function getEffectiveFlags(): Record<FeatureFlagKey, boolean> {
 }
 
 export function getAllFlagKeys(): FeatureFlagKey[] {
-  return (Object.keys(FEATURE_FLAGS) as FeatureFlagKey[]).sort((a, b) => a.localeCompare(b));
+  return Object.keys(FEATURE_FLAGS)
+    .filter((key): key is FeatureFlagKey => Object.hasOwn(FEATURE_FLAGS, key))
+    .sort((a, b) => a.localeCompare(b));
 }
 
 let baseFlags: Record<FeatureFlagKey, boolean> = { ...FEATURE_FLAGS };
@@ -85,7 +85,7 @@ function installFeatureFlagAccessor(): void {
   if (accessorInstalled) {
     return;
   }
-  baseFlags = { ...(config.featureFlags ?? FEATURE_FLAGS) } as Record<FeatureFlagKey, boolean>;
+  baseFlags = { ...(config.featureFlags ?? FEATURE_FLAGS) };
 
   Object.defineProperty(config, 'featureFlags', {
     configurable: true,
@@ -96,7 +96,7 @@ function installFeatureFlagAccessor(): void {
         return baseFlags;
       }
       const merged = { ...baseFlags };
-      for (const k of Object.keys(overrides) as FeatureFlagKey[]) {
+      for (const k of getAllFlagKeys()) {
         const v = overrides[k];
         if (typeof v === 'boolean') {
           merged[k] = v;
@@ -105,7 +105,7 @@ function installFeatureFlagAccessor(): void {
       return merged;
     },
     set(next: Record<FeatureFlagKey, boolean> | undefined): void {
-      baseFlags = { ...(next ?? FEATURE_FLAGS) } as Record<FeatureFlagKey, boolean>;
+      baseFlags = { ...(next ?? FEATURE_FLAGS) };
     },
   });
   accessorInstalled = true;
@@ -123,4 +123,18 @@ if (IsDev && typeof window !== 'undefined') {
   } catch {
     // localStorage / defineProperty unavailable.
   }
+}
+
+function parseOverrides(parsed: unknown): FeatureFlagOverrides {
+  if (!isObject(parsed)) {
+    return {};
+  }
+  const result: FeatureFlagOverrides = {};
+  for (const key of getAllFlagKeys()) {
+    const value = parsed[key];
+    if (typeof value === 'boolean') {
+      result[key] = value;
+    }
+  }
+  return result;
 }

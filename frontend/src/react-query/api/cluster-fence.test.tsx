@@ -31,6 +31,13 @@ import { useSupportedFeaturesStore } from 'state/supported-features';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { connectQueryWrapper } from 'test-utils';
 
+import {
+  describeClusterFenceError,
+  isStaleRevisionError,
+  useClusterFenceStatusQuery,
+  useFenceClusterMutation,
+} from './cluster-fence';
+
 const flags = rs.hoisted(() => ({ enableClusterFencing: true }));
 const host = rs.hoisted(() => ({ embedded: true }));
 
@@ -39,17 +46,10 @@ rs.mock('config', () => {
   return {
     ...actual,
     isEmbedded: rs.fn(() => host.embedded),
-    isFeatureFlagEnabled: rs.fn((key: string) => flags[key as keyof typeof flags] ?? false),
+    isFeatureFlagEnabled: rs.fn((key: string) => key === 'enableClusterFencing' && flags.enableClusterFencing),
     isServerless: rs.fn(() => false),
   };
 });
-
-import {
-  describeClusterFenceError,
-  isStaleRevisionError,
-  useClusterFenceStatusQuery,
-  useFenceClusterMutation,
-} from './cluster-fence';
 
 const fencedStatus = create(GetClusterFenceStatusResponseSchema, {
   fence: {
@@ -370,7 +370,9 @@ describe('useFenceClusterMutation', () => {
 
     let failure: unknown;
     await act(async () => {
-      failure = await result.current.mutateAsync({ settings: reviewed, opened: openedAt(4) }).catch((error) => error);
+      failure = await result.current
+        .mutateAsync({ settings: reviewed, opened: openedAt(4) })
+        .catch((error: unknown) => error);
     });
 
     expect(calls).toEqual(['save']);
@@ -408,8 +410,8 @@ describe('useClusterFenceStatusQuery when the status can’t be read', () => {
       .getQueryCache()
       .getAll()
       .find((candidate) => JSON.stringify(candidate.queryKey).includes('GetClusterFenceStatus'));
-    const interval = query?.observers[0]?.options.refetchInterval as ((q: typeof query) => number | false) | undefined;
-    return interval?.(query);
+    const interval = query?.observers[0]?.options.refetchInterval;
+    return query !== undefined && typeof interval === 'function' ? interval(query) : interval;
   };
 
   const renderFailingStatus = (error: ConnectError) => {

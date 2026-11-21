@@ -13,7 +13,7 @@ import type { useNavigate } from '@tanstack/react-router';
 
 type NavigateFn = ReturnType<typeof useNavigate>;
 
-/** Navigate to the connect-clusters list, centralizing the empty-search cast TanStack requires. */
+/** Navigate to the connect-clusters list, resetting its search state. */
 export function navigateToConnectClusters(navigate: NavigateFn) {
-  navigate({ to: '/connect-clusters', search: {} as never });
+  return navigate({ to: '/connect-clusters', search: {} });
 }

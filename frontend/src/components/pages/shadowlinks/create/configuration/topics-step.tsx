@@ -38,7 +38,9 @@ export const TopicsStep = () => {
   });
 
   const handleModeChange = (mode: string) => {
-    setValue('topicsMode', mode as 'all' | 'specify');
+    if (mode === 'all' || mode === 'specify') {
+      setValue('topicsMode', mode);
+    }
 
     // Auto-expand when switching to specify mode
     if (mode === 'specify') {

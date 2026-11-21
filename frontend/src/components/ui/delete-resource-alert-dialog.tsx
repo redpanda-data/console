@@ -26,8 +26,10 @@ import type { ButtonVariants } from 'components/redpanda-ui/components/button';
 import { Button } from 'components/redpanda-ui/components/button';
 import { DropdownMenuItem } from 'components/redpanda-ui/components/dropdown-menu';
 import { Input } from 'components/redpanda-ui/components/input';
+import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
-import { Loader2, Trash2 } from 'lucide-react';
+import './styles.css';
+import { Trash2 } from 'lucide-react';
 import React, { type ReactNode } from 'react';
 
 export type DeleteResourceAlertDialogProps = {
@@ -71,30 +73,37 @@ const DialogBody: React.FC<{
   confirmButtonTestId,
 }) => (
   <AlertDialogContent>
-    <AlertDialogHeader className="text-left">
+    <AlertDialogHeader className="console-delete-header">
       <AlertDialogTitle>Delete {resourceType}</AlertDialogTitle>
-      <AlertDialogDescription className="space-y-4">
-        <div className="text-body">
-          You are about to delete <InlineCode>{resourceName}</InlineCode>
+      <AlertDialogDescription>
+        <div className="space-y-4">
+          <div className="text-body">
+            You are about to delete <InlineCode>{resourceName}</InlineCode>
+          </div>
+          <div className="text-body">
+            This action will cause data loss. To confirm, type "delete" into the confirmation box below.
+          </div>
+          <Input
+            className="mt-4"
+            onChange={(e) => setConfirmationText(e.target.value)}
+            placeholder='Type "delete" to confirm'
+            value={confirmationText}
+          />
+          {children}
         </div>
-        <div className="text-body">
-          This action will cause data loss. To confirm, type "delete" into the confirmation box below.
-        </div>
-        <Input
-          className="mt-4"
-          onChange={(e) => setConfirmationText(e.target.value)}
-          placeholder='Type "delete" to confirm'
-          value={confirmationText}
-        />
-        {children}
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter>
       <AlertDialogCancel render={<Button variant="ghost">Cancel</Button>} />
       <AlertDialogAction
-        disabled={!isDeleteConfirmed || isDeleting}
+        disabled={!isDeleteConfirmed || isDeleting === true}
         onClick={handleDelete}
-        render={<Button data-testid={confirmButtonTestId} variant="destructive">{isDeleting ? 'Deleting...' : 'Delete'}</Button>} />
+        render={
+          <Button data-testid={confirmButtonTestId} variant="destructive">
+            {isDeleting === true ? 'Deleting...' : 'Delete'}
+          </Button>
+        }
+      />
     </AlertDialogFooter>
   </AlertDialogContent>
 );
@@ -137,16 +146,17 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
     return (
       <AlertDialog onOpenChange={handleOpenChange} open={open}>
         <DialogBody
-          children={children}
-          confirmButtonTestId={confirmButtonTestId}
           confirmationText={confirmationText}
+          confirmButtonTestId={confirmButtonTestId}
           handleDelete={handleDelete}
           isDeleteConfirmed={isDeleteConfirmed}
           isDeleting={isDeleting}
           resourceName={resourceName}
           resourceType={resourceType}
           setConfirmationText={setConfirmationText}
-        />
+        >
+          {children}
+        </DialogBody>
       </AlertDialog>
     );
   }
@@ -154,11 +164,11 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
   const renderTrigger = () => {
     if (triggerVariant === 'button') {
       return (
-        <Button disabled={isDeleting} icon={buttonIcon} variant={buttonVariant} size={!buttonText ? 'icon' : undefined}>
-          {buttonText && !isDeleting && buttonText}
-          {isDeleting && (
+        <Button disabled={isDeleting} icon={buttonIcon} size={buttonText ? undefined : 'icon'} variant={buttonVariant}>
+          {buttonText && isDeleting !== true && buttonText}
+          {isDeleting === true && (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Deleting...
+              <Spinner /> Deleting...
             </>
           )}
         </Button>
@@ -166,14 +176,14 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
     }
 
     return (
-      <DropdownMenuItem className="text-destructive focus:text-destructive">
-        {isDeleting ? (
+      <DropdownMenuItem variant="destructive">
+        {isDeleting === true ? (
           <div className="flex items-center gap-4">
-            <Loader2 className="h-4 w-4 animate-spin" /> Deleting
+            <Spinner /> Deleting
           </div>
         ) : (
           <div className="flex items-center gap-4">
-            <Trash2 className="h-4 w-4" /> Delete
+            <Trash2 className="size-4" /> Delete
           </div>
         )}
       </DropdownMenuItem>
@@ -184,16 +194,17 @@ export const DeleteResourceAlertDialog: React.FC<DeleteResourceAlertDialogProps>
     <AlertDialog onOpenChange={handleOpenChange}>
       <AlertDialogTrigger nativeButton={triggerVariant === 'button'} render={renderTrigger()} />
       <DialogBody
-        children={children}
-        confirmButtonTestId={confirmButtonTestId}
         confirmationText={confirmationText}
+        confirmButtonTestId={confirmButtonTestId}
         handleDelete={handleDelete}
         isDeleteConfirmed={isDeleteConfirmed}
         isDeleting={isDeleting}
         resourceName={resourceName}
         resourceType={resourceType}
         setConfirmationText={setConfirmationText}
-      />
+      >
+        {children}
+      </DialogBody>
     </AlertDialog>
   );
 };
@@ -210,20 +221,20 @@ export const DeleteResourceMenuItem: React.FC<{
   text?: string;
 }> = ({ isDeleting, onSelect, testId, text = 'Delete' }) => (
   <DropdownMenuItem
-    className="text-destructive focus:text-destructive"
     data-testid={testId}
     // Base UI's Menu.Item exposes `onClick`, not Radix's `onSelect`. The
     // dialog is a controlled sibling that outlives this menu, so letting the
     // menu close on click is fine.
     onClick={() => onSelect()}
+    variant="destructive"
   >
-    {isDeleting ? (
+    {isDeleting === true ? (
       <div className="flex items-center gap-4">
-        <Loader2 className="h-4 w-4 animate-spin" /> Deleting
+        <Spinner /> Deleting
       </div>
     ) : (
       <div className="flex items-center gap-4">
-        <Trash2 className="h-4 w-4" /> {text}
+        <Trash2 className="size-4" /> {text}
       </div>
     )}
   </DropdownMenuItem>

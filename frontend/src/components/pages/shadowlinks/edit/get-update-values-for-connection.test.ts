@@ -9,12 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
+import { ShadowLinkSchema as CpShadowLinkSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
+import { create } from '@bufbuild/protobuf';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 
-import { getUpdateValuesForConnection } from './shadowlink-edit-utils';
+import { buildControlplaneUpdateRequest, getUpdateValuesForConnection } from './shadowlink-edit-utils';
 import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
+import { buildDefaultFormValuesFromControlplane } from '../mappers/controlplane';
 
 // Base form values for testing
 const baseFormValues: FormValues = {
@@ -433,17 +436,17 @@ describe('getUpdateValuesForConnection', () => {
 
       const result = getUpdateValuesForConnection(updated, original);
 
-      expect(result.fieldMaskPaths).toEqual(
-        expect.arrayContaining([
-          'configurations.client_options.metadata_max_age_ms',
-          'configurations.client_options.connection_timeout_ms',
-          'configurations.client_options.retry_backoff_ms',
-          'configurations.client_options.fetch_wait_max_ms',
-          'configurations.client_options.fetch_min_bytes',
-          'configurations.client_options.fetch_max_bytes',
-          'configurations.client_options.fetch_partition_max_bytes',
-        ])
-      );
+      for (const expected of [
+        'configurations.client_options.metadata_max_age_ms',
+        'configurations.client_options.connection_timeout_ms',
+        'configurations.client_options.retry_backoff_ms',
+        'configurations.client_options.fetch_wait_max_ms',
+        'configurations.client_options.fetch_min_bytes',
+        'configurations.client_options.fetch_max_bytes',
+        'configurations.client_options.fetch_partition_max_bytes',
+      ]) {
+        expect(result.fieldMaskPaths).toContain(expected);
+      }
       expect(result.fieldMaskPaths).toHaveLength(7);
     });
   });
@@ -549,4 +552,42 @@ describe('getUpdateValuesForConnection', () => {
       expect(result.value.authenticationConfiguration).toBeUndefined();
     });
   });
+});
+
+test('controlplane updates keep TLS PEM material in the controlplane flat message', () => {
+  const original = create(CpShadowLinkSchema, {
+    id: 'link-id',
+    clientOptions: { bootstrapServers: ['source:9092'], tlsSettings: { enabled: true } },
+  });
+  const values: FormValues = {
+    ...buildDefaultFormValuesFromControlplane(original),
+    mtls: {
+      ca: { pemContent: 'ca-pem' },
+      clientCert: { pemContent: 'cert-pem' },
+      clientKey: { pemContent: 'key-pem' },
+    },
+  };
+  const request = buildControlplaneUpdateRequest('link-id', values, original, { roleSyncSupported: true });
+  expect(request.shadowLink?.clientOptions?.tlsSettings).toMatchObject({
+    enabled: true,
+    ca: 'ca-pem',
+    cert: 'cert-pem',
+    key: 'key-pem',
+  });
+  expect(request.updateMask?.paths).toContain('client_options.tls_settings');
+});
+
+test('controlplane updates reject local certificate paths rather than dropping them', () => {
+  const original = create(CpShadowLinkSchema, {
+    id: 'link-id',
+    clientOptions: { bootstrapServers: ['source:9092'], tlsSettings: { enabled: true } },
+  });
+  const values: FormValues = {
+    ...buildDefaultFormValuesFromControlplane(original),
+    mtlsMode: TLS_MODE.FILE_PATH,
+    mtls: { ca: { filePath: '/etc/ca.pem' } },
+  };
+  expect(() => buildControlplaneUpdateRequest('link-id', values, original, { roleSyncSupported: true })).toThrow(
+    'Controlplane shadow links require PEM certificates, not local file paths.'
+  );
 });

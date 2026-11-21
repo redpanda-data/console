@@ -224,7 +224,7 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
         remove: [],
         create: false,
       })
-      .catch(() => {});
+      .catch(() => undefined);
 
     // Cache must be rolled back — bob should not be present
     await waitFor(() => {

@@ -17,7 +17,7 @@ import {
 import { create } from '@bufbuild/protobuf';
 
 import { egressGatewayOptions, egressWrite } from './egress-gateways';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it as test } from 'bun:test';
 
 const gateway = (id: string, displayName: string, phase: ServerlessEgressGatewayStatus_Phase) =>
   create(ServerlessEgressGatewaySchema, {
@@ -28,7 +28,7 @@ const gateway = (id: string, displayName: string, phase: ServerlessEgressGateway
   });
 
 describe('egressGatewayOptions', () => {
-  it('offers usable gateways and keeps selected unusable ones, marked', () => {
+  test('offers usable gateways and keeps selected unusable ones, marked', () => {
     const gateways = [
       gateway('gw-b', 'beta', ServerlessEgressGatewayStatus_Phase.AVAILABLE),
       gateway('gw-a', 'alpha', ServerlessEgressGatewayStatus_Phase.AVAILABLE),
@@ -44,13 +44,13 @@ describe('egressGatewayOptions', () => {
     ]);
   });
 
-  it('labels selected gateways by ID until the gateways load', () => {
+  test('labels selected gateways by ID until the gateways load', () => {
     expect(egressGatewayOptions(undefined, ['gw-a'])).toEqual([{ id: 'gw-a', label: 'gw-a', available: false }]);
   });
 });
 
 describe('egressWrite', () => {
-  it('leaves the stored gateways alone unless the selection changed', () => {
+  test('leaves the stored gateways alone unless the selection changed', () => {
     expect(egressWrite([], [])).toBeUndefined();
     expect(egressWrite(['gw-b', 'gw-a'], ['gw-a', 'gw-b'])).toBeUndefined();
     expect(egressWrite(['gw-a'], [])?.gatewayRefs.map((ref) => ref.id)).toEqual(['gw-a']);

@@ -11,8 +11,7 @@
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
 
-import EditSchemaModePage from '../../../../components/pages/schemas/edit-mode';
-
+import { EditSchemaModePage } from '../../../../components/pages/schemas/edit-mode';
 export const Route = createFileRoute('/schema-registry/subjects/$subjectName/edit-mode')({
   staticData: {
     title: 'Edit Mode',

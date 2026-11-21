@@ -27,6 +27,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'compon
 import { Check, Circle, HelpCircle, Plus, Trash2, X } from 'lucide-react';
 import { type ReactNode, useId, useState } from 'react';
 import { useSupportedFeaturesStore } from 'state/supported-features';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import {
   getPermissionDescription,
@@ -55,7 +57,6 @@ import {
   type PrincipalType,
   PrincipalTypeRedpandaRole,
   parsePrincipal,
-  type ResourcePatternType,
   ResourcePatternTypeAny,
   ResourcePatternTypeLiteral,
   ResourcePatternTypePrefix,
@@ -146,18 +147,18 @@ function stringToHostType(h: string): HostType {
 const PermissionIcon = ({ value }: { value: string }) => {
   switch (value) {
     case OperationTypeAllow:
-      return <TonedIcon className="h-4 w-4" icon={Check} tone="success" />;
+      return <TonedIcon className="size-4" icon={Check} tone="success" />;
     case OperationTypeDeny:
-      return <TonedIcon className="h-4 w-4" icon={X} tone="destructive" />;
+      return <TonedIcon className="size-4" icon={X} tone="destructive" />;
     default:
-      return <TonedIcon className="h-4 w-4" icon={Circle} tone="disabled" />;
+      return <TonedIcon className="size-4" icon={Circle} tone="disabled" />;
   }
 };
 
 // Descriptions hold one API list per line.
 const PermissionDescription = ({ operation, resourceType }: { operation: string; resourceType: string }) => {
   const description = getPermissionDescription(operation, resourceType);
-  if (!description) {
+  if (!(description !== null && description !== undefined && description !== '')) {
     return 'Permission description not available';
   }
   return description.split('\n').map((line) => (
@@ -172,7 +173,7 @@ const FieldHelp = ({ children, contentClassName }: { children: ReactNode; conten
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger render={<span className="inline-flex cursor-help text-disabled" />}>
-        <HelpCircle className="h-4 w-4" />
+        <HelpCircle className="size-4" />
       </TooltipTrigger>
       <TooltipContent className={contentClassName}>{children}</TooltipContent>
     </Tooltip>
@@ -187,7 +188,9 @@ const ResourceTypeSelection = ({
   isSchemaRegistryEnabled,
   ruleIndex,
   labelId,
-}: ResourceTypeSelectionProps & { labelId: string }) => {
+}: ResourceTypeSelectionProps & {
+  labelId: string;
+}) => {
   const buttons = [
     {
       name: 'Cluster',
@@ -228,7 +231,10 @@ const ResourceTypeSelection = ({
         onValueChange={(values: string[]) => {
           const [resourceType] = values;
           if (resourceType) {
-            handleResourceTypeChange(rule.id, resourceType as ResourceType);
+            const selected = buttons.find((button) => button.resourceType === resourceType);
+            if (selected) {
+              handleResourceTypeChange(rule.id, selected.resourceType);
+            }
           }
         }}
         size="sm"
@@ -248,7 +254,7 @@ const ResourceTypeSelection = ({
                   </ToggleGroupItem>
                 }
               />
-              <TooltipContent hidden={!disabled}>
+              <TooltipContent hidden={!(disabled === true)}>
                 <p className="max-w-xs">{tooltipText}</p>
               </TooltipContent>
             </Tooltip>
@@ -296,14 +302,8 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
               }));
 
             // Check if all operations have the same permission
-            const allAllow =
-              enabledOperations.length > 0 &&
-              enabledOperations.length === ops.length &&
-              enabledOperations.every((op) => op.value === OperationTypeAllow);
-            const allDeny =
-              enabledOperations.length > 0 &&
-              enabledOperations.length === ops.length &&
-              enabledOperations.every((op) => op.value === OperationTypeDeny);
+            const allAllow = operationsSharePermission(rule.operations, OperationTypeAllow);
+            const allDeny = operationsSharePermission(rule.operations, OperationTypeDeny);
             const showSummary = allAllow || allDeny;
 
             return (
@@ -440,12 +440,15 @@ const AclRules = ({
                         [ResourcePatternTypeLiteral]: `${getResourceName(rule.resourceType)} names matching`,
                         [ResourcePatternTypePrefix]: `${getResourceName(rule.resourceType)} names starting with`,
                       }}
-                      onValueChange={(value) =>
+                      onValueChange={(value: unknown) => {
+                        if (value !== 'any' && value !== 'literal' && value !== 'prefix') {
+                          return;
+                        }
                         updateRule(rule.id, {
-                          selectorType: value as ResourcePatternType,
+                          selectorType: value,
                           selectorValue: value === ResourcePatternTypeAny ? '' : rule.selectorValue,
-                        })
-                      }
+                        });
+                      }}
                       value={rule.selectorType}
                     >
                       <SelectTrigger testId={`selector-type-select-${index}`}>
@@ -478,7 +481,7 @@ const AclRules = ({
                           value={rule.selectorValue}
                         />
                         <p
-                          className={clsx('text-body text-destructive', !!rule.selectorValue.length && 'hidden')}
+                          className={clsx('text-body text-destructive', rule.selectorValue.length > 0 && 'hidden')}
                           data-testid={`selector-value-error-${index}`}
                         >
                           {rule.selectorType === ResourcePatternTypeLiteral
@@ -496,45 +499,57 @@ const AclRules = ({
                 <div className="mb-3 flex items-center justify-between">
                   <FieldTitle id={`${labelIdPrefix}-${rule.id}-operations`}>Operations</FieldTitle>
                   <div className="inline-flex h-10 items-center justify-center rounded-md bg-surface-subtle p-1 text-subtle">
-                    <button
+                    <Button
                       className={clsx(
+                        // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                         'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeCustom
-                          ? 'bg-background text-strong shadow-sm'
-                          : 'text-subtle hover:bg-accent hover:text-strong'
+                          ? // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                            'bg-background text-strong shadow-sm'
+                          : // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                            'text-subtle hover:bg-accent hover:text-strong'
                       )}
                       data-testid={`mode-custom-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeCustom)}
                       type="button"
+                      variant="unstyled"
                     >
                       Custom
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className={clsx(
+                        // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                         'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeAllowAll
-                          ? 'bg-background text-strong shadow-sm'
-                          : 'text-subtle hover:bg-accent hover:text-strong'
+                          ? // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                            'bg-background text-strong shadow-sm'
+                          : // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                            'text-subtle hover:bg-accent hover:text-strong'
                       )}
                       data-testid={`mode-allow-all-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeAllowAll)}
                       type="button"
+                      variant="unstyled"
                     >
                       Allow all
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className={clsx(
+                        // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                         'inline-flex items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-white transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
                         rule.mode === ModeDenyAll
-                          ? 'bg-background text-strong shadow-sm'
-                          : 'text-subtle hover:bg-accent hover:text-strong'
+                          ? // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                            'bg-background text-strong shadow-sm'
+                          : // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                            'text-subtle hover:bg-accent hover:text-strong'
                       )}
                       data-testid={`mode-deny-all-button-${index}`}
                       onClick={() => handlePermissionModeChange(rule.id, ModeDenyAll)}
                       type="button"
+                      variant="unstyled"
                     >
                       Deny all
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -609,7 +624,7 @@ const AclRules = ({
         {/* Add Rule Button */}
         <div className="mt-6">
           <Button className="w-full" data-testid="add-acl-rule-button" onClick={addRule} variant="outline">
-            <Plus className="h-4 w-4" />
+            <Plus className="size-4" />
             Add rule
           </Button>
         </div>
@@ -677,7 +692,10 @@ const SharedConfiguration = ({
                     [RoleTypeGroup]: 'Group',
                     [RoleTypeRedpandaRole]: 'Redpanda role',
                   }}
-                  onValueChange={(value) => {
+                  onValueChange={(value: unknown) => {
+                    if (value !== 'User' && value !== 'Group' && value !== 'RedpandaRole') {
+                      return;
+                    }
                     setPrincipalType(value);
                     // Update the principal to include the new type
                     const currentValue = parsePrincipal(sharedConfig.principal).name || '';
@@ -741,8 +759,11 @@ const SharedConfiguration = ({
                   [HostTypeAllowAllHosts]: 'Allow all hosts',
                   [HostTypeSpecificHost]: 'Specific IP addresses',
                 }}
-                onValueChange={(value) => {
-                  setHostType(value as HostType);
+                onValueChange={(value: unknown) => {
+                  if (value !== 'Allow all hosts' && value !== 'Specific host') {
+                    return;
+                  }
+                  setHostType(value);
                   if (value === HostTypeAllowAllHosts) {
                     setSharedConfig({
                       ...sharedConfig,
@@ -793,8 +814,7 @@ type CreateACLProps = {
   principalType?: PrincipalType;
   renderPrincipal?: (props: PrincipalFieldProps) => ReactNode;
 };
-
-export default function CreateACL({
+export function CreateACL({
   onSubmit,
   onCancel,
   rules: propRules,
@@ -842,9 +862,10 @@ export default function CreateACL({
                     action={principalType === PrincipalTypeRedpandaRole ? 'editRoles' : 'editAcls'}
                     data-testid="submit-acl-button"
                     disabled={!!principalError || !hasConfiguredOperation(rules)}
-                    onClick={() =>
-                      submitIfPrincipalNamed(() => onSubmit?.(sharedConfig.principal, sharedConfig.host, rules))
-                    }
+                    onClick={asyncEvent(
+                      () => submitIfPrincipalNamed(() => onSubmit?.(sharedConfig.principal, sharedConfig.host, rules)),
+                      reportActionError
+                    )}
                   >
                     {edit ? 'Save' : 'Create'}
                   </FenceGuardedButton>
@@ -859,4 +880,9 @@ export default function CreateACL({
       </main>
     </div>
   );
+}
+
+function operationsSharePermission(operations: Rule['operations'], permission: Rule['operations'][string]): boolean {
+  const values = Object.values(operations);
+  return values.length > 0 && values.every((value) => value === permission);
 }

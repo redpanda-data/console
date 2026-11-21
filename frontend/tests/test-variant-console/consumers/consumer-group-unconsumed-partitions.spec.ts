@@ -98,8 +98,8 @@ test.describe('consumer Group Details - Unconsumed Partitions', () => {
 
   test.afterAll(async () => {
     // Best-effort cleanup: remove remaining offsets, then delete topic
-    await execRpk(`group offset-delete ${GROUP_NAME} -t ${TOPIC_NAME}:0`).catch(() => {});
-    await execRpk(`topic delete ${TOPIC_NAME}`).catch(() => {});
+    await execRpk(`group offset-delete ${GROUP_NAME} -t ${TOPIC_NAME}:0`).catch(() => undefined);
+    await execRpk(`topic delete ${TOPIC_NAME}`).catch(() => undefined);
   });
 
   test('shows all 3 partitions with correct Group Offset and Lag values', async ({ page }) => {

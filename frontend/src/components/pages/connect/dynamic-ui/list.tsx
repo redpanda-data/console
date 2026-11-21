@@ -15,6 +15,7 @@ import { CloseIcon, MenuIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { type JSX, useEffect, useRef, useState } from 'react';
 
 const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
@@ -73,9 +74,9 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
                   }
 
                   onUpdate(valuePending);
-                  (e.target as HTMLElement).blur();
+                  e.currentTarget.blur();
                 } else if (e.key === 'Escape') {
-                  (e.target as HTMLElement).blur();
+                  e.currentTarget.blur();
                 }
               }}
               size="sm"
@@ -88,9 +89,9 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
       </Tooltip>
 
       {/* Delete */}
-      <button className="deleteButton" onClick={onDelete} type="button">
+      <Button className="deleteButton" onClick={onDelete} type="button" variant="unstyled">
         <CloseIcon />
-      </button>
+      </Button>
     </>
   );
 };
@@ -132,9 +133,16 @@ export function CommaSeparatedStringList(props: {
   };
 
   return (
-    <div className="stringList" style={{ maxWidth: '500px' }}>
+    <div className={cn('stringList', 'max-w-125')}>
       <div className="createEntryRow">
-        <div className={newEntryError ? 'inputWrapperhasError' : 'inputWrapper'} style={{ height: '100%' }}>
+        <div
+          className={cn(
+            newEntryError !== null && newEntryError !== undefined && newEntryError !== ''
+              ? 'inputWrapper hasError'
+              : 'inputWrapper',
+            'h-full'
+          )}
+        >
           <Input
             className="h-full"
             containerClassName="h-full grow basis-[260px]"
@@ -164,9 +172,13 @@ export function CommaSeparatedStringList(props: {
 
         <Button
           className="h-full min-w-[120px]"
-          disabled={newEntryError !== null || !newEntry || newEntry.trim().length === 0}
+          disabled={
+            newEntryError !== null ||
+            !(newEntry !== null && newEntry !== undefined && newEntry !== '') ||
+            newEntry.trim().length === 0
+          }
           onClick={() => {
-            if (!newEntry) {
+            if (!(newEntry !== null && newEntry !== undefined && newEntry !== '')) {
               return;
             }
             setData((prev) => [...prev, { id: newEntry }]);
@@ -224,7 +236,7 @@ export function List<T extends { id: string }>(props: {
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="droppable" ignoreContainerClipping={false}>
           {(droppableProvided, _droppableSnapshot) => (
-            <div ref={droppableProvided.innerRef} style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className="flex flex-col" ref={droppableProvided.innerRef}>
               {list.map((tag, index) => (
                 <Draggable draggableId={String(index)} index={index} key={tag.id}>
                   {(draggableProvided, _draggableSnapshot) => (

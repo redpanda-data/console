@@ -23,9 +23,12 @@ import {
   type SourceFenceStep,
 } from './failover-model';
 import { describe, expect, test } from 'bun:test';
-import type { UnifiedShadowLink } from '../model';
+import { type UnifiedClientOptions, type UnifiedShadowLink, UnifiedShadowLinkState } from '../model';
 
-const cloudSource = (state: FencePhase, exemptPrincipals = ['shadow-orders']): ShadowLinkSource => ({
+const cloudSource = (
+  state: FencePhase,
+  exemptPrincipals = ['shadow-orders']
+): Extract<ShadowLinkSource, { kind: 'cloud' }> => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',
@@ -76,7 +79,7 @@ describe('getSourceFenceStep', () => {
   });
 
   describe('once the fence has been read in this visit', () => {
-    const lastKnown = cloudSource('fenced') as Extract<ShadowLinkSource, { kind: 'cloud' }>;
+    const lastKnown = cloudSource('fenced');
     const unavailable = (reason: 'no-leader' | 'not-running' | 'error' | 'unsupported' | 'inactive' | 'forbidden') =>
       getSourceFenceStep({
         source: {
@@ -196,8 +199,8 @@ describe('getFailoverReadiness', () => {
     expect(readiness.lag.status).toBe('blocked');
     expect(readiness.failover).toMatchObject({
       ready: false,
-      reason: expect.stringContaining('lets this link read'),
     });
+    expect(readiness.failover.reason).toContain('lets this link read');
     expect(getFailoverStepStates(readiness)).toMatchObject({
       settings: 'attention',
       fence: 'done',
@@ -210,7 +213,8 @@ describe('getFailoverReadiness', () => {
     const readiness = getFailoverReadiness({ topics: caughtUp, topicsFailed: true, fence: fencedStep });
 
     expect(readiness.lag).toMatchObject({ status: 'caught-up', stale: true, caughtUp: 2 });
-    expect(readiness.failover).toMatchObject({ ready: false, reason: expect.stringContaining('Couldn’t refresh') });
+    expect(readiness.failover).toMatchObject({ ready: false });
+    expect(readiness.failover.reason).toContain('Couldn’t refresh');
     expect(getFailoverStepStates(readiness)).toMatchObject({ lag: 'current', failover: 'pending' });
   });
 
@@ -241,10 +245,12 @@ describe('getFailoverReadiness', () => {
     expect(getFailoverReadiness({ topics: undefined, topicsFailed: true, fence: fencedStep }).failover.reason).toBe(
       'Couldn’t load the link’s topics, so Console can’t check their lag.'
     );
-    expect(
-      getFailoverReadiness({ topics: [topic('a', 0), topic('b', 0, ShadowTopicState.FAULTED)], fence: fencedStep })
-        .failover
-    ).toMatchObject({ ready: false, reason: expect.stringContaining('b has faulted') });
+    const faulted = getFailoverReadiness({
+      topics: [topic('a', 0), topic('b', 0, ShadowTopicState.FAULTED)],
+      fence: fencedStep,
+    }).failover;
+    expect(faulted).toMatchObject({ ready: false });
+    expect(faulted.reason).toContain('b has faulted');
     expect(
       getFailoverReadiness({ topics: [topic('a', 0, ShadowTopicState.PAUSED)], fence: fencedStep }).failover.reason
     ).toContain('a is paused');
@@ -279,14 +285,24 @@ describe('getFailoverReadiness', () => {
 });
 
 describe('getLinkIdentity', () => {
-  const linkWith = (clientOptions: unknown) => ({ configurations: { clientOptions } }) as UnifiedShadowLink;
+  const linkWith = (clientOptions: Partial<UnifiedClientOptions>): UnifiedShadowLink => ({
+    name: 'orders-dr',
+    id: 'orders-dr',
+    state: UnifiedShadowLinkState.ACTIVE,
+    tasksStatus: [],
+    syncedShadowTopicProperties: [],
+    configurations: { clientOptions: { bootstrapServers: [], ...clientOptions } },
+  });
 
   test('reads the user of a SCRAM or PLAIN link', () => {
     expect(
       getLinkIdentity(
         linkWith({
           authenticationConfiguration: {
-            authentication: { case: 'scramConfiguration', value: { username: 'shadow-orders' } },
+            authentication: {
+              case: 'scramConfiguration',
+              value: { username: 'shadow-orders', password: '', scramMechanism: 0 },
+            },
           },
         })
       )
@@ -294,7 +310,9 @@ describe('getLinkIdentity', () => {
     expect(
       getLinkIdentity(
         linkWith({
-          authenticationConfiguration: { authentication: { case: 'plainConfiguration', value: { username: 'plain' } } },
+          authenticationConfiguration: {
+            authentication: { case: 'plainConfiguration', value: { username: 'plain', password: '' } },
+          },
         })
       )
     ).toEqual({ authentication: 'sasl', principal: 'plain' });

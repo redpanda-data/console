@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from '@rstest/core';
+import { afterEach, describe, expect, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
 import { createGroupedSidebarItems } from 'utils/route-utils';
 
@@ -14,20 +14,20 @@ describe('the SidebarNavigation re-renders on endpointCompatibility change (UX-9
     });
   });
 
-  it('the SQLService defaults to unsupported when endpointCompatibility is null', () => {
+  test('the SQLService defaults to unsupported when endpointCompatibility is null', () => {
     const state = useSupportedFeaturesStore.getState();
     expect(state.endpointCompatibility).toBeNull();
     expect(state.sqlApi).toBe(false);
   });
 
-  it('the SQL item is hidden when SQLService is not supported', () => {
+  test('the SQL item is hidden when SQLService is not supported', () => {
     const groups = createGroupedSidebarItems();
     const allItems = groups.flatMap((g) => g.items);
     const sql = allItems.find((item) => item.to === '/sql');
     expect(sql).toBeUndefined();
   });
 
-  it('the SQL item appears after endpointCompatibility loads with SQLService supported', () => {
+  test('the SQL item appears after endpointCompatibility loads with SQLService supported', () => {
     const compatibility: EndpointCompatibility = {
       kafkaVersion: '3.6.0',
       endpoints: [
@@ -50,7 +50,7 @@ describe('the SidebarNavigation re-renders on endpointCompatibility change (UX-9
     expect(sql?.title).toBe('SQL');
   });
 
-  it('store selector triggers re-render when endpointCompatibility changes', async () => {
+  test('store selector triggers re-render when endpointCompatibility changes', async () => {
     const selector = (s: { endpointCompatibility: EndpointCompatibility | null }) => s.endpointCompatibility;
     const { result, unmount } = renderHook(() => useSupportedFeaturesStore(selector));
 

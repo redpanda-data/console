@@ -1,9 +1,9 @@
-@import "tailwindcss";
-@import "./components/redpanda-ui/style/theme.css";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import './components/redpanda-ui/style/theme.css';
+@import 'tw-animate-css';
 
 /* Tailwind's source detection walks markdown, so class names in the skill docs would ship as CSS. */
-@source not "../.claude";
+@source not '../.claude';
 
 /* tw-animate-css's .fade-in sets opacity: 0, which hides Monaco's own .monaco-hover.fade-in. */
 .monaco-hover.fade-in {
@@ -23,7 +23,7 @@
 /* …and this hands border-color back to the cascade layers so Tailwind's border utilities paint.
    Keyed on the substring every border utility shares, which also spares emotion's `chakra-*` and
    `css-<hash>` classes. Duplicated value-identically in cloud-ui — change both or neither. */
-[class*="border-"] {
+[class*='border-'] {
   border-color: revert-layer;
 }
 
@@ -43,15 +43,15 @@
   --color-logo-plate: transparent;
 }
 
-:root[data-theme="dark"],
+:root[data-theme='dark'],
 :root.dark {
   /* White softened toward the ground, so a plate reads as a deliberate light chip rather than a hole. */
   --color-logo-plate: color-mix(in oklab, var(--color-static-light), var(--color-background) 8%);
 }
 
 @utility logo-plate {
-  border-radius: var(--radius-sm);
   background-color: var(--color-logo-plate);
+  border-radius: var(--radius-sm);
   box-shadow: 0 0 0 0.2rem var(--color-logo-plate);
 }
 
@@ -65,12 +65,12 @@
   }
 
   .page-fill-viewport {
-    height: var(--page-fill-height);
+    block-size: var(--page-fill-height);
   }
 
   /* The same measure as a floor, for a page whose content may demand more. */
   .page-fill-viewport-min {
-    min-height: var(--page-fill-height);
+    min-block-size: var(--page-fill-height);
   }
 }
 
@@ -79,58 +79,60 @@
 @layer utilities {
   /* 100%, not none — so the release animates. */
   html[data-page-expanded] .page-expanded-uncap {
-    max-width: 100%;
+    max-inline-size: 100%;
   }
 
   html[data-page-expanded] .page-expanded-flush {
-    padding-left: 0;
-    padding-right: 0;
+    padding-inline: 0;
   }
 
   /* Chrome that stays put while the page beneath it goes edge-to-edge. */
   html[data-page-expanded] .page-expanded-inset {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-inline: 1rem;
   }
 }
 
-/* Dev-only floating debug triggers, raised clear of the host's Feedback tab. The container carries
-   4px padding around the button, so the offsets are -4 from where the visible circle sits. */
-.tsqd-open-btn-container {
-  right: 8px !important;
-  bottom: 64px !important;
+/* Public relative-position API: keep the query trigger clear of the host's Feedback tab. */
+.console-query-devtools {
+  position: fixed;
+  inset-block-end: 64px;
+  inset-inline-end: 8px;
+  z-index: 99999;
   opacity: 0.7;
   transition: opacity 150ms;
-}
-.tsqd-open-btn-container:hover {
-  opacity: 1;
-}
-.tsqd-open-btn,
-.tsqd-open-btn svg {
-  width: 32px !important;
-  height: 32px !important;
 }
 
-button[aria-label="Open TanStack Router Devtools"] {
-  right: 12px !important;
-  bottom: 36px !important;
-  transform: scale(0.85);
-  transform-origin: bottom right;
+.console-router-devtools-toggle {
   opacity: 0.7;
   transition: opacity 150ms;
 }
-button[aria-label="Open TanStack Router Devtools"]:hover {
+
+.console-query-devtools:hover,
+.console-router-devtools-toggle:hover {
   opacity: 1;
+}
+
+.console-query-devtools button,
+.console-query-devtools svg {
+  inline-size: 32px;
+  block-size: 32px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: Reduced motion must override third-party inline animation styles. */
     scroll-behavior: auto !important;
+
+    /* biome-ignore lint/complexity/noImportantStyles: Reduced motion must override third-party inline animation styles. */
+    transition-duration: 0.01ms !important;
+
+    /* biome-ignore lint/complexity/noImportantStyles: Reduced motion must override third-party inline animation styles. */
+    animation-duration: 0.01ms !important;
+
+    /* biome-ignore lint/complexity/noImportantStyles: Reduced motion must override third-party inline animation styles. */
+    animation-iteration-count: 1 !important;
   }
 }
 
@@ -144,8 +146,17 @@ button[aria-label="Open TanStack Router Devtools"]:hover {
     0% {
       background-color: var(--color-success-wash);
     }
+
     100% {
       background-color: transparent;
     }
   }
+}
+
+@utility page-padding-transition {
+  transition-property: padding;
+}
+
+@utility page-width-transition {
+  transition-property: max-inline-size, padding;
 }

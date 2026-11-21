@@ -9,32 +9,38 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, test } from '@rstest/core';
+import { afterEach, describe, expect, rs, test } from '@rstest/core';
+import { isRedirect } from '@tanstack/react-router';
+import { createTestRouterFromFiles } from 'test-utils';
 
 import { Route } from './index';
 
-// Regression test: navigating away from the Messages tab (e.g. clicking the "Topics"
-// breadcrumb) while a nuqs query-param update is still queued can flush that update
-// after the route changed, re-navigating here with topicName literally "undefined".
-// This must bounce back to the topic list instead of rendering a 404.
+afterEach(() => {
+  rs.restoreAllMocks();
+});
+
+// A queued query-param update can flush after navigation and supply the literal topic name "undefined".
 describe('topic details route', () => {
-  test('redirects /topics/undefined back to the topic list', () => {
-    expect.assertions(3);
-
-    try {
-      Route.options.beforeLoad?.({ params: { topicName: 'undefined' } } as never);
-    } catch (error) {
-      const redirect = error as Response & {
-        options: { replace: boolean; to: string };
-      };
-
-      expect(redirect.status).toBe(307);
-      expect(redirect.options.to).toBe('/topics');
-      expect(redirect.options.replace).toBe(true);
+  test('redirects /topics/undefined back to the topic list', async () => {
+    const guard = rs.spyOn(Route.options, 'beforeLoad');
+    const router = createTestRouterFromFiles('/topics/undefined');
+    await router.load();
+    const redirect: unknown = guard.mock.results.find((result) => result.type === 'throw')?.value;
+    if (!isRedirect(redirect)) {
+      throw new Error('Expected the invalid topic redirect');
     }
+    expect(redirect.status).toBe(307);
+    expect(redirect.options).toMatchObject({ to: '/topics', replace: true });
+    expect(router.state.location.pathname).toBe('/topics');
   });
 
-  test('does not redirect a real topic name', () => {
-    expect(() => Route.options.beforeLoad?.({ params: { topicName: 'my-real-topic' } } as never)).not.toThrow();
+  test('loads a real topic without redirecting', async () => {
+    const guard = rs.spyOn(Route.options, 'beforeLoad');
+    const router = createTestRouterFromFiles('/topics/my-real-topic');
+    await router.load();
+    expect(guard).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ params: { topicName: 'my-real-topic' } }));
+    expect(guard.mock.results.every((result) => result.type === 'return')).toBe(true);
+    expect(router.state.location.pathname).toBe('/topics/my-real-topic');
+    expect(router.state.matches.every((match) => match.status === 'success')).toBe(true);
   });
 });

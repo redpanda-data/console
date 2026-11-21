@@ -11,8 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import UserCreatePage from '../../../components/pages/security/users/user-create';
-
+import { UserCreatePage } from '../../../components/pages/security/users/user-create';
 export const Route = createFileRoute('/security/users/create')({
   staticData: {
     title: 'Create User',

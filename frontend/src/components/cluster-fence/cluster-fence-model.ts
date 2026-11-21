@@ -16,6 +16,7 @@ import {
   type GetClusterFenceStatusResponse,
 } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { isNonEmptyString } from 'utils/string-utils';
 
 export type FencePhase = 'unfenced' | 'fencing' | 'fenced' | 'unfencing';
 
@@ -164,7 +165,7 @@ export const brokersPhrase = (nodeIds: readonly number[]) => {
   if (nodeIds.length === 1) {
     return `broker ${nodeIds[0]}`;
   }
-  return `brokers ${nodeIds.slice(0, -1).join(', ')} and ${nodeIds.at(-1)}`;
+  return `brokers ${nodeIds.slice(0, -1).join(', ')} and ${String(nodeIds.at(-1))}`;
 };
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
@@ -174,7 +175,7 @@ export const unreachableBrokersSubject = (nodeIds: readonly number[]) =>
   `${capitalize(brokersPhrase(nodeIds))} ${nodeIds.length === 1 ? 'isn’t' : 'aren’t'}`;
 
 const idsWith = (brokers: readonly BrokerProgress[], status: BrokerProgress['status']) =>
-  brokers.filter((broker) => broker.status === status).map((broker) => broker.nodeId);
+  brokers.flatMap((broker) => (broker.status === status ? [broker.nodeId] : []));
 
 /**
  * A settings change while fenced puts the cluster back in Fencing, but brokers keep blocking on their
@@ -188,10 +189,15 @@ export const isApplyingNewSettings = (
 ): boolean =>
   summary.phase === 'fencing' &&
   brokers.some((broker) => broker.status === 'behind' && broker.blocks === true) &&
-  !brokers.some((broker) => broker.blocks === false);
+  brokers.every((broker) => broker.blocks !== false);
 
 const describeFencedReads = ({ allowAllReads }: Pick<FenceSummary, 'allowAllReads'>) =>
   allowAllReads ? 'Consumers can still read.' : 'Only exempt users can read from user topics.';
+
+const FENCE_RELEASE_DESCRIPTIONS = {
+  unfenced: 'Clients write and read as usual.',
+  unfencing: 'Brokers accept writes and reads again as the change reaches each of them.',
+};
 
 /**
  * What the phase means for writes and reads. It doesn't name the phase, which the badge or title
@@ -201,18 +207,15 @@ export const describeFencePhase = (
   summary: Pick<FenceSummary, 'phase' | 'allowAllReads'>,
   brokers: readonly BrokerProgress[]
 ): string => {
-  switch (summary.phase) {
-    case 'unfenced':
-      return 'Clients write and read as usual.';
-    case 'fencing':
-      return isApplyingNewSettings(summary, brokers)
-        ? `Writes stay blocked on every broker while the new settings reach them. ${describeFencedReads(summary)}`
-        : `Each broker rejects writes as soon as the fence reaches it. ${describeFencedReads(summary)}`;
-    case 'fenced':
-      return `Every broker rejects writes. ${describeFencedReads(summary)}`;
-    default:
-      return 'Brokers accept writes and reads again as the change reaches each of them.';
+  if (summary.phase === 'fencing') {
+    return isApplyingNewSettings(summary, brokers)
+      ? `Writes stay blocked on every broker while the new settings reach them. ${describeFencedReads(summary)}`
+      : `Each broker rejects writes as soon as the fence reaches it. ${describeFencedReads(summary)}`;
   }
+  if (summary.phase === 'fenced') {
+    return `Every broker rejects writes. ${describeFencedReads(summary)}`;
+  }
+  return FENCE_RELEASE_DESCRIPTIONS[summary.phase];
 };
 
 /**
@@ -259,7 +262,7 @@ export const linkCanRead = (policy: ReadPolicy, link: LinkIdentity): boolean | u
   if (link.authentication === 'none') {
     return policy.exemptPrincipals.includes('');
   }
-  if (link.principal) {
+  if (isNonEmptyString(link.principal)) {
     return policy.exemptPrincipals.includes(link.principal);
   }
 };
@@ -269,7 +272,7 @@ export const exemptNameFor = (link: LinkIdentity): string | undefined => {
   if (link.authentication === 'none') {
     return '';
   }
-  return link.principal || undefined;
+  return isNonEmptyString(link.principal) ? link.principal : undefined;
 };
 
 export const MTLS_LINK_NOTE =
@@ -319,7 +322,9 @@ export const getReadPolicyWarnings = (principals: string[], allowAllReads: boole
   if (principals.length === 0) {
     warnings.push({ id: 'empty', severity: 'danger', message: EMPTY_EXEMPT_WARNING });
   }
-  warnings.push(...principals.filter((principal) => principal.startsWith(USER_PREFIX)).map(userPrefixWarning));
+  warnings.push(
+    ...principals.flatMap((principal) => (principal.startsWith(USER_PREFIX) ? [userPrefixWarning(principal)] : []))
+  );
   if (principals.includes('')) {
     warnings.push({
       id: 'blank',
@@ -394,8 +399,8 @@ const splitVerdict = (
   brokers: readonly BrokerProgress[],
   words = { allowed: 'Allowed', rejected: 'Rejected' }
 ): Verdict => {
-  const blocking = brokers.filter((broker) => broker.blocks === true).map((broker) => broker.nodeId);
-  const open = brokers.filter((broker) => broker.blocks === false).map((broker) => broker.nodeId);
+  const blocking = brokers.flatMap((broker) => (broker.blocks === true ? [broker.nodeId] : []));
+  const open = brokers.flatMap((broker) => (broker.blocks === false ? [broker.nodeId] : []));
   if (blocking.length > 0 && open.length > 0) {
     return { verdict: 'partly', detail: moveSplitDetail(summary.phase, blocking, open, words) };
   }
@@ -508,33 +513,29 @@ export const getClientEffects = ({
   const knownLinks = links ?? [];
   const linkRows: ClientEffect[] = knownLinks.map((link) => ({
     id: `link-${link.linkName}`,
-    label: link.principal ? `${link.linkName} fetches as ${link.principal}` : `${link.linkName} fetches`,
+    label: isNonEmptyString(link.principal)
+      ? `${link.linkName} fetches as ${link.principal}`
+      : `${link.linkName} fetches`,
     ...readVerdict(summary, brokers, (policy) => linkCanRead(policy, link)),
   }));
   const consume = readVerdict(summary, brokers, (policy) => policy.allowAllReads);
+  const consumeVerdict: Verdict =
+    consume.verdict === 'allowed' && summary.allowAllReads
+      ? { verdict: 'allowed', detail: 'Allowed: Allow all reads is on.' }
+      : consume;
   /** Without the links themselves, a reminder that comes last: not every cluster is a link's source. */
-  const anyLinkRow: ClientEffect[] =
-    knownLinks.length > 0
-      ? []
-      : [
-          {
-            id: 'link',
-            label: 'A shadow link’s user fetches',
-            ...(consume.verdict === 'allowed'
-              ? ALLOWED
-              : { verdict: 'unknown' as const, detail: 'Allowed only if its user is on the exempt list.' }),
-          },
-        ];
+  const anyLinkRow: ClientEffect[] = [];
+  if (knownLinks.length === 0) {
+    const verdict: Verdict =
+      consume.verdict === 'allowed'
+        ? ALLOWED
+        : { verdict: 'unknown', detail: 'Allowed only if its user is on the exempt list.' };
+    anyLinkRow.push({ id: 'link', label: 'A shadow link’s user fetches', ...verdict });
+  }
   const rejected = splitVerdict(summary, brokers);
   return [
     { id: 'produce', label: 'A producer writes', ...rejected },
-    {
-      id: 'consume',
-      label: 'An app’s consumer fetches',
-      ...(consume.verdict === 'allowed' && summary.allowAllReads
-        ? { verdict: 'allowed' as const, detail: 'Allowed: Allow all reads is on.' }
-        : consume),
-    },
+    { id: 'consume', label: 'An app’s consumer fetches', ...consumeVerdict },
     ...linkRows,
     { id: 'commit', label: 'A consumer group joins, heartbeats or commits', ...rejected },
     { id: 'topic-config', label: 'A topic config change', ...rejected },

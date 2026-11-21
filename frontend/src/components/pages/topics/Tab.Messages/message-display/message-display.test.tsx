@@ -19,7 +19,7 @@ rs.mock('../../../../../state/ui-state', () => ({
   },
 }));
 
-rs.mock('../../../../../config', () => ({
+rs.mock('../../../../../runtime-config', () => ({
   isServerless: () => false,
 }));
 

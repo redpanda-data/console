@@ -1,3 +1,5 @@
+import { ConnectError } from '@connectrpc/connect';
+
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -10,6 +12,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
 import { KeyRoundIcon } from 'lucide-react';
 import {
   ACL_Operation,
@@ -21,6 +24,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
 import { docsLinks } from 'utils/docs-links';
 
 import {
@@ -35,8 +39,8 @@ import {
 import { AclPermissionRow, PermissionTypeText } from './acl-permission-rows';
 import { useCreateACLMutation, useDeleteAclMutation } from '../../../../react-query/api/acl';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
-import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
-import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { formatToastErrorMessageGRPC, reportActionError } from '../../../../utils/toast.utils';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
 import {
@@ -110,7 +114,7 @@ const toAclRows = (list: AclDetail[]): AclRow[] =>
             resourceType: RESOURCE_TYPE_LABELS[rule.resourceType] ?? rule.resourceType,
             resourceName: getResourceNameValue(rule),
             operation: op.charAt(0) + op.slice(1).toLowerCase(),
-            permissionType: (perm === 'allow' ? 'Allow' : 'Deny') as 'Allow' | 'Deny',
+            permissionType: perm === 'allow' ? ('Allow' as const) : ('Deny' as const),
             host: detail.sharedConfig.host,
             rawResourceType: getGRPCResourceType(rule.resourceType),
             rawPatternType:
@@ -146,7 +150,11 @@ const toastGrantAllResults = (results: PromiseSettledResult<unknown>[]) => {
   }
   const someCreated = failed.length < results.length;
   for (const f of failed) {
-    const description = formatToastErrorMessageGRPC({ error: f.reason, action: 'create', entity: 'ACL' });
+    const description = formatToastErrorMessageGRPC({
+      error: ConnectError.from(f.reason),
+      action: 'create',
+      entity: 'ACL',
+    });
     if (someCreated) {
       toast.warning('Some ACLs were created, but there were errors', { description });
     } else {
@@ -167,7 +175,7 @@ const GrantAllPermissionsDialog = ({ principal, open, onOpenChange }: GrantAllPe
   const grantAllResources = GRANT_ALL_RESOURCES.filter((r) => !r.requiresSchemaRegistry || schemaRegistryACLApi);
 
   const confirmGrantAllPermissions = async () => {
-    if (!principal) {
+    if (!(principal !== null && principal !== undefined && principal !== '')) {
       return;
     }
     const results = await Promise.allSettled(
@@ -230,7 +238,11 @@ const GrantAllPermissionsDialog = ({ principal, open, onOpenChange }: GrantAllPe
           <Button onClick={() => onOpenChange(false)} type="button" variant="outline">
             Cancel
           </Button>
-          <Button disabled={isGranting} onClick={confirmGrantAllPermissions} type="button">
+          <Button
+            disabled={isGranting}
+            onClick={asyncEvent(confirmGrantAllPermissions, reportActionError)}
+            type="button"
+          >
             Confirm
           </Button>
         </DialogFooter>
@@ -297,7 +309,7 @@ type AclRowsProps = {
 };
 
 const AclRows = ({ isLoading, rows, isSelected, onToggle }: AclRowsProps) => {
-  if (isLoading) {
+  if (isLoading === true) {
     return <AclRowsSkeleton />;
   }
   if (rows.length === 0) {
@@ -329,7 +341,9 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
     );
     for (const result of results) {
       if (result.status === 'rejected') {
-        toast.error(formatToastErrorMessageGRPC({ error: result.reason, action: 'delete', entity: 'ACL' }));
+        toast.error(
+          formatToastErrorMessageGRPC({ error: ConnectError.from(result.reason), action: 'delete', entity: 'ACL' })
+        );
       }
     }
     selection.clear();
@@ -345,13 +359,13 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
                 <FenceGuardedButton
                   action="editAcls"
                   disabled={isDeleting}
-                  onClick={deleteSelected}
+                  onClick={asyncEvent(deleteSelected, reportActionError)}
                   variant="destructive"
                 >
                   Delete selected ({selection.selected.size})
                 </FenceGuardedButton>
               )}
-              {principal && (
+              {isNonEmptyString(principal) && (
                 <FenceGuardedButton action="editAcls" onClick={() => setGrantAllOpen(true)} variant="outline">
                   Allow all operations
                 </FenceGuardedButton>
@@ -398,7 +412,9 @@ export const AclsCard = ({ acls, principal, isLoading }: AclsCardProps) => {
         </ListLayoutContent>
       </ListLayout>
 
-      {principal && <AddAclDialog onOpenChange={setDialogOpen} open={dialogOpen} principal={principal} />}
+      {isNonEmptyString(principal) && (
+        <AddAclDialog onOpenChange={setDialogOpen} open={dialogOpen} principal={principal} />
+      )}
 
       <GrantAllPermissionsDialog onOpenChange={setGrantAllOpen} open={grantAllOpen} principal={principal} />
     </>

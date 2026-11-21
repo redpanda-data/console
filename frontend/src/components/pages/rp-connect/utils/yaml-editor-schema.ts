@@ -1,5 +1,6 @@
 import { asciidocToMarkdown } from './asciidoc';
 import { isDeprecatedComponent } from './deprecation';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
 type SchemaNode = {
@@ -17,24 +18,24 @@ type SchemaNode = {
 };
 
 function addDescription(node: SchemaNode, description: string) {
-  if (!(node.description || node.markdownDescription) && description.trim()) {
+  if (!((node.description ?? '') || isNonEmptyString(node.markdownDescription)) && description.trim()) {
     node.markdownDescription = asciidocToMarkdown(description);
   }
 }
 
 function unwrapField(node: SchemaNode): SchemaNode {
   let current = node;
-  while (current.items && typeof current.items === 'object' && !Array.isArray(current.items)) {
+  while (typeof current.items === 'object' && !Array.isArray(current.items)) {
     current = current.items;
   }
   const mapValues = current.patternProperties?.['.'];
-  return mapValues && typeof mapValues === 'object' ? mapValues : current;
+  return typeof mapValues === 'object' ? mapValues : current;
 }
 
 function addFieldDescriptions(node: SchemaNode, fields: readonly RawFieldSpec[]) {
   for (const field of fields) {
     const child = node.properties?.[field.name];
-    if (!child || typeof child !== 'object') {
+    if (typeof child !== 'object') {
       continue;
     }
     addDescription(child, field.description || field.shortDescription || '');
@@ -51,9 +52,10 @@ function addComponentDescriptions(
   type: string,
   componentIndex: ReadonlyMap<string, ConnectComponentSpec>
 ) {
-  for (const [name, node] of Object.entries(option.properties ?? {})) {
+  const componentProperties = Object.entries(option.properties ?? {});
+  for (const [name, node] of componentProperties) {
     const component = componentIndex.get(`${type}:${name}`);
-    if (!(component && node) || typeof node !== 'object') {
+    if (!component || typeof node !== 'object') {
       continue;
     }
     // Not `deprecationMessage`: a branch with a problem loses the anyOf match, dropping its hover and completions.
@@ -69,8 +71,10 @@ export function withYamlDocumentation<T extends SchemaNode>(schema: T, component
   const documented = structuredClone(schema);
   const componentIndex = new Map(components.map((component) => [`${component.type}:${component.name}`, component]));
 
-  for (const [type, definition] of Object.entries(documented.definitions ?? {})) {
-    for (const option of schemaNodes(definition?.allOf).flatMap((branch) => schemaNodes(branch.anyOf))) {
+  const schemaDefinitions = Object.entries(documented.definitions ?? {});
+  for (const [type, definition] of schemaDefinitions) {
+    const componentOptions = schemaNodes(definition?.allOf).flatMap((branch) => schemaNodes(branch.anyOf));
+    for (const option of componentOptions) {
       addComponentDescriptions(option, type, componentIndex);
     }
   }

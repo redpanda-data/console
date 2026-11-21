@@ -10,7 +10,7 @@
  */
 
 import { changedNodeIds, changedNodeIdsFromBaseline, nodeConfigSignatures } from './pipeline-diff';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 const base = `pipeline:
   processors:
@@ -20,12 +20,12 @@ output:
   drop: {}`;
 
 describe('changedNodeIds', () => {
-  it('reports the node whose config changed', () => {
+  test('reports the node whose config changed', () => {
     const next = base.replace('message: hi', 'message: bye');
     expect(changedNodeIds(base, next)).toEqual(['proc-1']);
   });
 
-  it('reports a restored/added node', () => {
+  test('reports a restored/added node', () => {
     const without = `pipeline:
   processors:
     - mapping: 'root = this'
@@ -35,11 +35,11 @@ output:
     expect(changedNodeIds(without, base)).toContain('proc-1');
   });
 
-  it('returns nothing when the configs are identical', () => {
+  test('returns nothing when the configs are identical', () => {
     expect(changedNodeIds(base, base)).toEqual([]);
   });
 
-  it('flags only the inserted node when a processor is inserted at the head', () => {
+  test('flags only the inserted node when a processor is inserted at the head', () => {
     const next = `pipeline:
   processors:
     - http: { url: 'http://x' }
@@ -50,7 +50,7 @@ output:
     expect(changedNodeIds(base, next)).toEqual(['proc-0']);
   });
 
-  it('does not flag nodes whose identical config merely shifted position', () => {
+  test('does not flag nodes whose identical config merely shifted position', () => {
     const next = `pipeline:
   processors:
     - log: { message: hi }
@@ -60,7 +60,7 @@ output:
     expect(changedNodeIds(base, next)).toEqual([]);
   });
 
-  it('attributes a nested edit to the child only, not its ancestor containers', () => {
+  test('attributes a nested edit to the child only, not its ancestor containers', () => {
     const nested = `pipeline:
   processors:
     - switch:
@@ -74,14 +74,14 @@ output:
     expect(changedNodeIds(nested, next)).toEqual(['proc-0-case-1-p0']);
   });
 
-  it('never throws on malformed YAML', () => {
-    expect(changedNodeIds('{{{', base)).toEqual(expect.any(Array));
+  test('never throws on malformed YAML', () => {
+    expect(changedNodeIds('{{{', base)).toBeArray();
     expect(changedNodeIds(base, '{{{')).toEqual([]);
   });
 });
 
 describe('changedNodeIdsFromBaseline', () => {
-  it('matches changedNodeIds when diffing against pre-computed baseline signatures', () => {
+  test('matches changedNodeIds when diffing against pre-computed baseline signatures', () => {
     const baseline = nodeConfigSignatures(base);
     const next = base.replace('message: hi', 'message: bye');
     // One baseline serves repeated diffs (the panel re-diffs every keystroke against a constant baseline).
@@ -89,13 +89,13 @@ describe('changedNodeIdsFromBaseline', () => {
     expect(changedNodeIdsFromBaseline(baseline, base)).toEqual([]);
   });
 
-  it('handles a malformed-YAML baseline like changedNodeIds does', () => {
+  test('handles a malformed-YAML baseline like changedNodeIds does', () => {
     expect(changedNodeIdsFromBaseline(nodeConfigSignatures('{{{'), base)).toEqual(changedNodeIds('{{{', base));
   });
 });
 
 describe('stop conditions', () => {
-  it('a stop-condition edit marks its input as changed', () => {
+  test('a stop-condition edit marks its input as changed', () => {
     const before = 'input:\n  kafka: { topics: [a] }\noutput:\n  drop: {}\n';
     const wrapped =
       'input:\n  read_until:\n    idle_timeout: 5s\n    input:\n      kafka: { topics: [a] }\noutput:\n  drop: {}\n';

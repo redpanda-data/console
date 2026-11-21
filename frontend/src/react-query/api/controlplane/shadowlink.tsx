@@ -34,9 +34,10 @@ import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, type UseMutationOptions, useMutation, useQuery } from '@connectrpc/connect-query';
 import { type UseMutationResult, type UseQueryResult, useQueryClient } from '@tanstack/react-query';
-import { config, isEmbedded } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { MAX_PAGE_SIZE, type MessageInit } from 'react-query/react-query.utils';
+
+import { config, isEmbedded } from '../../../runtime-config';
 
 const listShadowLinksKeys = () => [
   createConnectQueryKey({ schema: cpListShadowLinks, cardinality: 'finite' }),
@@ -109,11 +110,16 @@ export const useControlplaneGetShadowLinkByNameQuery = (
   const shadowLinkId = listQuery.data?.shadowLinks?.find((sl) => sl.name === request.name)?.id;
 
   // Then fetch full details by ID
-  const getQuery = useControlplaneGetShadowLinkQuery({ id: shadowLinkId ?? '' }, { enabled: !!shadowLinkId });
+  const getQuery = useControlplaneGetShadowLinkQuery(
+    { id: shadowLinkId ?? '' },
+    { enabled: shadowLinkId !== null && shadowLinkId !== undefined && shadowLinkId !== '' }
+  );
 
   return {
     data: getQuery.data?.shadowLink,
-    isLoading: listQuery.isLoading || (!!shadowLinkId && getQuery.isLoading),
+    isLoading:
+      listQuery.isLoading ||
+      (shadowLinkId !== null && shadowLinkId !== undefined && shadowLinkId !== '' && getQuery.isLoading),
     error: listQuery.error || getQuery.error,
     refetch: async () => {
       await listQuery.refetch();

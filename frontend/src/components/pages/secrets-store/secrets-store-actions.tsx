@@ -22,6 +22,8 @@ import { MoreHorizontal, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useListResourcesForSecretQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { ResourceInUseAlert } from './resource-in-use-alert';
 import type { SecretTableRow } from './secrets-store-list-page';
@@ -60,24 +62,28 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button className="h-8 w-8" data-testid="secret-actions-menu-trigger" size="icon" variant="ghost">
-              <MoreHorizontal className="h-4 w-4" />
+            <Button className="size-8" data-testid="secret-actions-menu-trigger" size="icon" variant="ghost">
+              <MoreHorizontal className="size-4" />
               <span className="sr-only">Open menu</span>
             </Button>
           }
         />
         <DropdownMenuContent align="end" className="w-[200px]">
           {/* Stays open after copying, as the copy button it replaced did. */}
-          <DropdownMenuItem closeOnClick={false} data-testid="secret-copy-id-button" onClick={handleCopyId}>
+          <DropdownMenuItem
+            closeOnClick={false}
+            data-testid="secret-copy-id-button"
+            onClick={asyncEvent(handleCopyId, reportActionError)}
+          >
             <div className="flex items-center gap-4">
-              <CopyIcon className="h-4 w-4" />
+              <CopyIcon className="size-4" />
               Copy ID
             </div>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem data-testid="secret-edit-menu-item" onClick={() => onEdit(secret.id)}>
             <div className="flex items-center gap-4">
-              <Pencil className="h-4 w-4" />
+              <Pencil className="size-4" />
               Edit
             </div>
           </DropdownMenuItem>
@@ -88,7 +94,7 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
       {/* Render the dialog as a sibling of the dropdown so the dialog survives the menu's unmount on close. */}
       <DeleteResourceAlertDialog
         isDeleting={isDeleting}
-        onDelete={handleDelete}
+        onDelete={asyncEvent(handleDelete, reportActionError)}
         onOpenChange={setIsDeleteDialogOpen}
         open={isDeleteDialogOpen}
         resourceId={secret.id}

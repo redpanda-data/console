@@ -14,6 +14,7 @@
  * Used by the create-topic dialog and the rp-connect wizard
  */
 
+import { nonzeroNumber } from './number-utils';
 export type RetentionTimeUnit = keyof typeof timeFactors;
 export const timeFactors = {
   default: -1,
@@ -46,7 +47,7 @@ export const sizeFactors = {
  * @param unit The time unit
  * @returns Milliseconds (-1 for infinite/default)
  */
-export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit | string): number {
+export function convertRetentionTimeToMs(value: number, unit: string): number {
   if (unit === 'infinite' || unit === 'default') {
     return -1;
   }
@@ -61,7 +62,7 @@ export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit 
     years: 1000 * 60 * 60 * 24 * 365,
   };
 
-  return value * (multipliers[unit] || 1);
+  return value * (nonzeroNumber(multipliers[unit]) ?? 1);
 }
 
 /**
@@ -70,7 +71,7 @@ export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit 
  * @param unit The size unit
  * @returns Bytes (-1 for infinite/default)
  */
-export function convertRetentionSizeToBytes(value: number, unit: RetentionSizeUnit | string): number {
+export function convertRetentionSizeToBytes(value: number, unit: string): number {
   if (unit === 'infinite' || unit === 'default') {
     return -1;
   }
@@ -83,10 +84,9 @@ export function convertRetentionSizeToBytes(value: number, unit: RetentionSizeUn
     TiB: 1024 * 1024 * 1024 * 1024,
   };
 
-  return Math.floor(value * (multipliers[unit] || 1));
+  return Math.floor(value * (nonzeroNumber(multipliers[unit]) ?? 1));
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export function getRetentionTimeFinalValue(value: number | undefined, unit: RetentionTimeUnit) {
   if (unit === 'default') {
     return;
@@ -116,7 +116,6 @@ export function getRetentionTimeFinalValue(value: number | undefined, unit: Rete
   }
 }
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export function getRetentionSizeFinalValue(value: number | undefined, unit: RetentionSizeUnit) {
   if (unit === 'default') {
     return;

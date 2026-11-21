@@ -22,7 +22,7 @@ export const ConfiguredBadge = () => (
 export const UploadedFileName = ({ children }: { children: React.ReactNode }) => (
   <span className="flex w-full items-center gap-2">
     <span className="flex shrink-0">
-      <TonedIcon className="h-4 w-4" icon={CheckIcon} tone="success" />
+      <TonedIcon className="size-4" icon={CheckIcon} tone="success" />
     </span>
     <span className="flex-1 truncate text-left font-medium text-foreground">{children}</span>
   </span>
@@ -46,13 +46,13 @@ export const CertificateUploadRow = ({ fileName, onDrop, onError, testId }: Cert
     onError={onError}
     // Dropzone picks empty or filled rendering from src. A placeholder File is enough for
     // DropzoneContent to render — the real PEM bytes live in form state.
-    src={fileName ? [new File([], fileName)] : undefined}
+    src={fileName !== null && fileName !== undefined && fileName !== '' ? [new File([], fileName)] : undefined}
     testId={testId}
-    variant={fileName ? 'primary-outline' : 'outline'}
+    variant={fileName !== null && fileName !== undefined && fileName !== '' ? 'primary-outline' : 'outline'}
   >
     <DropzoneEmptyState className="my-0! w-full! flex-row! items-center! justify-start!">
       <span className="flex w-full items-center gap-2 text-muted-foreground">
-        <UploadCloud className="h-4 w-4 shrink-0" />
+        <UploadCloud className="size-4 shrink-0" />
         <span className="flex-1 text-left">Upload file</span>
       </span>
     </DropzoneEmptyState>

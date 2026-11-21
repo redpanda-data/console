@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
+import { describe, expect, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
 
 import { useResilientParse } from './use-resilient-parse';
@@ -23,28 +23,28 @@ const renderParse = (yaml: string) =>
   });
 
 describe('useResilientParse', () => {
-  it('holds the last real pipeline while the YAML is unparseable', () => {
+  test('holds the last real pipeline while the YAML is unparseable', () => {
     const { result, rerender } = renderParse(GOOD_YAML);
     rerender({ yaml: '{{{' });
     expect(result.current.showingStale).toBe(true);
     expect(result.current.nodes.some((n) => n.label === 'generate')).toBe(true);
   });
 
-  it('holds the last real pipeline when valid YAML loses its components mid-edit', () => {
+  test('holds the last real pipeline when valid YAML loses its components mid-edit', () => {
     const { result, rerender } = renderParse(GOOD_YAML);
     rerender({ yaml: 'input:\n' });
     expect(result.current.showingStale).toBe(true);
     expect(result.current.nodes.some((n) => n.label === 'generate')).toBe(true);
   });
 
-  it('resets to the empty state when the config text is cleared', () => {
+  test('resets to the empty state when the config text is cleared', () => {
     const { result, rerender } = renderParse(GOOD_YAML);
     rerender({ yaml: '' });
     expect(result.current.showingStale).toBe(false);
     expect(isPipelineEmpty(result.current.nodes)).toBe(true);
   });
 
-  it('resets to the empty state on a {} document (deleting the last node), not the stale pipeline', () => {
+  test('resets to the empty state on a {} document (deleting the last node), not the stale pipeline', () => {
     const { result, rerender } = renderParse(GOOD_YAML);
     rerender({ yaml: '{}' });
     expect(result.current.showingStale).toBe(false);

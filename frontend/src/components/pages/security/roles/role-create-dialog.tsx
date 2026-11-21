@@ -12,13 +12,15 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
+import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useCreateRoleMutation } from '../../../../react-query/api/security';
-import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
-import { useClusterFenceGuard } from '../../../cluster-fence/use-cluster-fence-guard';
 import { Button } from '../../../redpanda-ui/components/button';
 import {
   Dialog,
@@ -38,7 +40,7 @@ type RoleCreateDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-/** The name checks, plus whether the fence rejects creating roles right now. */
+/** Name availability and the fence both reject submitting a new role. */
 const useRoleNameChecks = (roleName: string) => ({
   ...useRoleNameAvailability(roleName),
   fenced: Boolean(useClusterFenceGuard().reasonFor('editRoles')),
@@ -80,8 +82,8 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
     setIsSubmitting(true);
     try {
       await createAndOpenRole(trimmed);
-    } catch (err) {
-      toast.error(`Failed to create role: ${ConnectError.from(err).message}`);
+    } catch (error) {
+      toast.error(`Failed to create role: ${ConnectError.from(error).message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -100,7 +102,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
               autoFocus
               id="role-name"
               onChange={(e) => setRoleName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              onKeyDown={asyncEvent((e) => e.key === 'Enter' && handleSubmit(), reportActionError)}
               placeholder="analytics-writer"
               value={roleName}
             />
@@ -114,7 +116,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           <FenceGuardedButton
             action="editRoles"
             disabled={!trimmed || (submitted && alreadyExists) || isSubmitting}
-            onClick={handleSubmit}
+            onClick={asyncEvent(handleSubmit, reportActionError)}
           >
             Create
           </FenceGuardedButton>

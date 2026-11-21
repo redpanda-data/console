@@ -11,10 +11,9 @@
 
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { ActivityIcon } from 'components/icons';
-import { isFeatureFlagEnabled, isServerless } from 'config';
 
-import ObservabilityPage from '../../components/pages/observability/observability-page';
-
+import { ObservabilityPage } from '../../components/pages/observability/observability-page';
+import { isFeatureFlagEnabled, isServerless } from '../../runtime-config';
 export const Route = createFileRoute('/observability/')({
   staticData: {
     title: 'Metrics',

@@ -66,10 +66,10 @@ function isNativeTooltipHost(element: ESTree.JSXOpeningElement, name: string) {
 function isRegistryComponent(sourceCode: SourceCode, identifier: ESTree.JSXIdentifier, member?: string) {
   const binding = importOf(sourceCode, identifier);
   const module = binding && REGISTRY_MODULE.exec(binding.source)?.[1];
-  if (!(binding && module)) {
+  if (!(binding && module !== null && module !== undefined && module !== '')) {
     return false;
   }
-  const exported = member === undefined ? binding.imported : member;
+  const exported = member ?? binding.imported;
   const throughNamespace = member === undefined || binding.imported === '*';
   return throughNamespace && exported === REGISTRY_EXPORTS[module];
 }

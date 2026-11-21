@@ -12,6 +12,13 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
+import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { render } from 'test-utils';
+
+import { shadowTopicsInterval } from './__fixtures__/shadow-topics-query';
+import { ShadowLinkDetailsPage } from './shadowlink-details-page';
 
 const flags = rs.hoisted(() => ({ enableClusterFencing: false }));
 const host = rs.hoisted(() => ({ embedded: true }));
@@ -26,12 +33,12 @@ rs.mock('@tanstack/react-router', () => {
     useNavigate: () => rs.fn(() => Promise.resolve()),
   };
 });
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
+rs.mock('runtime-config', () => {
+  const actual = rs.requireActual<typeof import('runtime-config')>('runtime-config');
   return {
     ...actual,
     isEmbedded: rs.fn(() => host.embedded),
-    isFeatureFlagEnabled: rs.fn((key: string) => flags[key as keyof typeof flags] ?? false),
+    isFeatureFlagEnabled: rs.fn((key: string) => key === 'enableClusterFencing' && flags.enableClusterFencing),
     isServerless: rs.fn(() => false),
   };
 });
@@ -73,14 +80,6 @@ rs.mock('./shadow-link-details', () => ({ ShadowLinkDetails: MockShadowLinkDetai
 rs.mock('./tasks-table', () => ({ TasksTable: MockTasksTable }));
 rs.mock('./config/shadow-link-configuration', () => ({ ShadowLinkConfiguration: MockShadowLinkConfiguration }));
 rs.mock('./failover-tab', () => ({ FailoverTab: MockFailoverTab }));
-rs.mock('state/ui-state', () => ({ uiState: { pageTitle: '', pageBreadcrumbs: [] } }));
-
-import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
-import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
-import { useClusterFenceStore } from 'stores/cluster-fence-store';
-import { render } from 'test-utils';
-
-import { ShadowLinkDetailsPage } from './shadowlink-details-page';
 
 const FENCED_SOURCE: ShadowLinkSource = {
   kind: 'cloud',
@@ -147,12 +146,9 @@ describe('the ShadowLinkDetailsPage', () => {
 
     expect(screen.getByTestId('failover-tab-trigger')).toHaveTextContent('Failover');
     expect(screen.getByTestId('failover-stub')).toBeInTheDocument();
-    const options = rs.mocked(useListShadowTopicQuery).mock.calls.at(-1)?.[1] as {
-      enabled: boolean;
-      refetchInterval: (query: { state: { status: string } }) => number | false;
-    };
-    expect(options.enabled).toBe(true);
-    expect(options.refetchInterval({ state: { status: 'success' } })).toBe(3000);
+    const options = rs.mocked(useListShadowTopicQuery).mock.calls.at(-1)?.[1];
+    expect(options?.enabled).toBe(true);
+    expect(shadowTopicsInterval(options, 'success')).toBe(3000);
 
     await user.click(screen.getByRole('button', { name: 'Fail over all topics' }));
     expect(await screen.findByTestId('failover-readiness')).toBeVisible();

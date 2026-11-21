@@ -46,6 +46,9 @@ import {
   mergeTimeSeries,
 } from 'utils/pipeline-throughput.utils';
 import { calculateTimeRange, getEvenlySpacedTimeTicks, getTimeRanges, type TimeRange } from 'utils/time-range';
+import { reportActionError } from 'utils/toast.utils';
+
+import { isObject } from '../../../../utils/type-guards';
 
 // Cap at 12h: the range-query backend can't serve a wider window at its default resolution (Prometheus' 11k-point limit).
 const TIME_RANGES = getTimeRanges(12 * 60 * 60 * 1000);
@@ -76,7 +79,7 @@ const ThroughputPlaceholder: FC<{ title: string; description: string; action?: R
       <EmptyTitle>{title}</EmptyTitle>
       <EmptyDescription>{description}</EmptyDescription>
     </EmptyHeader>
-    {action ? <EmptyContent>{action}</EmptyContent> : null}
+    {Boolean(action) ? <EmptyContent>{action}</EmptyContent> : null}
   </Empty>
 );
 
@@ -146,8 +149,9 @@ const ThroughputContent: FC<ThroughputContentProps> = ({
           content={
             <ChartTooltipContent
               labelFormatter={(_, payload) => {
-                const ts = payload?.[0]?.payload?.timestamp;
-                if (!ts || typeof ts !== 'number') {
+                const point: unknown = payload?.[0]?.payload;
+                const ts = isObject(point) ? point.timestamp : undefined;
+                if (typeof ts !== 'number' || ts === 0) {
                   return '';
                 }
                 return formatTooltipLabel(ts);
@@ -225,7 +229,7 @@ function usePipelineThroughput(pipelineId: string, selectedTimeRange: TimeRange)
   const handleRefresh = useCallback(() => {
     // The query-catalog key carries no timestamps, so a refreshKey bump alone never retries a failed
     // ListQueries.
-    refetchQueries();
+    refetchQueries().catch(reportActionError);
     setRefreshKey((prev) => prev + 1);
   }, [refetchQueries]);
 
@@ -263,7 +267,12 @@ export const PipelineThroughputCard: FC<PipelineThroughputCardProps> = ({ pipeli
         <div className="flex items-center gap-1">
           <Select
             items={TIME_RANGES}
-            onValueChange={(v) => setSelectedTimeRange(v as TimeRange)}
+            onValueChange={(v) => {
+              const option = TIME_RANGES.find((entry) => entry.value === v);
+              if (option) {
+                setSelectedTimeRange(option.value);
+              }
+            }}
             value={selectedTimeRange}
           >
             <SelectTrigger size="sm">

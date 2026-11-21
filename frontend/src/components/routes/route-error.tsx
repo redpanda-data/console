@@ -11,6 +11,8 @@
 
 import { useRouter } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import errorBananaSlip from '../../assets/redpanda/ErrorBananaSlip.svg';
 
@@ -42,7 +44,7 @@ export const RouteError = ({ error }: RouteErrorProps) => {
       <img alt="Error" className="h-[140px]" src={errorBananaSlip} />
       <h2 className="text-heading-xl font-semibold">Something went wrong</h2>
       <p className="max-w-md text-center text-body text-muted-foreground">{getRouteErrorMessage(error)}</p>
-      <Button onClick={() => router.invalidate()} variant="outline">
+      <Button onClick={asyncEvent(() => router.invalidate(), reportActionError)} variant="outline">
         Try again
       </Button>
     </div>

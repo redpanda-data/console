@@ -21,11 +21,11 @@ export function usePipelineMode(): { mode: PipelineMode; pipelineId?: string } {
     return { mode: 'create' };
   }
 
-  if (pipelineId && location.pathname.includes('/edit')) {
+  if (pipelineId !== null && pipelineId !== undefined && pipelineId !== '' && location.pathname.includes('/edit')) {
     return { mode: 'edit', pipelineId };
   }
 
-  if (pipelineId) {
+  if (pipelineId !== null && pipelineId !== undefined && pipelineId !== '') {
     return { mode: 'view', pipelineId };
   }
 

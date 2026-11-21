@@ -34,11 +34,10 @@ const renderSlot = (slot: Slot) => (typeof slot === 'function' ? slot() : slot);
 
 // Only the active panel renders its children, so function content runs for one tab.
 const TabSlot = ({ slot }: { slot: Slot }) => <>{renderSlot(slot)}</>;
-
-export default function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onChange, isFitted }: TabsProps) {
+export function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onChange, isFitted }: TabsProps) {
   return (
     <RegistryTabs
-      defaultValue={selectedTabKey || defaultSelectedTabKey || tabs[0]?.key}
+      defaultValue={(selectedTabKey ?? '') || (defaultSelectedTabKey ?? '') || tabs[0]?.key}
       onValueChange={(next, details) => {
         // Only user activation; Base UI also reports its own initial/fallback selection.
         if (details.reason === 'none' && next !== null) {
@@ -46,7 +45,7 @@ export default function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onCh
         }
       }}
     >
-      <TabsList activateOnFocus layout={isFitted ? 'full' : 'auto'} variant="underline">
+      <TabsList activateOnFocus layout={isFitted === true ? 'full' : 'auto'} variant="underline">
         {tabs.map((t) => (
           <TabsTrigger disabled={t.disabled} key={t.key} value={t.key} variant="underline">
             {renderSlot(t.title)}

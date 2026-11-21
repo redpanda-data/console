@@ -69,7 +69,7 @@ const ExplicitConfirmModal = (p: {
 };
 
 export function openDeleteModal(transformName: string, onConfirm: () => void) {
-  openModal(ExplicitConfirmModal, {
+  openModal<Parameters<typeof ExplicitConfirmModal>[0]>(ExplicitConfirmModal, {
     title: <>Permanently delete transform {transformName}</>,
     body: <>Deleting a transform cannot be undone.</>,
     primaryButtonContent: <>Delete</>,

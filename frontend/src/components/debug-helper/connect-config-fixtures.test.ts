@@ -13,6 +13,7 @@ import { parse as parseYaml } from 'yaml';
 
 import { CONNECT_CONFIG_FIXTURES } from './connect-config-fixtures';
 import { describe, expect, test } from 'bun:test';
+import { compareStrings } from '../../utils/string-utils';
 import { type PipelineEndStatus, summarizePipelineEndYaml } from '../pages/rp-connect/utils/input-end-behavior';
 import { parsePipelineFlowTree } from '../pages/rp-connect/utils/pipeline-flow-parser';
 import { localStopConditionLintHints } from '../pages/rp-connect/utils/pipeline-lint';
@@ -49,14 +50,19 @@ const memberNodes = (yaml: string) =>
 describe('the Connect config fixtures', () => {
   test('ids are unique, and every fixture but the malformed one parses', () => {
     expect(new Set(CONNECT_CONFIG_FIXTURES.map((f) => f.id)).size).toBe(CONNECT_CONFIG_FIXTURES.length);
-    for (const fixture of CONNECT_CONFIG_FIXTURES.filter((f) => f.id !== 'invalid-malformed-yaml')) {
-      expect(() => parseYaml(fixture.yaml, { merge: true })).not.toThrow();
+    for (const fixture of CONNECT_CONFIG_FIXTURES) {
+      if (fixture.id === 'invalid-malformed-yaml') {
+        continue;
+      }
+      expect(() => {
+        parseYaml(fixture.yaml, { merge: true });
+      }).not.toThrow();
     }
   });
 
   test('each stop-condition fixture ends as it says', () => {
     const tagged = CONNECT_CONFIG_FIXTURES.filter((f) => f.tags.includes('stops')).map((f) => f.id);
-    expect(tagged.sort()).toEqual(Object.keys(EXPECTED_END).sort());
+    expect(tagged.sort(compareStrings)).toEqual(Object.keys(EXPECTED_END).sort(compareStrings));
     for (const [id, status] of Object.entries(EXPECTED_END)) {
       expect([id, summarizePipelineEndYaml(yamlOf(id)).status]).toEqual([id, status]);
     }

@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { config, createAuthInjectingFetch } from './config';
+import { createAuthInjectingFetch } from './config';
+import { config } from './runtime-config';
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 describe('createAuthInjectingFetch', () => {
@@ -26,7 +27,7 @@ describe('createAuthInjectingFetch', () => {
 
   test('attaches the Bearer token from config.jwt when no Authorization header is present', async () => {
     config.jwt = 'token-123';
-    const baseFetch = mock().mockResolvedValue(ok);
+    const baseFetch = mock((_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => Promise.resolve(ok));
 
     await createAuthInjectingFetch(baseFetch)('/api/schema-registry/subjects/x/versions/latest/validate', {
       method: 'POST',
@@ -36,50 +37,45 @@ describe('createAuthInjectingFetch', () => {
 
     expect(baseFetch).toHaveBeenCalledTimes(1);
     const [input, init] = baseFetch.mock.calls[0];
-    const headers = new Headers(init.headers);
     expect(input).toBe('/api/schema-registry/subjects/x/versions/latest/validate');
-    expect(headers.get('Authorization')).toBe('Bearer token-123');
+    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token-123');
     // existing init is preserved
-    expect(headers.get('Content-Type')).toBe('application/json');
-    expectJsonPostBody(init);
+    expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json');
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBe('{}');
   });
 
   test('does not overwrite an Authorization header a host-provided (V1) fetch already set', async () => {
     config.jwt = 'token-123';
-    const baseFetch = mock().mockResolvedValue(ok);
+    const baseFetch = mock((_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => Promise.resolve(ok));
 
     await createAuthInjectingFetch(baseFetch)('/api/topics', {
       headers: { Authorization: 'Bearer host-token' },
     });
 
-    const headers = new Headers(baseFetch.mock.calls[0][1].headers);
+    const headers = new Headers(baseFetch.mock.calls[0][1]?.headers);
     expect(headers.get('Authorization')).toBe('Bearer host-token');
   });
 
   test('adds no Authorization header when config.jwt is unset (standalone OSS)', async () => {
     config.jwt = undefined;
-    const baseFetch = mock().mockResolvedValue(ok);
+    const baseFetch = mock((_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => Promise.resolve(ok));
 
     await createAuthInjectingFetch(baseFetch)('/api/topics');
 
-    const headers = new Headers(baseFetch.mock.calls[0][1].headers);
+    const headers = new Headers(baseFetch.mock.calls[0][1]?.headers);
     expect(headers.has('Authorization')).toBe(false);
   });
 
   test('reads config.jwt lazily at call time so token refreshes are picked up', async () => {
     config.jwt = 'old-token';
-    const baseFetch = mock().mockResolvedValue(ok);
+    const baseFetch = mock((_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => Promise.resolve(ok));
     const authFetch = createAuthInjectingFetch(baseFetch);
 
     config.jwt = 'refreshed-token';
     await authFetch('/api/topics');
 
-    const headers = new Headers(baseFetch.mock.calls[0][1].headers);
+    const headers = new Headers(baseFetch.mock.calls[0][1]?.headers);
     expect(headers.get('Authorization')).toBe('Bearer refreshed-token');
   });
 });
-
-function expectJsonPostBody(init: RequestInit) {
-  expect(init.method).toBe('POST');
-  expect(init.body).toBe('{}');
-}

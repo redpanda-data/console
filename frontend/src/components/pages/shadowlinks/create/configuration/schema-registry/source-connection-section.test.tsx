@@ -13,14 +13,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
-import { isEmbedded } from 'config';
-import { useForm } from 'react-hook-form';
+import { type DeepPartial, useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
 
 import { SourceConnectionSection } from './source-connection-section';
+import { isEmbedded } from '../../../../../../runtime-config';
 import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE, SR_AUTH_METHOD } from '../../model';
 
-rs.mock('config', () => ({
+rs.mock('runtime-config', () => ({
   isEmbedded: rs.fn(() => false),
   isFeatureFlagEnabled: rs.fn(() => false),
 }));
@@ -44,7 +44,7 @@ const TestWrapper = ({
   onFormChange,
 }: {
   defaultValues?: FormValues;
-  onFormChange?: (values: FormValues) => void;
+  onFormChange?: (values: DeepPartial<FormValues>) => void;
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
@@ -53,7 +53,7 @@ const TestWrapper = ({
 
   if (onFormChange) {
     form.watch((values) => {
-      onFormChange(values as FormValues);
+      onFormChange(values);
     });
   }
 
@@ -69,7 +69,7 @@ const TestWrapper = ({
 /** Renders the section and records the latest form values on every change. */
 const renderTrackingFormValues = () => {
   const user = userEvent.setup();
-  const latest: { values?: FormValues } = {};
+  const latest: { values?: DeepPartial<FormValues> } = {};
 
   render(
     <TestWrapper
@@ -82,8 +82,11 @@ const renderTrackingFormValues = () => {
 };
 
 const uploadToDropzone = async (user: ReturnType<typeof userEvent.setup>, dropzoneTestId: string, file: File) => {
-  const input = screen.getByTestId(dropzoneTestId).querySelector('input[type="file"]');
-  await user.upload(input as HTMLInputElement, file);
+  const input = screen.getByTestId(dropzoneTestId).querySelector<HTMLInputElement>('input[type="file"]');
+  if (!input) {
+    throw new Error('Expected the upload input');
+  }
+  await user.upload(input, file);
 };
 
 describe('the SourceConnectionSection', () => {
@@ -100,7 +103,7 @@ describe('the SourceConnectionSection', () => {
 
   test('should reveal username and a real password input for HTTP Basic', async () => {
     const user = userEvent.setup();
-    let formValues: FormValues | undefined;
+    let formValues: DeepPartial<FormValues> | undefined;
 
     render(
       <TestWrapper
@@ -142,7 +145,7 @@ describe('the SourceConnectionSection', () => {
     test('should render a secret selector instead of a raw password input and store a secret reference', async () => {
       mockSecretsData = { secrets: [{ id: 'SR_PASSWORD' }, { id: 'OTHER_SECRET' }] };
       const user = userEvent.setup();
-      let formValues: FormValues | undefined;
+      let formValues: DeepPartial<FormValues> | undefined;
 
       render(
         <TestWrapper
@@ -164,6 +167,7 @@ describe('the SourceConnectionSection', () => {
       await user.click(await screen.findByRole('option', { name: 'SR_PASSWORD' }));
 
       await waitFor(() => {
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
         expect(formValues?.schemaRegistry?.basicCredentials?.password).toBe('${secrets.SR_PASSWORD}');
       });
     });

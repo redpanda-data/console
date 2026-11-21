@@ -1,3 +1,4 @@
+import { createTopicMessage } from '../messages/message-test-helpers';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -36,14 +37,14 @@ function filter(overrides: Partial<FilterEntry>): FilterEntry {
 }
 
 function message(offset: number, timestamp: number, valueJson = ''): TopicMessage {
-  return { offset, timestamp, keyJson: '', valueJson } as TopicMessage;
+  return createTopicMessage({ offset, timestamp, keyJson: '', valueJson });
 }
 
 describe('getSearchErrorMessage', () => {
   test.each([
     [new Error('broker down'), 'broker down'],
     ['aborted', 'aborted'],
-    [new Error(''), 'Unknown error'],
+    [Object.assign(new Error('Error initialized before its message is cleared'), { message: '' }), 'Unknown error'],
     [undefined, 'Unknown error'],
   ])('describes %p as %p', (error, expected) => {
     expect(getSearchErrorMessage(error)).toBe(expected);

@@ -1,3 +1,4 @@
+import { deleteTransformAndRefresh } from './delete-transform';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -26,7 +27,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { showToast } from 'utils/toast.utils';
+import { reportActionError } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import { PartitionStatus } from './transforms-list';
@@ -45,20 +46,24 @@ import {
   transformsApi,
 } from '../../../state/backend-api';
 import type { TopicMessage } from '../../../state/rest-interfaces';
-import { PartitionOffsetOrigin } from '../../../state/ui';
+import { PartitionOffsetOrigin } from '../../../types/topic-settings';
+import { arrayFirst, arrayGenericJoin } from '../../../utils/array-utils';
 import { sanitizeString } from '../../../utils/filter-helper';
 import { DefaultSkeleton, quickTable, TimestampDisplay } from '../../../utils/tsx-utils';
+import { isPresent } from '../../../utils/type-guards';
 import { decodeURIComponentPercents, encodeBase64 } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 import { SearchInput } from '../../misc/search-input';
-import Section from '../../misc/section';
-import Tabs from '../../misc/tabs/tabs';
+import { Section } from '../../misc/section';
+import { Tabs } from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
 import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
-class TransformDetails extends PageComponent<{ transformName: string }> {
+class TransformDetails extends PageComponent<{
+  transformName: string;
+}> {
   initPage(p: PageInitHelper): void {
     const transformName = decodeURIComponentPercents(this.props.transformName);
     p.title = transformName;
@@ -73,7 +78,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
   }
 
   refreshData(force: boolean) {
-    transformsApi.refreshTransforms(force);
+    transformsApi.refreshTransforms(force).catch(reportActionError);
   }
 
   render() {
@@ -98,23 +103,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
             className="mt-2"
             onClick={() =>
               openDeleteModal(transformName, () => {
-                transformsApi
-                  .deleteTransform(transformName)
-                  .then(() => {
-                    showToast({
-                      status: 'success',
-                      duration: 4000,
-                      title: 'Transform deleted',
-                    });
-                    transformsApi.refreshTransforms(true);
-                  })
-                  .catch((err) => {
-                    showToast({
-                      status: 'error',
-                      title: 'Failed to delete transform',
-                      description: String(err),
-                    });
-                  });
+                deleteTransformAndRefresh(transformName).catch(reportActionError);
               })
             }
             variant="destructive-outline"
@@ -133,7 +122,8 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
     );
   }
 }
-export default TransformDetails;
+
+export { TransformDetails };
 
 // Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
@@ -169,11 +159,12 @@ const partitionStatusColumns: DataTableColumnDef<PartitionTransformStatus>[] = [
 
 const OverviewTab = (p: { transform: TransformMetadata }) => {
   let overallStatus: React.ReactNode;
-  if (p.transform.statuses.all((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
+  if (p.transform.statuses.every((x) => x.status === PartitionTransformStatus_PartitionStatus.RUNNING)) {
     overallStatus = <PartitionStatus status={PartitionTransformStatus_PartitionStatus.RUNNING} />;
   } else {
     // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-    const partitionTransformStatus = p.transform.statuses.first(
+    const partitionTransformStatus = arrayFirst(
+      p.transform.statuses,
       (x) => x.status !== PartitionTransformStatus_PartitionStatus.RUNNING
     )!;
     overallStatus = <PartitionStatus status={partitionTransformStatus.status} />;
@@ -190,18 +181,19 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
               key: 'Output topics',
               value: (
                 <>
-                  {p.transform.outputTopicNames
-                    .map((x) => <Fragment key={x}>{x}</Fragment>)
-                    .genericJoin(() => (
+                  {arrayGenericJoin(
+                    p.transform.outputTopicNames.map((x) => <Fragment key={x}>{x}</Fragment>),
+                    () => (
                       <br />
-                    ))}
+                    )
+                  )}
                 </>
               ),
             },
             // { key: '', value: p.transform.environmentVariables }
           ],
           {
-            keyStyle: { fontWeight: 600, verticalAlign: 'baseline' },
+            keyClassName: 'font-semibold align-baseline',
             keyAlign: 'left',
             gapHeight: '.5rem',
             gapWidth: '4rem',
@@ -222,9 +214,10 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
 };
 
 const TRANSFORM_LOGS_TOPIC = '_redpanda.transform_logs';
-
-type TransformLogState = { messages: TopicMessage[]; isComplete: boolean };
-
+type TransformLogState = {
+  messages: TopicMessage[];
+  isComplete: boolean;
+};
 const EMPTY_TRANSFORM_LOGS: TransformLogState = { messages: [], isComplete: false };
 
 // Stops the running log search and starts a fresh one for `transformName`.
@@ -236,9 +229,11 @@ function restartTransformLogSearch(
   searchRef.current?.stopSearch();
   const search = createMessageSearch();
   searchRef.current = search;
-  executeMessageSearch(search, TRANSFORM_LOGS_TOPIC, transformName).finally(() => {
-    setLogState({ messages: [...search.messages], isComplete: true });
-  });
+  executeMessageSearch(search, TRANSFORM_LOGS_TOPIC, transformName)
+    .finally(() => {
+      setLogState({ messages: [...search.messages], isComplete: true });
+    })
+    .catch(reportActionError);
 }
 
 // Streams the transform's log messages, restarting for another transform; `refresh` restarts the search.
@@ -281,7 +276,7 @@ const useTransformLogs = (transformName: string) => {
     };
     const loadedMessages = await search.startSearch(searchReq);
 
-    if (loadedMessages && loadedMessages.length === 1) {
+    if (isPresent(loadedMessages) && loadedMessages.length === 1) {
       setLogState((prev) => {
         const idx = prev.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
         if (idx === -1) {
@@ -309,7 +304,7 @@ const useTransformLogs = (transformName: string) => {
 };
 
 const LogsTab = (p: { transform: TransformMetadata }) => {
-  const topic = api.topics?.first((x) => x.topicName === TRANSFORM_LOGS_TOPIC);
+  const topic = api.topics?.find((x) => x.topicName === TRANSFORM_LOGS_TOPIC);
   const { messages, isComplete, refresh, loadLargeMessageOf } = useTransformLogs(p.transform.name);
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
 
@@ -447,15 +442,15 @@ function executeMessageSearch(search: MessageSearch, topicName: string, transfor
   } as MessageSearchRequest;
 
   try {
-    return search.startSearch(request).catch((err) => {
-      const msg = (err as Error).message ?? String(err);
+    return search.startSearch(request).catch((error: unknown) => {
+      const msg = error instanceof Error ? error.message : String(error);
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error(`error in transformLogsMessageSearch: ${msg}`);
       return [];
     });
   } catch (error: unknown) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error(`error in transformLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
+    console.error(`error in transformLogsMessageSearch: ${error instanceof Error ? error.message : String(error)}`);
     return Promise.resolve([]);
   }
 }

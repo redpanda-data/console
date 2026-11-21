@@ -4,6 +4,7 @@ import { type UseInfiniteQueryOptions, useInfiniteQuery } from '@connectrpc/conn
 import type { MessageInitWithPageParam, MessagePageParamKey } from '@connectrpc/connect-query-core';
 import type { InfiniteData, SkipToken, UseInfiniteQueryResult } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
 /**
  * Options for useInfiniteQueryWithAllPages
@@ -13,6 +14,16 @@ export type UseInfiniteQueryWithAllPagesOptions<
   O extends DescMessage,
   ParamKey extends MessagePageParamKey<MessageInitShape<I>>,
 > = UseInfiniteQueryOptions<I, O, ParamKey>;
+
+// The aggregated flags describe the whole drain, not TanStack's discriminated first-page state.
+export type AllPagesQueryResult<TData> = Omit<
+  UseInfiniteQueryResult<InfiniteData<TData>, ConnectError>,
+  'isLoading' | 'isFetching' | 'isError'
+> & {
+  isLoading: boolean;
+  isFetching: boolean;
+  isError: boolean;
+};
 
 /**
  * Enhanced version of useInfiniteQuery that automatically fetches all pages
@@ -28,7 +39,7 @@ export function useInfiniteQueryWithAllPages<
   schema: DescMethodUnary<I, O>,
   input: SkipToken | MessageInitWithPageParam<MessageInitShape<I>, ParamKey>,
   options: UseInfiniteQueryWithAllPagesOptions<I, O, ParamKey>
-): UseInfiniteQueryResult<InfiniteData<MessageShape<O>>, ConnectError> {
+): AllPagesQueryResult<MessageShape<O>> {
   // Use the standard ConnectRPC useInfiniteQuery hook
   const queryResult = useInfiniteQuery(schema, input, options);
 
@@ -43,7 +54,7 @@ export function useInfiniteQueryWithAllPages<
       !queryResult.isFetchNextPageError && // Stop on page fetch errors too
       queryResult.data
     ) {
-      queryResult.fetchNextPage();
+      queryResult.fetchNextPage().catch(reportActionError);
     }
   }, [
     queryResult.hasNextPage,
@@ -60,5 +71,5 @@ export function useInfiniteQueryWithAllPages<
     isLoading: queryResult.isLoading || queryResult.hasNextPage,
     isFetching: queryResult.isFetching || queryResult.isFetchingNextPage,
     isError: queryResult.isError || queryResult.isFetchNextPageError,
-  } as UseInfiniteQueryResult<InfiniteData<MessageShape<O>>, ConnectError>;
+  };
 }

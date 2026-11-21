@@ -18,6 +18,7 @@ export const useGetServerlessClusterQuery = (
 
   return useQuery(getServerlessCluster, getServerlessClusterRequest, {
     ...options,
-    enabled: options?.enabled && getServerlessClusterRequest?.id !== '' && !isUuid(getServerlessClusterRequest?.id), // Don't call query if it's a cluster UUID instead of XID
+    enabled:
+      options?.enabled === true && getServerlessClusterRequest?.id !== '' && !isUuid(getServerlessClusterRequest?.id), // Don't call query if it's a cluster UUID instead of XID
   });
 };

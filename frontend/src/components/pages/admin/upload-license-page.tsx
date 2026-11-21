@@ -1,3 +1,4 @@
+import { create } from '@bufbuild/protobuf';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Dropzone, DropzoneContent, DropzoneEmptyState } from 'components/redpanda-ui/components/dropzone';
@@ -7,13 +8,18 @@ import { Link } from 'components/redpanda-ui/components/typography';
 import { CheckCircle2Icon, CircleAlertIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
 import { docsLinks } from 'utils/docs-links';
+import { reportActionError } from 'utils/toast.utils';
 
-import type { SetLicenseRequest, SetLicenseResponse } from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
+import {
+  SetLicenseRequestSchema,
+  type SetLicenseResponse,
+} from '../../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import { ENTERPRISE_FEATURES_DOCS_LINK } from '../../license/license-utils';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -29,15 +35,18 @@ const UploadLicenseForm: FC<{
 
   const handleSubmit = async () => {
     setErrorMessage('');
-    const content = (showFileUpload ? licenseFile : license) as string;
-    await onUploadLicense(content)
-      .then(() => {
-        onSuccess();
-        api.listLicenses(); // refetch licenses
-      })
-      .catch((err) => {
-        setErrorMessage(err.message);
-      });
+    const content = showFileUpload ? licenseFile : license;
+    if (content === undefined) {
+      setErrorMessage('Choose a license file first');
+      return;
+    }
+    try {
+      await onUploadLicense(content);
+      onSuccess();
+      api.listLicenses().catch(reportActionError);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : String(error));
+    }
   };
 
   return (
@@ -61,7 +70,9 @@ const UploadLicenseForm: FC<{
                     setLicenseFile(text);
                     setDroppedFiles(acceptedFiles);
                   })
-                  .catch((err: Error) => setErrorMessage(err.message));
+                  .catch((error: unknown) =>
+                    setErrorMessage(error instanceof Error ? error.message : 'Could not read the license file.')
+                  );
               }}
               onError={(err) => {
                 // A rejected drop replaces nothing; drop the previous file so the error is about what is shown.
@@ -111,7 +122,7 @@ const UploadLicenseForm: FC<{
           </Alert>
         )}
         <div className="mt-2 flex gap-2">
-          <Button data-testid="upload-license" onClick={handleSubmit} type="button">
+          <Button data-testid="upload-license" onClick={asyncEvent(handleSubmit, reportActionError)} type="button">
             Upload
           </Button>
           <Button
@@ -127,8 +138,7 @@ const UploadLicenseForm: FC<{
     </div>
   );
 };
-
-export default class UploadLicensePage extends PageComponent {
+export class UploadLicensePage extends PageComponent {
   initPage(p: PageInitHelper): void {
     p.title = 'Upload Enterprise License';
     p.addBreadcrumb('Upload License', '/upload-license');
@@ -194,11 +204,7 @@ const UploadLicensePageContent: FC = () => {
           <div className="w-full md:w-[600px]">
             <UploadLicenseForm
               onSuccess={() => setSuccess(true)}
-              onUploadLicense={async (license) =>
-                await api.uploadLicense({
-                  license,
-                } as SetLicenseRequest)
-              }
+              onUploadLicense={async (license) => await api.uploadLicense(create(SetLicenseRequestSchema, { license }))}
             />
           </div>
         </>

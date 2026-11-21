@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -10,7 +11,6 @@
  */
 
 import { InfoIcon, WarningIcon } from 'components/icons';
-import type React from 'react';
 import type { ReactNode } from 'react';
 
 import { type PreviewDisplayMode, renderPreviewTags } from './preview-tags-text';
@@ -27,18 +27,18 @@ function isEmptyValue(value: Payload): boolean {
   );
 }
 
-function isPrimitivePayload(payload: unknown): boolean {
+function isPrimitivePayload(payload: unknown): payload is string | number | boolean {
   return typeof payload === 'string' || typeof payload === 'number' || typeof payload === 'boolean';
 }
 
 function getValuePreviewText(msg: TopicMessage): ReactNode {
   if (msg.value.encoding === 'binary') {
     // If the original data was binary, display as hex dump
-    return msg.valueBinHexPreview as React.ReactNode;
+    return msg.valueBinHexPreview;
   }
   if (isPrimitivePayload(msg.value.payload)) {
     // If we can show the value as a primitive, do so.
-    return msg.value.payload as React.ReactNode;
+    return msg.value.payload;
   }
   // Only thing left is 'object'
   // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
@@ -62,19 +62,17 @@ function renderValuePreview(
   const isObject = !(value.encoding === 'binary' || isPrimitivePayload(value.payload));
   // Preview tags replace the whole cell for an object payload.
   const tagsPreview = isObject ? renderPreviewTags(value.payload, previewFields, previewDisplayMode) : null;
-  if (tagsPreview) {
+  if (tagsPreview !== null) {
     return tagsPreview;
   }
 
   return (
     <div className="flex flex-col">
       <code>
-        <span className="cellDiv" style={{ fontSize: '95%' }}>
-          {getValuePreviewText(msg)}
-        </span>
+        <span className="cellDiv console-message-preview">{getValuePreviewText(msg)}</span>
       </code>
       <span className="text-muted-foreground">
-        {value.encoding?.toUpperCase() || 'UNKNOWN'} - {prettyBytes(value.size)}
+        {(value.encoding?.toUpperCase() ?? '') || 'UNKNOWN'} - {prettyBytes(value.size)}
       </span>
     </div>
   );
@@ -103,7 +101,7 @@ export const MessagePreview = ({
     );
   }
 
-  if (value.isPayloadTooLarge) {
+  if (value.isPayloadTooLarge === true) {
     return (
       <div className="flex items-center gap-2 text-informative">
         <InfoIcon size={24} />
@@ -114,7 +112,11 @@ export const MessagePreview = ({
 
   try {
     return renderValuePreview(msg, previewFields, previewDisplayMode);
-  } catch (e) {
-    return <span className="text-destructive">Error in RenderPreview: {(e as Error).message ?? String(e)}</span>;
+  } catch (error) {
+    return (
+      <span className="text-destructive">
+        Error in RenderPreview: {error instanceof Error ? error.message : String(error)}
+      </span>
+    );
   }
 };

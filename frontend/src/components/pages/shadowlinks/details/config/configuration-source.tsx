@@ -31,6 +31,7 @@ const getScramMechanismLabel = (mechanism: number | undefined): string => {
       return 'SCRAM-SHA-256';
     case ScramMechanism.SCRAM_SHA_512:
       return 'SCRAM-SHA-512';
+    case undefined:
     default:
       return '-';
   }
@@ -42,11 +43,11 @@ export type ConfigurationSourceProps = {
 
 const ConfigField = ({ label, value, testId }: { label: string; value: React.ReactNode; testId?: string }) => (
   <div className="flex items-start justify-between border-b py-3 last:border-b-0">
-    <div className="text-body text-muted-foreground" data-testid={`${testId}-label`}>
+    <div className="text-body text-muted-foreground" data-testid={testId === undefined ? undefined : `${testId}-label`}>
       {label}
     </div>
-    <div className="text-right font-medium" data-testid={`${testId}-value`}>
-      {value || '-'}
+    <div className="text-right font-medium" data-testid={testId === undefined ? undefined : `${testId}-value`}>
+      {Boolean(value) ? value : '-'}
     </div>
   </div>
 );
@@ -126,7 +127,7 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
               }
             />
 
-            {Boolean(hasTLSCerts) && <TlsCertificatesConfig tlsSettings={tlsSettings} />}
+            {hasTLSCerts && <TlsCertificatesConfig tlsSettings={tlsSettings} />}
           </div>
         </CardContent>
       </Card>
@@ -154,9 +155,9 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
               }
             />
 
-            {Boolean(isAuthEnabled) && (
+            {isAuthEnabled && (
               <>
-                <ConfigField label="Username" testId="auth-username" value={scramConfig?.username || '-'} />
+                <ConfigField label="Username" testId="auth-username" value={(scramConfig?.username ?? '') || '-'} />
                 <ConfigField label="SASL mechanism" testId="auth-sasl-mechanism" value={scramMechanismLabel} />
               </>
             )}

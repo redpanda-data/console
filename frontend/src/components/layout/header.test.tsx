@@ -8,14 +8,18 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-
-import { describe, expect, it, rs } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { PropsWithChildren, ReactNode } from 'react';
 
+import { AppPageHeader } from './header';
+
 const { getMatchedRoutes, mockPageBreadcrumbs, isDarkModeAvailable } = rs.hoisted(() => ({
   getMatchedRoutes: rs.fn(() => [[{ options: { staticData: { breadcrumbOnlyHeader: true } } }], {}, undefined]),
-  mockPageBreadcrumbs: [] as { title: string; linkTo: string }[],
+  mockPageBreadcrumbs: [] as {
+    title: string;
+    linkTo: string;
+  }[],
   isDarkModeAvailable: rs.fn(() => false),
 }));
 
@@ -38,7 +42,7 @@ rs.mock('lucide-react', () => ({
   ChevronLeft: MockChevronLeft,
 }));
 
-rs.mock('../../config', () => ({
+rs.mock('../../runtime-config', () => ({
   isEmbedded: () => false,
   isFeatureFlagEnabled: () => false,
 }));
@@ -53,7 +57,10 @@ rs.mock('../../state/ui-state', () => ({
     selector: (state: {
       _pageTitle: string;
       backLink: null;
-      pageBreadcrumbs: { title: string; linkTo: string }[];
+      pageBreadcrumbs: {
+        title: string;
+        linkTo: string;
+      }[];
       selectedClusterName: null;
       shouldHidePageHeader: boolean;
     }) => T
@@ -68,8 +75,7 @@ rs.mock('../../state/ui-state', () => ({
 }));
 
 rs.mock('../../theme-init', () => ({ isDarkModeAvailable }));
-rs.mock('../misc/buttons/data-refresh/component', () => ({ default: () => null }));
-
+rs.mock('../misc/buttons/data-refresh/component', () => ({ DataRefreshButton: () => null }));
 rs.mock('../redpanda-ui/components/breadcrumb', () => ({
   Breadcrumb: MockBreadcrumb,
   BreadcrumbItem: MockBreadcrumbItem,
@@ -82,11 +88,8 @@ rs.mock('../redpanda-ui/components/breadcrumb', () => ({
 rs.mock('../redpanda-ui/components/button', () => ({ Button: MockButton }));
 rs.mock('../redpanda-ui/components/separator', () => ({ Separator: MockSeparator }));
 rs.mock('../redpanda-ui/components/sidebar', () => ({ SidebarTrigger: MockSidebarTrigger }));
-
-import AppPageHeader from './header';
-
 describe('the AppPageHeader', () => {
-  it('hides the title row when the matched route owns it', () => {
+  test('hides the title row when the matched route owns it', () => {
     render(<AppPageHeader />);
 
     expect(screen.queryByRole('heading', { name: 'Cluster details' })).not.toBeInTheDocument();
@@ -95,7 +98,7 @@ describe('the AppPageHeader', () => {
   // Regression: the current page's crumb used to be a real link back to its own
   // bare path, which drops query params (filters, pagination, active tab) when
   // clicked. It must render as non-navigable text instead.
-  it('renders every breadcrumb but the last as a link, and the last as plain text', () => {
+  test('renders every breadcrumb but the last as a link, and the last as plain text', () => {
     mockPageBreadcrumbs.push({ title: 'Topics', linkTo: '/topics' }, { title: 'my-topic', linkTo: '/topics/my-topic' });
 
     render(<AppPageHeader />);
@@ -106,8 +109,7 @@ describe('the AppPageHeader', () => {
 
     mockPageBreadcrumbs.length = 0;
   });
-
-  it('shows the theme switch, even when the route hides the title row, only when dark mode is available', () => {
+  test('shows the theme switch, even when the route hides the title row, only when dark mode is available', () => {
     const { unmount } = render(<AppPageHeader />);
     expect(screen.queryByTestId('theme-mode-switch')).not.toBeInTheDocument();
     unmount();

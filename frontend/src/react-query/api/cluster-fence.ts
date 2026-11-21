@@ -147,8 +147,8 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[], since: 
  * guards don't drop while the copies load or can't be read.
  */
 const ownCopiesBlock = (copies: BrokerOwnCopy[], lastRead: FenceSummary | undefined): boolean =>
-  copies.some((copy) => copy.phase && isBlockingPhase(copy.phase)) ||
-  (lastRead !== undefined && isBlockingPhase(lastRead.phase) && !copies.every((copy) => copy.phase));
+  copies.some((copy) => copy.phase !== undefined && isBlockingPhase(copy.phase)) ||
+  (lastRead !== undefined && isBlockingPhase(lastRead.phase) && copies.some((copy) => copy.phase === undefined));
 
 /** The status query, polled at the pace the fence's state calls for. */
 const useClusterFenceStatusRead = (available: boolean) =>
@@ -366,14 +366,14 @@ export const describeClusterFenceReadError = (error: unknown): string => {
   if (!(error instanceof ConnectError)) {
     return describeClusterFenceError(error);
   }
-  switch (error.code) {
-    case Code.PermissionDenied:
-      return 'You don’t have permission to view this cluster’s fence.';
-    case Code.Unavailable:
-      return 'This cluster has no controller leader right now, so its fence can’t be read. Console keeps trying.';
-    case Code.DeadlineExceeded:
-      return 'The cluster didn’t answer in time.';
-    default:
-      return describeClusterFenceError(error);
+  if (error.code === Code.PermissionDenied) {
+    return 'You don’t have permission to view this cluster’s fence.';
   }
+  if (error.code === Code.Unavailable) {
+    return 'This cluster has no controller leader right now, so its fence can’t be read. Console keeps trying.';
+  }
+  if (error.code === Code.DeadlineExceeded) {
+    return 'The cluster didn’t answer in time.';
+  }
+  return describeClusterFenceError(error);
 };

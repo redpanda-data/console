@@ -10,9 +10,9 @@
  */
 
 import userEvent from '@testing-library/user-event';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { HostSelector } from './host-selector';
+import { renderWithFileRoutes, screen, waitFor } from '../../../../test-utils';
 
 describe('the HostSelector', () => {
   const defaultProps = {

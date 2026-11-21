@@ -9,40 +9,58 @@
  * by the Apache License, Version 2.0
  */
 
+import type { Interceptor } from '@connectrpc/connect';
 import { useQuery } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+import { ConsoleApp } from './console-app';
+import type { ConsoleAppProps } from './types';
+import { setup } from '../config';
+import { config } from '../runtime-config';
+
+type ResolvedNavigation = { toLocation: { pathname: string; searchStr: string } };
+type RouterDouble = {
+  subscribe: (event: string, callback: (event: ResolvedNavigation) => void) => () => void;
+  history: { subscribe: (callback: HistoryCallback) => () => void };
+  load: () => Promise<void>;
+  state: { location: { pathname: string; searchStr: string } };
+  navigate: (options: { href: string }) => Promise<void>;
+};
+
+// The provider is mocked: this double models only Console's host-navigation bridge, not a route engine.
+const { mockCreateRouter } = rs.hoisted(() => ({
+  mockCreateRouter: rs.fn<(...options: unknown[]) => RouterDouble>(),
+}));
 
 // Mock TanStack Router before any imports
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
   return {
     ...actual,
-    createRouter: rs.fn(() => ({
-      subscribe: rs.fn(() => rs.fn()), // Returns unsubscribe function
-      history: { subscribe: rs.fn(() => rs.fn()) },
-      load: rs.fn().mockResolvedValue(undefined),
+    createRouter: mockCreateRouter.mockImplementation(() => ({
+      subscribe: rs.fn<RouterDouble['subscribe']>(() => rs.fn<() => void>()),
+      load: rs.fn<RouterDouble['load']>().mockResolvedValue(undefined),
+      history: { subscribe: () => () => undefined },
       state: { location: { pathname: '/topics', searchStr: '' } },
-      navigate: rs.fn().mockResolvedValue(undefined),
+      navigate: rs.fn<RouterDouble['navigate']>().mockResolvedValue(undefined),
     })),
-    createMemoryHistory: rs.fn(() => ({
-      location: { pathname: '/topics' },
-      listen: rs.fn(),
-      push: rs.fn(),
-      replace: rs.fn(),
-    })),
+    createMemoryHistory: rs.fn(actual.createMemoryHistory),
     RouterProvider: MockRouterProvider,
   };
 });
 
 rs.mock('config', () => ({
+  setup: rs.fn(),
+  addBearerTokenInterceptor: rs.fn<Interceptor>((next) => async (request) => await next(request)),
+  checkExpiredLicenseInterceptor: rs.fn<Interceptor>((next) => async (request) => await next(request)),
+}));
+
+rs.mock('runtime-config', () => ({
   config: {
     jwt: undefined as string | undefined,
   },
-  setup: rs.fn(),
   getGrpcBasePath: rs.fn(() => 'http://localhost:9090'),
-  addBearerTokenInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
-  checkExpiredLicenseInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
 }));
 
 rs.mock('protobuf-registry', () => ({
@@ -56,10 +74,6 @@ rs.mock('../routeTree.gen', () => ({
 rs.mock('../components/misc/not-found-page', () => ({
   NotFoundPage: MockNotFoundPage,
 }));
-
-import { ConsoleApp } from './console-app';
-import type { ConsoleAppProps } from './types';
-import { config, setup } from '../config';
 
 let pendingTopic: Promise<string> | undefined;
 let reportBreadcrumbsDuringRender = false;
@@ -81,14 +95,13 @@ const defaultProps: ConsoleAppProps = {
   featureFlags: {},
 };
 
-type RouterEventCallback = (event: unknown) => void;
+type RouterEventCallback = Parameters<RouterDouble['subscribe']>[1];
 type HistoryCallback = (event: { action: { type: string } }) => void;
 
 /** A router whose history and onResolved callbacks the test fires itself, in the order a navigation does. */
-const mockRouterEvents = async () => {
-  const { createRouter } = await import('@tanstack/react-router');
+const mockRouterEvents = () => {
   const events: { onResolved?: RouterEventCallback; onHistory?: HistoryCallback } = {};
-  rs.mocked(createRouter).mockReturnValueOnce({
+  mockCreateRouter.mockReturnValueOnce({
     subscribe: rs.fn((_event: string, cb: RouterEventCallback) => {
       events.onResolved = cb;
       return rs.fn();
@@ -102,7 +115,7 @@ const mockRouterEvents = async () => {
     load: rs.fn().mockResolvedValue(undefined),
     state: { location: { pathname: '/topics', searchStr: '' } },
     navigate: rs.fn().mockResolvedValue(undefined),
-  } as unknown as ReturnType<typeof createRouter>);
+  });
   return {
     get onResolved() {
       return events.onResolved;
@@ -316,12 +329,14 @@ describe('the ConsoleApp', () => {
           expect.objectContaining({
             jwt: 'test-token-123',
             clusterId: 'test-cluster-id',
-            setSidebarItems: expect.any(Function),
-            setBreadcrumbs: expect.any(Function),
             featureFlags: { enablePipelineDiagrams: true },
             urlOverride: { grpc: 'http://custom-grpc:9090' },
           })
         );
+        expect(setup).toHaveBeenCalledTimes(1);
+        const actualOptions = rs.mocked(setup).mock.calls.at(0)?.[0];
+        expect(actualOptions?.setSidebarItems).toBeTypeOf('function');
+        expect(actualOptions?.setBreadcrumbs).toBeTypeOf('function');
       });
     });
 
@@ -356,7 +371,7 @@ describe('the ConsoleApp', () => {
       render(<ConsoleApp {...propsWithoutInitialPath} />);
 
       await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
+        expect(mockGetAccessToken).toHaveBeenCalledWith();
       });
     });
 
@@ -376,7 +391,7 @@ describe('the ConsoleApp', () => {
       const { unmount } = render(<ConsoleApp {...defaultProps} />);
 
       await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
+        expect(mockGetAccessToken).toHaveBeenCalledWith();
       });
 
       // Unmount should not throw
@@ -389,7 +404,7 @@ describe('the ConsoleApp', () => {
     render(<ConsoleApp {...defaultProps} navigateTo="/groups" />);
 
     await waitFor(() => {
-      expect(mockGetAccessToken).toHaveBeenCalled();
+      expect(mockGetAccessToken).toHaveBeenCalledWith();
     });
   });
 
@@ -397,7 +412,7 @@ describe('the ConsoleApp', () => {
     const { unmount } = render(<ConsoleApp {...defaultProps} />);
 
     await waitFor(() => {
-      expect(mockGetAccessToken).toHaveBeenCalled();
+      expect(mockGetAccessToken).toHaveBeenCalledWith();
     });
 
     // Should not throw on unmount (unsubscribe should be called)
@@ -424,12 +439,14 @@ describe('the ConsoleApp', () => {
       render(<ConsoleApp {...propsWithoutFlags} />);
 
       await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
+        expect(mockGetAccessToken).toHaveBeenCalledWith();
       });
 
       // setup should still be called
       await waitFor(() => {
-        expect(setup).toHaveBeenCalled();
+        expect(setup).toHaveBeenCalledWith(
+          expect.objectContaining({ clusterId: 'test-cluster-id', jwt: 'test-token-123' })
+        );
       });
     });
 
@@ -449,7 +466,7 @@ describe('the ConsoleApp', () => {
       const { rerender } = render(<ConsoleApp {...defaultProps} initialPath="/topics" />);
 
       await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
+        expect(mockGetAccessToken).toHaveBeenCalledWith();
       });
 
       const createRouterCallCount = rs.mocked(createRouter).mock.calls.length;
@@ -469,7 +486,7 @@ describe('the ConsoleApp', () => {
       const { rerender } = render(<ConsoleApp {...defaultProps} initialPath="/topics" />);
 
       await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
+        expect(mockGetAccessToken).toHaveBeenCalledWith();
       });
 
       // Verify initial path was used
@@ -488,29 +505,30 @@ describe('the ConsoleApp', () => {
   describe('search Params Handling', () => {
     test('onRouteChange includes searchStr when route resolves with search params', async () => {
       // Get a reference to the subscribe callback so we can invoke it manually
-      const { createRouter } = await import('@tanstack/react-router');
-      let subscribedCallback: ((event: unknown) => void) | undefined;
+      let subscribedCallback: ((event: ResolvedNavigation) => void) | undefined;
 
-      rs.mocked(createRouter).mockReturnValueOnce({
-        subscribe: rs.fn((event: string, cb: (event: unknown) => void) => {
+      mockCreateRouter.mockReturnValueOnce({
+        subscribe: rs.fn((_event: string, cb: (event: ResolvedNavigation) => void) => {
           subscribedCallback = cb;
           return rs.fn(); // unsubscribe
         }),
-        history: { subscribe: rs.fn(() => rs.fn()) },
-        load: rs.fn().mockResolvedValue(undefined),
+        load: rs.fn<RouterDouble['load']>().mockResolvedValue(undefined),
+        history: { subscribe: () => () => undefined },
         state: { location: { pathname: '/topics', searchStr: '' } },
-        navigate: rs.fn().mockResolvedValue(undefined),
-      } as unknown as ReturnType<typeof createRouter>);
+        navigate: rs.fn<RouterDouble['navigate']>().mockResolvedValue(undefined),
+      });
 
       render(<ConsoleApp {...defaultProps} />);
 
       await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
+        expect(mockGetAccessToken).toHaveBeenCalledWith();
       });
 
       // Simulate a route resolution with search params (e.g., ?tab=messages)
-      expect(subscribedCallback).toBeDefined();
-      subscribedCallback!({
+      if (subscribedCallback === undefined) {
+        throw new Error('Expected the registered route subscription');
+      }
+      subscribedCallback({
         toLocation: { pathname: '/topics/my-topic', searchStr: '?tab=messages' },
       });
 
@@ -518,7 +536,7 @@ describe('the ConsoleApp', () => {
     });
 
     test('onRouteChange tells the host when Console replaced its history entry', async () => {
-      const router = await mockRouterEvents();
+      const router = mockRouterEvents();
       render(<ConsoleApp {...defaultProps} />);
       await waitFor(() => {
         expect(router.onResolved).toBeDefined();
@@ -532,21 +550,20 @@ describe('the ConsoleApp', () => {
     });
 
     test('navigateTo with search params triggers router navigation', async () => {
-      const { createRouter } = await import('@tanstack/react-router');
       const mockNavigate = rs.fn().mockResolvedValue(undefined);
 
-      rs.mocked(createRouter).mockReturnValueOnce({
+      mockCreateRouter.mockReturnValueOnce({
         subscribe: rs.fn(() => rs.fn()),
-        history: { subscribe: rs.fn(() => rs.fn()) },
-        load: rs.fn().mockResolvedValue(undefined),
+        load: rs.fn<RouterDouble['load']>().mockResolvedValue(undefined),
+        history: { subscribe: () => () => undefined },
         state: { location: { pathname: '/topics', searchStr: '' } },
         navigate: mockNavigate,
-      } as unknown as ReturnType<typeof createRouter>);
+      });
 
       const { rerender } = render(<ConsoleApp {...defaultProps} />);
 
       await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
+        expect(mockGetAccessToken).toHaveBeenCalledWith();
       });
 
       // Rerender with navigateTo containing search params
@@ -558,21 +575,20 @@ describe('the ConsoleApp', () => {
     });
 
     test('navigateTo without search params still works (backwards compat)', async () => {
-      const { createRouter } = await import('@tanstack/react-router');
       const mockNavigate = rs.fn().mockResolvedValue(undefined);
 
-      rs.mocked(createRouter).mockReturnValueOnce({
+      mockCreateRouter.mockReturnValueOnce({
         subscribe: rs.fn(() => rs.fn()),
-        history: { subscribe: rs.fn(() => rs.fn()) },
-        load: rs.fn().mockResolvedValue(undefined),
+        load: rs.fn<RouterDouble['load']>().mockResolvedValue(undefined),
+        history: { subscribe: () => () => undefined },
         state: { location: { pathname: '/topics', searchStr: '' } },
         navigate: mockNavigate,
-      } as unknown as ReturnType<typeof createRouter>);
+      });
 
       const { rerender } = render(<ConsoleApp {...defaultProps} />);
 
       await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
+        expect(mockGetAccessToken).toHaveBeenCalledWith();
       });
 
       // Rerender with navigateTo without search params
@@ -584,16 +600,15 @@ describe('the ConsoleApp', () => {
     });
 
     test('navigateTo matching current path + searchStr is a no-op', async () => {
-      const { createRouter } = await import('@tanstack/react-router');
       const mockNavigate = rs.fn().mockResolvedValue(undefined);
 
-      rs.mocked(createRouter).mockReturnValueOnce({
+      mockCreateRouter.mockReturnValueOnce({
         subscribe: rs.fn(() => rs.fn()),
-        history: { subscribe: rs.fn(() => rs.fn()) },
-        load: rs.fn().mockResolvedValue(undefined),
+        load: rs.fn<RouterDouble['load']>().mockResolvedValue(undefined),
+        history: { subscribe: () => () => undefined },
         state: { location: { pathname: '/topics', searchStr: '?tab=messages' } },
         navigate: mockNavigate,
-      } as unknown as ReturnType<typeof createRouter>);
+      });
 
       const { container, rerender } = render(<ConsoleApp {...defaultProps} />);
 
@@ -650,10 +665,11 @@ describe('the ConsoleApp', () => {
       };
 
       // Should not throw
+      // @ts-expect-error JavaScript federation hosts can omit config; retain runtime compatibility coverage.
       render(<ConsoleApp {...propsWithoutConfig} />);
 
       await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
+        expect(mockGetAccessToken).toHaveBeenCalledWith();
       });
     });
   });

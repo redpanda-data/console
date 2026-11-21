@@ -5,7 +5,11 @@ import { expect, type Page } from '../../shared/e2e';
  * Encapsulates common quota-related operations for E2E tests
  */
 export class QuotaPage {
-  constructor(protected page: Page) {}
+  protected page: Page;
+
+  constructor(page: Page) {
+    this.page = page;
+  }
 
   /**
    * Navigation methods
@@ -27,7 +31,7 @@ export class QuotaPage {
   }
 
   async verifyProducerRate(rateValue: string, entityName?: string) {
-    if (entityName) {
+    if (entityName !== null && entityName !== undefined && entityName !== '') {
       // Find the row containing the entity name and verify the rate value is in that row
       const row = this.page.locator('tr').filter({ hasText: entityName });
       await expect(row.locator('td').filter({ hasText: rateValue })).toBeVisible();
@@ -37,7 +41,7 @@ export class QuotaPage {
   }
 
   async verifyConsumerRate(rateValue: string, entityName?: string) {
-    if (entityName) {
+    if (entityName !== null && entityName !== undefined && entityName !== '') {
       const row = this.page.locator('tr').filter({ hasText: entityName });
       await expect(row.locator('td').filter({ hasText: rateValue })).toBeVisible();
     } else {

@@ -50,7 +50,10 @@ function listSecretsPageRequest(pageToken: string, nameContains: string | undefi
     request: create(ListSecretsRequestSchemaDataPlane, {
       pageSize: SECRETS_LIST_PAGE_SIZE,
       pageToken,
-      filter: nameContains ? create(ListSecretsFilterSchema, { nameContains }) : undefined,
+      filter:
+        nameContains !== null && nameContains !== undefined && nameContains !== ''
+          ? create(ListSecretsFilterSchema, { nameContains })
+          : undefined,
     }),
   });
 }
@@ -74,7 +77,7 @@ async function fetchSecretsPage(
   nameContains: string | undefined,
   signal: AbortSignal | undefined
 ): Promise<{ secrets: Secret[]; next: string | null }> {
-  if (signal?.aborted) {
+  if (signal?.aborted === true) {
     throw signal.reason ?? new Error('ListSecrets query aborted');
   }
   const request = listSecretsPageRequest(pageToken, nameContains);
@@ -152,7 +155,7 @@ export const useCreateSecretMutation = (options?: { skipInvalidation?: boolean }
 
   return useMutation(createSecret, {
     onSuccess: async () => {
-      if (!options?.skipInvalidation) {
+      if (!(options?.skipInvalidation === true)) {
         await queryClient.invalidateQueries({
           queryKey: createConnectQueryKey({
             schema: SecretService.method.listSecrets,
@@ -198,7 +201,7 @@ export const useDeleteSecretMutation = (options?: { skipInvalidation?: boolean }
 
   return useMutation(deleteSecret, {
     onSuccess: async () => {
-      if (!options?.skipInvalidation) {
+      if (!(options?.skipInvalidation === true)) {
         await queryClient.invalidateQueries({
           queryKey: createConnectQueryKey({
             schema: SecretService.method.listSecrets,

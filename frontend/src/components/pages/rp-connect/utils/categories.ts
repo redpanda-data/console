@@ -1,3 +1,4 @@
+import { isPresent } from '../../../../utils/type-guards';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 
 export type ConnectNodeCategory = {
@@ -54,10 +55,7 @@ export const getAllCategories = (
 
   // Collect categories from built-in components
   for (const component of components) {
-    if (
-      component.categories &&
-      (componentType ? componentType?.includes(component.type as ConnectComponentType) : true)
-    ) {
+    if (isPresent(component.categories) && (componentType ? componentType?.includes(component.type) : true)) {
       for (const categoryId of component.categories) {
         categorySet.add(categoryId);
       }

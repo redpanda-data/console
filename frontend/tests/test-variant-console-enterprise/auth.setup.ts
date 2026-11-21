@@ -15,7 +15,7 @@ async function dismissErrorModalIfPresent(page: Page): Promise<void> {
 }
 
 export async function authenticate(page: Page) {
-  await page.goto('/', { waitUntil: 'networkidle' });
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
 
   // Wait for login form to be visible
   await page.getByTestId('auth-username-input').waitFor({ state: 'visible', timeout: 30_000 });

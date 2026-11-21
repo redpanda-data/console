@@ -37,6 +37,19 @@ function getErrorMessage(error: ConnectError): { title: string; description: str
         title: 'Internal Server Error',
         description: 'An unexpected error occurred on the server. Try again.',
       };
+    case Code.Canceled:
+    case Code.Unknown:
+    case Code.InvalidArgument:
+    case Code.NotFound:
+    case Code.AlreadyExists:
+    case Code.PermissionDenied:
+    case Code.ResourceExhausted:
+    case Code.FailedPrecondition:
+    case Code.Aborted:
+    case Code.OutOfRange:
+    case Code.Unimplemented:
+    case Code.DataLoss:
+    case Code.Unauthenticated:
     default:
       return {
         title: 'Connection Error',
@@ -52,13 +65,13 @@ export const ConnectionErrorUI: FC<ConnectionErrorUIProps> = ({ error, onRetry }
     <div className="flex min-h-screen items-center justify-center bg-surface-subtle">
       <div className="mx-4 w-full max-w-md rounded-lg bg-card p-8 shadow-sm">
         <div className="flex flex-col items-center text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive-wash">
-            <AlertIcon className="h-6 w-6" color="var(--color-destructive)" />
+          <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-destructive-wash">
+            <AlertIcon className="size-6" color="var(--color-destructive)" />
           </div>
           <h3 className="mb-2 text-heading-md text-strong">{title}</h3>
           <div className="mb-6 text-body-sm text-subtle">{description}</div>
           <Button onClick={onRetry}>
-            <RefreshIcon className="mr-2 h-4 w-4" />
+            <RefreshIcon className="mr-2 size-4" />
             Try Again
           </Button>
         </div>

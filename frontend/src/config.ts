@@ -9,17 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+// biome-ignore-all lint/performance/noBarrelFile: preserve the existing host bootstrap API while application imports use runtime-config.
+
 import { ShadowLinkService } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { RoleBindingService } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/iam/v1/role_binding_pb';
 import { ServiceAccountService } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/iam/v1/service_account_pb';
-import {
-  type Client,
-  Code,
-  ConnectError,
-  type Interceptor as ConnectRpcInterceptor,
-  createClient,
-  type Transport,
-} from '@connectrpc/connect';
+import { Code, ConnectError, type Interceptor as ConnectRpcInterceptor, createClient } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import memoizeOne from 'memoize-one';
 import type * as monaco from 'monaco-editor';
@@ -34,14 +29,28 @@ import { SecretService } from 'protogen/redpanda/api/console/v1alpha1/secret_pb'
 import { SecurityService } from 'protogen/redpanda/api/console/v1alpha1/security_pb';
 import { TransformService } from 'protogen/redpanda/api/console/v1alpha1/transform_pb';
 import { UserService } from 'protogen/redpanda/api/dataplane/v1/user_pb';
-import type { JSX } from 'react';
 
-import { DEFAULT_API_BASE, FEATURE_FLAGS } from './components/constants';
+import { FEATURE_FLAGS } from './components/constants';
+import { config, getGrpcBasePath, getRestBasePath, type SetConfigArguments, type SidebarItem } from './runtime-config';
 import { appGlobal } from './state/app-global';
 import { api, useApiStore } from './state/backend-api';
 import { useUIStateStore } from './state/ui-state';
 import { AppFeatures, getBasePath } from './utils/env';
 import { getEmbeddedAvailableRoutes } from './utils/route-utils';
+import { isNonEmptyString, removeStringSuffix } from './utils/string-utils';
+import { reportActionError } from './utils/toast.utils';
+import { isObject, isPresent } from './utils/type-guards';
+
+export type { Breadcrumb, FeatureFlagKey, SetConfigArguments, SidebarItem } from './runtime-config';
+// Preserve the host integration API; application consumers read the dependency-free leaf directly.
+export {
+  config,
+  getControlplaneBasePath,
+  getGrpcBasePath,
+  isEmbedded,
+  isFeatureFlagEnabled,
+  isServerless,
+} from './runtime-config';
 
 declare const __webpack_public_path__: string;
 
@@ -52,28 +61,8 @@ declare global {
   }
 }
 
-const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BASE;
-
-export const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
-
-const getControlplanePath = () => {
-  // TODO: Make this part of config from Cloud UI
-  if (window.location.hostname.includes('main')) {
-    return 'https://api.ign.cloud.redpanda.com';
-  }
-  if (window.location.hostname.includes('preprod')) {
-    return 'https://api.ppd.cloud.redpanda.com';
-  }
-  if (window.location.hostname.includes('cloud.redpanda.com')) {
-    return 'https://api.cloud.redpanda.com';
-  }
-  return 'https://api.ign.cloud.redpanda.com';
-};
-
-export const getControlplaneBasePath = (overrideUrl?: string) => overrideUrl ?? getControlplanePath();
-
 export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
-  if (config.jwt) {
+  if (isNonEmptyString(config.jwt)) {
     request.header.set('Authorization', `Bearer ${config.jwt}`);
   }
   return await next(request);
@@ -91,7 +80,7 @@ export const createAuthInjectingFetch =
   (baseFetch: WindowOrWorkerGlobalScope['fetch']): WindowOrWorkerGlobalScope['fetch'] =>
   (input, init) => {
     const headers = new Headers(init?.headers);
-    if (config.jwt && !headers.has('Authorization')) {
+    if (isNonEmptyString(config.jwt) && !headers.has('Authorization')) {
       headers.set('Authorization', `Bearer ${config.jwt}`);
     }
     return baseFetch(input, { ...init, headers });
@@ -113,13 +102,12 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
   } catch (error) {
     if (error instanceof ConnectError && error.code === Code.FailedPrecondition) {
       for (const detail of error.details) {
-        // TODO fix type checks for IncomingDetail, BE should provide types for debug field
-        const detailWithDebug = detail as { type?: string; debug?: { reason?: string } };
         if (
-          detailWithDebug?.type &&
-          detailWithDebug?.debug &&
-          detailWithDebug.type === 'google.rpc.ErrorInfo' &&
-          detailWithDebug.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
+          'type' in detail &&
+          detail.type === 'google.rpc.ErrorInfo' &&
+          'debug' in detail &&
+          isObject(detail.debug) &&
+          detail.debug.reason === 'REASON_ENTERPRISE_LICENSE_EXPIRED'
         ) {
           appGlobal.historyReplace('/trial-expired');
         }
@@ -128,81 +116,6 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
     // Re-throw the error to ensure it's handled by other interceptors or the calling code
     throw error;
   }
-};
-
-export type SetConfigArguments = {
-  fetch?: WindowOrWorkerGlobalScope['fetch'];
-  jwt?: string;
-  clusterId?: string;
-  urlOverride?: {
-    rest?: string;
-    ws?: string;
-    assets?: string;
-    grpc?: string;
-  };
-  setSidebarItems?: (items: SidebarItem[]) => void;
-  setBreadcrumbs?: (items: Breadcrumb[]) => void;
-  isServerless?: boolean;
-  featureFlags?: Record<keyof typeof FEATURE_FLAGS, boolean>;
-};
-
-export type SidebarItem = {
-  title: string; // "Topics"
-  to: string; // '/topics'
-  icon?: JSX.Element;
-  order: number;
-  group?: string;
-};
-
-export type Breadcrumb = {
-  title: string; // "Topics"
-  to: string; // '/topics'
-};
-
-type Config = {
-  controlplaneUrl: string;
-  dataplaneTransport?: Transport;
-  restBasePath: string;
-  grpcBasePath: string;
-  authenticationClient?: Client<typeof AuthenticationService>;
-  licenseClient?: Client<typeof LicenseService>;
-  consoleClient?: Client<typeof ConsoleService>;
-  debugBundleClient?: Client<typeof DebugBundleService>;
-  securityClient?: Client<typeof SecurityService>;
-  pipelinesClient?: Client<typeof PipelineService>;
-  rpcnSecretsClient?: Client<typeof SecretService>;
-  transformsClient?: Client<typeof TransformService>;
-  clusterStatusClient?: Client<typeof ClusterStatusService>;
-  userClient?: Client<typeof UserService>;
-  serviceAccountClient?: Client<typeof ServiceAccountService>;
-  roleBindingClient?: Client<typeof RoleBindingService>;
-  shadowLinkClient?: Client<typeof ShadowLinkService>;
-  fetch: WindowOrWorkerGlobalScope['fetch'];
-  assetsPath: string;
-  jwt?: string;
-  clusterId?: string;
-  setSidebarItems: (items: SidebarItem[]) => void;
-  setBreadcrumbs: (items: Breadcrumb[]) => void;
-  isServerless: boolean;
-  featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
-};
-
-// Config object - plain JavaScript object, no longer using MobX observable
-export const config: Config = {
-  restBasePath: getRestBasePath(),
-  grpcBasePath: getGrpcBasePath(),
-  controlplaneUrl: '',
-  fetch: window.fetch,
-  assetsPath: getBasePath(),
-  clusterId: 'default',
-  setSidebarItems: () => {
-    // no op - set by parent application
-  },
-  setBreadcrumbs: () => {
-    // no op - set by parent application
-  },
-  isServerless: false,
-  featureFlags: { ...FEATURE_FLAGS, ...(window.__E2E_FEATURE_FLAGS__ ?? {}) },
 };
 
 const setConfig = ({
@@ -214,7 +127,7 @@ const setConfig = ({
   ...args
 }: SetConfigArguments) => {
   const assetsUrl =
-    urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
+    urlOverride?.assets === 'WEBPACK' ? removeStringSuffix(__webpack_public_path__, '/') : urlOverride?.assets;
 
   // instantiate the client once, if we need to add more clients you can add them in here, ideally only one transport is necessary
   const dataplaneTransport = createConnectTransport({
@@ -236,7 +149,7 @@ const setConfig = ({
   Object.assign(config, {
     jwt,
     dataplaneTransport,
-    isServerless: isServerlessMode,
+    isServerless: isServerlessMode ?? false,
     restBasePath: getRestBasePath(urlOverride?.rest),
     grpcBasePath: getGrpcBasePath(urlOverride?.grpc),
     controlplaneUrl: config.controlplaneUrl,
@@ -255,9 +168,9 @@ const setConfig = ({
     serviceAccountClient: createClient(ServiceAccountService, controlplaneTransport),
     roleBindingClient: createClient(RoleBindingService, controlplaneTransport),
     shadowLinkClient: createClient(ShadowLinkService, controlplaneTransport),
-    featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...(window.__E2E_FEATURE_FLAGS__ ?? {}) }, // Needed for legacy UI purposes where we don't use functional components.
+    featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...window.__E2E_FEATURE_FLAGS__ }, // Needed for legacy UI purposes where we don't use functional components.
     ...args,
-  });
+  } satisfies Partial<typeof config>);
   return config;
 };
 
@@ -274,7 +187,7 @@ function installUiStateSubscriptions(): () => void {
 
     const unsubUi = useUIStateStore.subscribe((state) => {
       const setBreadcrumbs = config.setBreadcrumbs;
-      if (!setBreadcrumbs) {
+      if (!isPresent(setBreadcrumbs)) {
         return;
       }
 
@@ -296,7 +209,7 @@ function installUiStateSubscriptions(): () => void {
 
     const updateSidebarItems = () => {
       const setSidebarItems = config.setSidebarItems;
-      if (!setSidebarItems) {
+      if (!isPresent(setSidebarItems)) {
         return;
       }
 
@@ -307,14 +220,13 @@ function installUiStateSubscriptions(): () => void {
       }
 
       const sidebarItems = embeddedAvailableRoutesObservable.routes.map(
-        (r, i) =>
-          ({
-            title: r.title,
-            to: r.path,
-            icon: r.icon,
-            order: i,
-            group: r.group,
-          }) as SidebarItem
+        (r, i): SidebarItem => ({
+          title: r.title,
+          to: r.path,
+          icon: r.icon,
+          order: i,
+          group: r.group,
+        })
       );
 
       setSidebarItems(sidebarItems);
@@ -342,31 +254,6 @@ function installUiStateSubscriptions(): () => void {
       }
     }
   };
-}
-
-export function isEmbedded() {
-  return config.jwt !== null && config.jwt !== undefined;
-}
-
-/**
- * Type for feature flag keys - use this for typing mock implementations
- */
-export type FeatureFlagKey = keyof typeof FEATURE_FLAGS;
-
-/**
- * @description use in non-functional components if you must
- * @param featureFlag feature flag key to track
- * @returns The runtime value if the host (e.g. Cloud UI) provided one, otherwise
- *   the default declared in `FEATURE_FLAGS` (`components/constants.ts`). This lets
- *   `constants.ts` act as the source of truth for defaults — useful in standalone
- *   dev where `config.featureFlags` is never populated.
- */
-export function isFeatureFlagEnabled(featureFlag: FeatureFlagKey) {
-  return config.featureFlags?.[featureFlag] ?? FEATURE_FLAGS[featureFlag] ?? false;
-}
-
-export function isServerless() {
-  return config.isServerless;
 }
 
 export const embeddedAvailableRoutesObservable = {
@@ -408,6 +295,11 @@ export function teardownSetup(): void {
   }
 }
 
+/** setup is synchronous; startup RPC failures must still reach the application error UI. */
+function refreshInitialApiData(): void {
+  Promise.all([api.listLicenses(), api.refreshSupportedEndpoints()]).catch(reportActionError);
+}
+
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   // If setup() is re-invoked (memoize-one only caches the latest args), tear
   // down any state installed by the previous invocation first to avoid
@@ -437,16 +329,14 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
         return;
       }
       if (api.userData) {
-        api.refreshSupportedEndpoints();
-        api.listLicenses();
+        refreshInitialApiData();
       } else {
         setTimeout(checkUserData, 100);
       }
     };
     checkUserData();
   } else {
-    api.listLicenses();
-    api.refreshSupportedEndpoints();
+    refreshInitialApiData();
   }
 
   return teardownSetup;

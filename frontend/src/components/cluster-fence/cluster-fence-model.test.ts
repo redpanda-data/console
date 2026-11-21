@@ -225,18 +225,16 @@ test('toExemptName trims a principal and drops a User: prefix', () => {
 
 describe('getReadPolicyWarnings', () => {
   test('the default empty list locks out every shadow link, louder than anything else', () => {
-    expect(getReadPolicyWarnings([], false)).toEqual([
-      expect.objectContaining({
-        id: 'empty',
-        severity: 'danger',
-        message: expect.stringContaining('every shadow link'),
-      }),
-    ]);
+    const warnings = getReadPolicyWarnings([], false);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatchObject({ id: 'empty', severity: 'danger' });
+    expect(warnings[0]?.message).toContain('every shadow link');
   });
 
   test('a User: name matches nobody, with a fix to the bare name', () => {
     const [warning] = getReadPolicyWarnings(['User:alice', 'bob'], false);
-    expect(warning).toMatchObject({ severity: 'warning', message: expect.stringContaining('matches nobody') });
+    expect(warning?.severity).toBe('warning');
+    expect(warning?.message).toContain('matches nobody');
     expect(warning?.fix?.principals(['User:alice', 'bob'])).toEqual(['alice', 'bob']);
   });
 
@@ -306,7 +304,8 @@ describe('getClientEffects', () => {
       summary: { ...settings, phase: 'fencing' },
       brokers: progress([1, 'confirmed', true], [2, 'confirmed', true], [3, 'behind', false]),
     });
-    expect(produce).toMatchObject({ verdict: 'partly', detail: expect.stringContaining('Still allowed on broker 3') });
+    expect(produce?.verdict).toBe('partly');
+    expect(produce?.detail).toContain('Still allowed on broker 3');
   });
 
   test('part way through a first Fence, brokers that picked it up already end open transactions', () => {
@@ -314,10 +313,9 @@ describe('getClientEffects', () => {
       summary: { ...settings, phase: 'fencing' },
       brokers: progress([1, 'confirmed', true], [2, 'behind', false]),
     });
-    expect(effects.find((effect) => effect.id === 'transaction')).toMatchObject({
-      verdict: 'partly',
-      detail: expect.stringContaining('Ended on broker 1'),
-    });
+    const transaction = effects.find((effect) => effect.id === 'transaction');
+    expect(transaction?.verdict).toBe('partly');
+    expect(transaction?.detail).toContain('Ended on broker 1');
   });
 
   describe('while new read settings reach the brokers, each broker reads by the settings it has', () => {

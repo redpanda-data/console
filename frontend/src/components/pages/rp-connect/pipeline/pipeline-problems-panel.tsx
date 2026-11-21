@@ -15,7 +15,8 @@ import { AlertCircle, KeyRound, MousePointerClick, TriangleAlert } from 'lucide-
 import { pluralizeWithNumber } from 'utils/string';
 
 import { FloatingChipPanel } from './floating-chip-panel';
-import type { EditTarget } from '../utils/yaml';
+import { isNonzeroNumber } from '../../../../utils/number-utils';
+import type { EditTarget } from '../utils/yaml-edit-target';
 
 export type PipelineProblem = {
   key: string;
@@ -62,8 +63,8 @@ const ProblemRow = ({
     <>
       <TonedIcon
         className="mt-0.5 size-3.5 shrink-0"
-        icon={warning ? TriangleAlert : AlertCircle}
-        tone={warning ? 'warning' : 'destructive'}
+        icon={warning === true ? TriangleAlert : AlertCircle}
+        tone={warning === true ? 'warning' : 'destructive'}
       />
       <span className="flex min-w-0 flex-col">
         <span className="text-body-sm text-foreground">{problem.message}</span>
@@ -73,22 +74,26 @@ const ProblemRow = ({
               <MousePointerClick className="size-3" />
             </span>
             {problem.nodeLabel}
-            {problem.line ? ` · line ${problem.line}` : ''}
+            {isNonzeroNumber(problem.line) ? ` · line ${problem.line}` : ''}
           </span>
         ) : (
-          problem.line && <span className="text-body-sm text-muted-foreground">line {problem.line}</span>
+          isNonzeroNumber(problem.line) && (
+            <span className="text-body-sm text-muted-foreground">line {problem.line}</span>
+          )
         )}
       </span>
     </>
   );
   return onSelect ? (
-    <button
+    <Button
+      // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
       className="group flex w-full cursor-pointer items-start gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
       onClick={onSelect}
       type="button"
+      variant="unstyled"
     >
       {body}
-    </button>
+    </Button>
   ) : (
     <div className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left">{body}</div>
   );
@@ -142,7 +147,7 @@ function selectHandler(
   close: () => void
 ): (() => void) | undefined {
   const { nodeId, target, caseTarget } = problem;
-  if (!(nodeId && target)) {
+  if (!(nodeId !== null && nodeId !== undefined && nodeId !== '' && target)) {
     return;
   }
   return () => {
@@ -156,12 +161,15 @@ function selectHandler(
  * deprecated components. Expands to a list; clicking an issue selects its node (issues without a
  * node are inert).
  */
+const NO_MISSING_SECRETS: string[] = [];
+const NO_DEPRECATIONS: PipelineProblem[] = [];
+
 export function PipelineProblemsPanel({
   problems,
   onSelectProblem,
-  missingSecrets = [],
+  missingSecrets = NO_MISSING_SECRETS,
   onAddSecrets,
-  deprecations = [],
+  deprecations = NO_DEPRECATIONS,
 }: PipelineProblemsPanelProps) {
   const hasLint = problems.length > 0;
   const hasSecrets = missingSecrets.length > 0;
@@ -186,49 +194,72 @@ export function PipelineProblemsPanel({
       listTestId="pipeline-problems-list"
     >
       {(close) => (
-        <>
-          {hasSecrets ? (
-            <SecretsSection
-              missingSecrets={missingSecrets}
-              onAddSecrets={
-                onAddSecrets
-                  ? () => {
-                      onAddSecrets();
-                      close();
-                    }
-                  : undefined
-              }
-            />
-          ) : null}
-
-          {hasLint && (hasSecrets || hasDeprecations) ? (
-            <div className={hasSecrets ? 'mt-1 border-t border-border/60 pt-1' : undefined}>
-              <SectionLabel>Problems</SectionLabel>
-            </div>
-          ) : null}
-          {problems.map((problem) => (
-            <ProblemRow key={problem.key} onSelect={selectHandler(problem, onSelectProblem, close)} problem={problem} />
-          ))}
-
-          {hasDeprecations ? (
-            <div data-testid="pipeline-problems-deprecations">
-              {hasLint || hasSecrets ? (
-                <div className="mt-1 border-t border-border/60 pt-1">
-                  <SectionLabel>Deprecated components</SectionLabel>
-                </div>
-              ) : null}
-              {deprecations.map((deprecation) => (
-                <ProblemRow
-                  key={deprecation.key}
-                  onSelect={selectHandler(deprecation, onSelectProblem, close)}
-                  problem={deprecation}
-                  warning
-                />
-              ))}
-            </div>
-          ) : null}
-        </>
+        <ProblemsList
+          close={close}
+          deprecations={deprecations}
+          missingSecrets={missingSecrets}
+          onAddSecrets={onAddSecrets}
+          onSelectProblem={onSelectProblem}
+          problems={problems}
+        />
       )}
     </FloatingChipPanel>
+  );
+}
+
+function ProblemsList({
+  problems,
+  onSelectProblem,
+  missingSecrets = NO_MISSING_SECRETS,
+  onAddSecrets,
+  deprecations = NO_DEPRECATIONS,
+  close,
+}: PipelineProblemsPanelProps & { close: () => void }) {
+  const hasLint = problems.length > 0;
+  const hasSecrets = missingSecrets.length > 0;
+  const hasDeprecations = deprecations.length > 0;
+  return (
+    <>
+      {hasSecrets ? (
+        <SecretsSection
+          missingSecrets={missingSecrets}
+          onAddSecrets={
+            onAddSecrets
+              ? () => {
+                  onAddSecrets();
+                  close();
+                }
+              : undefined
+          }
+        />
+      ) : null}
+
+      {hasLint && (hasSecrets || hasDeprecations) ? (
+        <div className={hasSecrets ? 'mt-1 border-t border-border/60 pt-1' : undefined}>
+          <SectionLabel>Problems</SectionLabel>
+        </div>
+      ) : null}
+      {problems.map((problem) => (
+        <ProblemRow key={problem.key} onSelect={selectHandler(problem, onSelectProblem, close)} problem={problem} />
+      ))}
+
+      {hasDeprecations ? (
+        <div data-testid="pipeline-problems-deprecations">
+          {hasLint || hasSecrets ? (
+            <div className="mt-1 border-t border-border/60 pt-1">
+              <SectionLabel>Deprecated components</SectionLabel>
+            </div>
+          ) : null}
+          {deprecations.map((deprecation) => (
+            <ProblemRow
+              key={deprecation.key}
+              onSelect={selectHandler(deprecation, onSelectProblem, close)}
+              problem={deprecation}
+              warning
+            />
+          ))}
+        </div>
+      ) : null}
+    </>
   );
 }

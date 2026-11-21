@@ -1,5 +1,5 @@
 import {
-  type ListRoleBindingsRequest_Filter,
+  ListRoleBindingsRequest_FilterSchema,
   ListRoleBindingsRequestSchema,
   type RoleBinding,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/iam/v1/role_binding_pb';
@@ -76,9 +76,9 @@ export const useListServiceAccountsWithRoleBindingsQuery = (
   const serviceAccounts = listServiceAccountsResult?.data?.serviceAccounts || [];
 
   const listRoleBindingsRequest = create(ListRoleBindingsRequestSchema, {
-    filter: {
+    filter: create(ListRoleBindingsRequest_FilterSchema, {
       accountIds: serviceAccounts.map((sa) => sa.id),
-    } as ListRoleBindingsRequest_Filter,
+    }),
     pageSize: MAX_PAGE_SIZE,
   });
 
@@ -141,7 +141,7 @@ export const useCreateServiceAccountMutation = (options?: {
 
   return useMutation(createServiceAccount, {
     onSuccess: async () => {
-      if (!options?.skipInvalidation) {
+      if (!(options?.skipInvalidation === true)) {
         await invalidate();
       }
     },
@@ -230,7 +230,7 @@ export const useDeleteServiceAccountMutation = (options?: {
 
   return useMutation(deleteServiceAccount, {
     onSuccess: async () => {
-      if (!options?.skipInvalidation) {
+      if (!(options?.skipInvalidation === true)) {
         await invalidate();
       }
     },

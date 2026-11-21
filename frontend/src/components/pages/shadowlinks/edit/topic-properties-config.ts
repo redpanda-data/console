@@ -112,7 +112,7 @@ export const getPropertiesByCategory = (): Map<string, TopicPropertyConfig[]> =>
   const categoryMap = new Map<string, TopicPropertyConfig[]>();
 
   for (const property of TOPIC_PROPERTIES) {
-    const existing = categoryMap.get(property.category) || [];
+    const existing = categoryMap.get(property.category) ?? [];
     existing.push(property);
     categoryMap.set(property.category, existing);
   }
@@ -124,7 +124,7 @@ export const getPropertiesByCategory = (): Map<string, TopicPropertyConfig[]> =>
  * Get default properties that should be pre-selected
  */
 export const getDefaultProperties = (): string[] =>
-  TOPIC_PROPERTIES.filter((p) => p.status.includes('default')).map((p) => p.name);
+  TOPIC_PROPERTIES.flatMap((p) => (p.status.includes('default') ? [p.name] : []));
 
 /**
  * Check if a property can be edited (not 'never' or 'always')

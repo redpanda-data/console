@@ -26,7 +26,6 @@ import { api, useApiStoreHook } from '../../state/backend-api';
 const getLicenseAlertContent = (
   licenses: License[],
   onRegisterModalOpen: () => void
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 ): { message: ReactElement; status: 'warning' | 'informative' } | null => {
   if (licenses.length === 0) {
     return null;

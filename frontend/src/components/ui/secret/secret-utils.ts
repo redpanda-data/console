@@ -21,7 +21,7 @@ export function extractSecretName(secretTemplate: string): string {
   if (!secretTemplate) {
     return '';
   }
-  const match = secretTemplate.match(SECRET_TEMPLATE_REGEX);
+  const match = SECRET_TEMPLATE_REGEX.exec(secretTemplate);
   return match ? match[1] : secretTemplate; // Return original if no match (in case it's already just the ID)
 }
 

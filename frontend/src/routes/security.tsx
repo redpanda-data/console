@@ -12,6 +12,7 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { ShieldCheckIcon } from 'components/icons';
 import { useEffect } from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
 import { Alert, AlertDescription } from '../components/redpanda-ui/components/alert';
 import { appGlobal } from '../state/app-global';
@@ -42,11 +43,8 @@ function SecurityLayout() {
       await rolesApi.refreshRoleMembers();
     };
 
-    appGlobal.onRefresh = async () => {
-      await refreshData();
-    };
-
-    refreshData().catch(() => {});
+    appGlobal.onRefresh = refreshData;
+    refreshData().catch(reportActionError);
   }, []);
 
   const warning =

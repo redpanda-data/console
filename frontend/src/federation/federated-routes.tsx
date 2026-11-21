@@ -18,8 +18,8 @@ import { useLayoutEffect, useRef } from 'react';
 import { ClusterFenceBanner } from '../components/cluster-fence/cluster-fence-banner';
 import { ShadowLinkTopologySync } from '../components/cluster-fence/shadow-link-topology-sync';
 import { DebugHelper } from '../components/debug-helper/debug-helper';
-import AppFooter from '../components/layout/footer';
-import AppPageHeader from '../components/layout/header';
+import { AppFooter } from '../components/layout/footer';
+import { AppPageHeader } from '../components/layout/header';
 import { PageColumn } from '../components/layout/page-column';
 import { LicenseNotification } from '../components/license/license-notification';
 import { ErrorBoundary } from '../components/misc/error-boundary';
@@ -27,11 +27,14 @@ import { ErrorDisplay } from '../components/misc/error-display';
 import { ErrorModalsRenderer } from '../components/misc/error-modal';
 import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary';
 import { RouterSync } from '../components/misc/router-sync';
+// biome-ignore lint/suspicious/noDeprecatedImports: Legacy and host Sonner producers still require their own viewport; removing it drops their notifications.
 import { Toaster } from '../components/redpanda-ui/components/sonner';
-import RequireAuth from '../components/require-auth';
+import { RequireAuth } from '../components/require-auth';
 import { useThemeAppearance } from '../hooks/use-theme-appearance';
 import { chainToBody, documentTop } from '../utils/dom-position';
+import { env } from '../utils/env';
 import { ModalContainer } from '../utils/modal-container';
+import { nonzeroNumber } from '../utils/number-utils';
 
 /**
  * Builder.io components are excluded from federated routes.
@@ -75,15 +78,15 @@ function FederatedRootLayout() {
       <NuqsAdapter>
         <ErrorBoundary>
           {/* RequireAuth triggers the user-data fetch (api.refreshUserData) that
-              gates Console's endpoint-compatibility fetch and, in turn, the
-              embedded sidebar items. The standalone root (__root.tsx) wraps its
-              embedded layout the same way. */}
+            gates Console's endpoint-compatibility fetch and, in turn, the
+            embedded sidebar items. The standalone root (__root.tsx) wraps its
+            embedded layout the same way. */}
           <RequireAuth>
             <FederatedAppContent />
           </RequireAuth>
         </ErrorBoundary>
         {/* Cmd+Shift+D debug dialog — mirrors __root.tsx; dev-only. */}
-        {process.env.NODE_ENV === 'development' && <DebugHelper />}
+        {env.NODE_ENV === 'development' && <DebugHelper />}
       </NuqsAdapter>
     </>
   );
@@ -131,7 +134,7 @@ function FederatedAppContent() {
     // Flex column so the footer's `margin-top: auto` pins it to the bottom. px-12 is
     // Console's own gutter, released while a page is expanded (globals.css).
     <div
-      className="page-expanded-flush flex flex-col px-12 transition-[padding] duration-300 ease-in-out"
+      className="page-expanded-flush flex flex-col px-12 page-padding-transition duration-300 ease-in-out"
       id="mainLayout"
       ref={layoutRef}
     >
@@ -158,7 +161,7 @@ function FederatedAppContent() {
       <ErrorModalsRenderer />
 
       {/* sonner isn't an MF-shared singleton, so the host's <Toaster> can't
-          surface Console's toasts; mirror __root.tsx's AppContent. */}
+            surface Console's toasts; mirror __root.tsx's AppContent. */}
       <Toaster position="top-right" richColors theme={toasterTheme} />
     </div>
   );
@@ -170,9 +173,9 @@ function getHostPadding(wrappers: HTMLElement[]) {
   let bottom = 0;
   for (const element of wrappers) {
     const style = getComputedStyle(element);
-    left += Number.parseFloat(style.paddingLeft) || 0;
-    right += Number.parseFloat(style.paddingRight) || 0;
-    bottom += Number.parseFloat(style.paddingBottom) || 0;
+    left += nonzeroNumber(Number.parseFloat(style.paddingLeft)) ?? 0;
+    right += nonzeroNumber(Number.parseFloat(style.paddingRight)) ?? 0;
+    bottom += nonzeroNumber(Number.parseFloat(style.paddingBottom)) ?? 0;
   }
   return { left, right, bottom };
 }

@@ -10,14 +10,16 @@
  */
 
 import type { EditorProps, Monaco } from '@monaco-editor/react';
+import { editorTheme } from 'components/redpanda-ui/lib/editor-theme';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
+import { useThemeAppearance } from 'hooks/use-theme-appearance';
 import type { editor } from 'monaco-editor';
 import type { JSONSchema } from 'monaco-yaml';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
-import { lazy, useEffect, useMemo, useRef } from 'react';
-
-import { editorTheme } from 'components/redpanda-ui/lib/editor-theme';
-import { useThemeAppearance } from 'hooks/use-theme-appearance';
+import { lazy, type RefObject, useEffect, useMemo, useRef } from 'react';
+import { isNonEmptyString } from 'utils/string-utils';
+import { reportActionError } from 'utils/toast.utils';
+import { isObject, isUnknownArray, stringValue } from 'utils/type-guards';
 
 import { normalizePastedWhitespace } from './whitespace';
 
@@ -28,8 +30,8 @@ export type YamlEditorProps = EditorProps & {
   transparentBackground?: boolean;
   onEditorMount?: (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => void;
   schema?: {
-    definitions?: Record<string, JSONSchema>;
-    properties?: Record<string, JSONSchema>;
+    definitions?: JSONSchema['definitions'];
+    properties?: JSONSchema['properties'];
   };
 };
 
@@ -71,41 +73,52 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
 
 // Title each `anyOf` variant (first property name) so monaco-yaml's hover
 // doesn't render `|| || ||` between empty alternatives.
-export function annotateAnyOfTitles(node: unknown): void {
-  if (!node || typeof node !== 'object') {
+function annotateVariantTitle(variant: unknown): void {
+  if (!isObject(variant) || isUnknownArray(variant)) {
     return;
   }
-  if (Array.isArray(node)) {
+  if (
+    isNonEmptyString(stringValue(variant.title)) ||
+    isNonEmptyString(stringValue(variant.description)) ||
+    isNonEmptyString(stringValue(variant.markdownDescription))
+  ) {
+    return;
+  }
+  const firstKey = isObject(variant.properties) ? Object.keys(variant.properties)[0] : undefined;
+  if (firstKey !== undefined && firstKey !== '') {
+    variant.title = firstKey;
+  }
+}
+
+function annotateAlternatives(alternatives: unknown): void {
+  if (!isUnknownArray(alternatives)) {
+    return;
+  }
+  for (const variant of alternatives) {
+    annotateVariantTitle(variant);
+  }
+}
+
+export function annotateAnyOfTitles(node: unknown): void {
+  if (isUnknownArray(node)) {
     for (const child of node) {
       annotateAnyOfTitles(child);
     }
     return;
   }
-  const record = node as Record<string, unknown>;
-  const anyOf = record.anyOf;
-  if (Array.isArray(anyOf)) {
-    for (const variant of anyOf) {
-      if (variant && typeof variant === 'object' && !Array.isArray(variant)) {
-        const v = variant as Record<string, unknown>;
-        if (!v.title && !v.description && !v.markdownDescription) {
-          const properties = v.properties as Record<string, unknown> | undefined;
-          const firstKey = properties ? Object.keys(properties)[0] : undefined;
-          if (firstKey) {
-            v.title = firstKey;
-          }
-        }
-      }
-    }
+  if (!isObject(node)) {
+    return;
   }
-  for (const value of Object.values(record)) {
-    annotateAnyOfTitles(value);
+  annotateAlternatives(node.anyOf);
+  const children = Object.values(node);
+  for (const child of children) {
+    annotateAnyOfTitles(child);
   }
 }
 
-function buildMonacoYamlOptions(
-  schema?: YamlEditorProps['schema'],
-): MonacoYamlOptions {
-  const schemaUri = 'https://raw.githubusercontent.com/redpanda-data/console/refs/heads/master/frontend/src/assets/rp-connect-schema.json';
+function buildMonacoYamlOptions(schema?: YamlEditorProps['schema']): MonacoYamlOptions {
+  const schemaUri =
+    'https://raw.githubusercontent.com/redpanda-data/console/refs/heads/master/frontend/src/assets/rp-connect-schema.json';
   const inlineSchema =
     schema?.definitions || schema?.properties
       ? {
@@ -143,25 +156,27 @@ const applyTheme = (monaco: Monaco, transparentBackground: boolean) => {
   monaco.editor.setTheme(THEME_NAME);
 };
 
-export const YamlEditor = (props: YamlEditorProps) => {
-  const { options: givenOptions, schema, transparentBackground, onEditorMount, ...rest } = props;
-  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
-  const yamlRef = useRef<MonacoYaml | null>(null);
-  const monacoRef = useRef<Monaco | null>(null);
-  const hasInitializedRef = useRef(false);
+function useYamlTheme(monacoRef: RefObject<Monaco | null>, transparentBackground: boolean | undefined) {
   const appearance = useThemeAppearance();
 
   // `defineTheme` is global, so re-resolving on a flip re-themes every mounted editor at once.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Appearance changes the CSS tokens editorTheme reads from the DOM.
   useEffect(() => {
     if (monacoRef.current) {
       applyTheme(monacoRef.current, transparentBackground ?? false);
     }
   }, [appearance, transparentBackground]);
+}
 
-  const monacoYamlOptions = useMemo<MonacoYamlOptions>(
-    () => buildMonacoYamlOptions(schema),
-    [schema],
-  );
+export const YamlEditor = (props: YamlEditorProps) => {
+  const { options: givenOptions, schema, transparentBackground, onEditorMount, ...rest } = props;
+  const options = { ...defaultOptions, ...givenOptions };
+  const yamlRef = useRef<MonacoYaml | null>(null);
+  const monacoRef = useRef<Monaco | null>(null);
+  const hasInitializedRef = useRef(false);
+  useYamlTheme(monacoRef, transparentBackground);
+
+  const monacoYamlOptions = useMemo<MonacoYamlOptions>(() => buildMonacoYamlOptions(schema), [schema]);
 
   // Re-apply options when schema changes after mount.
   useEffect(() => {
@@ -170,16 +185,17 @@ export const YamlEditor = (props: YamlEditorProps) => {
       return;
     }
 
-    yamlRef.current?.update(monacoYamlOptions);
+    yamlRef.current?.update(monacoYamlOptions).catch(reportActionError);
   }, [monacoYamlOptions]);
 
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (yamlRef.current) {
         yamlRef.current.dispose();
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   return (
     <LoadingBoundary fallback={<LoadingPlaceholder />}>
@@ -210,13 +226,7 @@ export const YamlEditor = (props: YamlEditorProps) => {
         path="pipeline.yaml"
         theme={THEME_NAME}
         wrapperProps={{
-          style: {
-            minWidth: 0,
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            flexBasis: '100%',
-          },
+          className: 'flex min-w-0 size-full basis-full',
         }}
         {...rest}
       />

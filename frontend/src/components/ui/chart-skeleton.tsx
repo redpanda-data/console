@@ -42,7 +42,7 @@ function GridLines() {
     <>
       {Array.from({ length: GRID_LINES }, (_, i) => {
         const y = (CHART_H / (GRID_LINES - 1)) * i;
-        return <line key={i} stroke="currentColor" strokeOpacity={0.08} x1={0} x2={CHART_W} y1={y} y2={y} />;
+        return <line key={y} stroke="currentColor" strokeOpacity={0.08} x1={0} x2={CHART_W} y1={y} y2={y} />;
       })}
     </>
   );
@@ -54,14 +54,12 @@ function AxisTicks() {
       {Array.from({ length: 5 }, (_, i) => {
         const x = (CHART_W / 4) * i;
         return (
-          <rect fill="currentColor" height={2} key={`x-${i}`} opacity={0.1} rx={1} width={12} x={x} y={CHART_H + 6} />
+          <rect fill="currentColor" height={2} key={`x-${x}`} opacity={0.1} rx={1} width={12} x={x} y={CHART_H + 6} />
         );
       })}
       {Array.from({ length: GRID_LINES }, (_, i) => {
         const y = (CHART_H / (GRID_LINES - 1)) * i;
-        return (
-          <rect fill="currentColor" height={2} key={`y-${i}`} opacity={0.1} rx={1} width={10} x={-18} y={y - 1} />
-        );
+        return <rect fill="currentColor" height={2} key={`y-${y}`} opacity={0.1} rx={1} width={10} x={-18} y={y - 1} />;
       })}
     </>
   );
@@ -136,7 +134,7 @@ function BarVariant() {
           <rect
             fill="currentColor"
             height={barH}
-            key={`b1-${i}`}
+            key={`b1-${x}`}
             opacity={0.08}
             rx={1}
             width={BAR_W * 0.45}
@@ -152,7 +150,7 @@ function BarVariant() {
           <rect
             fill="currentColor"
             height={barH}
-            key={`b2-${i}`}
+            key={`b2-${x}`}
             opacity={0.05}
             rx={1}
             width={BAR_W * 0.45}
@@ -175,7 +173,12 @@ export const ChartSkeleton: FC<ChartSkeletonProps> = ({ variant = 'area', classN
   const VariantComponent = VARIANT_MAP[variant];
   return (
     <div className={cn('animate-pulse', className)}>
-      <svg className="block h-full w-full" preserveAspectRatio="none" viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}>
+      <svg
+        aria-hidden="true"
+        className="block size-full"
+        preserveAspectRatio="none"
+        viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
+      >
         <g transform={`translate(${PADDING.left}, ${PADDING.top})`}>
           <GridLines />
           <AxisTicks />

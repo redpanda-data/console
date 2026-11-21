@@ -12,11 +12,13 @@
 import type { SortingState } from '@tanstack/react-table';
 import { createParser, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useEffect } from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useQueryStateWithCallback } from '../../../../../hooks/use-query-state-with-callback';
 import { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { PartitionOffsetOrigin } from '../../../../../state/ui';
 import { DEFAULT_SORTING, useTopicSettingsStore } from '../../../../../stores/topic-settings-store';
+import { PartitionOffsetOrigin } from '../../../../../types/topic-settings';
+import { payloadEncodingParser } from '../../../../../utils/payload-encoding';
 import { sortingParser } from '../../../../../utils/sorting-parser';
 import type { FieldFilterToken, ReadScopeMode } from '../types';
 import { parseFilterInput, sameFieldTokens, tokenQueryText } from '../utils/filter-token';
@@ -66,6 +68,7 @@ export function offsetForReadScopeMode(mode: ReadScopeMode, customOffset: number
       return PartitionOffsetOrigin.Timestamp;
     case 'offset':
       return Math.max(0, customOffset);
+    case 'newest':
     default:
       return PartitionOffsetOrigin.EndMinusResults;
   }
@@ -147,7 +150,7 @@ function useDecodingParams(topicName: string) {
       getDefaultValue: () => getSearchParams(topicName)?.keyDeserializer ?? PayloadEncoding.UNSPECIFIED,
     },
     'kd',
-    parseAsInteger.withDefault(PayloadEncoding.UNSPECIFIED)
+    payloadEncodingParser
   );
 
   const [valueDeserializer, setValueDeserializer] = useQueryStateWithCallback<PayloadEncoding>(
@@ -156,7 +159,7 @@ function useDecodingParams(topicName: string) {
       getDefaultValue: () => getSearchParams(topicName)?.valueDeserializer ?? PayloadEncoding.UNSPECIFIED,
     },
     'vd',
-    parseAsInteger.withDefault(PayloadEncoding.UNSPECIFIED)
+    payloadEncodingParser
   );
 
   const [schemaContext, setSchemaContext] = useQueryStateWithCallback<string>(
@@ -240,8 +243,8 @@ function useReadScopeMode(
   // Migrate legacy live-tail URLs (`o=-3`) to the orthogonal `live` param
   useEffect(() => {
     if (startOffset === PartitionOffsetOrigin.End) {
-      setStartOffset(PartitionOffsetOrigin.EndMinusResults);
-      setLiveTail(true);
+      setStartOffset(PartitionOffsetOrigin.EndMinusResults).catch(reportActionError);
+      setLiveTail(true).catch(reportActionError);
     }
   }, [startOffset, setStartOffset, setLiveTail]);
 
@@ -254,23 +257,23 @@ function useReadScopeMode(
   // mode-change handler used.
   useEffect(() => {
     if (readScopeMode === 'timestamp' && startTimestamp < 0) {
-      setStartTimestamp(Date.now());
+      setStartTimestamp(Date.now()).catch(reportActionError);
     }
   }, [readScopeMode, startTimestamp, setStartTimestamp]);
 
   const setReadScopeMode = useCallback(
     (mode: ReadScopeMode, customOffset = 0) => {
-      setStartOffset(offsetForReadScopeMode(mode, customOffset));
-      setPageIndex(0);
+      setStartOffset(offsetForReadScopeMode(mode, customOffset)).catch(reportActionError);
+      setPageIndex(0).catch(reportActionError);
       // Mirrors legacy's offset-origin select handler: seed "now" switching into timestamp
       // mode (unless a real value is already set), and drop it switching away so a later
       // return to timestamp mode starts fresh instead of an ancient sticky value.
       if (mode === 'timestamp') {
         if (startTimestamp < 0) {
-          setStartTimestamp(Date.now());
+          setStartTimestamp(Date.now()).catch(reportActionError);
         }
       } else {
-        setStartTimestamp(-1);
+        setStartTimestamp(-1).catch(reportActionError);
       }
     },
     [setStartOffset, setPageIndex, setStartTimestamp, startTimestamp]

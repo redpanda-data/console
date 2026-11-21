@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
+import { describe, expect, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 
 import { RoutePending } from './route-pending';
 
 describe('the RoutePending', () => {
-  it('announces route loading', () => {
+  test('announces route loading', () => {
     render(<RoutePending />);
 
     expect(screen.getByRole('status', { name: 'Loading page' })).toBeVisible();

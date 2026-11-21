@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PanelSize } from 'react-resizable-panels';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useMessageSearch } from './use-message-search';
 import { useMessagesQuery, useSearchRunner } from './use-messages-query';
@@ -35,7 +36,7 @@ function usePageSurfaces() {
  * How the message detail is presented: docked or expanded, the docked panel's width, the focus
  * targets the panel hands focus back to, and closing it (which clears the URL selection).
  */
-export function useDetailPresentation(setSelectedKey: (key: string | null) => void) {
+export function useDetailPresentation(setSelectedKey: (key: string | null) => Promise<URLSearchParams>) {
   const expandButtonRef = useRef<HTMLButtonElement>(null);
   const fallbackFocusRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +49,7 @@ export function useDetailPresentation(setSelectedKey: (key: string | null) => vo
   }, []);
 
   const handleDetailClose = useCallback(() => {
-    setSelectedKey(null);
+    setSelectedKey(null).catch(reportActionError);
   }, [setSelectedKey]);
 
   // Docked panel width is a persisted preference too. A ref (not state) so

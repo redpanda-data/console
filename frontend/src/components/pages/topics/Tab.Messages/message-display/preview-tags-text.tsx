@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -32,13 +33,12 @@ export function renderPreviewTags(
     return null;
   }
   const caseSensitive = uiState.topicSettings.previewTagsCaseSensitive === 'caseSensitive';
-  const tags = getPreviewTags(payload as Record<string, unknown>, previewTags, caseSensitive);
+  const tags = getPreviewTags(payload, previewTags, caseSensitive);
   const displayMode = previewDisplayMode ?? uiState.topicSettings.previewDisplayMode;
   return (
-    <span className="cellDiv fade" style={{ fontSize: '95%' }}>
+    <span className="cellDiv fade console-message-preview">
       <div
         className={clsx('previewTags', {
-          'previewTags-single': displayMode === 'single',
           'previewTags-wrap': displayMode === 'wrap',
           'previewTags-rows': displayMode === 'rows',
         })}

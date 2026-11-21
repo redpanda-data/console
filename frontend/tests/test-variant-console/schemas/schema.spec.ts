@@ -160,7 +160,7 @@ function describeSubjectListSuites() {
       await firstSchemaLink.click();
 
       await expect(page).toHaveURL(/\/schema-registry\/subjects\//);
-      await expect(page.getByText(schemaName || '').first()).toBeVisible();
+      await expect(page.getByText((schemaName ?? '') || '').first()).toBeVisible();
     });
   });
 
@@ -587,7 +587,7 @@ function describeSchemaWorkflowSuites() {
       const firstSchema = page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).first();
       const schemaName = await firstSchema.textContent();
 
-      if (schemaName) {
+      if (schemaName !== null && schemaName !== undefined && schemaName !== '') {
         const actionsTrigger = page.getByTestId(`schema-list-actions-trigger-${schemaName}`);
         await expect(actionsTrigger).toBeVisible();
 

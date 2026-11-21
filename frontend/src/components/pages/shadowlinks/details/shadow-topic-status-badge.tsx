@@ -46,7 +46,7 @@ export const ShadowTopicStatusBadge = ({ state }: { state: ShadowTopicState }) =
       text: 'Promoted',
       tone: 'informative' as const,
     },
-  }[state] || { text: 'Unknown', tone: 'default' as const };
+  }[state] ?? { text: 'Unknown', tone: 'default' as const };
 
   return (
     <Badge tone={stateInfo.tone} variant="subtle">

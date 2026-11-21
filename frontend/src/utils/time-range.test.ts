@@ -10,22 +10,22 @@
  */
 
 import { getEvenlySpacedTimeTicks } from './time-range';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 describe('getEvenlySpacedTimeTicks', () => {
-  it('spans the full window inclusive of both endpoints', () => {
+  test('spans the full window inclusive of both endpoints', () => {
     const ticks = getEvenlySpacedTimeTicks(0, 60_000, 6);
     expect(ticks).toHaveLength(6);
     expect(ticks[0]).toBe(0);
     expect(ticks.at(-1)).toBe(60_000);
   });
 
-  it('produces evenly spaced ticks', () => {
+  test('produces evenly spaced ticks', () => {
     const ticks = getEvenlySpacedTimeTicks(0, 100, 5);
     expect(ticks).toEqual([0, 25, 50, 75, 100]);
   });
 
-  it('falls back to a single tick for degenerate ranges', () => {
+  test('falls back to a single tick for degenerate ranges', () => {
     expect(getEvenlySpacedTimeTicks(500, 500)).toEqual([500]);
     expect(getEvenlySpacedTimeTicks(800, 500)).toEqual([800]);
     expect(getEvenlySpacedTimeTicks(0, 100, 1)).toEqual([0]);

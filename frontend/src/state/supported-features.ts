@@ -19,6 +19,7 @@
 import { create } from 'zustand';
 
 import type { EndpointCompatibility } from './rest-interfaces';
+import { isNonEmptyString } from '../utils/string-utils';
 
 export type FeatureEntry = {
   endpoint: string;
@@ -153,7 +154,7 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
 export function isSupported(f: FeatureEntry): boolean {
   const state = useSupportedFeaturesStore.getState();
   const result = computeSupported(f, state.endpointCompatibility);
-  if (result.error) {
+  if (isNonEmptyString(result.error)) {
     state.addFeatureError(result.error);
   }
   return result.supported;
@@ -172,7 +173,7 @@ function computeAllFeatures(c: EndpointCompatibility | null) {
   const errors: string[] = [];
   const compute = (f: FeatureEntry) => {
     const result = computeSupported(f, c);
-    if (result.error) {
+    if (isNonEmptyString(result.error)) {
       errors.push(result.error);
     }
     return result.supported;

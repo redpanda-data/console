@@ -9,24 +9,23 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from 'bun:test';
-
 import { normalizePastedWhitespace } from './whitespace';
+import { describe, expect, test } from 'bun:test';
 
 const NBSP = String.fromCharCode(0xa0);
-const EM_SPACE = String.fromCharCode(0x2003);
+const EM_SPACE = String.fromCharCode(0x20_03);
 
-describe('normalizePastedWhitespace', () => {
-  it('replaces non-breaking-space indentation with regular spaces', () => {
+describe('normalize pasted whitespace', () => {
+  test('replaces non-breaking-space indentation with regular spaces', () => {
     const pasted = `input:\n${NBSP}${NBSP}redpanda:\n${NBSP}${NBSP}${NBSP}${NBSP}seed_brokers: []`;
     expect(normalizePastedWhitespace(pasted)).toBe('input:\n  redpanda:\n    seed_brokers: []');
   });
 
-  it('normalizes other unicode space separators', () => {
+  test('normalizes other unicode space separators', () => {
     expect(normalizePastedWhitespace(`a${EM_SPACE}b`)).toBe('a b');
   });
 
-  it('leaves regular spaces and content unchanged', () => {
+  test('leaves regular spaces and content unchanged', () => {
     const valid = 'input:\n  redpanda: {}\n';
     expect(normalizePastedWhitespace(valid)).toBe(valid);
   });

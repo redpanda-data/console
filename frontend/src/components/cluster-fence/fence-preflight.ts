@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { isNonEmptyString } from 'utils/string-utils';
+
 import {
   type BrokerProgress,
   linkCanRead,
@@ -57,7 +59,7 @@ const ownLinksCheck = (links: PreflightInput['linksThatStopFence']): PreflightCh
 };
 
 const brokersCheck = (brokers: BrokerProgress[]): PreflightCheck | undefined => {
-  const down = brokers.filter((broker) => broker.status === 'not-answering').map((broker) => broker.nodeId);
+  const down = brokers.flatMap((broker) => (broker.status === 'not-answering' ? [broker.nodeId] : []));
   if (down.length === 0) {
     return;
   }
@@ -79,7 +81,7 @@ const blockedReaderMessage = (reader: ShadowLinkReader) => {
   if (reader.authentication === 'none') {
     return `${reader.linkName} connects without SASL or mTLS, so only an empty exempt name lets it read. Exempt clients without SASL or mTLS above.`;
   }
-  if (!reader.principal) {
+  if (!isNonEmptyString(reader.principal)) {
     return `No one is exempt, so ${reader.linkName} couldn’t read or finish copying.`;
   }
   return `${reader.linkName} reads as ${reader.principal}, which isn’t exempt, so it couldn’t finish copying.`;

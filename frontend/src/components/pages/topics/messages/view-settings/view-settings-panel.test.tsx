@@ -15,7 +15,8 @@ import userEvent from '@testing-library/user-event';
 
 import { ViewSettingsPanel, type ViewSettingsPanelProps } from './view-settings-panel';
 import { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { DEFAULT_ROW_DENSITY, useTopicSettingsStore } from '../../../../../stores/topic-settings-store';
+import { useTopicSettingsStore } from '../../../../../stores/topic-settings-store';
+import { DEFAULT_ROW_DENSITY } from '../../../../../types/topic-settings';
 
 const TOPIC = 'view-settings-test-topic';
 
@@ -114,6 +115,6 @@ describe('the ViewSettingsPanel', () => {
     useTopicSettingsStore.getState().setRowDensity(TOPIC, 'compact');
     await userEvent.click(screen.getByTestId('view-settings-reset'));
     expect(useTopicSettingsStore.getState().getRowDensity(TOPIC)).toBe(DEFAULT_ROW_DENSITY);
-    expect(props.onResetDeserializers).toHaveBeenCalled();
+    expect(props.onResetDeserializers).toHaveBeenCalledWith();
   });
 });

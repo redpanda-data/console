@@ -9,14 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Calendar } from 'components/redpanda-ui/components/calendar';
 import { Input, InputEnd } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
+import './styles.css';
 import { CalendarIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 export type DateTimeInputMode = 'local' | 'utc';
 
@@ -83,8 +85,8 @@ type ModeToggleProps = {
 const ModeToggle = ({ mode, onModeChange }: ModeToggleProps) => (
   <ToggleGroup
     onValueChange={(value: string[]) => {
-      if (value[0]) {
-        onModeChange(value[0] as DateTimeInputMode);
+      if (value[0] === 'local' || value[0] === 'utc') {
+        onModeChange(value[0]);
       }
     }}
     size="sm"
@@ -154,7 +156,9 @@ const DateTimePickerPanel = ({
   };
 
   return (
-    <div
+    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Inputs and calendar buttons own keyboard actions; this fieldset only isolates Base UI popover focus and pointer events.
+    <fieldset
+      aria-label="Date and time"
       className="flex flex-col gap-3"
       // Prevent base-ui from misclassifying in-popover clicks (Calendar days,
       // <input type="time">) as outside-presses that would close the popup.
@@ -167,7 +171,12 @@ const DateTimePickerPanel = ({
       match without touching the shared Calendar. `p-0` strips Calendar's built-in padding, which
       otherwise stacks on this panel's own spacing. */}
       <div className="[--color-selected-foreground:var(--color-primary-foreground)] [--color-selected:var(--color-primary)]">
-        <Calendar className="p-0" mode="single" onSelect={setFromCalendar} selected={calendarSelected} />
+        <Calendar
+          className="console-datetime-calendar"
+          mode="single"
+          onSelect={setFromCalendar}
+          selected={calendarSelected}
+        />
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-1 items-center gap-2">
@@ -185,9 +194,9 @@ const DateTimePickerPanel = ({
             Now
           </Button>
         </div>
-        {!hideTimezoneToggle && <ModeToggle mode={mode} onModeChange={onModeChange} />}
+        {hideTimezoneToggle !== true && <ModeToggle mode={mode} onModeChange={onModeChange} />}
       </div>
-    </div>
+    </fieldset>
   );
 };
 
@@ -206,11 +215,11 @@ export const DateTimeInput = ({
   placeholder = DEFAULT_PLACEHOLDER,
   ...rest
 }: DateTimeInputProps) => {
+  const inputId = useId();
   const [mode, setMode] = useState<DateTimeInputMode>(defaultMode);
   const [draft, setDraft] = useState<string>('');
 
-  const numericText = isFiniteNumber(value) ? String(value) : '';
-  const displayedNumber = draft === '' ? numericText : draft;
+  const displayedNumber = draft === '' ? (isFiniteNumber(value) ? String(value) : '') : draft;
 
   const commitNumeric = () => {
     if (draft === '') {
@@ -238,6 +247,7 @@ export const DateTimeInput = ({
 
   const numberInputProps = {
     className,
+    id: inputId,
     'data-testid': rest['data-testid'],
     disabled,
     onBlur: commitNumeric,
@@ -259,10 +269,12 @@ export const DateTimeInput = ({
       <div className="flex flex-col gap-3">
         {panel}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-caption uppercase tracking-wide">Unix timestamp</Label>
+          <Label htmlFor={inputId}>
+            <span className="text-caption tracking-wide uppercase">Unix timestamp</span>
+          </Label>
           <Input {...numberInputProps}>
             <InputEnd>
-              <CalendarIcon className="size-4 text-muted-foreground" />
+              <TonedIcon className="size-4" icon={CalendarIcon} tone="muted" />
             </InputEnd>
           </Input>
         </div>
@@ -273,20 +285,21 @@ export const DateTimeInput = ({
   return (
     <Popover>
       <PopoverAnchor
-        render={<Input {...numberInputProps}>
-          <InputEnd className="pointer-events-auto">
-            <PopoverTrigger
-              render={<button
-                aria-label="Open calendar"
-                className="text-muted-foreground hover:text-foreground"
-                disabled={disabled}
-                type="button"
-              >
-                <CalendarIcon className="size-4" />
-              </button>} />
-          </InputEnd>
-        </Input>} />
-      <PopoverContent align="start" className="w-auto p-3">
+        render={
+          <Input {...numberInputProps}>
+            <InputEnd className="pointer-events-auto">
+              <PopoverTrigger
+                render={
+                  <Button aria-label="Open calendar" disabled={disabled} size="icon-sm" type="button" variant="ghost">
+                    <CalendarIcon className="size-4" />
+                  </Button>
+                }
+              />
+            </InputEnd>
+          </Input>
+        }
+      />
+      <PopoverContent align="start" className="console-datetime-popover w-auto">
         {panel}
       </PopoverContent>
     </Popover>

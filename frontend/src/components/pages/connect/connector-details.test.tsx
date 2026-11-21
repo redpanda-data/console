@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { act, render, screen } from 'test-utils';
 
-import KafkaConnectorDetails from './connector-details';
+import { KafkaConnectorDetails } from './connector-details';
 import { type MessageSearchRequest, useApiStore } from '../../../state/backend-api';
 import { ConnectClusterStore } from '../../../state/connect/state';
-import type { ClusterConnectorInfo, ClusterConnectors, Topic, TopicMessage } from '../../../state/rest-interfaces';
+import type { Topic, TopicMessage } from '../../../state/rest-interfaces';
+import { act, render, screen } from '../../../test-utils';
+import type { ClusterConnectorInfo, ClusterConnectors } from '../../../types/kafka-connect';
 
 /** Every log search the page started, in order; each stays open until stopped, like the real stream. */
 const { logSearches } = rs.hoisted(() => ({ logSearches: [] as FakeLogSearch[] }));
@@ -128,7 +129,7 @@ test('restarts the log search for the connector the page now shows', async () =>
   rerender(<KafkaConnectorDetails clusterName="cluster" connector="other" matchedPath="/" />);
 
   expect(lastLogFilter()).toBe('return key == "other";');
-  expect(exampleSearch?.stopSearch).toHaveBeenCalled();
+  expect(exampleSearch?.stopSearch).toHaveBeenCalledWith();
 });
 
 test('refreshing the logs stops the running search and starts a new one', async () => {
@@ -139,6 +140,6 @@ test('refreshing the logs stops the running search and starts a new one', async 
   await user.click(screen.getByRole('button', { name: 'Refresh logs' }));
 
   expect(logSearches.at(-1)).not.toBe(firstSearch);
-  expect(firstSearch?.stopSearch).toHaveBeenCalled();
+  expect(firstSearch?.stopSearch).toHaveBeenCalledWith();
   expect(lastLogFilter()).toBe('return key == "example";');
 });

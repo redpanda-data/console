@@ -1,3 +1,4 @@
+import { isNonEmptyString } from '../../../../../utils/string-utils';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -15,11 +16,11 @@ import type { UnifiedTLSSettings } from '../../model';
 
 const ConfigField = ({ label, value, testId }: { label: string; value: React.ReactNode; testId?: string }) => (
   <div className="flex items-start justify-between border-b py-3 last:border-b-0">
-    <div className="text-body text-muted-foreground" data-testid={`${testId}-label`}>
+    <div className="text-body text-muted-foreground" data-testid={testId === undefined ? undefined : `${testId}-label`}>
       {label}
     </div>
-    <div className="text-right font-medium" data-testid={`${testId}-value`}>
-      {value || '-'}
+    <div className="text-right font-medium" data-testid={testId === undefined ? undefined : `${testId}-value`}>
+      {Boolean(value) ? value : '-'}
     </div>
   </div>
 );
@@ -58,10 +59,10 @@ const summarizeTlsCertificates = (tlsSettings?: UnifiedTLSSettings): TlsCertific
       const { caPath, certPath, keyPath } = settings.value;
       return {
         inputMethod: 'File path',
-        caCertificate: caPath || '-',
-        clientCertificate: certPath || '-',
-        clientKey: keyPath || '-',
-        hasClientCertificates: Boolean(certPath || keyPath),
+        caCertificate: (caPath ?? '') || '-',
+        clientCertificate: (certPath ?? '') || '-',
+        clientKey: (keyPath ?? '') || '-',
+        hasClientCertificates: Boolean((certPath ?? '') || keyPath),
       };
     }
     case 'tlsPemSettings': {
@@ -69,11 +70,12 @@ const summarizeTlsCertificates = (tlsSettings?: UnifiedTLSSettings): TlsCertific
       return {
         inputMethod: 'Upload',
         caCertificate: 'ca-cert.pem',
-        clientCertificate: cert ? 'client-cert.pem' : '-',
-        clientKey: key ? 'client-key.pem' : '-',
-        hasClientCertificates: Boolean(cert || key),
+        clientCertificate: isNonEmptyString(cert) ? 'client-cert.pem' : '-',
+        clientKey: isNonEmptyString(key) ? 'client-key.pem' : '-',
+        hasClientCertificates: Boolean((cert ?? '') || key),
       };
     }
+    case undefined:
     default:
       return NO_TLS_CERTIFICATES;
   }

@@ -9,13 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-// Augment the global object with a value property
-
-// biome-ignore lint/style/useConsistentTypeDefinitions: leave as interface due to type checker
-interface GlobalWithValue {
-  value: unknown;
-}
-
-(globalThis as unknown as GlobalWithValue).value = {};
+// The interpreter's root payload is injected as an ordinary global property.
+Object.assign(globalThis, { value: {} });
 
 export {};

@@ -20,15 +20,9 @@ import {
   parseGoDuration,
   parseMessageLimit,
 } from './read-until';
-import {
-  asRecord,
-  type ParsedYamlConfig,
-  READ_UNTIL,
-  type StopCondition,
-  slotComponentKey,
-  unwrapReadUntil,
-  yamlFlag,
-} from './yaml';
+import type { ParsedYamlConfig } from './yaml';
+import { asRecord, READ_UNTIL, type StopCondition, slotComponentKey, unwrapReadUntil, yamlFlag } from './yaml-values';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 
 /**
  * How an input ends. `condition`: a `read_until` stop condition; `natural`: it stops once its data
@@ -62,7 +56,9 @@ const nonEmpty = (value: unknown): boolean => typeof value === 'string' && value
 
 const natural = (reason: string): InputEndBehavior => ({ kind: 'natural', reason });
 const continuous = (reason: string, finiteHint?: string): InputEndBehavior =>
-  finiteHint ? { kind: 'continuous', reason, finiteHint } : { kind: 'continuous', reason };
+  finiteHint !== null && finiteHint !== undefined && finiteHint !== ''
+    ? { kind: 'continuous', reason, finiteHint }
+    : { kind: 'continuous', reason };
 
 const UNKNOWN: InputEndBehavior = {
   kind: 'unknown',
@@ -122,7 +118,7 @@ function generateEnd(c: Config): InputEndBehavior {
     return dependsOn('count', c.count);
   }
   const count = positiveInteger(c.count);
-  if (!count) {
+  if (count === undefined) {
     const hint =
       c.count === undefined
         ? 'Set `count` to stop after a fixed number of messages.'
@@ -319,7 +315,7 @@ function neverStopPhrase(n: number, total: number): string {
 function aggregate(name: string, slots: unknown[], ctx: ClassifyContext): InputEndBehavior {
   const behaviors = slots.map((m) => classifySlot(m, ctx));
   const result = aggregateEnd(name, behaviors);
-  return behaviors.some((b) => b.batches) ? { ...result, batches: true } : result;
+  return behaviors.some((b) => b.batches === true) ? { ...result, batches: true } : result;
 }
 
 function memberCounts(behaviors: InputEndBehavior[]): MemberCounts {
@@ -359,7 +355,7 @@ function unknownMembersEnd(members: MemberCounts): InputEndBehavior {
 function stoppedMembersEnd(name: string, behaviors: InputEndBehavior[], members: MemberCounts): InputEndBehavior {
   const reason =
     name === 'sequence' ? 'Stops after its last input stops.' : 'Stops once every one of its inputs has stopped.';
-  const caveats = behaviors.filter((b) => b.caveat).length;
+  const caveats = behaviors.filter((b) => isNonEmptyString(b.caveat)).length;
   return caveats > 0
     ? {
         ...natural(reason),
@@ -528,7 +524,7 @@ function followResources(
 ): ResourceFailure | { chain: string[]; target: unknown } {
   const chain = new Set<string>();
   let current = label;
-  for (;;) {
+  while (true) {
     const hop = resourceHop(current, chain, resources);
     if ('failed' in hop) {
       return hop;
@@ -567,7 +563,7 @@ function inertStopWhy(stop: StopCondition, rereads: boolean): { why: string; hin
       hint: 'Turn off `restart_input` so it stops when it goes idle.',
     };
   }
-  if (stop.check && NEVER_TRUE.has(stop.check.trim())) {
+  if (isNonEmptyString(stop.check) && NEVER_TRUE.has(stop.check.trim())) {
     return {
       why: `Its check ${code(stop.check.trim())} is never true`,
       hint: 'Use a check a message can meet, or add an idle timeout.',
@@ -591,13 +587,16 @@ function caveatFor(
     return inner.caveat;
   }
   const limit = parseMessageLimit(stop.check)?.limit;
-  const unit = inner.batches ? 'batches' : 'messages';
-  const shortfall = limit ? `If fewer than ${limit} ${unit} arrive` : 'If no message meets its check';
+  const unit = inner.batches === true ? 'batches' : 'messages';
+  const shortfall =
+    limit !== null && limit !== undefined && Boolean(limit)
+      ? `If fewer than ${limit} ${unit} arrive`
+      : 'If no message meets its check';
   if (inner.kind === 'continuous') {
     return `${shortfall}, it keeps running. Add an idle timeout as a backstop.`;
   }
   // Its input may never end; with `restart_input`, an idle timeout may never fire either.
-  return stop.restartInput
+  return stop.restartInput === true
     ? `${shortfall}, it may keep running: \`restart_input\` reads its input again whenever it finishes.`
     : `${shortfall}, it may keep running. Add an idle timeout as a backstop.`;
 }
@@ -619,13 +618,13 @@ function stopEffects(stop: StopCondition, inner: InputEndBehavior): StopEffects 
 
 // Connect's own start-up errors: an unparseable timeout, or nothing to stop on.
 function stopStartupError(stop: StopCondition): InputEndBehavior | undefined {
-  if (stop.idleTimeout && classifyIdleTimeout(stop.idleTimeout) === 'invalid') {
+  if (isNonEmptyString(stop.idleTimeout) && classifyIdleTimeout(stop.idleTimeout) === 'invalid') {
     return {
       kind: 'invalid',
       reason: `Its idle timeout ${code(stop.idleTimeout.trim())} isn’t a duration such as 30s or 5m.`,
     };
   }
-  if (!(stop.check || isIdleTimeoutSet(stop.idleTimeout))) {
+  if (!((stop.check ?? '') || isIdleTimeoutSet(stop.idleTimeout))) {
     return { kind: 'invalid', reason: 'Its stop condition needs a check or an idle timeout.' };
   }
 }
@@ -690,7 +689,7 @@ function actingStop(stop: StopCondition, inner: InputEndBehavior, effects: StopE
 
 // Connect checks only the first message of each batch, so a match later in one goes unseen.
 const batchCaveat = (working: StopCondition, inner: InputEndBehavior): string | undefined =>
-  inner.batches && working.check && !parseMessageLimit(working.check)
+  inner.batches === true && isNonEmptyString(working.check) && !parseMessageLimit(working.check)
     ? 'Its input reads in batches, and the check sees only the first message of each.'
     : undefined;
 
@@ -728,7 +727,7 @@ function classifyReadUntil(
   const inner = classifySlot(component, ctx);
   const restart = asRecord(record[READ_UNTIL])?.restart_input;
   const behavior = envRef(restart) ? classifyStopWithRestartRef(stop, inner, restart) : classifyStop(stop, inner);
-  return inner.batches ? { ...behavior, batches: true } : behavior;
+  return inner.batches === true ? { ...behavior, batches: true } : behavior;
 }
 
 // The rule for a component name from the YAML; only the table's own keys, so `constructor` finds none.
@@ -753,12 +752,13 @@ function classifyRecord(record: Config, ctx: ClassifyContext): InputEndBehavior 
     return classifyReadUntil(record, component, stop, ctx);
   }
   const name = slotComponentKey(component);
-  return name ? classifyComponent(name, component[name], ctx) : UNKNOWN;
+  return name !== null && name !== undefined && name !== '' ? classifyComponent(name, component[name], ctx) : UNKNOWN;
 }
 
 function inputResourceMap(config: ParsedYamlConfig): Map<string, unknown> {
   const map = new Map<string, unknown>();
-  for (const item of Array.isArray(config.input_resources) ? config.input_resources : []) {
+  const inputResources = Array.isArray(config.input_resources) ? config.input_resources : [];
+  for (const item of inputResources) {
     const label = asRecord(item)?.label;
     if (typeof label === 'string' && label !== '' && !map.has(label)) {
       map.set(label, item);
@@ -798,9 +798,10 @@ export function pipelineEndStatus(behavior: InputEndBehavior | undefined): Pipel
  * Whether a pipeline ends by itself: it does when its top-level input does. A finished Cloud pipeline
  * is stopped automatically, so `finite` is the gate for running it on a schedule.
  */
-export function summarizePipelineEnd(config: ParsedYamlConfig | null | undefined): PipelineEndSummary {
+export function summarizePipelineEnd(value: unknown): PipelineEndSummary {
+  const config = asRecord(value);
   const input = asRecord(config?.input);
-  if (!(config && input && slotComponentKey(input))) {
+  if (!(config && input && isNonEmptyString(slotComponentKey(input)))) {
     return { status: 'none' };
   }
   const behavior = classifyInputSlot(input, config);
@@ -810,7 +811,7 @@ export function summarizePipelineEnd(config: ParsedYamlConfig | null | undefined
 /** {@link summarizePipelineEnd} from config text; undefined for YAML that doesn't parse. */
 export function readPipelineEnd(configYaml: string): PipelineEndSummary | undefined {
   try {
-    return summarizePipelineEnd(parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null);
+    return summarizePipelineEnd(parseYaml(configYaml, { merge: true }));
   } catch {
     // YAML that doesn't parse has no answer.
   }

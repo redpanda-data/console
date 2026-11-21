@@ -16,9 +16,6 @@ import {
   UpgradeButton,
   UploadLicenseButton,
 } from './license-utils';
-
-const WARNING_THRESHOLD_DAYS = 5;
-
 import { RegisterModal } from './register-modal';
 import {
   type License,
@@ -28,14 +25,14 @@ import {
 import { api } from '../../state/backend-api';
 import { Alert, AlertDescription } from '../redpanda-ui/components/alert';
 
-// biome-ignore lint/nursery/useMaxParams: Refactoring to options object would require updating all call sites
+const WARNING_THRESHOLD_DAYS = 5;
+
 const getLicenseAlertContentForFeature = (
   _featureName: 'rbac' | 'reassignPartitions',
   license: License | undefined,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
   bakedInTrial: boolean,
   onRegisterModalOpen: () => void
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 ): { message: ReactElement; variant: 'destructive' | 'informative' } | null => {
   if (license === undefined) {
     return null;

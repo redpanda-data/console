@@ -45,7 +45,7 @@ export const useListRolesQuery = (
     pageParamKey: 'pageToken',
   });
 
-  const roles = listRolesResult?.data?.pages?.flatMap((response) => (response ? response?.roles : [])) || [];
+  const roles = listRolesResult?.data?.pages?.flatMap((response) => response.roles) || [];
 
   return {
     ...listRolesResult,

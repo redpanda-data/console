@@ -23,10 +23,13 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { useState } from 'react';
 import { type Control, type UseFormSetError, useForm, useWatch } from 'react-hook-form';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import { useCreateACLMutation } from '../../../../react-query/api/acl';
 import { api } from '../../../../state/backend-api';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { Alert, AlertDescription } from '../../../redpanda-ui/components/alert';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
@@ -64,6 +67,8 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+const isFormField = (value: string): value is keyof FormValues => Object.hasOwn(schema.shape, value);
 
 const FORM_FIELD_NAMES = new Set<string>(Object.keys(schema.shape));
 
@@ -150,9 +155,7 @@ const getSubmitErrorMessage = (
   }
   const violations = err.findDetails(BadRequestSchema).flatMap((badRequest) => badRequest.fieldViolations);
   const fieldViolations = violations.filter((v) => isRenderableViolation(v, renderableFieldNames));
-  for (const violation of fieldViolations) {
-    setError(violation.field as keyof FormValues, { type: 'server', message: violation.description });
-  }
+  applyFieldViolations(fieldViolations, setError);
   const globalMessages = violations
     .filter((v) => !isRenderableViolation(v, renderableFieldNames))
     .map((v) => (v.field ? `${v.field}: ${v.description}` : v.description));
@@ -180,8 +183,11 @@ const PrincipalField = ({ control, picker }: PrincipalFieldProps) => {
           <FormControl>
             <div className="flex gap-2">
               <Select
-                onValueChange={(v) => {
-                  setPrincipalType(v as 'User' | 'Group');
+                onValueChange={(v: unknown) => {
+                  if (v !== 'User' && v !== 'Group') {
+                    return;
+                  }
+                  setPrincipalType(v);
                   setPrincipalValue('');
                   field.onChange('');
                 }}
@@ -211,7 +217,6 @@ const PrincipalField = ({ control, picker }: PrincipalFieldProps) => {
                 />
               ) : (
                 <Input
-                  // biome-ignore lint/a11y/noAutofocus: auto-focus after switching type so the user can type immediately
                   autoFocus
                   className="flex-1"
                   onChange={(e) => {
@@ -241,7 +246,7 @@ type AddAclDialogProps = {
 export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProps) => {
   const { mutateAsync: createACL, isPending } = useCreateACLMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const picker = usePrincipalPicker(!principal);
+  const picker = usePrincipalPicker(!(principal !== null && principal !== undefined && principal !== ''));
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -265,7 +270,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
   const closeAndReset = () => {
     onOpenChange(false);
     form.reset();
-    if (!principal) {
+    if (!(principal !== null && principal !== undefined && principal !== '')) {
       picker.reset();
     }
   };
@@ -275,14 +280,15 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
     form.clearErrors();
     // When principal is pre-set via prop its field isn't rendered, so server violations
     // on it must go to the global alert rather than being silently dropped.
-    const renderableFieldNames = principal
-      ? new Set([...FORM_FIELD_NAMES].filter((f) => f !== 'principal'))
-      : FORM_FIELD_NAMES;
+    const renderableFieldNames =
+      principal !== null && principal !== undefined && principal !== ''
+        ? new Set([...FORM_FIELD_NAMES].filter((f) => f !== 'principal'))
+        : FORM_FIELD_NAMES;
     try {
       await createACL(toCreateAclRequest(values));
       closeAndReset();
-    } catch (err) {
-      setSubmitError(getSubmitErrorMessage(err, form.setError, renderableFieldNames));
+    } catch (error) {
+      setSubmitError(getSubmitErrorMessage(error, form.setError, renderableFieldNames));
     }
   };
 
@@ -296,14 +302,18 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
       <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Add ACL</DialogTitle>
-          {principal && <DialogDescription>Define a new access control rule for {principal}.</DialogDescription>}
+          {isNonEmptyString(principal) && (
+            <DialogDescription>Define a new access control rule for {principal}.</DialogDescription>
+          )}
         </DialogHeader>
 
         <DialogBody>
           <Form {...form}>
-            <form id="add-acl-form" onSubmit={form.handleSubmit(onSubmit)}>
+            <form id="add-acl-form" onSubmit={asyncEvent(form.handleSubmit(onSubmit), reportActionError)}>
               <div className="space-y-4 py-2">
-                {!principal && <PrincipalField control={form.control} picker={picker} />}
+                {!(principal !== null && principal !== undefined && principal !== '') && (
+                  <PrincipalField control={form.control} picker={picker} />
+                )}
 
                 <FormField
                   control={form.control}
@@ -311,7 +321,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Resource Type</FormLabel>
-                      <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
+                      <Select onValueChange={(v: unknown) => field.onChange(Number(v))} value={String(field.value)}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue>
@@ -345,22 +355,26 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                             { value: ACL_ResourcePatternType.PREFIXED, label: 'Prefixed' },
                             { value: ACL_ResourcePatternType.ANY, label: 'Any' },
                           ].map((opt) => (
-                            <button
+                            <Button
                               className={clsx(
+                                // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                                 'inline-flex flex-1 items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-background transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
                                 field.value === opt.value
-                                  ? 'bg-background text-foreground shadow-sm'
-                                  : 'text-muted-foreground hover:text-foreground'
+                                  ? // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                                    'bg-background text-foreground shadow-sm'
+                                  : // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                                    'text-muted-foreground hover:text-foreground'
                               )}
                               key={opt.value}
                               onClick={() => field.onChange(opt.value)}
                               type="button"
+                              variant="unstyled"
                             >
                               {opt.label}
-                            </button>
+                            </Button>
                           ))}
                         </div>
-                        {PATTERN_TYPE_HELP[field.value] && (
+                        {isNonEmptyString(PATTERN_TYPE_HELP[field.value]) && (
                           <div className="mt-1 text-body text-muted-foreground">{PATTERN_TYPE_HELP[field.value]}</div>
                         )}
                         <FormMessage />
@@ -391,7 +405,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Operation</FormLabel>
-                      <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
+                      <Select onValueChange={(v: unknown) => field.onChange(Number(v))} value={String(field.value)}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue>
@@ -418,7 +432,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Permission</FormLabel>
-                      <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value)}>
+                      <Select onValueChange={(v: unknown) => field.onChange(Number(v))} value={String(field.value)}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue>
@@ -466,7 +480,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                   )}
                 />
 
-                {submitError && (
+                {isNonEmptyString(submitError) && (
                   <Alert variant="destructive">
                     <AlertDescription>{submitError}</AlertDescription>
                   </Alert>
@@ -487,3 +501,14 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
     </Dialog>
   );
 };
+
+function applyFieldViolations(
+  violations: { field: string; description: string }[],
+  setError: UseFormSetError<FormValues>
+) {
+  for (const violation of violations) {
+    if (isFormField(violation.field)) {
+      setError(violation.field, { type: 'server', message: violation.description });
+    }
+  }
+}
