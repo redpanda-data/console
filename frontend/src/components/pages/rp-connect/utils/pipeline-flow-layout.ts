@@ -29,8 +29,6 @@ import {
 } from './pipeline-flow-parser';
 import type { EditTarget } from './yaml';
 
-// Card dimensions here must match the node components in pipeline-flow-canvas-nodes.
-
 /** Leaf card width on the full canvas; the node component must match this. */
 export const FLOW_CARD_WIDTH = 256;
 const FLOW_MAX_META_ROWS = 4;
@@ -64,7 +62,6 @@ const FLOW_PLACEHOLDER_LEAF_H = 72;
 const FLOW_LABEL_ROW_H = 30;
 const FLOW_LABEL_ROW_BOTTOM_PAD = 12;
 const FLOW_META_BLOCK_PAD = 12;
-// A switch case's routing-condition row beneath the header (only on cards carrying a `caseEditTarget`).
 const FLOW_CONDITION_ROW_H = 30;
 export const FLOW_STOP_ROW_H = 30;
 
@@ -104,7 +101,6 @@ function reconverges(node: PipelineFlowNode) {
 function fanSides(node: PipelineFlowNode) {
   return {
     out: node.childFlow === 'parallel' && node.section !== 'input',
-    // Inputs fan in only when parallel (broker); a `sequence` renders as a sequential chain.
     in: (node.section === 'input' && node.childFlow !== 'sequential') || reconverges(node),
   };
 }
@@ -175,9 +171,7 @@ type GraphNodeSpec = {
   node?: PipelineFlowNode;
   w: number;
   h: number;
-  /** For split markers: direct child count (cases / steps), surfaced on the card as a descriptor. */
   childCount?: number;
-  /** A fan construct's in-card "Add case / Add input" footer affordance (edit mode only). */
   footerAdd?: { payload: FlowInsertPayload; label: string };
 };
 type GraphEdgeSpec = {
@@ -206,7 +200,6 @@ type GraphCtx = {
   inserts: GraphInsertSpec[];
   childrenOf: (id: string) => PipelineFlowNode[];
   dims: FlowDims;
-  // Node-based add affordances are only emitted in edit mode; on-edge "+" slots are view-safe already.
   editable: boolean;
 };
 
@@ -214,18 +207,17 @@ function addGraphCard(ctx: GraphCtx, node: PipelineFlowNode) {
   ctx.gnodes.push({ id: node.id, kind: 'card', node, w: ctx.dims.cardW, h: leafCardHeight(node, ctx.dims) });
   return node.id;
 }
-function splitAddAction(
-  node: PipelineFlowNode,
-  childCount: number
-): { payload: FlowInsertPayload; label: string } | undefined {
+function splitAddAction(node: PipelineFlowNode, childCount: number) {
   if (node.addChildSlot) {
-    return { payload: { kind: 'addChild', ...node.addChildSlot }, label: 'Add case' };
+    return { payload: { kind: 'addChild', ...node.addChildSlot }, label: 'Add case' } satisfies
+      | { payload: FlowInsertPayload; label: string }
+      | undefined;
   }
   if (node.insertSlot) {
     return {
       payload: { kind: 'insert', ...node.insertSlot, index: childCount },
       label: `Add ${node.insertSlot.accepts}`,
-    };
+    } satisfies { payload: FlowInsertPayload; label: string } | undefined;
   }
 }
 
@@ -262,18 +254,17 @@ function addGraphInsert(ctx: GraphCtx, id: string, anchorId: string, payload: Fl
   }
 }
 
-// The label + edge tone for a fan branch (a switch/group_by case, fallback tier).
-function branchEdgeInfo(owner: PipelineFlowNode): { type: GraphEdgeType; label?: string } {
+function branchEdgeInfo(owner: PipelineFlowNode) {
   if (owner.isErrorPath) {
-    return { type: 'error', label: owner.condition ?? 'on error' };
+    return { type: 'error', label: owner.condition ?? 'on error' } satisfies { type: GraphEdgeType; label?: string };
   }
   if (owner.condition) {
-    return { type: 'conditional', label: owner.condition };
+    return { type: 'conditional', label: owner.condition } satisfies { type: GraphEdgeType; label?: string };
   }
   if (owner.isDefault) {
-    return { type: 'conditional', label: 'default' };
+    return { type: 'conditional', label: 'default' } satisfies { type: GraphEdgeType; label?: string };
   }
-  return { type: 'flow' };
+  return { type: 'flow' } satisfies { type: GraphEdgeType; label?: string };
 }
 
 function fanUnwrapsChildren(node: PipelineFlowNode) {
@@ -298,7 +289,7 @@ function caseEntrySteps(lane: FanLane) {
   ];
 }
 
-function fanLaneList(node: PipelineFlowNode, kids: PipelineFlowNode[], ctx: GraphCtx): FanLane[] {
+function fanLaneList(node: PipelineFlowNode, kids: PipelineFlowNode[], ctx: GraphCtx) {
   const unwrap = fanUnwrapsChildren(node);
   return kids.map((kid) =>
     unwrap && kid.kind === 'group'
@@ -307,21 +298,21 @@ function fanLaneList(node: PipelineFlowNode, kids: PipelineFlowNode[], ctx: Grap
   );
 }
 
-function laneAppendSlot(owner: PipelineFlowNode, atEnd: boolean, ctx: GraphCtx): FlowInsertPayload | undefined {
-  return owner.insertSlot
-    ? { kind: 'insert', ...owner.insertSlot, index: atEnd ? ctx.childrenOf(owner.id).length : 0 }
-    : undefined;
+function laneAppendSlot(owner: PipelineFlowNode, atEnd: boolean, ctx: GraphCtx) {
+  return (
+    owner.insertSlot
+      ? { kind: 'insert', ...owner.insertSlot, index: atEnd ? ctx.childrenOf(owner.id).length : 0 }
+      : undefined
+  ) satisfies FlowInsertPayload | undefined;
 }
 
-// A fan's split/merge marker ids (either may be absent: input broker = merge only, output fan = split only).
 type FanEnds = { split?: string; merge?: string };
 
 type EmittedLane = { owner: PipelineFlowNode; body: GraphSegment; carriesChip: boolean };
 
-function fanoutEdge(lane: EmittedLane, split: string, merge: string | undefined, ctx: GraphCtx): GraphEdgeSpec {
+function fanoutEdge(lane: EmittedLane, split: string, merge: string | undefined, ctx: GraphCtx) {
   const { owner, body, carriesChip } = lane;
   const info = branchEdgeInfo(owner);
-  // The case edit target rides the fan-out edge only when there is no entry chip (empty case).
   const selectTarget = carriesChip ? undefined : owner.caseEditTarget;
   return {
     id: `fanout-${owner.id}`,
@@ -331,11 +322,10 @@ function fanoutEdge(lane: EmittedLane, split: string, merge: string | undefined,
     ...(carriesChip ? {} : { label: info.label }),
     ...(selectTarget ? { selectId: owner.id, selectTarget } : {}),
     ...(body ? {} : { slot: laneAppendSlot(owner, false, ctx) }),
-  };
+  } satisfies GraphEdgeSpec;
 }
 
 function emitFanLane(lane: FanLane, ends: FanEnds, carriesCaseChips: boolean, ctx: GraphCtx) {
-  // label when a body exists. An empty-bodied case (no card yet) keeps the edge label as fallback.
   const carriesChip = carriesCaseChips && lane.bodySteps.length > 0;
   const body = emitSequence(carriesChip ? caseEntrySteps(lane) : lane.bodySteps, ctx);
   if (ends.split) {
@@ -352,13 +342,12 @@ function emitFanLane(lane: FanLane, ends: FanEnds, carriesCaseChips: boolean, ct
   }
 }
 
-// merge only; output fan = split only (sinks terminate).
 function emitFan(
   node: PipelineFlowNode,
   kids: PipelineFlowNode[],
   sides: { out: boolean; in: boolean },
   ctx: GraphCtx
-): GraphSegment {
+) {
   const footerAdd = ctx.editable ? splitAddAction(node, kids.length) : undefined;
   const split = sides.out ? addGraphSplit(ctx, node, footerAdd) : undefined;
   const merge = sides.in
@@ -370,10 +359,10 @@ function emitFan(
   for (const lane of fanLaneList(node, kids, ctx)) {
     emitFanLane(lane, { split, merge }, carriesCaseChips, ctx);
   }
-  return { entry: split ?? merge ?? node.id, exit: merge ?? split ?? node.id };
+  return { entry: split ?? merge ?? node.id, exit: merge ?? split ?? node.id } satisfies GraphSegment;
 }
 
-function emitSequentialGroup(node: PipelineFlowNode, kids: PipelineFlowNode[], ctx: GraphCtx): GraphSegment {
+function emitSequentialGroup(node: PipelineFlowNode, kids: PipelineFlowNode[], ctx: GraphCtx) {
   const head = addGraphSplit(ctx, node);
   const body = emitSequence(kids, ctx);
   if (body) {
@@ -384,7 +373,7 @@ function emitSequentialGroup(node: PipelineFlowNode, kids: PipelineFlowNode[], c
       type: node.isErrorPath ? 'error' : 'flow',
       ...(node.insertSlot ? { slot: { kind: 'insert', ...node.insertSlot, index: kids.length } } : {}),
     });
-    return { entry: head, exit: body.exit };
+    return { entry: head, exit: body.exit } satisfies GraphSegment;
   }
   if (node.insertSlot) {
     addGraphInsert(
@@ -395,11 +384,13 @@ function emitSequentialGroup(node: PipelineFlowNode, kids: PipelineFlowNode[], c
       `Add ${node.insertSlot.accepts}`
     );
   }
-  return { entry: head, exit: head };
+  return { entry: head, exit: head } satisfies GraphSegment;
 }
 
-const endInsertSlot = (node: PipelineFlowNode, ctx: GraphCtx): FlowInsertPayload | undefined =>
-  node.insertSlot ? { kind: 'insert', ...node.insertSlot, index: ctx.childrenOf(node.id).length } : undefined;
+const endInsertSlot = (node: PipelineFlowNode, ctx: GraphCtx) =>
+  (node.insertSlot
+    ? { kind: 'insert', ...node.insertSlot, index: ctx.childrenOf(node.id).length }
+    : undefined) satisfies FlowInsertPayload | undefined;
 
 type TryCatchArm = { node: PipelineFlowNode; head: string; body: GraphSegment; type: GraphEdgeType };
 
@@ -418,7 +409,7 @@ function emitTryCatchArm(arm: TryCatchArm, merge: string, ctx: GraphCtx) {
   });
 }
 
-function emitTryCatch(tryNode: PipelineFlowNode, catchNode: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
+function emitTryCatch(tryNode: PipelineFlowNode, catchNode: PipelineFlowNode, ctx: GraphCtx) {
   const tryHead = addGraphSplit(ctx, tryNode);
   const tryBody = emitSequence(ctx.childrenOf(tryNode.id), ctx);
   const catchHead = addGraphSplit(ctx, catchNode);
@@ -434,13 +425,13 @@ function emitTryCatch(tryNode: PipelineFlowNode, catchNode: PipelineFlowNode, ct
     label: 'on error',
   });
   emitTryCatchArm({ node: catchNode, head: catchHead, body: catchBody, type: 'error' }, merge, ctx);
-  return { entry: tryHead, exit: merge };
+  return { entry: tryHead, exit: merge } satisfies GraphSegment;
 }
 
-function emitGraphStep(node: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
+function emitGraphStep(node: PipelineFlowNode, ctx: GraphCtx) {
   if (node.kind === 'leaf') {
     addGraphCard(ctx, node);
-    return { entry: node.id, exit: node.id };
+    return { entry: node.id, exit: node.id } satisfies GraphSegment;
   }
   const kids = ctx.childrenOf(node.id);
   if (node.branch) {
@@ -456,7 +447,6 @@ function emitGraphStep(node: PipelineFlowNode, ctx: GraphCtx): GraphSegment {
 const isTryStep = (n?: PipelineFlowNode) => n?.kind === 'group' && n.label === 'try';
 const isCatchStep = (n?: PipelineFlowNode) => n?.kind === 'group' && n.label === 'catch';
 
-// unparseable entries are skipped, so on-edge inserts must carry the YAML index, not a rendered count.
 const topLevelProcessorIndex = (n?: PipelineFlowNode) =>
   n?.editTarget?.kind === 'processor' ? n.editTarget.index : undefined;
 
@@ -473,8 +463,8 @@ function sequenceUnits(steps: PipelineFlowNode[]) {
   return units;
 }
 
-function emitSequenceUnit([step, catchStep]: SequenceUnit, ctx: GraphCtx): GraphSegment {
-  return catchStep ? emitTryCatch(step, catchStep, ctx) : emitGraphStep(step, ctx);
+function emitSequenceUnit([step, catchStep]: SequenceUnit, ctx: GraphCtx) {
+  return (catchStep ? emitTryCatch(step, catchStep, ctx) : emitGraphStep(step, ctx)) satisfies GraphSegment;
 }
 
 function lastProcessorIndexAfter(unit: SequenceUnit, lastProcessorIndex: number) {
@@ -502,7 +492,7 @@ function appendToChain(
   chain.exit = seg.exit;
 }
 
-function emitSequence(steps: PipelineFlowNode[], ctx: GraphCtx, topLevel = false): GraphSegment {
+function emitSequence(steps: PipelineFlowNode[], ctx: GraphCtx, topLevel = false) {
   const chain: SequenceChain = {};
   let lastProcessorIndex = -1;
   for (const unit of sequenceUnits(steps)) {
@@ -513,7 +503,9 @@ function emitSequence(steps: PipelineFlowNode[], ctx: GraphCtx, topLevel = false
     }
     lastProcessorIndex = lastProcessorIndexAfter(unit, lastProcessorIndex);
   }
-  return chain.entry !== undefined && chain.exit !== undefined ? { entry: chain.entry, exit: chain.exit } : null;
+  return (
+    chain.entry !== undefined && chain.exit !== undefined ? { entry: chain.entry, exit: chain.exit } : null
+  ) satisfies GraphSegment;
 }
 
 function buildPipelineGraph(nodes: PipelineFlowNode[], editable: boolean) {
@@ -530,12 +522,9 @@ function buildPipelineGraph(nodes: PipelineFlowNode[], editable: boolean) {
   return ctx;
 }
 
-function graphEdgePoints(
-  edge: GraphEdgeSpec,
-  laidOut: DagreGraph<GraphLabel, NodeLabel, EdgeLabel>
-): { x: number; y: number }[] {
+function graphEdgePoints(edge: GraphEdgeSpec, laidOut: DagreGraph<GraphLabel, NodeLabel, EdgeLabel>) {
   const e = laidOut.edge({ v: edge.from, w: edge.to, name: edge.id });
-  return e?.points ?? [];
+  return (e?.points ?? []) satisfies { x: number; y: number }[];
 }
 
 function makeMergeData(ownerId: string) {
@@ -544,7 +533,7 @@ function makeMergeData(ownerId: string) {
 
 type NodeBox = { x: number; y: number; w: number; h: number };
 
-function refEdge(id: string, from: string, to: string, points: { x: number; y: number }[]): Edge {
+function refEdge(id: string, from: string, to: string, points: { x: number; y: number }[]) {
   return {
     id,
     source: from,
@@ -554,7 +543,7 @@ function refEdge(id: string, from: string, to: string, points: { x: number; y: n
     type: 'flowGraphEdge',
     zIndex: 4,
     data: { tone: 'muted', dashed: true, points },
-  };
+  } satisfies Edge;
 }
 
 type ResourceRef = { userId: string; resourceId: string };
@@ -563,7 +552,7 @@ function collectResourceRefs(
   nodes: PipelineFlowNode[],
   resolve: ReturnType<typeof buildResourceRefResolver>,
   boxes: Map<string, NodeBox>
-): { refs: ResourceRef[]; desiredX: Map<string, number> } {
+) {
   const refs = new Map<string, ResourceRef>();
   const desiredX = new Map<string, number>();
   for (const node of nodes) {
@@ -575,7 +564,7 @@ function collectResourceRefs(
       desiredX.set(resource.id, Math.min(desiredX.get(resource.id) ?? Number.POSITIVE_INFINITY, left));
     }
   }
-  return { refs: [...refs.values()], desiredX };
+  return { refs: [...refs.values()], desiredX } satisfies { refs: ResourceRef[]; desiredX: Map<string, number> };
 }
 
 type ResourcePlacement = { resource: PipelineFlowNode; x: number; h: number };
@@ -597,7 +586,7 @@ function placeResources(resources: PipelineFlowNode[], desiredX: Map<string, num
   return placements;
 }
 
-function resourceCardNode({ resource, x, h }: ResourcePlacement, laneY: number): Node {
+function resourceCardNode({ resource, x, h }: ResourcePlacement, laneY: number) {
   return {
     id: resource.id,
     type: 'flowCard',
@@ -607,7 +596,7 @@ function resourceCardNode({ resource, x, h }: ResourcePlacement, laneY: number):
     zIndex: 8,
     style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
     data: makeFlowNodeData(resource, false, 0),
-  };
+  } satisfies Node;
 }
 
 type CableLanes = { busTop: number; laneY: number };
@@ -629,7 +618,7 @@ function resourceCablePoints(user: NodeBox, endX: number, busY: number, laneY: n
 
 type CableCtx = CableLanes & { boxes: Map<string, NodeBox>; resLeft: Map<string, number> };
 
-function resourceCable(ref: ResourceRef, index: number, ctx: CableCtx): Edge | undefined {
+function resourceCable(ref: ResourceRef, index: number, ctx: CableCtx) {
   const user = ctx.boxes.get(ref.userId);
   const rx = ctx.resLeft.get(ref.resourceId);
   if (!(user && rx !== undefined)) {
@@ -645,7 +634,7 @@ function resourceCables(
   placements: ResourcePlacement[],
   boxes: Map<string, NodeBox>,
   lanes: CableLanes
-): Edge[] {
+) {
   const ctx: CableCtx = { ...lanes, boxes, resLeft: new Map(placements.map((p) => [p.resource.id, p.x])) };
   return refs.flatMap((ref, i) => resourceCable(ref, i, ctx) ?? []);
 }
@@ -687,7 +676,7 @@ function placeGraphInserts(ctx: GraphCtx, rfNodes: Node[], boxes: Map<string, No
   return { maxX, maxY };
 }
 
-function insertPillNode(ins: GraphInsertSpec, center: { x: number; y: number }): Node {
+function insertPillNode(ins: GraphInsertSpec, center: { x: number; y: number }) {
   return {
     id: ins.id,
     type: 'flowInsert',
@@ -699,7 +688,7 @@ function insertPillNode(ins: GraphInsertSpec, center: { x: number; y: number }):
     zIndex: 8,
     style: { pointerEvents: 'all' },
     data: { payload: ins.payload, label: ins.label, ghost: true },
-  };
+  } satisfies Node;
 }
 
 const GRAPH_EDGE_TONE: Record<GraphEdgeType, 'primary' | 'muted' | 'error'> = {
@@ -747,7 +736,7 @@ function forwardRanks(gnodes: GraphNodeSpec[], gedges: GraphEdgeSpec[]) {
 
 type LaidOutGraph = DagreGraph<GraphLabel, NodeLabel, EdgeLabel>;
 
-function newDagreGraph(): LaidOutGraph {
+function newDagreGraph() {
   const g = new DagreGraph<GraphLabel, NodeLabel, EdgeLabel>({ multigraph: true });
   g.setGraph({
     rankdir: 'LR',
@@ -762,7 +751,7 @@ function newDagreGraph(): LaidOutGraph {
   return g;
 }
 
-function layoutGraph(ctx: GraphCtx): LaidOutGraph {
+function layoutGraph(ctx: GraphCtx) {
   const g = newDagreGraph();
   for (const gn of ctx.gnodes) {
     g.setNode(gn.id, { width: gn.w, height: gn.h });
@@ -778,17 +767,19 @@ function layoutGraph(ctx: GraphCtx): LaidOutGraph {
 
 type PlacedGraphNode = { gn: GraphNodeSpec; x: number; y: number; center: NodeBox };
 
-function placeGraphNode(gn: GraphNodeSpec, g: LaidOutGraph): PlacedGraphNode | undefined {
+function placeGraphNode(gn: GraphNodeSpec, g: LaidOutGraph) {
   const dn = g.node(gn.id);
   if (!dn) {
     return;
   }
   const cx = dn.x ?? 0;
   const cy = dn.y ?? 0;
-  return { gn, x: cx - gn.w / 2, y: cy - gn.h / 2, center: { x: cx, y: cy, w: gn.w, h: gn.h } };
+  return { gn, x: cx - gn.w / 2, y: cy - gn.h / 2, center: { x: cx, y: cy, w: gn.w, h: gn.h } } satisfies
+    | PlacedGraphNode
+    | undefined;
 }
 
-function graphRfNode({ gn, x, y }: PlacedGraphNode): Node {
+function graphRfNode({ gn, x, y }: PlacedGraphNode) {
   if (gn.kind === 'merge') {
     return {
       id: gn.id,
@@ -799,7 +790,7 @@ function graphRfNode({ gn, x, y }: PlacedGraphNode): Node {
       zIndex: 8,
       style: { pointerEvents: 'all', transition: 'transform 200ms ease' },
       data: makeMergeData(gn.id.replace(/-merge$/u, '')),
-    };
+    } satisfies Node;
   }
   const node = gn.node as PipelineFlowNode;
   return {
@@ -815,36 +806,33 @@ function graphRfNode({ gn, x, y }: PlacedGraphNode): Node {
       ...(node.parentId ? { ownerId: node.parentId } : {}),
       ...(gn.footerAdd ? { addAction: gn.footerAdd } : {}),
     },
-  };
+  } satisfies Node;
 }
 
 type FlowExtent = { minX: number; maxX: number; maxY: number };
 
-function flowExtent(placed: PlacedGraphNode[]): FlowExtent {
+function flowExtent(placed: PlacedGraphNode[]) {
   const minX = Math.min(...placed.map((p) => p.x));
   if (!Number.isFinite(minX)) {
-    return { minX: 0, maxX: FULL_DIMS.cardW, maxY: FULL_DIMS.leafBaseH };
+    return { minX: 0, maxX: FULL_DIMS.cardW, maxY: FULL_DIMS.leafBaseH } satisfies FlowExtent;
   }
   return {
     minX,
     maxX: Math.max(...placed.map((p) => p.x + p.gn.w)),
     maxY: Math.max(...placed.map((p) => p.y + p.gn.h)),
-  };
+  } satisfies FlowExtent;
 }
 
-function placeFlowNodes(
-  ctx: GraphCtx,
-  g: LaidOutGraph
-): { rfNodes: Node[]; centerById: Map<string, NodeBox>; extent: FlowExtent } {
+function placeFlowNodes(ctx: GraphCtx, g: LaidOutGraph) {
   const placed = ctx.gnodes.map((gn) => placeGraphNode(gn, g)).filter((p) => p !== undefined);
   return {
-    rfNodes: placed.map((p) => graphRfNode(p)),
+    rfNodes: placed.map<Node>((p) => graphRfNode(p)),
     centerById: new Map(placed.map((p) => [p.gn.id, p.center])),
     extent: flowExtent(placed),
   };
 }
 
-function graphRfEdge(ge: GraphEdgeSpec, g: LaidOutGraph): Edge {
+function graphRfEdge(ge: GraphEdgeSpec, g: LaidOutGraph) {
   return {
     id: ge.id,
     source: ge.from,
@@ -863,22 +851,19 @@ function graphRfEdge(ge: GraphEdgeSpec, g: LaidOutGraph): Edge {
       ...(ge.selectId && ge.selectTarget ? { selectId: ge.selectId, selectTarget: ge.selectTarget } : {}),
       ...((ge.type === 'conditional' || ge.type === 'error') && ge.label ? { labelT: 0.5 } : {}),
     },
-  };
+  } satisfies Edge;
 }
 
-export function computeGraphLayout(
-  nodes: PipelineFlowNode[],
-  editable = false
-): {
-  rfNodes: Node[];
-  rfEdges: Edge[];
-  width: number;
-  height: number;
-} {
+/**
+ * Lay out sequential and parallel lanes, with inputs merging and outputs
+ * splitting. In edit mode, insertion controls retain their YAML slot even
+ * when an invalid entry has no visible card.
+ */
+export function computeGraphLayout(nodes: PipelineFlowNode[], editable = false) {
   const ctx = buildPipelineGraph(nodes, editable);
   const g = layoutGraph(ctx);
   const { rfNodes, centerById, extent } = placeFlowNodes(ctx, g);
-  const rfEdges = ctx.gedges.map((ge) => graphRfEdge(ge, g));
+  const rfEdges = ctx.gedges.map<Edge>((ge) => graphRfEdge(ge, g));
   const inserts = placeGraphInserts(ctx, rfNodes, centerById);
   const bounds = {
     minX: extent.minX,
@@ -886,5 +871,10 @@ export function computeGraphLayout(
     maxY: Math.max(extent.maxY, inserts.maxY),
   };
   const { right, bottom } = placeResourceDependencies(nodes, rfNodes, rfEdges, centerById, bounds);
-  return { rfNodes, rfEdges, width: Math.max(right, bounds.maxX) - bounds.minX, height: Math.max(bottom, bounds.maxY) };
+  return {
+    rfNodes,
+    rfEdges,
+    width: Math.max(right, bounds.maxX) - bounds.minX,
+    height: Math.max(bottom, bounds.maxY),
+  };
 }

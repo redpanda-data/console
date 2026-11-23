@@ -54,7 +54,7 @@ import { isTopicField } from '../utils/wizard';
 import type { EditTarget, ResourceKind } from '../utils/yaml';
 import { resourceKindForComponentName } from '../utils/yaml';
 
-// A direct child (case / step) of a control-flow component, shown as a clickable row to its full config.
+/** A control-flow child displayed as a link to its own config. */
 export type InspectorChildItem = {
   id: string;
   target: EditTarget;
@@ -78,7 +78,7 @@ const childItemConditionText = (item: InspectorChildItem) => {
   }
 };
 
-const childItemCondColor = (item: InspectorChildItem): string => {
+const childItemCondColor = (item: InspectorChildItem) => {
   if (item.isErrorPath) {
     return 'text-destructive';
   }
@@ -129,7 +129,6 @@ export const ChildItemsList = ({
   onSelect: (item: InspectorChildItem) => void;
   label: string;
 }) => (
-  // A heading, not a <label>: the rows are buttons with their own accessible text; nothing for htmlFor.
   <div className="flex flex-col gap-1.5">
     <div className="text-body font-medium">{label}</div>
     <div className="flex flex-col gap-1.5">
@@ -141,29 +140,18 @@ export const ChildItemsList = ({
   </div>
 );
 
-// Cluster-linking context (resource labels, create-resource, create-topic), provided by the
-// inspector so the form stays a pure config editor. Context rather than props because the
-// consumers are leaf controls several generic layers down (SchemaFields → SchemaField →
-// Scalar/ArrayField → controls) — drilling would thread cluster concerns through every layer.
 type ResourceFieldContextValue = {
   labels: Record<ResourceKind, string[]>;
   onCreateResource?: (kind: ResourceKind) => void;
-  // Kind of the edited component, so a plainly-typed `resource:` string field still reads as a link.
   componentResourceKind?: ResourceKind;
-  // True when the component's topic/topics fields name topics on THIS cluster (kafka/redpanda
-  // family) — gates the pickers, so an mqtt/pulsar topic field stays a plain input.
   clusterTopicFields?: boolean;
-  /** Opens the Add-topic dialog; the created topic is written into the component's topic field. */
   onCreateTopic?: () => void;
-  /** Docs URL for one field of the edited component, by its path. */
   fieldDocsUrl?: (path: string[]) => string | undefined;
 };
 const ResourceFieldContext = createContext<ResourceFieldContextValue>({ labels: { cache: [], rate_limit: [] } });
 
 const CREATE_RESOURCE_VALUE = '__create_resource__';
 
-// Resource kind a field links to: by field type, or by the enclosing cache/rate_limit component for
-// a field named `resource` (some schemas type it as a plain string).
 function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: ResourceKind) {
   if (spec.type === 'cache' || spec.type === 'rate_limit') {
     return spec.type;
@@ -173,8 +161,6 @@ function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: Resourc
   }
 }
 
-// Dropdown for a `resource:` link — never free text, so the reference can't be mistyped; a stale
-// value is still shown, flagged missing.
 const ResourceReferenceSelect = ({
   kind,
   value = '',
@@ -223,7 +209,6 @@ const ResourceReferenceSelect = ({
   );
 };
 
-// Path helpers for the plain-JSON config object (not the YAML AST).
 function getInObj(obj: Record<string, unknown>, path: string[]) {
   let cur: unknown = obj;
   for (const key of path) {
@@ -256,7 +241,6 @@ function deleteInObj(obj: Record<string, unknown>, path: string[]) {
   }
 }
 
-// Drop objects that became empty after clearing their fields, so the YAML stays tidy.
 function pruneEmptyObjects(obj: Record<string, unknown>) {
   for (const [key, val] of Object.entries(obj)) {
     if (val && typeof val === 'object' && !Array.isArray(val)) {
@@ -290,10 +274,7 @@ function coerceScalar(spec: RawFieldSpec, raw: string | boolean) {
   return text;
 }
 
-// '' when the literal doesn't parse, which the save path drops.
 function coerceNumericText(text: string, integer: boolean) {
-  // Interpolations (`${ENV}`, secrets, Bloblang) are valid even in numeric fields — keep verbatim
-  // rather than coercing to NaN (→ '' → dropped on commit). Matches numericHint.
   if (text.includes('${')) {
     return text;
   }
@@ -311,7 +292,7 @@ const arrayFieldLines = (text: string) =>
     .map((l) => l.trim())
     .filter((l) => l !== '');
 
-function coerceArrayItems(spec: RawFieldSpec, text: string): unknown[] {
+function coerceArrayItems(spec: RawFieldSpec, text: string) {
   const lines = arrayFieldLines(text);
   if (spec.type === 'int' || spec.type === 'float') {
     return lines.map(Number).filter((n) => !Number.isNaN(n));
@@ -322,7 +303,6 @@ function coerceArrayItems(spec: RawFieldSpec, text: string): unknown[] {
 type Leaf = { spec: RawFieldSpec; path: string[]; key: string };
 type Leaves = { scalars: Leaf[]; arrays: Leaf[] };
 
-/** All scalar + scalar-array leaves (recursing into object groups), keyed by path. */
 function collectLeaves(fields: RawFieldSpec[], base: string[] = []) {
   const leaves: Leaves = { scalars: [], arrays: [] };
   for (const f of fields) {
@@ -333,7 +313,6 @@ function collectLeaves(fields: RawFieldSpec[], base: string[] = []) {
   return leaves;
 }
 
-// Files one field under its leaf kind, or recurses into it when it is an object group.
 function collectFieldLeaves(field: RawFieldSpec, path: string[], leaves: Leaves) {
   const leaf: Leaf = { spec: field, path, key: path.join('/') };
   if (isScalarField(field)) {
@@ -347,7 +326,6 @@ function collectFieldLeaves(field: RawFieldSpec, path: string[], leaves: Leaves)
   }
 }
 
-// Paths of the nested object groups the form renders as collapsible sections (tls, batching, …).
 function collectGroupKeys(fields: RawFieldSpec[], base: string[] = [], out: string[] = []) {
   for (const f of fields) {
     if (f.deprecated || !isObjectGroupField(f)) {
@@ -365,26 +343,22 @@ function collectGroupKeys(fields: RawFieldSpec[], base: string[] = [], out: stri
  * anchors lint errors can attach to. A group anchor renders at the top of its (auto-opened)
  * section, which is as specific as an error on the group itself (`batching: null`) can get.
  */
-export function formFieldKeys(spec: ConnectComponentSpec): ReadonlySet<string> {
+export function formFieldKeys(spec: ConnectComponentSpec) {
   const fields = spec.config?.children ?? [];
   const leaves = collectLeaves(fields);
-  return new Set([
+  const keys: ReadonlySet<string> = new Set([
     'label',
     ...leaves.scalars.map((l) => l.key),
     ...leaves.arrays.map((l) => l.key),
     ...collectGroupKeys(fields),
   ]);
+  return keys;
 }
 
-// Lint messages anchored to field keys, provided by the inspector; read by the recursive field
-// renderers (a prop would have to thread through every SchemaField level).
 const FieldLintErrorsContext = createContext<FieldLintErrors>(new Map());
 
-// Lint errors anchored under this field. Hidden while the field is dirty — the user is addressing
-// it, and the message describes the SAVED value, not what they're typing.
 const FieldLintErrorList = ({ fieldKey, dirty }: { fieldKey: string; dirty: boolean }) => {
   const errors = useContext(FieldLintErrorsContext).get(fieldKey);
-  // Inside an invalid registry Field, this list is what the control's aria-describedby points at.
   const { errorId } = useFieldContext();
   if (!errors || errors.length === 0 || dirty) {
     return null;
@@ -392,7 +366,6 @@ const FieldLintErrorList = ({ fieldKey, dirty }: { fieldKey: string; dirty: bool
   return (
     <div className="flex flex-col gap-1" id={errorId}>
       {errors.map((message, i) => (
-        // Indexed key: identical messages can anchor to one field, and the list is rebuilt per render.
         <div className="flex items-start gap-1 text-body-sm text-destructive" key={`${i}-${message}`}>
           <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
           {message}
@@ -402,9 +375,6 @@ const FieldLintErrorList = ({ fieldKey, dirty }: { fieldKey: string; dirty: bool
   );
 };
 
-// The lint errors anchored at `prefix` or anywhere under it, joined into one signature string.
-// Groups force-open when the signature CHANGES: mere truthiness would leave errors that arrive
-// after a manual collapse invisible, while reopening on every lint refresh would fight the user.
 function lintErrorSignatureUnder(errors: FieldLintErrors, prefix: string) {
   const messages: string[] = [];
   for (const [key, list] of errors) {
@@ -426,15 +396,12 @@ type FormValues = {
   arrays: Record<string, string>;
 };
 
-// Parse the "Other settings (YAML)" text: the mapping, `{}` when empty (intentional clear), or
-// `null` when invalid / not a mapping — so callers preserve existing keys instead of wiping them.
 function parseRawSection(showRaw: boolean, raw: string) {
   if (!(showRaw && raw.trim())) {
     return {};
   }
   try {
     const parsed = parseYaml(raw);
-    // Empty / comments-only parses to nullish — treat as an intentional clear, not invalid.
     if (parsed === null || parsed === undefined) {
       return {};
     }
@@ -444,12 +411,10 @@ function parseRawSection(showRaw: boolean, raw: string) {
   }
 }
 
-// Which form fields the user actually edited (react-hook-form dirty state).
 type DirtyState = { fields?: Record<string, unknown>; arrays?: Record<string, unknown>; raw?: unknown };
 
 type BuildArgs = {
   componentName: string;
-  /** The full component entry being edited, e.g. `{ label, switch: [...] }`. */
   value: Record<string, unknown>;
   inner: Record<string, unknown>;
   leaves: Leaves;
@@ -457,7 +422,6 @@ type BuildArgs = {
   showRaw: boolean;
   data: FormValues;
   dirty: DirtyState;
-  /** Resources are referenced by label — never drop it, even if the field is cleared. */
   requireLabel?: boolean;
 };
 
@@ -466,8 +430,6 @@ function applyScalarEdits(config: Record<string, unknown>, scalars: Leaf[], data
     if (!dirty.fields?.[key]) {
       continue;
     }
-    // A malformed numeric literal is flagged and NOT committed — coercing would silently truncate
-    // (`10x` → 10) or drop it; the saved value is kept until fixed.
     if (numericHint(spec, data.fields[key])) {
       continue;
     }
@@ -499,7 +461,6 @@ function applyRawEdits(config: Record<string, unknown>, { rawKeys, showRaw, data
     return;
   }
   const parsedRaw = parseRawSection(showRaw, data.raw);
-  // Invalid YAML → null: keep the existing raw keys rather than wiping them (the editor shows the error).
   if (!parsedRaw) {
     return;
   }
@@ -509,20 +470,17 @@ function applyRawEdits(config: Record<string, unknown>, { rawKeys, showRaw, data
   Object.assign(config, parsedRaw);
 }
 
-// The entry's `label`, as an object to start the entry from (`{}` when there is none).
-function entryLabel({ data, value, requireLabel }: BuildArgs): Record<string, unknown> {
+function entryLabel({ data, value, requireLabel }: BuildArgs) {
   const typed = data.label.trim();
   if (typed) {
     return { label: typed };
   }
-  // Clearing a resource's label would strand its `resource:` references — keep the saved label.
   if (requireLabel && typeof value.label === 'string' && value.label) {
     return { label: value.label };
   }
   return {};
 }
 
-// The existing config with the user's edits overlaid: raw section first, then the form fields.
 function editedConfig(args: BuildArgs) {
   const config: Record<string, unknown> = structuredClone(args.inner);
   applyRawEdits(config, args);
@@ -532,14 +490,10 @@ function editedConfig(args: BuildArgs) {
   return config;
 }
 
-// Assemble the component entry: start from the existing config (so unrendered and untouched
-// fields round-trip byte-for-byte) and overlay only the fields the user actually changed.
-function buildComponentEntry(args: BuildArgs): Record<string, unknown> {
+function buildComponentEntry(args: BuildArgs) {
   const { componentName, value } = args;
-  const next = entryLabel(args);
+  const next: Record<string, unknown> = entryLabel(args);
   const original = value[componentName];
-  // A list/scalar-valued component (switch/try/catch/for_each): preserve the value verbatim and only
-  // patch the label — rebuilding would write `{}` over the array and drop the children.
   if (!(original && typeof original === 'object') || Array.isArray(original)) {
     next[componentName] = original ?? {};
     return next;
@@ -564,7 +518,6 @@ const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string })
       <span className="shrink-0 text-body-sm text-muted-foreground">{spec.type}</span>
     ) : null}
     {spec.defaultValue ? (
-      // Defaults can be long templates — keep the label on one line and ellipsize, full value on hover.
       <ElementTooltip content={`default: ${spec.defaultValue}`}>
         <span className="min-w-0 truncate text-body-sm text-muted-foreground">
           default: <span className="font-mono">{spec.defaultValue}</span>
@@ -574,16 +527,11 @@ const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string })
   </div>
 );
 
-// Mask fields the schema flags as secret (stamped from the raw config schema; the proto has no
-// secret field), plus a name heuristic as the union — the flag misses plausibly-sensitive fields
-// like AWS session tokens and SAS tokens, and the heuristic is all we have on older dataplanes.
 const SECRET_NAME_RE = /(?:password|secret|token|private_key|api_key|passphrase)$/iu;
 
 const isSecretField = (spec: RawFieldSpec) =>
   spec.secret === true || (spec.type === 'string' && !fieldHasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? ''));
 
-// Masked credential input. `type="password"` gives the registry Input's reveal toggle; a `${…}`
-// interpolation isn't a literal credential, so it's shown in the clear.
 const SecretInput = (props: { id?: string; value: string; onChange: (value: unknown) => void; required?: boolean }) => (
   <Input
     aria-required={props.required || undefined}
@@ -595,15 +543,12 @@ const SecretInput = (props: { id?: string; value: string; onChange: (value: unkn
   />
 );
 
-// Cluster topics offered by topic-field pickers (internal topics hidden, like the template flow).
 function useTopicOptions() {
   const { data, isLoading } = useListTopicsQuery(undefined, undefined, { hideInternalTopics: true });
   const options = (data.topics ?? []).map((t) => ({ value: t.name, label: t.name }));
   return { options, isLoading };
 }
 
-// The "Create new topic" affordance next to topic pickers; opens the Add-topic dialog. The created
-// topic is written into the YAML, which re-syncs into the (clean) form.
 const CreateTopicButton = () => {
   const { onCreateTopic } = useContext(ResourceFieldContext);
   if (!onCreateTopic) {
@@ -616,12 +561,6 @@ const CreateTopicButton = () => {
   );
 };
 
-// A topic-named scalar: pick an existing cluster topic (like the template flow's selector), type a
-// custom value (interpolations, `topic:partition`), or create a new topic. Typed text propagates
-// per keystroke (onInputValueChange): the combobox itself only fires onChange on Enter/selection,
-// which would let a blur-commit save stale YAML while the field still displays the typed text.
-// The combobox forwards no aria props, so a registry Field marks its input invalid and describes it
-// by the lint messages rendered inside; `invalid` must be set exactly when those messages render.
 const TopicScalarControl = ({
   id,
   value,
@@ -659,12 +598,8 @@ const TopicScalarControl = ({
   );
 };
 
-// Appends cluster topics to a topics-list field without giving up the free-text lines (regex
-// patterns, explicit partitions) the textarea supports.
 const TopicArrayPicker = ({ lines, onAppend }: { lines: string[]; onAppend: (topic: string) => void }) => {
   const { options, isLoading } = useTopicOptions();
-  // Remounted per pick: the combobox pins value='' but keeps displaying the picked label as if
-  // it were still a pending selection.
   const [pickCount, setPickCount] = useState(0);
   const remaining = options.filter((o) => !lines.includes(o.value));
   return (
@@ -688,15 +623,8 @@ const TopicArrayPicker = ({ lines, onAppend }: { lines: string[]; onAppend: (top
   );
 };
 
-// Sentinel item value — '' can't be one.
 const UNSET_OPTION = '__unset__';
 
-/**
- * Enum (annotated-options) field. A select can't be cleared by deleting text the way inputs can,
- * so optional fields get an explicit unset item ("Default (x)" / "Not set") — without it a value
- * seeded by the insert template is stuck in the YAML forever. Unset maps to '', which the save
- * path treats as "remove the key".
- */
 const OptionsSelect = ({
   spec,
   value,
@@ -739,8 +667,6 @@ type ScalarControlProps = {
   invalid?: boolean;
 };
 
-// Whether a scalar gets the cluster topic picker: a topic-named field on a Redpanda connector that
-// ScalarControl would otherwise free-type (not a switch, resource reference, or enum select).
 function usesTopicPicker(spec: RawFieldSpec, { clusterTopicFields, componentResourceKind }: ResourceFieldContextValue) {
   return (
     Boolean(clusterTopicFields) &&
@@ -766,7 +692,6 @@ const ScalarControl = ({ spec, value, onChange, id, invalid }: ScalarControlProp
   return <TypedScalarControl id={id} invalid={invalid} onChange={onChange} spec={spec} value={value} />;
 };
 
-// A free-typed scalar other than a cluster topic: a masked credential, or plain text.
 const TypedScalarControl = ({ spec, value, onChange, id, invalid }: ScalarControlProps) => {
   const required = checkRequired(spec);
   if (isSecretField(spec)) {
@@ -777,8 +702,6 @@ const TypedScalarControl = ({ spec, value, onChange, id, invalid }: ScalarContro
   );
 };
 
-// Text input (numeric inputMode), not type="number": a number input blanks values the browser
-// can't parse (e.g. `1000$`); text keeps them visible and fixable.
 const ScalarTextInput = ({
   spec,
   value,
@@ -811,9 +734,7 @@ const ScalarTextInput = ({
 
 const INT_VALUE_RE = /^-?\d+$/u;
 
-// A non-blocking validity hint for numeric fields. `${…}` values are interpolations (env vars,
-// secrets, Bloblang) — legitimate anywhere — so only plainly malformed literals are flagged.
-function numericHint(spec: RawFieldSpec, value: string | boolean): string | null {
+function numericHint(spec: RawFieldSpec, value: string | boolean) {
   const text = String(value ?? '').trim();
   if (text === '' || typeof value === 'boolean' || text.includes('${')) {
     return null;
@@ -926,7 +847,6 @@ const FieldGroup = ({
 }: {
   label: string;
   defaultOpen?: boolean;
-  /** Reopens the group whenever this changes to non-empty (lint anchored new errors inside it). */
   forceOpenSignal?: string;
   children: React.ReactNode;
 }) => {
@@ -936,7 +856,6 @@ const FieldGroup = ({
       setOpen(true);
     }
   }, [forceOpenSignal]);
-  // The registry Collapsible is unstyled: the frame, header padding, and body layout are this group's own boxes.
   return (
     <div className="rounded-md border border-border/60">
       <Collapsible onOpenChange={setOpen} open={open}>
@@ -956,7 +875,6 @@ const FieldGroup = ({
   );
 };
 
-// Render one field: scalar, scalar list, or nested object group; complex fields go to the raw section.
 const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string[]; control: Control<FormValues> }) => {
   const here = [...path, spec.name];
   const lintSignatureInside = useLintErrorSignatureUnder(here);
@@ -973,7 +891,6 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
         forceOpenSignal={lintSignatureInside}
         label={spec.name}
       >
-        {/* Errors anchored on the group itself (e.g. `batching: null`) — shown where it's fixed. */}
         <FieldLintErrorList dirty={false} fieldKey={here.join('/')} />
         <SchemaFields control={control} fields={spec.children ?? []} path={here} />
       </FieldGroup>
@@ -982,8 +899,6 @@ const SchemaField = ({ spec, path, control }: { spec: RawFieldSpec; path: string
   return null;
 };
 
-// "Optional" only means something in contrast to required fields above it — with none, the label
-// reads as "nothing here matters", which lint errors then contradict; render the fields plainly.
 const OptionalFieldsSection = ({
   fields,
   hasRequired,
@@ -1002,21 +917,19 @@ const OptionalFieldsSection = ({
 
 type FieldGroupKey = 'required' | 'optional' | 'advanced';
 
-// Display buckets; `advanced` wins over `required`, so an advanced+required field stays below the fold.
-const fieldGroupKey = (spec: RawFieldSpec): FieldGroupKey => {
+const fieldGroupKey = (spec: RawFieldSpec) => {
   if (spec.advanced) {
-    return 'advanced';
+    return 'advanced' satisfies FieldGroupKey;
   }
   if (checkRequired(spec)) {
-    return 'required';
+    return 'required' satisfies FieldGroupKey;
   }
-  return 'optional';
+  return 'optional' satisfies FieldGroupKey;
 };
 
 function groupFormFields(fields: RawFieldSpec[]) {
   const groups: Record<FieldGroupKey, RawFieldSpec[]> = { required: [], optional: [], advanced: [] };
   for (const spec of fields) {
-    // isFormField excludes deprecated fields; their existing values surface in the raw-YAML section.
     if (isFormField(spec)) {
       groups[fieldGroupKey(spec)].push(spec);
     }
@@ -1076,11 +989,8 @@ type NodeConfigFormProps = {
 
 const NO_FIELD_ERRORS: FieldLintErrors = new Map();
 
-// What the form edits, derived from the schema and the saved component value.
 type FormModel = {
   inner: Record<string, unknown>;
-  // A list-valued component (switch/try/catch/for_each) is edited on the canvas, not via object
-  // fields — rendering them would mislead and saving would clobber the array. Show a hint instead.
   isListValued: boolean;
   leaves: Leaves;
   rawKeys: string[];
@@ -1088,8 +998,6 @@ type FormModel = {
   rawObject: Record<string, unknown>;
 };
 
-// Keys the raw-YAML fallback owns: complex (or deprecated) schema fields and keys the schema
-// doesn't know. Nested-component fields are preserved untouched (the form clones the config).
 function rawSectionKeys(fields: RawFieldSpec[], inner: Record<string, unknown>) {
   const schemaKeys = new Set(fields.map((f) => f.name).filter(Boolean));
   const complexSchemaKeys = fields
@@ -1099,8 +1007,7 @@ function rawSectionKeys(fields: RawFieldSpec[], inner: Record<string, unknown>) 
   return [...new Set([...complexSchemaKeys, ...unknownKeys])].filter((k) => inner[k] !== undefined);
 }
 
-// Leaves drive form defaults + assembly; everything else round-trips through the raw section.
-function deriveFormModel(fields: RawFieldSpec[], componentValue: unknown): FormModel {
+function deriveFormModel(fields: RawFieldSpec[], componentValue: unknown) {
   const isListValued = Array.isArray(componentValue);
   const inner =
     componentValue && typeof componentValue === 'object' && !isListValued
@@ -1114,10 +1021,10 @@ function deriveFormModel(fields: RawFieldSpec[], componentValue: unknown): FormM
     rawKeys,
     showRaw: rawKeys.length > 0,
     rawObject: Object.fromEntries(rawKeys.map((k) => [k, inner[k]])),
-  };
+  } satisfies FormModel;
 }
 
-function buildFormValues(value: Record<string, unknown>, { inner, leaves, showRaw, rawObject }: FormModel): FormValues {
+function buildFormValues(value: Record<string, unknown>, { inner, leaves, showRaw, rawObject }: FormModel) {
   return {
     label: typeof value.label === 'string' ? value.label : '',
     raw: showRaw ? yamlStringify(rawObject) : '',
@@ -1128,12 +1035,9 @@ function buildFormValues(value: Record<string, unknown>, { inner, leaves, showRa
         return [l.key, Array.isArray(v) ? v.join('\n') : ''];
       })
     ),
-  };
+  } satisfies FormValues;
 }
 
-// The values a successful commit leaves as the form's baseline. Edits the save path deliberately
-// skipped (malformed numerics, invalid raw YAML) keep their SAVED value as the baseline so they
-// stay dirty — otherwise the clean-form resync would silently revert them.
 function committedBaseline(current: FormValues, { inner, leaves, showRaw, rawObject }: FormModel) {
   const committed: FormValues = { ...current, fields: { ...current.fields } };
   for (const leaf of leaves.scalars) {
@@ -1154,8 +1058,6 @@ type NodeConfigDraftArgs = Pick<
   model: FormModel;
 };
 
-// The form state behind NodeConfigForm: re-syncs from external writes, reports the assembled
-// draft, and flushes it per field.
 function useNodeConfigDraft({
   componentName,
   value,
@@ -1168,14 +1070,9 @@ function useNodeConfigDraft({
     defaultValues: buildFormValues(value, model),
   });
 
-  // Read dirtyFields/isDirty during render so react-hook-form subscribes to (and
-  // keeps updating) them — otherwise they stay empty and every field looks untouched.
+  // WARNING: Read dirty state during render so React Hook Form subscribes; otherwise edits can look untouched.
   const { dirtyFields, isDirty } = formState;
 
-  // External writes while the form is open (a field-blur commit round-tripping through the YAML,
-  // the Topic/User pill dialogs, resource linking) change `value` without remounting. A clean form
-  // re-syncs in place — no remount, so focus and scroll survive; a dirty form keeps the user's
-  // edits and re-syncs when it next becomes clean, so a write that landed mid-edit isn't lost.
   const serializedValue = JSON.stringify(value);
   const syncedValueRef = useRef(serializedValue);
   // biome-ignore lint/correctness/useExhaustiveDependencies: `serializedValue`/`isDirty` are the triggers; values rebuild from the latest props.
@@ -1187,8 +1084,6 @@ function useNodeConfigDraft({
   }, [serializedValue, isDirty]);
 
   const watched = useWatch({ control });
-  // `serializedValue` is a trigger too: an external write while dirty (create-topic patch) must
-  // rebuild the draft from the fresh value, or flushing it later would clobber that write.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `watched`/`serializedValue` are the change triggers; the config is rebuilt from the latest values/props read in the body.
   useEffect(() => {
     onConfigChange?.(
@@ -1208,8 +1103,6 @@ function useNodeConfigDraft({
     );
   }, [watched, isDirty, getValues, onConfigChange, serializedValue]);
 
-  // Flush the draft into the YAML now (field blur / ⌘⏎ / Apply). On success the committed values
-  // become the form's new baseline in place — no remount, focus and scroll survive.
   const commitNow = () => {
     if (!(onCommitField && isDirty && onCommitField())) {
       return;
@@ -1226,10 +1119,7 @@ function resourceFieldContextFor({
   resourceLabels,
   onCreateResource,
   onCreateTopic,
-}: Pick<
-  NodeConfigFormProps,
-  'spec' | 'componentName' | 'resourceLabels' | 'onCreateResource' | 'onCreateTopic'
->): ResourceFieldContextValue {
+}: Pick<NodeConfigFormProps, 'spec' | 'componentName' | 'resourceLabels' | 'onCreateResource' | 'onCreateTopic'>) {
   const clusterTopicFields = REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName);
   return {
     labels: resourceLabels ?? { cache: [], rate_limit: [] },
@@ -1238,10 +1128,9 @@ function resourceFieldContextFor({
     clusterTopicFields,
     onCreateTopic: clusterTopicFields ? onCreateTopic : undefined,
     fieldDocsUrl: (path) => getFieldDocsUrl(spec.type, componentName, path),
-  };
+  } satisfies ResourceFieldContextValue;
 }
 
-// The lint errors anchored anywhere under these fields, as one signature (see lintErrorSignatureUnder).
 function lintErrorSignatureUnderFields(errors: FieldLintErrors, fields: RawFieldSpec[]) {
   return fields
     .map((f) => lintErrorSignatureUnder(errors, f.name))
@@ -1249,7 +1138,6 @@ function lintErrorSignatureUnderFields(errors: FieldLintErrors, fields: RawField
     .join('\n');
 }
 
-// A control-flow component's direct children, when there are any and a way to open them.
 type ChildList = { items: InspectorChildItem[]; onSelect: (item: InspectorChildItem) => void };
 
 const LabelField = ({ control, requireLabel }: { control: Control<FormValues>; requireLabel?: boolean }) => {
@@ -1286,7 +1174,6 @@ const LabelField = ({ control, requireLabel }: { control: Control<FormValues>; r
   );
 };
 
-// A list-valued component's items are edited on the canvas: list them, or say where they live.
 const ListValuedItems = ({ childList }: { childList?: ChildList }) =>
   childList ? (
     <ChildItemsList {...childList} label="Cases" />
@@ -1327,8 +1214,6 @@ const RawSettingsGroup = ({ control }: { control: Control<FormValues> }) => (
   </FieldGroup>
 );
 
-// Required fields, then Optional and Advanced groups, nested-component Steps, and the raw-YAML
-// fallback. A fragment: the sections are direct children of the scroll area's vertical rhythm.
 const SchemaSections = ({
   control,
   fields,
@@ -1342,7 +1227,6 @@ const SchemaSections = ({
 }) => {
   const errors = useContext(FieldLintErrorsContext);
   const { required, optional, advanced } = groupFormFields(fields);
-  // Nested-component fields are their own canvas nodes — offered as a clickable "Steps" list, never inline.
   const hasComponentFields = fields.some(isComponentField);
   return (
     <>
@@ -1367,8 +1251,7 @@ const SchemaSections = ({
   );
 };
 
-// Edits normally apply on field blur; this is the visible pending state plus a manual trigger
-// (and ⌘⏎) for applying without moving focus.
+/** Apply edits without moving focus from the field; field blur and the commit shortcut also apply. */
 export const PendingEditsBar = ({ onApply }: { onApply: () => void }) => (
   <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border bg-muted/40 px-4 py-2">
     <span className="flex items-center gap-1.5 text-body-sm text-muted-foreground">
@@ -1385,6 +1268,16 @@ export const PendingEditsBar = ({ onApply }: { onApply: () => void }) => (
 
 export const isCommitShortcut = (e: React.KeyboardEvent) => (e.metaKey || e.ctrlKey) && e.key === 'Enter';
 
+/**
+ * Edit a connector without replacing untouched config, list-valued children,
+ * or labels that resources still reference. Invalid numeric or raw YAML edits
+ * stay dirty and keep the last saved value. Interpolations are preserved.
+ *
+ * External config changes resync a clean form in place. A dirty form overlays
+ * its edits on the latest config so a concurrent topic or resource change is
+ * not lost. Commit on field blur, the keyboard shortcut, or explicit Apply.
+ * Lint hints describe the saved value and hide while the affected field is dirty.
+ */
 export function NodeConfigForm(props: NodeConfigFormProps) {
   const { spec, componentName, value, headerSlot, childItems, onSelectChild, onCommitField, fieldErrors } = props;
   const fields = spec.config?.children ?? [];
@@ -1396,9 +1289,6 @@ export function NodeConfigForm(props: NodeConfigFormProps) {
   return (
     <ResourceFieldContext.Provider value={resourceFieldContextFor(props)}>
       <FieldLintErrorsContext.Provider value={fieldErrors ?? NO_FIELD_ERRORS}>
-        {/* Committing per FIELD (not per node): the container listens for focus leaving any field
-            (bubbled focusout) and ⌘⏎, flushing the draft so the canvas card and lint react while
-            the node is still selected. It is not itself interactive — the fields inside are. */}
         {/* biome-ignore lint/a11y/noStaticElementInteractions: passive listener for events bubbling from the form controls. */}
         {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: passive listener for events bubbling from the form controls. */}
         <div
@@ -1416,7 +1306,6 @@ export function NodeConfigForm(props: NodeConfigFormProps) {
           }
         >
           <ScrollShadow contentClassName="space-y-4 px-4 py-4">
-            {/* Full-bleed to the scroll edges; padded fields follow. */}
             {headerSlot ? <div className="-mx-4 -mt-4">{headerSlot}</div> : null}
             <LabelField control={control} requireLabel={props.requireLabel} />
             {model.isListValued ? (
