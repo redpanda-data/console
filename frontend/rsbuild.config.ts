@@ -162,10 +162,7 @@ export function consoleTools({ federationOnly = false } = {}): NonNullable<Rsbui
         nativeWatcher: true,
         pureFunctions: isProd,
       };
-      config.resolve ||= {};
       config.output ||= {};
-      /* resolve symlinks so the proto generate code can be built. */
-      config.resolve.symlinks = false;
 
       config.output.publicPath = 'auto';
 
