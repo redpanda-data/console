@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file redpanda/api/console/v1alpha1/signup.proto.
  */
 export const file_redpanda_api_console_v1alpha1_signup: GenFile = /*@__PURE__*/
-  fileDesc("CipyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9zaWdudXAucHJvdG8SHXJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExIusBChRMaWNlbnNlU2lnbnVwUmVxdWVzdBI7CgpnaXZlbl9uYW1lGAEgASgJQie6SCTIAQFyHxABGP8BMhheW1xwe0x9XHB7TX1ccHtOfSAnXy1dKyQSPAoLZmFtaWx5X25hbWUYAiABKAlCJ7pIJMgBAXIfEAEY/wEyGF5bXHB7TH1ccHtNfVxwe059ICdfLV0rJBI9Cgxjb21wYW55X25hbWUYAyABKAlCJ7pIJNgBAXIfEAEY/wEyGF5bXHB7TH1ccHtNfVxwe059ICdfLV0rJBIZCgVlbWFpbBgEIAEoCUIKukgHyAEBcgJgASK2AQoVTGljZW5zZVNpZ251cFJlc3BvbnNlEk0KB2xpY2Vuc2UYAiABKAsyPC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaWNlbnNlU2lnbnVwUmVzcG9uc2UuTGljZW5zZRpOCgdMaWNlbnNlEhMKC2xpY2Vuc2Vfa2V5GAEgASgJEi4KCmV4cGlyYXRpb24YAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wMo0BCg1TaWdudXBTZXJ2aWNlEnwKDUxpY2Vuc2VTaWdudXASMy5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaWNlbnNlU2lnbnVwUmVxdWVzdBo0LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpY2Vuc2VTaWdudXBSZXNwb25zZSIAYgZwcm90bzM", [file_buf_validate_validate, file_google_protobuf_timestamp]);
+  fileDesc("CipyZWRwYW5kYS9hcGkvY29uc29sZS92MWFscGhhMS9zaWdudXAucHJvdG8SHXJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExIusBChRMaWNlbnNlU2lnbnVwUmVxdWVzdBI7CgpnaXZlbl9uYW1lGAEgASgJQie6SCTIAQFyHxABGP8BMhheW1xwe0x9XHB7TX1ccHtOfSAnXy1dKyQSPAoLZmFtaWx5X25hbWUYAiABKAlCJ7pIJMgBAXIfEAEY/wEyGF5bXHB7TH1ccHtNfVxwe059ICdfLV0rJBI9Cgxjb21wYW55X25hbWUYAyABKAlCJ7pIJNgBAXIfEAEY/wEyGF5bXHB7TH1ccHtNfVxwe059ICdfLV0rJBIZCgVlbWFpbBgEIAEoCUIKukgHyAEBcgJgASLtAwoVTGljZW5zZVNpZ251cFJlc3BvbnNlEk0KB2xpY2Vuc2UYAiABKAsyPC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaWNlbnNlU2lnbnVwUmVzcG9uc2UuTGljZW5zZRJoChV2ZXJpZmljYXRpb25fcmVxdWlyZWQYAyABKAsySS5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaWNlbnNlU2lnbnVwUmVzcG9uc2UuVmVyaWZpY2F0aW9uUmVxdWlyZWQSXQoQc2lnbl9pbl9yZXF1aXJlZBgEIAEoCzJDLnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLkxpY2Vuc2VTaWdudXBSZXNwb25zZS5TaWduSW5SZXF1aXJlZBpOCgdMaWNlbnNlEhMKC2xpY2Vuc2Vfa2V5GAEgASgJEi4KCmV4cGlyYXRpb24YAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGjgKFFZlcmlmaWNhdGlvblJlcXVpcmVkEg0KBWVtYWlsGAEgASgJEhEKCWNsYWltX3VybBgCIAEoCRoyCg5TaWduSW5SZXF1aXJlZBINCgVlbWFpbBgBIAEoCRIRCgljbGFpbV91cmwYAiABKAkiPAofUmVzZW5kUGFzc3dvcmRTZXR1cEVtYWlsUmVxdWVzdBIZCgVlbWFpbBgBIAEoCUIKukgHyAEBcgJgASIiCiBSZXNlbmRQYXNzd29yZFNldHVwRW1haWxSZXNwb25zZTKtAgoNU2lnbnVwU2VydmljZRJ8Cg1MaWNlbnNlU2lnbnVwEjMucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuTGljZW5zZVNpZ251cFJlcXVlc3QaNC5yZWRwYW5kYS5hcGkuY29uc29sZS52MWFscGhhMS5MaWNlbnNlU2lnbnVwUmVzcG9uc2UiABKdAQoYUmVzZW5kUGFzc3dvcmRTZXR1cEVtYWlsEj4ucmVkcGFuZGEuYXBpLmNvbnNvbGUudjFhbHBoYTEuUmVzZW5kUGFzc3dvcmRTZXR1cEVtYWlsUmVxdWVzdBo/LnJlZHBhbmRhLmFwaS5jb25zb2xlLnYxYWxwaGExLlJlc2VuZFBhc3N3b3JkU2V0dXBFbWFpbFJlc3BvbnNlIgBiBnByb3RvMw", [file_buf_validate_validate, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message redpanda.api.console.v1alpha1.LicenseSignupRequest
@@ -52,9 +52,22 @@ export const LicenseSignupRequestSchema: GenMessage<LicenseSignupRequest> = /*@_
  */
 export type LicenseSignupResponse = Message<"redpanda.api.console.v1alpha1.LicenseSignupResponse"> & {
   /**
+   * license is set when Redpanda issued the license straight away. Console
+   * has already installed it on the cluster.
+   *
    * @generated from field: redpanda.api.console.v1alpha1.LicenseSignupResponse.License license = 2;
    */
   license?: LicenseSignupResponse_License;
+
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.LicenseSignupResponse.VerificationRequired verification_required = 3;
+   */
+  verificationRequired?: LicenseSignupResponse_VerificationRequired;
+
+  /**
+   * @generated from field: redpanda.api.console.v1alpha1.LicenseSignupResponse.SignInRequired sign_in_required = 4;
+   */
+  signInRequired?: LicenseSignupResponse_SignInRequired;
 };
 
 /**
@@ -87,16 +100,121 @@ export const LicenseSignupResponse_LicenseSchema: GenMessage<LicenseSignupRespon
   messageDesc(file_redpanda_api_console_v1alpha1_signup, 1, 0);
 
 /**
+ * VerificationRequired means Redpanda emailed a link to set a password for
+ * the user's new Redpanda Cloud account. After setting it, the user signs
+ * in at claim_url to get the license.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.LicenseSignupResponse.VerificationRequired
+ */
+export type LicenseSignupResponse_VerificationRequired = Message<"redpanda.api.console.v1alpha1.LicenseSignupResponse.VerificationRequired"> & {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email: string;
+
+  /**
+   * claim_url opens the license page for this cluster.
+   *
+   * @generated from field: string claim_url = 2;
+   */
+  claimUrl: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.LicenseSignupResponse.VerificationRequired.
+ * Use `create(LicenseSignupResponse_VerificationRequiredSchema)` to create a new message.
+ */
+export const LicenseSignupResponse_VerificationRequiredSchema: GenMessage<LicenseSignupResponse_VerificationRequired> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_signup, 1, 1);
+
+/**
+ * SignInRequired means the email already has a Redpanda Cloud account. No
+ * email was sent. The user signs in at claim_url to get the license.
+ *
+ * @generated from message redpanda.api.console.v1alpha1.LicenseSignupResponse.SignInRequired
+ */
+export type LicenseSignupResponse_SignInRequired = Message<"redpanda.api.console.v1alpha1.LicenseSignupResponse.SignInRequired"> & {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email: string;
+
+  /**
+   * claim_url opens the license page for this cluster. Empty when Redpanda
+   * did not return one.
+   *
+   * @generated from field: string claim_url = 2;
+   */
+  claimUrl: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.LicenseSignupResponse.SignInRequired.
+ * Use `create(LicenseSignupResponse_SignInRequiredSchema)` to create a new message.
+ */
+export const LicenseSignupResponse_SignInRequiredSchema: GenMessage<LicenseSignupResponse_SignInRequired> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_signup, 1, 2);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ResendPasswordSetupEmailRequest
+ */
+export type ResendPasswordSetupEmailRequest = Message<"redpanda.api.console.v1alpha1.ResendPasswordSetupEmailRequest"> & {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email: string;
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ResendPasswordSetupEmailRequest.
+ * Use `create(ResendPasswordSetupEmailRequestSchema)` to create a new message.
+ */
+export const ResendPasswordSetupEmailRequestSchema: GenMessage<ResendPasswordSetupEmailRequest> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_signup, 2);
+
+/**
+ * @generated from message redpanda.api.console.v1alpha1.ResendPasswordSetupEmailResponse
+ */
+export type ResendPasswordSetupEmailResponse = Message<"redpanda.api.console.v1alpha1.ResendPasswordSetupEmailResponse"> & {
+};
+
+/**
+ * Describes the message redpanda.api.console.v1alpha1.ResendPasswordSetupEmailResponse.
+ * Use `create(ResendPasswordSetupEmailResponseSchema)` to create a new message.
+ */
+export const ResendPasswordSetupEmailResponseSchema: GenMessage<ResendPasswordSetupEmailResponse> = /*@__PURE__*/
+  messageDesc(file_redpanda_api_console_v1alpha1_signup, 3);
+
+/**
  * @generated from service redpanda.api.console.v1alpha1.SignupService
  */
 export const SignupService: GenService<{
   /**
+   * LicenseSignup starts a 30-day Enterprise trial. When Redpanda issues the
+   * license straight away, Console installs it and returns it in license.
+   * Otherwise the trial belongs to a Redpanda Cloud account, and the response
+   * says how the user gets the license: verification_required after a
+   * set-password email, or sign_in_required when the email already has an
+   * account. The user then applies the license with LicenseService.SetLicense.
+   *
    * @generated from rpc redpanda.api.console.v1alpha1.SignupService.LicenseSignup
    */
   licenseSignup: {
     methodKind: "unary";
     input: typeof LicenseSignupRequestSchema;
     output: typeof LicenseSignupResponseSchema;
+  },
+  /**
+   * ResendPasswordSetupEmail sends the set-password link again. It succeeds
+   * for any well-formed address, so it does not reveal which emails have
+   * accounts.
+   *
+   * @generated from rpc redpanda.api.console.v1alpha1.SignupService.ResendPasswordSetupEmail
+   */
+  resendPasswordSetupEmail: {
+    methodKind: "unary";
+    input: typeof ResendPasswordSetupEmailRequestSchema;
+    output: typeof ResendPasswordSetupEmailResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_redpanda_api_console_v1alpha1_signup, 0);

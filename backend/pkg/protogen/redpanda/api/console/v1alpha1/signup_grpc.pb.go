@@ -20,14 +20,25 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SignupService_LicenseSignup_FullMethodName = "/redpanda.api.console.v1alpha1.SignupService/LicenseSignup"
+	SignupService_LicenseSignup_FullMethodName            = "/redpanda.api.console.v1alpha1.SignupService/LicenseSignup"
+	SignupService_ResendPasswordSetupEmail_FullMethodName = "/redpanda.api.console.v1alpha1.SignupService/ResendPasswordSetupEmail"
 )
 
 // SignupServiceClient is the client API for SignupService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SignupServiceClient interface {
+	// LicenseSignup starts a 30-day Enterprise trial. When Redpanda issues the
+	// license straight away, Console installs it and returns it in license.
+	// Otherwise the trial belongs to a Redpanda Cloud account, and the response
+	// says how the user gets the license: verification_required after a
+	// set-password email, or sign_in_required when the email already has an
+	// account. The user then applies the license with LicenseService.SetLicense.
 	LicenseSignup(ctx context.Context, in *LicenseSignupRequest, opts ...grpc.CallOption) (*LicenseSignupResponse, error)
+	// ResendPasswordSetupEmail sends the set-password link again. It succeeds
+	// for any well-formed address, so it does not reveal which emails have
+	// accounts.
+	ResendPasswordSetupEmail(ctx context.Context, in *ResendPasswordSetupEmailRequest, opts ...grpc.CallOption) (*ResendPasswordSetupEmailResponse, error)
 }
 
 type signupServiceClient struct {
@@ -48,11 +59,31 @@ func (c *signupServiceClient) LicenseSignup(ctx context.Context, in *LicenseSign
 	return out, nil
 }
 
+func (c *signupServiceClient) ResendPasswordSetupEmail(ctx context.Context, in *ResendPasswordSetupEmailRequest, opts ...grpc.CallOption) (*ResendPasswordSetupEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResendPasswordSetupEmailResponse)
+	err := c.cc.Invoke(ctx, SignupService_ResendPasswordSetupEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SignupServiceServer is the server API for SignupService service.
 // All implementations must embed UnimplementedSignupServiceServer
 // for forward compatibility.
 type SignupServiceServer interface {
+	// LicenseSignup starts a 30-day Enterprise trial. When Redpanda issues the
+	// license straight away, Console installs it and returns it in license.
+	// Otherwise the trial belongs to a Redpanda Cloud account, and the response
+	// says how the user gets the license: verification_required after a
+	// set-password email, or sign_in_required when the email already has an
+	// account. The user then applies the license with LicenseService.SetLicense.
 	LicenseSignup(context.Context, *LicenseSignupRequest) (*LicenseSignupResponse, error)
+	// ResendPasswordSetupEmail sends the set-password link again. It succeeds
+	// for any well-formed address, so it does not reveal which emails have
+	// accounts.
+	ResendPasswordSetupEmail(context.Context, *ResendPasswordSetupEmailRequest) (*ResendPasswordSetupEmailResponse, error)
 	mustEmbedUnimplementedSignupServiceServer()
 }
 
@@ -65,6 +96,9 @@ type UnimplementedSignupServiceServer struct{}
 
 func (UnimplementedSignupServiceServer) LicenseSignup(context.Context, *LicenseSignupRequest) (*LicenseSignupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LicenseSignup not implemented")
+}
+func (UnimplementedSignupServiceServer) ResendPasswordSetupEmail(context.Context, *ResendPasswordSetupEmailRequest) (*ResendPasswordSetupEmailResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResendPasswordSetupEmail not implemented")
 }
 func (UnimplementedSignupServiceServer) mustEmbedUnimplementedSignupServiceServer() {}
 func (UnimplementedSignupServiceServer) testEmbeddedByValue()                       {}
@@ -105,6 +139,24 @@ func _SignupService_LicenseSignup_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SignupService_ResendPasswordSetupEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResendPasswordSetupEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SignupServiceServer).ResendPasswordSetupEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SignupService_ResendPasswordSetupEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SignupServiceServer).ResendPasswordSetupEmail(ctx, req.(*ResendPasswordSetupEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SignupService_ServiceDesc is the grpc.ServiceDesc for SignupService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -115,6 +167,10 @@ var SignupService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LicenseSignup",
 			Handler:    _SignupService_LicenseSignup_Handler,
+		},
+		{
+			MethodName: "ResendPasswordSetupEmail",
+			Handler:    _SignupService_ResendPasswordSetupEmail_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

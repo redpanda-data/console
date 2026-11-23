@@ -18,6 +18,8 @@ import { useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { capitalizeFirst } from 'utils/utils';
 
+import { ClaimLicenseStep, type ClaimLicenseStepProps } from './claim-license-step';
+import type { LicenseSignupResponse } from '../../protogen/redpanda/api/console/v1alpha1/signup_pb';
 import { useLicenseSignupMutation } from '../../react-query/api/signup';
 import { api } from '../../state/backend-api';
 
@@ -59,6 +61,8 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSuccess, setIsSuccess] = useState(false);
+  // Set when the license is not issued straight away and the user gets it from Redpanda Cloud.
+  const [claim, setClaim] = useState<Omit<ClaimLicenseStepProps, 'onApplied'> | null>(null);
   const signupMutation = useLicenseSignupMutation();
 
   const {
@@ -75,24 +79,32 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
     },
   });
 
+  // Shows the claim step when the license was not issued straight away, otherwise the success state.
+  const handleSignupResponse = (response: LicenseSignupResponse, email: string) => {
+    const nextClaim = claimFromSignup(response, email);
+    if (nextClaim) {
+      setClaim(nextClaim);
+      return;
+    }
+    // Refresh licenses after successful registration
+    api.listLicenses();
+    setIsSuccess(true);
+  };
+
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
     setIsSubmitting(true);
     setFieldErrors({}); // Clear previous field errors
 
     try {
-      await signupMutation.mutateAsync({
+      const response = await signupMutation.mutateAsync({
         givenName: data.givenName,
         familyName: data.familyName,
         email: data.email,
         companyName: data.companyName || 'unknown',
       });
 
-      // Refresh licenses after successful registration
-      api.listLicenses();
-
-      // Show success state
-      setIsSuccess(true);
+      handleSignupResponse(response, data.email);
     } catch (error) {
       if (error instanceof ConnectError) {
         setFieldErrors(getRegistrationFieldErrors(error));
@@ -109,6 +121,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
     reset();
     setFieldErrors({});
     setIsSuccess(false);
+    setClaim(null);
     signupMutation.reset();
     onClose();
 
@@ -132,7 +145,17 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
           <DialogTitle>Register</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          {isSuccess ? (
+          {!isSuccess && claim && (
+            <ClaimLicenseStep
+              {...claim}
+              onApplied={() => {
+                api.listLicenses();
+                setClaim(null);
+                setIsSuccess(true);
+              }}
+            />
+          )}
+          {isSuccess && (
             <div className="flex flex-col items-center gap-6 py-4">
               <div className="flex size-20 items-center justify-center rounded-full bg-success-wash">
                 <CheckIcon color="var(--color-success)" size={40} />
@@ -142,7 +165,8 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
                 <div className="text-center text-body text-subtle">Enjoy 30 more days of enterprise features.</div>
               </div>
             </div>
-          ) : (
+          )}
+          {!(isSuccess || claim) && (
             <div>
               <div className="mb-4 text-body text-subtle">
                 Register this cluster for an additional 30 days of enterprise features.
@@ -264,8 +288,10 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
         </DialogBody>
 
         <DialogFooter>
-          {isSuccess ? (
-            <Button onClick={handleClose}>Close</Button>
+          {isSuccess || claim ? (
+            <Button onClick={handleClose} variant={claim ? 'ghost' : undefined}>
+              Close
+            </Button>
           ) : (
             <>
               <Button onClick={handleClose} variant="ghost">
@@ -287,6 +313,33 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
     </Dialog>
   );
 };
+
+/**
+ * Says how the user gets the license when the signup did not issue it straight away, or null when it did.
+ */
+export function claimFromSignup(
+  response: LicenseSignupResponse,
+  email: string
+): Omit<ClaimLicenseStepProps, 'onApplied'> | null {
+  if (response.license?.licenseKey) {
+    return null;
+  }
+  if (response.signInRequired) {
+    return {
+      email: response.signInRequired.email || email,
+      claimUrl: response.signInRequired.claimUrl,
+      existingAccount: true,
+    };
+  }
+  if (response.verificationRequired) {
+    return {
+      email: response.verificationRequired.email || email,
+      claimUrl: response.verificationRequired.claimUrl,
+      existingAccount: false,
+    };
+  }
+  return null;
+}
 
 function getRegistrationFieldErrors(error: ConnectError): Record<string, string> {
   const fieldErrors: Record<string, string> = {};
