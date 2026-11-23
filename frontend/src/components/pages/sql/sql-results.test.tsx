@@ -32,7 +32,8 @@ beforeAll(() => {
     if (!isGridRoot(this)) {
       return original.call(this);
     }
-    return { ...original.call(this), width: GRID_RECT.width, height: GRID_RECT.height };
+    const { x, y } = original.call(this);
+    return new DOMRect(x, y, GRID_RECT.width, GRID_RECT.height);
   };
   for (const [prop, value] of [
     ['clientWidth', GRID_RECT.width],

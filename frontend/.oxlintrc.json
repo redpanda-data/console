@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [],
+  "plugins": ["oxc", "typescript"],
   "jsPlugins": ["./lint-rules/index.ts"],
   "categories": {
     "correctness": "off",
@@ -18,11 +18,27 @@
     "console/no-wall-clock-in-tests": "error",
     "console/no-test-timeout-or-unreasoned-skip": "error",
     "console/require-suppression-reason": "error",
-    "console/no-native-title-tooltip": "error"
+    "console/no-native-title-tooltip": "error",
+    "oxc/bad-array-method-on-arguments": "error",
+    "oxc/bad-char-at-comparison": "error",
+    "oxc/bad-comparison-sequence": "error",
+    "oxc/bad-match-all-arg": "error",
+    "oxc/bad-min-max-func": "error",
+    "oxc/bad-object-literal-comparison": "error",
+    "oxc/bad-replace-all-arg": "error",
+    "oxc/const-comparisons": "error",
+    "oxc/double-comparisons": "error",
+    "oxc/erasing-op": "error",
+    "oxc/misrefactored-assign-op": "error",
+    "oxc/missing-throw": "error",
+    "oxc/no-this-in-exported-function": "error",
+    "oxc/number-arg-out-of-range": "error",
+    "oxc/only-used-in-recursion": "error",
+    "oxc/uninvoked-array-callback": "error"
   },
   "options": {
     "reportUnusedDisableDirectives": "error",
-    "typeAware": false,
+    "typeAware": true,
     "typeCheck": false
   },
   "ignorePatterns": [
@@ -54,6 +70,23 @@
       "files": ["tests/shared/global-setup.mjs"],
       "rules": {
         "console/no-real-time-wait-in-tests": "off"
+      }
+    },
+    {
+      "files": ["src/**/*.{ts,tsx}"],
+      "rules": {
+        "typescript/await-thenable": "error",
+        "typescript/no-array-delete": "error",
+        "typescript/no-for-in-array": "error",
+        "typescript/no-implied-eval": "error",
+        "typescript/no-misused-spread": "error",
+        "typescript/no-unsafe-unary-minus": "error"
+      }
+    },
+    {
+      "files": ["src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "typescript/await-thenable": "off"
       }
     }
   ]
