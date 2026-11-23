@@ -20,12 +20,11 @@ import { localStopConditionLintHints, localYamlLintHints, mergeLintHints } from 
 
 /**
  * Deduped hints for the Lint-issues panel: server lint RPC, client-side YAML syntax errors, and
- * save-error hints. Debounced so it doesn't re-lint on every keystroke.
+ * save-error hints. Blank YAML skips live lint and its spinner, but keeps
+ * feedback from an explicit save. Debouncing avoids linting on every keystroke.
  */
 export function usePipelineLint(yamlContent: string, errorLintHints: Record<string, LintHint>, enabled: boolean) {
   const debouncedYamlContent = useDebouncedValue(yamlContent, 500);
-  // A blank config has nothing to lint — the server would only reject it with
-  // "config_yaml: value is required", which is noise before the user has typed anything.
   const lintEnabled = enabled && debouncedYamlContent.trim() !== '';
   const {
     data: lintResponse,
@@ -55,6 +54,5 @@ export function usePipelineLint(yamlContent: string, errorLintHints: Record<stri
     return mergeLintHints(errorLintHints, lintResponse?.lintHints ?? [], [...rejection, ...stopHints]);
   }, [syntaxHints, isLintError, lintError, errorLintHints, lintResponse, stopHints]);
 
-  // A disabled query reports isPending forever; only surface pending when a lint can actually run.
   return { lintHints, isLintPending: lintEnabled && isLintPending };
 }
