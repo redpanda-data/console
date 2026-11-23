@@ -22,7 +22,7 @@ export type LineWord = { text: string; start: number; end: number };
  * a `:`/`=`/`<`/`>` operator — so a stray/literal quote elsewhere in a word (`key:a"b`) doesn't get
  * misread as opening a multi-word span and swallow the rest of the line.
  */
-const opensQuote = (text: string, i: number, start: number): boolean =>
+const opensQuote = (text: string, i: number, start: number) =>
   text[i] === '"' && (i === start || VALUE_START_PATTERN.test(text[i - 1]));
 
 /**
@@ -32,7 +32,7 @@ const opensQuote = (text: string, i: number, start: number): boolean =>
  * `decodeValue` decode an escaped value. An unterminated quote (no closing `"` anywhere later)
  * counts as still-being-typed and swallows the rest of the line into one word.
  */
-function findWordEnd(text: string, start: number): number {
+function findWordEnd(text: string, start: number) {
   let i = start;
   while (i < text.length && !WHITESPACE_PATTERN.test(text[i])) {
     i = opensQuote(text, i, start) ? skipQuotedSpan(text, i) : i + 1;
@@ -41,7 +41,7 @@ function findWordEnd(text: string, start: number): number {
 }
 
 /** Index just past the quoted span whose opening `"` is at `openQuote` (see `findWordEnd`). */
-function skipQuotedSpan(text: string, openQuote: number): number {
+function skipQuotedSpan(text: string, openQuote: number) {
   let i = openQuote + 1;
   while (i < text.length) {
     if (text[i] === '\\' && i + 1 < text.length) {
@@ -56,7 +56,7 @@ function skipQuotedSpan(text: string, openQuote: number): number {
 }
 
 /** Index of the first non-whitespace character at or after `from` (`text.length` when there is none). */
-const skipWhitespace = (text: string, from: number): number => {
+const skipWhitespace = (text: string, from: number) => {
   let i = from;
   while (i < text.length && WHITESPACE_PATTERN.test(text[i])) {
     i += 1;
@@ -65,7 +65,7 @@ const skipWhitespace = (text: string, from: number): number => {
 };
 
 /** Splits a line into whitespace-delimited words — see `findWordEnd` for the quote-handling rules. */
-export function tokenizeLine(text: string): LineWord[] {
+export function tokenizeLine(text: string) {
   const words: LineWord[] = [];
   let start = skipWhitespace(text, 0);
   while (start < text.length) {
@@ -126,7 +126,7 @@ type RecognizedWord = { word: LineWord; parsed: NonNullable<ReturnType<typeof pa
  * the filter bar (initial mount, "Clear all", browser back/forward); never
  * during normal typing, so it never fights the user's own edits.
  */
-export function formatFilterLine(partitionId: number, fieldTokens: FieldFilterToken[], remainder: string): string {
+export function formatFilterLine(partitionId: number, fieldTokens: FieldFilterToken[], remainder: string) {
   const parts: string[] = [];
   if (partitionId >= 0) {
     parts.push(`partition:${partitionId}`);
@@ -141,7 +141,7 @@ export function formatFilterLine(partitionId: number, fieldTokens: FieldFilterTo
 }
 
 /** The word (if any) touching the caret — drives the autocomplete dropdown and tells suggestion-acceptance which range to replace. */
-export function wordRangeAtCaret(text: string, caret: number): LineWord | null {
+export function wordRangeAtCaret(text: string, caret: number) {
   for (const word of tokenizeLine(text)) {
     if (caret >= word.start && caret <= word.end) {
       return word;

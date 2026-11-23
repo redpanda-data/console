@@ -208,7 +208,7 @@ function getInitialErrorInfo(error: Error | null, errorInfo: object) {
   return { infoItems, decodedStackIndex };
 }
 
-function getRawErrorStack(error: Error): string {
+function getRawErrorStack(error: Error) {
   const stack = (error.stack ?? '').removePrefix('error:').trim();
   return error.message && stack.startsWith(error.message) ? stack.slice(error.message.length).trimStart() : stack;
 }

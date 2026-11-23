@@ -66,7 +66,7 @@ export function findComponentByName(
   componentList: ComponentList,
   name: string,
   type?: Exclude<ConnectComponentType, 'custom'>
-): ComponentSpec | undefined {
+) {
   const mappings = type ? [COMPONENT_TYPE_MAPPINGS[type]] : Object.values(COMPONENT_TYPE_MAPPINGS);
   for (const { listKey } of mappings) {
     const list = componentList[listKey] as ComponentSpec[] | undefined;
@@ -84,7 +84,7 @@ export function findComponentByName(
  * Walks a dotted field path (e.g. `tls.cert_file`) through a field-spec children tree.
  * Plain proto FieldSpec trees are accepted too (structurally assignable to RawFieldSpec).
  */
-export function resolveFieldByPath(root: RawFieldSpec | undefined, path: string): RawFieldSpec | undefined {
+export function resolveFieldByPath(root: RawFieldSpec | undefined, path: string) {
   if (!(root && path)) {
     return;
   }
@@ -119,7 +119,7 @@ export function parseSchema(componentList: ComponentList): ConnectComponentSpec[
   }
 }
 
-const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
+const generateRedpandaTopLevelConfig = () => {
   const userData = rpcnWizardStore.getUserData();
   const redpandaConfig: Record<string, unknown> = {};
 
@@ -139,10 +139,7 @@ const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
 };
 
 /** Converts a component spec into a default-valued config object following the Connect YAML schema. */
-export const schemaToConfig = (
-  componentSpec?: ConnectComponentSpec,
-  showAdvancedFields?: boolean
-): { config: Partial<ConnectConfigObject>; spec: ConnectComponentSpec } | undefined => {
+export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showAdvancedFields?: boolean) => {
   if (!componentSpec?.config) {
     return;
   }
@@ -159,10 +156,7 @@ export const schemaToConfig = (
   return { config, spec: componentSpec };
 };
 
-function redpandaCommonConfig(
-  componentSpec: ConnectComponentSpec,
-  connectionConfig: unknown
-): Partial<ConnectConfigObject> {
+function redpandaCommonConfig(componentSpec: ConnectComponentSpec, connectionConfig: unknown) {
   const config: Partial<ConnectConfigObject> = {};
   const redpandaBlockConfig = generateRedpandaTopLevelConfig();
 
@@ -185,10 +179,7 @@ function redpandaCommonConfig(
 }
 
 /** The snippet that places a component's config under its section of the Connect YAML schema. */
-function componentSectionConfig(
-  componentSpec: ConnectComponentSpec,
-  connectionConfig: unknown
-): Partial<ConnectConfigObject> {
+function componentSectionConfig(componentSpec: ConnectComponentSpec, connectionConfig: unknown) {
   const config: Partial<ConnectConfigObject> = {};
 
   switch (componentSpec.type) {
@@ -237,11 +228,7 @@ function componentSectionConfig(
   return config;
 }
 
-function populateWizardFields(
-  spec: RawFieldSpec,
-  componentName?: string,
-  parentName?: string
-): string | string[] | undefined {
+function populateWizardFields(spec: RawFieldSpec, componentName?: string, parentName?: string) {
   if (!spec.name) {
     return;
   }
@@ -268,7 +255,7 @@ function populateWizardFields(
   }
 }
 
-function saslSecretRef(fieldName: string, username: string): string | undefined {
+function saslSecretRef(fieldName: string, username: string) {
   if (isUserField(fieldName)) {
     return getSecretSyntax(userSecretIds(username).username);
   }
@@ -314,13 +301,13 @@ function populateConnectionDefaults(
   }
 }
 
-const isRedpandaComponent = (name?: string): boolean => !!name && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(name);
+const isRedpandaComponent = (name?: string) => !!name && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(name);
 
 function shouldShowField(params: {
   spec: RawFieldSpec;
   showAdvancedFields: boolean;
   componentName: string | undefined;
-}): boolean {
+}) {
   const { spec, showAdvancedFields, componentName } = params;
 
   // Deprecated fields never belong in a generated config.
@@ -443,7 +430,7 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   return spec.children.some((c) => checkRequired(c));
 }
 
-function mayHaveLostDefault(spec: RawFieldSpec, ancestorOptional?: boolean): boolean {
+function mayHaveLostDefault(spec: RawFieldSpec, ancestorOptional?: boolean) {
   return (
     (Boolean(ancestorOptional) && spec.kind !== 'scalar') ||
     // Non-string types lose their defaults in proto (0/false/[] → ""), so can't be deemed required.
@@ -457,11 +444,11 @@ const SCALAR_FIELD_TYPES = new Set<string>(['string', 'int', 'float', 'bool']);
 // Types whose value is a nested component edited on the canvas (all except the wizard-only `custom`).
 const COMPONENT_FIELD_TYPES = new Set<string>(CONNECT_COMPONENT_TYPE.filter((t) => t !== 'custom'));
 
-export function fieldHasOptions(spec: RawFieldSpec): boolean {
+export function fieldHasOptions(spec: RawFieldSpec) {
   return (spec.annotatedOptions?.length ?? 0) > 0;
 }
 
-export function isResourceRefField(spec: RawFieldSpec): boolean {
+export function isResourceRefField(spec: RawFieldSpec) {
   return (
     Boolean(spec.name) &&
     spec.kind === 'scalar' &&
@@ -470,7 +457,7 @@ export function isResourceRefField(spec: RawFieldSpec): boolean {
   );
 }
 
-export function isScalarField(spec: RawFieldSpec): boolean {
+export function isScalarField(spec: RawFieldSpec) {
   return (
     Boolean(spec.name) &&
     spec.kind === 'scalar' &&
@@ -478,11 +465,11 @@ export function isScalarField(spec: RawFieldSpec): boolean {
   );
 }
 
-export function isScalarArrayField(spec: RawFieldSpec): boolean {
+export function isScalarArrayField(spec: RawFieldSpec) {
   return Boolean(spec.name) && spec.kind === 'array' && SCALAR_FIELD_TYPES.has(spec.type) && !fieldHasOptions(spec);
 }
 
-export function isObjectGroupField(spec: RawFieldSpec): boolean {
+export function isObjectGroupField(spec: RawFieldSpec) {
   return (
     Boolean(spec.name) &&
     (spec.kind === 'scalar' || (spec.kind === '' && spec.type === 'object')) &&
@@ -490,12 +477,12 @@ export function isObjectGroupField(spec: RawFieldSpec): boolean {
   );
 }
 
-export function isComponentField(spec: RawFieldSpec): boolean {
+export function isComponentField(spec: RawFieldSpec) {
   return Boolean(spec.name) && COMPONENT_FIELD_TYPES.has(spec.type) && !isResourceRefField(spec);
 }
 
 // Fields rendered as form controls; deprecated fields, nested components, and complex fields
-export function isFormField(spec: RawFieldSpec): boolean {
+export function isFormField(spec: RawFieldSpec) {
   return (
     !(spec.deprecated || isComponentField(spec)) &&
     (isScalarField(spec) || isScalarArrayField(spec) || isObjectGroupField(spec))
@@ -503,15 +490,11 @@ export function isFormField(spec: RawFieldSpec): boolean {
 }
 
 /** Finds a parsed component spec by name; `type` disambiguates names shared across types (e.g. `redpanda`). */
-export function findConnectComponent(
-  components: ConnectComponentSpec[],
-  name: string,
-  type?: ConnectComponentType
-): ConnectComponentSpec | undefined {
+export function findConnectComponent(components: ConnectComponentSpec[], name: string, type?: ConnectComponentType) {
   return components.find((c) => (type === undefined || c.type === type) && c.name === name);
 }
 
-function getRequiredFieldTypeHint(spec: RawFieldSpec): string {
+function getRequiredFieldTypeHint(spec: RawFieldSpec) {
   const typeLabel = (() => {
     switch (spec.type) {
       case 'int':
@@ -563,7 +546,7 @@ function populateRedpandaValue(spec: RawFieldSpec, componentName?: string, paren
   );
 }
 
-function markRequired(spec: RawFieldSpec): string {
+function markRequired(spec: RawFieldSpec) {
   spec.comment = `Required - ${getRequiredFieldTypeHint(spec)}, must be manually set`;
   return SENTINEL_REQUIRED_FIELD;
 }

@@ -15,14 +15,14 @@ import { Feature, isSupported } from '../../../../state/supported-features';
 /**
  * Checks if user has privilege to delete records
  */
-export function hasDeleteRecordsPrivilege(allowedActions: TopicAction[] | undefined): boolean {
+export function hasDeleteRecordsPrivilege(allowedActions: TopicAction[] | undefined) {
   return !allowedActions || allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
 }
 
 /**
  * Checks if deletion is enabled for a topic
  */
-export function isDeleteEnabled(isCompacted: boolean, allowedActions: TopicAction[] | undefined): boolean {
+export function isDeleteEnabled(isCompacted: boolean, allowedActions: TopicAction[] | undefined) {
   return !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
 }
 

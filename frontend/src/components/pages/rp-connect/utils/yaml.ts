@@ -33,7 +33,7 @@ export const YAML_STRINGIFY_OPTIONS = { lineWidth: 0 } as const;
 const RESERVED_COMPONENT_KEYS = new Set(['label', '<<']);
 
 /** Extract the component name from an object, skipping reserved keys like `label`. */
-export const firstKey = (obj: unknown): string | undefined => {
+export const firstKey = (obj: unknown) => {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
     return;
   }
@@ -44,7 +44,7 @@ export const firstKey = (obj: unknown): string | undefined => {
 const SLOT_SIBLING_KEYS = new Set([...RESERVED_COMPONENT_KEYS, 'processors']);
 
 /** The component name in an input or output slot, skipping `label` and the slot's `processors`. */
-export const slotComponentKey = (obj: unknown): string | undefined => {
+export const slotComponentKey = (obj: unknown) => {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
     return;
   }
@@ -55,7 +55,7 @@ const YAML_TRUE = new Set(['true', 'yes', 'y', 'on']);
 const YAML_FALSE = new Set(['false', 'no', 'n', 'off']);
 
 /** A boolean field as Connect decodes it, YAML 1.1 words included; undefined for an env reference or anything else. */
-export function yamlFlag(value: unknown): boolean | undefined {
+export function yamlFlag(value: unknown) {
   if (typeof value === 'boolean') {
     return value;
   }
@@ -92,19 +92,17 @@ export type UnwrappedInput = {
 };
 
 /** The value as a plain object, or undefined for anything else (arrays included). */
-export const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+export const asRecord = (value: unknown) =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
 
-const nonEmptyString = (value: unknown): string | undefined =>
-  typeof value === 'string' && value.trim() !== '' ? value : undefined;
+const nonEmptyString = (value: unknown) => (typeof value === 'string' && value.trim() !== '' ? value : undefined);
 
 // Connect reads a scalar `check: true` as the query `true`.
-const checkQuery = (value: unknown): string | undefined =>
+const checkQuery = (value: unknown) =>
   nonEmptyString(typeof value === 'boolean' || typeof value === 'number' ? String(value) : value);
 
 // An unquoted `idle_timeout: 30` parses as a number — keep it visible rather than drop it.
-const idleTimeoutText = (value: unknown): string | undefined =>
-  typeof value === 'number' ? String(value) : nonEmptyString(value);
+const idleTimeoutText = (value: unknown) => (typeof value === 'number' ? String(value) : nonEmptyString(value));
 
 /** The settings of a parsed `read_until` value (its fields other than `input`). */
 export function readStopCondition(value: unknown): StopCondition {
@@ -140,13 +138,13 @@ export function unwrapReadUntil(slot: Record<string, unknown>): UnwrappedInput {
 }
 
 // The component name of an input slot, looking through a `read_until` wrapper.
-const inputSlotName = (slot: unknown): string | undefined => {
+const inputSlotName = (slot: unknown) => {
   const record = asRecord(slot);
   return record ? slotComponentKey(unwrapReadUntil(record).component) : undefined;
 };
 
 /** Extract child input names from a multi-input component (broker, sequence). */
-export const parseMultiInputs = (inputKey: string, value: unknown): string[] | undefined => {
+export const parseMultiInputs = (inputKey: string, value: unknown) => {
   if (
     (inputKey === 'broker' || inputKey === 'sequence') &&
     value &&
@@ -162,7 +160,7 @@ export const parseMultiInputs = (inputKey: string, value: unknown): string[] | u
 };
 
 /** Extract child output names from a multi-output component (broker, switch, fallback). */
-export const parseMultiOutputs = (outputKey: string, value: unknown): string[] | undefined => {
+export const parseMultiOutputs = (outputKey: string, value: unknown) => {
   if (outputKey === 'broker' && value && typeof value === 'object' && !Array.isArray(value) && 'outputs' in value) {
     const items = (value as { outputs?: unknown[] }).outputs;
     if (Array.isArray(items)) {
@@ -186,7 +184,7 @@ export const parseMultiOutputs = (outputKey: string, value: unknown): string[] |
 
 // Append into the seq at `path` IN PLACE, creating it when absent — rebuilding an existing
 // array through toJSON()/setIn would strip comments and anchors off its current entries.
-const appendToSeq = (doc: Document.Parsed, path: string[], item: unknown): void => {
+const appendToSeq = (doc: Document.Parsed, path: string[], item: unknown) => {
   const node = doc.getIn(path);
   if (isSeq(node)) {
     node.add(doc.createNode(item));
@@ -195,7 +193,7 @@ const appendToSeq = (doc: Document.Parsed, path: string[], item: unknown): void 
   }
 };
 
-const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
+const mergeProcessor = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>) => {
   const configObj = newConfigObject as Record<string, { processors?: unknown[] }>;
   const processorsArray = configObj?.pipeline?.processors;
   const newProcessor = Array.isArray(processorsArray) ? processorsArray[0] : undefined;
@@ -210,7 +208,7 @@ const mergeResourceArray = (
   doc: Document.Parsed,
   newConfigObject: Partial<ConnectConfigObject>,
   key: ResourceArrayKey
-): void => {
+) => {
   const newResource = (newConfigObject as Record<string, unknown[]>)?.[key]?.[0] as Record<string, unknown> | undefined;
   if (!newResource) {
     return;
@@ -228,7 +226,7 @@ const mergeResourceArray = (
   appendToSeq(doc, [key], newResource);
 };
 
-const mergeRootComponent = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
+const mergeRootComponent = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>) => {
   if (newConfigObject) {
     for (const [key, value] of Object.entries(newConfigObject)) {
       // Avoid duplicate top-level redpanda blocks across multiple redpanda_common components.
@@ -250,7 +248,7 @@ const rootInputComponent = (
   return inputType ? { inputType, innerPath } : undefined;
 };
 
-const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): void => {
+const mergeScanner = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>) => {
   // A scanner belongs to the input itself, inside any `read_until` around it.
   const input = rootInputComponent(doc);
   if (!input) {
@@ -281,7 +279,7 @@ const SECTION_COMPONENT_TYPES = [
 ] as const;
 
 // Single key that isn't a known root section, with an existing input → scanner.
-const isScannerSnippet = (newConfigObject: Partial<ConnectConfigObject>, doc?: Document.Parsed): boolean => {
+const isScannerSnippet = (newConfigObject: Partial<ConnectConfigObject>, doc?: Document.Parsed) => {
   const keys = Object.keys(newConfigObject);
   return (
     keys.length === 1 &&
@@ -334,7 +332,7 @@ const mergeByComponentType = (
   }
 };
 
-function convertRequiredFieldSentinels(yamlString: string): string {
+function convertRequiredFieldSentinels(yamlString: string) {
   // With inline comment: `key: __REQUIRED_FIELD__ # comment` → `# key: comment`
   let result = yamlString.replace(
     /^(?<indent>\s*)(?<key>[\w][\w.-]*): ['"]?__REQUIRED_FIELD__['"]?\s*#\s*(?<description>.+)$/gmu,
@@ -351,14 +349,14 @@ function convertRequiredFieldSentinels(yamlString: string): string {
 const keyMatchRegex = /^(?<key>[^:#\n]+):/u;
 
 /** The key of an unindented `key:` line, if the line is one. */
-const rootKeyOf = (line: string): string | undefined => {
+const rootKeyOf = (line: string) => {
   if (!line.trim() || line.length !== line.trimStart().length || !line.includes(':')) {
     return;
   }
   return line.match(keyMatchRegex)?.[1].trim();
 };
 
-const addRootSpacing = (yamlString: string): string => {
+const addRootSpacing = (yamlString: string) => {
   const processedLines: string[] = [];
   let previousRootKey: string | null = null;
   for (const line of yamlString.split('\n')) {
@@ -382,12 +380,12 @@ const addRootSpacing = (yamlString: string): string => {
 
 // Blank = empty/whitespace text or an empty root map — `{}` is what the yaml lib emits when the
 // last key is deleted. Comment-only text is NOT blank here: it merges, preserving the comments.
-const isBlankConfigText = (text: string): boolean => {
+const isBlankConfigText = (text: string) => {
   const trimmed = text.trim();
   return trimmed === '' || trimmed === '{}';
 };
 
-const toastMergeFailure = (error: unknown, action: string): void => {
+const toastMergeFailure = (error: unknown, action: string) => {
   toast.error(
     formatToastErrorMessageGRPC({
       error: ConnectError.from(error),
@@ -406,7 +404,7 @@ const parseExistingDocument = (existingYaml: string): Document.Parsed | undefine
 };
 
 // Returns false (after a toast) when the merge throws.
-const mergeIntoDocument = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>): boolean => {
+const mergeIntoDocument = (doc: Document.Parsed, newConfigObject: Partial<ConnectConfigObject>) => {
   const componentType = detectComponentType(newConfigObject, doc);
   try {
     mergeByComponentType(componentType, doc, newConfigObject);
@@ -446,7 +444,7 @@ type YAMLNode = { items?: unknown[]; comment?: string; commentBefore?: string };
 type YAMLKey = { value?: string; comment?: string };
 type YAMLPair = { key?: YAMLKey; value?: YAMLNode };
 
-function addCommentsRecursive(node: YAMLNode, spec: RawFieldSpec): void {
+function addCommentsRecursive(node: YAMLNode, spec: RawFieldSpec) {
   if (!(node.items && spec.children)) {
     return;
   }
@@ -456,7 +454,7 @@ function addCommentsRecursive(node: YAMLNode, spec: RawFieldSpec): void {
   }
 }
 
-function addPairComments(pair: YAMLPair, fields: RawFieldSpec[]): void {
+function addPairComments(pair: YAMLPair, fields: RawFieldSpec[]) {
   const key = pair?.key?.value;
   const fieldSpec = key ? fields.find((child) => child.name === key) : undefined;
   if (!fieldSpec) {
@@ -473,7 +471,7 @@ function addPairComments(pair: YAMLPair, fields: RawFieldSpec[]): void {
 }
 
 // Array → comment on key; leaf → comment on value; parent object → skip (children get it).
-function placeFieldComment(pair: YAMLPair, fieldSpec: RawFieldSpec, comment: string): void {
+function placeFieldComment(pair: YAMLPair, fieldSpec: RawFieldSpec, comment: string) {
   const hasItems = Boolean(pair.value?.items);
   if (hasItems && !fieldSpec.children && pair.key) {
     pair.key.comment = ` ${comment}`;
@@ -484,17 +482,14 @@ function placeFieldComment(pair: YAMLPair, fieldSpec: RawFieldSpec, comment: str
 
 // Merges APPEND the new component to its array, so field help-comments must target the LAST
 // entry (a standalone doc has exactly one, so "last" holds there too).
-function lastArrayIndex(doc: Document.Parsed | Document, path: string[]): string {
+function lastArrayIndex(doc: Document.Parsed | Document, path: string[]) {
   const node = doc.getIn(path) as { items?: unknown[] } | undefined;
   const length = node?.items?.length ?? 0;
   return String(length > 0 ? length - 1 : 0);
 }
 
 /** Where a component's own config object sits in the document, or undefined when it has no place. */
-function componentConfigPath(
-  doc: Document.Parsed | Document,
-  componentSpec: ConnectComponentSpec
-): string[] | undefined {
+function componentConfigPath(doc: Document.Parsed | Document, componentSpec: ConnectComponentSpec) {
   const specName = componentSpec.name;
   switch (componentSpec.type) {
     case 'input':
@@ -541,7 +536,7 @@ function nodeAlongPath(doc: Document.Parsed | Document, path: string[]): YAMLNod
   return currentNode;
 }
 
-function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: ConnectComponentSpec): void {
+function addCommentsFromSpec(doc: Document.Parsed | Document, componentSpec: ConnectComponentSpec) {
   if (!componentSpec.config) {
     return;
   }
@@ -564,7 +559,7 @@ const toYamlDocument = (configObject: Document.Parsed | Partial<ConnectConfigObj
 export const configToYaml = (
   configObject: Document.Parsed | Partial<ConnectConfigObject> | undefined,
   componentSpec?: ConnectComponentSpec
-): string => {
+) => {
   if (!configObject) {
     return '';
   }
@@ -589,7 +584,7 @@ export const configToYaml = (
   }
 };
 
-const yamlHasInput = (yamlContent?: string): boolean => {
+const yamlHasInput = (yamlContent?: string) => {
   if (!yamlContent?.trim()) {
     return false;
   }
@@ -600,11 +595,7 @@ const yamlHasInput = (yamlContent?: string): boolean => {
   }
 };
 
-const findTemplateSpec = (
-  components: ConnectComponentSpec[],
-  connectionName: string,
-  connectionType: string
-): ConnectComponentSpec | undefined => {
+const findTemplateSpec = (components: ConnectComponentSpec[], connectionName: string, connectionType: string) => {
   const componentSpec =
     connectionName && connectionType
       ? components.find((comp) => comp.type === connectionType && comp.name === connectionName)
@@ -624,7 +615,7 @@ const findTemplateSpec = (
 
 // A scanner isn't a root section — it nests under `input.<type>.scanner` (see mergeScanner).
 // With no input to attach to, it would land as a bogus top-level block, so refuse instead.
-const isScannerWithoutInput = (spec: ConnectComponentSpec, existingYaml?: string): boolean => {
+const isScannerWithoutInput = (spec: ConnectComponentSpec, existingYaml?: string) => {
   if (spec.type !== 'scanner' || yamlHasInput(existingYaml)) {
     return false;
   }
@@ -643,7 +634,7 @@ const mergeTemplateIntoYaml = (
   existingYaml: string,
   newConfigObject: Partial<ConnectConfigObject>,
   spec: ConnectComponentSpec
-): string => {
+) => {
   const mergedConfig = mergeConnectConfigs(existingYaml, newConfigObject);
   if (!mergedConfig) {
     return existingYaml;
@@ -708,7 +699,7 @@ export type ParsedConfigComponents = {
 const sectionComponentNames = (
   component: Record<string, unknown> | undefined,
   parseMulti: (key: string, value: unknown) => string[] | undefined
-): string[] => {
+) => {
   const key = slotComponentKey(component);
   if (!(component && key)) {
     return [];
@@ -769,7 +760,7 @@ type RedpandaSection = 'input' | 'output';
 // The YAML path of a top-level input/output component, looking through an input's `read_until`, or
 // undefined when that isn't where the component is (a second wrapper inside, say). Judged on the
 // merge-resolved config, so a wrapper built from a `<<` merge key is still seen.
-function componentPathIn(yamlContent: string, section: RedpandaSection, componentName: string): string[] | undefined {
+function componentPathIn(yamlContent: string, section: RedpandaSection, componentName: string) {
   try {
     const slot = asRecord(asRecord(parseYaml(yamlContent, { merge: true }))?.[section]);
     if (!slot) {
@@ -782,14 +773,14 @@ function componentPathIn(yamlContent: string, section: RedpandaSection, componen
   }
 }
 
-const leadingSpaces = (line: string): number => line.length - line.trimStart().length;
+const leadingSpaces = (line: string) => line.length - line.trimStart().length;
 // Lines that close a block: content (not blank, not a comment) at or above the block's indent.
-const closesBlock = (line: string, indent: number): boolean =>
+const closesBlock = (line: string, indent: number) =>
   line.trim() !== '' && !line.trimStart().startsWith('#') && leadingSpaces(line) <= indent;
 
 // Strip commented-out placeholder lines for just-patched keys, so the user doesn't see
 // both the `# topics: Required ...` comment and the real value. Assumes 2-space block indentation.
-function stripCommentedKeys(yaml: string, keys: string[], componentPath: string[]): string {
+function stripCommentedKeys(yaml: string, keys: string[], componentPath: string[]) {
   if (keys.length === 0) {
     return yaml;
   }
@@ -808,7 +799,7 @@ function stripCommentedKeys(yaml: string, keys: string[], componentPath: string[
 type LineBlock = { start: number; end: number };
 
 /** Line range of the block at `componentPath` in serialized YAML: its key line up to the line that closes it. */
-function findComponentBlock(lines: string[], componentPath: string[]): LineBlock | undefined {
+function findComponentBlock(lines: string[], componentPath: string[]) {
   // Walk down the path one indent level per segment, staying inside each parent's block.
   let block: LineBlock = { start: -1, end: lines.length };
   for (const [depth, segment] of componentPath.entries()) {
@@ -821,7 +812,7 @@ function findComponentBlock(lines: string[], componentPath: string[]): LineBlock
   return block.start === -1 ? undefined : block;
 }
 
-function findKeyLine(lines: string[], parent: LineBlock, depth: number, segment: string): number {
+function findKeyLine(lines: string[], parent: LineBlock, depth: number, segment: string) {
   const indent = depth * 2;
   const keyRegex = new RegExp(`^ {${indent}}${escapeRegExp(segment)}:`, 'u');
   for (let i = parent.start + 1; i < parent.end; i++) {
@@ -835,7 +826,7 @@ function findKeyLine(lines: string[], parent: LineBlock, depth: number, segment:
   return -1;
 }
 
-function findBlockEnd(lines: string[], start: number, indent: number): number {
+function findBlockEnd(lines: string[], start: number, indent: number) {
   for (let i = start + 1; i < lines.length; i++) {
     if (closesBlock(lines[i], indent)) {
       return i;
@@ -869,7 +860,7 @@ function patchTopicName(
 }
 
 /** Whether a parsed component names at least one broker to connect to. */
-export function hasSeedBrokers(component: unknown): boolean {
+export function hasSeedBrokers(component: unknown) {
   const brokers =
     component && typeof component === 'object' ? (component as Record<string, unknown>).seed_brokers : undefined;
   return (Array.isArray(brokers) ? brokers : [brokers]).some((broker) => typeof broker === 'string' && broker !== '');
@@ -881,12 +872,7 @@ export function hasSeedBrokers(component: unknown): boolean {
  * Returns the added keys. `resolved` is the component with aliases and merge keys applied, as the flow
  * parser reads it.
  */
-function ensureOwnConnection(
-  doc: Document.Parsed,
-  componentPath: string[],
-  componentName: string,
-  resolved: unknown
-): string[] {
+function ensureOwnConnection(doc: Document.Parsed, componentPath: string[], componentName: string, resolved: unknown) {
   const component = doc.getIn(componentPath);
   if (!(SHARED_CLIENT_FALLBACK_COMPONENTS.has(componentName) && isMap(component))) {
     return [];
@@ -898,7 +884,7 @@ function ensureOwnConnection(
   return ensureTlsDefault(doc, component, resolved) ? ['seed_brokers', 'tls'] : ['seed_brokers'];
 }
 
-function setGeneratedSeedBrokers(doc: Document.Parsed, component: YAMLMap): void {
+function setGeneratedSeedBrokers(doc: Document.Parsed, component: YAMLMap) {
   const brokers = doc.createNode([getContextualVariableSyntax('REDPANDA_BROKERS')]);
   if (component.has('seed_brokers')) {
     component.set('seed_brokers', brokers);
@@ -909,7 +895,7 @@ function setGeneratedSeedBrokers(doc: Document.Parsed, component: YAMLMap): void
 
 // Cloud's TLS default for generated brokers: enabled unless the component already decides. Returns
 // whether a `tls` key was added.
-function ensureTlsDefault(doc: Document.Parsed, component: YAMLMap, resolved: unknown): boolean {
+function ensureTlsDefault(doc: Document.Parsed, component: YAMLMap, resolved: unknown) {
   const resolvedTls = (resolved as { tls?: unknown } | undefined)?.tls;
   if (resolvedTls === undefined || resolvedTls === null) {
     component.set('tls', doc.createNode({ enabled: true }));
@@ -927,7 +913,7 @@ export function patchRedpandaConfig(
   section: RedpandaSection,
   componentName: string,
   patch: RedpandaPatch
-): string | undefined {
+) {
   const doc = existingYaml.trim() ? tryParseDocument(existingYaml) : undefined;
   const componentPath = doc && componentPathIn(existingYaml, section, componentName);
   // Writing into a component that only a merge key supplies would shadow everything else it merges in.
@@ -961,7 +947,7 @@ function applyRedpandaPatch(
   componentName: string,
   patch: RedpandaPatch,
   resolved: Record<string, unknown> | undefined
-): string[] {
+) {
   const patchedKeys: string[] = [];
 
   if (patch.topicName) {
@@ -986,7 +972,7 @@ function patchSasl(
   componentName: string,
   sasl: NonNullable<RedpandaPatch['sasl']>,
   resolved: Record<string, unknown> | undefined
-): string[] {
+) {
   if (componentName === 'redpanda_common') {
     // redpanda_common keeps SASL in a top-level `redpanda:` block.
     doc.setIn(['redpanda', 'sasl'], sasl);
@@ -1002,7 +988,7 @@ export function tryPatchRedpandaYaml(
   section: RedpandaSection,
   componentName: string,
   result: RedpandaSetupResultLike
-): string | undefined {
+) {
   const patch: RedpandaPatch = {
     topicName: result.topicName || undefined,
     consumerGroup: result.consumerGroup || undefined,
@@ -1015,7 +1001,7 @@ export function tryPatchRedpandaYaml(
 }
 
 /** Whether any client logs in with the pipeline's service account, which it then can't run without. */
-export function usesServiceAccountLogin(yamlContent: string): boolean {
+export function usesServiceAccountLogin(yamlContent: string) {
   let found = false;
   visit(parseDocument(yamlContent), {
     Pair(_, pair) {
@@ -1039,11 +1025,7 @@ export function usesServiceAccountLogin(yamlContent: string): boolean {
  * collects structural errors instead of throwing, so malformed-but-parseable YAML reads as a missing
  * component rather than a parse error.
  */
-function readComponent(
-  yamlContent: string,
-  section: RedpandaSection,
-  componentName: string
-): { component: Record<string, unknown> | undefined; parseError: boolean } {
+function readComponent(yamlContent: string, section: RedpandaSection, componentName: string) {
   if (!yamlContent.trim()) {
     return { component: undefined, parseError: false };
   }
@@ -1057,11 +1039,7 @@ function readComponent(
 }
 
 /** `parsed[section][componentName]` when it is an object; an input's may sit inside a `read_until` wrapper. */
-function componentObjectIn(
-  parsed: unknown,
-  section: RedpandaSection,
-  componentName: string
-): Record<string, unknown> | undefined {
+function componentObjectIn(parsed: unknown, section: RedpandaSection, componentName: string) {
   const sectionObj = asRecord(asRecord(parsed)?.[section]);
   const holder = sectionObj && section === 'input' ? unwrapReadUntil(sectionObj).component : sectionObj;
   const component = holder?.[componentName];
@@ -1075,11 +1053,7 @@ function componentObjectIn(
  * Extract topic(s) from a Redpanda connector. All Redpanda types keep topics at
  * `[section].[componentName].topics[]` (inputs) or `.topic` (outputs).
  */
-export function extractConnectorTopics(
-  yamlContent: string,
-  section: RedpandaSection,
-  componentName: string
-): { topics: string[] | undefined; parseError: boolean } {
+export function extractConnectorTopics(yamlContent: string, section: RedpandaSection, componentName: string) {
   const { component: config, parseError } = readComponent(yamlContent, section, componentName);
   if (!config) {
     return { topics: undefined, parseError };
@@ -1098,13 +1072,13 @@ export function extractConnectorTopics(
 }
 
 /** The consumer group an input component reads with, if it names one. */
-export function extractConnectorConsumerGroup(yamlContent: string, componentName: string): string | undefined {
+export function extractConnectorConsumerGroup(yamlContent: string, componentName: string) {
   const group = readComponent(yamlContent, 'input', componentName).component?.consumer_group;
   return typeof group === 'string' && group !== '' ? group : undefined;
 }
 
 /** Extract all referenced topic names from input/output configs. */
-export function extractAllTopics(yamlContent: string): string[] {
+export function extractAllTopics(yamlContent: string) {
   if (!yamlContent.trim()) {
     return [];
   }
@@ -1123,7 +1097,7 @@ export function extractAllTopics(yamlContent: string): string[] {
   return [...topics];
 }
 
-function walkForTopics(obj: unknown, topics: Set<string>, seen: WeakSet<object>): void {
+function walkForTopics(obj: unknown, topics: Set<string>, seen: WeakSet<object>) {
   if (!obj || typeof obj !== 'object' || seen.has(obj)) {
     return;
   }
@@ -1144,7 +1118,7 @@ function walkForTopics(obj: unknown, topics: Set<string>, seen: WeakSet<object>)
 }
 
 // Collects a `topic`/`topics` entry's names; false when the entry isn't one, so the walk descends.
-function addTopicValue(key: string, value: unknown, topics: Set<string>): boolean {
+function addTopicValue(key: string, value: unknown, topics: Set<string>) {
   if ((key === 'topic' || key === 'topics') && typeof value === 'string' && value) {
     topics.add(value);
     return true;
@@ -1165,7 +1139,7 @@ export function generateYamlFromWizardData(
   input: { connectionName: string; connectionType: string } | undefined,
   output: { connectionName: string; connectionType: string } | undefined,
   components: ConnectComponentSpec[]
-): string {
+) {
   if (!(input?.connectionName && input?.connectionType)) {
     return '';
   }
@@ -1212,7 +1186,7 @@ export type EditTarget =
   | { kind: 'switchCase'; path: (string | number)[] };
 
 /** The YAML path (for `getIn`/`setIn`) of an edit target's component object, or of an input's slot. */
-export function editTargetPath(target: EditTarget): (string | number)[] {
+export function editTargetPath(target: EditTarget) {
   switch (target.kind) {
     case 'input':
       return ['input'];
@@ -1228,18 +1202,18 @@ export function editTargetPath(target: EditTarget): (string | number)[] {
   }
 }
 
-function isEmptySeq(node: unknown): boolean {
+function isEmptySeq(node: unknown) {
   return isSeq(node) && node.items.length === 0;
 }
 
-function isEmptyMap(node: unknown): boolean {
+function isEmptyMap(node: unknown) {
   const items = (node as { items?: unknown[] } | undefined)?.items;
   return Array.isArray(items) && items.length === 0;
 }
 
 // After a delete, drop now-empty TOP-LEVEL containers so the diagram falls back to its placeholder.
 // Nested arrays deliberately stay `[]` — deleting the key can hide surviving content or leave `- {}` cruft.
-function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
+function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget) {
   if (target.kind === 'processor') {
     if (isEmptySeq(doc.getIn(['pipeline', 'processors']))) {
       doc.deleteIn(['pipeline', 'processors']);
@@ -1262,13 +1236,13 @@ function pruneEmptyContainers(doc: Document.Parsed, target: EditTarget): void {
 }
 
 /** The component name of what `target` holds: input and output slots skip their own `processors`. */
-export function componentKeyAt(target: EditTarget, component: unknown): string | undefined {
+export function componentKeyAt(target: EditTarget, component: unknown) {
   const type = targetComponentType(target);
   return type === 'input' || type === 'output' ? slotComponentKey(component) : firstKey(component);
 }
 
 /** The component type an edit target loads its schema/config as. */
-export function targetComponentType(target: EditTarget): ConnectComponentType {
+export function targetComponentType(target: EditTarget) {
   switch (target.kind) {
     case 'input':
       return 'input';
@@ -1288,7 +1262,7 @@ export function targetComponentType(target: EditTarget): ConnectComponentType {
 
 // Structural equality of two edit targets — to find the parsed node for a just-inserted target.
 // Path/switchCase targets are identified by their YAML path; the rest by their discriminant fields.
-export function editTargetsEqual(a: EditTarget | undefined, b: EditTarget): boolean {
+export function editTargetsEqual(a: EditTarget | undefined, b: EditTarget) {
   if (a?.kind !== b.kind) {
     return false;
   }
@@ -1304,7 +1278,7 @@ export function editTargetsEqual(a: EditTarget | undefined, b: EditTarget): bool
   return true; // input / output — singletons, kind match is enough
 }
 
-const recordAt = (doc: Document, path: (string | number)[]): Record<string, unknown> | undefined =>
+const recordAt = (doc: Document, path: (string | number)[]) =>
   asRecord((doc.getIn(path) as { toJSON?: () => unknown } | undefined)?.toJSON?.());
 
 /**
@@ -1312,7 +1286,7 @@ const recordAt = (doc: Document, path: (string | number)[]): Record<string, unkn
  * top-level one, or a broker or sequence member) as the input its `read_until` wraps, so that is where
  * its component is read and written; deleting the target still takes the whole slot.
  */
-export function targetComponentPath(doc: Document, target: EditTarget): (string | number)[] {
+export function targetComponentPath(doc: Document, target: EditTarget) {
   const path = editTargetPath(target);
   if (targetComponentType(target) !== 'input' || path[0] !== 'input') {
     return path;
@@ -1322,7 +1296,7 @@ export function targetComponentPath(doc: Document, target: EditTarget): (string 
 }
 
 /** Read the component object at an edit target as plain JS (for the edit dialog). */
-export function getComponentAt(yaml: string, target: EditTarget): Record<string, unknown> | undefined {
+export function getComponentAt(yaml: string, target: EditTarget) {
   try {
     const doc = parseDocument(yaml);
     return recordAt(doc, targetComponentPath(doc, target));
@@ -1331,11 +1305,7 @@ export function getComponentAt(yaml: string, target: EditTarget): Record<string,
   }
 }
 
-export function setComponentAt(
-  yaml: string,
-  target: EditTarget,
-  componentObject: Record<string, unknown>
-): string | null {
+export function setComponentAt(yaml: string, target: EditTarget, componentObject: Record<string, unknown>) {
   try {
     const doc = parseDocument(yaml);
     const path = targetComponentPath(doc, target);
@@ -1352,7 +1322,7 @@ export function setComponentAt(
 }
 
 /** Remove the component at an edit target, pruning containers left empty. */
-export function removeComponentAt(yaml: string, target: EditTarget): string | null {
+export function removeComponentAt(yaml: string, target: EditTarget) {
   try {
     const doc = parseDocument(yaml);
     doc.deleteIn(editTargetPath(target));
@@ -1367,7 +1337,7 @@ export function removeComponentAt(yaml: string, target: EditTarget): string | nu
 }
 
 // Items in the sequence at `path` (0 if absent). Locates a just-inserted item (an append lands at length-1).
-export function seqLengthAt(yaml: string, path: (string | number)[]): number {
+export function seqLengthAt(yaml: string, path: (string | number)[]) {
   try {
     const seq = parseDocument(yaml).getIn(path);
     return isSeq(seq) ? seq.items.length : 0;
@@ -1385,7 +1355,7 @@ export function insertComponentAt(
   containerPath: (string | number)[],
   index: number,
   componentObject: Record<string, unknown>
-): string | null {
+) {
   try {
     const doc = parseDocument(yaml);
     const seq = doc.getIn(containerPath);
@@ -1405,11 +1375,7 @@ export function insertComponentAt(
 }
 
 /** Append a resource object to a resource array (creating the array as needed). */
-export function appendResource(
-  yaml: string,
-  resourceKey: ResourceArrayKey,
-  resourceObject: Record<string, unknown>
-): string | null {
+export function appendResource(yaml: string, resourceKey: ResourceArrayKey, resourceObject: Record<string, unknown>) {
   try {
     const doc = parseDocument(yaml);
     appendToSeq(doc, [resourceKey], resourceObject);
@@ -1427,7 +1393,7 @@ export function buildInsertableComponent(
   connectionName: string,
   connectionType: InsertableComponentType,
   components: ConnectComponentSpec[]
-): Record<string, unknown> | undefined {
+) {
   const yaml = getConnectTemplate({ connectionName, connectionType, components, existingYaml: '' });
   if (!yaml) {
     return;
@@ -1443,10 +1409,7 @@ export function buildInsertableComponent(
 type InsertableComponentType = 'processor' | 'cache' | 'rate_limit' | 'input' | 'output';
 
 /** The bare component a parsed template wraps: its first processor/resource, or its input/output. */
-function templateComponent(
-  parsed: Record<string, unknown>,
-  connectionType: InsertableComponentType
-): Record<string, unknown> | undefined {
+function templateComponent(parsed: Record<string, unknown>, connectionType: InsertableComponentType) {
   if (connectionType === 'processor') {
     const procs = (parsed.pipeline as { processors?: unknown[] } | undefined)?.processors;
     return Array.isArray(procs) ? (procs[0] as Record<string, unknown>) : undefined;
@@ -1472,7 +1435,7 @@ const RESOURCE_KEY_BY_KIND: Record<ResourceKind, ResourceArrayKey> = {
 };
 
 /** The top-level resource array key for a kind (cache → cache_resources). */
-export function resourceArrayKey(kind: ResourceKind): ResourceArrayKey {
+export function resourceArrayKey(kind: ResourceKind) {
   return RESOURCE_KEY_BY_KIND[kind];
 }
 
@@ -1514,7 +1477,7 @@ const PATH_RESOURCE_REF_KIND: Record<string, ResourceRefKind> = {
 };
 
 /** The ref kind of a `*_resources` item edited via a path target (input_resources → input, …). */
-export function pathResourceRefKind(target: EditTarget): ResourceRefKind | undefined {
+export function pathResourceRefKind(target: EditTarget) {
   if (target.kind !== 'path' || target.path.length !== 2) {
     return;
   }
@@ -1528,7 +1491,7 @@ export function resourceRefKindForTarget(target: EditTarget): ResourceRefKind | 
 }
 
 /** Labels of every resource of a kind, in document order — the options for a reference dropdown. */
-export function listResourceLabels(yaml: string, kind: ResourceKind): string[] {
+export function listResourceLabels(yaml: string, kind: ResourceKind) {
   try {
     const node = parseDocument(yaml).getIn([RESOURCE_KEY_BY_KIND[kind]]) as { toJSON?: () => unknown } | undefined;
     const items = node?.toJSON?.();
@@ -1544,7 +1507,7 @@ export function listResourceLabels(yaml: string, kind: ResourceKind): string[] {
 }
 
 /** Pick a label not already used by a resource of this kind, suffixing `_N` on collision. */
-function uniqueResourceLabel(existing: string[], base: string): string {
+function uniqueResourceLabel(existing: string[], base: string) {
   if (!existing.includes(base)) {
     return base;
   }
@@ -1564,7 +1527,7 @@ export function createResourceAndReturnLabel(
   kind: ResourceKind,
   connectionName: string,
   components: ConnectComponentSpec[]
-): { yaml: string; label: string } | null {
+) {
   const resourceObject = buildInsertableComponent(connectionName, kind, components);
   if (!resourceObject) {
     return null;
@@ -1612,7 +1575,7 @@ function visitResourceReferences(
   label: string,
   kind: ResourceRefKind | undefined,
   onMatch: (value: { value: unknown }) => void
-): void {
+) {
   visit(doc, {
     Pair(_, pair, path) {
       if (!(isScalar(pair.key) && isScalar(pair.value) && pair.value.value === label)) {
@@ -1640,12 +1603,7 @@ function visitResourceReferences(
  * Repoint every reference from `oldLabel` to `newLabel`. With `kind`, only references
  * of that resource kind are rewritten; without it, every matching reference is.
  */
-export function renameResourceReferences(
-  yaml: string,
-  oldLabel: string,
-  newLabel: string,
-  kind?: ResourceRefKind
-): string | null {
+export function renameResourceReferences(yaml: string, oldLabel: string, newLabel: string, kind?: ResourceRefKind) {
   if (oldLabel === '' || oldLabel === newLabel) {
     return yaml;
   }
@@ -1664,7 +1622,7 @@ export function renameResourceReferences(
  * Count how many components reference a resource label (via `resource:` or a name-referencing
  * field). With `kind`, only references belonging to that resource kind are counted.
  */
-export function countResourceReferences(yaml: string, label: string, kind?: ResourceRefKind): number {
+export function countResourceReferences(yaml: string, label: string, kind?: ResourceRefKind) {
   if (!label) {
     return 0;
   }

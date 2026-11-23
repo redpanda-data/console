@@ -31,7 +31,7 @@ export const createRule = (id: number, resourceType: ResourceType): Rule => ({
   operations: { ...getOperationsForResourceType(resourceType) },
 });
 
-export const getInitialRules = (rules?: Rule[]): Rule[] => rules ?? [createRule(1, ResourceTypeCluster)];
+export const getInitialRules = (rules?: Rule[]) => rules ?? [createRule(1, ResourceTypeCluster)];
 
 export const getInitialSharedConfig = (sharedConfig?: Partial<SharedConfig>, principalType?: string): SharedConfig => ({
   principal: sharedConfig?.principal ?? (principalType ? `${principalType}` : 'User:'),
@@ -42,7 +42,7 @@ const hasRuleOfType = (rules: Rule[], resourceType: ResourceType) =>
   rules.some((rule) => rule.resourceType === resourceType);
 
 // Only one cluster rule may exist, so later rules default to topics.
-export const getNextRuleResourceType = (rules: Rule[]): ResourceType =>
+export const getNextRuleResourceType = (rules: Rule[]) =>
   hasRuleOfType(rules, ResourceTypeCluster) ? ResourceTypeTopic : ResourceTypeCluster;
 
 export const createAllowAllRules = (schemaRegistryEnabled: boolean, firstId: number): Rule[] => {
@@ -100,7 +100,7 @@ export const getResourceTypeChange = (resourceType: ResourceType): Partial<Rule>
   return changes;
 };
 
-const getModeOperation = (mode: string, current: OperationType): OperationType => {
+const getModeOperation = (mode: string, current: OperationType) => {
   if (mode === ModeAllowAll) {
     return OperationTypeAllow;
   }

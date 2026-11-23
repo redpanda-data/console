@@ -296,7 +296,7 @@ const useSourceClusters = (topology: ShadowLinkTopology | null, candidates: read
  * fencing on. Null otherwise, or when the link list can't load, so the pages fall back to what this
  * cluster can see on its own, as in a self-hosted Console.
  */
-export const useShadowLinkTopology = (): ShadowLinkTopology | null => {
+export const useShadowLinkTopology = () => {
   const clusterId = hasClusterId(config.clusterId) ? config.clusterId : '';
   const enabled = isEmbedded() && isGuidedFailoverEnabled() && clusterId !== '';
   const { topology, candidates } = useResolvedTopology(clusterId, enabled);

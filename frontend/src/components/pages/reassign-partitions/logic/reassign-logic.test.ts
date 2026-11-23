@@ -32,7 +32,7 @@ const makeTopic = (topicName: string, partitionCount: number, replicationFactor:
   allowedActions: undefined,
 });
 
-const makePartition = (id: number, replicas: number[], replicaSize: number): Partition =>
+const makePartition = (id: number, replicas: number[], replicaSize: number) =>
   ({
     id,
     partitionError: null,

@@ -333,7 +333,7 @@ const extractControlplaneAuthSettings = (
 /**
  * Check if name filters represent "all" mode (single filter with name='*')
  */
-const isAllNameFilter = (filters: { name: string; patternType: PatternType; filterType: FilterType }[]): boolean =>
+const isAllNameFilter = (filters: { name: string; patternType: PatternType; filterType: FilterType }[]) =>
   filters.length === 1 &&
   filters[0].name === '*' &&
   filters[0].patternType === PatternType.LITERAL &&
@@ -342,7 +342,7 @@ const isAllNameFilter = (filters: { name: string; patternType: PatternType; filt
 /**
  * Check if ACL filters represent "all" mode (single filter matching any ACL)
  */
-const isAllACLFilter = (filters: ControlplaneShadowLink['securitySyncOptions']): boolean => {
+const isAllACLFilter = (filters: ControlplaneShadowLink['securitySyncOptions']) => {
   const aclFilters = filters?.aclFilters ?? [];
   if (aclFilters.length !== 1) {
     return false;

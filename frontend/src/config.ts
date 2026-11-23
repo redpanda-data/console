@@ -255,7 +255,7 @@ const setConfig = ({
   return config;
 };
 
-function installUiStateSubscriptions(): () => void {
+function installUiStateSubscriptions() {
   const unsubs: Array<() => void> = [];
 
   try {

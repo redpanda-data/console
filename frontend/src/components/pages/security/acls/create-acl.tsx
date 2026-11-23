@@ -81,7 +81,7 @@ const FIRST_CHAR_REGEX = /^\w/u;
 const COLON_REGEX = /:/u;
 const PRINCIPAL_PREFIX_REGEX = /^[^:]+:/u;
 
-export const formatLabel = (text: string): string => {
+export const formatLabel = (text: string) => {
   return text
     .replace(UNDERSCORE_REGEX, ' ')
     .toLowerCase()
@@ -89,11 +89,11 @@ export const formatLabel = (text: string): string => {
     .replace('id', 'ID'); // transactional ids => transactional IDs
 };
 
-export const formatSummaryLabel = (text: string): string => {
+export const formatSummaryLabel = (text: string) => {
   return text.replace('id', 'ID'); // transactional ids => transactional IDs
 };
 
-const getResourceName = (resourceType: ResourceType): string => {
+const getResourceName = (resourceType: ResourceType) => {
   const resourceNames: Record<string, string> = {
     [ResourceTypeTopic]: 'Topic',
     [ResourceTypeConsumerGroup]: 'Consumer group',
@@ -104,7 +104,7 @@ const getResourceName = (resourceType: ResourceType): string => {
   return resourceNames[resourceType] || resourceType;
 };
 
-const getPluralResourceName = (resourceType: ResourceType): string => {
+const getPluralResourceName = (resourceType: ResourceType) => {
   const pluralNames: Record<string, string> = {
     [ResourceTypeCluster]: 'clusters',
     [ResourceTypeTopic]: 'topics',
@@ -116,7 +116,7 @@ const getPluralResourceName = (resourceType: ResourceType): string => {
   return pluralNames[resourceType] || resourceType;
 };
 
-const getRuleSelectorSummary = (rule: Rule): string => {
+const getRuleSelectorSummary = (rule: Rule) => {
   if (rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) {
     return getResourceName(rule.resourceType);
   }
@@ -127,9 +127,9 @@ const getRuleSelectorSummary = (rule: Rule): string => {
   return `${getPluralResourceName(rule.resourceType)} ${matchType}: "${rule.selectorValue}"`;
 };
 
-const getRuleSummaryTitle = (rule: Rule): string => formatSummaryLabel(getRuleSelectorSummary(rule));
+const getRuleSummaryTitle = (rule: Rule) => formatSummaryLabel(getRuleSelectorSummary(rule));
 
-function stringToHostType(h: string): HostType {
+function stringToHostType(h: string) {
   switch (h) {
     case '*':
     case '':

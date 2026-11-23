@@ -14,28 +14,30 @@ import type { SchemaRegistryVersionedSchema } from '../../../state/rest-interfac
 const AVRO_CAR = '{ "type": "record", "name": "car", "fields": [] }';
 const PROTO_CAR = 'syntax = "proto3";\nmessage Car {\n  string make = 1;\n}';
 
-const editorState = (overrides: Partial<SchemaEditorStateData> = {}): SchemaEditorStateData => ({
-  strategy: 'TOPIC',
-  userInput: '',
-  keyOrValue: undefined,
-  format: 'AVRO',
-  schemaText: AVRO_CAR,
-  references: [],
-  normalize: false,
-  metadataProperties: [],
-  context: '',
-  ...overrides,
-});
+const editorState = (overrides: Partial<SchemaEditorStateData> = {}) =>
+  ({
+    strategy: 'TOPIC',
+    userInput: '',
+    keyOrValue: undefined,
+    format: 'AVRO',
+    schemaText: AVRO_CAR,
+    references: [],
+    normalize: false,
+    metadataProperties: [],
+    context: '',
+    ...overrides,
+  }) satisfies SchemaEditorStateData;
 
-const versionedSchema = (overrides: Partial<SchemaRegistryVersionedSchema> = {}): SchemaRegistryVersionedSchema => ({
-  id: 7,
-  version: 3,
-  isSoftDeleted: false,
-  type: 'AVRO',
-  schema: AVRO_CAR,
-  references: [],
-  ...overrides,
-});
+const versionedSchema = (overrides: Partial<SchemaRegistryVersionedSchema> = {}) =>
+  ({
+    id: 7,
+    version: 3,
+    isSoftDeleted: false,
+    type: 'AVRO',
+    schema: AVRO_CAR,
+    references: [],
+    ...overrides,
+  }) satisfies SchemaRegistryVersionedSchema;
 
 describe('computeRecordName', () => {
   test.each([

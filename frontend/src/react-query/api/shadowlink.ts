@@ -334,7 +334,7 @@ function unifyShadowLink(
   embedded: boolean,
   dataplane: DataplaneShadowLink | undefined,
   controlplane: ControlplaneShadowLink | undefined
-): UnifiedShadowLink | undefined {
+) {
   const unifiedData = dataplane ? fromDataplaneShadowLink(dataplane) : undefined;
   if (!(embedded && controlplane)) {
     return unifiedData;
@@ -382,7 +382,7 @@ function editFormValues(
   embedded: boolean,
   controlplaneShadowLink: ControlplaneShadowLink | undefined,
   shadowLink: DataplaneShadowLink | undefined
-): FormValues | undefined {
+) {
   if (embedded && controlplaneShadowLink) {
     return buildDefaultFormValuesFromControlplane(controlplaneShadowLink);
   }

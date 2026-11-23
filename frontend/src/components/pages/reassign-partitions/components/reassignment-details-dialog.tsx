@@ -191,7 +191,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     );
   }
 
-  isThrottled(): boolean {
+  isThrottled() {
     // Reassignment is throttled when the topic contains any partition/broker pair that is currently being reassigned
     if (!this.lastState) {
       return false;
@@ -271,7 +271,7 @@ function anyPartitionThrottled(
   entries: ThrottledReplica[] | undefined,
   partitions: ReassignmentState['partitions'],
   brokersOf: (p: ReassignmentState['partitions'][number]) => number[]
-): boolean {
+) {
   if (!entries) {
     return false;
   }
@@ -306,7 +306,7 @@ function throttledReplicasOf(state: ReassignmentState) {
 }
 
 /** Cancels every partition reassignment of the topic, reporting progress in a toast. Returns whether it worked. */
-async function cancelReassignmentWithToast(state: ReassignmentState): Promise<boolean> {
+async function cancelReassignmentWithToast(state: ReassignmentState) {
   const toastRef = showToast({
     status: 'loading',
     description: `Cancelling reassignment of '${state.topicName}'...`,

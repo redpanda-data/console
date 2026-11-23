@@ -322,7 +322,7 @@ function processSidebarItem(item: SidebarItem): NavLinkProps | null {
 /**
  * Get disabled text from disabled reasons.
  */
-function getDisabledText(reasons: DisabledReason[]): string {
+function getDisabledText(reasons: DisabledReason[]) {
   const firstReason = reasons[0];
   if (firstReason === undefined) {
     return '';
@@ -368,7 +368,7 @@ export function createGroupedSidebarItems(): SidebarGroupedItems[] {
  * Get filtered routes for embedded mode.
  * Used by config.ts for embeddedAvailableRoutesObservable.
  */
-export function getEmbeddedAvailableRoutes(): SidebarItem[] {
+export function getEmbeddedAvailableRoutes() {
   return SIDEBAR_ITEMS.filter((x) => x.icon !== null && x.icon !== undefined) // Routes without icon are "nested"
     .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // Things that should not be visible in embedded/cloud mode
     .filter((x) => {

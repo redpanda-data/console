@@ -61,7 +61,7 @@ export class Secret {
     };
   }
 
-  getSecretString(key: string, id?: string): string | null {
+  getSecretString(key: string, id?: string) {
     const _id = id ?? this.id;
     if (_id) {
       return `\${secretsManager:${_id}:${key}}`;
@@ -69,7 +69,7 @@ export class Secret {
     return null;
   }
 
-  extractSecretId(secretString: string): boolean {
+  extractSecretId(secretString: string) {
     if (!this.validateSecretString(secretString)) {
       return false;
     }
@@ -77,7 +77,7 @@ export class Secret {
     return !!this.id;
   }
 
-  validateSecretString(secretString: string): boolean {
+  validateSecretString(secretString: string) {
     const validationResult = SECRET_STRING_REGEX.test(secretString);
     if (validationResult) {
       this.secretString = secretString;

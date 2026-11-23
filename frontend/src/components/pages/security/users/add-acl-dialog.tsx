@@ -143,7 +143,7 @@ const getSubmitErrorMessage = (
   err: unknown,
   setError: UseFormSetError<FormValues>,
   renderableFieldNames: Set<string>
-): string | null => {
+) => {
   if (!(err instanceof ConnectError)) {
     return err instanceof Error ? err.message : String(err);
   }

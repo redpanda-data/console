@@ -121,7 +121,7 @@ export const LicenseNotification = () => {
   );
 };
 
-function preferCoreLicenseForSharedExpiry(licenses: License[]): License[] {
+function preferCoreLicenseForSharedExpiry(licenses: License[]) {
   return licenses.length > 1 && new Set(licenses.map((license) => license.expiresAt)).size === 1
     ? licenses.filter((license) => license.source === License_Source.REDPANDA_CORE)
     : licenses;

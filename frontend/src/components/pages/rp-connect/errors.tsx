@@ -46,7 +46,7 @@ export function formatPipelineError(err: unknown): React.ReactNode {
   );
 }
 
-function errorHint(hint: string): LintHint {
+function errorHint(hint: string) {
   return create(LintHintSchema, { line: 0, column: 0, hint, lintType: 'error' });
 }
 
@@ -55,7 +55,7 @@ function toHintRecord(hints: LintHint[]): Record<string, LintHint> {
 }
 
 /** Lint hints carried by the error details, with each field violation converted to a hint. */
-function lintHintsFromDetails(details: ConnectError['details']): LintHint[] {
+function lintHintsFromDetails(details: ConnectError['details']) {
   const hints: LintHint[] = [];
   for (const detail of details) {
     if (isLintHint(detail)) {
@@ -68,7 +68,7 @@ function lintHintsFromDetails(details: ConnectError['details']): LintHint[] {
 }
 
 /** The error message, prefixed with the error code when the message doesn't already mention it. */
-function connectErrorHintText(err: ConnectError): string {
+function connectErrorHintText(err: ConnectError) {
   const code = String(err.code);
   if (err.code && !err.message.toLowerCase().includes(code.toLowerCase())) {
     return `[${code}] ${err.message}`;
@@ -76,7 +76,7 @@ function connectErrorHintText(err: ConnectError): string {
   return err.message || err.rawMessage || String(err);
 }
 
-function lintHintText(hint: LintHint): string {
+function lintHintText(hint: LintHint) {
   return hint.line > 0 ? `Line ${hint.line}, Col ${hint.column}: ${hint.hint}` : hint.hint;
 }
 

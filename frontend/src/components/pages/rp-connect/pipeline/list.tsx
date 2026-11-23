@@ -101,7 +101,7 @@ const ListStatusAnnouncements = ({
 );
 
 // Pages still unfetched means partial data; otherwise a background refresh failed and it's stale.
-const listErrorMessageFor = (error: { message: string } | null, hasNextPage: boolean | undefined): string | null => {
+const listErrorMessageFor = (error: { message: string } | null, hasNextPage: boolean | undefined) => {
   if (!error) {
     return null;
   }
@@ -404,7 +404,7 @@ const PipelineListToolbar = ({
   );
 };
 
-const isRowNavigationClick = (event: MouseEvent<HTMLTableRowElement>): boolean =>
+const isRowNavigationClick = (event: MouseEvent<HTMLTableRowElement>) =>
   !isModifiedClick(event) &&
   isRowActivationClick(event.target, event.currentTarget) &&
   !window.getSelection()?.toString();

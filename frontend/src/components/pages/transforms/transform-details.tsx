@@ -59,7 +59,7 @@ import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
 class TransformDetails extends PageComponent<{ transformName: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const transformName = decodeURIComponentPercents(this.props.transformName);
     p.title = transformName;
     p.addBreadcrumb('Transforms', '/transforms');

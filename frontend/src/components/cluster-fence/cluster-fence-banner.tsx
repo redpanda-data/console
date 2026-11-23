@@ -33,7 +33,7 @@ const TITLE: Record<Exclude<FencePhase, 'unfenced'>, string> = {
 };
 
 /** What the phase means for writes, and a warning when the fence lets no one read. */
-const describeBanner = (summary: FenceSummary, brokers: BrokerProgress[]): string => {
+const describeBanner = (summary: FenceSummary, brokers: BrokerProgress[]) => {
   const exemptsNobody =
     isBlockingPhase(summary.phase) && !summary.allowAllReads && summary.exemptPrincipals.length === 0;
   return exemptsNobody

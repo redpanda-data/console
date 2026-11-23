@@ -45,7 +45,7 @@ function raceWithTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
-function isTimeoutError(error: unknown): boolean {
+function isTimeoutError(error: unknown) {
   return error instanceof Error && error.message === 'timeout';
 }
 

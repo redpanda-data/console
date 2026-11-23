@@ -68,7 +68,7 @@ export const ErrorDisplay: FC<{ children: ReactElement }> = ({ children }) => {
   );
 };
 
-function formatError(err: unknown): string {
+function formatError(err: unknown) {
   if (err instanceof Error && err.message) {
     return err.message;
   }

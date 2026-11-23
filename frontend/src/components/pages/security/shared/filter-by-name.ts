@@ -10,7 +10,7 @@
  */
 
 /** Filters items by name using a case-insensitive regex match (falls back to substring if the query is an invalid regex). Returns all items if the query is empty. */
-export function filterByName<T>(items: T[], query: string, getName: (item: T) => string): T[] {
+export function filterByName<T>(items: T[], query: string, getName: (item: T) => string) {
   if (!query) {
     return items;
   }

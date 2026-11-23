@@ -192,7 +192,7 @@ function refreshTopicData(topicName: string, force: boolean) {
   refreshLazyTabData(activeTab, topicName, force);
 }
 
-function resolveActiveTab(): TopicTabId | undefined {
+function resolveActiveTab() {
   const urlHash = window.location.hash.replace('#', '') as TopicTabId;
   return TopicTabIds.includes(urlHash) ? urlHash : uiSettings.topicDetailsActiveTabKey;
 }
@@ -236,7 +236,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   }
 }
 
-function useModifiedConfigCount(topicName: string): number {
+function useModifiedConfigCount(topicName: string) {
   const config = useApiStoreHook((s) => s.topicConfig.get(topicName));
   const topicConfig: ConfigEntry[] | null | undefined =
     config === undefined ? undefined : config === null || config.error !== null ? null : config.configEntries;
@@ -248,7 +248,7 @@ function useModifiedConfigCount(topicName: string): number {
 
 type TopicPartitionIds = { topicName: string; partitionIds: number[] };
 
-function findTopicPartitionIds(entries: TopicPartitionIds[] | undefined, topicName: string): number[] | undefined {
+function findTopicPartitionIds(entries: TopicPartitionIds[] | undefined, topicName: string) {
   return (entries ?? []).find(({ topicName: tn }) => tn === topicName)?.partitionIds;
 }
 
@@ -284,7 +284,7 @@ const docuDisableHooks: TabDisableHook[] = [
       : null,
 ];
 
-function getEnabledTabIds(topic: Topic): Set<TopicTabId> {
+function getEnabledTabIds(topic: Topic) {
   return new Set<TopicTabId>(
     [
       'messages',
@@ -492,13 +492,13 @@ function addBaseFavs(topicConfig: ConfigEntry[]) {
   }
 }
 
-function hasTopicPermission(topic: Topic, requiredPermission: TopicAction): boolean {
+function hasTopicPermission(topic: Topic, requiredPermission: TopicAction) {
   return (
     !topic.allowedActions || topic.allowedActions[0] === 'all' || topic.allowedActions.includes(requiredPermission)
   );
 }
 
-function getSelectedTabId(enabledTabIds: Set<TopicTabId>): TopicTabId {
+function getSelectedTabId(enabledTabIds: Set<TopicTabId>) {
   function computeTabId() {
     let key = appGlobal.location.hash.replace('#', '');
     if (TopicTabIds.includes(key as TopicTabId)) {

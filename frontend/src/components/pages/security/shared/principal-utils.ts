@@ -13,7 +13,7 @@
  * Parses a principal from a route parameter.
  * aclName may be a full principal like "Group:mygroup" or just a bare name (defaults to User).
  */
-export function parsePrincipalFromParam(aclName: string): { principalType: string; principalName: string } {
+export function parsePrincipalFromParam(aclName: string) {
   const colonIdx = aclName.indexOf(':');
   if (colonIdx >= 0) {
     return { principalType: aclName.slice(0, colonIdx), principalName: aclName.slice(colonIdx + 1) };

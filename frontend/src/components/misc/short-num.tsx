@@ -36,7 +36,7 @@ export function ShortNum(p: { value: number; tooltip?: boolean; className?: stri
   );
 }
 
-function formatShortNumber(value: number): string {
+function formatShortNumber(value: number) {
   const million = 1_000_000;
   const unit = value >= million ? 'M' : value >= 1000 ? 'k' : '';
   const scaled = unit === 'M' ? value / million : unit === 'k' ? value / 1000 : value;

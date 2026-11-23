@@ -56,7 +56,7 @@ export type TableRef = {
 // A table as ListTables returns it.
 export type FetchedTable = { name: string; catalogNamespace: string; topic?: string };
 
-function groupFetchedTables(catalog: Catalog, tables: FetchedTable[]): Map<string, TableRef[]> {
+function groupFetchedTables(catalog: Catalog, tables: FetchedTable[]) {
   const byNamespace = new Map<string, TableRef[]>();
   for (const t of tables) {
     const list = byNamespace.get(t.catalogNamespace) ?? [];
@@ -156,7 +156,7 @@ export type SqlRole = 'admin' | 'viewer';
 // when the type is not an array.
 const ARRAY_WRAPPER_RE = /^(?:ARRAY|LIST)\s*<(?<elementType>.+)>$/iu;
 
-export function arrayElementPgType(pgType: string): string | null {
+export function arrayElementPgType(pgType: string) {
   const t = pgType.trim();
   if (t.endsWith('[]')) {
     return t.slice(0, -2);
@@ -168,7 +168,7 @@ export function arrayElementPgType(pgType: string): string | null {
   return wrapped ? wrapped[1] : null;
 }
 
-export function isArrayPgType(pgType: string): boolean {
+export function isArrayPgType(pgType: string) {
   return arrayElementPgType(pgType) !== null;
 }
 
@@ -186,7 +186,7 @@ const SCALAR_KIND_MATCHERS: [ColumnKind, (upperType: string) => boolean][] = [
 // literal "record"/"record[]" (the backend parses structure into Column.fields)
 // and render with the JSON tree viewer. Arrays map to their element kind;
 // anything unrecognized defaults to a string.
-export function columnKindForPgType(pgType: string): ColumnKind {
+export function columnKindForPgType(pgType: string) {
   const element = arrayElementPgType(pgType);
   if (element !== null) {
     return columnKindForPgType(element);
@@ -196,7 +196,7 @@ export function columnKindForPgType(pgType: string): ColumnKind {
 }
 
 // Structured hint from the Connect error's ErrorInfo metadata. undefined when absent.
-export function hintFromError(error: unknown): string | undefined {
+export function hintFromError(error: unknown) {
   if (error instanceof ConnectError) {
     for (const info of error.findDetails(ErrorInfoSchema)) {
       if (info.metadata.hint) {

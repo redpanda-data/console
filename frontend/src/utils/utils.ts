@@ -103,7 +103,7 @@ function assignDeepObject(target: Record<string, unknown>, key: string, value: o
   }
 }
 
-export function containsIgnoreCase(str: string, search: string): boolean {
+export function containsIgnoreCase(str: string, search: string) {
   return str.toLowerCase().indexOf(search.toLowerCase()) >= 0;
 }
 
@@ -129,7 +129,7 @@ export function collectElements(
   obj: unknown,
   isMatch: (propertyName: string, path: string[], value: unknown) => boolean,
   returnFirstMatch: boolean
-): FoundProperty[] {
+) {
   const ctx: PropertySearchExContext = {
     isMatch,
     currentPath: [],
@@ -168,11 +168,7 @@ function collectMatchingProperty(ctx: PropertySearchExContext, key: string, valu
 type IsMatchFunc = (pathElement: string, propertyName: string, value: unknown) => boolean;
 export type CollectedProperty = { path: string[]; value: unknown };
 
-export function collectElements2(
-  targetObject: Record<string, unknown>,
-  path: string[],
-  isMatch: IsMatchFunc
-): CollectedProperty[] {
+export function collectElements2(targetObject: Record<string, unknown>, path: string[], isMatch: IsMatchFunc) {
   let explore: CollectedProperty[] = [{ path: [], value: targetObject }];
   for (let index = 0; index < path.length; index++) {
     const next = explore.flatMap((property) => collectPathSegment(property, path[index], isMatch));
@@ -184,7 +180,7 @@ export function collectElements2(
   return [];
 }
 
-function collectPathSegment(property: CollectedProperty, segment: string, isMatch: IsMatchFunc): CollectedProperty[] {
+function collectPathSegment(property: CollectedProperty, segment: string, isMatch: IsMatchFunc) {
   if (segment !== '**') {
     return collectDirectProperties(property, segment, isMatch);
   }
@@ -195,11 +191,7 @@ function collectPathSegment(property: CollectedProperty, segment: string, isMatc
   ];
 }
 
-function collectDirectProperties(
-  property: CollectedProperty,
-  segment: string,
-  isMatch: IsMatchFunc
-): CollectedProperty[] {
+function collectDirectProperties(property: CollectedProperty, segment: string, isMatch: IsMatchFunc) {
   const results: CollectedProperty[] = [];
   for (const key in property.value as Record<string, unknown>) {
     if (Object.hasOwn(property.value as Record<string, unknown>, key)) {
@@ -215,7 +207,7 @@ function collectDirectProperties(
   return results;
 }
 
-export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
+export function getAllMessageKeys(messages: TopicMessage[]) {
   const ctx: GetAllKeysContext = {
     currentFullPath: '',
     currentPath: [],
@@ -252,7 +244,7 @@ type GetAllKeysContext = {
   results: Property[];
 };
 
-function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>): void {
+function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>) {
   const isArray = Array.isArray(obj);
   const pathToHere = ctx.currentFullPath;
   for (const key in obj) {
@@ -263,13 +255,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown
   ctx.currentFullPath = pathToHere;
 }
 
-function collectMessageKey(
-  ctx: GetAllKeysContext,
-  value: unknown,
-  key: string,
-  pathToHere: string,
-  isArray: boolean
-): void {
+function collectMessageKey(ctx: GetAllKeysContext, value: unknown, key: string, pathToHere: string, isArray: boolean) {
   ctx.currentPath.push(key);
   const fullPath = isArray ? `${pathToHere}[*]` : `${pathToHere}.${key}`;
   ctx.currentFullPath = fullPath;
@@ -283,7 +269,7 @@ function collectMessageKey(
   ctx.currentFullPath = fullPath;
 }
 
-function recordMessageKey(ctx: GetAllKeysContext, key: string, fullPath: string): void {
+function recordMessageKey(ctx: GetAllKeysContext, key: string, fullPath: string) {
   if (ctx.existingPaths.has(fullPath)) {
     return;
   }
@@ -305,7 +291,7 @@ export const cullText = (str: string, length: number) => {
   return str.length > length ? `${str.substring(0, length - ELLIPSIS_LENGTH)}...` : str;
 };
 
-export function groupConsecutive(ar: number[]): number[][] {
+export function groupConsecutive(ar: number[]) {
   const groups: number[][] = [];
 
   for (const cur of ar) {
@@ -334,8 +320,7 @@ export const prettyBytesOrNA = (n: number) => {
 };
 
 /** Same size, same members. */
-export const eqSet = <T = string>(xs: Set<T>, ys: Set<T>): boolean =>
-  xs.size === ys.size && [...xs].every((x) => ys.has(x));
+export const eqSet = <T = string>(xs: Set<T>, ys: Set<T>) => xs.size === ys.size && [...xs].every((x) => ys.has(x));
 
 export type PrettyValueOptions = {
   /** Show 'Infinite' for greater or equal to 2^64-1 */
@@ -354,7 +339,7 @@ function isUInt64Maximum(str: string) {
   return false;
 }
 
-function parsePrettyString(value: string): number | string {
+function parsePrettyString(value: string) {
   if (value === '') {
     return 'N/A';
   }
@@ -362,7 +347,7 @@ function parsePrettyString(value: string): number | string {
   return Number.isFinite(parsed) ? parsed : String(parsed);
 }
 
-function parsePrettyValue(value: number | string | null | undefined, options?: PrettyValueOptions): number | string {
+function parsePrettyValue(value: number | string | null | undefined, options?: PrettyValueOptions) {
   if (value === undefined || value === null) {
     return options?.showNullAs ?? 'N/A';
   }
@@ -414,14 +399,14 @@ export function prettyNumber(num: number) {
   return toG(num);
 }
 
-export function fromDecimalSeparated(str: string): number {
+export function fromDecimalSeparated(str: string) {
   if (!str || str === '') {
     return 0;
   }
   return Number.parseInt(str.replace(',', ''), 10);
 }
 
-export function toDecimalSeparated(num: number): string {
+export function toDecimalSeparated(num: number) {
   return String(num).replace(/\B(?=(?:\d{3})+(?!\d))/gu, ',');
 }
 
@@ -442,18 +427,18 @@ export function simpleUniqueId(prefix?: string) {
 /**
  * 4x 'randomId()'
  */
-export function uniqueId4(): string {
+export function uniqueId4() {
   return randomId() + randomId() + randomId() + randomId();
 }
 
-export function titleCase(str: string): string {
+export function titleCase(str: string) {
   if (!str) {
     return str;
   }
   return str[0].toUpperCase() + str.slice(1).toLowerCase();
 }
 
-export function capitalizeFirst(str: string): string {
+export function capitalizeFirst(str: string) {
   if (!str) {
     return str; // Handle empty or falsy strings
   }
@@ -463,7 +448,7 @@ export function capitalizeFirst(str: string): string {
 /**
  * Scroll the main content region
  */
-export function scrollToTop(): void {
+export function scrollToTop() {
   const mainLayout = document.querySelector<HTMLElement>('#mainLayout');
   if (!mainLayout) {
     return;
@@ -475,7 +460,7 @@ export function scrollToTop(): void {
 /**
  * Scroll the main content region to the target element (which is found by the given id)
  */
-export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 'center', offset?: number): void {
+export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 'center', offset?: number) {
   const mainLayout = document.querySelector<HTMLElement>('#mainLayout');
   if (!mainLayout) {
     return;
@@ -523,7 +508,7 @@ export function encodeBase64(rawData: string) {
 }
 
 /** True when `Base64.decode` accepts the string. */
-export function isValidBase64(str: string): boolean {
+export function isValidBase64(str: string) {
   try {
     Base64.decode(str);
     return true;
@@ -548,11 +533,11 @@ function binaryStringToBytes(binary: string): Uint8Array {
   return bytes;
 }
 
-function formatHexBytes(bytes: Uint8Array): string {
+function formatHexBytes(bytes: Uint8Array) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(' ');
 }
 
-export function base64ToHexString(base64: string): string {
+export function base64ToHexString(base64: string) {
   try {
     return formatHexBytes(binaryStringToBytes(Base64.atob(base64)));
   } catch (_err) {
@@ -560,7 +545,7 @@ export function base64ToHexString(base64: string): string {
   }
 }
 
-export function uint8ArrayToHexString(ar: Uint8Array): string {
+export function uint8ArrayToHexString(ar: Uint8Array) {
   try {
     return formatHexBytes(ar);
   } catch (_err) {
@@ -588,10 +573,7 @@ export function setHeader(init: RequestInit, name: string, value: string) {
 }
 
 // very simple retrier utility for allowing some retries, if we ended up using it more often we should consider making it more elaborate
-export function retrier<T>(
-  operation: () => Promise<T>,
-  { attempts = Number.POSITIVE_INFINITY, delayTime = 100 }
-): Promise<T> {
+export function retrier<T>(operation: () => Promise<T>, { attempts = Number.POSITIVE_INFINITY, delayTime = 100 }) {
   return new Promise<T>((resolve, reject) => {
     operation()
       .then(resolve)
@@ -620,7 +602,7 @@ export type ElementOf<T> = T extends (infer E)[] ? E : T extends readonly (infer
  * @param {number} maxLength The maximum length of the string, including the ellipsis.
  * @returns {string} The truncated string with ellipsis if truncation was necessary, otherwise the original string.
  */
-export function substringWithEllipsis(input: string, maxLength: number): string {
+export function substringWithEllipsis(input: string, maxLength: number) {
   // Check if the input length is greater than the maxLength
   // Note: We account for the length of the ellipsis in the comparison
   if (input.length > maxLength) {
@@ -636,12 +618,12 @@ export function substringWithEllipsis(input: string, maxLength: number): string 
 // Otherwise we cannot tell the difference between '/' and '%2F' and '%252F'
 // https://github.com/remix-run/react-router/issues/10213
 // https://github.com/remix-run/history/issues/874
-export function encodeURIComponentPercents(rawStr: string): string {
+export function encodeURIComponentPercents(rawStr: string) {
   const encoded = encodeURIComponent(rawStr);
   return encoded.replace(/%/gu, '﹪');
 }
 
-export function decodeURIComponentPercents(encodedStr: string): string {
+export function decodeURIComponentPercents(encodedStr: string) {
   const encoded = encodedStr.replace(/﹪/gu, '%');
   return decodeURIComponent(encoded);
 }
@@ -652,7 +634,7 @@ export function decodeURIComponentPercents(encodedStr: string): string {
  */
 export function getOidcSubject(error: {
   details?: { debug?: { metadata?: { login_type?: string; subject?: string } } }[];
-}): string | null {
+}) {
   if (!error.details) {
     return null;
   }

@@ -25,7 +25,7 @@
  * Returns the input array unchanged when it already fits, so referential
  * equality holds for memoized consumers.
  */
-export function applyDisplayWindow<T>(rows: readonly T[], cap: number): { rows: readonly T[]; trimmed: number } {
+export function applyDisplayWindow<T>(rows: readonly T[], cap: number) {
   if (rows.length <= cap) {
     return { rows, trimmed: 0 };
   }

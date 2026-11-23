@@ -9,7 +9,7 @@ export async function createClientIdQuota(params: {
   consumerByteRate?: number;
   controllerMutationRate?: number;
   variantName?: string;
-}): Promise<string> {
+}) {
   const { clientId, producerByteRate, consumerByteRate, controllerMutationRate, variantName = 'console' } = params;
 
   const args: string[] = [`--name client-id=${clientId}`];
@@ -36,7 +36,7 @@ export async function createUserQuota(params: {
   consumerByteRate?: number;
   controllerMutationRate?: number;
   variantName?: string;
-}): Promise<string> {
+}) {
   const { user, producerByteRate, consumerByteRate, controllerMutationRate, variantName = 'console' } = params;
 
   const args: string[] = [`--name user=${user}`];
@@ -57,7 +57,7 @@ export async function createUserQuota(params: {
 /**
  * Delete a client-id quota
  */
-export async function deleteClientIdQuota(clientId: string, variantName = 'console'): Promise<string> {
+export async function deleteClientIdQuota(clientId: string, variantName = 'console') {
   return await execRpk(
     `cluster quotas alter --delete producer_byte_rate --delete consumer_byte_rate --delete controller_mutation_rate --name client-id=${clientId}`,
     variantName
@@ -67,7 +67,7 @@ export async function deleteClientIdQuota(clientId: string, variantName = 'conso
 /**
  * Delete a user quota
  */
-export async function deleteUserQuota(user: string, variantName = 'console'): Promise<string> {
+export async function deleteUserQuota(user: string, variantName = 'console') {
   return await execRpk(
     `cluster quotas alter --delete producer_byte_rate --delete consumer_byte_rate --delete controller_mutation_rate --name user=${user}`,
     variantName
@@ -77,6 +77,6 @@ export async function deleteUserQuota(user: string, variantName = 'console'): Pr
 /**
  * List all quotas using RPK
  */
-export async function listQuotas(variantName = 'console'): Promise<string> {
+export async function listQuotas(variantName = 'console') {
   return await execRpk('cluster quotas list', variantName);
 }

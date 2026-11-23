@@ -2,7 +2,7 @@ import type { Namespace, TableRef } from './sql-types';
 
 export const CAT_LIMIT = 20;
 
-export function tablesForNamespace(namespace: Namespace, fetched: TableRef[]): TableRef[] {
+export function tablesForNamespace(namespace: Namespace, fetched: TableRef[]) {
   const byId = new Map<string, TableRef>();
   for (const t of namespace.tables) {
     byId.set(t.id, t);

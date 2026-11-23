@@ -65,7 +65,7 @@ export const useClusterFenceGuard = () => {
 
   /** Pass `topic` for a change to one topic, so the fence's internal-topic exemption applies. */
   const reasonFor = useCallback(
-    (action: FencedAction, topic?: string): string | undefined => {
+    (action: FencedAction, topic?: string) => {
       const covered = topic === undefined || (TOPIC_IN_SCOPE[action]?.(topic) ?? true);
       return blocking && covered ? fencedActionReason(action) : undefined;
     },
@@ -73,10 +73,7 @@ export const useClusterFenceGuard = () => {
   );
 
   /** Whether a failed message search is most likely the fence turning Console's fetch away. */
-  const isFencedRead = useCallback(
-    (message: string): boolean => readsBlocked && isFencedReadError(message),
-    [readsBlocked]
-  );
+  const isFencedRead = useCallback((message: string) => readsBlocked && isFencedReadError(message), [readsBlocked]);
 
   return { reasonFor, isFencedRead };
 };

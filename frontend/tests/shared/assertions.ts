@@ -24,10 +24,10 @@ async function attemptBeforeDeadline<T>(assertion: () => T | Promise<T>, remaini
 export function retryAssertion<T>(
   assertion: () => T | Promise<T>,
   { timeout, intervals = [100, 250, 500, 1000] }: { timeout: number; intervals?: number[] }
-): Promise<T> {
+) {
   const deadline = Date.now() + timeout;
   // Retries recursively: each attempt settles, and its backoff elapses, before the next attempt starts.
-  const attemptFrom = async (attempt: number): Promise<T> => {
+  const attemptFrom = async (attempt: number) => {
     try {
       return await attemptBeforeDeadline(assertion, deadline - Date.now(), timeout);
     } catch (error) {
@@ -42,7 +42,7 @@ export function retryAssertion<T>(
   return attemptFrom(0);
 }
 
-export async function step<T>(name: string, action: () => T | Promise<T>): Promise<T> {
+export async function step<T>(name: string, action: () => T | Promise<T>) {
   try {
     return await action();
   } catch (cause) {

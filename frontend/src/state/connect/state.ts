@@ -16,7 +16,7 @@ import { SecretCreationError } from './secret-creation-error';
 import type { SecretsStore } from './secrets-store';
 import { retrier } from '../../utils/utils';
 import { api } from '../backend-api';
-import type { ClusterAdditionalInfo, ClusterConnectors, ConnectorPossibleStatesLiteral } from '../rest-interfaces';
+import type { ClusterAdditionalInfo, ConnectorPossibleStatesLiteral } from '../rest-interfaces';
 
 export { ConnectorCreationError } from './connector-creation-error';
 export { ConnectorPropertiesStore, type Property, type PropertyGroup } from './connector-properties-store';
@@ -49,7 +49,7 @@ export class ConnectClusterStore {
     this.connectors = new Map();
   }
 
-  static getInstance(clusterName: string): ConnectClusterStore {
+  static getInstance(clusterName: string) {
     let instance = ConnectClusterStore.connectClusters.get(clusterName);
     if (!instance) {
       instance = new ConnectClusterStore(clusterName);
@@ -240,7 +240,7 @@ export class ConnectClusterStore {
     return connectorProperties;
   }
 
-  get cluster(): ClusterConnectors | null {
+  get cluster() {
     if (this.isInitialized) {
       const cluster = api.connectConnectors?.clusters?.first((c) => c.clusterName === this.clusterName);
       if (!cluster) {
@@ -296,7 +296,7 @@ export type ConnectorClusterFeatures = {
 };
 
 // The connector name the secrets are stored under: it must be a non-blank string.
-function requireConnectorName(configObj: Record<string, unknown> | undefined): string {
+function requireConnectorName(configObj: Record<string, unknown> | undefined) {
   const connectorNameValue = configObj?.name;
 
   if (connectorNameValue === undefined || connectorNameValue === null) {
@@ -324,16 +324,13 @@ function describeValueType(value: unknown): string {
   return typeof value;
 }
 
-function isFilledSecret(key: string, secret: Secret): boolean {
+function isFilledSecret(key: string, secret: Secret) {
   return Boolean(key && key.trim() !== '' && secret.value && secret.value.trim() !== '');
 }
 
 // If the config has been created using only the json view, the secrets are missing (since updates to them, only apply to our property wrappers)
 // We need to go through all props of type password, and use those values instead (since those will be the "secret string" aka placeholder)
-function withSecretValues(
-  properties: Record<string, unknown>,
-  secrets: SecretsStore | null | undefined
-): Record<string, unknown> {
+function withSecretValues(properties: Record<string, unknown>, secrets: SecretsStore | null | undefined) {
   if (secrets) {
     for (const [key, secret] of secrets.secrets) {
       if (secret.value) {

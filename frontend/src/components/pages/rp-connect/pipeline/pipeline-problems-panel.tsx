@@ -119,7 +119,7 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
 );
 
 // The chip's wording: specific when there's only one kind of issue, "issues" for a mix.
-function issuesLabel(problemCount: number, secretCount: number, deprecationCount: number): string {
+function issuesLabel(problemCount: number, secretCount: number, deprecationCount: number) {
   const counts = [problemCount, secretCount, deprecationCount];
   if (counts.filter((count) => count > 0).length > 1) {
     return pluralizeWithNumber(problemCount + secretCount + deprecationCount, 'issue');
@@ -137,7 +137,7 @@ function selectHandler(
   problem: PipelineProblem,
   onSelectProblem: PipelineProblemsPanelProps['onSelectProblem'],
   close: () => void
-): (() => void) | undefined {
+) {
   const { nodeId, target, caseTarget } = problem;
   if (!(nodeId && target)) {
     return;

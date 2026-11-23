@@ -91,7 +91,7 @@ function columnDefFromProto(column: SqlColumn): ColumnDef {
   };
 }
 
-function cellValueForColumn(value: SqlValue, column: ColumnDef): CellValue {
+function cellValueForColumn(value: SqlValue, column: ColumnDef) {
   let cell: CellValue = value.nullValue ? null : (value.value ?? null);
   // Arrays keep their raw string form — only scalar bools coerce. Case-insensitive
   if (cell !== null && column.kind === 'bool' && !column.isArray) {
@@ -101,7 +101,7 @@ function cellValueForColumn(value: SqlValue, column: ColumnDef): CellValue {
   return cell;
 }
 
-function resultRowFromProto(row: SqlRow, columns: ColumnDef[]): ResultRow {
+function resultRowFromProto(row: SqlRow, columns: ColumnDef[]) {
   const result: ResultRow = {};
   row.values.forEach((value, index) => {
     const column = columns[index];
@@ -145,7 +145,7 @@ function useSqlStudioPage() {
 }
 
 // Caller's effective role: an explicit prop wins (tests/storybook), otherwise
-function useSqlRole(sqlRoleProp: SqlRole | undefined): SqlRole {
+function useSqlRole(sqlRoleProp: SqlRole | undefined) {
   const { data: identity } = useGetSqlIdentityQuery();
   return sqlRoleProp ?? (identity?.isAdmin ? 'admin' : 'viewer');
 }
@@ -187,7 +187,7 @@ function useSqlCatalogs() {
   };
 }
 
-function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null): BridgeInfo | undefined {
+function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null) {
   // Whether the queried topic is Iceberg-tiered — the authoritative bridge-query
   // must key off the config, not metric presence (else a not-yet-synced bridge
   const { isIceberg: bridgeTopicTiered } = useTopicIcebergQuery(bridgeTopic ?? '', {

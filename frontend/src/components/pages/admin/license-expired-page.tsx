@@ -9,7 +9,7 @@ import { PageComponent } from '../page';
  * Formats a list of enabled enterprise feature names into a human-readable string.
  * Returns undefined if no features are enabled.
  */
-function formatEnabledFeatures(features: { name: string; enabled: boolean }[]): string | undefined {
+function formatEnabledFeatures(features: { name: string; enabled: boolean }[]) {
   const enabledFeatures = features.filter((f) => f.enabled).map((f) => f.name);
 
   if (enabledFeatures.length === 0) {
@@ -28,7 +28,7 @@ function formatEnabledFeatures(features: { name: string; enabled: boolean }[]): 
 }
 
 export default class LicenseExpiredPage extends PageComponent {
-  initPage(): void {
+  initPage() {
     this.refreshData();
     appGlobal.onRefresh = () => this.refreshData();
   }

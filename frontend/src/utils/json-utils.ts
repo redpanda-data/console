@@ -26,7 +26,7 @@ export type DataType =
   | 'null';
 
 const seen = new Set();
-export function toJson(obj: unknown, space?: string | number | undefined): string {
+export function toJson(obj: unknown, space?: string | number | undefined) {
   seen.clear();
   try {
     return JSON.stringify(
@@ -131,7 +131,7 @@ export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonVal
 /**
  * Updates an array at a specific path
  */
-function updateArray(array: JsonValue[], path: string[], value: JsonValue): JsonValue[] {
+function updateArray(array: JsonValue[], path: string[], value: JsonValue) {
   const [index, ...restPath] = path;
   const arrayIndex = Number(index);
 
@@ -148,7 +148,7 @@ function updateArray(array: JsonValue[], path: string[], value: JsonValue): Json
   return newArray;
 }
 
-function copyDenseArray(array: JsonValue[], length: number): JsonValue[] {
+function copyDenseArray(array: JsonValue[], length: number) {
   const copy: JsonValue[] = new Array(length).fill(null);
   for (let index = 0; index < array.length; index++) {
     copy[index] = index in array ? array[index] : null;
@@ -159,7 +159,7 @@ function copyDenseArray(array: JsonValue[], length: number): JsonValue[] {
 /**
  * Updates an object at a specific path
  */
-function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonObject {
+function updateObject(obj: JsonObject, path: string[], value: JsonValue) {
   const [key, ...restPath] = path;
 
   if (typeof key !== 'string') {
@@ -240,7 +240,7 @@ export function deepParseJson(value: unknown, depth = 0, maxDepth = 10): unknown
   return value;
 }
 
-function deepParseObject(value: object, depth: number, maxDepth: number): Record<string, unknown> {
+function deepParseObject(value: object, depth: number, maxDepth: number) {
   const result: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(value)) {
     result[key] = deepParseJson(val, depth + 1, maxDepth);

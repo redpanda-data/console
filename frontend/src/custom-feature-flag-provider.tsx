@@ -53,7 +53,7 @@ export const CustomFeatureFlagProvider = ({
   return <FeatureFlagContext.Provider value={contextValue}>{children}</FeatureFlagContext.Provider>;
 };
 
-export const useBooleanFlagValue = (key: keyof typeof FEATURE_FLAGS, defaultValue = false): boolean => {
+export const useBooleanFlagValue = (key: keyof typeof FEATURE_FLAGS, defaultValue = false) => {
   const context = useContext(FeatureFlagContext);
 
   if (!context) {
@@ -66,7 +66,7 @@ export const useBooleanFlagValue = (key: keyof typeof FEATURE_FLAGS, defaultValu
   return context.getBooleanFlagValue(key, defaultValue);
 };
 
-export const useFeatureFlags = (): FeatureFlagContextType => {
+export const useFeatureFlags = () => {
   const context = useContext(FeatureFlagContext);
 
   if (!context) {

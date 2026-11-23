@@ -26,7 +26,7 @@ export type ComponentChange = {
 };
 
 // Section containers are excluded; only leaf components are listed.
-function componentNodesById(yaml: string): Map<string, PipelineFlowNode> {
+function componentNodesById(yaml: string) {
   const byId = new Map<string, PipelineFlowNode>();
   if (!yaml.trim()) {
     return byId;
@@ -68,7 +68,7 @@ export function summarizeComponentChanges(
   return [...editedChanges, ...removedChanges].sort(compareBySectionThenId);
 }
 
-function compareBySectionThenId(a: ComponentChange, b: ComponentChange): number {
+function compareBySectionThenId(a: ComponentChange, b: ComponentChange) {
   return a.section.localeCompare(b.section) || a.id.localeCompare(b.id, undefined, { numeric: true });
 }
 
@@ -107,7 +107,7 @@ const NOT_SET = 'not set';
 /** Egress gateway names by ID, for the gateways the editor could look up. */
 export type EgressGatewayNames = ReadonlyMap<string, string>;
 
-function formatSettingValue(key: SettingsFieldKey, values: SettingsValues, gatewayNames?: EgressGatewayNames): string {
+function formatSettingValue(key: SettingsFieldKey, values: SettingsValues, gatewayNames?: EgressGatewayNames) {
   if (key === 'computeUnits') {
     return values.computeUnits === undefined ? NOT_SET : String(values.computeUnits);
   }
@@ -128,7 +128,7 @@ export function summarizeSettingsChanges(
   saved: SettingsValues | undefined,
   current: SettingsValues,
   gatewayNames?: EgressGatewayNames
-): SettingsChange[] {
+) {
   const changes: SettingsChange[] = [];
   for (const { key, label } of SETTINGS_FIELDS) {
     const from = formatSettingValue(key, saved ?? {}, gatewayNames);
@@ -150,7 +150,7 @@ export function changesImpactMessage(state: Pipeline_State | undefined) {
   return 'These changes are not saved to the pipeline yet.';
 }
 
-export const changesImpactTone = (state: Pipeline_State | undefined): 'info' | 'warning' =>
+export const changesImpactTone = (state: Pipeline_State | undefined) =>
   state === Pipeline_State.RUNNING || state === Pipeline_State.STARTING ? 'warning' : 'info';
 
 export const NO_CHANGES_COPY = {

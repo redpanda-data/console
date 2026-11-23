@@ -55,13 +55,13 @@ export const REDPANDA_CONTEXTUAL_VARIABLES = {
   },
 } as const;
 
-export const getContextualVariableSyntax = (name: string): string => `\${${name}}`;
+export const getContextualVariableSyntax = (name: string) => `\${${name}}`;
 
 export type ContextualVariableName = keyof typeof REDPANDA_CONTEXTUAL_VARIABLES;
 
-export const convertToScreamingSnakeCase = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/gu, '_');
+export const convertToScreamingSnakeCase = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/gu, '_');
 
-export const getSecretSyntax = (secretName: string): string => `\${secrets.${secretName}}`;
+export const getSecretSyntax = (secretName: string) => `\${secrets.${secretName}}`;
 
 /** The secrets a pipeline reads a SASL user's credentials from. */
 export const userSecretIds = (username: string) => {

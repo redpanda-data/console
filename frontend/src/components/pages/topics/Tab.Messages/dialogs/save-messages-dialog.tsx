@@ -29,7 +29,7 @@ import { base64FromUInt8Array } from '../../../../../utils/utils';
 
 const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
 
-function cleanPayload(p: Payload, includeRawContent: boolean): Payload | undefined {
+function cleanPayload(p: Payload, includeRawContent: boolean) {
   if (!p) {
     return;
   }
@@ -66,7 +66,7 @@ function cleanMessage(src: TopicMessage, includeRawContent: boolean): Partial<To
   };
 }
 
-function csvHeaders(firstMessage: TopicMessage): string[] {
+function csvHeaders(firstMessage: TopicMessage) {
   const headers: string[] = [...COLUMN_ORDER];
 
   if (firstMessage.compression && !headers.includes('compression')) {
@@ -79,7 +79,7 @@ function csvHeaders(firstMessage: TopicMessage): string[] {
   return headers;
 }
 
-function csvPayloadCell(payload: Payload | undefined): string {
+function csvPayloadCell(payload: Payload | undefined) {
   if (!payload) {
     return '';
   }
@@ -89,7 +89,7 @@ function csvPayloadCell(payload: Payload | undefined): string {
     : String(content).replace(/,/gu, ';');
 }
 
-function csvCell(message: TopicMessage, header: string): string | number | boolean {
+function csvCell(message: TopicMessage, header: string) {
   if (header === 'key') {
     return csvPayloadCell(message.key);
   }
@@ -106,7 +106,7 @@ function csvCell(message: TopicMessage, header: string): string | number | boole
   return messageValue !== undefined && messageValue !== null ? (messageValue as string | number | boolean) : '';
 }
 
-function convertToCSV(messagesToConvert: TopicMessage[]): string {
+function convertToCSV(messagesToConvert: TopicMessage[]) {
   if (messagesToConvert.length === 0) {
     return '';
   }

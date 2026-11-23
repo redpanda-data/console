@@ -110,7 +110,7 @@ type InsertParams = {
   components: ConnectComponentSpec[];
 };
 
-function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: PipelineFlowNode[]): EditTarget | undefined {
+function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: PipelineFlowNode[]) {
   if (node?.caseEditTarget) {
     return node.caseEditTarget;
   }
@@ -135,11 +135,7 @@ function resolveJumpTarget(
   return node.editTarget ? { id: node.id, target: node.editTarget, caseTarget: node.caseEditTarget } : null;
 }
 
-function buildChildItems(
-  selectedId: string,
-  flowNodes: PipelineFlowNode[],
-  lintByNode: Map<string, LintHint[]>
-): InspectorChildItem[] {
+function buildChildItems(selectedId: string, flowNodes: PipelineFlowNode[], lintByNode: Map<string, LintHint[]>) {
   const items: InspectorChildItem[] = [];
   for (const child of flowNodes.filter((n) => n.parentId === selectedId)) {
     const isCaseWrapper = child.editTarget?.kind === 'switchCase';
@@ -163,7 +159,7 @@ function buildChildItems(
   return items;
 }
 
-function componentNameAt(yaml: string, target: EditTarget): string | undefined {
+function componentNameAt(yaml: string, target: EditTarget) {
   const comp = getComponentAt(yaml, target);
   return comp ? componentKeyAt(target, comp) : undefined;
 }
@@ -178,7 +174,7 @@ function wrapAsCase(section: SwitchCaseInsert['section'], step: Record<string, u
   return section === 'output' ? { check: '', output: step } : { check: '', processors: [step] };
 }
 
-function caseStepPath(target: SwitchCaseInsert, caseIndex: number): (string | number)[] {
+function caseStepPath(target: SwitchCaseInsert, caseIndex: number) {
   return target.section === 'output'
     ? [...target.containerPath, caseIndex, 'output']
     : [...target.containerPath, caseIndex, 'processors', 0];
@@ -206,7 +202,7 @@ function insertSwitchCase(
   };
 }
 
-function linkResourceToNode(yaml: string, target: EditTarget, label: string): string {
+function linkResourceToNode(yaml: string, target: EditTarget, label: string) {
   const comp = getComponentAt(yaml, target);
   const name = comp ? firstKey(comp) : undefined;
   const inner = name ? comp?.[name] : undefined;
@@ -414,7 +410,7 @@ function usePendingNodeCommit(yamlContent: string, onYamlChange: (yaml: string) 
   const commitRef = useRef<PendingNodeCommit | null>(null);
   const yamlRef = useRef(yamlContent);
   yamlRef.current = yamlContent;
-  const commitPending = useCallback((): string => {
+  const commitPending = useCallback(() => {
     const pending = commitRef.current;
     if (!pending) {
       return yamlRef.current;
@@ -574,10 +570,7 @@ function useUnsavedNodes(yamlContent: string, isEditing: boolean, flowNodes: Pip
   return { unsavedNodeIds, unsavedNodeList };
 }
 
-function nodeProblems(
-  lintByNode: Map<string, LintHint[]>,
-  flowNodes: PipelineFlowNode[]
-): { list: PipelineProblem[]; mapped: Set<LintHint> } {
+function nodeProblems(lintByNode: Map<string, LintHint[]>, flowNodes: PipelineFlowNode[]) {
   const nodesById = new Map(flowNodes.map((n) => [n.id, n]));
   const mapped = new Set<LintHint>();
   const list: PipelineProblem[] = [];
@@ -619,7 +612,7 @@ function buildProblems(
   return [...list, ...unmapped];
 }
 
-function hintMessagesByNode(hintsByNode: Map<string, LintHint[]>): Map<string, string[]> {
+function hintMessagesByNode(hintsByNode: Map<string, LintHint[]>) {
   return new Map([...hintsByNode].map(([id, hints]) => [id, hints.map((h) => h.hint)]));
 }
 
@@ -817,7 +810,7 @@ function useSetStopCondition(
   const { yamlRef, commitPending } = selection;
   const recordEdit = usePipelineEditorStore((s) => s.recordEdit);
   return useCallback(
-    (nodeId: string, draft: StopConditionDraft | null): boolean => {
+    (nodeId: string, draft: StopConditionDraft | null) => {
       const before = yamlRef.current;
       const yaml = commitPending();
       if (yaml !== before) {
@@ -1045,7 +1038,7 @@ function insertPickerTypes(pending: PendingInsert | null): ConnectComponentType[
   return INSERTABLE_TYPES;
 }
 
-function insertSlotKind(pending: PendingInsert | null): 'input' | 'processor' | 'output' | undefined {
+function insertSlotKind(pending: PendingInsert | null) {
   if (pending?.context === 'slot') {
     return pending.accepts;
   }
@@ -1054,7 +1047,7 @@ function insertSlotKind(pending: PendingInsert | null): 'input' | 'processor' | 
   }
 }
 
-function insertPickerCopy(pending: PendingInsert | null): { title: string; searchPlaceholder: string } {
+function insertPickerCopy(pending: PendingInsert | null) {
   if (pending?.context === 'resourceForNode') {
     return {
       title: `Add ${pending.kind === 'cache' ? 'cache' : 'rate limit'} resource`,

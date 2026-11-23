@@ -180,7 +180,7 @@ export class TopicPage {
     await expect(this.page.getByRole('heading', { name: groupName })).toBeVisible();
   }
 
-  async getConfigurationGroups(): Promise<string[]> {
+  async getConfigurationGroups() {
     return await this.page
       .getByRole('navigation', { name: 'Configuration categories' })
       .getByRole('button')

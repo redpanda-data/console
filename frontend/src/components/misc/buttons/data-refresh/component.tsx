@@ -123,10 +123,7 @@ export const DataRefreshButton = () => {
 
 export default DataRefreshButton;
 
-function getRemainingRefreshSeconds(
-  state: { isActive: boolean; nextRefresh: number },
-  currentRequests: number
-): number {
+function getRemainingRefreshSeconds(state: { isActive: boolean; nextRefresh: number }, currentRequests: number) {
   if (state.isActive && currentRequests === 0) {
     const timeUntilRefresh = state.nextRefresh - Date.now();
     if (timeUntilRefresh > 0) {

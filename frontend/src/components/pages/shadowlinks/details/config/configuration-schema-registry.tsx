@@ -33,7 +33,7 @@ const UNSUPPORTED_FEATURE_POLICY_LABELS: Record<number, string> = {
   [UnsupportedSchemaFeaturePolicy.REMOVE]: 'Remove unsupported features',
 };
 
-const hasCustomCa = (tlsSettings?: UnifiedTLSSettings): boolean => {
+const hasCustomCa = (tlsSettings?: UnifiedTLSSettings) => {
   if (tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
     return Boolean(tlsSettings.tlsSettings.value.caPath);
   }
@@ -43,7 +43,7 @@ const hasCustomCa = (tlsSettings?: UnifiedTLSSettings): boolean => {
   return false;
 };
 
-const hasClientCertificate = (tlsSettings?: UnifiedTLSSettings): boolean => {
+const hasClientCertificate = (tlsSettings?: UnifiedTLSSettings) => {
   if (tlsSettings?.tlsSettings?.case === 'tlsFileSettings') {
     return Boolean(tlsSettings.tlsSettings.value.certPath || tlsSettings.tlsSettings.value.keyPath);
   }
@@ -63,7 +63,7 @@ const formatPasswordStatus = (basicAuth: UnifiedSchemaRegistryBasicAuth) => {
   return 'Not set';
 };
 
-const formatIntervalSeconds = (seconds?: number): string => {
+const formatIntervalSeconds = (seconds?: number) => {
   if (seconds === undefined) {
     return 'Cluster default';
   }

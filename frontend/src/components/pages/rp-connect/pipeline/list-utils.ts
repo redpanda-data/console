@@ -17,7 +17,7 @@ export type ConnectorCount = {
 };
 
 /** ["redpanda", "redpanda", "s3"] → [{ name: "redpanda", count: 2 }, { name: "s3", count: 1 }]. */
-export function aggregateConnectors(names: string[]): ConnectorCount[] {
+export function aggregateConnectors(names: string[]) {
   const byName = new Map<string, ConnectorCount>();
   for (const name of names) {
     const existing = byName.get(name);
@@ -68,7 +68,7 @@ export const PIPELINE_STATE_TABS: PipelineStateTab[] = [
   },
 ];
 
-export function stateFilterValues(tab: PipelineStateTab): string[] | undefined {
+export function stateFilterValues(tab: PipelineStateTab) {
   const values = (tab.states ?? []).map(String);
   return values.length > 0 ? values : undefined;
 }
@@ -77,7 +77,7 @@ const TAB_BY_STATE = new Map<Pipeline_State, PipelineStateTabId>(
   PIPELINE_STATE_TABS.flatMap((tab) => (tab.states ?? []).map((state) => [state, tab.id] as const))
 );
 
-export function countPipelinesPerTab(states: Pipeline_State[]): Record<PipelineStateTabId, number> {
+export function countPipelinesPerTab(states: Pipeline_State[]) {
   const counts: Record<PipelineStateTabId, number> = {
     all: states.length,
     draft: 0,
@@ -106,7 +106,7 @@ export function pipelineListEmptyText({
   hasActiveFilters: boolean;
   activeTab: PipelineStateTabId;
   totalPipelines: number;
-}): string | null {
+}) {
   if (hasActiveFilters) {
     return 'No pipelines match the current filters';
   }
@@ -117,7 +117,7 @@ export function pipelineListEmptyText({
 }
 
 /** Case-insensitive substring match over a pipeline's display name and id. */
-export function matchesNameOrId(search: string, name: string, id: string): boolean {
+export function matchesNameOrId(search: string, name: string, id: string) {
   const needle = search.trim().toLowerCase();
   if (!needle) {
     return true;

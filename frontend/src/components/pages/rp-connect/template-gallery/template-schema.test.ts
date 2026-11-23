@@ -49,9 +49,8 @@ const components = [
   },
 ] as unknown as ConnectComponentSpec[];
 
-const slot = (
-  overrides: Partial<TemplateSlot> & Pick<TemplateSlot, 'id' | 'kind' | 'section' | 'label'>
-): TemplateSlot => ({ ...overrides }) as TemplateSlot;
+const slot = (overrides: Partial<TemplateSlot> & Pick<TemplateSlot, 'id' | 'kind' | 'section' | 'label'>) =>
+  ({ ...overrides }) as TemplateSlot;
 
 const buildTemplate = (slots: TemplateSlot[]): PipelineTemplate => ({
   id: 'postgres-cdc-to-redpanda',

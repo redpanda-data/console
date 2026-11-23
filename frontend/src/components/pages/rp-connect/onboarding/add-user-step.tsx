@@ -544,7 +544,7 @@ async function triggerUserStepSubmit({
   authMethod: AuthenticationMethodType;
   submit: SubmitUser;
   signal?: AbortSignal;
-}): Promise<UserStepSubmissionResult> {
+}) {
   if (signal?.aborted) {
     return { success: false };
   }

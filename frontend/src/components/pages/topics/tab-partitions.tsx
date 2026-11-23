@@ -37,10 +37,7 @@ type TopicPartitionsProps = { topic: Topic };
 
 const EMPTY_PARTITIONS: Partition[] = [];
 
-function findPartitionIds(
-  entries: { topicName: string; partitionIds: number[] }[] | undefined,
-  topicName: string
-): number[] | undefined {
+function findPartitionIds(entries: { topicName: string; partitionIds: number[] }[] | undefined, topicName: string) {
   return (entries ?? []).find((entry) => entry.topicName === topicName)?.partitionIds;
 }
 

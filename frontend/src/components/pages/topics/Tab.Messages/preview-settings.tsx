@@ -38,7 +38,7 @@ import { Label, OptionGroup, toSafeString } from '../../../../utils/tsx-utils';
 import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import { SingleSelect } from '../../../misc/select';
 
-function getFreeId(tags: PreviewTagV2[]): string {
+function getFreeId(tags: PreviewTagV2[]) {
   const ids = new Set(tags.map((tag) => tag.id));
   let i = 1;
   while (ids.has(String(i))) {
@@ -448,7 +448,7 @@ function readPlainSegment(str: string, pos: number): PathStep {
   return { next: end === -1 ? str.length : end, segment }; // continue after the end
 }
 
-function indexOfMany(str: string, matches: string[], position: number): number {
+function indexOfMany(str: string, matches: string[], position: number) {
   const indices: number[] = matches.map((_) => -1);
   // for every string we want to find, record the index of its first occurance
   for (let i = 0; i < matches.length; i++) {
@@ -547,13 +547,13 @@ if (IsDev) {
   }
 }
 
-function wildcardToRegex(pattern: string): RegExp {
+function wildcardToRegex(pattern: string) {
   const components = pattern.split('*'); // split by '*' symbol
   const escapedComponents = components.map(regexEscape); // ensure the components don't contain regex special characters
   const joined = escapedComponents.join('.*'); // join components, adding back the wildcard
   return new RegExp(`^${joined}$`, 'u');
 }
 
-function regexEscape(regexPattern: string): string {
+function regexEscape(regexPattern: string) {
   return regexPattern.replace(/[/\\^$*+?.()|[\]{}]/gu, '\\$&');
 }

@@ -68,7 +68,7 @@ const FLOW_META_BLOCK_PAD = 12;
 const FLOW_CONDITION_ROW_H = 30;
 export const FLOW_STOP_ROW_H = 30;
 
-function labelAndMetaRowsHeight(node: PipelineFlowNode, dims: FlowDims): number {
+function labelAndMetaRowsHeight(node: PipelineFlowNode, dims: FlowDims) {
   const metaRows = Math.min(
     (node.meta?.length ?? 0) +
       (node.topics && node.topics.length > 0 ? 1 : 0) +
@@ -89,7 +89,7 @@ function labelAndMetaRowsHeight(node: PipelineFlowNode, dims: FlowDims): number 
   return h;
 }
 
-function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
+function leafCardHeight(node: PipelineFlowNode, dims: FlowDims) {
   if (node.label === 'none') {
     return FLOW_PLACEHOLDER_LEAF_H;
   }
@@ -97,11 +97,11 @@ function leafCardHeight(node: PipelineFlowNode, dims: FlowDims): number {
   return dims.leafBaseH + conditionRowH + labelAndMetaRowsHeight(node, dims);
 }
 
-function reconverges(node: PipelineFlowNode): boolean {
+function reconverges(node: PipelineFlowNode) {
   return node.childFlow === 'parallel' && node.section === 'processor';
 }
 
-function fanSides(node: PipelineFlowNode): { out: boolean; in: boolean } {
+function fanSides(node: PipelineFlowNode) {
   return {
     out: node.childFlow === 'parallel' && node.section !== 'input',
     // Inputs fan in only when parallel (broker); a `sequence` renders as a sequential chain.
@@ -210,7 +210,7 @@ type GraphCtx = {
   editable: boolean;
 };
 
-function addGraphCard(ctx: GraphCtx, node: PipelineFlowNode): string {
+function addGraphCard(ctx: GraphCtx, node: PipelineFlowNode) {
   ctx.gnodes.push({ id: node.id, kind: 'card', node, w: ctx.dims.cardW, h: leafCardHeight(node, ctx.dims) });
   return node.id;
 }
@@ -233,7 +233,7 @@ function addGraphSplit(
   ctx: GraphCtx,
   node: PipelineFlowNode,
   footerAdd?: { payload: FlowInsertPayload; label: string }
-): string {
+) {
   ctx.gnodes.push({
     id: node.id,
     kind: 'split',
@@ -249,7 +249,7 @@ function addGraphSplit(
   });
   return node.id;
 }
-function addGraphMerge(ctx: GraphCtx, id: string): string {
+function addGraphMerge(ctx: GraphCtx, id: string) {
   ctx.gnodes.push({ id, kind: 'merge', w: GRAPH_MERGE_W, h: GRAPH_MERGE_H });
   return id;
 }
@@ -276,13 +276,13 @@ function branchEdgeInfo(owner: PipelineFlowNode): { type: GraphEdgeType; label?:
   return { type: 'flow' };
 }
 
-function fanUnwrapsChildren(node: PipelineFlowNode): boolean {
+function fanUnwrapsChildren(node: PipelineFlowNode) {
   return CASE_CONTAINER_LABELS.has(node.label) && node.section === 'processor';
 }
 
 type FanLane = { owner: PipelineFlowNode; bodySteps: PipelineFlowNode[] };
 
-function caseEntrySteps(lane: FanLane): PipelineFlowNode[] {
+function caseEntrySteps(lane: FanLane) {
   const [first, ...rest] = lane.bodySteps;
   const o = lane.owner;
   return [
@@ -457,12 +457,12 @@ const isTryStep = (n?: PipelineFlowNode) => n?.kind === 'group' && n.label === '
 const isCatchStep = (n?: PipelineFlowNode) => n?.kind === 'group' && n.label === 'catch';
 
 // unparseable entries are skipped, so on-edge inserts must carry the YAML index, not a rendered count.
-const topLevelProcessorIndex = (n?: PipelineFlowNode): number | undefined =>
+const topLevelProcessorIndex = (n?: PipelineFlowNode) =>
   n?.editTarget?.kind === 'processor' ? n.editTarget.index : undefined;
 
 type SequenceUnit = [PipelineFlowNode] | [PipelineFlowNode, PipelineFlowNode];
 
-function sequenceUnits(steps: PipelineFlowNode[]): SequenceUnit[] {
+function sequenceUnits(steps: PipelineFlowNode[]) {
   const units: SequenceUnit[] = [];
   let i = 0;
   while (i < steps.length) {
@@ -477,7 +477,7 @@ function emitSequenceUnit([step, catchStep]: SequenceUnit, ctx: GraphCtx): Graph
   return catchStep ? emitTryCatch(step, catchStep, ctx) : emitGraphStep(step, ctx);
 }
 
-function lastProcessorIndexAfter(unit: SequenceUnit, lastProcessorIndex: number): number {
+function lastProcessorIndexAfter(unit: SequenceUnit, lastProcessorIndex: number) {
   return unit.reduce((index, step) => topLevelProcessorIndex(step) ?? index, lastProcessorIndex);
 }
 
@@ -516,7 +516,7 @@ function emitSequence(steps: PipelineFlowNode[], ctx: GraphCtx, topLevel = false
   return chain.entry !== undefined && chain.exit !== undefined ? { entry: chain.entry, exit: chain.exit } : null;
 }
 
-function buildPipelineGraph(nodes: PipelineFlowNode[], editable: boolean): GraphCtx {
+function buildPipelineGraph(nodes: PipelineFlowNode[], editable: boolean) {
   const childrenMap = buildChildrenMap(nodes);
   const ctx: GraphCtx = {
     gnodes: [],
@@ -580,11 +580,7 @@ function collectResourceRefs(
 
 type ResourcePlacement = { resource: PipelineFlowNode; x: number; h: number };
 
-function placeResources(
-  resources: PipelineFlowNode[],
-  desiredX: Map<string, number>,
-  startX: number
-): ResourcePlacement[] {
+function placeResources(resources: PipelineFlowNode[], desiredX: Map<string, number>, startX: number) {
   const ordered = [
     ...resources
       .filter((r) => desiredX.has(r.id))
@@ -616,7 +612,7 @@ function resourceCardNode({ resource, x, h }: ResourcePlacement, laneY: number):
 
 type CableLanes = { busTop: number; laneY: number };
 
-function resourceCablePoints(user: NodeBox, endX: number, busY: number, laneY: number): { x: number; y: number }[] {
+function resourceCablePoints(user: NodeBox, endX: number, busY: number, laneY: number) {
   const startX = user.x - user.w / 2 + HANDLE_X;
   const startY = user.y + user.h / 2;
   const toLeft = endX < user.x;
@@ -660,7 +656,7 @@ function placeResourceDependencies(
   rfEdges: Edge[],
   boxes: Map<string, NodeBox>,
   bounds: { minX: number; maxX: number; maxY: number }
-): { right: number; bottom: number } {
+) {
   const resources = sectionChildren(nodes, buildChildrenMap(nodes), 'resource');
   if (resources.length === 0) {
     return { right: bounds.maxX, bottom: bounds.maxY };
@@ -676,11 +672,7 @@ function placeResourceDependencies(
   };
 }
 
-function placeGraphInserts(
-  ctx: GraphCtx,
-  rfNodes: Node[],
-  boxes: Map<string, NodeBox>
-): { maxX: number; maxY: number } {
+function placeGraphInserts(ctx: GraphCtx, rfNodes: Node[], boxes: Map<string, NodeBox>) {
   let maxX = Number.NEGATIVE_INFINITY;
   let maxY = Number.NEGATIVE_INFINITY;
   for (const ins of ctx.inserts) {
@@ -716,7 +708,7 @@ const GRAPH_EDGE_TONE: Record<GraphEdgeType, 'primary' | 'muted' | 'error'> = {
   error: 'error',
 };
 
-function predecessorMap(gedges: GraphEdgeSpec[]): Map<string, string[]> {
+function predecessorMap(gedges: GraphEdgeSpec[]) {
   const predecessors = new Map<string, string[]>();
   for (const edge of gedges) {
     const list = predecessors.get(edge.to);
@@ -729,11 +721,11 @@ function predecessorMap(gedges: GraphEdgeSpec[]): Map<string, string[]> {
   return predecessors;
 }
 
-function forwardRanks(gnodes: GraphNodeSpec[], gedges: GraphEdgeSpec[]): Map<string, number> {
+function forwardRanks(gnodes: GraphNodeSpec[], gedges: GraphEdgeSpec[]) {
   const predecessors = predecessorMap(gedges);
   const rank = new Map<string, number>();
   const inProgress = new Set<string>();
-  const rankOf = (id: string): number => {
+  const rankOf = (id: string) => {
     const cached = rank.get(id);
     if (cached !== undefined) {
       return cached;

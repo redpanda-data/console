@@ -20,7 +20,7 @@ import { uiState } from '../../state/ui-state';
 import { getBasePath } from '../../utils/env';
 import fetchWithTimeout from '../../utils/fetch-with-timeout';
 
-function readOAuthError(searchParams: URLSearchParams): string {
+function readOAuthError(searchParams: URLSearchParams) {
   const error = searchParams.get('error');
   const description = searchParams.get('error_description');
   return [error ? `Error: ${error}` : '', description ? `Description: ${description}` : '']
@@ -29,7 +29,7 @@ function readOAuthError(searchParams: URLSearchParams): string {
     .trim();
 }
 
-async function fetchLoginCallback(provider: string, query: string): Promise<void> {
+async function fetchLoginCallback(provider: string, query: string) {
   const url = `./auth/callbacks/${provider}${query}`;
 
   const response = await fetchWithTimeout(url, 10 * 1000, {

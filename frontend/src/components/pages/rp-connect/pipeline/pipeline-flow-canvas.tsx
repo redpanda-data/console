@@ -48,7 +48,7 @@ import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;
 
-function useLeadingDebouncedValue<T>(value: T, delay: number): T {
+function useLeadingDebouncedValue<T>(value: T, delay: number) {
   const [settled, setSettled] = useState(value);
   const lastAppliedAt = useRef(0);
   useEffect(() => {
@@ -71,7 +71,7 @@ function useLeadingDebouncedValue<T>(value: T, delay: number): T {
 }
 const PAN_PADDING = 240;
 
-const animMs = (ms: number): number =>
+const animMs = (ms: number) =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : ms;
 
 const reportViewportMoveFailure = (error: unknown) => {
@@ -82,7 +82,7 @@ const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
 const ABSOLUTE_MIN_ZOOM = 0.05;
 
-function fitMinZoom(graphW: number, graphH: number, paneW: number, paneH: number): number {
+function fitMinZoom(graphW: number, graphH: number, paneW: number, paneH: number) {
   if (graphW <= 0 || graphH <= 0 || paneW <= 0 || paneH <= 0) {
     return MIN_ZOOM;
   }
@@ -91,7 +91,7 @@ function fitMinZoom(graphW: number, graphH: number, paneW: number, paneH: number
 }
 
 // Bounding box of top-level nodes at their layout size; measured (not assumed from origin) since
-function contentBounds(nodes: Node[]): ScopeBounds {
+function contentBounds(nodes: Node[]) {
   const layoutSizeOnly: MeasuredById = new Map();
   const box = nodes
     .filter((node) => !node.parentId)
@@ -104,9 +104,9 @@ const MINIMAP_MAX_INNER_H = 168;
 const MINIMAP_PAD = 2;
 const MINIMAP_BORDER = 1;
 
-const clampValue = (value: number, lo: number, hi: number): number => Math.min(Math.max(value, lo), hi);
+const clampValue = (value: number, lo: number, hi: number) => Math.min(Math.max(value, lo), hi);
 
-function miniMapNodeColor(node: Node): string {
+function miniMapNodeColor(node: Node) {
   return sectionAccent((node.data as FlowCardData | undefined)?.section) ?? 'transparent';
 }
 
@@ -186,7 +186,7 @@ function miniMapLayout(
   return { viewport, ext, canPanX, canPanY, projection, view };
 }
 
-function miniMapPanCentre(layout: MiniMapLayout, px: number, py: number): { cx: number; cy: number } {
+function miniMapPanCentre(layout: MiniMapLayout, px: number, py: number) {
   const { ext, viewport: vp, projection, canPanX, canPanY } = layout;
   const fx = (px - projection.offsetX) / projection.scaleX;
   const fy = (py - projection.offsetY) / projection.scaleY;
@@ -281,7 +281,7 @@ export function PipelineMiniMap({ nodes, translateExtent }: { nodes: Node[]; tra
 const SELECTION_REVEAL_MARGIN = 32;
 const RAIL_SETTLE_MS = 240;
 
-function nodeInScope(node: Node, scope: ReadonlySet<string>): boolean {
+function nodeInScope(node: Node, scope: ReadonlySet<string>) {
   return scope.has(node.id) || scope.has((node.data as FlowCardData).ownerId ?? ' ');
 }
 
@@ -289,7 +289,7 @@ function focusDimNodes(
   rfNodes: Node[],
   selectedNodeId: string | undefined,
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined
-): Node[] {
+) {
   const selectedNode = selectedNodeId ? rfNodes.find((n) => n.id === selectedNodeId) : undefined;
   const focus = selectedNode?.type === 'flowSplit' ? scopeOf(selectedNodeId) : undefined;
   if (!focus) {
@@ -305,7 +305,7 @@ function focusDimNodes(
   );
 }
 
-const staleFlowClass = (stale: boolean): string => `transition-opacity duration-200 ${stale ? 'opacity-60' : ''}`;
+const staleFlowClass = (stale: boolean) => `transition-opacity duration-200 ${stale ? 'opacity-60' : ''}`;
 
 const CANVAS_NOTICE_POSITION = 'absolute top-3 left-1/2 z-20 -translate-x-1/2';
 
@@ -348,13 +348,13 @@ function useZoomCursor(mode: ZoomMode, ref: RefObject<HTMLDivElement | null>) {
   }, [mode, ref]);
 }
 
-const canPanCanvas = (mode: ZoomMode): boolean => mode === null;
+const canPanCanvas = (mode: ZoomMode) => mode === null;
 
 function heldZoomMode(zDown: boolean, alt: boolean): ZoomMode {
   return zDown ? (alt ? 'out' : 'in') : null;
 }
 
-const isTypingTarget = (target: EventTarget | null): boolean =>
+const isTypingTarget = (target: EventTarget | null) =>
   Boolean(
     (target as HTMLElement | null)?.closest(
       'input, textarea, [contenteditable="true"], [data-slot="popover-content"], .monaco-editor'
@@ -499,11 +499,7 @@ function FocusNode({ nodeId, token }: { nodeId?: string; token?: number }) {
   return null;
 }
 
-function revealPanDx(
-  bounds: { x: number; width: number },
-  viewport: { x: number; zoom: number },
-  paneWidth: number
-): number {
+function revealPanDx(bounds: { x: number; width: number }, viewport: { x: number; zoom: number }, paneWidth: number) {
   const screenLeft = bounds.x * viewport.zoom + viewport.x;
   const screenRight = (bounds.x + bounds.width) * viewport.zoom + viewport.x;
   if (screenRight > paneWidth - SELECTION_REVEAL_MARGIN) {
@@ -549,7 +545,7 @@ const SCOPE_REGION_PAD = 6;
 const SCOPE_REGION_TOP_PAD = 6;
 const SCOPE_REGION_NEST_STEP = 4;
 
-function constructAccent(node?: Node): string {
+function constructAccent(node?: Node) {
   const d = node?.data as FlowCardData | undefined;
   return d?.isErrorPath ? 'var(--color-destructive)' : (sectionAccent(d?.section) ?? 'var(--color-primary)');
 }
@@ -566,7 +562,7 @@ function nodeRect(n: Node, measuredById: MeasuredById): ScopeBounds {
   return { minX: n.position.x, minY: n.position.y, maxX: n.position.x + w, maxY: n.position.y + h };
 }
 
-const growBounds = (box: ScopeBounds | null, r: ScopeBounds): ScopeBounds =>
+const growBounds = (box: ScopeBounds | null, r: ScopeBounds) =>
   box
     ? {
         minX: Math.min(box.minX, r.minX),
@@ -624,12 +620,12 @@ type RegionGeometry = {
 
 type ScopeArm = { side: 'left' | 'right'; outerX: number; top: number; bottom: number };
 
-function entrySide(entry: ScopeBounds, body: ScopeBounds): 'left' | 'right' | undefined {
+function entrySide(entry: ScopeBounds, body: ScopeBounds) {
   return entry.maxX <= body.minX ? 'left' : entry.minX >= body.maxX ? 'right' : undefined;
 }
 
 // sits clear above/below it; otherwise clamped to the body so it stays thin and can't reach into a sibling.
-function armSpan(entry: ScopeBounds, pb: ScopeBounds, pad: number): { top: number; bottom: number } {
+function armSpan(entry: ScopeBounds, pb: ScopeBounds, pad: number) {
   const top = entry.minY - pad;
   const bottom = entry.maxY + pad;
   if (bottom < pb.minY) {
@@ -658,7 +654,7 @@ function armRect(arm: ScopeArm, pb: ScopeBounds): ScopeBounds {
     : { minX: pb.maxX, minY: arm.top, maxX: arm.outerX, maxY: arm.bottom };
 }
 
-function regionPath(pb: ScopeBounds, arm?: ScopeArm): Point[] {
+function regionPath(pb: ScopeBounds, arm?: ScopeArm) {
   const pts: Point[] = [
     { x: pb.minX, y: pb.minY },
     { x: pb.maxX, y: pb.minY },
@@ -1063,7 +1059,7 @@ type EdgeActionData = {
   selectTarget?: EditTarget;
 };
 
-function withInsertHandler(edge: Edge, { onInsert, onSlotInsert }: DecorateEdgeOptions): Edge {
+function withInsertHandler(edge: Edge, { onInsert, onSlotInsert }: DecorateEdgeOptions) {
   const edgeData = edge.data as EdgeActionData | undefined;
   const insertIndex = edgeData?.insertIndex;
   const slotPayload = edgeData?.slotPayload;
@@ -1076,7 +1072,7 @@ function withInsertHandler(edge: Edge, { onInsert, onSlotInsert }: DecorateEdgeO
   return edge;
 }
 
-function withLabelClick(edge: Edge, onSelectNode: DecorateEdgeOptions['onSelectNode']): Edge {
+function withLabelClick(edge: Edge, onSelectNode: DecorateEdgeOptions['onSelectNode']) {
   const edgeData = edge.data as EdgeActionData | undefined;
   if (!(onSelectNode && edgeData?.selectId && edgeData.selectTarget)) {
     return edge;
@@ -1177,7 +1173,7 @@ function layoutCanvasGraph(nodes: PipelineFlowNode[], editable: boolean) {
   };
 }
 
-function tryCatchPairsOf(layoutEdges: Edge[]): Map<string, string> {
+function tryCatchPairsOf(layoutEdges: Edge[]) {
   const pairs = new Map<string, string>();
   for (const edge of layoutEdges) {
     if (edge.id.startsWith('error-')) {
@@ -1267,7 +1263,7 @@ function useDecoratedNodes({
   unsavedNodeIds,
   flashNodeIds,
   flashToken,
-}: DecoratedNodesOptions): Node[] {
+}: DecoratedNodesOptions) {
   const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(new Set());
   const toggleCollapse = useCallback((nodeId: string) => {
     setCollapsedIds((prev) => {

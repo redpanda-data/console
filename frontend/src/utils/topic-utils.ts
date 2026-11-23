@@ -46,7 +46,7 @@ export const sizeFactors = {
  * @param unit The time unit
  * @returns Milliseconds (-1 for infinite/default)
  */
-export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit | string): number {
+export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit | string) {
   if (unit === 'infinite' || unit === 'default') {
     return -1;
   }
@@ -70,7 +70,7 @@ export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit 
  * @param unit The size unit
  * @returns Bytes (-1 for infinite/default)
  */
-export function convertRetentionSizeToBytes(value: number, unit: RetentionSizeUnit | string): number {
+export function convertRetentionSizeToBytes(value: number, unit: RetentionSizeUnit | string) {
   if (unit === 'infinite' || unit === 'default') {
     return -1;
   }

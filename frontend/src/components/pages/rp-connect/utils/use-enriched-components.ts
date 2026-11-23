@@ -24,7 +24,7 @@ let lastEnrichment: {
   result: ConnectComponentSpec[];
 } | null = null;
 
-function getEnrichedComponents(componentList: ComponentList, configSchema: string | undefined): ConnectComponentSpec[] {
+function getEnrichedComponents(componentList: ComponentList, configSchema: string | undefined) {
   if (lastEnrichment?.componentList === componentList && lastEnrichment?.configSchema === configSchema) {
     return lastEnrichment.result;
   }
@@ -40,11 +40,7 @@ function getEnrichedComponents(componentList: ComponentList, configSchema: strin
  * enrichment stamps once it settles; until then `checkRequired` runs in its degraded proto-flag mode.
  * Consumers needing full fidelity (template forms computing defaults once) can gate on `isLoading`.
  */
-export function useEnrichedComponents(): {
-  components: ConnectComponentSpec[];
-  componentList: ComponentList | undefined;
-  isLoading: boolean;
-} {
+export function useEnrichedComponents() {
   const { data: componentListResponse, isLoading: isComponentListLoading } = useListComponentsQuery();
   const { data: schemaResponse, isLoading: isSchemaLoading } = useGetPipelineServiceConfigSchemaQuery();
 

@@ -2,7 +2,7 @@
  * Generates a random password of the given length using cryptographically
  * secure random values.
  */
-export function generatePassword(length: number, allowSpecialChars: boolean): string {
+export function generatePassword(length: number, allowSpecialChars: boolean) {
   if (length <= 0) {
     return '';
   }

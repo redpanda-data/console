@@ -536,7 +536,7 @@ function formConfigEntries(values: CreateTopicFormValues): [string, string | num
   ];
 }
 
-function tryGetBrokerConfig(configName: string): string | undefined {
+function tryGetBrokerConfig(configName: string) {
   return (
     api.clusterInfo?.brokers?.find(() => true)?.config.configs?.find((x) => x.name === configName)?.value ?? undefined
   );

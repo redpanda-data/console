@@ -54,7 +54,7 @@ const NOISE_FIELDS = new Set([
   'client_secret',
 ]);
 
-export function truncate(value: string, max = MAX_VALUE_LEN): string {
+export function truncate(value: string, max = MAX_VALUE_LEN) {
   const trimmed = value.replace(/\s+/gu, ' ').trim();
   return trimmed.length > max ? `${trimmed.slice(0, max - 1)}…` : trimmed;
 }
@@ -213,7 +213,7 @@ function pushField(meta: NodeMetaEntry[], config: Record<string, unknown>, key: 
   }
 }
 
-function salientFields(record: Record<string, unknown>): NodeMetaEntry[] {
+function salientFields(record: Record<string, unknown>) {
   const meta: NodeMetaEntry[] = [];
   for (const name of SALIENT_FIELD_NAMES) {
     if (meta.length >= 2) {
@@ -226,7 +226,7 @@ function salientFields(record: Record<string, unknown>): NodeMetaEntry[] {
   return meta;
 }
 
-function firstScalarFields(record: Record<string, unknown>): NodeMetaEntry[] {
+function firstScalarFields(record: Record<string, unknown>) {
   const meta: NodeMetaEntry[] = [];
   for (const [key, value] of Object.entries(record)) {
     if (meta.length >= 2) {
@@ -241,12 +241,12 @@ function firstScalarFields(record: Record<string, unknown>): NodeMetaEntry[] {
 }
 
 // Fallback when no preferred field matched: salient-named scalars first, then the first couple of
-function fallbackFields(record: Record<string, unknown>): NodeMetaEntry[] {
+function fallbackFields(record: Record<string, unknown>) {
   const salient = salientFields(record);
   return salient.length > 0 ? salient : firstScalarFields(record);
 }
 
-function preferredFields(componentName: string, record: Record<string, unknown>): NodeMetaEntry[] {
+function preferredFields(componentName: string, record: Record<string, unknown>) {
   const meta: NodeMetaEntry[] = [];
   for (const key of PREFERRED_FIELDS[componentName] ?? []) {
     if (meta.length >= MAX_META) {
@@ -261,7 +261,7 @@ function preferredFields(componentName: string, record: Record<string, unknown>)
  * Derive up to a few of the most relevant config values for a node card. Deterministic.
  * `config` is the component's inner config; for mapping/bloblang it can be a bare string.
  */
-export function summarizeComponent(componentName: string, config: unknown): NodeMetaEntry[] {
+export function summarizeComponent(componentName: string, config: unknown) {
   if (typeof config === 'string') {
     return config.trim() ? [{ label: 'expr', value: truncate(config.split('\n')[0]) }] : [];
   }

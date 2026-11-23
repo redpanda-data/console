@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 import { FENCE_PHASE_LABEL, type FencePhase } from './cluster-fence-model';
 
 /** The current time, refreshed on an interval so time-in-state labels keep counting. */
-export const useNow = (intervalMs = 30_000): number => {
+export const useNow = (intervalMs = 30_000) => {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), intervalMs);

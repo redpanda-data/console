@@ -21,7 +21,7 @@ const PAGE_EXPANDED_ATTR = 'data-page-expanded';
 
 const clearPageExpanded = () => document.documentElement.removeAttribute(PAGE_EXPANDED_ATTR);
 
-const readStoredExpanded = (storageKey: string): boolean => {
+const readStoredExpanded = (storageKey: string) => {
   try {
     return localStorage.getItem(storageKey) === 'full';
   } catch {

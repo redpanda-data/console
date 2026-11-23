@@ -149,7 +149,7 @@ const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) 
   setIsTemplateDialogOpen: (open) => set({ isTemplateDialogOpen: open }),
 });
 
-export function createPipelineEditorStore(overrides?: Partial<PipelineEditorStore>): StoreApi<PipelineEditorStore> {
+export function createPipelineEditorStore(overrides?: Partial<PipelineEditorStore>) {
   return createStore<PipelineEditorStore>()((...args) => ({
     ...createDocumentSlice(...args),
     ...createUiSlice(...args),
@@ -175,7 +175,7 @@ export function PipelineEditorProvider({
   return createElement(PipelineEditorContext.Provider, { value: storeRef.current }, children);
 }
 
-function usePipelineEditorStoreContext(): StoreApi<PipelineEditorStore> {
+function usePipelineEditorStoreContext() {
   const store = useContext(PipelineEditorContext);
   if (!store) {
     throw new Error('usePipelineEditorStore must be used within a PipelineEditorProvider');
@@ -183,10 +183,10 @@ function usePipelineEditorStoreContext(): StoreApi<PipelineEditorStore> {
   return store;
 }
 
-export function usePipelineEditorStore<T>(selector: (state: PipelineEditorStore) => T): T {
+export function usePipelineEditorStore<T>(selector: (state: PipelineEditorStore) => T) {
   return useStore(usePipelineEditorStoreContext(), selector);
 }
 
-export function usePipelineEditorStoreApi(): StoreApi<PipelineEditorStore> {
+export function usePipelineEditorStoreApi() {
   return usePipelineEditorStoreContext();
 }

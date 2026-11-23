@@ -53,11 +53,7 @@ type BrokerReplicaCount = {
 
 export type ApiData = { brokers: Broker[]; topics: Topic[]; topicPartitions: Map<string, Partition[]> };
 
-function computeReassignments(
-  apiData: ApiData,
-  selectedTopicPartitions: TopicPartitions[],
-  targetBrokers: Broker[]
-): TopicAssignments {
+function computeReassignments(apiData: ApiData, selectedTopicPartitions: TopicPartitions[], targetBrokers: Broker[]) {
   checkArguments(apiData, selectedTopicPartitions, targetBrokers);
 
   // Track information like used disk space per broker, so we extend each broker with some metadata
@@ -83,7 +79,7 @@ function computeReassignments(
   return resultAssignments;
 }
 
-function exBrokerById(allExBrokers: ExBroker[], brokerId: number): ExBroker {
+function exBrokerById(allExBrokers: ExBroker[], brokerId: number) {
   const exBroker = allExBrokers.find((x) => x.brokerId === brokerId);
   if (exBroker === undefined) {
     throw new Error(`cannot find ExBroker with brokerId ${brokerId}`);
@@ -91,7 +87,7 @@ function exBrokerById(allExBrokers: ExBroker[], brokerId: number): ExBroker {
   return exBroker;
 }
 
-function createExBrokers(apiData: ApiData, selectedTopicPartitions: TopicPartitions[]): ExBroker[] {
+function createExBrokers(apiData: ApiData, selectedTopicPartitions: TopicPartitions[]) {
   const allExBrokers = apiData.brokers.map((b) => new ExBroker(b));
 
   // Recompute broker stats:
@@ -106,7 +102,7 @@ function createExBrokers(apiData: ApiData, selectedTopicPartitions: TopicPartiti
 }
 
 /** An entry without brokers for every selected partition, keyed by topic name and partition id. */
-function createEmptyAssignments(selectedTopicPartitions: TopicPartitions[]): TopicAssignments {
+function createEmptyAssignments(selectedTopicPartitions: TopicPartitions[]) {
   const resultAssignments: TopicAssignments = {};
   for (const t of selectedTopicPartitions) {
     resultAssignments[t.topic.topicName] = {};
@@ -148,7 +144,7 @@ function optimizeLeaders(
   resultAssignments: TopicAssignments,
   allExBrokers: ExBroker[],
   apiData: ApiData
-): LeaderOptimizationRound[] {
+) {
   const optimizationLog: LeaderOptimizationRound[] = [];
   for (let round = 0; round < 10; round++) {
     const { range: skewBefore } = calcRange(allExBrokers, (x) => x.plannedLeader);
@@ -301,7 +297,7 @@ const CANDIDATE_CRITERIA: CandidateCriterion[] = [
   (a, b) => preferLower(a.broker.plannedSize, b.broker.plannedSize),
 ];
 
-function compareCandidates(a: BrokerReplicaCount, b: BrokerReplicaCount, ctx: CandidateContext): number {
+function compareCandidates(a: BrokerReplicaCount, b: BrokerReplicaCount, ctx: CandidateContext) {
   for (const criterion of CANDIDATE_CRITERIA) {
     const order = criterion(a, b, ctx);
     if (order !== 0) {
@@ -337,7 +333,7 @@ function computeReplicaAssignments(
   replicas: number,
   brokerReplicaCount: BrokerReplicaCount[],
   allBrokers: ExBroker[]
-): ExBroker[] {
+) {
   // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
   const sourceBrokers = partition.replicas.map((id) => allBrokers.first((b) => b.brokerId === id)!);
   if (sourceBrokers.any((x) => x === null)) {
@@ -389,7 +385,7 @@ function balancePartitionLeader(
   p: Partition,
   allExBrokers: ExBroker[],
   apiData: ApiData
-): boolean {
+) {
   // map plain brokers to extended brokers (those with attached tracking data)
   const newBrokers = assignment.brokers.map(
     // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
@@ -542,13 +538,13 @@ class ExBroker implements Broker {
   assignedSize = 0;
   assignedLeader = 0;
 
-  get plannedReplicas(): number {
+  get plannedReplicas() {
     return this.initialReplicas + this.assignedReplicas;
   }
-  get plannedSize(): number {
+  get plannedSize() {
     return this.initialSize + this.assignedSize;
   }
-  get plannedLeader(): number {
+  get plannedLeader() {
     return this.initialLeader + this.assignedLeader;
   }
 
@@ -600,7 +596,7 @@ class ExBroker implements Broker {
 }
 
 /** Every partition of every topic, for the usage of broker `brokerId`; throws if a topic's partitions are unknown. */
-function allTopicPartitions(topicPartitions: ApiData['topicPartitions'], brokerId: number): Partition[] {
+function allTopicPartitions(topicPartitions: ApiData['topicPartitions'], brokerId: number) {
   return [...topicPartitions].flatMap(([topic, partitions]) => {
     if (partitions === null) {
       throw new Error(
@@ -617,7 +613,7 @@ type BrokerUsage = { replicas: number; size: number; leader: number };
  * The replicas, leaderships and log dir size that `partitions` place on broker `brokerId`.
  * `fallbackSize` sizes a hosted replica that has no log dir entry for the broker.
  */
-function brokerUsage(partitions: Partition[], brokerId: number, fallbackSize: (p: Partition) => number): BrokerUsage {
+function brokerUsage(partitions: Partition[], brokerId: number, fallbackSize: (p: Partition) => number) {
   const usage: BrokerUsage = { replicas: 0, size: 0, leader: 0 };
   for (const p of partitions) {
     const replicasOnBroker = p.replicas.count((x) => x === brokerId);

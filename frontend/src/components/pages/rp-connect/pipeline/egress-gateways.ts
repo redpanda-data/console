@@ -16,7 +16,7 @@ import {
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/serverless_egress_gateway_pb';
 import { create } from '@bufbuild/protobuf';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
-import { type Egress, EgressSchema, type Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { EgressSchema, type Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 /** Gateways come from the controlplane API, which the Console reaches only embedded in Cloud UI. */
 export const isEgressGatewayPickerEnabled = () =>
@@ -71,7 +71,7 @@ const sameIds = (a: string[], b: string[]) => a.length === b.length && a.every((
  * The egress a save sends: unset when the selection matches what is stored, which leaves the stored
  * gateways alone; otherwise the whole selection, empty to remove them.
  */
-export const egressWrite = (selectedIds: string[], storedIds: string[]): Egress | undefined =>
+export const egressWrite = (selectedIds: string[], storedIds: string[]) =>
   sameIds(selectedIds, storedIds)
     ? undefined
     : create(EgressSchema, { gatewayRefs: selectedIds.map((id) => ({ id })) });

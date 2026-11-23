@@ -11,26 +11,20 @@
 
 import { getUpdateValuesForSchemaRegistry } from './shadowlink-edit-utils';
 import { describe, expect, test } from 'bun:test';
-import {
-  type FormValues,
-  initialValues,
-  SCHEMA_REGISTRY_MODE,
-  type SchemaRegistryFormValues,
-  SR_AUTH_METHOD,
-} from '../create/model';
+import { initialValues, SCHEMA_REGISTRY_MODE, type SchemaRegistryFormValues, SR_AUTH_METHOD } from '../create/model';
 
 const SR_MASK_PATH = 'configurations.schema_registry_sync_options';
 
-const noneValues = (): FormValues => structuredClone(initialValues);
+const noneValues = () => structuredClone(initialValues);
 
-const topicValues = (): FormValues => {
+const topicValues = () => {
   const values = structuredClone(initialValues);
   values.enableSchemaRegistrySync = true;
   values.schemaRegistry.mode = SCHEMA_REGISTRY_MODE.TOPIC;
   return values;
 };
 
-const apiValues = (overrides: Partial<SchemaRegistryFormValues> = {}): FormValues => {
+const apiValues = (overrides: Partial<SchemaRegistryFormValues> = {}) => {
   const values = structuredClone(initialValues);
   values.schemaRegistry = {
     ...values.schemaRegistry,
@@ -112,7 +106,7 @@ describe('getUpdateValuesForSchemaRegistry', () => {
       // rpk/Admin API links can store file-path TLS with enabled: false; the
       // mask replaces the whole parent message, so the material must survive
       // edits to other fields.
-      const disabledTls = (): FormValues =>
+      const disabledTls = () =>
         apiValues({
           useTls: false,
           mtls: {

@@ -24,7 +24,7 @@ type HotKeyOptions = {
 
 const TYPING_TAG_REGEX = /^(?:input|textarea|select)$/iu;
 
-export const isTypingTarget = (target: EventTarget | null): boolean => {
+export const isTypingTarget = (target: EventTarget | null) => {
   const el = target as HTMLElement | null;
   return el !== null && (TYPING_TAG_REGEX.test(el.tagName) || el.isContentEditable);
 };
@@ -36,7 +36,7 @@ const MODIFIER_CHECKS: Record<Modifier, (e: KeyboardEvent) => boolean> = {
   alt: (e) => e.altKey,
 };
 
-function modifiersMatch(e: KeyboardEvent, mods: Modifier[]): boolean {
+function modifiersMatch(e: KeyboardEvent, mods: Modifier[]) {
   return mods.every((mod) => MODIFIER_CHECKS[mod](e));
 }
 

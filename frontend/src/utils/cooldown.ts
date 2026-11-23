@@ -26,12 +26,12 @@ export class Cooldown {
   }
 
   /** Time (in ms) since the last time the cooldown was triggered */
-  timeSinceLastTrigger(): number {
+  timeSinceLastTrigger() {
     return Date.now() - this.timestamp;
   }
 
   /** Time (in ms) until the cooldown is ready (or 0 if it is) */
-  get timeLeft(): number {
+  get timeLeft() {
     const t = this.duration - this.timeSinceLastTrigger();
     if (t < 0) {
       return 0;
@@ -40,12 +40,12 @@ export class Cooldown {
   }
 
   // Check if ready
-  get isReady(): boolean {
+  get isReady() {
     return this.timeLeft <= 0;
   }
 
   // 'Use' the cooldown. Check if ready, and if it is also trigger it
-  consume(force = false): boolean {
+  consume(force = false) {
     if (this.timeLeft <= 0 || force) {
       this.timestamp = Date.now();
       return true;
@@ -54,12 +54,12 @@ export class Cooldown {
   }
 
   // Force the cooldown to be ready
-  setReady(): void {
+  setReady() {
     this.timestamp = 0;
   }
 
   // Same as 'consume(true)'
-  restart(): void {
+  restart() {
     this.timestamp = Date.now();
   }
 }

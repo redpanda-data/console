@@ -9,7 +9,7 @@ export type ColumnFiltersBinding = {
   onColumnFiltersChange: (updater: Updater<ColumnFiltersState>) => void;
 };
 
-const resolveUpdater = <T>(updater: Updater<T>, current: T): T =>
+const resolveUpdater = <T>(updater: Updater<T>, current: T) =>
   typeof updater === 'function' ? (updater as (old: T) => T)(current) : updater;
 
 const findFilterValue = (filters: ColumnFiltersState, id: string) => filters.find((f) => f.id === id)?.value;

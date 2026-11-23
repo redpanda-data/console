@@ -76,7 +76,7 @@ function selectionStatistics(selectedPartitions: SelectedTopicPartitions[], invo
 function selectedTopicPartitions(
   topicPartitions: Map<string, Partition[] | null>,
   partitionSelection: PartitionSelection
-): SelectedTopicPartitions[] {
+) {
   const selectedPartitions: SelectedTopicPartitions[] = [];
   for (const [topic, partitions] of topicPartitions) {
     if (partitions === null) {
@@ -92,7 +92,7 @@ function selectedTopicPartitions(
 }
 
 /** The brokers leading or hosting a replica of any selected partition. */
-function brokersInvolvedIn(selectedPartitions: SelectedTopicPartitions[], brokers: Broker[]): Broker[] {
+function brokersInvolvedIn(selectedPartitions: SelectedTopicPartitions[], brokers: Broker[]) {
   const brokerIds = new Set<number>();
   for (const t of selectedPartitions) {
     for (const p of t.partitions) {

@@ -65,7 +65,7 @@ function mapPayloadEncoding(encoding: PayloadEncoding | undefined): Payload['enc
  * Converts a proto `ListMessagesResponse.DataMessage` to a legacy `TopicMessage`.
  * Pure function — shared by `createMessageSearch` (MobX) and `useLogSearch` (React).
  */
-export function convertListMessageData(data: ListMessagesResponse_DataMessage): TopicMessage {
+export function convertListMessageData(data: ListMessagesResponse_DataMessage) {
   const keyJson = textDecoder.decode(data.key?.normalizedPayload);
   const valueJson = textDecoder.decode(data.value?.normalizedPayload);
   // Hex previews are populated by the message viewer, as in the legacy search adapter.
@@ -122,7 +122,7 @@ function convertPayload(
   source: ListMessagesResponse_DataMessage['key'],
   normalizedText: string,
   kind: 'key' | 'value'
-): Payload {
+) {
   const encoding = mapPayloadEncoding(source?.encoding);
   if (!encoding && source?.encoding !== undefined && source?.encoding !== null) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage

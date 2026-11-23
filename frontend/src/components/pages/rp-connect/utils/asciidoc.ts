@@ -55,11 +55,11 @@ const BACKSLASH_ESCAPE = /\\(?<escapedCharacter>.)/gu;
 const WHITESPACE_RUN = /\s+/gu;
 const CRLF = /\r\n/gu;
 
-function macroLabel(label: string): string {
+function macroLabel(label: string) {
   return label.replace(BACKSLASH_ESCAPE, '$1').replace(NEW_WINDOW_FLAG, '').trim();
 }
 
-const macrosToLabels = (text: string): string =>
+const macrosToLabels = (text: string) =>
   text
     .replace(XREF_MACRO, (_match, label: string) => macroLabel(label) || EMPTY_XREF_LABEL)
     .replace(INTERNAL_XREF, (_match, anchor: string, label?: string) => (label ?? anchor).trim());
@@ -68,7 +68,7 @@ const macrosToLabels = (text: string): string =>
  * Flattens `|===` and Markdown pipe tables to one bullet per row — react-markdown is mounted without
  * remark-gfm. Outside a fence a row must be pipe-delimited at both ends, so prose keeps its `|`.
  */
-function flattenTables(text: string): string {
+function flattenTables(text: string) {
   if (!text.includes('|')) {
     return text;
   }
@@ -86,7 +86,7 @@ function flattenTables(text: string): string {
 type TableState = { inFence: boolean; separator: RegExp };
 
 // What one line becomes, undefined to drop it; tracks the enclosing `|===` fence in `state`.
-function flattenTableLine(line: string, state: TableState): string | undefined {
+function flattenTableLine(line: string, state: TableState) {
   const trimmed = line.trim();
   if (TABLE_FENCE.test(trimmed)) {
     toggleTableFence(state);
@@ -101,14 +101,14 @@ function flattenTableLine(line: string, state: TableState): string | undefined {
 }
 
 // Closing a fence resets the cell separator a DSV attribute may have switched.
-function toggleTableFence(state: TableState): void {
+function toggleTableFence(state: TableState) {
   state.inFence = !state.inFence;
   if (!state.inFence) {
     state.separator = TABLE_CELL_SEPARATOR;
   }
 }
 
-function tableRowBullet(trimmed: string, state: TableState): string | undefined {
+function tableRowBullet(trimmed: string, state: TableState) {
   // A Markdown header rule (`|---|---|`) carries no content; inside a fence it could be a row.
   if (!state.inFence && TABLE_RULE_ROW.test(trimmed)) {
     return;
@@ -118,7 +118,7 @@ function tableRowBullet(trimmed: string, state: TableState): string | undefined 
 }
 
 /** Escapes `<placeholder>` outside code: remark reads it as inline HTML and, with HTML off, drops it. */
-function escapePlaceholders(text: string): string {
+function escapePlaceholders(text: string) {
   return text
     .split(CODE_BLOCK_OR_SPAN)
     .map((part, index) => (index % 2 === 1 ? part : part.replace(PLACEHOLDER_OPENER, String.raw`\<`)))
@@ -126,7 +126,7 @@ function escapePlaceholders(text: string): string {
 }
 
 /** AsciiDoc to Markdown for react-markdown; newlines survive, so titles and paragraphs stay distinct. */
-export function asciidocToMarkdown(raw: string): string {
+export function asciidocToMarkdown(raw: string) {
   return escapePlaceholders(
     macrosToLabels(flattenTables(raw.replace(CRLF, '\n')))
       .replace(ATTRIBUTE_LINE, '')
@@ -147,7 +147,7 @@ export function asciidocToMarkdown(raw: string): string {
 }
 
 /** Strips Markdown syntax to a single line, for collapsed previews. */
-export function markdownToPlainText(markdown: string): string {
+export function markdownToPlainText(markdown: string) {
   return markdown
     .replace(MARKDOWN_LINK, '$1')
     .replace(MARKDOWN_HEADING, '')

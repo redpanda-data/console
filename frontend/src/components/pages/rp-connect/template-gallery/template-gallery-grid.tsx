@@ -40,7 +40,7 @@ const CATEGORY_FILTER_LABELS: Record<CategoryFilter, string> = {
 
 const FILTER_OPTIONS: CategoryFilter[] = ['all', ...TEMPLATE_CATEGORY_ORDER];
 
-const matchesQuery = (template: PipelineTemplate, query: string): boolean => {
+const matchesQuery = (template: PipelineTemplate, query: string) => {
   if (!query.trim()) {
     return true;
   }
@@ -53,7 +53,7 @@ const matchesQuery = (template: PipelineTemplate, query: string): boolean => {
   );
 };
 
-const groupByCategory = (templates: PipelineTemplate[]): Map<TemplateCategory, PipelineTemplate[]> => {
+const groupByCategory = (templates: PipelineTemplate[]) => {
   const grouped = new Map<TemplateCategory, PipelineTemplate[]>();
   for (const cat of TEMPLATE_CATEGORY_ORDER) {
     grouped.set(cat, []);

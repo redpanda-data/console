@@ -55,7 +55,7 @@ const CERTIFICATE_TEST_ID_SUFFIXES: Record<CertificateType, string> = {
 
 type Cert = NonNullable<FormValues['mtls']>['ca'];
 
-const hasCertValue = (cert: Cert): boolean => Boolean(cert?.filePath || cert?.pemContent);
+const hasCertValue = (cert: Cert) => Boolean(cert?.filePath || cert?.pemContent);
 
 function CertificateDropzone({ certType }: { certType: CertificateType }) {
   const { control, setValue } = useFormContext<FormValues>();

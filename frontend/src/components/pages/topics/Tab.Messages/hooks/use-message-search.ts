@@ -180,7 +180,7 @@ type SearchRequestParams = Pick<
   continuousPaginationEnabled: boolean;
 };
 
-function buildMessageSearchRequest(params: SearchRequestParams): MessageSearchRequest {
+function buildMessageSearchRequest(params: SearchRequestParams) {
   const { topicName, filters, continuousPaginationEnabled, maxResults } = params;
   const canUseFilters = (api.topicPermissions.get(topicName)?.canUseSearchFilters ?? true) && !isServerless();
 
@@ -280,7 +280,7 @@ function useExecuteMessageSearch(
   const { isMountedRef, windowStartPageRef, lastLoadMoreRef } = refs;
 
   return useCallback(
-    async (abortSignal?: AbortSignal): Promise<TopicMessage[]> => {
+    async (abortSignal?: AbortSignal) => {
       const ctx: SearchRunContext = {
         setFetchError,
         setSearchPhase,

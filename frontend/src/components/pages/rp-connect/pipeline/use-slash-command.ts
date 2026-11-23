@@ -17,7 +17,7 @@ export type SlashPosition = { lineNumber: number; column: number };
 export const SLASH_TRIGGER_PATTERN = /\s/u;
 
 /** A `/` triggers at the start of a line or after whitespace. */
-function isSlashTriggerColumn(lineContent: string, slashColumn: number): boolean {
+function isSlashTriggerColumn(lineContent: string, slashColumn: number) {
   const charBefore = slashColumn > 1 ? lineContent[slashColumn - 2] : undefined;
   return slashColumn === 1 || Boolean(charBefore && SLASH_TRIGGER_PATTERN.test(charBefore));
 }

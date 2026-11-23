@@ -57,7 +57,7 @@ import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
 class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
     const pipeline = pipelinesApi.pipelines?.first((x) => x.id === pipelineId);
     p.title = pipeline?.displayName ?? pipelineId;
@@ -219,7 +219,7 @@ const PIPELINE_TRANSITION_POLL_DELAYS = [200, 400, 1000, 1000, 1000, 5000];
  * Refreshes the pipeline list until the pipeline leaves its starting/stopping state, or is gone. Each
  * poll backs off from the previous one and reads the list it refreshed, so attempts recurse in order.
  */
-async function watchPipelineUpdates(pipelineId: string, attempt = 0): Promise<void> {
+async function watchPipelineUpdates(pipelineId: string, attempt = 0) {
   await delay(PIPELINE_TRANSITION_POLL_DELAYS[Math.min(PIPELINE_TRANSITION_POLL_DELAYS.length - 1, attempt)]);
 
   await pipelinesApi.refreshPipelines(true);

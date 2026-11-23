@@ -38,7 +38,7 @@ export const pipelineListSearchSchema = z.object({
 export type PipelineListSearch = z.infer<typeof pipelineListSearchSchema>;
 
 /** The search params' list keys, parsed; anything else in them is left out. */
-export function readPipelineListSearch(search: unknown): PipelineListSearch {
+export function readPipelineListSearch(search: unknown) {
   const parsed = pipelineListSearchSchema.safeParse(search ?? {});
   return parsed.success ? parsed.data : {};
 }
@@ -81,7 +81,7 @@ export function facetSearchFromFilters(
 
 const DEFAULT_SORT: SortingState = [{ id: 'state', desc: false }];
 
-export function sortingFromSearch(search: PipelineListSearch): SortingState {
+export function sortingFromSearch(search: PipelineListSearch) {
   return search.sort ? [{ id: search.sort, desc: search.desc ?? false }] : DEFAULT_SORT;
 }
 
@@ -99,7 +99,7 @@ export function sortSearchFromSorting(sorting: SortingState): Pick<PipelineListS
 export function nextPipelineListSearch(
   search: Record<string, unknown>,
   patch: Partial<Record<keyof PipelineListSearch, unknown>>
-): Record<string, unknown> {
+) {
   const next: Record<string, unknown> = { ...search, ...patch };
   for (const [key, value] of Object.entries(next)) {
     const empty = value === undefined || value === '' || (Array.isArray(value) && value.length === 0);

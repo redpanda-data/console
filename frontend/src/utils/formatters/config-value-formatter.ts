@@ -42,7 +42,7 @@ export function formatConfigValue(
   name: string,
   value: string | null | undefined,
   formatType: 'friendly' | 'raw' | 'both'
-): string {
+) {
   if (value === null || value === undefined) {
     return '';
   }
@@ -59,7 +59,7 @@ export function formatConfigValue(
   return formatNumericConfigValue(name, value, num, formatType === 'both' ? ` (${value})` : '');
 }
 
-function formatNumericConfigValue(name: string, value: string, num: number, suffix: string): string {
+function formatNumericConfigValue(name: string, value: string, num: number, suffix: string) {
   if (name === 'flush.messages' && num > 2 ** 60) {
     return `Never${suffix}`;
   }
@@ -76,13 +76,13 @@ function formatNumericConfigValue(name: string, value: string, num: number, suff
   return formatByteOrRatioConfigValue(name, value, num, suffix);
 }
 
-function formatTimeConfigValue(num: number, msFactor: number, suffix: string): string {
+function formatTimeConfigValue(num: number, msFactor: number, suffix: string) {
   return num > Number.MAX_SAFE_INTEGER || num === -1
     ? `Infinite${suffix}`
     : prettyMilliseconds(num * msFactor, { verbose: true, unitCount: 2 }) + suffix;
 }
 
-function formatByteOrRatioConfigValue(name: string, value: string, num: number, suffix: string): string {
+function formatByteOrRatioConfigValue(name: string, value: string, num: number, suffix: string) {
   if (BYTE_EXTENSIONS.some((extension) => name.endsWith(extension))) {
     const uint64Max = '18446744073709551615';
     const uint64Exp = 1.844_674_407_370_955e19;

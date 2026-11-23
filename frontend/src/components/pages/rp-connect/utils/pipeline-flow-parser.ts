@@ -101,7 +101,7 @@ export type InputEndRow = {
 };
 
 /** The pipeline's inputs that can take a stop condition, in canvas order. */
-export function inputEndRows(nodes: PipelineFlowNode[]): InputEndRow[] {
+export function inputEndRows(nodes: PipelineFlowNode[]) {
   const rows: InputEndRow[] = [];
   for (const node of nodes) {
     if (hasStopSlot(node)) {
@@ -147,7 +147,7 @@ export const SECTION_LABEL: Record<NonNullable<PipelineFlowNode['section']>, str
   resource: 'Resource',
 };
 
-export function sectionLabel(section?: string): string {
+export function sectionLabel(section?: string) {
   return SECTION_LABEL[section as NonNullable<PipelineFlowNode['section']>] ?? '';
 }
 
@@ -195,7 +195,7 @@ const NESTED_MEMBER_SUMMARY: Record<string, { label: string; sep: string }> = {
   switch: { label: 'routes', sep: ' | ' },
 };
 
-function memberMeta(key: string, value: unknown): NodeMetaEntry[] | undefined {
+function memberMeta(key: string, value: unknown) {
   const summary = NESTED_MEMBER_SUMMARY[key];
   if (summary) {
     const names = parseMultiInputs(key, value);
@@ -211,11 +211,7 @@ function memberNameAndMeta(key: string, obj: unknown): { name: string; meta?: No
   return { name: key, meta: memberMeta(key, (obj as Record<string, unknown>)[key]) };
 }
 
-function multiMemberSpecs(
-  value: unknown,
-  membersPath: (string | number)[],
-  config: ParsedYamlConfig
-): GroupChildSpec[] | undefined {
+function multiMemberSpecs(value: unknown, membersPath: (string | number)[], config: ParsedYamlConfig) {
   if (!value || typeof value !== 'object') {
     return;
   }
@@ -225,11 +221,7 @@ function multiMemberSpecs(
 
 // Skip entries with no component key (null/scalar, or reserved-only stubs like `- label: x`) —
 // matching parseMultiInputs — but keep original indices so edit paths never land on a neighbour.
-function memberSpecsWithIndices(
-  items: unknown[],
-  membersPath: (string | number)[],
-  config: ParsedYamlConfig
-): GroupChildSpec[] {
+function memberSpecsWithIndices(items: unknown[], membersPath: (string | number)[], config: ParsedYamlConfig) {
   const specs: GroupChildSpec[] = [];
   for (const [i, item] of items.entries()) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
@@ -328,7 +320,7 @@ type OutputMemberSpec = {
   caseNumber?: number;
 };
 
-function enumerateSwitchCases(cases: unknown[]): { index: number; ordinal: number; record: Record<string, unknown> }[] {
+function enumerateSwitchCases(cases: unknown[]) {
   const entries: { index: number; ordinal: number; record: Record<string, unknown> }[] = [];
   for (const [i, c] of cases.entries()) {
     if (c && typeof c === 'object') {
@@ -389,11 +381,11 @@ function outputContainerSlot(key: string, path: (string | number)[]): ContainerS
   }
 }
 
-function extractLabel(obj: Record<string, unknown>): string | undefined {
+function extractLabel(obj: Record<string, unknown>) {
   return typeof obj.label === 'string' && obj.label !== '' ? obj.label : undefined;
 }
 
-function extractTopics(componentConfig: unknown): string[] | undefined {
+function extractTopics(componentConfig: unknown) {
   if (!componentConfig || typeof componentConfig !== 'object') {
     return;
   }
@@ -407,7 +399,7 @@ function extractTopics(componentConfig: unknown): string[] | undefined {
   }
 }
 
-function hasNonEmptySasl(obj: unknown): boolean {
+function hasNonEmptySasl(obj: unknown) {
   if (!obj || typeof obj !== 'object') {
     return false;
   }
@@ -424,7 +416,7 @@ function hasNonEmptySasl(obj: unknown): boolean {
   return false;
 }
 
-function hasSaslConfig(componentName: string, componentConfig: unknown, rootConfig: ParsedYamlConfig): boolean {
+function hasSaslConfig(componentName: string, componentConfig: unknown, rootConfig: ParsedYamlConfig) {
   const ownSaslIsUsed =
     hasNonEmptySasl(componentConfig) &&
     (!SHARED_CLIENT_FALLBACK_COMPONENTS.has(componentName) || hasSeedBrokers(componentConfig));
@@ -534,7 +526,7 @@ const NESTED_PROC_CONTAINERS: ReadonlySet<string> = new Set(['branch', 'while', 
 type ProcessorEntry = [number, Record<string, unknown>];
 
 // (`- null`, mid-edit scalars) are skipped, but edit paths must never land on a neighbouring entry.
-function extractProcessorEntries(value: unknown): ProcessorEntry[] | undefined {
+function extractProcessorEntries(value: unknown) {
   if (!Array.isArray(value)) {
     return;
   }
@@ -547,7 +539,7 @@ function extractProcessorEntries(value: unknown): ProcessorEntry[] | undefined {
   return entries;
 }
 
-function extractResourceRef(componentValue: unknown): string | undefined {
+function extractResourceRef(componentValue: unknown) {
   if (!componentValue || typeof componentValue !== 'object' || Array.isArray(componentValue)) {
     return;
   }
@@ -555,7 +547,7 @@ function extractResourceRef(componentValue: unknown): string | undefined {
   return typeof ref === 'string' && ref !== '' ? ref : undefined;
 }
 
-function indirectionResourceRef(componentName: string | undefined, componentValue: unknown): string | undefined {
+function indirectionResourceRef(componentName: string | undefined, componentValue: unknown) {
   return componentName === 'resource' && typeof componentValue === 'string' && componentValue !== ''
     ? componentValue
     : undefined;
@@ -565,7 +557,7 @@ export type ResourceRefCandidate = { label: string; kind: ResourceKind };
 
 // A resource ref may live in a non-`resource` field (e.g. `checkpoint_cache`). Only fields whose
 // (e.g. `client_id` equal to a resource label) must not draw a dependency edge. The post-pass
-function extractRefCandidates(componentValue: unknown): ResourceRefCandidate[] | undefined {
+function extractRefCandidates(componentValue: unknown) {
   if (!componentValue || typeof componentValue !== 'object' || Array.isArray(componentValue)) {
     return;
   }
@@ -580,7 +572,7 @@ function extractRefCandidates(componentValue: unknown): ResourceRefCandidate[] |
 }
 
 const ERRORED_CHECK_RE = /errored\s*\(/u;
-function isErroredCheck(check: unknown): boolean {
+function isErroredCheck(check: unknown) {
   return typeof check === 'string' && ERRORED_CHECK_RE.test(check);
 }
 
@@ -629,7 +621,7 @@ function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
   };
 }
 
-function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNode[] {
+function parseSwitchCases(cases: unknown[], ctx: BranchContext) {
   const nodes: PipelineFlowNode[] = [];
   for (const { index: ci, ordinal, record: caseRecord } of enumerateSwitchCases(cases)) {
     // A check-only case (no `processors` array) still renders as an empty case — never silently vanishes.
@@ -679,7 +671,7 @@ function pushProcessorChildren(nodes: PipelineFlowNode[], procs: ProcessorEntry[
   }
 }
 
-function processorChildNodes(procs: ProcessorEntry[], ctx: BranchContext): PipelineFlowNode[] {
+function processorChildNodes(procs: ProcessorEntry[], ctx: BranchContext) {
   const nodes: PipelineFlowNode[] = [];
   pushProcessorChildren(nodes, procs, ctx);
   return nodes;
@@ -687,7 +679,7 @@ function processorChildNodes(procs: ProcessorEntry[], ctx: BranchContext): Pipel
 
 const PROCESSORS_FIELD_KEYS = new Set(['while', 'branch', 'group_by', 'group_by_value']);
 
-function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContext): PipelineFlowNode[] {
+function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContext) {
   if (key === 'switch' && Array.isArray(fieldValue)) {
     return parseSwitchCases(fieldValue, { ...ctx, path: [...ctx.path, key] });
   }
@@ -707,11 +699,7 @@ function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContex
     : [];
 }
 
-function parseBranchingKeys(
-  config: Record<string, unknown>,
-  ctx: BranchContext,
-  componentName: string
-): PipelineFlowNode[] {
+function parseBranchingKeys(config: Record<string, unknown>, ctx: BranchContext, componentName: string) {
   const branchingKeys = Object.keys(config).filter((k) => BRANCHING_FIELDS.has(k));
   if (branchingKeys.length === 0) {
     return [];
@@ -792,11 +780,7 @@ function childlessComponentNodes(
   return [group];
 }
 
-function withBranchMeta(
-  group: PipelineFlowNode,
-  componentName: string,
-  config: Record<string, unknown>
-): PipelineFlowNode {
+function withBranchMeta(group: PipelineFlowNode, componentName: string, config: Record<string, unknown>) {
   if (componentName !== 'branch') {
     return group;
   }
@@ -872,7 +856,7 @@ function resourceItemEditTarget(key: string, index: number): EditTarget | undefi
   return componentType ? { kind: 'path', path: [key, index], componentType } : undefined;
 }
 
-function parseArrayResource(value: unknown[], key: string, sectionId: string): PipelineFlowNode[] {
+function parseArrayResource(value: unknown[], key: string, sectionId: string) {
   const nodes: PipelineFlowNode[] = [];
   for (const [i, item] of value.entries()) {
     if (item && typeof item === 'object') {
@@ -895,7 +879,7 @@ function parseArrayResource(value: unknown[], key: string, sectionId: string): P
   return nodes;
 }
 
-function parseResourceNodes(config: ParsedYamlConfig, sectionId: string): PipelineFlowNode[] {
+function parseResourceNodes(config: ParsedYamlConfig, sectionId: string) {
   const nodes: PipelineFlowNode[] = [];
   for (const key of RESOURCE_YAML_KEYS) {
     const value = config[key];
@@ -1123,7 +1107,7 @@ function lockStopSlots(nodes: PipelineFlowNode[], doc: Document) {
   }
 }
 
-function buildFlowTree(config: ParsedYamlConfig, doc: Document): PipelineFlowNode[] {
+function buildFlowTree(config: ParsedYamlConfig, doc: Document) {
   const nodes: PipelineFlowNode[] = [];
   buildInputSection(nodes, config);
   buildProcessorSection(nodes, config);
@@ -1173,12 +1157,12 @@ export function parseEditableNodes(
 }
 
 /** True when the pipeline has no real components — only section labels / `none` placeholders. */
-export function isPipelineEmpty(nodes: PipelineFlowNode[]): boolean {
+export function isPipelineEmpty(nodes: PipelineFlowNode[]) {
   return !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
 }
 
 /** True when the config text is only whitespace, `#` comments, or an empty `{}` document — i.e. genuinely blank. */
-export function isConfigTextEmpty(configYaml: string): boolean {
+export function isConfigTextEmpty(configYaml: string) {
   return configYaml.split('\n').every((line) => {
     const trimmed = line.trim();
     return trimmed === '' || trimmed.startsWith('#') || trimmed === '{}';
@@ -1189,7 +1173,7 @@ export function isConfigTextEmpty(configYaml: string): boolean {
  * Offer "Start from a template" ONLY for a genuinely blank config: text that parses to no components
  * (invalid YAML, or lost sections) is NOT empty — a template there would clobber the user's work.
  */
-export function shouldOfferTemplate(configYaml: string, nodes: PipelineFlowNode[]): boolean {
+export function shouldOfferTemplate(configYaml: string, nodes: PipelineFlowNode[]) {
   return isPipelineEmpty(nodes) && isConfigTextEmpty(configYaml);
 }
 
@@ -1215,7 +1199,7 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]) {
 }
 
 // The `*_resources` array a node's ref must resolve into: a candidate-promoted ref carries the
-function expectedResourceKey(node: PipelineFlowNode): string | undefined {
+function expectedResourceKey(node: PipelineFlowNode) {
   if (node.resourceRefKind) {
     return resourceArrayKey(node.resourceRefKind);
   }
@@ -1261,7 +1245,7 @@ function promoteRefCandidate(node: PipelineFlowNode, resolve: ResourceRefResolve
   }
 }
 
-function linkResourceRefs(nodes: PipelineFlowNode[], resolve: ResourceRefResolver): Map<string, number> {
+function linkResourceRefs(nodes: PipelineFlowNode[], resolve: ResourceRefResolver) {
   const usedBy = new Map<string, number>();
   for (const node of nodes) {
     if (!node.resourceRef || node.section === 'resource') {
@@ -1292,7 +1276,7 @@ function annotateResourceRefs(nodes: PipelineFlowNode[]) {
   }
 }
 
-export function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefined, PipelineFlowNode[]> {
+export function buildChildrenMap(nodes: PipelineFlowNode[]) {
   const map = new Map<string | undefined, PipelineFlowNode[]>();
   for (const node of nodes) {
     const siblings = map.get(node.parentId);
@@ -1309,13 +1293,13 @@ export function sectionChildren(
   nodes: PipelineFlowNode[],
   map: Map<string | undefined, PipelineFlowNode[]>,
   section: NonNullable<PipelineFlowNode['section']>
-): PipelineFlowNode[] {
+) {
   const sectionNode = nodes.find((n) => n.kind === 'section' && n.section === section);
   return sectionNode ? (map.get(sectionNode.id) ?? []) : [];
 }
 
 /** The linear data path: input component(s) → top-level processors → output(s). */
-export function mainFlowSequence(nodes: PipelineFlowNode[]): PipelineFlowNode[] {
+export function mainFlowSequence(nodes: PipelineFlowNode[]) {
   const map = buildChildrenMap(nodes);
   return [
     ...sectionChildren(nodes, map, 'input'),

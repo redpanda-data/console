@@ -27,8 +27,7 @@ const escapeForQuoting = (value: string) => value.replace(/\\/gu, '\\\\').replac
  * an embedded `"` — so it round-trips exactly through `parseFilterInput` instead of being split
  * on a space or misread at an embedded quote.
  */
-const quoteIfNeeded = (value: string): string =>
-  NEEDS_QUOTING_PATTERN.test(value) ? `"${escapeForQuoting(value)}"` : value;
+const quoteIfNeeded = (value: string) => (NEEDS_QUOTING_PATTERN.test(value) ? `"${escapeForQuoting(value)}"` : value);
 
 /**
  * Fixed operator↔symbol pairs — the single source of truth `parseOperator` and
@@ -57,7 +56,7 @@ const OPERATOR_SYMBOLS: [symbol: string, op: FilterOp][] = [
  * `fieldTokenText`, to keep it round-trippable in the URL.
  */
 const DISPLAY_OP_SYMBOLS = new Map(
-  OPERATOR_SYMBOLS.filter(([, op]) => op !== 'eq').map(([symbol, op]): [FilterOp, string] => [op, symbol])
+  OPERATOR_SYMBOLS.filter(([, op]) => op !== 'eq').map(([symbol, op]) => [op, symbol])
 );
 
 /**
@@ -66,7 +65,7 @@ const DISPLAY_OP_SYMBOLS = new Map(
  * `formatTokenText`/`tokenEditText`/`tokenQueryText` each pass in an already
  * appropriately-encoded `value` (raw, quote-wrapped, or as-is).
  */
-const fieldTokenText = (token: FieldFilterToken, value: string): string => {
+const fieldTokenText = (token: FieldFilterToken, value: string) => {
   const symbol = DISPLAY_OP_SYMBOLS.get(token.op);
   return symbol ? `${token.field}${symbol}${value}` : `${token.field}:${value}`;
 };
@@ -76,7 +75,7 @@ const fieldTokenText = (token: FieldFilterToken, value: string): string => {
  * This is the read-only display form shown on a committed chip — unlike `tokenEditText`, the value
  * is never quote-wrapped, so it's not meant to be parsed back with `parseFilterInput`.
  */
-export function formatTokenText(token: FilterToken): string {
+export function formatTokenText(token: FilterToken) {
   if (token.kind === 'js') {
     return `ƒ ${token.name || token.code}`;
   }
@@ -88,7 +87,7 @@ export function formatTokenText(token: FilterToken): string {
  * A value containing whitespace is quote-wrapped so retyping doesn't risk the
  * filter bar's space-triggered auto-commit cutting it short again.
  */
-export function tokenEditText(token: FilterToken): string {
+export function tokenEditText(token: FilterToken) {
   if (token.kind === 'js') {
     return token.code;
   }
@@ -100,7 +99,7 @@ export function tokenEditText(token: FilterToken): string {
  * `eq` serializes as `=` so `parseFilterInput` round-trips the operator exactly, and the value is
  * quoted whenever needed (see `quoteIfNeeded`) so it round-trips exactly too, not just the op.
  */
-export function tokenQueryText(token: FieldFilterToken): string {
+export function tokenQueryText(token: FieldFilterToken) {
   const value = quoteIfNeeded(token.value);
   return token.op === 'eq' ? `${token.field}=${value}` : fieldTokenText(token, value);
 }
@@ -111,7 +110,7 @@ export function tokenQueryText(token: FieldFilterToken): string {
  * change," shared by the filter bar's own resync check and the URL
  * persistence layer's `eq`, so a fix to one always reaches the other.
  */
-export function sameFieldTokens(a: FieldFilterToken[], b: FieldFilterToken[]): boolean {
+export function sameFieldTokens(a: FieldFilterToken[], b: FieldFilterToken[]) {
   return a.length === b.length && a.every((t, i) => tokenQueryText(t) === tokenQueryText(b[i]));
 }
 
@@ -135,7 +134,7 @@ function parseOperator(field: string, rest: string): { op: FilterOp; rawValue: s
 }
 
 /** True when a partition value is outside `[0, partitionCount)` — unknowable, so unchecked, when `partitionCount` is omitted. */
-function isOutOfRangePartition(field: string, value: string, partitionCount: number | undefined): boolean {
+function isOutOfRangePartition(field: string, value: string, partitionCount: number | undefined) {
   return field === 'partition' && partitionCount !== undefined && Number(value) >= partitionCount;
 }
 
@@ -193,7 +192,7 @@ function parseFieldAndOperator(trimmed: string): { field: string; op: FilterOp; 
 }
 
 /** The decoded value, or null when it's empty, an unterminated quote, or not an integer for a numeric field. */
-function parseFieldValue(field: string, rawValue: string): string | null {
+function parseFieldValue(field: string, rawValue: string) {
   const value = decodeValue(rawValue.trim());
   if (value === null || (NUMERIC_FIELDS.has(field) && !INTEGER_VALUE_PATTERN.test(value))) {
     // A non-numeric value for a numeric field (typo, or the incomplete "partition:-" while
@@ -210,7 +209,7 @@ function parseFieldValue(field: string, rawValue: string): string | null {
  * `"`), honoring `\"`/`\\` escapes. Returns the decoded value and how many characters of
  * `rawValue` the quoted span consumed, or null when the quote never closes.
  */
-function readQuotedValue(rawValue: string): { value: string; length: number } | null {
+function readQuotedValue(rawValue: string) {
   let value = '';
   let i = 1;
   while (i < rawValue.length && rawValue[i] !== '"') {
@@ -225,7 +224,7 @@ function readQuotedValue(rawValue: string): { value: string; length: number } | 
 /** Strips a value's surrounding quotes if present; null for an empty or unterminated-quote value, or
  * for trailing content after the closing quote (shouldn't happen given a whole tokenized word, but
  * guarded rather than silently dropped). */
-function decodeValue(rawValue: string): string | null {
+function decodeValue(rawValue: string) {
   if (!rawValue.startsWith('"')) {
     return rawValue.length > 0 ? rawValue : null;
   }
@@ -237,7 +236,7 @@ function decodeValue(rawValue: string): string | null {
 }
 
 /** True when the text looks like a JavaScript predicate rather than a field token or plain text. */
-export function looksLikeJs(text: string): boolean {
+export function looksLikeJs(text: string) {
   const trimmed = text.trim();
   if (trimmed.startsWith('js:') || trimmed.startsWith('javascript:')) {
     return true;
@@ -253,12 +252,12 @@ const JS_CODE_LIKE_PATTERN = /return\b|=>|[=!<>]==?|&&|\|\||[();{}[\].]/u;
  * rather than a plain label. Lets `js:dach-region` seed the new filter's
  * name instead of dropping "dach-region" in as code the user never wrote.
  */
-export function looksLikeJsCode(code: string): boolean {
+export function looksLikeJsCode(code: string) {
   return JS_CODE_LIKE_PATTERN.test(code);
 }
 
 /** Strip a `js:` / `javascript:` prefix from typed input, returning the code. */
-export function stripJsPrefix(text: string): string {
+export function stripJsPrefix(text: string) {
   const trimmed = text.trim();
   if (trimmed.startsWith('js:')) {
     return trimmed.slice(3).trim();

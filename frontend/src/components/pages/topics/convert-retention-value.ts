@@ -20,7 +20,7 @@ export function convertRetentionValue<U extends string>(
   unit: U,
   newUnit: U,
   factors: Record<U, number>
-): number {
+) {
   if (newUnit === 'default') {
     return value * factors[unit];
   }

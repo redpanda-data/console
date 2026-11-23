@@ -53,12 +53,10 @@ import {
   type CreateTopicResponse,
   type DeleteConsumerGroupOffsetsRequest,
   type DeleteConsumerGroupOffsetsResponse,
-  type DeleteConsumerGroupOffsetsResponseTopic,
   type DeleteConsumerGroupOffsetsTopic,
   type DeleteRecordsResponseData,
   type EditConsumerGroupOffsetsRequest,
   type EditConsumerGroupOffsetsResponse,
-  type EditConsumerGroupOffsetsResponseTopic,
   type EditConsumerGroupOffsetsTopic,
   type EndpointCompatibility,
   type EndpointCompatibilityResponse,
@@ -107,7 +105,6 @@ import {
   type TopicDocumentation,
   type TopicDocumentationResponse,
   type TopicMessage,
-  type TopicOffset,
   type TopicPermissions,
   type UserData,
   WrappedApiError,
@@ -130,7 +127,6 @@ import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/clu
 import type { PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
   type CreateDebugBundleRequest,
-  type CreateDebugBundleResponse,
   type DebugBundleStatus,
   DebugBundleStatus_Status,
   type GetClusterHealthResponse,
@@ -140,12 +136,8 @@ import type {
   License,
   ListEnterpriseFeaturesResponse_Feature,
   SetLicenseRequest,
-  SetLicenseResponse,
 } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import type {
-  PublishMessageRequest,
-  PublishMessageResponse,
-} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import type { PublishMessageRequest } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
 import {
   GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
@@ -192,7 +184,7 @@ declare const registry: Registry;
 /*
  * allow custom fetch or websocket interceptors
  * */
-export async function rest<T>(url: string, requestInit?: RequestInit): Promise<T | null> {
+export async function rest<T>(url: string, requestInit?: RequestInit) {
   const headers = createRestHeaders(requestInit?.headers);
 
   const res = await fetchWithTimeout(url, REST_TIMEOUT_SEC * 1000, {
@@ -326,7 +318,7 @@ class CacheEntry {
   }
 }
 
-function cachedApiRequest<T>(url: string, force = false): Promise<T> {
+function cachedApiRequest<T>(url: string, force = false) {
   const entry = cache.get(url);
 
   if (entry.isPending) {
@@ -399,7 +391,7 @@ function embeddedUserData(): UserData {
 
 type IdentityError = Parameters<typeof getOidcSubject>[0] & { code?: Code };
 
-function authFailureRedirect(err: IdentityError): string | null {
+function authFailureRedirect(err: IdentityError) {
   // Authentication failure (401) - redirect to login
   if (err.code === Code.Unauthenticated) {
     return '/login';
@@ -417,7 +409,7 @@ function authFailureRedirect(err: IdentityError): string | null {
 
 type PartitionLogDir = Partition['partitionLogDirs'][number];
 
-function largestLogDirSize(logDirs: PartitionLogDir[], isHealthy: (logDir: PartitionLogDir) => boolean): number {
+function largestLogDirSize(logDirs: PartitionLogDir[], isHealthy: (logDir: PartitionLogDir) => boolean) {
   const validLogDirs = logDirs.filter((e) => isHealthy(e) && e.size >= 0);
   const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
   return Math.max(replicaSize, 0);
@@ -458,7 +450,7 @@ function recordPartitionErrors(p: Partition, lists: PartitionErrorLists) {
   }
 }
 
-function collectPartitionErrors(topicName: string, partitions: Partition[]): PartitionErrorLists {
+function collectPartitionErrors(topicName: string, partitions: Partition[]) {
   const lists: PartitionErrorLists = { partitionErrors: [], waterMarksErrors: [] };
 
   for (const p of partitions) {
@@ -523,7 +515,7 @@ function countPartitionErrors(p: Partition, counts: PartitionErrorCounts) {
   }
 }
 
-function flagErroredPartitions(topicName: string, partitions: Partition[]): PartitionErrorCounts {
+function flagErroredPartitions(topicName: string, partitions: Partition[]) {
   const counts: PartitionErrorCounts = { partitionErrors: 0, waterMarkErrors: 0 };
 
   for (const p of partitions) {
@@ -720,7 +712,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
 
   _msgSearchVersion: 0,
 
-  refreshTopics(force?: boolean): Promise<void> {
+  refreshTopics(force?: boolean) {
     return cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
       if (v?.topics !== null && v?.topics !== undefined) {
         for (const t of v.topics) {
@@ -756,7 +748,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     }, addError);
   },
 
-  refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
+  refreshTopicConfig(topicName: string, force?: boolean) {
     const promise = cachedApiRequest<TopicConfigResponse | null>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/configuration`,
       force
@@ -783,7 +775,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return promise as Promise<void>;
   },
 
-  async getTopicOffsetsByTimestamp(topicNames: string[], timestampUnixMs: number): Promise<TopicOffset[]> {
+  async getTopicOffsetsByTimestamp(topicNames: string[], timestampUnixMs: number) {
     const query = `topicNames=${encodeURIComponent(topicNames.join(','))}&timestamp=${timestampUnixMs}`;
     const response = await appConfig.fetch(`${appConfig.restBasePath}/topics-offsets?${query}`, {
       method: 'GET',
@@ -858,7 +850,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     ).catch(addError);
   },
 
-  refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
+  refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean) {
     const processedTopics = Array.isArray(topics) ? topics.sort().map((t) => encodeURIComponent(t)) : topics;
 
     const url =
@@ -956,7 +948,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     );
   },
 
-  async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
+  async refreshSupportedEndpoints() {
     try {
       const r = await rest<EndpointCompatibilityResponse>(`${appConfig.restBasePath}/console/endpoints`);
       if (!r) {
@@ -1110,10 +1102,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       .catch(console.error);
   },
 
-  async editConsumerGroupOffsets(
-    groupId: string,
-    topics: EditConsumerGroupOffsetsTopic[]
-  ): Promise<EditConsumerGroupOffsetsResponseTopic[]> {
+  async editConsumerGroupOffsets(groupId: string, topics: EditConsumerGroupOffsetsTopic[]) {
     const request: EditConsumerGroupOffsetsRequest = {
       groupId,
       topics,
@@ -1129,10 +1118,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return r.topics;
   },
 
-  async deleteConsumerGroupOffsets(
-    groupId: string,
-    topics: DeleteConsumerGroupOffsetsTopic[]
-  ): Promise<DeleteConsumerGroupOffsetsResponseTopic[]> {
+  async deleteConsumerGroupOffsets(groupId: string, topics: DeleteConsumerGroupOffsetsTopic[]) {
     const request: DeleteConsumerGroupOffsetsRequest = {
       groupId,
       topics,
@@ -1303,9 +1289,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     );
   },
 
-  async setSchemaRegistryCompatibilityMode(
-    mode: SchemaRegistryCompatibilityMode
-  ): Promise<SchemaRegistryConfigResponse> {
+  async setSchemaRegistryCompatibilityMode(mode: SchemaRegistryCompatibilityMode) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
       method: 'PUT',
       headers: [['Content-Type', 'application/json']],
@@ -1319,7 +1303,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
   async setSchemaRegistrySubjectCompatibilityMode(
     subjectName: string,
     mode: SchemaRegistryCompatibilityModeWithDefault
-  ): Promise<SchemaRegistryConfigResponse> {
+  ) {
     if (mode === 'DEFAULT') {
       const response = await appConfig.fetch(
         `${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
@@ -1342,11 +1326,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
   },
 
-  async validateSchema(
-    subjectName: string,
-    version: number | 'latest',
-    request: SchemaRegistryCreateSchema
-  ): Promise<SchemaRegistryValidateSchemaResponse> {
+  async validateSchema(subjectName: string, version: number | 'latest', request: SchemaRegistryCreateSchema) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/validate`,
       {
@@ -1357,10 +1337,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     );
     return parseOrUnwrap<SchemaRegistryValidateSchemaResponse>(response, null);
   },
-  async createSchema(
-    subjectName: string,
-    request: SchemaRegistryCreateSchema
-  ): Promise<SchemaRegistryCreateSchemaResponse> {
+  async createSchema(subjectName: string, request: SchemaRegistryCreateSchema) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions`,
       {
@@ -1372,7 +1349,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<SchemaRegistryCreateSchemaResponse>(response, null);
   },
 
-  async deleteSchemaSubject(subjectName: string, permanent: boolean): Promise<SchemaRegistryDeleteSubjectResponse> {
+  async deleteSchemaSubject(subjectName: string, permanent: boolean) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}?permanent=${permanent ? 'true' : 'false'}`,
       {
@@ -1383,11 +1360,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<SchemaRegistryDeleteSubjectResponse>(response, null);
   },
 
-  async deleteSchemaSubjectVersion(
-    subjectName: string,
-    version: 'latest' | number,
-    permanent: boolean
-  ): Promise<SchemaRegistryDeleteSubjectVersionResponse> {
+  async deleteSchemaSubjectVersion(subjectName: string, version: 'latest' | number, permanent: boolean) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${encodeURIComponent(version)}?permanent=${permanent ? 'true' : 'false'}`,
       {
@@ -1398,7 +1371,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<SchemaRegistryDeleteSubjectVersionResponse>(response, null);
   },
 
-  refreshPartitionReassignments(force?: boolean): Promise<void> {
+  refreshPartitionReassignments(force?: boolean) {
     return cachedApiRequest<PartitionReassignmentsResponse | null>(
       `${appConfig.restBasePath}/operations/reassign-partitions`,
       force
@@ -1411,9 +1384,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     }, addError);
   },
 
-  async startPartitionReassignment(
-    request: PartitionReassignmentRequest
-  ): Promise<AlterPartitionReassignmentsResponse> {
+  async startPartitionReassignment(request: PartitionReassignmentRequest) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/operations/reassign-partitions`, {
       method: 'PATCH',
       headers: [['Content-Type', 'application/json']],
@@ -1422,7 +1393,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return await parseOrUnwrap<AlterPartitionReassignmentsResponse>(response, null);
   },
 
-  async setReplicationThrottleRate(brokerIds: number[], maxBytesPerSecond: number): Promise<PatchConfigsResponse> {
+  async setReplicationThrottleRate(brokerIds: number[], maxBytesPerSecond: number) {
     const ceiledRate = Math.ceil(maxBytesPerSecond);
 
     const configRequest: PatchConfigsRequest = { resources: [] };
@@ -1455,7 +1426,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       leaderReplicas: { brokerId: number; partitionId: number }[];
       followerReplicas: { brokerId: number; partitionId: number }[];
     }[]
-  ): Promise<PatchConfigsResponse> {
+  ) {
     const configRequest: PatchConfigsRequest = { resources: [] };
 
     for (const t of topicReplicas) {
@@ -1484,7 +1455,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return await get().changeConfig(configRequest);
   },
 
-  async resetThrottledReplicas(topicNames: string[]): Promise<PatchConfigsResponse> {
+  async resetThrottledReplicas(topicNames: string[]) {
     const configRequest: PatchConfigsRequest = { resources: [] };
 
     for (const t of topicNames) {
@@ -1507,7 +1478,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return await get().changeConfig(configRequest);
   },
 
-  async resetReplicationThrottleRate(brokerIds: number[]): Promise<PatchConfigsResponse> {
+  async resetReplicationThrottleRate(brokerIds: number[]) {
     const configRequest: PatchConfigsRequest = { resources: [] };
 
     // We currently only set replication throttle on each broker, instead of cluster-wide (same effect, but different kind of 'ConfigSource')
@@ -1533,7 +1504,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return await get().changeConfig(configRequest);
   },
 
-  async changeConfig(request: PatchConfigsRequest): Promise<PatchConfigsResponse> {
+  async changeConfig(request: PatchConfigsRequest) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/operations/configs`, {
       method: 'PATCH',
       headers: [['Content-Type', 'application/json']],
@@ -1542,7 +1513,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return await parseOrUnwrap<PatchConfigsResponse>(response, null);
   },
 
-  async refreshConnectClusters(): Promise<void> {
+  async refreshConnectClusters() {
     set({ connectConnectorsError: null });
     const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/connectors`, {
       method: 'GET',
@@ -1586,7 +1557,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     await parseOrUnwrap<void>(response, null);
   },
 
-  refreshClusterAdditionalInfo(clusterName: string, force?: boolean): Promise<void> {
+  refreshClusterAdditionalInfo(clusterName: string, force?: boolean) {
     return cachedApiRequest<ClusterAdditionalInfo | null>(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}`,
       force
@@ -1605,7 +1576,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     }, addError);
   },
 
-  async deleteConnector(clusterName: string, connector: string): Promise<void> {
+  async deleteConnector(clusterName: string, connector: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}`,
       {
@@ -1616,7 +1587,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async pauseConnector(clusterName: string, connector: string): Promise<void> {
+  async pauseConnector(clusterName: string, connector: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/pause`,
       {
@@ -1627,7 +1598,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async resumeConnector(clusterName: string, connector: string): Promise<void> {
+  async resumeConnector(clusterName: string, connector: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/resume`,
       {
@@ -1638,7 +1609,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async restartConnector(clusterName: string, connector: string): Promise<void> {
+  async restartConnector(clusterName: string, connector: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/restart`,
       {
@@ -1649,7 +1620,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async updateConnector(clusterName: string, connector: string, config: object): Promise<void> {
+  async updateConnector(clusterName: string, connector: string, config: object) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}`,
       {
@@ -1661,7 +1632,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async restartTask(clusterName: string, connector: string, taskID: number): Promise<void> {
+  async restartTask(clusterName: string, connector: string, taskID: number) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/tasks/${String(taskID)}/restart`,
       {
@@ -1673,11 +1644,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async validateConnectorConfig(
-    clusterName: string,
-    pluginClassName: string,
-    config: object
-  ): Promise<ConnectorValidationResult> {
+  async validateConnectorConfig(clusterName: string, pluginClassName: string, config: object) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connector-plugins/${encodeURIComponent(pluginClassName)}/config/validate`,
       {
@@ -1700,7 +1667,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     connectorName: string,
     _pluginClassName: string, // needs to be kept to avoid larger refactor despite not being used.
     config: object
-  ): Promise<void> {
+  ) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors`,
       {
@@ -1715,7 +1682,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async publishRecords(request: PublishRecordsRequest): Promise<ProduceRecordsResponse> {
+  async publishRecords(request: PublishRecordsRequest) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/topics-records`, {
       method: 'POST',
       headers: [['Content-Type', 'application/json']],
@@ -1724,7 +1691,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<ProduceRecordsResponse>(response, null);
   },
 
-  async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
+  async publishMessage(request: PublishMessageRequest) {
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.consoleClient!;
     if (!client) {
@@ -1735,7 +1702,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return r;
   },
 
-  async createTopic(request: CreateTopicRequest): Promise<CreateTopicResponse> {
+  async createTopic(request: CreateTopicRequest) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/topics`, {
       method: 'POST',
       headers: [['Content-Type', 'application/json']],
@@ -1744,7 +1711,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<CreateTopicResponse>(response, null);
   },
 
-  async createSecret(clusterName: string, connectorName: string, secretValue: string): Promise<CreateSecretResponse> {
+  async createSecret(clusterName: string, connectorName: string, secretValue: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets`,
       {
@@ -1763,7 +1730,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<CreateSecretResponse>(response, null);
   },
 
-  async updateSecret(clusterName: string, secretId: string, secretValue: string): Promise<void> {
+  async updateSecret(clusterName: string, secretId: string, secretValue: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`,
       {
@@ -1777,7 +1744,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async deleteSecret(clusterName: string, secretId: string): Promise<void> {
+  async deleteSecret(clusterName: string, secretId: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`,
       {
@@ -1787,7 +1754,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async uploadLicense(request: SetLicenseRequest): Promise<SetLicenseResponse> {
+  async uploadLicense(request: SetLicenseRequest) {
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.licenseClient!;
     if (!client) {
@@ -1881,7 +1848,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       });
   },
 
-  async createDebugBundle(request: CreateDebugBundleRequest): Promise<CreateDebugBundleResponse> {
+  async createDebugBundle(request: CreateDebugBundleRequest) {
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
@@ -1992,7 +1959,7 @@ function roleMembersEntry(res: GetRoleResult): [string, RolePrincipal[]] | null 
   return [role.name, members];
 }
 
-async function collectRoleMembers(rolePromises: Promise<GetRoleResult>[]): Promise<Map<string, RolePrincipal[]>> {
+async function collectRoleMembers(rolePromises: Promise<GetRoleResult>[]) {
   const roleMembers = new Map<string, RolePrincipal[]>();
   const roles = await Promise.all(rolePromises);
   for (const role of roles) {
@@ -2387,7 +2354,7 @@ type ConsoleClient = NonNullable<typeof appConfig.consoleClient>;
 const SEARCH_TIMEOUT_MS = 30 * 1000;
 const LIVE_TAIL_TIMEOUT_MS = 30 * 60 * 1000;
 
-function requireConsoleClient(): ConsoleClient {
+function requireConsoleClient() {
   // https://connectrpc.com/docs/web/using-clients
   // https://github.com/connectrpc/connect-es
   // https://github.com/connectrpc/examples-es
@@ -2432,7 +2399,7 @@ function toListMessagesRequest(searchRequest: MessageSearchRequest) {
   });
 }
 
-function isLiveTailSearch(searchRequest: MessageSearchRequest): boolean {
+function isLiveTailSearch(searchRequest: MessageSearchRequest) {
   return searchRequest.startOffset === PartitionOffsetOrigin.End || searchRequest.filterInterpreterCode !== null;
 }
 
@@ -2589,11 +2556,7 @@ export function createMessageSearch() {
 
     messages: [] as TopicMessage[],
 
-    async startSearch(
-      _searchRequest: MessageSearchRequest,
-      externalSignal?: AbortSignal,
-      append = false
-    ): Promise<TopicMessage[]> {
+    async startSearch(_searchRequest: MessageSearchRequest, externalSignal?: AbortSignal, append = false) {
       const client = requireConsoleClient();
 
       if (this.searchPhase) {
@@ -2623,7 +2586,7 @@ export function createMessageSearch() {
       }
     },
 
-    async loadMore(loadMorePageSize?: number, externalSignal?: AbortSignal): Promise<TopicMessage[]> {
+    async loadMore(loadMorePageSize?: number, externalSignal?: AbortSignal) {
       if (!this.nextPageToken) {
         throw new Error('No next page available');
       }
@@ -2677,7 +2640,7 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
 }
 
 export const brokerMap = {
-  get(): Map<number, Broker> | null {
+  get() {
     const brokers = api.clusterInfo?.brokers;
     if (!brokers) {
       return null;
@@ -2703,7 +2666,7 @@ function prepareSynonyms(configEntries: ConfigEntry[]) {
 }
 
 function normalizeAcls(acls: AclResource[]) {
-  function upperFirst(str: string): string {
+  function upperFirst(str: string) {
     if (!str) {
       return str;
     }
@@ -2717,7 +2680,7 @@ function normalizeAcls(acls: AclResource[]) {
     TRANSACTIONAL_ID: 'TransactionalID',
   } as { [key: string]: string };
 
-  function normalizeStringEnum<T extends string>(str: T): T {
+  function normalizeStringEnum<T extends string>(str: T) {
     if (!str) {
       return str;
     }
@@ -2744,7 +2707,7 @@ function normalizeAcls(acls: AclResource[]) {
   }
 }
 
-export function aclRequestToQuery(request: GetAclsRequest): string {
+export function aclRequestToQuery(request: GetAclsRequest) {
   const filters = objToKv(request)
     .filter((kv) => !!kv.value)
     .map((x) => [x.key, String(x.value)]);
@@ -2753,10 +2716,7 @@ export function aclRequestToQuery(request: GetAclsRequest): string {
   return searchParams.toString();
 }
 
-export async function partialTopicConfigs(
-  configKeys: string[],
-  topics?: string[]
-): Promise<PartialTopicConfigsResponse> {
+export async function partialTopicConfigs(configKeys: string[], topics?: string[]) {
   const keys = configKeys.map((k) => encodeURIComponent(k)).join(',');
   const topicNames = topics?.map((t) => encodeURIComponent(t)).join(',');
   const query = topicNames ? `topicNames=${topicNames}&configKeys=${keys}` : `configKeys=${keys}`;
@@ -2787,7 +2747,7 @@ export type MessageSearchRequest = {
   schemaContext?: string; // '' resolves the topic's context, '.' forces the default.
 };
 
-async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
+async function parseOrUnwrap<T>(response: Response, text: string | null) {
   const responseText = await readResponseBody(response, text);
   const obj = parseResponseJson(responseText);
 
@@ -2818,7 +2778,7 @@ function addError(err: Error) {
 }
 
 /** React hook to subscribe to API store state. Use this in components instead of useStore(useApiStore, ...). */
-function useApiStoreHook<T>(selector: (state: ApiState) => T): T {
+function useApiStoreHook<T>(selector: (state: ApiState) => T) {
   return useStore(useApiStore, selector);
 }
 
@@ -2917,7 +2877,7 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
   },
 });
 
-function createRestHeaders(initialHeaders?: HeadersInit): Headers {
+function createRestHeaders(initialHeaders?: HeadersInit) {
   // Only add if not already set - custom fetch (e.g., Cloud UI's authenticatedFetch) may have already added it
   const headers = new Headers(initialHeaders);
   if (appConfig.jwt && !headers.has('Authorization')) {
@@ -2940,7 +2900,7 @@ async function updateLoginError(res: Response) {
   }
 }
 
-function readResponseBody(response: Response, text: string | null): Promise<string> {
+function readResponseBody(response: Response, text: string | null) {
   if (text !== null) {
     return Promise.resolve(text);
   }
@@ -2960,9 +2920,9 @@ function parseResponseJson(text: string): unknown {
 
 type PaginatedItems<T> = { items: T[]; nextPageToken?: string };
 
-function collectPages<T>(fetchPage: (pageToken: string) => Promise<PaginatedItems<T> | undefined>): Promise<T[]> {
+function collectPages<T>(fetchPage: (pageToken: string) => Promise<PaginatedItems<T> | undefined>) {
   const items: T[] = [];
-  const nextPage = async (pageToken: string): Promise<T[]> => {
+  const nextPage = async (pageToken: string) => {
     const page = await fetchPage(pageToken);
     if (!page) {
       return items;

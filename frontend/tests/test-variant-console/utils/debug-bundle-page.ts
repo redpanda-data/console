@@ -1,4 +1,4 @@
-import type { Download, Locator, Page } from '../../shared/e2e';
+import type { Locator, Page } from '../../shared/e2e';
 import { expect, step } from '../../shared/e2e';
 
 /**
@@ -275,7 +275,7 @@ export class DebugBundlePage {
   /**
    * Bundle download and deletion
    */
-  async downloadBundle(): Promise<Download> {
+  async downloadBundle() {
     const downloadLink = this.page.getByRole('link', { name: /download/iu });
     await expect(downloadLink).toBeVisible({ timeout: 5000 });
 
@@ -310,7 +310,7 @@ export class DebugBundlePage {
   /**
    * Status checking methods
    */
-  async isBundleGenerationInProgress(): Promise<boolean> {
+  async isBundleGenerationInProgress() {
     await this.goto({ skipCleanup: true });
 
     const progressLink = this.page.getByRole('link', { name: /progress|in progress/iu });

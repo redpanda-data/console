@@ -62,7 +62,7 @@ const authenticationApiClient = {
     username: string;
     password: string;
     mechanism: SASLMechanism;
-  }): Promise<void> {
+  }) {
     const client = appConfig.authenticationClient;
 
     if (!client) {

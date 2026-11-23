@@ -28,7 +28,7 @@ const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
 
 const nbsp = '\xA0'; // non breaking space
 
-export function numberToThousandsString(n: number): JSX.Element {
+export function numberToThousandsString(n: number) {
   if (typeof n !== 'number') {
     return <>{n}</>;
   }
@@ -117,7 +117,7 @@ export function quickTable(
     | { [key: string]: React.ReactNode }
     | [React.ReactNode, React.ReactNode][],
   options?: QuickTableOptions
-): JSX.Element {
+) {
   let entries: { key: React.ReactNode; value: React.ReactNode }[];
 
   // plain object?
@@ -168,7 +168,7 @@ export function quickTable(
   );
 }
 
-export function toSafeString(x: unknown): string {
+export function toSafeString(x: unknown) {
   if (typeof x === 'undefined' || x === null) {
     return '';
   }
@@ -181,7 +181,7 @@ export function toSafeString(x: unknown): string {
   return toJson(x);
 }
 
-export function objToKv(obj: Record<string, unknown>): { key: string; value: unknown }[] {
+export function objToKv(obj: Record<string, unknown>) {
   const ar = [] as { key: string; value: unknown }[];
   for (const k in obj) {
     if (Object.hasOwn(obj, k)) {
@@ -191,7 +191,7 @@ export function objToKv(obj: Record<string, unknown>): { key: string; value: unk
   return ar;
 }
 
-function withChildId(child: React.ReactNode, id: string): React.ReactElement {
+function withChildId(child: React.ReactNode, id: string) {
   // biome-ignore lint/style/useObjectSpread: ReactNode cannot be spread safely
   const newChild = Object.assign({}, child) as { props?: Record<string, unknown> };
   newChild.props = {};

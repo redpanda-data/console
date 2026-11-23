@@ -49,7 +49,6 @@ export class WrappedApiError extends Error {
 
     this.statusCode = apiError.statusCode;
 
-    // try showing only the path of the url
     try {
       const u = new URL(response.url);
       this.path = u.pathname + u.search;
@@ -83,11 +82,13 @@ export type Topic = {
   cleanupPolicy: string;
   documentation: 'UNKNOWN' | 'NOT_CONFIGURED' | 'NOT_EXISTENT' | 'AVAILABLE';
   logDirSummary: TopicLogDirSummary;
-  allowedActions: TopicAction[] | undefined; // undefined means 'all'
+  /** An omitted list permits all topic actions. */
+  allowedActions: TopicAction[] | undefined;
 };
 
 export type TopicLogDirSummary = {
-  totalSizeBytes: number; // how much space this topic takes up (files in its log dir)
+  /** Total size of this topic's log directory files, in bytes. */
+  totalSizeBytes: number;
   replicaErrors:
     | {
         brokerId: number;
@@ -105,29 +106,36 @@ export type Partition = {
   id: number;
 
   partitionError: string | null;
-  replicas: number[]; // brokerIds of all brokers that host the leader or a replica of this partition
+  /** Broker IDs hosting a replica, including the leader. */
+  replicas: number[];
   offlineReplicas: number[] | null;
-  inSyncReplicas: number[]; // brokerId (can only be one?) of the leading broker
-  leader: number; // id of the "leader" broker for this partition
+  /** Broker IDs in the in-sync replica set. */
+  inSyncReplicas: number[];
+  leader: number;
   partitionLogDirs: {
-    error: string; // empty when no error
+    /** Empty when the log directory was described successfully. */
+    error: string;
     brokerId: number;
-    partitionId: number; // redundant?
-    size: number; // size (in bytes) of log dir on that broker
+    partitionId: number;
+    /** Log directory size in bytes on this broker. */
+    size: number;
   }[];
 
   waterMarksError: string | null;
   waterMarkLow: number;
   waterMarkHigh: number;
 
-  replicaSize: number; // largest known/reported size of any replica; used for estimating how much traffic a reassignment would cause
-  topicName: string; // used for finding the actual topic this partition belongs to (in case we pass around a partition reference on its own)
-  hasErrors: boolean; // just (partitionError || waterMarksError)
+  /** Largest reported replica size, used to estimate reassignment traffic. */
+  replicaSize: number;
+  topicName: string;
+  /** Whether partition metadata or water mark lookup failed. */
+  hasErrors: boolean;
 };
 
 export type GetPartitionsResponse = {
   topicName: string;
-  error: string | null; // only set if metadata request has failed for the whole topic
+  /** Set only when metadata lookup failed for the whole topic. */
+  error: string | null;
   partitions: Partition[];
 };
 
@@ -190,15 +198,17 @@ export const CompressionType = {
 export type CompressionTypeType = (typeof CompressionType)[keyof typeof CompressionType];
 
 export type Payload = {
-  payload: unknown; // json obj
+  payload: unknown;
   isPayloadNull: boolean;
-  encoding: MessageDataType; // actual format of the message (before the backend converted it to json)
+  /** Original wire encoding before the backend converted the payload to JSON. */
+  encoding: MessageDataType;
   schemaId: number;
   size: number;
 
   troubleshootReport?: TroubleshootReport[];
   isPayloadTooLarge?: boolean;
-  normalizedPayload?: Uint8Array; // used to show hex bytes if payload couldn't be decoded
+  /** Bytes used for the hex preview when the payload cannot be decoded. */
+  normalizedPayload?: Uint8Array;
   rawBytes?: Uint8Array;
 };
 
@@ -217,7 +227,8 @@ export type TopicMessage = {
   key: Payload;
   value: Payload;
 
-  valueJson: string; // Value json is what is used for (local) filtering
+  /** Serialized value used by client-side message filters. */
+  valueJson: string;
   valueBinHexPreview: string;
   keyJson: string;
   keyBinHexPreview: string;
@@ -295,9 +306,11 @@ export type PartialTopicConfigsResponse = {
 };
 export type TopicDocumentation = {
   isEnabled: boolean;
-  markdown: string | null; // base64
+  /** Base64-encoded Markdown. */
+  markdown: string | null;
 
-  text: string | null; // atob(markdown)
+  /** Decoded Markdown. */
+  text: string | null;
 };
 export type TopicDocumentationResponse = {
   topicName: string;
@@ -309,13 +322,15 @@ export type GroupMemberAssignment = {
   partitionIds: number[];
 };
 export type GroupMemberDescription = {
-  id: string; // unique ID assigned to the member after login
+  /** ID assigned by the broker when the member joins. */
+  id: string;
   instanceId?: string;
-  clientId: string; // custom id reported by the member
-  clientHost: string; // address/host of the connection
-  assignments: GroupMemberAssignment[]; // topics+partitions that the worker is assigned to
+  /** Client identifier reported by the member. */
+  clientId: string;
+  clientHost: string;
+  assignments: GroupMemberAssignment[];
 
-  // consumer (KIP-848) groups only
+  /** Only available for KIP-848 consumer groups. */
   memberEpoch?: number;
   targetAssignments?: GroupMemberAssignment[];
   subscribedTopics?: string[];
@@ -330,20 +345,22 @@ export type GroupAction = 'all' | (typeof GroupActions)[number];
 export type GroupType = 'classic' | 'consumer';
 
 export type GroupDescription = {
-  groupId: string; // name of the group
+  groupId: string;
   groupType: GroupType;
   state: string;
-  protocol: string; // balancer of a classic group, assignor of a consumer group
-  protocolType: string; // Will be "consumer" if we can decode the members; otherwise ".members" will be empty, which happens for "sr" (for schema registry) for example
-  // consumer (KIP-848) groups only; missing when the broker could not describe the group
+  /** Classic group balancer or KIP-848 consumer group assignor. */
+  protocol: string;
+  /** Only consumer-protocol member metadata is decoded; other types, such as Schema Registry's "sr", have no decoded members. */
+  protocolType: string;
+  /** Only available for KIP-848 groups the broker could describe. */
   groupEpoch?: number;
   targetAssignmentEpoch?: number;
-  members: GroupMemberDescription[]; // members (consumers) that are currently present in the group
+  members: GroupMemberDescription[];
   coordinatorId: number;
   topicOffsets: GroupTopicOffsets[];
   allowedActions: GroupAction[] | null;
 
-  lagSum: number; // sum of lag for all topic offsets
+  lagSum: number;
 
   isInUse: boolean;
   noEditPerms: boolean;
@@ -352,17 +369,20 @@ export type GroupDescription = {
 
 export type GroupTopicOffsets = {
   topic: string;
-  summedLag: number; // summed lag of all partitions (non consumed partitions are not considered)
+  /** Total lag across partitions with committed offsets. */
+  summedLag: number;
   partitionCount: number;
-  partitionsWithOffset: number; // number of partitions that have an active group offset
+  partitionsWithOffset: number;
   partitionOffsets: GroupPartitionOffset[];
 };
 
 export type GroupPartitionOffset = {
   partitionId: number;
-  groupOffset: number | null; // null when no committed offset exists for this partition
+  /** Null when this group has no committed offset for the partition. */
+  groupOffset: number | null;
 
-  error: string | undefined; // Error will be set when the high water mark could not be fetched
+  /** Set when the high water mark could not be fetched. */
+  error: string | undefined;
   highWaterMark: number;
   lag: number;
 };
@@ -376,7 +396,8 @@ export type EditConsumerGroupOffsetsTopic = {
   topicName: string;
   partitions: {
     partitionId: number;
-    offset: number; // -1 latest, -2 earliest
+    /** Use -1 for the latest and -2 for the earliest offset. */
+    offset: number;
   }[];
 };
 
@@ -421,7 +442,8 @@ export type DeleteConsumerGroupOffsetsResponseTopic = {
 
 export type GetTopicOffsetsByTimestampRequest = {
   topics: GetTopicOffsetsByTimestampRequestTopic[];
-  timestamp: number; // unix ms
+  /** Unix timestamp in milliseconds. */
+  timestamp: number;
 };
 export type GetTopicOffsetsByTimestampRequestTopic = {
   topicName: string;
@@ -446,13 +468,13 @@ export type PartitionOffset = {
 };
 
 export type TopicLag = {
-  topic: string; // name
+  topic: string;
   summedLag: number;
 
-  partitionCount: number; // number of partitions the topic has
-  partitionsWithOffset: number; // number of partitions that have an active offset in this group
+  partitionCount: number;
+  partitionsWithOffset: number;
 
-  // only lists partitions that have a commited offset (independent of whether or not a member is currently assigned to it)
+  /** Includes partitions with committed offsets, even when no group member owns them. */
   partitionLags: PartitionLag[];
 };
 
@@ -479,7 +501,8 @@ export type ClusterInfo = {
 };
 export type Broker = {
   brokerId: number;
-  logDirSize: number; // bytes of the whole directory
+  /** Total log directory size, in bytes. */
+  logDirSize: number;
   address: string;
   rack: string | null;
 
@@ -496,9 +519,8 @@ export type EndpointCompatibilityResponse = {
 };
 
 export type RedpandaLicense = {
-  // Source is where the license is used (e.g. Redpanda Cluster, Console)
+  /** Product where the license is active, such as Console or the Redpanda cluster. */
   source: 'console' | 'cluster' | string;
-  // Type is the type of license (free, trial, enterprise)
   type: 'free_trial' | 'open_source' | 'enterprise' | string;
   expiresAt: number;
 };
@@ -530,10 +552,11 @@ export type User = {
   };
 };
 export type Seat = {
-  id: string; // id of seat
-  licenseId: string; // shouldn't that be censored??
-  user: User; // user representation of firestore? should be removed...
-  lastActivity: string; // is a datetime string, should probably be a "UnixMillis"
+  id: string;
+  licenseId: string;
+  user: User;
+  /** Date-time string, not a Unix timestamp. */
+  lastActivity: string;
 };
 export type UserData = {
   displayName: string;
@@ -572,7 +595,7 @@ export type TopicPermissions = {
   canEditTopicConfig: boolean;
 };
 
-// https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L47
+/** @see https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L47 */
 export const AclResourceType = {
   Unknown: 0,
   Any: 1,
@@ -585,7 +608,7 @@ export const AclResourceType = {
 
 export type AclResourceTypeType = (typeof AclResourceType)[keyof typeof AclResourceType];
 
-// https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L59
+/** @see https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L59 */
 export const AclResourcePatternType = {
   Unknown: 0,
   Any: 1,
@@ -596,7 +619,7 @@ export const AclResourcePatternType = {
 
 export type AclResourcePatternTypeType = (typeof AclResourcePatternType)[keyof typeof AclResourcePatternType];
 
-// https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L81
+/** @see https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L81 */
 export const AclOperation = {
   Unknown: 0,
   Any: 1,
@@ -615,7 +638,7 @@ export const AclOperation = {
 
 export type AclOperationType = (typeof AclOperation)[keyof typeof AclOperation];
 
-// https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L71
+/** @see https://github.com/twmb/franz-go/blob/master/generate/definitions/enums#L71 */
 export const AclPermission = {
   Unknown: 0,
   Any: 1,
@@ -625,7 +648,6 @@ export const AclPermission = {
 
 export type AclPermissionType = (typeof AclPermission)[keyof typeof AclPermission];
 
-//   /api/acls?resourceType=1&resourcePatternTypeFilter=1&operation=1&permissionType=1
 export type GetAclsRequest = {
   resourceType: AclStrResourceType;
   resourceName?: string;
@@ -720,12 +742,11 @@ export type PartitionReassignmentRequest = {
   topics: TopicAssignment[];
 };
 export type TopicAssignment = {
-  topicName: string; // name of topic to change
+  topicName: string;
   partitions: {
     partitionId: number;
+    /** Null cancels the pending reassignment. Kafka may rebalance partition leadership later. */
     replicas: number[] | null;
-    // Since Kafka rebalances the leader partitions across the brokers periodically, it is not super important which broker is the leader.
-    // Can also be null to cancel a pending reassignment.
   }[];
 };
 
@@ -751,10 +772,10 @@ export const ConfigResourceType = {
 export type ConfigResourceTypeType = (typeof ConfigResourceType)[keyof typeof ConfigResourceType];
 
 export const AlterConfigOperation = {
-  Set: 0, // set a config key
-  Delete: 1, // remove/unset a config key
-  Append: 2, // add a value to a list
-  Subtract: 3, // remove a value from a list
+  Set: 0,
+  Delete: 1,
+  Append: 2,
+  Subtract: 3,
 } as const;
 
 export type AlterConfigOperationType = (typeof AlterConfigOperation)[keyof typeof AlterConfigOperation];
@@ -762,8 +783,7 @@ export type AlterConfigOperationType = (typeof AlterConfigOperation)[keyof typeo
 export type IncrementalAlterConfigsRequestResourceConfig = {
   name: string;
 
-  // set(0) value must not be null
-  // append(2) append value to list of values, the config entry must be a list
+  /** Set requires a non-null value; Append requires a list-valued config entry. */
   op: AlterConfigOperationType;
 
   value?: string;
@@ -772,8 +792,7 @@ export type IncrementalAlterConfigsRequestResourceConfig = {
 export type ResourceConfig = {
   resourceType: ConfigResourceTypeType;
 
-  // even when the path is unchanged, and password options are per-broker only); a broker ID is
-  // required for broker logger.
+  /** Broker logger updates require a broker ID. Password settings are per-broker. */
   resourceName: string;
 
   configs: IncrementalAlterConfigsRequestResourceConfig[];
@@ -791,7 +810,7 @@ export type PatchConfigsResponse = {
 };
 
 export type PatchTopicConfigsEntry = {
-  key: string; // segment.bytes, ...
+  key: string;
   op: 'SET' | 'DELETE' | 'APPEND' | 'SUBTRACT';
   value?: string;
 };
@@ -824,7 +843,8 @@ export type ConnectClusterShard = {
 };
 
 export type KafkaConnectors = {
-  clusters: ClusterConnectors[] | null; // only null when isConfigured=false
+  /** Null when Kafka Connect is not configured. */
+  clusters: ClusterConnectors[] | null;
   isConfigured: boolean;
 };
 
@@ -852,7 +872,7 @@ export type ClusterConnectors = {
   canDeleteCluster: boolean;
 };
 
-// https://docs.confluent.io/home/connect/monitoring.html#connector-and-task-status
+/** @see https://docs.confluent.io/home/connect/monitoring.html#connector-and-task-status */
 export const ConnectorState = {
   Unassigned: 'UNASSIGNED',
   Running: 'RUNNING',
@@ -876,10 +896,13 @@ export type ConnectorPossibleStatesLiteral = `${ConnectorStateType}`;
 
 export type ClusterConnectorInfo = {
   name: string;
-  class: string; // java class name
-  config: object; // map[string]string
-  type: string; // Source or Sink
-  topic: string; // Kafka Topic name
+  /** Java class name of the connector plugin. */
+  class: string;
+  /** Connector configuration keys and their string values. */
+  config: object;
+  /** Whether this connector is a source or sink. */
+  type: string;
+  topic: string;
   state: ConnectorStateType;
   status: ConnectorStatus;
   errors: ConnectorError[];
@@ -896,7 +919,7 @@ export type ClusterConnectorTaskInfo = {
   taskId: number;
   state: TaskState;
   workerId: string;
-  trace?: string; // error message
+  trace?: string;
 };
 
 export type ClusterAdditionalInfo = {
@@ -1026,28 +1049,32 @@ export type PublishRecordsRequest = {
 
   compressionType: CompressionTypeNumType;
 
-  // UseTransactions indicates whether we should produce the records transactional. If only one record shall
+  /** Whether to publish records inside a transaction. */
   useTransactions: boolean;
 
   records: PublishRecord[];
 };
 
 export type PublishRecord = {
-  key: string; // base64
-  value: null | string; // base64
+  /** Base64-encoded record key. */
+  key: string;
+  /** Base64-encoded record value; null encodes a tombstone. */
+  value: null | string;
 
   headers: {
-    key: string; // base64
-    value: string; // base64
+    /** Base64-encoded header key. */
+    key: string;
+    /** Base64-encoded header value. */
+    value: string;
   }[];
 
-  partitionId: number; // -1 for automatic
+  /** Use -1 to let the producer choose the partition. */
+  partitionId: number;
 };
 
 export type ProduceRecordsResponse = {
   records: ProduceRecordResponse[];
-  // Error indicates that producing for all records have failed. E.g. because creating a transaction has failed
-  // when transactions were enabled. Another option could be that the Kafka client creation has failed because
+  /** Batch-level failure, such as failure to start the transaction or create the Kafka client. */
   error?: string;
 };
 
@@ -1090,8 +1117,10 @@ export type TopicConfigEntry = WellKnownTopicConfigEntries | { name: string; val
 
 export type CreateTopicRequest = {
   topicName: string;
-  partitionCount: number; // -1 for default
-  replicationFactor: number; // -1 for default
+  /** Use -1 to use the broker's default partition count. */
+  partitionCount: number;
+  /** Use -1 to use the broker's default replication factor. */
+  replicationFactor: number;
   configs: TopicConfigEntry[];
 };
 
@@ -1135,7 +1164,7 @@ export type BrokerWithConfigAndStorage = {
   address: string;
   rack?: string;
   totalLogDirSizeBytes?: number;
-  // TotalPrimaryLogDirSizeBytes is the log dir size of the unique/leading partitions only.
+  /** Log directory size in bytes counting only partitions this broker leads. */
   totalPrimaryLogDirSizeBytes?: number;
 };
 
@@ -1143,7 +1172,8 @@ export type SchemaRegistryMode = 'READWRITE' | 'READONLY' | 'IMPORT';
 export type SchemaRegistryModeWithDefault = 'DEFAULT' | SchemaRegistryMode;
 
 export type SchemaRegistryModeResponse = {
-  isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
+  /** Present and false only when Schema Registry has not been configured. */
+  isConfigured?: false;
   mode: string;
 };
 
@@ -1169,7 +1199,8 @@ export const SchemaRegistryCompatibilityModes = {
   FULL_TRANSITIVE: 'FULL_TRANSITIVE',
 } as const satisfies Record<string, SchemaRegistryCompatibilityModeWithDefault>;
 export type SchemaRegistryConfigResponse = {
-  isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
+  /** Present and false only when Schema Registry has not been configured. */
+  isConfigured?: false;
   compatibility: SchemaRegistryCompatibilityMode;
 };
 
@@ -1183,7 +1214,8 @@ export type SchemaRegistrySubject = {
 };
 
 export type SchemaRegistrySchemaTypesResponse = {
-  isConfigured?: false; // can only ever be undefined (schema reg is configured properly), or false (is not configured)
+  /** Present and false only when Schema Registry has not been configured. */
+  isConfigured?: false;
   schemaTypes: string[];
 };
 

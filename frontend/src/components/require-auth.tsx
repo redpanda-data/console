@@ -18,7 +18,7 @@ import { useSupportedFeaturesStore } from '../state/supported-features';
 import { uiState } from '../state/ui-state';
 import { AppFeatures, getBasePath, IsDev } from '../utils/env';
 
-function loginHandling(): JSX.Element | null {
+function loginHandling() {
   if (!AppFeatures.SINGLE_SIGN_ON) {
     return null;
   }
@@ -38,7 +38,7 @@ function loginHandling(): JSX.Element | null {
   return renderAuthenticatedState(path);
 }
 
-function renderAuthenticatedState(path: string): JSX.Element | null {
+function renderAuthenticatedState(path: string) {
   const preLogin = <div style={{ background: 'var(--color-page)', height: '100vh' }} />;
   if (api.userData === null && !path.startsWith('/login')) {
     logLoginState(path, 'known not logged in, hard redirect');
@@ -105,7 +105,7 @@ function requestInitialUserData() {
   }
 }
 
-function renderInitialLoginState(path: string, preLogin: JSX.Element): JSX.Element {
+function renderInitialLoginState(path: string, preLogin: JSX.Element) {
   logLoginState(path, 'user is undefined (probably a fresh page load)');
 
   if (api.userDataError) {

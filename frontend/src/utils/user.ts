@@ -24,10 +24,10 @@ export const USERNAME_ERROR_MESSAGE =
 export const PASSWORD_MIN_LENGTH = 4;
 export const PASSWORD_MAX_LENGTH = 64;
 
-export function validateUsername(username: string): boolean {
+export function validateUsername(username: string) {
   return USERNAME_REGEX.test(username);
 }
 
-export function validatePassword(password: string): boolean {
+export function validatePassword(password: string) {
   return Boolean(password) && password.length >= PASSWORD_MIN_LENGTH && password.length <= PASSWORD_MAX_LENGTH;
 }

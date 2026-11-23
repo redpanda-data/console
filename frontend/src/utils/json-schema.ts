@@ -89,11 +89,11 @@ export function generateDefaultFromJsonSchema(
  * @param schema The parent schema containing the required array
  * @returns true if the property is required, false otherwise
  */
-export function isPropertyRequired(propertyName: string, schema: JsonSchemaType): boolean {
+export function isPropertyRequired(propertyName: string, schema: JsonSchemaType) {
   return schema.required?.includes(propertyName) ?? false;
 }
 
-function generateObjectDefault(schema: JsonSchemaType): JsonObject {
+function generateObjectDefault(schema: JsonSchemaType) {
   const result: JsonObject = {};
   for (const [key, property] of Object.entries(schema.properties ?? {})) {
     if (isPropertyRequired(key, schema)) {

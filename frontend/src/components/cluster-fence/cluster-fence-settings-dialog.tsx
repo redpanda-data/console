@@ -72,7 +72,7 @@ const useAddedPrincipal = (form: UseFormReturn<FormValues>, addPrincipal: string
   }, [addPrincipal, form]);
 };
 
-const toFormValues = (summary: FenceSummary): FormValues => ({
+const toFormValues = (summary: FenceSummary) => ({
   settings: { exemptPrincipals: summary.exemptPrincipals, allowAllReads: summary.allowAllReads },
 });
 

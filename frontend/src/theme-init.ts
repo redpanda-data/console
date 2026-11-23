@@ -35,7 +35,7 @@ export const UNAVAILABLE_THEME_INIT = {
 } as const satisfies ThemeInit;
 
 /** Safari in private mode throws on `localStorage`; without storage, dark mode stays unavailable. */
-const readDarkModeAvailable = (): boolean => {
+const readDarkModeAvailable = () => {
   try {
     return localStorage.getItem(DARK_MODE_AVAILABLE_KEY) === 'true';
   } catch {
@@ -49,7 +49,7 @@ let availableThisLoad: boolean | undefined;
  * Read once per page load, so index.html's inline script, the pre-paint `initTheme` in bootstrap.tsx,
  * app.tsx's ThemeProvider and the header's switch agree until the next load.
  */
-export const isDarkModeAvailable = (): boolean => {
+export const isDarkModeAvailable = () => {
   availableThisLoad ??= readDarkModeAvailable();
   return availableThisLoad;
 };
@@ -61,7 +61,7 @@ export const themeInitFor = (available: boolean): ThemeInit =>
  * Records `isAvailable()` for the next load: now, and again when the page is left, so a flag toggled in
  * the debug dialog lands on the reload.
  */
-export const installDarkModeAvailabilitySync = (isAvailable: () => boolean): (() => void) => {
+export const installDarkModeAvailabilitySync = (isAvailable: () => boolean) => {
   const sync = () => {
     try {
       if (isAvailable()) {

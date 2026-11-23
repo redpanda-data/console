@@ -10,7 +10,7 @@
  */
 
 /** Distance from the document top. Unlike getBoundingClientRect, scroll-independent. */
-export const documentTop = (target: HTMLElement): number => {
+export const documentTop = (target: HTMLElement) => {
   let top = 0;
   let el: HTMLElement | null = target;
   while (el) {
@@ -21,7 +21,7 @@ export const documentTop = (target: HTMLElement): number => {
 };
 
 /** `from` and its ancestors, up to but excluding `<body>`. */
-export const chainToBody = (from: HTMLElement | null): HTMLElement[] => {
+export const chainToBody = (from: HTMLElement | null) => {
   const chain: HTMLElement[] = [];
   for (let el = from; el && el !== document.body; el = el.parentElement) {
     chain.push(el);

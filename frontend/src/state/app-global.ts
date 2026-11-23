@@ -23,7 +23,7 @@ const TRAILING_SLASH_REGEX = /\/+$/u;
  * Normalizes a path by removing trailing slashes for consistent comparison.
  * This prevents duplicate navigations when paths differ only by trailing slash.
  */
-function normalizePath(path: string | undefined): string {
+function normalizePath(path: string | undefined) {
   if (!path) {
     return '/';
   }
@@ -86,7 +86,7 @@ class AppGlobal {
     this._location = location;
   }
 
-  get location(): ParsedLocation {
+  get location() {
     if (!this._location) {
       throw new Error('Location is not initialized. Make sure RouterSync is mounted.');
     }
@@ -94,7 +94,7 @@ class AppGlobal {
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: Router type is complex and varies based on route tree
-  get router(): Router<any, any, any> {
+  get router() {
     if (!this._router) {
       throw new Error('Router is not initialized. Make sure RouterSync is mounted.');
     }

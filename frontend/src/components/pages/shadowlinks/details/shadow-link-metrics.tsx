@@ -19,7 +19,7 @@ import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
 import { SHORT_LIVED_CACHE_STALE_TIME } from '../../../../react-query/react-query.utils';
 import { type UnifiedShadowLink, type UnifiedShadowLinkState, UnifiedShadowLinkStateLabel } from '../model';
 
-const getStateDisplay = (state: UnifiedShadowLinkState): string => UnifiedShadowLinkStateLabel[state] || 'Unknown';
+const getStateDisplay = (state: UnifiedShadowLinkState) => UnifiedShadowLinkStateLabel[state] || 'Unknown';
 
 const MetricCardRefreshButton = ({ isFetching, onRefresh }: { isFetching: boolean; onRefresh: () => void }) =>
   isFetching ? (

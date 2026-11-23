@@ -158,7 +158,7 @@ export const getSourceFenceStep = ({
 };
 
 /** Fenced, and still readable by this link: a fence that blocks the link would leave its lag stuck. */
-export const isSourceFenceReady = (step: SourceFenceStep): boolean =>
+export const isSourceFenceReady = (step: SourceFenceStep) =>
   step.kind === 'cloud' && step.fenced && step.linkExempt !== false;
 
 /** `blocked` when the fence is in place but stops this link reading, so its lag can't drain. */
@@ -242,7 +242,7 @@ const sourceFenceReason = (fence: SourceFenceStep): string | undefined => {
   return progress === 'ready' ? undefined : 'Not ready until the source cluster reports Fenced.';
 };
 
-const lagReason = (lag: LagStep): string | undefined => {
+const lagReason = (lag: LagStep) => {
   if (lag.stale) {
     return 'Couldn’t refresh the topics’ lag, so Console can’t confirm they’ve caught up.';
   }
@@ -263,7 +263,7 @@ const failoverReason = (
   topicsFailed: boolean,
   fence: SourceFenceStep,
   lag: LagStep
-): string | undefined => {
+) => {
   if (topics === undefined) {
     return topicsFailed
       ? 'Couldn’t load the link’s topics, so Console can’t check their lag.'

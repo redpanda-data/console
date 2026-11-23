@@ -29,7 +29,7 @@ type PayloadRenderData =
   | { type: 'json'; content: string | object | null | undefined }
   | { type: 'error'; content: string };
 
-function isPrimitivePayload(val: unknown): boolean {
+function isPrimitivePayload(val: unknown) {
   return typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
 }
 

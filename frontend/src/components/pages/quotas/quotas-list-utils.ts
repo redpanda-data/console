@@ -39,7 +39,7 @@ export const mapEntityTypeToDisplay = (entityType: Quota_EntityType): QuotaEntit
 };
 
 /** Returns the value for a given quota type, or `undefined` when that type is not present. */
-export const getRate = (values: Quota_Value[], valueType: Quota_ValueType): number | undefined =>
+export const getRate = (values: Quota_Value[], valueType: Quota_ValueType) =>
   values.find((v) => v.valueType === valueType)?.value;
 
 /**
@@ -53,7 +53,7 @@ export const isQuotaConfigured = (value?: number): value is number => value !== 
  * too-large `?page=` can't render a false "No quotas configured" empty state. An empty
  * list has no pages, so it clamps to 0 (the genuine empty state).
  */
-export const clampPageIndex = (requestedPage: number, rowCount: number, pageSize: number): number => {
+export const clampPageIndex = (requestedPage: number, rowCount: number, pageSize: number) => {
   const pageCount = pageSize > 0 ? Math.ceil(rowCount / pageSize) : 0;
   if (pageCount <= 0) {
     return 0;

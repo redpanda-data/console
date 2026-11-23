@@ -21,7 +21,6 @@ import {
 import { buildDefaultFormValuesFromControlplane, fromControlplaneShadowLink } from './controlplane';
 import { describe, expect, test } from 'bun:test';
 import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE } from '../create/model';
-import type { UnifiedSchemaRegistryApiOptions } from '../model';
 
 type SchemaRegistrySyncOptionsInit = NonNullable<
   MessageInitShape<typeof ShadowLinkSchema>['schemaRegistrySyncOptions']
@@ -41,9 +40,7 @@ const buildShadowLink = (
     roleSyncOptions,
   });
 
-const mapApiOptions = (
-  shadowingMode: SchemaRegistrySyncOptionsInit['schemaRegistryShadowingMode']
-): UnifiedSchemaRegistryApiOptions => {
+const mapApiOptions = (shadowingMode: SchemaRegistrySyncOptionsInit['schemaRegistryShadowingMode']) => {
   const shadowLink = buildShadowLink({ schemaRegistryShadowingMode: shadowingMode });
   const mode =
     fromControlplaneShadowLink(shadowLink).configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;

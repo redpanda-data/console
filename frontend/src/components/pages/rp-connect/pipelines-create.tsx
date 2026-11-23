@@ -47,7 +47,7 @@ const exampleContent = `
 
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesCreate extends PageComponent<{}> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Create Pipeline';
     p.addBreadcrumb('Redpanda Connect', '/connect-clusters');
     p.addBreadcrumb('Create Pipeline', '');
@@ -532,7 +532,7 @@ export const PipelineEditor = (p: {
 };
 
 /** True when `value` parses as JSON carrying Kafka Connect config keys (`connector.class`, the converters, …). */
-const isKafkaConnectPipeline = (value: string | undefined): boolean => {
+const isKafkaConnectPipeline = (value: string | undefined) => {
   if (value === undefined) {
     return false;
   }

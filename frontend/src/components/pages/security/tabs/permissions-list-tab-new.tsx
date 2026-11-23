@@ -324,7 +324,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
 
 const includesIgnoringCase = (value: string, lowerCaseQuery: string) => value.toLowerCase().includes(lowerCaseQuery);
 
-const principalMatchesSearch = (group: PrincipalPermissionGroup, query: string): boolean => {
+const principalMatchesSearch = (group: PrincipalPermissionGroup, query: string) => {
   if (!query) {
     return true;
   }

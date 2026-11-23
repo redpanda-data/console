@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 const TIME_RANGES = getTimeRanges(12 * 60 * 60 * 1000); // Up to 12 hours
 
-function formatTimeRangeDate(date: Date): string {
+function formatTimeRangeDate(date: Date) {
   return date.toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',

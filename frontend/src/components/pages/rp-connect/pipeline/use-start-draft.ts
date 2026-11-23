@@ -26,7 +26,7 @@ import { extractLintHintsFromError } from '../errors';
 // A refused start's hints, for the editor it opens; taken once, after hydration.
 const pendingStartLintHints = new Map<string, Record<string, LintHint>>();
 
-export function takeStartLintHints(pipelineId: string): Record<string, LintHint> | null {
+export function takeStartLintHints(pipelineId: string) {
   const hints = pendingStartLintHints.get(pipelineId) ?? null;
   pendingStartLintHints.delete(pipelineId);
   return hints;

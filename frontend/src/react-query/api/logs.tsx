@@ -72,7 +72,7 @@ const logHistoryKey = (pipelineId: string) => ['log-history', pipelineId] as con
 const noop = () => {};
 
 // Serverful clusters filter by pipelineId with a pushdown filter; serverless has none.
-function logsFilterCode(pipelineId: string, serverless: boolean): string {
+function logsFilterCode(pipelineId: string, serverless: boolean) {
   return serverless ? '' : encodeBase64(sanitizeString(`return key == "${pipelineId}";`));
 }
 
@@ -94,14 +94,14 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
 // The logs topic is created by the first pipeline that logs, so until then there is nothing to find.
 const isMissingLogsTopic = (message: string) => message.includes('UNKNOWN_TOPIC_OR_PARTITION');
 
-function describeHistoryError(error: Error): string {
+function describeHistoryError(error: Error) {
   if (ConnectError.from(error).code === Code.DeadlineExceeded) {
     return 'The log search timed out. Refresh to try again.';
   }
   return error.message;
 }
 
-function shouldIncludeMessage(msg: TopicMessage, pipelineId: string, serverless: boolean): boolean {
+function shouldIncludeMessage(msg: TopicMessage, pipelineId: string, serverless: boolean) {
   // Serverful clusters filter by pipelineId via server-side pushdown; serverless filters here.
   if (!serverless) {
     return true;
@@ -137,7 +137,7 @@ type HistoryStreamOpts = {
 };
 
 // A missing logs topic is expected before any pipeline has logged, so only other failures are toasted.
-function historyStreamError(errMsg: string): Error {
+function historyStreamError(errMsg: string) {
   if (!isMissingLogsTopic(errMsg)) {
     sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
   }
@@ -283,7 +283,7 @@ type LiveAction =
 
 export const LIVE_INITIAL_STATE: LiveState = { messages: [], phase: null, error: null, progress: ZERO_PROGRESS };
 
-export function liveReducer(state: LiveState, action: LiveAction): LiveState {
+export function liveReducer(state: LiveState, action: LiveAction) {
   switch (action.type) {
     case 'reset':
       return LIVE_INITIAL_STATE;
@@ -400,7 +400,7 @@ function startLiveStream(
   opts: { pipelineId: string; serverless: boolean },
   refs: LiveRefs,
   dispatch: React.Dispatch<LiveAction>
-): AbortController | null {
+) {
   stopLiveStream(refs);
   const abortController = new AbortController();
   refs.abortControllerRef.current = abortController;
@@ -463,7 +463,7 @@ function useLivePendingFlush(
   }, [enabled, pendingRef, dispatch]);
 }
 
-function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: boolean }): LiveState {
+function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: boolean }) {
   const [state, dispatch] = useReducer(liveReducer, LIVE_INITIAL_STATE);
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -497,7 +497,7 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
 }
 
 /** History and tail can both hold a message written as the tail opened; keeps the first of each. */
-function withoutRepeats(messages: TopicMessage[]): TopicMessage[] {
+function withoutRepeats(messages: TopicMessage[]) {
   const seen = new Set<string>();
   return messages.filter((msg) => {
     const id = `${msg.partitionID}:${msg.offset}`;

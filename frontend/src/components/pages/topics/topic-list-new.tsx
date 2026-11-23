@@ -648,7 +648,7 @@ const viewTopicActions: TopicAction[] = [
   'viewConfig',
 ];
 
-function countMissingViewActions(actions: TopicAction[]): number {
+function countMissingViewActions(actions: TopicAction[]) {
   let missing = 0;
   for (const a of viewTopicActions) {
     if (!actions.includes(a)) {

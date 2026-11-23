@@ -113,7 +113,7 @@ function underCondition(node: Node) {
 }
 
 /** `skipIf(true)` and `runIf(false)` are static; any other condition is a runtime decision. */
-function literalCondition(chain: TestChain): 'dynamic' | 'skips' | undefined {
+function literalCondition(chain: TestChain) {
   for (const member of chain.members) {
     const skipsWhen = SKIPS_WHEN[member];
     const condition = unwrap(chain.calls.find((call) => memberName(call.callee) === member)?.arguments[0]);

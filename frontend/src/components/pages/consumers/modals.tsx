@@ -569,7 +569,7 @@ export class EditOffsetsModal extends Component<{
   }
 
   /** The offsets in the selected topic and partition (null selects all). */
-  offsetsToApply(): GroupOffset[] {
+  offsetsToApply() {
     // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
     return this.props.offsets!.filter(
       ({ topicName, partitionId }) =>
@@ -830,7 +830,7 @@ const DELETE_LEAD_TEXT: Record<GroupDeletingMode, string> = {
 };
 
 /** The latest non-null offsets, so the dialog content doesn't flash empty during the close animation. */
-const useLastOffsets = (offsets: GroupOffset[] | null): GroupOffset[] => {
+const useLastOffsets = (offsets: GroupOffset[] | null) => {
   const lastOffsetsRef = useRef<GroupOffset[]>([]);
   if (offsets) {
     lastOffsetsRef.current = offsets;
@@ -1052,7 +1052,7 @@ function assignTimestampOffsets(offsets: GroupOffset[], offsetsForTimestamp: Top
   }
 }
 
-function groupOffsetOf(group: GroupDescription, topicName: string, partitionId: number): number | undefined {
+function groupOffsetOf(group: GroupDescription, topicName: string, partitionId: number) {
   return (
     group.topicOffsets.first((t) => t.topic === topicName)?.partitionOffsets.first((p) => p.partitionId === partitionId)
       ?.groupOffset ?? undefined
@@ -1083,7 +1083,7 @@ function appendMissingOffsets(currentOffsets: GroupOffset[], other: GroupDescrip
   }
 }
 function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
-  const getOffset = (x: GroupOffset['newOffset']): number | undefined => {
+  const getOffset = (x: GroupOffset['newOffset']) => {
     // no offset set
     if (x === null) {
       return;

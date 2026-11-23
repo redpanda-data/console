@@ -26,7 +26,7 @@ import type { PageInitHelper } from '../page';
 export default class AdminPageDebugBundleProgress extends pageWithContent(() => (
   <AdminPageDebugBundleProgressContent />
 )) {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Generate debug bundle';
     p.addBreadcrumb('Generate debug bundle', '/debug-bundle/progress');
 

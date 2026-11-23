@@ -176,13 +176,13 @@ const NAME_LOOKUP_PAGE_SIZE = 100;
 const DISALLOWED_IN_NAME_FILTER = /[^A-Za-z0-9\-_ /]/gu;
 const NAME_FILTER_MAX_LENGTH = 128;
 
-export const toNameContainsFilter = (nameContains: string): string =>
+export const toNameContainsFilter = (nameContains: string) =>
   nameContains.replace(DISALLOWED_IN_NAME_FILTER, '').slice(0, NAME_FILTER_MAX_LENGTH);
 
 export const useFetchPipelineNames = () => {
   const transport = useTransport();
   return useCallback(
-    async (nameContains: string): Promise<string[]> => {
+    async (nameContains: string) => {
       const safeNameContains = toNameContainsFilter(nameContains);
       const response = await callUnaryMethod(
         transport,

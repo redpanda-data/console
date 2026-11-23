@@ -39,7 +39,7 @@ const percentOf = (value: number) => ((value - SLIDER_MIN) / (SLIDER_MAX - SLIDE
 export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback) {
   const [isDragging, setIsDragging] = useState(false);
 
-  const getValue = (): number | null => {
+  const getValue = () => {
     if ('value' in props) {
       return props.value;
     }

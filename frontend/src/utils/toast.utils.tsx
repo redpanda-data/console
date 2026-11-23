@@ -52,7 +52,7 @@ const getToastId = ({ initialId, resourceName }: GetToastIdProps) => {
   return initialId ? `${initialId}_${resourceName}` : resourceName;
 };
 
-const toTimeout = (status: ToastStatus | undefined, duration: number | null | undefined): number => {
+const toTimeout = (status: ToastStatus | undefined, duration: number | null | undefined) => {
   if (duration === null) {
     return 0;
   }
@@ -63,15 +63,7 @@ const toTimeout = (status: ToastStatus | undefined, duration: number | null | un
 };
 
 /** Returns the toast id, for `updateToast` / `closeToast`. */
-export const showToast = ({
-  id,
-  resourceName,
-  status,
-  title,
-  description,
-  duration,
-  onClose,
-}: ShowToastOptions): string =>
+export const showToast = ({ id, resourceName, status, title, description, duration, onClose }: ShowToastOptions) =>
   toast.add({
     id: getToastId({ initialId: id, resourceName }),
     type: status,
@@ -128,19 +120,19 @@ export const formatToastErrorMessage = ({
   return `Failed to ${action} ${entity} due to: ${customReason || error.reason} (code: ${error.internalCode})`;
 };
 
-function collectBadRequestDetails(error: ConnectError): string[] {
+function collectBadRequestDetails(error: ConnectError) {
   return error
     .findDetails(BadRequestSchema)
     .flatMap((br) => br.fieldViolations.map((v) => (v.field ? `${v.field}: ${v.description}` : v.description)));
 }
 
-function collectViolationDescriptions(error: ConnectError): string[] {
+function collectViolationDescriptions(error: ConnectError) {
   const preconditions = error.findDetails(PreconditionFailureSchema).flatMap((pf) => pf.violations);
   const quotas = error.findDetails(QuotaFailureSchema).flatMap((qf) => qf.violations);
   return [...preconditions, ...quotas].map((v) => v.description).filter(Boolean);
 }
 
-function collectResourceInfoDetails(error: ConnectError): string[] {
+function collectResourceInfoDetails(error: ConnectError) {
   return error.findDetails(ResourceInfoSchema).flatMap((ri) => {
     if (!ri.resourceName) {
       return [];
@@ -153,7 +145,7 @@ function collectResourceInfoDetails(error: ConnectError): string[] {
 /**
  * Extracts human-readable detail strings from well-known gRPC error detail types.
  */
-function collectErrorDetails(error: ConnectError): string[] {
+function collectErrorDetails(error: ConnectError) {
   return [
     ...collectBadRequestDetails(error),
     ...collectViolationDescriptions(error),
@@ -196,13 +188,13 @@ const clusterFenceHint = (error: ConnectError): string | undefined => {
     : 'This cluster is fenced, which rejects writes and most changes a shadow link copies until it’s unfenced.';
 };
 
-export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToastMessageGRPCProps): string {
+export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToastMessageGRPCProps) {
   const message = formatGRPCErrorMessage({ error, action, entity });
   const hint = clusterFenceHint(error);
   return hint ? `${message.replace(TRAILING_PERIOD, '')}. ${hint}` : message;
 }
 
-function formatGRPCErrorMessage({ error, action, entity }: FormatToastMessageGRPCProps): string {
+function formatGRPCErrorMessage({ error, action, entity }: FormatToastMessageGRPCProps) {
   const localizedText = error.findDetails(LocalizedMessageSchema).find((m) => m.message)?.message;
 
   const baseMessage = localizedText || error.rawMessage;
@@ -222,7 +214,7 @@ function formatGRPCErrorMessage({ error, action, entity }: FormatToastMessageGRP
   return result;
 }
 
-function formatErrorReasons(error: ConnectError): string {
+function formatErrorReasons(error: ConnectError) {
   return error
     .findDetails(ErrorInfoSchema)
     .filter((info) => info.reason)

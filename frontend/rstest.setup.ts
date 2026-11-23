@@ -1,7 +1,7 @@
 // Copyright 2026 Redpanda Data, Inc.
 
 // React 19 under Rstest's prebundled happy-dom no longer needs the former MessageChannel deletion workaround.
-import { afterEach, beforeEach, expect, rs } from '@rstest/core';
+import { afterAll, afterEach, beforeEach, expect, rs } from '@rstest/core';
 import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
 import './src/utils/array-extensions';
@@ -54,9 +54,31 @@ if (typeof window !== 'undefined' && 'happyDOM' in window) {
 
 const unexpectedRequests: Error[] = [];
 
+function alignFetchHeaders() {
+  const browserHeaders = new Request(window.location.href).headers.constructor;
+  if (browserHeaders === Headers) {
+    return;
+  }
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'Headers');
+  Object.defineProperty(globalThis, 'Headers', {
+    configurable: true,
+    writable: true,
+    value: browserHeaders,
+  });
+  afterAll(() => {
+    if (original) {
+      Object.defineProperty(globalThis, 'Headers', original);
+    } else {
+      Reflect.deleteProperty(globalThis, 'Headers');
+    }
+  });
+}
+
 // Record before rejecting: application error handling must not hide a missing fixture.
 // Like the real fetch, failures reach the caller as a rejected promise, never as a synchronous throw.
 if (typeof window !== 'undefined') {
+  // WARNING: Rstest installs happy-dom Request and Response but leaves Node Headers; mixed constructors silently drop HTTP headers.
+  alignFetchHeaders();
   globalThis.fetch = Object.assign(
     (input: RequestInfo | URL, init?: RequestInit) =>
       new Promise<Response>((_, reject) => {
@@ -179,7 +201,7 @@ const SUPPRESSED_PATTERNS = [
   /cannot appear as a descendant of[\s\S]*<button>/u,
 ];
 
-function isSuppressed(args: unknown[]): boolean {
+function isSuppressed(args: unknown[]) {
   // Join every argument so patterns also catch cases like
   // console.warn('prefix:', errorObject) where the signal lives in args[1].
   const msg = args.map((a) => (typeof a === 'string' ? a : String(a))).join(' ');

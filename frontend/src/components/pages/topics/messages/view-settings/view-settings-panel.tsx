@@ -120,7 +120,7 @@ export const ViewSettingsPanel = ({
   const columns = getMessageColumns(topicName);
   const tsFormat = getTopicSettings(topicName)?.previewTimestamps ?? 'default';
 
-  const configSummary = (columnId: MessageColumnConfig['id']): string => {
+  const configSummary = (columnId: MessageColumnConfig['id']) => {
     switch (columnId) {
       case 'timestamp':
         return TS_FORMATS.find((f) => f.value === tsFormat)?.label ?? 'Local DateTime';

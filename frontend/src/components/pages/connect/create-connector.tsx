@@ -45,7 +45,7 @@ import { PageComponent, type PageInitHelper } from '../page';
 type PluginTabFilter = 'all' | 'export' | 'import';
 type ConnectorPluginEntry = { class: string; type: 'sink' | 'source'; version?: string | undefined };
 
-function matchesTabFilter(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilter): boolean {
+function matchesTabFilter(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilter) {
   if (tabFilter === 'export') {
     return plugin.type !== 'source'; // not an "export" type
   }
@@ -55,7 +55,7 @@ function matchesTabFilter(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilt
   return true;
 }
 
-function matchesTextFilter(plugin: ConnectorPluginEntry, meta: ConnectorMetadata, textFilter: string): boolean {
+function matchesTextFilter(plugin: ConnectorPluginEntry, meta: ConnectorMetadata, textFilter: string) {
   if (!textFilter) {
     return true;
   }
@@ -66,7 +66,7 @@ function matchesTextFilter(plugin: ConnectorPluginEntry, meta: ConnectorMetadata
   );
 }
 
-function matchesPluginFilters(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilter, textFilter: string): boolean {
+function matchesPluginFilters(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilter, textFilter: string) {
   if (!matchesTabFilter(plugin, tabFilter)) {
     return false;
   }
@@ -297,7 +297,7 @@ function useInitializedConnectClusterStore(activeCluster: string) {
   return { connectClusterStore, isStoreInitialized };
 }
 
-function isShallowEqualConfig(a: ConfigObject, b: ConfigObject): boolean {
+function isShallowEqualConfig(a: ConfigObject, b: ConfigObject) {
   return Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k]);
 }
 
@@ -343,7 +343,7 @@ function prepareConnectorConfig(
   connectClusterStore: ConnectClusterStore,
   pluginClass: string,
   parsedUpdatedConfig: ConfigObject | null
-): ConfigObject | undefined {
+) {
   const connectorRef = connectClusterStore.getConnector(pluginClass, null, undefined);
   applyEditedConfig(connectorRef, parsedUpdatedConfig);
   syncSecretsFromJson(connectorRef, parsedUpdatedConfig);
@@ -355,7 +355,7 @@ async function findValidationErrors(
   activeCluster: string,
   pluginClass: string,
   propertiesObject: ConfigObject | undefined
-): Promise<ConnectorValidationResult | null> {
+) {
   try {
     const validationResult = await api.validateConnectorConfig(activeCluster, pluginClass, propertiesObject ?? {});
     const errorCount = validationResult.configs.sum((x) => x.value.errors.length);
@@ -374,7 +374,7 @@ async function waitForConnector(
   connectClusterStore: ConnectClusterStore,
   connectorName: string,
   timer = new TimeSince()
-): Promise<boolean> {
+) {
   if (timer.value > CONNECTOR_SCAN_MAX_TIME) {
     return false; // Abort, tried to wait for too long
   }
@@ -426,7 +426,7 @@ function reportCreationFailure(e: unknown, wizard: WizardControls) {
   }
 }
 
-async function createConnectorWithProgress(submission: ReviewSubmission, connectorName: string): Promise<boolean> {
+async function createConnectorWithProgress(submission: ReviewSubmission, connectorName: string) {
   try {
     submission.setCreatingModalOpen(true);
     await createAndOpenConnector(submission, connectorName);
@@ -439,7 +439,7 @@ async function createConnectorWithProgress(submission: ReviewSubmission, connect
   }
 }
 
-async function validateAndCreateConnector(submission: ReviewSubmission): Promise<boolean> {
+async function validateAndCreateConnector(submission: ReviewSubmission) {
   const { activeCluster, connectClusterStore, pluginClass } = submission;
   const propertiesObject = prepareConnectorConfig(connectClusterStore, pluginClass, submission.parsedUpdatedConfig);
 
@@ -452,7 +452,7 @@ async function validateAndCreateConnector(submission: ReviewSubmission): Promise
   return await createConnectorWithProgress(submission, propertiesObject?.name as string);
 }
 
-async function submitReview(submission: ReviewSubmission): Promise<{ conditionMet: boolean }> {
+async function submitReview(submission: ReviewSubmission) {
   submission.wizard.clearErrors();
   submission.wizard.setLoading(true);
   const conditionMet = await validateAndCreateConnector(submission);

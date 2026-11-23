@@ -35,7 +35,7 @@ import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
 
 class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const pipelineId = this.props.pipelineId;
 
     p.title = 'Edit Pipeline';

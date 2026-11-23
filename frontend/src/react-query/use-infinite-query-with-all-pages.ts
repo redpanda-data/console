@@ -28,7 +28,7 @@ export function useInfiniteQueryWithAllPages<
   schema: DescMethodUnary<I, O>,
   input: SkipToken | MessageInitWithPageParam<MessageInitShape<I>, ParamKey>,
   options: UseInfiniteQueryWithAllPagesOptions<I, O, ParamKey>
-): UseInfiniteQueryResult<InfiniteData<MessageShape<O>>, ConnectError> {
+) {
   const queryResult = useInfiniteQuery(schema, input, options);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: fetchNextPage intentionally excluded - its reference changes every render but the function is stable. Including it causes infinite loops.

@@ -101,7 +101,7 @@ function rpcnWizardData(state: RpcnWizardStore): RpcnWizardData {
  * Read connection data, falling back to session storage for the race where the
  * store hydrated before CloudV2 wrote it (client-side nav, no full reload).
  */
-export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input' | 'output'> {
+export function getWizardConnectionData() {
   const { input, output } = useRpcnWizardStore.getState();
   if (input || output) {
     return { input, output };
@@ -119,7 +119,7 @@ export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input
   return connectionData;
 }
 
-function readStoredConnectionData(): Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>> | null {
+function readStoredConnectionData() {
   const raw = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
   return raw ? (JSON.parse(raw) as Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>>) : null;
 }

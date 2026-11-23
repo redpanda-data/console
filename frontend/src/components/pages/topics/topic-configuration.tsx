@@ -42,7 +42,7 @@ import { toast } from 'sonner';
 
 import { isServerless } from '../../../config';
 import { api, useApiStoreHook } from '../../../state/backend-api';
-import type { ConfigEntryExtended, ConfigEntrySynonym } from '../../../state/rest-interfaces';
+import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
 import {
   entryHasInfiniteValue,
   formatConfigValue,
@@ -69,19 +69,19 @@ const SOURCE_PRIORITY_ORDER = [
 ];
 
 /** Highest-priority synonym that represents the inherited (non topic-level) default. */
-function getDefaultConfigSynonym(entry: ConfigEntryExtended): ConfigEntrySynonym | undefined {
+function getDefaultConfigSynonym(entry: ConfigEntryExtended) {
   return entry.synonyms
     ?.filter(({ source }) => source !== 'DYNAMIC_TOPIC_CONFIG')
     .sort((a, b) => SOURCE_PRIORITY_ORDER.indexOf(a.source) - SOURCE_PRIORITY_ORDER.indexOf(b.source))[0];
 }
 
 /** A config is "modified" when this topic explicitly overrides the cluster/broker default. */
-function isConfigModified(entry: ConfigEntryExtended): boolean {
+function isConfigModified(entry: ConfigEntryExtended) {
   return entry.isExplicitlySet;
 }
 
 /** First option for enum-style editors, used as the fallback when there's no value. */
-function getFirstSelectOption(entry: ConfigEntryExtended): string | undefined {
+function getFirstSelectOption(entry: ConfigEntryExtended) {
   if (entry.frontendFormat === 'BOOLEAN') {
     return 'false';
   }
@@ -106,11 +106,11 @@ const CONFIG_CATEGORIES = [
 
 const ALLOWED_CATEGORIES = new Set<string>(CONFIG_CATEGORIES.map((c) => c.name));
 
-function categoryForEntry(entry: ConfigEntryExtended): string {
+function categoryForEntry(entry: ConfigEntryExtended) {
   return entry.category && ALLOWED_CATEGORIES.has(entry.category) ? entry.category : 'Other';
 }
 
-function getDefaultValueType(entry: ConfigEntryExtended): Inputs['valueType'] {
+function getDefaultValueType(entry: ConfigEntryExtended) {
   if (!entry.isExplicitlySet) {
     return 'default';
   }
@@ -128,7 +128,7 @@ function getEditorDefaultValues(entry: ConfigEntryExtended): Inputs {
   };
 }
 
-function getValueTypeOptions(entry: ConfigEntryExtended): Array<{ label: string; value: Inputs['valueType'] }> {
+function getValueTypeOptions(entry: ConfigEntryExtended) {
   const hasInfiniteValue =
     entry.frontendFormat && ['BYTE_SIZE', 'DURATION'].includes(entry.frontendFormat) && !entry.noInfiniteValue;
   const valueTypeOptions: Array<{
@@ -843,7 +843,7 @@ function UnitInput<U extends string>({
   onChange: (v: number) => void;
   id?: string;
 }) {
-  const getInitialUnit = (): U => {
+  const getInitialUnit = () => {
     const pairs = (Object.entries(unitFactors) as [U, number][])
       .map(([unit, factor]) => ({ unit, text: String(baseValue / factor) }))
       .sort((a, b) => a.text.length - b.text.length);

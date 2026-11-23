@@ -129,7 +129,7 @@ const UploadLicenseForm: FC<{
   );
 };
 
-function configurePage(p: PageInitHelper): void {
+function configurePage(p: PageInitHelper) {
   p.title = 'Upload Enterprise License';
   p.addBreadcrumb('Upload License', '/upload-license');
 }

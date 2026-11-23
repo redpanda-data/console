@@ -29,7 +29,7 @@ export type DeprecationNotice = ComponentRef & {
   docsUrl?: string;
 };
 
-export function isDeprecatedComponent(component: Pick<ConnectComponentSpec, 'status'>): boolean {
+export function isDeprecatedComponent(component: Pick<ConnectComponentSpec, 'status'>) {
   return component.status === ComponentStatus.DEPRECATED;
 }
 
@@ -64,7 +64,7 @@ export function deprecationNotice(
 }
 
 /** The warning every surface shows. */
-export function deprecationMessage({ name, replacement }: DeprecationNotice): string {
+export function deprecationMessage({ name, replacement }: DeprecationNotice) {
   return replacement
     ? `${name} is deprecated. Use the ${replacement.name} ${replacement.type.replace(/_/gu, ' ')} instead.`
     : `${name} is deprecated and may be removed in a future release.`;
@@ -102,7 +102,7 @@ const CONFIG_ROOT: FieldShape = {
 
 type Walk = { catalog: readonly ConnectComponentSpec[]; lineCounter: LineCounter; usages: DeprecatedUsage[] };
 
-function fieldValues(node: unknown, kind: string): unknown[] {
+function fieldValues(node: unknown, kind: string) {
   switch (kind) {
     case 'array':
       return isSeq(node) ? node.items : [];
@@ -152,14 +152,14 @@ function walkSlotKey(walk: Walk, key: Scalar<string>, value: unknown, type: Conn
   }
 }
 
-function lineRange([startOffset, endOffset]: Range, lineCounter: LineCounter): DeprecatedUsage['range'] {
+function lineRange([startOffset, endOffset]: Range, lineCounter: LineCounter) {
   const start = lineCounter.linePos(startOffset);
   const end = lineCounter.linePos(endOffset);
   return { startLineNumber: start.line, startColumn: start.col, endLineNumber: end.line, endColumn: end.col };
 }
 
 /** Every deprecated component the YAML uses, nested ones included, in document order. */
-export function findDeprecatedUsages(yaml: string, components: readonly ConnectComponentSpec[]): DeprecatedUsage[] {
+export function findDeprecatedUsages(yaml: string, components: readonly ConnectComponentSpec[]) {
   // Most configs use none; skip the parse unless a deprecated name appears at all.
   if (!components.some((c) => isDeprecatedComponent(c) && yaml.includes(c.name))) {
     return [];

@@ -130,7 +130,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
 
   const dataSource = useCallback(() => connectors, [connectors]);
 
-  const isFilterMatch = useCallback((filter: string, item: ClusterConnectorInfo): boolean => {
+  const isFilterMatch = useCallback((filter: string, item: ClusterConnectorInfo) => {
     try {
       const quickSearchRegExp = new RegExp(filter, 'iu');
       const nameMatch = item.name.match(quickSearchRegExp) !== null;

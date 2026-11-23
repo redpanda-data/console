@@ -11,7 +11,7 @@
 
 import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
 
-export function jumpableNodes(nodes: PipelineFlowNode[]): PipelineFlowNode[] {
+export function jumpableNodes(nodes: PipelineFlowNode[]) {
   return nodes.filter((n) => n.editTarget && n.section);
 }
 
@@ -22,7 +22,7 @@ export function searchValue(node: PipelineFlowNode, index: number) {
 }
 
 // Meta values (topics, urls, …) stay searchable via cmdk's `keywords` — user-authored, unlike node ids.
-export function searchKeywords(node: PipelineFlowNode): string[] | undefined {
+export function searchKeywords(node: PipelineFlowNode) {
   const keywords = node.meta?.map((m) => m.value).filter(Boolean);
   return keywords?.length ? keywords : undefined;
 }

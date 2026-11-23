@@ -19,7 +19,7 @@ export type NodeSignatures = {
   parentOf: Map<string, string | undefined>;
 };
 
-function configSignature(doc: Document, path: ReturnType<typeof editTargetPath>): string {
+function configSignature(doc: Document, path: ReturnType<typeof editTargetPath>) {
   const value = doc.getIn(path) as { toJSON?: () => unknown } | undefined;
   return JSON.stringify(value?.toJSON?.() ?? value ?? null);
 }
@@ -34,7 +34,7 @@ function collectNodeSignatures(yaml: string, out: NodeSignatures) {
   }
 }
 
-export function nodeConfigSignatures(yaml: string): NodeSignatures {
+export function nodeConfigSignatures(yaml: string) {
   const result: NodeSignatures = { signatures: new Map(), parentOf: new Map() };
   if (!yaml) {
     return result;
@@ -45,7 +45,7 @@ export function nodeConfigSignatures(yaml: string): NodeSignatures {
   return result;
 }
 
-function signatureMultiset(signatures: Iterable<string>): Map<string, number> {
+function signatureMultiset(signatures: Iterable<string>) {
   const available = new Map<string, number>();
   for (const signature of signatures) {
     available.set(signature, (available.get(signature) ?? 0) + 1);
@@ -66,7 +66,7 @@ function consumeUnmovedSignatures(
   prev: Map<string, string>,
   next: Map<string, string>,
   available: Map<string, number>
-): string[] {
+) {
   const moved: string[] = [];
   for (const [id, signature] of next) {
     if (prev.get(id) === signature) {
@@ -80,7 +80,7 @@ function consumeUnmovedSignatures(
 
 // (`proc-0`, …), so a moved-but-identical config is not a change; same-id matches consume their
 // and yaml !== initialYaml remains the authoritative dirty signal.
-function unmatchedNextIds(prev: Map<string, string>, next: Map<string, string>): Set<string> {
+function unmatchedNextIds(prev: Map<string, string>, next: Map<string, string>) {
   const available = signatureMultiset(prev.values());
   const moved = consumeUnmovedSignatures(prev, next, available);
   const changed = new Set<string>();
@@ -95,7 +95,7 @@ function unmatchedNextIds(prev: Map<string, string>, next: Map<string, string>):
 
 // re-diffs on every keystroke against a constant baseline, so the baseline is signed only once.
 // A container's signature embeds its children, so attribute each change to the deepest node(s) only.
-export function changedNodeIdsFromBaseline(baseline: NodeSignatures, nextYaml: string): string[] {
+export function changedNodeIdsFromBaseline(baseline: NodeSignatures, nextYaml: string) {
   const next = nodeConfigSignatures(nextYaml);
   const changed = unmatchedNextIds(baseline.signatures, next.signatures);
   const isAncestorOfChanged = (id: string) => {
@@ -114,6 +114,6 @@ export function changedNodeIdsFromBaseline(baseline: NodeSignatures, nextYaml: s
   return [...changed].filter((id) => !isAncestorOfChanged(id));
 }
 
-export function changedNodeIds(prevYaml: string, nextYaml: string): string[] {
+export function changedNodeIds(prevYaml: string, nextYaml: string) {
   return changedNodeIdsFromBaseline(nodeConfigSignatures(prevYaml), nextYaml);
 }

@@ -70,12 +70,12 @@ import { prettyBytes, prettyMilliseconds } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import RemovableFilter from '../../../misc/removable-filter';
 
-function getOffsetOrigin(startOffset: number): PartitionOffsetOriginType {
+function getOffsetOrigin(startOffset: number) {
   return (startOffset >= 0 ? PartitionOffsetOrigin.Custom : startOffset) as PartitionOffsetOriginType;
 }
 
 // Continuous pagination is only available with Newest or Beginning start offsets.
-function supportsContinuousPagination(origin: PartitionOffsetOriginType): boolean {
+function supportsContinuousPagination(origin: PartitionOffsetOriginType) {
   return origin === PartitionOffsetOrigin.EndMinusResults || origin === PartitionOffsetOrigin.Start;
 }
 
@@ -86,7 +86,7 @@ function nextStartOffset(origin: PartitionOffsetOriginType, startOffset: number)
   return origin;
 }
 
-function nextStartTimestamp(origin: PartitionOffsetOriginType, startTimestamp: number): number | null | undefined {
+function nextStartTimestamp(origin: PartitionOffsetOriginType, startTimestamp: number) {
   if (origin === PartitionOffsetOrigin.Timestamp) {
     return startTimestamp === -1 ? Date.now() : undefined;
   }

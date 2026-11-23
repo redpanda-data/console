@@ -23,8 +23,7 @@ const DEFAULT_LIMIT = '1000';
 export const DEFAULT_IDLE = '30s';
 const POSITIVE_INT_RE = /^\d+$/u;
 
-const usesIdle = (s: { mode: StopMode; alsoIdle: boolean }): boolean =>
-  s.mode === 'idle' || (s.mode !== 'none' && s.alsoIdle);
+const usesIdle = (s: { mode: StopMode; alsoIdle: boolean }) => s.mode === 'idle' || (s.mode !== 'none' && s.alsoIdle);
 
 /** The editor's form. Each field is checked only when the chosen mode reads it. */
 export const stopFormSchema = z
@@ -89,7 +88,7 @@ export function stopFormState(condition?: StopCondition, canKeepRunning = true):
  * it's met (with an idle timeout alone, a re-read input never goes idle). One the YAML already sets
  * stays on offer, so applying never drops it unseen.
  */
-export function offersRestart(mode: StopMode, own: InputEndBehavior, condition?: StopCondition): boolean {
+export function offersRestart(mode: StopMode, own: InputEndBehavior, condition?: StopCondition) {
   return Boolean(condition?.restartInput) || ((mode === 'count' || mode === 'check') && own.kind !== 'continuous');
 }
 
@@ -118,10 +117,7 @@ function noBackstopHint(s: Pick<StopFormState, 'mode' | 'limit'>, own: InputEndB
 }
 
 /** What can still leave the input running with the condition as chosen. */
-export function backstopHint(
-  s: Pick<StopFormState, 'mode' | 'restart' | 'alsoIdle' | 'limit'>,
-  own: InputEndBehavior
-): string | undefined {
+export function backstopHint(s: Pick<StopFormState, 'mode' | 'restart' | 'alsoIdle' | 'limit'>, own: InputEndBehavior) {
   const rereads = s.restart && own.kind !== 'continuous';
   if (s.mode === 'idle') {
     return rereads

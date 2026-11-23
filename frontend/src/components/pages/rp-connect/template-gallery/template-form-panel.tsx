@@ -37,7 +37,7 @@ const SECTION_LABELS: Record<TemplateSlotSection, string> = {
 
 const SECTION_ORDER: TemplateSlotSection[] = ['source', 'sink', 'options'];
 
-const endpointFor = (section: TemplateSlotSection, template: PipelineTemplate): TemplateEndpoint | null => {
+const endpointFor = (section: TemplateSlotSection, template: PipelineTemplate) => {
   if (section === 'source') {
     return template.source;
   }
@@ -101,7 +101,7 @@ export const buildSchema = (slots: TemplateSlot[]) => {
   return z.object(shape);
 };
 
-const defaultValuesFor = (template: PipelineTemplate, slots: TemplateSlot[]): Record<string, string> => {
+const defaultValuesFor = (template: PipelineTemplate, slots: TemplateSlot[]) => {
   const defaults: Record<string, string> = {
     [PIPELINE_NAME_FIELD]: template.defaultPipelineName,
   };
@@ -111,7 +111,7 @@ const defaultValuesFor = (template: PipelineTemplate, slots: TemplateSlot[]): Re
   return defaults;
 };
 
-const groupSlotsBySection = (slots: TemplateSlot[]): Record<TemplateSlotSection, TemplateSlot[]> => {
+const groupSlotsBySection = (slots: TemplateSlot[]) => {
   const grouped: Record<TemplateSlotSection, TemplateSlot[]> = {
     source: [],
     sink: [],
@@ -196,7 +196,7 @@ export const TemplateFormPanel = forwardRef<TemplateFormPanelHandle, TemplateFor
   ) => {
     const { form, effectiveSlots } = useTemplateForm(template);
 
-    const stitchCurrentYaml = (values: FormValues): string => {
+    const stitchCurrentYaml = (values: FormValues) => {
       const { [PIPELINE_NAME_FIELD]: pipelineName, ...slotValues } = values;
       return stitchTemplateYaml({
         template,

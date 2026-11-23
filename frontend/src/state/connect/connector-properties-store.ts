@@ -125,7 +125,7 @@ export class ConnectorPropertiesStore {
     }
   }
 
-  subscribe(listener: () => void): () => void {
+  subscribe(listener: () => void) {
     this.changeListeners.add(listener);
     return () => {
       this.changeListeners.delete(listener);
@@ -143,7 +143,7 @@ export class ConnectorPropertiesStore {
       properties,
       propertiesWithErrors: [],
 
-      get filteredProperties(): Property[] {
+      get filteredProperties() {
         if (self.showAdvancedOptions) {
           // advanced mode shows all settings
           return this.properties;
@@ -245,7 +245,7 @@ export class ConnectorPropertiesStore {
     linkPropertiesToGroups(this.allGroups);
   }
 
-  private groupProperties(step: ConnectorStep, groupDef: ConnectorGroup): Property[] {
+  private groupProperties(step: ConnectorStep, groupDef: ConnectorGroup) {
     return groupDef.config_keys
       .map((k) => {
         const prop = this.propsByName.get(k);
@@ -360,7 +360,7 @@ export class ConnectorPropertiesStore {
 
   // Creates our Property objects, while fixing some issues with the source data
   // like: missing value, propertyWidth, group, ...
-  createCustomProperties(properties: ConnectorProperty[]): Property[] {
+  createCustomProperties(properties: ConnectorProperty[]) {
     // Fix missing properties
     for (const p of properties) {
       const def = p.definition;
@@ -382,7 +382,7 @@ export class ConnectorPropertiesStore {
     return allProps;
   }
 
-  private createProperty(p: ConnectorProperty): Property {
+  private createProperty(p: ConnectorProperty) {
     const { name, type: definitionType } = p.definition;
 
     const property: Property = {
@@ -435,7 +435,7 @@ function parseConfigJson(jsonText: string): Record<string, unknown> {
 
 // Whether a property's value goes into the submitted config. Optional values still at their default
 // are left out, so the connector keeps following the default.
-function isSubmittedProperty(p: Property, config: Record<string, unknown>): boolean {
+function isSubmittedProperty(p: Property, config: Record<string, unknown>) {
   if (p.entry.definition.required) {
     return true;
   }
@@ -487,7 +487,7 @@ function linkPropertiesToGroups(groups: PropertyGroup[]) {
 }
 
 // The group's position across all steps' groups; a group no step lists sorts last.
-function stepGroupOrder(steps: ConnectorStep[], groupName: string | undefined): number {
+function stepGroupOrder(steps: ConnectorStep[], groupName: string | undefined) {
   let order = 0;
   for (const s of steps) {
     for (const g of s.groups) {
@@ -510,7 +510,7 @@ function syncRecommendedValues(target: Property, source: Property) {
 }
 
 // Show the first error, skipping over simple / unhelpful messages when there are several.
-function firstHelpfulErrorIndex(errors: string[]): number {
+function firstHelpfulErrorIndex(errors: string[]) {
   if (errors.length <= 1) {
     return 0;
   }
@@ -538,7 +538,7 @@ function updatePropertyErrors(target: Property, errors: string[]) {
 }
 
 // Fix type of default values
-function initialPropertyValue(p: ConnectorProperty): Property['value'] {
+function initialPropertyValue(p: ConnectorProperty) {
   const defaultValue: unknown = sanitizeDefaultValue(p.definition.default_value, p.definition.type);
   const initialValue: unknown = sanitizeValue(p.value.value, p.definition.type);
   return (initialValue ?? defaultValue) as Property['value'];

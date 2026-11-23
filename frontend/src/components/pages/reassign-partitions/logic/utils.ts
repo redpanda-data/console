@@ -19,7 +19,7 @@ export function partitionSelectionToTopicPartitions(
   partitionSelection: PartitionSelection,
   apiTopicPartitions: Map<string, Partition[] | null>,
   apiTopics: Topic[]
-): TopicPartitions[] | undefined {
+) {
   const ar: TopicPartitions[] = [];
 
   for (const topicName of Object.keys(partitionSelection)) {
@@ -67,7 +67,7 @@ export function computeMovedReplicas(
   assignments: PartitionReassignmentRequest,
   apiTopics: Topic[],
   apiTopicPartitions: Map<string, Partition[] | null>
-): TopicWithMoves[] {
+) {
   const ar: TopicWithMoves[] = [];
   for (const [topicName, allPartitions] of apiTopicPartitions) {
     const topicWithMoves = computeTopicMoves(topicName, allPartitions, partitionSelection, assignments, apiTopics);
@@ -146,7 +146,7 @@ function replicaMoves(oldBrokers: number[], newBrokers: number[]) {
 /**
  * Returns a clone of topicAssignments with redundant reassignments removed
  */
-export function removeRedundantReassignments(topicAssignments: TopicAssignments, apiData: ApiData): TopicAssignments {
+export function removeRedundantReassignments(topicAssignments: TopicAssignments, apiData: ApiData) {
   const result = clone(topicAssignments);
 
   for (const t of Object.keys(result)) {

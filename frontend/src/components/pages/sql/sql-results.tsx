@@ -116,7 +116,7 @@ function BridgeTimeline({ bridge }: { bridge: BridgeInfo }) {
   );
 }
 
-function cellText(v: CellValue): string {
+function cellText(v: CellValue) {
   return v === null || v === undefined ? '' : String(v);
 }
 
@@ -124,7 +124,7 @@ const CELL_MAX_W = 'max-w-80';
 const CELL_CLAMP_CHARS = 45;
 const GRID_HEADER_H = 52;
 
-function prettyJson(raw: string): string {
+function prettyJson(raw: string) {
   try {
     return JSON.stringify(JSON.parse(raw), null, 2);
   } catch {
@@ -248,7 +248,7 @@ function CellContent({
   return <LongCellPopover value={s} />;
 }
 
-function csvField(v: CellValue): string {
+function csvField(v: CellValue) {
   const raw = cellText(v);
   const s = CSV_FORMULA_RE.test(raw) ? `'${raw}` : raw;
   return CSV_ESCAPE_RE.test(s) ? `"${s.replace(CSV_QUOTE_RE, '""')}"` : s;
@@ -260,7 +260,7 @@ function toCsv(cols: ColumnDef[], rows: ResultRow[]) {
   return `${head}\n${body}`;
 }
 
-function exportBlob(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]): Blob {
+function exportBlob(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
   if (fmt === 'json') {
     return new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
   }
@@ -276,7 +276,7 @@ function exportData(fmt: 'csv' | 'json', cols: ColumnDef[], rows: ResultRow[]) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function buildRowKeys(rows: ResultRow[]): WeakMap<ResultRow, number> {
+function buildRowKeys(rows: ResultRow[]) {
   const map = new WeakMap<ResultRow, number>();
   rows.forEach((r, i) => {
     map.set(r, i);

@@ -19,7 +19,7 @@ import { encodeBase64 } from '../../../../../utils/utils';
  * showing an active chip in that state would claim a filter is being applied
  * when it isn't.
  */
-export function visibleJsFilters(jsFilters: FilterEntry[], canUseJsFilters: boolean): FilterEntry[] {
+export function visibleJsFilters(jsFilters: FilterEntry[], canUseJsFilters: boolean) {
   return canUseJsFilters ? jsFilters.filter((f) => f.isActive) : [];
 }
 
@@ -28,7 +28,7 @@ export function visibleJsFilters(jsFilters: FilterEntry[], canUseJsFilters: bool
  * becomes a `filterN()` function and the predicate returns all of them `&&`-ed together.
  * Empty when no filter is active and complete.
  */
-export function buildFilterInterpreterCode(jsFilters: FilterEntry[]): string {
+export function buildFilterInterpreterCode(jsFilters: FilterEntry[]) {
   const active = jsFilters.filter((f) => f.isActive && f.code && f.transpiledCode);
   if (active.length === 0) {
     return '';

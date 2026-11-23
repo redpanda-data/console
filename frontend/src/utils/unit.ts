@@ -42,7 +42,7 @@ const UNIT_ABBREV: Record<string, string> = {
 /**
  * Abbreviate a single unit
  */
-function abbreviateUnit(unit: string): string {
+function abbreviateUnit(unit: string) {
   const normalized = unit.toLowerCase().trim();
 
   if (UNIT_ABBREV[normalized]) {
@@ -55,7 +55,7 @@ function abbreviateUnit(unit: string): string {
 /**
  * Canonicalize a unit to form "x" or "x/y"
  */
-function canonicalizeUnit(unit: string): string {
+function canonicalizeUnit(unit: string) {
   if (!unit) {
     return '';
   }
@@ -73,7 +73,7 @@ function canonicalizeUnit(unit: string): string {
 /**
  * Format a number and return formatted value and scale
  */
-function formatNumber(value: number): { formatted: string; scale: string } {
+function formatNumber(value: number) {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
 
@@ -93,7 +93,7 @@ function formatNumber(value: number): { formatted: string; scale: string } {
 /**
  * Format a number with its unit
  */
-export function formatWithUnit(value: number, unit: string | undefined): string {
+export function formatWithUnit(value: number, unit: string | undefined) {
   if (!unit) {
     const { formatted, scale } = formatNumber(value);
     return `${formatted}${scale}`;

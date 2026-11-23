@@ -286,7 +286,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
   );
 };
 
-function getRegistrationFieldErrors(error: ConnectError): Record<string, string> {
+function getRegistrationFieldErrors(error: ConnectError) {
   const fieldErrors: Record<string, string> = {};
   for (const detail of error.details ?? []) {
     if (isBadRequest(detail)) {

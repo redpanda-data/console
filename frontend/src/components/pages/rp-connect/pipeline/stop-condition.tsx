@@ -213,7 +213,7 @@ const IdleField = ({ control }: FormPartProps) => (
   />
 );
 
-function noneOption(own: InputEndBehavior, isGroup?: boolean): { title: string; description: string } {
+function noneOption(own: InputEndBehavior, isGroup?: boolean) {
   if (isGroup) {
     const title = own.kind === 'natural' ? 'When all its inputs have stopped' : 'No stop condition of its own';
     return { title, description: 'Each input keeps its own stop condition.' };
@@ -230,7 +230,7 @@ function noneOption(own: InputEndBehavior, isGroup?: boolean): { title: string; 
   return { title: 'No stop condition', description: own.reason };
 }
 
-function currentBehavior(slot: StopSlot, effective: InputEndBehavior, editing = false): string {
+function currentBehavior(slot: StopSlot, effective: InputEndBehavior, editing = false) {
   if (slot.locked) {
     return slot.locked === CHILDLESS_WRAPPER
       ? slot.locked

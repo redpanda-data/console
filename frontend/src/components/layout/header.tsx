@@ -241,7 +241,7 @@ function useShouldHideHeader() {
   return pagesWithOwnHeaders.some((page) => pathname.startsWith(page));
 }
 
-function getBreadcrumbItems(pageBreadcrumbs: BreadcrumbEntry[], selectedClusterName: string | null): BreadcrumbEntry[] {
+function getBreadcrumbItems(pageBreadcrumbs: BreadcrumbEntry[], selectedClusterName: string | null) {
   const items = [...pageBreadcrumbs];
   if (!isEmbedded() && selectedClusterName) {
     items.unshift({ heading: '', title: 'Cluster', linkTo: '/' });

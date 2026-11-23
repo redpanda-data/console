@@ -3,7 +3,7 @@ import { type UseQueryStateReturn, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 // Memoize searchParams to avoid creating a new URLSearchParams object on every render
-function useLocationSearchParams(): URLSearchParams {
+function useLocationSearchParams() {
   const location = useLocation();
   const searchStr = location.searchStr ?? '';
   return useMemo(() => new URLSearchParams(searchStr), [searchStr]);
@@ -19,7 +19,7 @@ export function useQueryStateWithCallback<T, U = null>(
     getDefaultValue: () => T;
   },
   ...options: Parameters<typeof useQueryState<T>>
-): UseQueryStateReturn<T, U> {
+) {
   const [key, ...otherOptions] = options;
   const [value, setValue] = useQueryState<T>(key, ...otherOptions);
   const searchParams = useLocationSearchParams();

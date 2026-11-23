@@ -170,7 +170,7 @@ type StreamRun = {
   sawDone: boolean;
 };
 
-const requireConsoleClient = (): ConsoleClient => {
+const requireConsoleClient = () => {
   const client = appConfig.consoleClient;
   if (!client) {
     throw new Error('No console client configured');
@@ -334,7 +334,7 @@ const applyControlMessage = (controlMessage: ControlMessage, run: StreamRun) => 
  * case (e.g. every partition failed); promote it so callers that auto-restart (live tail) can
  * tell it apart from a clean finish.
  */
-const promoteUnfinishedBackendError = (run: StreamRun): Error | null => {
+const promoteUnfinishedBackendError = (run: StreamRun) => {
   const backendError = run.pendingBackendError;
   if (backendError === null || run.sawDone) {
     return null;
@@ -343,7 +343,7 @@ const promoteUnfinishedBackendError = (run: StreamRun): Error | null => {
   return backendError;
 };
 
-const failRun = (run: StreamRun, err: unknown): Error => {
+const failRun = (run: StreamRun, err: unknown) => {
   const streamError = err instanceof Error ? err : new Error(String(err));
   run.setters.setError(streamError);
   return streamError;
@@ -393,7 +393,7 @@ const consumeStream = async (client: ConsoleClient, req: ListMessagesRequest, ru
 };
 
 /** Re-fetches one message with the size limit lifted; the last data frame wins. */
-const fetchLargeMessage = async (client: ConsoleClient, req: ListMessagesRequest): Promise<TopicMessage> => {
+const fetchLargeMessage = async (client: ConsoleClient, req: ListMessagesRequest) => {
   let loaded: TopicMessage | null = null;
   for await (const res of client.listMessages(req, { timeoutMs: DEFAULT_TIMEOUT_MS })) {
     if (res.controlMessage.case === 'data') {

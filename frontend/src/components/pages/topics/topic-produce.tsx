@@ -28,7 +28,6 @@ import {
 import {
   type PublishMessagePayloadOptions,
   PublishMessagePayloadOptionsSchema,
-  type PublishMessageRequest,
   PublishMessageRequestSchema,
 } from '../../../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import { appGlobal } from '../../../state/app-global';
@@ -278,7 +277,7 @@ function applySchemaSelection(options: PublishMessagePayloadOptions, payload: Pa
   }
 }
 
-function buildPayloadOptions(payload: PayloadInputs): PublishMessagePayloadOptions | undefined {
+function buildPayloadOptions(payload: PayloadInputs) {
   const data = tryEncodeData(payload);
   if (data === undefined) {
     return;
@@ -293,7 +292,7 @@ function buildPayloadOptions(payload: PayloadInputs): PublishMessagePayloadOptio
   return options;
 }
 
-function buildPublishRequest(topicName: string, data: Inputs): PublishMessageRequest | undefined {
+function buildPublishRequest(topicName: string, data: Inputs) {
   const req = create(PublishMessageRequestSchema, {
     topic: topicName,
     partitionId: data.partition,

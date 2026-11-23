@@ -327,9 +327,7 @@ const extractAuthSettings = (
 /**
  * Extract advanced client options from shadow link client options
  */
-const extractAdvancedClientOptions = (
-  clientOptions: ShadowLinkClientOptions | undefined
-): FormValues['advanceClientOptions'] => ({
+const extractAdvancedClientOptions = (clientOptions: ShadowLinkClientOptions | undefined) => ({
   metadataMaxAgeMs: clientOptions?.metadataMaxAgeMs || 10_000,
   connectionTimeoutMs: clientOptions?.connectionTimeoutMs || 1000,
   retryBackoffMs: clientOptions?.retryBackoffMs || 100,
@@ -342,7 +340,7 @@ const extractAdvancedClientOptions = (
 /**
  * Check if name filters represent "all" mode (single filter with name='*')
  */
-const isAllNameFilter = (filters: { name: string; patternType: PatternType; filterType: FilterType }[]): boolean =>
+const isAllNameFilter = (filters: { name: string; patternType: PatternType; filterType: FilterType }[]) =>
   filters.length === 1 &&
   filters[0].name === '*' &&
   filters[0].patternType === PatternType.LITERAL &&
@@ -351,7 +349,7 @@ const isAllNameFilter = (filters: { name: string; patternType: PatternType; filt
 /**
  * Check if ACL filters represent "all" mode (single filter matching any ACL)
  */
-const isAllACLFilter = (filters: ACLFilter[]): boolean => {
+const isAllACLFilter = (filters: ACLFilter[]) => {
   if (filters.length !== 1) {
     return false;
   }

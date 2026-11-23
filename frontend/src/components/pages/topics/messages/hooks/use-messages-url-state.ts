@@ -56,7 +56,7 @@ export function readScopeModeFromOffset(startOffset: number): ReadScopeMode {
   }
 }
 
-export function offsetForReadScopeMode(mode: ReadScopeMode, customOffset: number): number {
+export function offsetForReadScopeMode(mode: ReadScopeMode, customOffset: number) {
   switch (mode) {
     case 'oldest':
       return PartitionOffsetOrigin.Start;

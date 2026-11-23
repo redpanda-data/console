@@ -18,9 +18,6 @@ import {
   type UpdateShadowLinkRequestSchema as CpUpdateShadowLinkRequestSchema,
   type DeleteShadowLinkOperation,
   type DeleteShadowLinkRequest,
-  type GetShadowLinkResponse,
-  type ListShadowLinksResponse,
-  type ShadowLink,
   type UpdateShadowLinkOperation,
   type UpdateShadowLinkRequest,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
@@ -33,7 +30,7 @@ import {
 import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, type UseMutationOptions, useMutation, useQuery } from '@connectrpc/connect-query';
-import { type UseMutationResult, type UseQueryResult, useQueryClient } from '@tanstack/react-query';
+import { type UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import { config, isEmbedded } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { MAX_PAGE_SIZE, type MessageInit } from 'react-query/react-query.utils';
@@ -51,9 +48,7 @@ const listShadowLinksKeys = () => [
  * Hook to list shadow links using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneListShadowLinksQuery = (opts?: {
-  enabled?: boolean;
-}): UseQueryResult<ListShadowLinksResponse, ConnectError> => {
+export const useControlplaneListShadowLinksQuery = (opts?: { enabled?: boolean }) => {
   const transport = useControlplaneTransport();
   const embedded = isEmbedded();
   const clusterId = config.clusterId;
@@ -77,10 +72,7 @@ export const useControlplaneListShadowLinksQuery = (opts?: {
  * Hook to get a shadow link by ID using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneGetShadowLinkQuery = (
-  request: { id: string },
-  opts?: { enabled?: boolean }
-): UseQueryResult<GetShadowLinkResponse, ConnectError> => {
+export const useControlplaneGetShadowLinkQuery = (request: { id: string }, opts?: { enabled?: boolean }) => {
   const transport = useControlplaneTransport();
   const getShadowLinkRequest = create(CpGetShadowLinkRequestSchema, {
     id: request.id,
@@ -94,15 +86,7 @@ export const useControlplaneGetShadowLinkQuery = (
  * First lists shadow links to find ID by name, then fetches full details
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneGetShadowLinkByNameQuery = (
-  request: { name: string },
-  opts?: { enabled?: boolean }
-): {
-  data: ShadowLink | undefined;
-  isLoading: boolean;
-  error: ConnectError | null;
-  refetch: () => Promise<void>;
-} => {
+export const useControlplaneGetShadowLinkByNameQuery = (request: { name: string }, opts?: { enabled?: boolean }) => {
   const listQuery = useControlplaneListShadowLinksQuery({ enabled: opts?.enabled });
 
   const shadowLinkId = listQuery.data?.shadowLinks?.find((sl) => sl.name === request.name)?.id;

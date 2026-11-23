@@ -29,7 +29,7 @@ async function tryTranspile(
   tsWorkerClient: languages.typescript.TypeScriptWorker,
   formattedEditorUri: string,
   fallback: string
-): Promise<string> {
+) {
   try {
     const result = await tsWorkerClient.getEmitOutput(formattedEditorUri);
     if (result?.outputFiles?.[0]?.text) {

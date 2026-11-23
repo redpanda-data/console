@@ -17,7 +17,7 @@ const MAX_RETRY_DELAY_MS = 30_000;
 export const DEFAULT_LIVE_TAIL_MAX_RETRIES = 5;
 
 /** Exponential backoff (capped) for the `failureCount`-th (1-indexed) consecutive failure. */
-export function liveTailRetryDelayMs(failureCount: number): number {
+export function liveTailRetryDelayMs(failureCount: number) {
   return Math.min(BASE_RETRY_DELAY_MS * 2 ** (failureCount - 1), MAX_RETRY_DELAY_MS);
 }
 
@@ -50,7 +50,7 @@ type LiveTailSession = Pick<LiveTailLoopOptions, 'start'> & {
  * Runs one tail session until the returned cancel is called: a clean completion restarts at once
  * (appending), a failure backs off, and `maxRetries` consecutive failures end the session.
  */
-function runLiveTailSession({ start, maxRetries, setStatus }: LiveTailSession): () => void {
+function runLiveTailSession({ start, maxRetries, setStatus }: LiveTailSession) {
   let cancelled = false;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let failureCount = 0;

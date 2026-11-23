@@ -46,7 +46,7 @@ export function mockConnectQuery() {
  * swaps the real type at runtime, so we reach in defensively and throw
  * a helpful error if the mock shape is wrong.
  */
-export function getRouteComponent(route: unknown): React.ComponentType {
+export function getRouteComponent(route: unknown) {
   const r = route as { component?: React.ComponentType };
   if (!r.component) {
     throw new Error('Route mock missing component');

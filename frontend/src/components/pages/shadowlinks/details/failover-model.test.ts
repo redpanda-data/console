@@ -20,7 +20,6 @@ import {
   getLagStep,
   getLinkIdentity,
   getSourceFenceStep,
-  type SourceFenceStep,
 } from './failover-model';
 import { describe, expect, test } from 'bun:test';
 import type { UnifiedShadowLink } from '../model';
@@ -41,7 +40,7 @@ const cloudSource = (state: FencePhase, exemptPrincipals = ['shadow-orders']): S
 
 const sasl: LinkIdentity = { authentication: 'sasl', principal: 'shadow-orders' };
 
-const step = (source: ShadowLinkSource, link: LinkIdentity = sasl): SourceFenceStep => {
+const step = (source: ShadowLinkSource, link: LinkIdentity = sasl) => {
   const result = getSourceFenceStep({ source, link, resolving: false });
   if (!result) {
     throw new Error('No guided failover for this source');

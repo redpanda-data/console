@@ -92,7 +92,7 @@ const OVERLAY_FONT_CLASS = 'font-mono text-sm';
 const PILL_HIGHLIGHT_CLASS = 'rounded-md px-0.5 py-1 -mx-0.5 outline-1 outline-border/60';
 
 /** Text a suggestion/ghost action should splice in at the current word, or `null` for actions handled specially (opening the JS dialog). */
-const replacementTextFor = (action: SuggestionAction): string | null => {
+const replacementTextFor = (action: SuggestionAction) => {
   switch (action.type) {
     case 'set-pending':
       return `${action.field}:`;

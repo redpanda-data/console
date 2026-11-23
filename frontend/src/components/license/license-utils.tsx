@@ -34,8 +34,7 @@ export const LICENSE_WEIGHT: Record<License_Type, number> = {
  * otherwise `false`
  */
 
-export const isBakedInTrial = (license: License): boolean =>
-  license.organization === 'Redpanda Built-In Evaluation Period';
+export const isBakedInTrial = (license: License) => license.organization === 'Redpanda Built-In Evaluation Period';
 
 /**
  * Checks if a list of enterprise features includes enabled features for authentication,
@@ -43,12 +42,11 @@ export const isBakedInTrial = (license: License): boolean =>
  *
  * @returns {boolean} - Returns `true` if an enabled feature with name 'sso', 'reassign partitions', or 'shadow links' is found, otherwise `false`.
  */
-export const consoleHasEnterpriseFeature = (
-  feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS' | 'SHADOW_LINKS'
-): boolean => AppFeatures[feature] ?? false;
+export const consoleHasEnterpriseFeature = (feature: 'SINGLE_SIGN_ON' | 'REASSIGN_PARTITIONS' | 'SHADOW_LINKS') =>
+  AppFeatures[feature] ?? false;
 
 /** True when Core has at least one enterprise feature enabled. */
-export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]): boolean =>
+export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesResponse_Feature[]) =>
   features.some((feature) => feature.enabled);
 
 /**
@@ -60,7 +58,7 @@ export const coreHasEnterpriseFeatures = (features: ListEnterpriseFeaturesRespon
  * @param {string} license.type - The type of the license (e.g., `COMMUNITY`).
  * @returns {boolean} - Returns `true` if the license is expired, otherwise `false`.
  */
-export const licenseIsExpired = (license: License): boolean =>
+export const licenseIsExpired = (license: License) =>
   license.type !== License_Type.COMMUNITY && new Date(Number(license.expiresAt) * 1000) < new Date();
 
 /**
@@ -79,7 +77,7 @@ export const licenseSoonToExpire = (
     [License_Type.TRIAL]: 15,
     [License_Type.ENTERPRISE]: 30,
   }
-): boolean => {
+) => {
   const daysToExpire: number | undefined = offsetInDays[license.type];
 
   if (daysToExpire === undefined) {
@@ -101,10 +99,10 @@ export const licenseSoonToExpire = (
  * @param {License} license - The license object containing the expiration timestamp.
  * @returns {Date} The expiration date as a JavaScript Date object.
  */
-export const getExpirationDate = (license: License): Date => new Date(Number(license.expiresAt) * 1000);
+export const getExpirationDate = (license: License) => new Date(Number(license.expiresAt) * 1000);
 
 /** Expiry as a long en-US date, pinned to that locale so it does not vary by environment. */
-export const getPrettyExpirationDate = (license: License): string =>
+export const getPrettyExpirationDate = (license: License) =>
   new Intl.DateTimeFormat('en-US', {
     month: 'long',
     day: 'numeric',
@@ -118,7 +116,7 @@ export const getPrettyExpirationDate = (license: License): string =>
  * @param {string} license.expiresAt - The Unix timestamp (in seconds) when the license expires.
  * @returns {number} - The time remaining until expiration in milliseconds. If the license has already expired, returns 0.
  */
-export const getMillisecondsToExpiration = (license: License): number => {
+export const getMillisecondsToExpiration = (license: License) => {
   const expirationDate = getExpirationDate(license);
   const currentTime = new Date();
 
@@ -139,7 +137,7 @@ export const getPrettyTimeToExpiration = (license: License) => {
 };
 
 /** Display name for a licence type ("Redpanda Enterprise", "Trial", …), optionally prefixed with its source. */
-export const prettyLicenseType = (license: License, showSource = false): string => {
+export const prettyLicenseType = (license: License, showSource = false) => {
   const licenseType = {
     [License_Type.COMMUNITY]: 'Community',
     [License_Type.UNSPECIFIED]: 'Unspecified',
@@ -185,7 +183,7 @@ export const prettyExpirationDate = (license: License) => {
  * @param {License_Type} license.type - The type of the license.
  * @returns {boolean} - Returns `true` if the license type can expire, otherwise `false`.
  */
-export const licenseCanExpire = (license: License): boolean => license.type !== License_Type.COMMUNITY;
+export const licenseCanExpire = (license: License) => license.type !== License_Type.COMMUNITY;
 
 /**
  * Determines whether the given license grants access to enterprise-level features.
@@ -196,11 +194,11 @@ export const licenseCanExpire = (license: License): boolean => license.type !== 
  * @param license - The license object to evaluate.
  * @returns `true` if the license type is `TRIAL` or `ENTERPRISE`, otherwise `false`.
  */
-export const isLicenseWithEnterpriseAccess = (license: License): boolean =>
+export const isLicenseWithEnterpriseAccess = (license: License) =>
   license.type === License_Type.TRIAL || license.type === License_Type.ENTERPRISE;
 
 /** True when the Redpanda cluster itself holds an unexpired Enterprise licence. */
-export const coreHasActiveEnterpriseLicense = (licenses: License[]): boolean =>
+export const coreHasActiveEnterpriseLicense = (licenses: License[]) =>
   licenses.some(
     (license) =>
       license.source === License_Source.REDPANDA_CORE &&
@@ -214,7 +212,7 @@ export const coreHasActiveEnterpriseLicense = (licenses: License[]): boolean =>
  * @param licenses - An array of License objects to evaluate.
  * @returns The license with the latest expiration time, or undefined if the array is empty.
  */
-export const getLatestExpiringLicense = (licenses: License[]): License | undefined => {
+export const getLatestExpiringLicense = (licenses: License[]) => {
   if (licenses.length === 0) {
     return;
   }
@@ -231,13 +229,7 @@ export const getLatestExpiringLicense = (licenses: License[]): License | undefin
  * licences collapses to the bare type name (`Enterprise`); a type with one keeps its source in the
  * name (`Core Enterprise`). `expiresAt` is empty for licences that never expire.
  */
-export const licensesToSimplifiedPreview = (
-  licenses: License[]
-): Array<{
-  name: string;
-  expiresAt: string;
-  isExpired: boolean;
-}> => {
+export const licensesToSimplifiedPreview = (licenses: License[]) => {
   const groupedLicenses = licenses.groupBy((x) => x.type);
 
   return [...groupedLicenses.values()].map((licensesGroup) => {
@@ -281,7 +273,7 @@ export const resolveEnterpriseCTALink = (
   return url.toString();
 };
 
-export const getEnterpriseCTALink = (type: EnterpriseLinkType): string =>
+export const getEnterpriseCTALink = (type: EnterpriseLinkType) =>
   resolveEnterpriseCTALink(type, api.clusterOverview?.kafka?.clusterId, api.isRedpanda);
 
 export const DISABLE_SSO_DOCS_LINK = docsLinks.selfManaged.consoleConfig;

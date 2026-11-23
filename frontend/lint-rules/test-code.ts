@@ -177,7 +177,7 @@ function clockKinds(node: Node | undefined) {
 }
 
 /** What `useFakeTimers(options)` fakes; Rstest's default fakes everything but ticks. */
-function fakedBy(options: Node | undefined): Set<ClockKind> {
+function fakedBy(options: Node | undefined) {
   const kinds = new Set(clockKinds(propertyValue(options, 'toFake')) ?? FAKED_BY_DEFAULT);
   for (const kind of clockKinds(propertyValue(options, 'toNotFake')) ?? []) {
     kinds.delete(kind);

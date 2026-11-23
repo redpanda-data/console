@@ -36,7 +36,7 @@ type ItemProps = {
   onDelete: () => void;
 };
 
-const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element => {
+const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps) => {
   const [hasFocus, setHasFocus] = useState(false);
   const [valuePending, setValuePending] = useState('');
 

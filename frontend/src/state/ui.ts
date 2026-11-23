@@ -581,7 +581,7 @@ function upgradePreviewTags(ts: TopicDetailsSettings) {
   }
 }
 
-function upgradeSettings(loadedSettings: Partial<UISettings>): Partial<UISettings> {
+function upgradeSettings(loadedSettings: Partial<UISettings>) {
   if (loadedSettings.perTopicSettings) {
     for (const ts of loadedSettings.perTopicSettings) {
       fillNewTopicSettingsDefaults(ts);
@@ -701,7 +701,7 @@ export const useUISettingsStore = create<UISettingsStore>()(
  * React owns the lifecycle. No-op when `window` is undefined (SSR and tests
  * isolate resets before happy-dom installs globals).
  */
-export function installUISettingsSideEffects(): () => void {
+export function installUISettingsSideEffects() {
   if (typeof window === 'undefined') {
     return () => {};
   }

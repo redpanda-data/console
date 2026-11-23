@@ -228,10 +228,7 @@ function updatePartitionSizes(state: ReassignmentState) {
 }
 
 /** The replica size each adding broker reports so far, 0 for a broker without a log dir for the partition. */
-function sizesOnAddingBrokers(
-  addingReplicas: number[],
-  logDirs: Partition['partitionLogDirs']
-): { brokerId: number; replicaSize: number }[] {
+function sizesOnAddingBrokers(addingReplicas: number[], logDirs: Partition['partitionLogDirs']) {
   return addingReplicas.map((b) => {
     const logDir = logDirs.first((l) => l.brokerId === b);
     return { brokerId: b, replicaSize: logDir && !logDir.error ? logDir.size : 0 };
@@ -277,7 +274,7 @@ function updateReassignmentState(state: ReassignmentState) {
   return state;
 }
 
-function computeId(r: PartitionReassignments): string {
+function computeId(r: PartitionReassignments) {
   const id: unknown[] = [];
   id.push(r.topicName);
 

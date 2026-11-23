@@ -66,7 +66,7 @@ export type InspectorChildItem = {
   lintCount?: number;
 };
 
-const childItemConditionText = (item: InspectorChildItem): string | undefined => {
+const childItemConditionText = (item: InspectorChildItem) => {
   if (item.condition) {
     return `if ${item.condition}`;
   }
@@ -164,7 +164,7 @@ const CREATE_RESOURCE_VALUE = '__create_resource__';
 
 // Resource kind a field links to: by field type, or by the enclosing cache/rate_limit component for
 // a field named `resource` (some schemas type it as a plain string).
-function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: ResourceKind): ResourceKind | undefined {
+function resolveResourceKind(spec: RawFieldSpec, componentResourceKind?: ResourceKind) {
   if (spec.type === 'cache' || spec.type === 'rate_limit') {
     return spec.type;
   }
@@ -224,7 +224,7 @@ const ResourceReferenceSelect = ({
 };
 
 // Path helpers for the plain-JSON config object (not the YAML AST).
-function getInObj(obj: Record<string, unknown>, path: string[]): unknown {
+function getInObj(obj: Record<string, unknown>, path: string[]) {
   let cur: unknown = obj;
   for (const key of path) {
     if (!cur || typeof cur !== 'object') {
@@ -235,7 +235,7 @@ function getInObj(obj: Record<string, unknown>, path: string[]): unknown {
   return cur;
 }
 
-function setInObj(obj: Record<string, unknown>, path: string[], value: unknown): void {
+function setInObj(obj: Record<string, unknown>, path: string[], value: unknown) {
   let cur = obj;
   for (const key of path.slice(0, -1)) {
     if (!cur[key] || typeof cur[key] !== 'object' || Array.isArray(cur[key])) {
@@ -246,7 +246,7 @@ function setInObj(obj: Record<string, unknown>, path: string[], value: unknown):
   cur[path.at(-1) as string] = value;
 }
 
-function deleteInObj(obj: Record<string, unknown>, path: string[]): void {
+function deleteInObj(obj: Record<string, unknown>, path: string[]) {
   const parent = path.slice(0, -1).reduce<Record<string, unknown> | undefined>((cur, key) => {
     const next = cur?.[key];
     return next && typeof next === 'object' ? (next as Record<string, unknown>) : undefined;
@@ -257,7 +257,7 @@ function deleteInObj(obj: Record<string, unknown>, path: string[]): void {
 }
 
 // Drop objects that became empty after clearing their fields, so the YAML stays tidy.
-function pruneEmptyObjects(obj: Record<string, unknown>): void {
+function pruneEmptyObjects(obj: Record<string, unknown>) {
   for (const [key, val] of Object.entries(obj)) {
     if (val && typeof val === 'object' && !Array.isArray(val)) {
       pruneEmptyObjects(val as Record<string, unknown>);
@@ -268,7 +268,7 @@ function pruneEmptyObjects(obj: Record<string, unknown>): void {
   }
 }
 
-function initialScalar(spec: RawFieldSpec, current: unknown): string | boolean {
+function initialScalar(spec: RawFieldSpec, current: unknown) {
   const isMissing = current === undefined || current === null;
   if (spec.type === 'bool') {
     return isMissing ? spec.defaultValue === 'true' : Boolean(current);
@@ -279,7 +279,7 @@ function initialScalar(spec: RawFieldSpec, current: unknown): string | boolean {
   return String(current);
 }
 
-function coerceScalar(spec: RawFieldSpec, raw: string | boolean): string | number | boolean {
+function coerceScalar(spec: RawFieldSpec, raw: string | boolean) {
   if (spec.type === 'bool') {
     return Boolean(raw);
   }
@@ -291,7 +291,7 @@ function coerceScalar(spec: RawFieldSpec, raw: string | boolean): string | numbe
 }
 
 // '' when the literal doesn't parse, which the save path drops.
-function coerceNumericText(text: string, integer: boolean): string | number {
+function coerceNumericText(text: string, integer: boolean) {
   // Interpolations (`${ENV}`, secrets, Bloblang) are valid even in numeric fields — keep verbatim
   // rather than coercing to NaN (→ '' → dropped on commit). Matches numericHint.
   if (text.includes('${')) {
@@ -305,7 +305,7 @@ function coerceNumericText(text: string, integer: boolean): string | number {
   return text === '' || Number.isNaN(n) ? '' : n;
 }
 
-const arrayFieldLines = (text: string): string[] =>
+const arrayFieldLines = (text: string) =>
   text
     .split('\n')
     .map((l) => l.trim())
@@ -323,7 +323,7 @@ type Leaf = { spec: RawFieldSpec; path: string[]; key: string };
 type Leaves = { scalars: Leaf[]; arrays: Leaf[] };
 
 /** All scalar + scalar-array leaves (recursing into object groups), keyed by path. */
-function collectLeaves(fields: RawFieldSpec[], base: string[] = []): Leaves {
+function collectLeaves(fields: RawFieldSpec[], base: string[] = []) {
   const leaves: Leaves = { scalars: [], arrays: [] };
   for (const f of fields) {
     if (!f.deprecated) {
@@ -334,7 +334,7 @@ function collectLeaves(fields: RawFieldSpec[], base: string[] = []): Leaves {
 }
 
 // Files one field under its leaf kind, or recurses into it when it is an object group.
-function collectFieldLeaves(field: RawFieldSpec, path: string[], leaves: Leaves): void {
+function collectFieldLeaves(field: RawFieldSpec, path: string[], leaves: Leaves) {
   const leaf: Leaf = { spec: field, path, key: path.join('/') };
   if (isScalarField(field)) {
     leaves.scalars.push(leaf);
@@ -348,7 +348,7 @@ function collectFieldLeaves(field: RawFieldSpec, path: string[], leaves: Leaves)
 }
 
 // Paths of the nested object groups the form renders as collapsible sections (tls, batching, …).
-function collectGroupKeys(fields: RawFieldSpec[], base: string[] = [], out: string[] = []): string[] {
+function collectGroupKeys(fields: RawFieldSpec[], base: string[] = [], out: string[] = []) {
   for (const f of fields) {
     if (f.deprecated || !isObjectGroupField(f)) {
       continue;
@@ -405,7 +405,7 @@ const FieldLintErrorList = ({ fieldKey, dirty }: { fieldKey: string; dirty: bool
 // The lint errors anchored at `prefix` or anywhere under it, joined into one signature string.
 // Groups force-open when the signature CHANGES: mere truthiness would leave errors that arrive
 // after a manual collapse invisible, while reopening on every lint refresh would fight the user.
-function lintErrorSignatureUnder(errors: FieldLintErrors, prefix: string): string {
+function lintErrorSignatureUnder(errors: FieldLintErrors, prefix: string) {
   const messages: string[] = [];
   for (const [key, list] of errors) {
     if (key === prefix || key.startsWith(`${prefix}/`)) {
@@ -415,7 +415,7 @@ function lintErrorSignatureUnder(errors: FieldLintErrors, prefix: string): strin
   return messages.join('\n');
 }
 
-function useLintErrorSignatureUnder(prefix: string[]): string {
+function useLintErrorSignatureUnder(prefix: string[]) {
   return lintErrorSignatureUnder(useContext(FieldLintErrorsContext), prefix.join('/'));
 }
 
@@ -428,7 +428,7 @@ type FormValues = {
 
 // Parse the "Other settings (YAML)" text: the mapping, `{}` when empty (intentional clear), or
 // `null` when invalid / not a mapping — so callers preserve existing keys instead of wiping them.
-function parseRawSection(showRaw: boolean, raw: string): Record<string, unknown> | null {
+function parseRawSection(showRaw: boolean, raw: string) {
   if (!(showRaw && raw.trim())) {
     return {};
   }
@@ -461,7 +461,7 @@ type BuildArgs = {
   requireLabel?: boolean;
 };
 
-function applyScalarEdits(config: Record<string, unknown>, scalars: Leaf[], data: FormValues, dirty: DirtyState): void {
+function applyScalarEdits(config: Record<string, unknown>, scalars: Leaf[], data: FormValues, dirty: DirtyState) {
   for (const { spec, path, key } of scalars) {
     if (!dirty.fields?.[key]) {
       continue;
@@ -480,7 +480,7 @@ function applyScalarEdits(config: Record<string, unknown>, scalars: Leaf[], data
   }
 }
 
-function applyArrayEdits(config: Record<string, unknown>, arrays: Leaf[], data: FormValues, dirty: DirtyState): void {
+function applyArrayEdits(config: Record<string, unknown>, arrays: Leaf[], data: FormValues, dirty: DirtyState) {
   for (const { spec, path, key } of arrays) {
     if (!dirty.arrays?.[key]) {
       continue;
@@ -494,7 +494,7 @@ function applyArrayEdits(config: Record<string, unknown>, arrays: Leaf[], data: 
   }
 }
 
-function applyRawEdits(config: Record<string, unknown>, { rawKeys, showRaw, data, dirty }: BuildArgs): void {
+function applyRawEdits(config: Record<string, unknown>, { rawKeys, showRaw, data, dirty }: BuildArgs) {
   if (!(showRaw && dirty.raw)) {
     return;
   }
@@ -523,7 +523,7 @@ function entryLabel({ data, value, requireLabel }: BuildArgs): Record<string, un
 }
 
 // The existing config with the user's edits overlaid: raw section first, then the form fields.
-function editedConfig(args: BuildArgs): Record<string, unknown> {
+function editedConfig(args: BuildArgs) {
   const config: Record<string, unknown> = structuredClone(args.inner);
   applyRawEdits(config, args);
   applyScalarEdits(config, args.leaves.scalars, args.data, args.dirty);
@@ -579,7 +579,7 @@ const FieldLabel = ({ spec, htmlFor }: { spec: RawFieldSpec; htmlFor?: string })
 // like AWS session tokens and SAS tokens, and the heuristic is all we have on older dataplanes.
 const SECRET_NAME_RE = /(?:password|secret|token|private_key|api_key|passphrase)$/iu;
 
-const isSecretField = (spec: RawFieldSpec): boolean =>
+const isSecretField = (spec: RawFieldSpec) =>
   spec.secret === true || (spec.type === 'string' && !fieldHasOptions(spec) && SECRET_NAME_RE.test(spec.name ?? ''));
 
 // Masked credential input. `type="password"` gives the registry Input's reveal toggle; a `${…}`
@@ -1013,7 +1013,7 @@ const fieldGroupKey = (spec: RawFieldSpec): FieldGroupKey => {
   return 'optional';
 };
 
-function groupFormFields(fields: RawFieldSpec[]): Record<FieldGroupKey, RawFieldSpec[]> {
+function groupFormFields(fields: RawFieldSpec[]) {
   const groups: Record<FieldGroupKey, RawFieldSpec[]> = { required: [], optional: [], advanced: [] };
   for (const spec of fields) {
     // isFormField excludes deprecated fields; their existing values surface in the raw-YAML section.
@@ -1090,7 +1090,7 @@ type FormModel = {
 
 // Keys the raw-YAML fallback owns: complex (or deprecated) schema fields and keys the schema
 // doesn't know. Nested-component fields are preserved untouched (the form clones the config).
-function rawSectionKeys(fields: RawFieldSpec[], inner: Record<string, unknown>): string[] {
+function rawSectionKeys(fields: RawFieldSpec[], inner: Record<string, unknown>) {
   const schemaKeys = new Set(fields.map((f) => f.name).filter(Boolean));
   const complexSchemaKeys = fields
     .filter((f) => f.name && (f.deprecated || !(isFormField(f) || isComponentField(f))))
@@ -1134,7 +1134,7 @@ function buildFormValues(value: Record<string, unknown>, { inner, leaves, showRa
 // The values a successful commit leaves as the form's baseline. Edits the save path deliberately
 // skipped (malformed numerics, invalid raw YAML) keep their SAVED value as the baseline so they
 // stay dirty — otherwise the clean-form resync would silently revert them.
-function committedBaseline(current: FormValues, { inner, leaves, showRaw, rawObject }: FormModel): FormValues {
+function committedBaseline(current: FormValues, { inner, leaves, showRaw, rawObject }: FormModel) {
   const committed: FormValues = { ...current, fields: { ...current.fields } };
   for (const leaf of leaves.scalars) {
     if (numericHint(leaf.spec, current.fields[leaf.key])) {
@@ -1242,7 +1242,7 @@ function resourceFieldContextFor({
 }
 
 // The lint errors anchored anywhere under these fields, as one signature (see lintErrorSignatureUnder).
-function lintErrorSignatureUnderFields(errors: FieldLintErrors, fields: RawFieldSpec[]): string {
+function lintErrorSignatureUnderFields(errors: FieldLintErrors, fields: RawFieldSpec[]) {
   return fields
     .map((f) => lintErrorSignatureUnder(errors, f.name))
     .filter(Boolean)

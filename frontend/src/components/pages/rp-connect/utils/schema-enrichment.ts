@@ -36,7 +36,7 @@ type JsonSchemaNode = {
 };
 
 /** Unwraps array/map wrappers so the node's `properties` line up with the proto field's `children`. */
-function unwrapStructural(node: JsonSchemaNode): JsonSchemaNode {
+function unwrapStructural(node: JsonSchemaNode) {
   let current = node;
   while (current.items) {
     current = current.items;
@@ -64,7 +64,7 @@ function stampFields(fields: RawFieldSpec[] | undefined, parent: JsonSchemaNode)
   });
 }
 
-function collectComponentNodes(definitions: Record<string, JsonSchemaNode>): Map<string, JsonSchemaNode> {
+function collectComponentNodes(definitions: Record<string, JsonSchemaNode>) {
   const nodes = new Map<string, JsonSchemaNode>();
   for (const [componentType, definition] of Object.entries(definitions)) {
     for (const branch of definition.allOf ?? []) {
@@ -94,7 +94,7 @@ const LINT_REQUIRED_FIELDS: Record<string, readonly string[]> = {
  * Stamps `requiredBySchema: true` on the curated fields. Runs even when the raw schema is
  * missing or too old to stamp from (the flags are console knowledge, not schema knowledge).
  */
-function applyLintRequiredFields(components: ConnectComponentSpec[]): ConnectComponentSpec[] {
+function applyLintRequiredFields(components: ConnectComponentSpec[]) {
   return components.map((component) => {
     const fieldNames = LINT_REQUIRED_FIELDS[`${component.type}:${component.name}`];
     if (!(fieldNames && component.config?.children)) {
@@ -120,10 +120,7 @@ function applyLintRequiredFields(components: ConnectComponentSpec[]): ConnectCom
  * secrets (the name heuristic still covers those). A document with no `required` keys at all
  * predates the arrays; stamping `requiredBySchema: false` everywhere from it would be a lie.
  */
-function stampFromConfigSchema(
-  components: ConnectComponentSpec[],
-  configSchema: string | undefined
-): ConnectComponentSpec[] {
+function stampFromConfigSchema(components: ConnectComponentSpec[], configSchema: string | undefined) {
   if (!configSchema?.includes('"required"')) {
     return components;
   }
@@ -158,9 +155,6 @@ function stampFromConfigSchema(
  * then overlays the curated lint-required flags (which win — they exist precisely because the
  * schema calls those fields optional).
  */
-export function enrichComponentsWithConfigSchema(
-  components: ConnectComponentSpec[],
-  configSchema: string | undefined
-): ConnectComponentSpec[] {
+export function enrichComponentsWithConfigSchema(components: ConnectComponentSpec[], configSchema: string | undefined) {
   return applyLintRequiredFields(stampFromConfigSchema(components, configSchema));
 }

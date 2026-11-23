@@ -22,7 +22,7 @@ function addDescription(node: SchemaNode, description: string) {
   }
 }
 
-function unwrapField(node: SchemaNode): SchemaNode {
+function unwrapField(node: SchemaNode) {
   let current = node;
   while (current.items && typeof current.items === 'object' && !Array.isArray(current.items)) {
     current = current.items;
@@ -42,7 +42,7 @@ function addFieldDescriptions(node: SchemaNode, fields: readonly RawFieldSpec[])
   }
 }
 
-function schemaNodes(nodes: readonly (SchemaNode | boolean)[] | undefined): SchemaNode[] {
+function schemaNodes(nodes: readonly (SchemaNode | boolean)[] | undefined) {
   return (nodes ?? []).filter((node): node is SchemaNode => Boolean(node) && typeof node === 'object');
 }
 
@@ -64,7 +64,7 @@ function addComponentDescriptions(
   }
 }
 
-export function withYamlDocumentation<T extends SchemaNode>(schema: T, components: readonly ConnectComponentSpec[]): T {
+export function withYamlDocumentation<T extends SchemaNode>(schema: T, components: readonly ConnectComponentSpec[]) {
   const documented = structuredClone(schema);
   const componentIndex = new Map(components.map((component) => [`${component.type}:${component.name}`, component]));
 

@@ -32,11 +32,11 @@ const COMMON_COMPONENTS = new Set([
 ]);
 
 // Experimental components are de-emphasised: sorted below stable ones. Deprecated ones never reach the palette.
-function isDemoted(status: ComponentStatus): boolean {
+function isDemoted(status: ComponentStatus) {
   return status === ComponentStatus.EXPERIMENTAL;
 }
 
-export function byProminence(a: ConnectComponentSpec, b: ConnectComponentSpec): number {
+export function byProminence(a: ConnectComponentSpec, b: ConnectComponentSpec) {
   const demoted = (isDemoted(a.status) ? 1 : 0) - (isDemoted(b.status) ? 1 : 0);
   if (demoted !== 0) {
     return demoted;
@@ -50,7 +50,7 @@ export function byProminence(a: ConnectComponentSpec, b: ConnectComponentSpec): 
 
 type RecentEntry = { name: string; type: ConnectComponentType };
 
-export function readRecents(): RecentEntry[] {
+export function readRecents() {
   if (typeof window === 'undefined') {
     return [];
   }
@@ -123,14 +123,14 @@ function nameContainsToken(name: string, fragment: string) {
   }
 }
 
-function isTokenBoundedAt(name: string, at: number, length: number): boolean {
+function isTokenBoundedAt(name: string, at: number, length: number) {
   const end = at + length;
   const boundedBefore = at === 0 || name[at - 1] === '_';
   const boundedAfter = end === name.length || name[end] === '_';
   return boundedBefore && boundedAfter;
 }
 
-export function aliasTermsForName(name: string): string[] {
+export function aliasTermsForName(name: string) {
   const lower = name.toLowerCase();
   const terms: string[] = [];
   for (const [alias, fragments] of Object.entries(COMPONENT_ALIASES)) {
@@ -141,7 +141,7 @@ export function aliasTermsForName(name: string): string[] {
   return terms;
 }
 
-export function searchableText(component: ConnectComponentSpec): string {
+export function searchableText(component: ConnectComponentSpec) {
   return [
     component.name,
     ...aliasTermsForName(component.name),
@@ -169,14 +169,14 @@ export function matchRank(component: ConnectComponentSpec, query: string, text: 
 
 const STARTS_WITH_VOWEL_REGEX = /^[aeiou]/u;
 
-function pluralTypeLabel(labels: string[] | undefined, emptyLabel: string): string {
+function pluralTypeLabel(labels: string[] | undefined, emptyLabel: string) {
   if (!labels || labels.length === 0) {
     return emptyLabel;
   }
   return labels.map((label) => `${label.replace(/_/gu, ' ')}s`).join(' or ');
 }
 
-function withArticles(labels: string[]): string {
+function withArticles(labels: string[]) {
   const labeled = labels.map((label) => {
     const humanized = label.replace(/_/gu, ' ');
     return `${STARTS_WITH_VOWEL_REGEX.test(humanized) ? 'an' : 'a'} ${humanized}`;
@@ -205,7 +205,7 @@ export function computeSuggested(
   allowedTypes: ConnectComponentType[] | undefined,
   byName: Map<string, ConnectComponentSpec>,
   recentComponents: ConnectComponentSpec[]
-): ConnectComponentSpec[] {
+) {
   const names = new Set((allowedTypes ?? []).flatMap((t) => SUGGESTED_BY_TYPE[t] ?? []));
   const recentNames = new Set(recentComponents.map((c) => c.name));
   return [...names]

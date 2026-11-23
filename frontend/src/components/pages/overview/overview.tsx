@@ -85,7 +85,7 @@ const BrokerIdCell: FC<{ broker: BrokerWithConfigAndStorage }> = ({ broker }) =>
 };
 
 class Overview extends PageComponent {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Overview';
     p.addBreadcrumb('Overview', '/overview');
 

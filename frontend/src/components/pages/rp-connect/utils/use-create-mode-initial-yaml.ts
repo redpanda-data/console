@@ -30,9 +30,7 @@ export function useCreateModeInitialYaml(opts: {
   isPipelineDiagramsEnabled: boolean;
   onResolved: (yaml: string) => void;
   timeoutMs?: number;
-}): {
-  isInitializing: boolean;
-} {
+}) {
   const { enabled, isServerlessMode, components, isPipelineDiagramsEnabled, timeoutMs = DEFAULT_TIMEOUT_MS } = opts;
   const persistedYamlContent = useRpcnWizardStore((s) => s.yamlContent);
   const onResolvedRef = useRef(opts.onResolved);

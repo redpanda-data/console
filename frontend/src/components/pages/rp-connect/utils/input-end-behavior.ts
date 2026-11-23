@@ -58,7 +58,7 @@ export type MemberCounts = { total: number; continuous: number; unknown: number;
 type Config = Record<string, unknown>;
 type EndRule = (config: Config) => InputEndBehavior;
 
-const nonEmpty = (value: unknown): boolean => typeof value === 'string' && value.trim() !== '';
+const nonEmpty = (value: unknown) => typeof value === 'string' && value.trim() !== '';
 
 const natural = (reason: string): InputEndBehavior => ({ kind: 'natural', reason });
 const continuous = (reason: string, finiteHint?: string): InputEndBehavior =>
@@ -97,7 +97,7 @@ const snapshotOnly =
           'Set `snapshot_mode: snapshot_only` to read a snapshot and stop.'
         );
 
-const positiveInteger = (value: unknown): number | undefined => {
+const positiveInteger = (value: unknown) => {
   const n = typeof value === 'string' ? Number(value) : value;
   return typeof n === 'number' && Number.isFinite(n) && Math.trunc(n) >= 1 ? Math.trunc(n) : undefined;
 };
@@ -110,7 +110,7 @@ const dependsOn = (field: string, value: string): InputEndBehavior => ({
 });
 
 // A boolean field with its default when unset; undefined when only the runtime can tell (an env var).
-const flag = (value: unknown, fallback: boolean): boolean | undefined =>
+const flag = (value: unknown, fallback: boolean) =>
   value === undefined || value === null ? fallback : yamlFlag(value);
 
 const DELETED_RE = /\bdeleted\(\s*\)/u;
@@ -296,7 +296,7 @@ function membersPhrase(n: number, total: number, [one, many]: [string, string]) 
   return `${n} of ${total} inputs ${n === 1 ? one : many}`;
 }
 
-function neverStopPhrase(n: number, total: number): string {
+function neverStopPhrase(n: number, total: number) {
   if (total === 1) {
     return 'Its input never stops on its own';
   }
@@ -381,7 +381,7 @@ function inherited(inner: InputEndBehavior, reason: string): InputEndBehavior {
   return { ...inner, kind: inner.kind === 'condition' ? 'natural' : inner.kind, reason };
 }
 
-function policyBatches(policy: unknown): boolean {
+function policyBatches(policy: unknown) {
   const p = asRecord(policy) ?? {};
   if (Number(p.count) === 1) {
     return false;
@@ -396,7 +396,7 @@ function policyBatches(policy: unknown): boolean {
 }
 
 // Connect sends a last partial batch only on a `period` timer: once the input ends, any other policy
-function lastBatchWaits(policy: unknown, alwaysBatches: boolean): boolean {
+function lastBatchWaits(policy: unknown, alwaysBatches: boolean) {
   const p = asRecord(policy) ?? {};
   if (nonEmpty(p.period) || Number(p.count) === 1) {
     return false;
@@ -404,7 +404,7 @@ function lastBatchWaits(policy: unknown, alwaysBatches: boolean): boolean {
   return alwaysBatches || policyBatches(p);
 }
 
-function deliversBatches(name: string, config: Config): boolean {
+function deliversBatches(name: string, config: Config) {
   if (name === 'batched' || name === 'redpanda_common' || name === 'redpanda_migrator') {
     return true;
   }
@@ -539,7 +539,7 @@ function classifyResource(label: unknown, ctx: ClassifyContext): InputEndBehavio
 
 const NEVER_TRUE = new Set(['false', 'null']);
 
-function inertStopWhy(stop: StopCondition, rereads: boolean): { why: string; hint: string } {
+function inertStopWhy(stop: StopCondition, rereads: boolean) {
   if (rereads) {
     return {
       why: 'It reads its input again each time it finishes and never goes idle',
@@ -558,11 +558,7 @@ function inertStopWhy(stop: StopCondition, rereads: boolean): { why: string; hin
   };
 }
 
-function caveatFor(
-  stop: StopCondition,
-  inner: InputEndBehavior,
-  { rereads, idleEnds }: StopEffects
-): string | undefined {
+function caveatFor(stop: StopCondition, inner: InputEndBehavior, { rereads, idleEnds }: StopEffects) {
   if (rereads) {
     return 'It reads its input again each time it finishes, until a message meets its check. If none does, it never stops.';
   }
@@ -646,7 +642,7 @@ function classifyStop(stop: StopCondition, inner: InputEndBehavior): InputEndBeh
   return actingStop(stop, inner, effects);
 }
 
-function actingStop(stop: StopCondition, inner: InputEndBehavior, effects: StopEffects): InputEndBehavior {
+function actingStop(stop: StopCondition, inner: InputEndBehavior, effects: StopEffects) {
   const working: StopCondition = {
     check: effects.checkEnds ? stop.check : undefined,
     idleTimeout: effects.idleEnds ? stop.idleTimeout : undefined,
@@ -703,8 +699,7 @@ function classifyReadUntil(
 }
 
 // The rule for a component name from the YAML; only the table's own keys, so `constructor` finds none.
-const ownRule = <T>(rules: Record<string, T>, name: string): T | undefined =>
-  Object.hasOwn(rules, name) ? rules[name] : undefined;
+const ownRule = <T>(rules: Record<string, T>, name: string) => (Object.hasOwn(rules, name) ? rules[name] : undefined);
 
 function classifyComponent(name: string, value: unknown, ctx: ClassifyContext): InputEndBehavior {
   if (name === READ_UNTIL) {
@@ -727,7 +722,7 @@ function classifyRecord(record: Config, ctx: ClassifyContext): InputEndBehavior 
   return name ? classifyComponent(name, component[name], ctx) : UNKNOWN;
 }
 
-function inputResourceMap(config: ParsedYamlConfig): Map<string, unknown> {
+function inputResourceMap(config: ParsedYamlConfig) {
   const map = new Map<string, unknown>();
   for (const item of Array.isArray(config.input_resources) ? config.input_resources : []) {
     const label = asRecord(item)?.label;
@@ -761,7 +756,7 @@ const STATUS_BY_KIND: Record<InputEndKind, PipelineEndStatus> = {
 };
 
 /** The pipeline's status from its top-level input's behavior (`none` without an input). */
-export function pipelineEndStatus(behavior: InputEndBehavior | undefined): PipelineEndStatus {
+export function pipelineEndStatus(behavior: InputEndBehavior | undefined) {
   return behavior ? STATUS_BY_KIND[behavior.kind] : 'none';
 }
 

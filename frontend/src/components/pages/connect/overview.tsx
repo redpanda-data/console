@@ -117,7 +117,7 @@ class KafkaConnectOverview extends PageComponent<{
   isKafkaConnectEnabled: boolean;
   isLoadingKafkaConnectors: boolean;
 }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Connect';
     p.addBreadcrumb('Connect', '/connect-clusters');
 
@@ -302,7 +302,7 @@ const TabConnectors = () => {
 
   const dataSource = useCallback(() => allConnectors, [allConnectors]);
 
-  const isFilterMatch = useCallback((filter: string, item: ConnectorType): boolean => {
+  const isFilterMatch = useCallback((filter: string, item: ConnectorType) => {
     try {
       const quickSearchRegExp = new RegExp(filter, 'iu');
       const nameMatch = item.name.match(quickSearchRegExp) !== null;

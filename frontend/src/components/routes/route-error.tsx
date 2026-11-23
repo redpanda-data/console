@@ -19,7 +19,7 @@ type RouteErrorProps = {
 };
 
 // (e.g. an aborted request during navigation), so never assume `error.message` exists.
-const getRouteErrorMessage = (error: unknown): string => {
+const getRouteErrorMessage = (error: unknown) => {
   if (error instanceof Error && error.message) {
     return error.message;
   }

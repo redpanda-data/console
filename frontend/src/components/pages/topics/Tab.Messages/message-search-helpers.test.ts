@@ -35,7 +35,7 @@ function filter(overrides: Partial<FilterEntry>): FilterEntry {
   };
 }
 
-function message(offset: number, timestamp: number, valueJson = ''): TopicMessage {
+function message(offset: number, timestamp: number, valueJson = '') {
   return { offset, timestamp, keyJson: '', valueJson } as TopicMessage;
 }
 

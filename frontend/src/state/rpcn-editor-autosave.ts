@@ -33,7 +33,7 @@ export const MAX_AUTOSAVE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const CREATE_AUTOSAVE_TARGET = 'create';
 
-export const autosaveTargetKey = (pipelineId?: string): string => pipelineId || CREATE_AUTOSAVE_TARGET;
+export const autosaveTargetKey = (pipelineId?: string) => pipelineId || CREATE_AUTOSAVE_TARGET;
 
 const attachedServiceAccountSchema = z.object({ serviceAccountId: z.string(), secretName: z.string() });
 
@@ -64,14 +64,14 @@ export type EditorAutosaveEntry = z.infer<typeof editorAutosaveEntrySchema>;
 
 export type EditorAutosaveInput = Omit<EditorAutosaveEntry, 'version' | 'clusterId' | 'updatedAt'>;
 
-const currentClusterId = (): string => config.clusterId || 'default';
+const currentClusterId = () => config.clusterId || 'default';
 
-const isAutosaveYamlTooLarge = (configYaml: string): boolean => new Blob([configYaml]).size > MAX_AUTOSAVE_YAML_BYTES;
+const isAutosaveYamlTooLarge = (configYaml: string) => new Blob([configYaml]).size > MAX_AUTOSAVE_YAML_BYTES;
 
-const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now()): boolean =>
+const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now()) =>
   now - entry.updatedAt > MAX_AUTOSAVE_AGE_MS;
 
-function parseStoredEntries(raw: string | null): EditorAutosaveEntry[] {
+function parseStoredEntries(raw: string | null) {
   const parsed: unknown = raw ? JSON.parse(raw) : [];
   if (!Array.isArray(parsed)) {
     return [];
@@ -82,7 +82,7 @@ function parseStoredEntries(raw: string | null): EditorAutosaveEntry[] {
   });
 }
 
-function readAll(): EditorAutosaveEntry[] {
+function readAll() {
   if (typeof window === 'undefined') {
     return [];
   }
@@ -122,7 +122,7 @@ function removeAll() {
 
 const newestFirst = (a: EditorAutosaveEntry, b: EditorAutosaveEntry) => b.updatedAt - a.updatedAt;
 
-function prune(entries: EditorAutosaveEntry[], clusterId: string): EditorAutosaveEntry[] {
+function prune(entries: EditorAutosaveEntry[], clusterId: string) {
   const mine = entries.filter((e) => e.clusterId === clusterId).sort(newestFirst);
   const others = entries.filter((e) => e.clusterId !== clusterId);
   return [...mine.slice(0, MAX_AUTOSAVE_BUFFERS), ...others].sort(newestFirst).slice(0, MAX_AUTOSAVE_BUFFERS_TOTAL);
@@ -181,10 +181,7 @@ export const useRpcnEditorAutosaveStore = create<EditorAutosaveStore>()((set) =>
   refresh: () => set({ entries: readAll() }),
 }));
 
-export function selectAutosaveEntry(
-  entries: EditorAutosaveEntry[],
-  targetKey: string | undefined
-): EditorAutosaveEntry | null {
+export function selectAutosaveEntry(entries: EditorAutosaveEntry[], targetKey: string | undefined) {
   if (!targetKey) {
     return null;
   }

@@ -587,7 +587,7 @@ const ConnectorErrorModal = (p: { error: ConnectorError }) => {
 };
 
 class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connector: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const clusterName = decodeURIComponent(this.props.clusterName);
     const connector = decodeURIComponent(this.props.connector);
     p.title = connector;
@@ -608,7 +608,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
-  async refreshData(force: boolean): Promise<void> {
+  async refreshData(force: boolean) {
     ConnectClusterStore.connectClusters.clear();
     await this.api.refreshConnectClusters();
 
@@ -645,7 +645,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
 export default KafkaConnectorDetails;
 
 // Visible, non-secret, high-importance properties with a value; the name is already the title.
-function isConnectorDetailsProperty(x: Property): boolean {
+function isConnectorDetailsProperty(x: Property) {
   return (
     !x.isHidden &&
     x.entry.definition.type !== DataType.Password &&

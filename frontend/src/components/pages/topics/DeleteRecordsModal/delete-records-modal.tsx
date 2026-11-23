@@ -40,7 +40,7 @@ import { Slider } from 'components/redpanda-ui/components/slider';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
-import { type JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { api, useApiStoreHook } from '../../../../state/backend-api';
@@ -141,7 +141,7 @@ function SelectPartitionStep({
   onPartitionSpecified: (v: number | null) => void;
   specificPartition: number | null;
   partitions: number[];
-}): JSX.Element {
+}) {
   return (
     <div className="space-y-4">
       <DeleteRecordsIntro>
@@ -606,7 +606,7 @@ function getPrimaryLabel(hasErrors: boolean, isLast: boolean) {
   return isLast ? 'Delete Records' : 'Choose End Offset';
 }
 
-export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
+export default function DeleteRecordsModal(props: DeleteRecordsModalProps) {
   const { visible, topic, onCancel, onFinish } = props;
 
   useEffect(() => {

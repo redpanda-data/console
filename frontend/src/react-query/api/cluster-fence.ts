@@ -59,7 +59,7 @@ const transitionPollMs = (data: GetClusterFenceStatusResponse | undefined): numb
  * cluster this is all it needs; fencing this cluster also needs its backend to serve
  * ClusterFenceService for a cluster that supports fencing.
  */
-export const isGuidedFailoverEnabled = (): boolean =>
+export const isGuidedFailoverEnabled = () =>
   !isServerless() && (!isEmbedded() || isFeatureFlagEnabled('enableClusterFencing'));
 
 const invalidateStatus = (queryClient: QueryClient) =>
@@ -75,7 +75,7 @@ const invalidateStatus = (queryClient: QueryClient) =>
 const UNSUPPORTED_CODES = new Set([Code.Unimplemented, Code.NotFound, Code.FailedPrecondition]);
 
 /** Why the status can't be shown, when it can't. */
-const accessOf = (error: unknown): 'ok' | 'unsupported' | 'forbidden' => {
+const accessOf = (error: unknown) => {
   if (!(error instanceof ConnectError)) {
     return 'ok';
   }
@@ -86,9 +86,9 @@ const accessOf = (error: unknown): 'ok' | 'unsupported' | 'forbidden' => {
 };
 
 /** Not answered for this viewer, and asking again won't change that until they sign in as someone else. */
-const isSettledReadError = (error: unknown): boolean => accessOf(error) !== 'ok';
+const isSettledReadError = (error: unknown) => accessOf(error) !== 'ok';
 
-const isNoLeaderError = (error: unknown): boolean => error instanceof ConnectError && error.code === Code.Unavailable;
+const isNoLeaderError = (error: unknown) => error instanceof ConnectError && error.code === Code.Unavailable;
 
 /** No controller leader is usually brief, so ask again soon. */
 const NO_LEADER_POLL_MS = 5000;
@@ -146,7 +146,7 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[], since: 
  * in, the last status read before the controller leader went still counts, so the banner and the
  * guards don't drop while the copies load or can't be read.
  */
-const ownCopiesBlock = (copies: BrokerOwnCopy[], lastRead: FenceSummary | undefined): boolean =>
+const ownCopiesBlock = (copies: BrokerOwnCopy[], lastRead: FenceSummary | undefined) =>
   copies.some((copy) => copy.phase && isBlockingPhase(copy.phase)) ||
   (lastRead !== undefined && isBlockingPhase(lastRead.phase) && !copies.every((copy) => copy.phase));
 
@@ -326,7 +326,7 @@ const PRECONDITION_HINTS: { pattern: RegExp; sentence: string }[] = [
 ];
 
 /** A stale `expected_revision`: someone else changed the fence since this page read it. */
-export const isStaleRevisionError = (error: unknown): boolean =>
+export const isStaleRevisionError = (error: unknown) =>
   error instanceof ConnectError && error.code === Code.FailedPrecondition && STALE_REVISION.test(error.rawMessage);
 
 const withServerMessage = (sentence: string, error: ConnectError) =>
@@ -343,7 +343,7 @@ const CHANGE_ERROR_SENTENCE: Partial<Record<Code, string>> = {
 };
 
 /** Turns a cluster fence API failure into a sentence that says what to do next. */
-export const describeClusterFenceError = (error: unknown): string => {
+export const describeClusterFenceError = (error: unknown) => {
   if (!(error instanceof ConnectError)) {
     return error instanceof Error ? error.message : String(error);
   }
@@ -361,7 +361,7 @@ export const describeClusterFenceError = (error: unknown): string => {
 };
 
 /** A sentence for a status read that failed, which unlike a change has nothing that may still apply. */
-export const describeClusterFenceReadError = (error: unknown): string => {
+export const describeClusterFenceReadError = (error: unknown) => {
   if (!(error instanceof ConnectError)) {
     return describeClusterFenceError(error);
   }

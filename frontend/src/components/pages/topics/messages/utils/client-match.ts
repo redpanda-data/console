@@ -17,7 +17,7 @@ import type { FilterOp } from '../types';
  * `value`, or a `value.<dot.path>` accessor into the decoded value payload.
  * Returns undefined when the path doesn't exist.
  */
-export function resolveField(msg: TopicMessage, field: string): unknown {
+export function resolveField(msg: TopicMessage, field: string) {
   switch (field) {
     case 'key':
       return msg.key.isPayloadNull ? undefined : (msg.key.payload ?? msg.keyJson);
@@ -43,7 +43,7 @@ export function resolveField(msg: TopicMessage, field: string): unknown {
   return current;
 }
 
-const compareNumeric = (resolved: unknown, value: string, op: 'gt' | 'lt' | 'gte' | 'lte'): boolean => {
+const compareNumeric = (resolved: unknown, value: string, op: 'gt' | 'lt' | 'gte' | 'lte') => {
   const left = Number(resolved);
   const right = Number(value);
   if (Number.isNaN(left) || Number.isNaN(right)) {
@@ -63,11 +63,11 @@ const compareNumeric = (resolved: unknown, value: string, op: 'gt' | 'lt' | 'gte
   }
 };
 
-const asComparableString = (resolved: unknown): string =>
+const asComparableString = (resolved: unknown) =>
   typeof resolved === 'string' ? resolved : (JSON.stringify(resolved) ?? '');
 
 /** Apply one structured `field op value` filter to a loaded message. */
-export function matchesFieldFilter(msg: TopicMessage, field: string, op: FilterOp, value: string): boolean {
+export function matchesFieldFilter(msg: TopicMessage, field: string, op: FilterOp, value: string) {
   const resolved = resolveField(msg, field);
   if (resolved === undefined) {
     // A field that isn't present doesn't equal the filter value either — `neq` should keep
@@ -94,12 +94,7 @@ export function matchesFieldFilter(msg: TopicMessage, field: string, op: FilterO
  * Distinct values of a field across the loaded rows, filtered by an optional
  * typed prefix/substring, sorted by frequency. Powers the suggestion dropdown.
  */
-export function distinctFieldValues(
-  messages: TopicMessage[],
-  field: string,
-  query: string,
-  limit = 6
-): { value: string; count: number }[] {
+export function distinctFieldValues(messages: TopicMessage[], field: string, query: string, limit = 6) {
   const counts = new Map<string, number>();
   for (const msg of messages) {
     const resolved = resolveField(msg, field);
@@ -131,7 +126,7 @@ const collectPaths = (obj: unknown, prefix: string, depth: number, out: Set<stri
 };
 
 /** Sorted dotted paths under the decoded value payloads of the first 50 loaded rows. */
-const loadedValuePaths = (messages: TopicMessage[]): string[] => {
+const loadedValuePaths = (messages: TopicMessage[]) => {
   const paths = new Set<string>();
   for (const msg of messages.slice(0, 50)) {
     if (!msg.value.isPayloadNull) {
@@ -142,7 +137,7 @@ const loadedValuePaths = (messages: TopicMessage[]): string[] => {
 };
 
 /** Dotted paths that exist under the decoded value payloads of the loaded rows. */
-export function valuePaths(messages: TopicMessage[], filter = ''): string[] {
+export function valuePaths(messages: TopicMessage[], filter = '') {
   const all = loadedValuePaths(messages);
   const needle = filter.toLowerCase();
   if (!needle) {

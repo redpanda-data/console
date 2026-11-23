@@ -26,7 +26,7 @@ export function mergePrincipals(
   scramUsers: { name: string }[],
   aclPrincipalGroups: { principalType: string; principalName: string }[],
   roleMembersMap: Map<string, { name: string }[]>
-): PrincipalEntry[] {
+) {
   const scramUserNames = new Set(scramUsers.map((u) => u.name));
 
   const principals: PrincipalEntry[] = scramUsers.map((u) => ({

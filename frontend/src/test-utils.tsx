@@ -6,13 +6,7 @@ import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
 import { type RenderOptions, render } from '@testing-library/react';
-import React, {
-  type JSX,
-  type JSXElementConstructor,
-  type PropsWithChildren,
-  type ReactElement,
-  useState,
-} from 'react';
+import React, { type JSXElementConstructor, type PropsWithChildren, type ReactElement, useState } from 'react';
 
 import { TooltipProvider } from './components/redpanda-ui/components/tooltip';
 import type { RouterContext } from './routes/__root';
@@ -179,7 +173,7 @@ export { connectQueryWrapper, customRender as render, renderWithRouter };
 function TransportQueryProviders({
   renderOptions,
   children,
-}: PropsWithChildren<{ renderOptions: ExtendedRenderOptions }>): JSX.Element {
+}: PropsWithChildren<{ renderOptions: ExtendedRenderOptions }>) {
   const finalTransport =
     renderOptions.transport ??
     createConnectTransport({
@@ -211,10 +205,7 @@ function TransportQueryProviders({
   );
 }
 
-function renderTransportQueryProviders(
-  renderOptions: ExtendedRenderOptions,
-  { children }: PropsWithChildren
-): JSX.Element {
+function renderTransportQueryProviders(renderOptions: ExtendedRenderOptions, { children }: PropsWithChildren) {
   return <TransportQueryProviders renderOptions={renderOptions}>{children}</TransportQueryProviders>;
 }
 
@@ -225,7 +216,7 @@ function FileRouteProviders(
     router,
   }: { transport: Transport; queryClient: QueryClient; router: ReturnType<typeof createTestRouterFromFiles> },
   { children }: PropsWithChildren
-): JSX.Element {
+) {
   return (
     <TransportProvider transport={finalTransport}>
       <QueryClientProvider client={queryClient}>

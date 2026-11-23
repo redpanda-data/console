@@ -88,7 +88,7 @@ export type ShadowLinkTopology = {
 };
 
 /** An active or paused link reads from its source: one still being created, or failed or being deleted, doesn't. */
-export const isReadingLinkState = (state: ShadowLink_State): boolean =>
+export const isReadingLinkState = (state: ShadowLink_State) =>
   state === ShadowLink_State.ACTIVE || state === ShadowLink_State.PAUSED;
 
 const LINK_SOURCE_STATES = new Set([Cluster_State.READY, Cluster_State.UPGRADING, Cluster_State.SUSPENDED]);
@@ -97,11 +97,11 @@ const LINK_SOURCE_STATES = new Set([Cluster_State.READY, Cluster_State.UPGRADING
  * A cluster that may be a link's source and that GetCluster can read. One being created, deleted or
  * failed to create may carry a UUID GetCluster rejects, which would leave the topology resolving for good.
  */
-export const canBeLinkSource = (cluster: Pick<Cluster, 'id' | 'state'>): boolean =>
+export const canBeLinkSource = (cluster: Pick<Cluster, 'id' | 'state'>) =>
   LINK_SOURCE_STATES.has(cluster.state) && cluster.id !== '' && !isUuid(cluster.id);
 
 /** Only a running cluster answers for its fence. */
-export const canReadFence = (cluster: Pick<Cluster, 'state'>): boolean =>
+export const canReadFence = (cluster: Pick<Cluster, 'state'>) =>
   cluster.state === Cluster_State.READY || cluster.state === Cluster_State.UPGRADING;
 
 const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//u;
@@ -140,7 +140,7 @@ export const findSourceCluster = (
   clusters: readonly Cluster[],
   shadowClusterId: string,
   allowHostMatch = true
-): Cluster | undefined => {
+) => {
   const candidates = clusters.filter((cluster) => cluster.id !== shadowClusterId);
   const endpoints = endpointsOf(bootstrapServers);
   const exact = candidates.find((cluster) => matchesExactly(endpoints, cluster));
@@ -170,7 +170,7 @@ const readsFrom = (
   bootstrapServers: readonly string[],
   self: Cluster,
   others: SourceCandidates
-): boolean | 'pending' | 'failed' => {
+) => {
   const endpoints = endpointsOf(bootstrapServers);
   if (matchesExactly(endpoints, self)) {
     return true;
@@ -325,7 +325,7 @@ export const needsOtherClusters = ({
   links,
   details,
   self,
-}: Pick<TopologyInputs, 'clusterId' | 'links' | 'details' | 'self'>): boolean => {
+}: Pick<TopologyInputs, 'clusterId' | 'links' | 'details' | 'self'>) => {
   if (self.status !== 'ready') {
     return false;
   }
@@ -376,7 +376,7 @@ export const buildShadowLinkTopology = ({
 };
 
 /** The Cloud clusters this cluster's links read from, each once. */
-export const sourceClusterIds = (topology: ShadowLinkTopology): string[] => [
+export const sourceClusterIds = (topology: ShadowLinkTopology) => [
   ...new Set(Object.values(topology.sources).flatMap((source) => (source.kind === 'cloud' ? [source.clusterId] : []))),
 ];
 

@@ -14,16 +14,15 @@ import { type Pipeline, Pipeline_State } from 'protogen/redpanda/api/dataplane/v
 import { pluralize } from 'utils/string';
 import { prettyMilliseconds } from 'utils/utils';
 
-export const areDraftsEnabled = (): boolean => isFeatureFlagEnabled('enableRpcnPipelineDrafts');
+export const areDraftsEnabled = () => isFeatureFlagEnabled('enableRpcnPipelineDrafts');
 
-export const isDraft = (pipeline: { state?: Pipeline_State } | undefined): boolean =>
-  pipeline?.state === Pipeline_State.DRAFT;
+export const isDraft = (pipeline: { state?: Pipeline_State } | undefined) => pipeline?.state === Pipeline_State.DRAFT;
 
 /**
  * A pipeline carries `create_time` only when both the console backend and the dataplane know drafts.
  * Without a pipeline there is no proof.
  */
-export const provesDraftSupport = (pipeline: Pick<Pipeline, 'state' | 'createTime'> | undefined): boolean =>
+export const provesDraftSupport = (pipeline: Pick<Pipeline, 'state' | 'createTime'> | undefined) =>
   isDraft(pipeline) || pipeline?.createTime !== undefined;
 
 export const DRAFT_BADGE_TOOLTIP =
@@ -50,7 +49,7 @@ export const UNTITLED_PIPELINE_NAME = 'Untitled pipeline';
 export const NOTHING_TO_SAVE_MESSAGE = 'Nothing to save yet — add a name or some configuration first.';
 
 /** `display_name` is required (min 3 chars); numbered past the names already taken. */
-export function untitledPipelineName(existingNames: Iterable<string>): string {
+export function untitledPipelineName(existingNames: Iterable<string>) {
   const taken = new Set<string>();
   for (const name of existingNames) {
     taken.add(name.trim().toLowerCase());
@@ -75,7 +74,7 @@ export const relativeAgeLabel = (at: number, now: number = Date.now()) => {
   return `${prettyMilliseconds(elapsed, { compact: true })} ago`;
 };
 
-export const timestampToMillis = (timestamp: Pipeline['updateTime']): number | null =>
+export const timestampToMillis = (timestamp: Pipeline['updateTime']) =>
   timestamp ? Number(timestamp.seconds) * 1000 + Math.floor(timestamp.nanos / 1_000_000) : null;
 
 export function startBlockedMessage(issueCount: number) {
@@ -86,7 +85,7 @@ export function startBlockedMessage(issueCount: number) {
   return "This draft isn't valid yet, so it can't start — opening the editor.";
 }
 
-export function draftIssueSummary(issueCount: number): string | null {
+export function draftIssueSummary(issueCount: number) {
   if (issueCount <= 0) {
     return null;
   }
@@ -101,7 +100,7 @@ export const START_DRAFT_CONFIRM_IRREVERSIBLE =
 const MAX_LISTED_TOPICS = 3;
 
 /** "a", "a and b", "a, b and c", "a, b, c and 2 more". */
-export function formatTopicList(topics: string[]): string {
+export function formatTopicList(topics: string[]) {
   if (topics.length > MAX_LISTED_TOPICS) {
     return `${topics.slice(0, MAX_LISTED_TOPICS).join(', ')} and ${topics.length - MAX_LISTED_TOPICS} more`;
   }

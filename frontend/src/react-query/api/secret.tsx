@@ -51,7 +51,7 @@ function listSecretsPageRequest(pageToken: string, nameContains: string | undefi
   });
 }
 
-function nextSecretsPageToken(response: ListSecretsResponse, pageToken: string): string | null {
+function nextSecretsPageToken(response: ListSecretsResponse, pageToken: string) {
   const next = response.response?.nextPageToken ?? '';
   if (!next) {
     return null;
@@ -68,7 +68,7 @@ async function fetchSecretsPage(
   pageToken: string,
   nameContains: string | undefined,
   signal: AbortSignal | undefined
-): Promise<{ secrets: Secret[]; next: string | null }> {
+) {
   if (signal?.aborted) {
     throw signal.reason ?? new Error('ListSecrets query aborted');
   }
@@ -82,7 +82,7 @@ async function fetchSecretsPage(
 
 function listAllSecrets(transport: Transport, nameContains: string | undefined, signal: AbortSignal | undefined) {
   const secrets: Secret[] = [];
-  const nextPage = async (pageToken: string, iteration: number): Promise<{ secrets: Secret[] }> => {
+  const nextPage = async (pageToken: string, iteration: number) => {
     if (iteration >= SECRETS_LIST_MAX_PAGES) {
       throw new Error(`ListSecrets exceeded ${SECRETS_LIST_MAX_PAGES} pages; aborting to avoid runaway pagination`);
     }

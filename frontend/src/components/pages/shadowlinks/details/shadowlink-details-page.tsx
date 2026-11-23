@@ -157,7 +157,7 @@ const guidedReadiness = (
 ) => (readiness && (available || requested === 'failover') ? readiness : undefined);
 
 /** A link to the Failover tab falls back to Overview while there's no Failover tab. */
-const resolveDetailsTab = (requested: DetailsTab | undefined, guided: boolean): DetailsTab => {
+const resolveDetailsTab = (requested: DetailsTab | undefined, guided: boolean) => {
   if (requested === 'failover' && !guided) {
     return 'overview';
   }

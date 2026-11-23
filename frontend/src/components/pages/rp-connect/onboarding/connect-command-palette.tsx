@@ -268,7 +268,7 @@ function buildTabs(
   recentComponents: ConnectComponentSpec[],
   suggested: ConnectComponentSpec[],
   grouped: CategoryGroup[]
-): Tab[] {
+) {
   const list: Tab[] = [];
   if (recentComponents.length > 0) {
     list.push({ id: 'recent', label: 'Recent' });
@@ -288,7 +288,7 @@ function browseItemsForTab(
   recentComponents: ConnectComponentSpec[],
   suggested: ConnectComponentSpec[],
   grouped: CategoryGroup[]
-): ConnectComponentSpec[] | null {
+) {
   if (tab === 'recent') {
     return recentComponents;
   }

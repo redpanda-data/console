@@ -19,7 +19,7 @@ export type ConfigListFacts = ParsedConfigComponents & { end: PipelineEndStatus 
 
 const NO_FACTS: ConfigListFacts = { inputs: [], processors: [], outputs: [], end: 'none' };
 
-const orElse = <T>(read: () => T, fallback: T): T => {
+const orElse = <T>(read: () => T, fallback: T) => {
   try {
     return read();
   } catch {

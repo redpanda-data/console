@@ -27,11 +27,11 @@ const SLOT_TOKEN_PATTERN = /\$\{slot\.(?<slotId>[A-Za-z0-9_-]+)\}/gu;
 const EXACT_SLOT_TOKEN_PATTERN = /^\$\{slot\.(?<slotId>[A-Za-z0-9_-]+)\}$/u;
 
 // matchAll avoids the shared-lastIndex hazard of RegExp.test on a global pattern.
-const referencedSlotIdsIn = (text: string): string[] => [...text.matchAll(SLOT_TOKEN_PATTERN)].map((m) => m[1]);
+const referencedSlotIdsIn = (text: string) => [...text.matchAll(SLOT_TOKEN_PATTERN)].map((m) => m[1]);
 
-const isBlank = (v: string | undefined): boolean => !v?.trim();
+const isBlank = (v: string | undefined) => !v?.trim();
 
-const splitListValue = (value: string): string[] =>
+const splitListValue = (value: string) =>
   value
     .split(',')
     .map((part) => part.trim())
@@ -40,7 +40,7 @@ const splitListValue = (value: string): string[] =>
 const yamlStringifyConfig = { indent: 2, lineWidth: 120 };
 
 /** Resolve a `${slot.X}` reference to its text, or `null` when blank with no fallback (drop the node). */
-const resolveSlotToken = (slot: TemplateSlot | undefined, raw: string, pipelineName: string): string | null => {
+const resolveSlotToken = (slot: TemplateSlot | undefined, raw: string, pipelineName: string) => {
   if (!isBlank(raw)) {
     return slot?.kind === 'secret' ? getSecretSyntax(raw) : raw;
   }
@@ -54,7 +54,7 @@ const substituteScalar = (
   slotMap: Map<string, TemplateSlot>,
   values: SlotValues,
   pipelineName: string
-): string | null => {
+) => {
   const ids = referencedSlotIdsIn(text);
   if (ids.length === 0) {
     return text;
@@ -71,7 +71,7 @@ const substituteScalar = (
 };
 
 /** The slot id of a sequence item that is exactly `${slot.X}` for a list slot X. */
-const listSlotItemId = (item: unknown, slotMap: Map<string, TemplateSlot>): string | undefined => {
+const listSlotItemId = (item: unknown, slotMap: Map<string, TemplateSlot>) => {
   const tokenId =
     isScalar(item) && typeof item.value === 'string' ? item.value.match(EXACT_SLOT_TOKEN_PATTERN)?.[1] : undefined;
   const slot = tokenId ? slotMap.get(tokenId) : undefined;
@@ -91,7 +91,7 @@ const expandListSlotItems = (
   slotMap: Map<string, TemplateSlot>,
   values: SlotValues,
   pipelineName: string
-): unknown[] | null => {
+) => {
   let changed = false;
   const expanded: unknown[] = [];
   for (const item of items) {
@@ -111,7 +111,7 @@ const expandListSlotItems = (
  * blank optional fields drop their whole key/sequence-item (and any sequence emptied as a result),
  * rather than leaving a dangling key or empty value. Curated comments and layout are preserved.
  */
-export const stitchTemplateYaml = ({ template, values, pipelineName }: StitchTemplateArgs): string => {
+export const stitchTemplateYaml = ({ template, values, pipelineName }: StitchTemplateArgs) => {
   const slotMap = new Map(template.slots.map((s) => [s.id, s]));
   const doc = parseDocument(template.baseYaml);
 

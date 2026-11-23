@@ -127,7 +127,7 @@ import {
 } from '../utils/yaml';
 import { withYamlDocumentation } from '../utils/yaml-editor-schema';
 
-function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null): string | undefined {
+function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null) {
   if (type === 'input') {
     return 'Add an input';
   }
@@ -137,7 +137,7 @@ function getConnectorDialogTitle(type: ConnectComponentType | 'resource' | null)
   return type ? `Add a ${type}` : undefined;
 }
 
-function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' | null): string | undefined {
+function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' | null) {
   return type ? `Search ${type}s...` : undefined;
 }
 
@@ -500,7 +500,7 @@ function EditorPanel({
   );
 }
 
-function useShouldOfferTemplate(yamlContent: string): boolean {
+function useShouldOfferTemplate(yamlContent: string) {
   return useMemo(() => shouldOfferTemplate(yamlContent, parsePipelineFlowTree(yamlContent).nodes), [yamlContent]);
 }
 
@@ -508,7 +508,7 @@ type NodeLineRange = ReturnType<typeof nodeLineRanges>[number];
 type CursorSyncSuppression = { current: boolean };
 type RevealAttempt = { id: string | null; count: number };
 
-function useNodeLineRanges(yaml: string): NodeLineRange[] {
+function useNodeLineRanges(yaml: string) {
   return useMemo(() => {
     try {
       return nodeLineRanges(yaml);
@@ -557,12 +557,12 @@ function revealNodeLines(
 }
 
 /** The attempt for `revealNodeId`, restarted whenever the request changes. */
-function revealAttemptFor(attempt: RevealAttempt, revealNodeId: string | null): RevealAttempt {
+function revealAttemptFor(attempt: RevealAttempt, revealNodeId: string | null) {
   return attempt.id === revealNodeId ? attempt : { id: revealNodeId, count: 0 };
 }
 
 /** Counts a reveal that could not resolve yet; true once the request has used its retries. */
-function recordUnresolvedReveal(attempt: RevealAttempt): boolean {
+function recordUnresolvedReveal(attempt: RevealAttempt) {
   attempt.count += 1;
   return attempt.count > MAX_REVEAL_ATTEMPTS;
 }
@@ -762,7 +762,7 @@ type LaneTab = {
 };
 
 // The visual editor builds on the diagram parsing, so it also requires the diagrams flag and the
-const isVisualEditorFeatureEnabled = (): boolean =>
+const isVisualEditorFeatureEnabled = () =>
   isFeatureFlagEnabled('enableRpcnVisualEditor') && isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
 
 export default function PipelinePage() {
@@ -1152,7 +1152,7 @@ function shouldOfferAutosaveRestore({
   hasStoredBuffer: boolean;
   baselineYaml: string | null;
   recoveredSettingsChangeCount: number;
-}): boolean {
+}) {
   return (
     mode !== 'view' &&
     !isDismissed &&
@@ -1162,7 +1162,7 @@ function shouldOfferAutosaveRestore({
   );
 }
 
-function isAutosaveEntryStale(entry: EditorAutosaveEntry | null, savedUpdateTime: number | null): boolean {
+function isAutosaveEntryStale(entry: EditorAutosaveEntry | null, savedUpdateTime: number | null) {
   return (
     !!entry &&
     entry.basedOnUpdateTime != null &&
@@ -1395,7 +1395,7 @@ function viewLaneTabs({
   isVisualEditorEnabled: boolean;
   goToYamlNode: () => void;
   setActiveViewLane: (lane: ViewLane) => void;
-}): LaneTab[] {
+}) {
   const viewLanes: LaneTab[] = [
     ...(editingDraft
       ? []
@@ -1422,7 +1422,7 @@ function editLaneTabs({
   setActiveEditLane: (lane: EditLane) => void;
   changeCount: number;
   hasUnsavedChanges: boolean;
-}): LaneTab[] {
+}) {
   const editLanes: LaneTab[] = [{ value: 'yaml', label: 'YAML', onSelect: () => goToYamlNode() }];
   if (isVisualEditorEnabled) {
     editLanes.push({ value: 'visual', label: 'Visual', onSelect: () => setActiveEditLane('visual') });

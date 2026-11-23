@@ -36,7 +36,7 @@ const UTIL_MODULES = new Set(['node:util', 'util']);
 const MAX_HELPER_DEPTH = 1;
 
 /** The clock a scheduling function such as `setTimeout` or `window.requestAnimationFrame` runs on. */
-export function schedulerKind(sourceCode: SourceCode, callee: Node | null | undefined): ClockKind | undefined {
+export function schedulerKind(sourceCode: SourceCode, callee: Node | null | undefined) {
   const path = globalPath(sourceCode, callee);
   return path === undefined ? undefined : SCHEDULERS[path];
 }
@@ -118,7 +118,7 @@ function isDestructuredResolve(sourceCode: SourceCode, definition: Definition) {
 }
 
 /** `resolve` from `new Promise((resolve) => ...)` or `Promise.withResolvers()`, under any name. */
-function isResolve(sourceCode: SourceCode, node: Node | null | undefined): boolean {
+function isResolve(sourceCode: SourceCode, node: Node | null | undefined) {
   const target = unwrap(node);
   if (target?.type === 'MemberExpression') {
     const object = unwrap(target.object);

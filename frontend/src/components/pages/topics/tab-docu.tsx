@@ -48,7 +48,7 @@ My nonsuspious link
 
 const allowedProtocols = ['http://', 'https://', 'mailto://'];
 
-function sanitizeUrl(uri: string): string {
+function sanitizeUrl(uri: string) {
   const baseTransformed = baseUriTransformer(uri);
   if (baseTransformed !== uri) {
     return baseTransformed;

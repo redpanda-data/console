@@ -47,7 +47,7 @@ export function trimSlidingWindow({
   currentGlobalPage: number;
   windowStartPage: number;
   virtualStartIndex: number;
-}): { messages: TopicMessage[]; windowStartPage: number; virtualStartIndex: number; trimCount: number } {
+}) {
   const maxWindowSize = maxResults + pageSize;
 
   if (maxResults < pageSize || messages.length <= maxWindowSize) {

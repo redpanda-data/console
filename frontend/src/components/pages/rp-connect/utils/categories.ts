@@ -40,7 +40,7 @@ const displayNames: Record<string, string> = {
   unstructured: 'Unstructured',
 };
 
-export const getCategoryDisplayName = (category: string): string =>
+export const getCategoryDisplayName = (category: string) =>
   displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/gu, ' ');
 
 export const getAllCategories = (
@@ -70,5 +70,5 @@ export const getAllCategories = (
 
 const PRIORITY_CATEGORIES = ['api', 'AWS'];
 
-export const getFilterableCategories = (categories: ConnectNodeCategory[]): ConnectNodeCategory[] =>
+export const getFilterableCategories = (categories: ConnectNodeCategory[]) =>
   categories.filter((category) => !PRIORITY_CATEGORIES.includes(category.id));

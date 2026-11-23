@@ -20,7 +20,7 @@ type TopicFiltersMap = {
 /**
  * Get all filters from sessionStorage
  */
-function getAllFilters(): TopicFiltersMap {
+function getAllFilters() {
   try {
     const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (!stored) {
@@ -49,7 +49,7 @@ function saveAllFilters(filters: TopicFiltersMap) {
 /**
  * Get filters for a specific topic
  */
-export function getTopicFilters(topicName: string): FilterEntry[] {
+export function getTopicFilters(topicName: string) {
   const allFilters = getAllFilters();
   return allFilters[topicName] ?? [];
 }

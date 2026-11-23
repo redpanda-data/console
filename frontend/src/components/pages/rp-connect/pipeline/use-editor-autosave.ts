@@ -44,7 +44,7 @@ export function useEditorAutosave({
   // Only clear a buffer this editor wrote; an earlier session's must survive the load settling.
   const hasWrittenRef = useRef(false);
 
-  const write = useCallback((): boolean => {
+  const write = useCallback(() => {
     // `baselineUpdateTime` is the version on screen, not the live query: a refetch must not move it.
     const { yamlContent, initialYaml, baselineUpdateTime } = editorStore.getState();
     const documentChanged = initialYaml === null ? yamlContent.trim() !== '' : yamlContent !== initialYaml;

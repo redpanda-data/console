@@ -102,16 +102,16 @@ function copyToClipboard(text: string, successMsg = 'Copied to clipboard') {
     .catch(() => toast.error('Failed to copy to clipboard'));
 }
 
-function emitConsole(level: 'log' | 'info' | 'warn' | 'error', message: string): void {
+function emitConsole(level: 'log' | 'info' | 'warn' | 'error', message: string) {
   // biome-ignore lint/suspicious/noConsole: intentional debug helper for the Simulate panel
   console[level](message);
 }
 
-function formatBytes(bytes: number): string {
+function formatBytes(bytes: number) {
   return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-function readStorageEntries(storage: Storage): { key: string; value: string }[] {
+function readStorageEntries(storage: Storage) {
   const entries: { key: string; value: string }[] = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
@@ -122,7 +122,7 @@ function readStorageEntries(storage: Storage): { key: string; value: string }[] 
   return entries;
 }
 
-function useForceUpdate(): () => void {
+function useForceUpdate() {
   const [, setTick] = useState(0);
   return useCallback(() => setTick((n) => n + 1), []);
 }
@@ -205,7 +205,7 @@ const FIXTURE_GROUPS: { tag: FixtureTag; label: string; chip: string; descriptio
 ];
 
 // A stop-condition fixture lists under Stop conditions; any other under its first tag.
-const groupOf = (f: ConnectConfigFixture): FixtureTag => (f.tags.includes('stops') ? 'stops' : f.tags[0]);
+const groupOf = (f: ConnectConfigFixture) => (f.tags.includes('stops') ? 'stops' : f.tags[0]);
 
 const SECRET_REF_RE = /\$\{secrets\.(?<secretName>[A-Za-z0-9_]+)\}/gu;
 
@@ -545,7 +545,7 @@ function dumpStorage(storage: Storage): Record<string, string> {
   return Object.fromEntries(readStorageEntries(storage).map(({ key, value }) => [key, value]));
 }
 
-function tryFormatValue(raw: string): string {
+function tryFormatValue(raw: string) {
   try {
     return JSON.stringify(JSON.parse(raw), null, 2);
   } catch {

@@ -67,7 +67,7 @@ type GroupSearchParams = {
 const DEFAULT_MATCH_ALL_REGEX = /.*/su;
 const QUICK_SEARCH_REGEX_CACHE = new Map<string, RegExp>();
 
-function getQuickSearchRegex(pattern: string): RegExp {
+function getQuickSearchRegex(pattern: string) {
   if (QUICK_SEARCH_REGEX_CACHE.has(pattern)) {
     // biome-ignore lint/style/noNonNullAssertion: cache hit guarantees value exists
     return QUICK_SEARCH_REGEX_CACHE.get(pattern)!;
@@ -164,7 +164,7 @@ const useDeleteOffsetsState = () => {
 };
 
 /** Every committed partition offset of the group, as the modals expect them. */
-const toGroupOffsets = (group: GroupDescription): GroupOffset[] =>
+const toGroupOffsets = (group: GroupDescription) =>
   group.topicOffsets.flatMap((x) =>
     x.partitionOffsets.map(
       (p) =>
@@ -910,7 +910,7 @@ function cannotEditGroupReason(
   featurePatchGroup: boolean,
   fencedReason: string | undefined,
   consumedPartitions?: readonly unknown[]
-): string | undefined {
+) {
   if (consumedPartitions !== undefined && consumedPartitions.length === 0) {
     return 'No committed offsets';
   }
@@ -930,7 +930,7 @@ function cannotDeleteGroupReason(
   group: GroupDescription,
   featureDeleteGroup: boolean,
   fencedReason: string | undefined
-): string | undefined {
+) {
   if (group.noDeletePerms) {
     return "You don't have 'deleteConsumerGroup' permissions for this group";
   }
@@ -948,7 +948,7 @@ function cannotDeleteGroupOffsetsReason(
   featureDeleteGroupOffsets: boolean,
   fencedReason: string | undefined,
   consumedPartitions?: readonly unknown[]
-): string | undefined {
+) {
   if (consumedPartitions !== undefined && consumedPartitions.length === 0) {
     return 'No committed offsets';
   }

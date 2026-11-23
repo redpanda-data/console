@@ -66,7 +66,7 @@ const HistoryEntrySchema = z.object({ sql: z.string(), at: z.number() });
 
 type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 
-function loadHistory(): HistoryEntry[] {
+function loadHistory() {
   if (typeof localStorage === 'undefined') {
     return [];
   }
@@ -84,7 +84,7 @@ function loadHistory(): HistoryEntry[] {
   }
 }
 
-function saveHistory(list: HistoryEntry[]): void {
+function saveHistory(list: HistoryEntry[]) {
   if (typeof localStorage === 'undefined') {
     return;
   }
@@ -101,7 +101,7 @@ const DEFAULT_QUERY =
   'SELECT vin, make, model, year, price_usd\nFROM default_redpanda_catalog=>cars\nWHERE in_stock = true\nORDER BY price_usd DESC\nLIMIT 100;';
 
 // Transparent editor/gutter so the `bg-background` surface shows through.
-function editorChrome(mode: 'light' | 'dark'): Extension {
+function editorChrome(mode: 'light' | 'dark') {
   return EditorView.theme(
     {
       '&': { backgroundColor: 'transparent', height: '100%', fontSize: '13px' },
@@ -127,7 +127,7 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
 }
 
 // SQL syntax palette from semantic tokens, so it tracks light/dark.
-function sqlHighlight(): Extension {
+function sqlHighlight() {
   return syntaxHighlighting(
     HighlightStyle.define([
       { tag: tags.keyword, color: 'var(--color-secondary)', fontWeight: 'bold' },
@@ -253,7 +253,7 @@ function catalogNameCompletionResult(catalogs: Catalog[], from: number, before: 
 
 // A `catalog=>` or `catalog.` reference ending at the cursor whose name is a
 // known catalog, with nothing identifier-like glued on before it.
-function catalogRefAtCursor(before: string, catalogs: Catalog[]): { catalog: Catalog; ref: RegExpExecArray } | null {
+function catalogRefAtCursor(before: string, catalogs: Catalog[]) {
   const ref = CATALOG_REF_RE.exec(before);
   if (!ref) {
     return null;
@@ -307,7 +307,7 @@ function catalogArrowSource(catalogs: Catalog[]): (context: CompletionContext) =
 
 // Reformat via sql-formatter (lazy-loaded; postgresql ≈ Oxla) in one
 // transaction so undo restores the original.
-async function formatDocument(view: EditorView): Promise<void> {
+async function formatDocument(view: EditorView) {
   const { format } = await import('sql-formatter');
   const current = view.state.doc.toString();
   let next: string;

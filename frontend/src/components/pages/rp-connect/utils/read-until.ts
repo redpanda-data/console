@@ -51,7 +51,7 @@ export function parseMessageLimit(check: string | undefined): MessageLimit | und
   return counter === undefined ? { limit } : { limit, counter };
 }
 
-export function messageLimitCheck({ limit, counter }: MessageLimit): string {
+export function messageLimitCheck({ limit, counter }: MessageLimit) {
   return counter === undefined ? `counter() >= ${limit}` : `count("${counter}") >= ${limit}`;
 }
 
@@ -64,7 +64,7 @@ export type StopConditionDraft = {
 };
 
 /** The condition to write for a draft; an edited legacy `count("…")` limit keeps its counter. */
-export function resolveStopCondition(existing: StopCondition | undefined, draft: StopConditionDraft): StopCondition {
+export function resolveStopCondition(existing: StopCondition | undefined, draft: StopConditionDraft) {
   const stop: StopCondition = {};
   if (draft.messageLimit !== undefined) {
     stop.check = messageLimitCheck({ limit: draft.messageLimit, counter: parseMessageLimit(existing?.check)?.counter });
@@ -81,7 +81,7 @@ export function resolveStopCondition(existing: StopCondition | undefined, draft:
 }
 
 // The same check, or the same message limit however it's written (`counter() > 5` is `counter() >= 6`).
-function sameCheck(a: string | undefined, b: string | undefined): boolean {
+function sameCheck(a: string | undefined, b: string | undefined) {
   if ((a?.trim() || undefined) === (b?.trim() || undefined)) {
     return true;
   }
@@ -90,7 +90,7 @@ function sameCheck(a: string | undefined, b: string | undefined): boolean {
 }
 
 /** Whether two conditions stop the input the same way. */
-export function sameStopCondition(a: StopCondition | undefined, b: StopCondition | undefined): boolean {
+export function sameStopCondition(a: StopCondition | undefined, b: StopCondition | undefined) {
   return (
     sameCheck(a?.check, b?.check) &&
     (a?.idleTimeout?.trim() || undefined) === (b?.idleTimeout?.trim() || undefined) &&
@@ -117,7 +117,7 @@ const MAX_DURATION_NS = 2 ** 63 - 1;
 const DURATION_PART_RE = /^(?<whole>\d*)(?:\.(?<fraction>\d*))?(?<unit>[^\d.]*)/u;
 
 // The leading `<number><unit>` part of `text`: its length and nanoseconds; undefined when there isn't one.
-function durationPart(text: string): { length: number; ns: number } | undefined {
+function durationPart(text: string) {
   const [part, whole = '', fraction, unit = ''] = DURATION_PART_RE.exec(text) ?? [''];
   const scale = Object.hasOwn(UNIT_NS, unit) ? UNIT_NS[unit] : undefined;
   if (!(whole || fraction) || scale === undefined) {
@@ -128,7 +128,7 @@ function durationPart(text: string): { length: number; ns: number } | undefined 
 }
 
 // The unsigned magnitude in nanoseconds, one `<number><unit>` part at a time.
-function durationMagnitude(text: string): number | undefined {
+function durationMagnitude(text: string) {
   let rest = text;
   let total = 0;
   while (rest !== '') {
@@ -143,7 +143,7 @@ function durationMagnitude(text: string): number | undefined {
 }
 
 /** A Go duration in nanoseconds, parsed as `time.ParseDuration` does; undefined where Go rejects it. */
-export function parseGoDuration(value: string): number | undefined {
+export function parseGoDuration(value: string) {
   const trimmed = value.trim();
   const signed = trimmed.startsWith('-') || trimmed.startsWith('+');
   const rest = signed ? trimmed.slice(1) : trimmed;
@@ -179,13 +179,13 @@ export function classifyIdleTimeout(value: string | undefined): IdleTimeoutKind 
 }
 
 /** Whether an `idle_timeout` arms a timer: Connect only starts one for a positive duration. */
-export const idleTimeoutFires = (value: string | undefined): boolean => {
+export const idleTimeoutFires = (value: string | undefined) => {
   const kind = classifyIdleTimeout(value);
   return kind === 'positive' || kind === 'env';
 };
 
 /** Whether Connect counts the `idle_timeout` as set, so the `read_until` needs no check. */
-export const isIdleTimeoutSet = (value: string | undefined): boolean => {
+export const isIdleTimeoutSet = (value: string | undefined) => {
   const kind = classifyIdleTimeout(value);
   return kind === 'positive' || kind === 'env' || kind === 'zero';
 };
@@ -203,7 +203,7 @@ const DURATION_UNIT_WORDS: Record<string, [string, string]> = {
 };
 
 /** `90s` → "90 seconds", `1h30m` → "1 hour 30 minutes"; anything unparseable is returned as written. */
-export function describeDuration(value: string): string {
+export function describeDuration(value: string) {
   const trimmed = value.trim();
   const ns = parseGoDuration(trimmed);
   if (ns === undefined || ns < 0) {
@@ -224,7 +224,7 @@ const COMPACT_NUMBER = new Intl.NumberFormat('en', { notation: 'compact', maximu
 const FULL_NUMBER = new Intl.NumberFormat('en');
 
 /** A message count in short form, as stop rows and run history show it: "1K", "12.5K". */
-export const compactCount = (n: number): string => COMPACT_NUMBER.format(n);
+export const compactCount = (n: number) => COMPACT_NUMBER.format(n);
 
 export type StopConditionSummary = {
   /** Fits a one-line label, e.g. "1K msgs · idle 30s". */
@@ -298,7 +298,7 @@ const SHORT_BY_KIND: Record<Exclude<InputEndKind, 'condition'>, string> = {
  * An input's one-line end label (the end chip's per-input rows): its condition while that condition is
  * what ends the input, otherwise how the input ends (a broken or never-firing condition included).
  */
-export function stopShortLabel(slot: StopSlot, effective: InputEndBehavior): string {
+export function stopShortLabel(slot: StopSlot, effective: InputEndBehavior) {
   if (effective.kind === 'condition' && isStopConditionSet(slot.condition)) {
     const { short } = describeStopCondition(effective.stopsOn ?? slot.condition, { batches: slot.ownEnd.batches });
     return short.charAt(0).toUpperCase() + short.slice(1);
@@ -310,13 +310,13 @@ export function stopShortLabel(slot: StopSlot, effective: InputEndBehavior): str
 
 /** A `code` span in behavior text. */
 export const CODE_SPAN_RE = /`(?<code>[^`]+)`/gu;
-const plain = (text: string): string => text.replace(CODE_SPAN_RE, '$1');
+const plain = (text: string) => text.replace(CODE_SPAN_RE, '$1');
 
 export const withCaveat = (text: string, behavior: InputEndBehavior) =>
   behavior.caveat ? `${text} ${behavior.caveat}` : text;
 
 /** An input's one-line end label, plus the plain-text sentence for its tooltip. */
-export function stopSummary(slot: StopSlot, effective: InputEndBehavior): { short: string; long: string } {
+export function stopSummary(slot: StopSlot, effective: InputEndBehavior) {
   const short = stopShortLabel(slot, effective);
   const note =
     effective.kind === 'continuous' && !isStopConditionSet(slot.condition) ? ' No stop condition is set.' : '';
@@ -324,7 +324,7 @@ export function stopSummary(slot: StopSlot, effective: InputEndBehavior): { shor
 }
 
 // "its input never stops", "none of its 3 inputs stop", "2 of 3 inputs never stop".
-function continuousShare(n: number, total: number): string {
+function continuousShare(n: number, total: number) {
   if (total === 1) {
     return 'its input never stops';
   }
@@ -335,7 +335,7 @@ function continuousShare(n: number, total: number): string {
 }
 
 // "its input", "all 3 inputs", "1 of 3 inputs".
-function whichMembers(n: number, total: number): string {
+function whichMembers(n: number, total: number) {
   if (total === 1) {
     return 'its input';
   }
@@ -343,7 +343,7 @@ function whichMembers(n: number, total: number): string {
 }
 
 // A broker/sequence: what its members add up to.
-function groupEndText(name: string, effective: InputEndBehavior): { eyebrow: string; text: string } {
+function groupEndText(name: string, effective: InputEndBehavior) {
   const m = effective.members;
   switch (effective.kind) {
     case 'natural':
@@ -365,11 +365,7 @@ function groupEndText(name: string, effective: InputEndBehavior): { eyebrow: str
 }
 
 // A single input, short enough for its card: how it ends without a condition, or why that one doesn't act.
-function inputEndText(
-  slot: StopSlot,
-  effective: InputEndBehavior,
-  editable: boolean
-): { eyebrow: string; text: string } {
+function inputEndText(slot: StopSlot, effective: InputEndBehavior, editable: boolean) {
   const wrapped = slot.condition !== undefined;
   switch (effective.kind) {
     case 'natural':
@@ -396,7 +392,7 @@ export function stopRowText(
   slot: StopSlot,
   effective: InputEndBehavior,
   { isGroup = false, editable = false }: { isGroup?: boolean; editable?: boolean } = {}
-): { eyebrow: string; text: string } {
+) {
   if (effective.kind === 'condition' && isStopConditionSet(slot.condition)) {
     const { compact } = describeStopCondition(effective.stopsOn ?? slot.condition, { batches: slot.ownEnd.batches });
     return { eyebrow: 'Stops', text: compact };
@@ -406,11 +402,10 @@ export function stopRowText(
 
 // ── YAML mutation ──────────────────────────────────────────────────────────
 
-const pairKey = (pair: unknown): unknown =>
+const pairKey = (pair: unknown) =>
   pair instanceof Pair && isScalar(pair.key) ? (pair.key as Scalar).value : undefined;
 
-const findPair = (map: YAMLMap, key: string): Pair | undefined =>
-  map.items.find((p) => pairKey(p) === key) as Pair | undefined;
+const findPair = (map: YAMLMap, key: string) => map.items.find((p) => pairKey(p) === key) as Pair | undefined;
 
 // The wrapper's settings, in document order ahead of its child `input` so they read first.
 const SETTING_KEYS = ['check', 'idle_timeout', 'restart_input'] as const;
@@ -424,7 +419,7 @@ function settingValues(stop: StopCondition): Record<(typeof SETTING_KEYS)[number
   };
 }
 
-function setPairValue(pair: Pair, value: string | boolean): void {
+function setPairValue(pair: Pair, value: string | boolean) {
   if (isScalar(pair.value)) {
     pair.value.value = value;
   } else {
@@ -432,12 +427,12 @@ function setPairValue(pair: Pair, value: string | boolean): void {
   }
 }
 
-function insertBeforeInput(wrapper: YAMLMap, pair: Pair): void {
+function insertBeforeInput(wrapper: YAMLMap, pair: Pair) {
   const inputIndex = wrapper.items.findIndex((p) => pairKey(p) === 'input');
   wrapper.items.splice(inputIndex === -1 ? wrapper.items.length : inputIndex, 0, pair);
 }
 
-function applySetting(wrapper: YAMLMap, key: string, value: string | boolean | undefined): void {
+function applySetting(wrapper: YAMLMap, key: string, value: string | boolean | undefined) {
   const existing = findPair(wrapper, key);
   if (value === undefined) {
     if (existing) {
@@ -452,7 +447,7 @@ function applySetting(wrapper: YAMLMap, key: string, value: string | boolean | u
 
 // Update the wrapper's settings in place: existing keys keep their position and comments, new ones
 // land just before `input`, cleared ones are removed.
-function applySettings(wrapper: YAMLMap, stop: StopCondition): void {
+function applySettings(wrapper: YAMLMap, stop: StopCondition) {
   const values = settingValues(stop);
   for (const key of SETTING_KEYS) {
     applySetting(wrapper, key, values[key]);
@@ -461,7 +456,7 @@ function applySettings(wrapper: YAMLMap, stop: StopCondition): void {
 
 // Wrap the slot's input in a `read_until`: its fields (label and processors included) move into the
 // child input as is, comments too, so the component keeps its own identity.
-function wrapSlot(slot: YAMLMap, stop: StopCondition): void {
+function wrapSlot(slot: YAMLMap, stop: StopCondition) {
   // A one-line `{ kafka: … }` member would nest the whole wrapper onto that line.
   slot.flow = false;
   const inner = new YAMLMap();
@@ -479,7 +474,7 @@ function wrapSlot(slot: YAMLMap, stop: StopCondition): void {
 // label (the child's is the one shown and edited), or merged (the slot's processors ran after the
 // child's — one list keeps that order). A clash on any other key can't merge without changing behaviour,
 // nor can an anchored list: its aliases elsewhere would gain or lose the other's processors.
-function placeChildPair(slot: YAMLMap, pair: Pair, outerKeys: Set<unknown>): 'move' | 'done' | 'clash' {
+function placeChildPair(slot: YAMLMap, pair: Pair, outerKeys: Set<unknown>) {
   const key = pairKey(pair);
   if (!outerKeys.has(key)) {
     return 'move';
@@ -492,11 +487,11 @@ function placeChildPair(slot: YAMLMap, pair: Pair, outerKeys: Set<unknown>): 'mo
 }
 
 // Both are lists, and neither is anchored.
-const processorsMerge = (outer: unknown, inner: unknown): boolean =>
+const processorsMerge = (outer: unknown, inner: unknown) =>
   isSeq(outer) && isSeq(inner) && !(outer.anchor || inner.anchor);
 
 // Prepend the child's processors to the slot's; false when they can't merge.
-function prependProcessors(outer: unknown, inner: unknown): boolean {
+function prependProcessors(outer: unknown, inner: unknown) {
   if (!(isSeq(outer) && isSeq(inner) && processorsMerge(outer, inner))) {
     return false;
   }
@@ -536,7 +531,7 @@ function wrappedInput(wrapper: unknown): YAMLMap | undefined {
 }
 
 // The child's pairs that move onto the slot, placing the rest as they go; undefined on a clash.
-function childPairsToMove(slot: YAMLMap, inner: YAMLMap): Pair[] | undefined {
+function childPairsToMove(slot: YAMLMap, inner: YAMLMap) {
   const outerKeys = new Set(slot.items.map(pairKey).filter((k) => k !== READ_UNTIL));
   const moved: Pair[] = [];
   for (const pair of inner.items as Pair[]) {
@@ -554,7 +549,7 @@ function childPairsToMove(slot: YAMLMap, inner: YAMLMap): Pair[] | undefined {
 // Comments on the wrapper's own keys and above the child's first key stay with what follows them;
 // ones trailing the child or the wrapper close the slot instead. The wrapped input's anchor names
 // what now sits on the slot.
-function carryCommentsAndAnchor(slot: YAMLMap, wrapperPair: Pair, inner: YAMLMap, first: unknown): void {
+function carryCommentsAndAnchor(slot: YAMLMap, wrapperPair: Pair, inner: YAMLMap, first: unknown) {
   const wrapper = wrapperPair.value;
   const inputPair = isMap(wrapper) ? findPair(wrapper, 'input') : undefined;
   const comments = [wrapperPair.key, wrapper, inputPair?.key, inner]
@@ -573,7 +568,7 @@ function carryCommentsAndAnchor(slot: YAMLMap, wrapperPair: Pair, inner: YAMLMap
 }
 
 // Replace the wrapper with its child input's fields, in place; false when they can't merge.
-function unwrapSlot(slot: YAMLMap, wrapperPair: Pair): boolean {
+function unwrapSlot(slot: YAMLMap, wrapperPair: Pair) {
   const inner = wrappedInput(wrapperPair.value);
   if (!inner || unwrapBlocker(slot, inner)) {
     return false;
@@ -595,13 +590,13 @@ const MERGED_SETTINGS = 'Its stop settings come from a YAML merge key. Change it
 const MAX_MERGE_DEPTH = 8;
 
 // A `<<` key: the string with `merge` off, a symbol with it on.
-const isMergePair = (pair: unknown): boolean => {
+const isMergePair = (pair: unknown) => {
   const key = pairKey(pair);
   return key === '<<' || (typeof key === 'symbol' && key.description === '<<');
 };
 
 // The maps a `<<` value merges in: an alias, a map, or a list of them.
-function mergeSources(doc: Document, value: unknown): YAMLMap[] {
+function mergeSources(doc: Document, value: unknown) {
   const items = isSeq(value) ? value.items : [value];
   return items.map((item) => (isAlias(item) ? item.resolve(doc) : item)).filter((m): m is YAMLMap => isMap(m));
 }
@@ -625,7 +620,7 @@ function mergesIn(doc: Document, map: YAMLMap, key: string, depth = 0): boolean 
  * `read_until`, that wrapper's child or one of its settings comes from an alias or merge key, or
  * `restart_input` from an env var the editor would drop. Undefined when it can.
  */
-export function stopSlotLock(doc: Document, slotPath: (string | number)[]): string | undefined {
+export function stopSlotLock(doc: Document, slotPath: (string | number)[]) {
   const slot = doc.getIn(slotPath, true);
   if (!isMap(slot)) {
     return VIA_ALIAS;
@@ -641,7 +636,7 @@ export function stopSlotLock(doc: Document, slotPath: (string | number)[]): stri
 }
 
 // Why a `read_until` map's child input or settings can't be rewritten in place.
-function wrapperLock(doc: Document, wrapper: YAMLMap): string | undefined {
+function wrapperLock(doc: Document, wrapper: YAMLMap) {
   const input = wrapper.get('input', true);
   if (isAlias(input) || (input === undefined && mergesIn(doc, wrapper, 'input'))) {
     return VIA_ALIAS;
@@ -665,7 +660,7 @@ export function unwrapLock(doc: Document, slotPath: (string | number)[]): string
 }
 
 // Apply `stop` to the slot in place: false when it can't be done safely, 'unchanged' for a no-op.
-function applyToSlot(slot: YAMLMap, stop: StopCondition | null): boolean | 'unchanged' {
+function applyToSlot(slot: YAMLMap, stop: StopCondition | null) {
   const wrapperPair = findPair(slot, READ_UNTIL);
   const isWrapper = wrappedInput(wrapperPair?.value) !== undefined;
   if (!isStopConditionSet(stop)) {
@@ -686,11 +681,7 @@ function applyToSlot(slot: YAMLMap, stop: StopCondition | null): boolean | 'unch
  * wraps the input in a `read_until`, updates an existing one in place, or unwraps it when `stop` is
  * null/unset. Returns null when the YAML can't be rewritten safely.
  */
-export function setStopCondition(
-  yaml: string,
-  slotPath: (string | number)[],
-  stop: StopCondition | null
-): string | null {
+export function setStopCondition(yaml: string, slotPath: (string | number)[], stop: StopCondition | null) {
   try {
     const doc = parseDocument(yaml);
     const slot = doc.errors.length > 0 ? undefined : doc.getIn(slotPath, true);

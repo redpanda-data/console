@@ -158,7 +158,7 @@ export type ResourceTypeSelectionProps = {
   isSchemaRegistryEnabled: boolean;
 };
 
-export const parsePrincipal = (principal: string): { type: string; name: string } => {
+export const parsePrincipal = (principal: string) => {
   let [type, name] = principal.split(':'); // Split at the first colon
   name = name ?? '';
   return {
@@ -167,7 +167,7 @@ export const parsePrincipal = (principal: string): { type: string; name: string 
   };
 };
 
-export const getResourceNameValue = (rule: Rule): string => {
+export const getResourceNameValue = (rule: Rule) => {
   let resourceName = rule.selectorValue;
   if (rule.resourceType === ResourceTypeCluster) {
     resourceName = 'kafka-cluster';
@@ -252,7 +252,7 @@ export function getGRPCOperationType(op: string): ACL_Operation {
 
 // from gRPC types to ACL model
 
-function getResourceTypeFromGRPC(grpcType: ACL_ResourceType): ResourceType {
+function getResourceTypeFromGRPC(grpcType: ACL_ResourceType) {
   switch (grpcType) {
     case ACL_ResourceType.CLUSTER:
       return ResourceTypeCluster;
@@ -271,7 +271,7 @@ function getResourceTypeFromGRPC(grpcType: ACL_ResourceType): ResourceType {
   }
 }
 
-function getResourcePatternTypeFromGRPC(grpcPattern: ACL_ResourcePatternType): ResourcePatternType {
+function getResourcePatternTypeFromGRPC(grpcPattern: ACL_ResourcePatternType) {
   switch (grpcPattern) {
     case ACL_ResourcePatternType.ANY:
       return ResourcePatternTypeAny;
@@ -284,7 +284,7 @@ function getResourcePatternTypeFromGRPC(grpcPattern: ACL_ResourcePatternType): R
   }
 }
 
-function getOperationTypeFromGRPC(grpcPermission: ACL_PermissionType): OperationType {
+function getOperationTypeFromGRPC(grpcPermission: ACL_PermissionType) {
   switch (grpcPermission) {
     case ACL_PermissionType.ALLOW:
       return OperationTypeAllow;
@@ -327,7 +327,7 @@ function getOperationNameFromGRPC(grpcOp: ACL_Operation): string {
 type HostData = { principal: string; rulesMap: Map<string, Rule>; ruleIdCounter: number };
 
 // Helper function to initialize hosts map from resources
-const initializeHostsMap = (resources: ListACLsResponse['resources']): Map<string, HostData> => {
+const initializeHostsMap = (resources: ListACLsResponse['resources']) => {
   const hostsMap = new Map<string, HostData>();
   for (const resource of resources) {
     for (const acl of resource.acls) {
@@ -346,7 +346,7 @@ const initializeHostsMap = (resources: ListACLsResponse['resources']): Map<strin
 type RuleTarget = Pick<Rule, 'resourceType' | 'selectorType' | 'selectorValue'>;
 
 // The host's rule for this resource selector, created with the host's next rule id on first use.
-const getOrCreateRule = (hostData: HostData, ruleKey: string, target: RuleTarget): Rule => {
+const getOrCreateRule = (hostData: HostData, ruleKey: string, target: RuleTarget) => {
   const existing = hostData.rulesMap.get(ruleKey);
   if (existing) {
     return existing;
@@ -409,7 +409,7 @@ const determineRuleMode = (rule: Rule) => {
 };
 
 // function to convert ACL List response to AclDetail array (one per host)
-export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail[] => {
+export const getAclFromAclListResponse = (aclList: ListACLsResponse) => {
   const hostsMap = initializeHostsMap(aclList.resources);
 
   for (const resource of aclList.resources) {
@@ -436,14 +436,13 @@ export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail[
   return results;
 };
 
-export const getOperationsForResourceType = (resourceType: ResourceType): Record<string, OperationType> =>
-  operationSets[resourceType] || {};
+export const getOperationsForResourceType = (resourceType: ResourceType) => operationSets[resourceType] || {};
 
-export const getInitialRuleIdCounter = (rules?: Rule[]): number =>
+export const getInitialRuleIdCounter = (rules?: Rule[]) =>
   rules && rules.length > 0 ? Math.max(...rules.map((r) => r.id)) + 1 : 2;
 
 // Helper function to get resource name
-export const getResourceName = (resourceType: string): string => {
+export const getResourceName = (resourceType: string) => {
   const resourceNames: Record<string, string> = {
     cluster: 'cluster',
     topic: 'topic',
@@ -456,7 +455,7 @@ export const getResourceName = (resourceType: string): string => {
 };
 
 // Helper function to get plural resource name
-export const getPluralResourceName = (resourceType: string): string => {
+export const getPluralResourceName = (resourceType: string) => {
   const pluralNames: Record<string, string> = {
     cluster: 'clusters',
     topic: 'topics',
@@ -469,7 +468,7 @@ export const getPluralResourceName = (resourceType: string): string => {
 };
 
 // Generate a unique key for an ACL based on Rule and SharedConfig
-export function getIdFromRule(rule: Rule, operation: string, permission: OperationType): string {
+export function getIdFromRule(rule: Rule, operation: string, permission: OperationType) {
   const sep = '-';
   const resourceName = getResourceNameValue(rule);
   const grpcResourceType = getGRPCResourceType(rule.resourceType);
@@ -493,7 +492,7 @@ export function getIdFromRule(rule: Rule, operation: string, permission: Operati
 }
 
 // Generate a unique key for an ACL from CreateACLRequest
-export function getIdFromCreateACLRequest(request: CreateACLRequest): string {
+export function getIdFromCreateACLRequest(request: CreateACLRequest) {
   const sep = '-';
   return (
     request.principal +
@@ -513,7 +512,7 @@ export function getIdFromCreateACLRequest(request: CreateACLRequest): string {
 }
 
 // Convert rules to CreateACLRequest array for API calls
-export function convertRulesToCreateACLRequests(rules: Rule[], principal: string, host: string): CreateACLRequest[] {
+export function convertRulesToCreateACLRequests(rules: Rule[], principal: string, host: string) {
   return rules.reduce<CreateACLRequest[]>((acc, r) => {
     const baseRule = {
       resourcePatternType:
@@ -567,14 +566,14 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
 }
 
 // Helper function to convert UPPER_CASE strings to sentence case
-export const formatLabel = (text: string): string =>
+export const formatLabel = (text: string) =>
   text
     .replace(UNDERSCORE_REGEX, ' ')
     .toLowerCase()
     .replace(FIRST_CHAR_REGEX, (c) => c.toUpperCase());
 
 // Helper function to generate rule data-testid
-export const getRuleDataTestId = (rule: Rule): string => {
+export const getRuleDataTestId = (rule: Rule) => {
   const rt =
     rule.selectorType === 'any' ? ACL_ResourcePatternType.LITERAL : getGRPCResourcePatternType(rule.selectorType);
 
@@ -626,10 +625,10 @@ export const handleResponses = (errors: ConnectError[], created: boolean) => {
   }
 };
 
-export const handleUrlWithHost = (baseUrl: string, host?: string): string =>
+export const handleUrlWithHost = (baseUrl: string, host?: string) =>
   host ? `${baseUrl}?host=${encodeURIComponent(host)}` : baseUrl;
 
-export const aclResourceTypeLabel = (type: ACL_ResourceType): string => {
+export const aclResourceTypeLabel = (type: ACL_ResourceType) => {
   const map: Partial<Record<ACL_ResourceType, string>> = {
     [ACL_ResourceType.TOPIC]: 'Topic',
     [ACL_ResourceType.GROUP]: 'Group',
@@ -641,7 +640,7 @@ export const aclResourceTypeLabel = (type: ACL_ResourceType): string => {
   return map[type] ?? 'Unknown';
 };
 
-export const aclOperationLabel = (op: ACL_Operation): string => {
+export const aclOperationLabel = (op: ACL_Operation) => {
   const map: Partial<Record<ACL_Operation, string>> = {
     [ACL_Operation.ALL]: 'All',
     [ACL_Operation.READ]: 'Read',

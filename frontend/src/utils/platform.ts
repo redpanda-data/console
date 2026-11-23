@@ -4,7 +4,7 @@ const MAC_OS_USER_AGENT_REGEX = /Mac/iu;
  * Mirrors the approach used by React Spectrum (@react-aria/utils) which
  * moved from the deprecated `navigator.platform` to `navigator.userAgent`.
  */
-function testUserAgent(re: RegExp): boolean {
+function testUserAgent(re: RegExp) {
   if (typeof navigator === 'undefined' || !navigator.userAgent) {
     return false;
   }
@@ -12,6 +12,6 @@ function testUserAgent(re: RegExp): boolean {
 }
 
 /** Returns true if the user is on macOS. */
-export function isMacOS(): boolean {
+export function isMacOS() {
   return testUserAgent(MAC_OS_USER_AGENT_REGEX);
 }

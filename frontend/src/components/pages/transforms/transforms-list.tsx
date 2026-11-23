@@ -72,7 +72,7 @@ export const PartitionStatus = (p: { status: PartitionTransformStatus_PartitionS
 };
 
 class TransformsList extends pageWithContent(() => <TransformsListContent />) {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.addBreadcrumb('Data Transforms', '/transforms');
 
     this.refreshData(true);
@@ -180,7 +180,7 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
   },
 ];
 
-const compileQuickSearch = (quickSearch: string): RegExp | null => {
+const compileQuickSearch = (quickSearch: string) => {
   try {
     return new RegExp(quickSearch, 'iu');
   } catch {

@@ -464,7 +464,7 @@ const DIALOG_FOR_ACTION = { exempt: 'settings', fence: 'fence', unfence: 'unfenc
  * A search value as written, read from the raw query string: the parsed search turns a name like
  * `1001` into a number. Routers quote a value that would read as JSON, so `"1001"` is unquoted.
  */
-const searchText = (searchStr: string, key: string): string | undefined => {
+const searchText = (searchStr: string, key: string) => {
   const raw = new URLSearchParams(searchStr).get(key);
   if (raw === null) {
     return;

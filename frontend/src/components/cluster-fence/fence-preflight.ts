@@ -163,7 +163,7 @@ export const getFencePreflightChecks = ({
   readers,
   readersResolving,
   readersIncomplete,
-}: PreflightInput): PreflightCheck[] => {
+}: PreflightInput) => {
   const checks = [ownLinksCheck(linksThatStopFence), brokersCheck(brokers)].filter(
     (check): check is PreflightCheck => check !== undefined
   );

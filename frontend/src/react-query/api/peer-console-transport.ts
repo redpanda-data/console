@@ -17,7 +17,7 @@ import { protobufRegistry } from 'protobuf-registry';
 
 type Fetch = WindowOrWorkerGlobalScope['fetch'];
 
-const hasConnectCode = (body: unknown): boolean =>
+const hasConnectCode = (body: unknown) =>
   typeof body === 'object' &&
   body !== null &&
   'code' in body &&
@@ -53,7 +53,7 @@ const consoleErrorsOnly =
 export const createPeerConsoleTransport = (
   consoleUrl: string,
   fetchImpl: Fetch = (input, init) => globalThis.fetch(input, init)
-): Transport =>
+) =>
   createConnectTransport({
     baseUrl: consoleUrl,
     /** Bun's `fetch` type adds `preconnect`, which Connect never calls. */
@@ -68,7 +68,7 @@ const transports = new Map<string, Transport>();
  * Each cluster's Console serves its own cluster fence API, at the URL Cloud lists for it. Calls carry
  * the same token as this Console's own, so the other cluster checks the viewer's own permissions.
  */
-export const peerConsoleTransport = (consoleUrl: string): Transport => {
+export const peerConsoleTransport = (consoleUrl: string) => {
   let transport = transports.get(consoleUrl);
   if (!transport) {
     transport = createPeerConsoleTransport(consoleUrl);

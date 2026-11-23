@@ -15,7 +15,7 @@ const GROUND_TOKEN = '--color-background';
 const DARK_BELOW = 0.4;
 
 /** Painting resolves the token whatever it is — a hex, a `var()` chain, a wash. */
-const paintGround = (): string => {
+const paintGround = () => {
   const probe = document.createElement('span');
   probe.style.display = 'none';
   probe.style.color = `var(${GROUND_TOKEN})`;
@@ -27,7 +27,7 @@ const paintGround = (): string => {
 };
 
 /** One pixel is all a single colour needs to rasterise. */
-const createPixelCanvas = (): HTMLCanvasElement => {
+const createPixelCanvas = () => {
   const canvas = document.createElement('canvas');
   canvas.width = 1;
   canvas.height = 1;
@@ -76,7 +76,7 @@ let cached: ThemeAppearance | null = null;
 
 const THEME_ATTRIBUTES = ['class', 'data-theme', 'data-theme-palette', 'style'];
 
-function subscribe(onStoreChange: () => void): () => void {
+function subscribe(onStoreChange: () => void) {
   cached = null;
   const observer = new MutationObserver(() => {
     cached = null;
@@ -86,7 +86,7 @@ function subscribe(onStoreChange: () => void): () => void {
   return () => observer.disconnect();
 }
 
-const getSnapshot = (): ThemeAppearance => {
+const getSnapshot = () => {
   cached ??= classifyGround(toSrgb(paintGround()));
   return cached;
 };

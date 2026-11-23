@@ -63,7 +63,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 /** Turn a topic name into a valid default table name (topic names may contain dots or dashes). */
-function suggestTableName(topicName: string): string {
+function suggestTableName(topicName: string) {
   const slug = topicName.toLowerCase().replaceAll(/[^a-z0-9_]/gu, '_');
   return TABLE_NAME_RE.test(slug) ? slug : `_${slug}`;
 }
@@ -72,7 +72,7 @@ export function createTableSql(tableName: string, topic: string) {
   return `CREATE TABLE ${CATALOG_NAME}=>${tableName || 'my_table'}\n  WITH (topic='${topic}');`;
 }
 
-function describeTopic(topic: WizardTopic): string {
+function describeTopic(topic: WizardTopic) {
   const partitions = typeof topic.partitions === 'number' ? `${topic.partitions} partitions` : 'topic';
   return topic.format ? `${partitions} · ${topic.format}` : partitions;
 }

@@ -28,7 +28,7 @@ const DIFF_ALPHA = {
   fill: 0.6,
 } as const;
 
-const withAlpha = (hex: string, alpha: number): string =>
+const withAlpha = (hex: string, alpha: number) =>
   `${hex}${Math.round(alpha * 255)
     .toString(16)
     .padStart(2, '0')}`;
@@ -63,7 +63,7 @@ const toHex = (painted: string) => {
   return `#${hexChannel(parts[0])}${hexChannel(parts[1])}${hexChannel(parts[2])}`;
 };
 
-const resolveDiffBase = (): DiffBase => {
+const resolveDiffBase = () => {
   const probe = document.createElement('span');
   probe.style.display = 'none';
   document.body.append(probe);

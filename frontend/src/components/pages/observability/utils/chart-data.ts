@@ -40,10 +40,7 @@ function addDataPoint(
   }
 }
 
-export function transformTimeSeriesData(results: ExecuteRangeQueryResponse['results']): Array<{
-  timestamp: number;
-  [key: string]: number;
-}> {
+export function transformTimeSeriesData(results: ExecuteRangeQueryResponse['results']) {
   if (!results || results.length === 0) {
     return [];
   }

@@ -266,7 +266,7 @@ const lagNumber = new Intl.NumberFormat();
 const plural = (count: number, one: string, many: string) => (count === 1 ? one : many);
 
 /** For example "47 of 48 topics caught up. orders-events is 1,204 messages behind." */
-const describeLag = (lag: LagStep): string => {
+const describeLag = (lag: LagStep) => {
   if (lag.syncing === 0) {
     return 'No topics are syncing.';
   }

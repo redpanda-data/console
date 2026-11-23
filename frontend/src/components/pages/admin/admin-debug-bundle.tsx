@@ -164,7 +164,7 @@ const NumberWithUnitField = ({
 );
 
 /** `data-invalid={false}` would render as the string "false", so the falsy case has to be undefined. */
-const invalidFlag = (violation?: string): true | undefined => (violation ? true : undefined);
+const invalidFlag = (violation?: string) => (violation ? true : undefined);
 
 // The running job's status when there is one; brokers can also report a finished or failed bundle.
 const pickCurrentStatus = <T extends { status: DebugBundleStatus_Status }>(bundleStatuses: T[]) =>
@@ -207,7 +207,7 @@ type FieldViolationsMap = {
 };
 
 export class AdminDebugBundle extends pageWithContent(() => <AdminDebugBundleContent />) {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Debug bundle';
     p.addBreadcrumb('Debug bundle', '/debug-bundle');
 

@@ -21,7 +21,7 @@ export const queryPendingStates: BooleanKeys<QueryObserverBaseResult>[] = [
 
 export const queryCompletedStates: BooleanKeys<QueryObserverBaseResult>[] = ['isFetched', 'isSuccess'];
 
-export const getInfiniteQueryStates = (results: QueryObserverBaseResult[]): QueryObserverBaseResult => {
+export const getInfiniteQueryStates = (results: QueryObserverBaseResult[]) => {
   const resultWithError = results.find((result) => result.isError);
   if (resultWithError) {
     return resultWithError;

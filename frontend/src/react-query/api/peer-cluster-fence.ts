@@ -149,7 +149,7 @@ export const readPeerClusterFence = async (
   }
 };
 
-const failureOf = (error: unknown): ReadFailure => (error instanceof PeerFenceReadError ? error.reason : 'error');
+const failureOf = (error: unknown) => (error instanceof PeerFenceReadError ? error.reason : 'error');
 
 /** What a failed read with nothing to show reads as, so the page says why instead of loading. */
 export const unreadablePeerFence = (error: unknown): ShadowLinkPeerFence => ({
@@ -158,7 +158,7 @@ export const unreadablePeerFence = (error: unknown): ShadowLinkPeerFence => ({
 });
 
 /** One retry, except after a timeout: trying again straight away would only wait as long again. */
-export const peerFenceRetry = (failureCount: number, error: unknown): boolean =>
+export const peerFenceRetry = (failureCount: number, error: unknown) =>
   failureCount < 1 && failureOf(error) !== 'timeout';
 
 type PeerFenceQueryState = {

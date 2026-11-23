@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { type Duration, DurationSchema } from '@bufbuild/protobuf/wkt';
+import { DurationSchema } from '@bufbuild/protobuf/wkt';
 import {
   HTTPBasicAuthOptionsSchema,
   SchemaRegistryAuthOptionsSchema,
@@ -18,8 +18,6 @@ import {
   SchemaRegistryContextMapSchema,
   SchemaRegistryExactContextMappingsSchema,
   SchemaRegistrySourceFilterSchema,
-  type SchemaRegistrySyncOptions,
-  type SchemaRegistrySyncOptions_ShadowSchemaRegistryApi,
   SchemaRegistrySyncOptions_ShadowSchemaRegistryApiSchema,
   SchemaRegistrySyncOptions_ShadowSchemaRegistryTopicSchema,
   SchemaRegistrySyncOptionsSchema,
@@ -28,7 +26,6 @@ import {
 import {
   TLSFileSettingsSchema,
   TLSPEMSettingsSchema,
-  type TLSSettings,
   TLSSettingsSchema,
 } from 'protogen/redpanda/core/common/v1/tls_pb';
 
@@ -58,7 +55,7 @@ const DURATION_INPUT_REGEX = /^(?<value>\d+)(?<unit>ns|us|ms|s|m|h)$/u;
  * google.protobuf.Duration. '' or an unparseable value returns undefined so
  * the field stays unset and the cluster default applies.
  */
-export const durationFromString = (value: string): Duration | undefined => {
+export const durationFromString = (value: string) => {
   const match = value.trim().match(DURATION_INPUT_REGEX);
   if (!match) {
     return;
@@ -77,8 +74,7 @@ export const durationFromString = (value: string): Duration | undefined => {
 
 // Hydrated PEMs carry no file name (the dropzone sets one on upload), so this
 // distinguishes server-stored material from fresh uploads.
-const hydratedSrPem = (cert: SrCertificate | undefined): string =>
-  cert?.fileName === '' ? srCertificatePem(cert) : '';
+const hydratedSrPem = (cert: SrCertificate | undefined) => (cert?.fileName === '' ? srCertificatePem(cert) : '');
 
 /**
  * TLS off normally omits the message entirely (the create contract). But an
@@ -89,7 +85,7 @@ const hydratedSrPem = (cert: SrCertificate | undefined): string =>
  * PEMs without a file name; fresh uploads keep today's drop-on-disable
  * behavior.
  */
-const buildDisabledSrTlsSettings = (sr: SchemaRegistryFormValues): TLSSettings | undefined => {
+const buildDisabledSrTlsSettings = (sr: SchemaRegistryFormValues) => {
   if (sr.mtls.filePaths) {
     return create(TLSSettingsSchema, {
       doNotSetSniHostname: sr.mtls.doNotSetSniHostname,
@@ -126,7 +122,7 @@ const buildDisabledSrTlsSettings = (sr: SchemaRegistryFormValues): TLSSettings |
  * cert present means "keep the key stored server-side" (edit flow). File-path
  * settings hydrated from an rpk-created link are round-tripped verbatim.
  */
-const buildSrTlsSettings = (sr: SchemaRegistryFormValues): TLSSettings | undefined => {
+const buildSrTlsSettings = (sr: SchemaRegistryFormValues) => {
   if (!sr.useTls) {
     return buildDisabledSrTlsSettings(sr);
   }
@@ -168,9 +164,7 @@ const SR_UNSUPPORTED_FEATURE_POLICY: Record<
   remove: UnsupportedSchemaFeaturePolicy.REMOVE,
 };
 
-export const buildShadowSchemaRegistryApiOptions = (
-  sr: SchemaRegistryFormValues
-): SchemaRegistrySyncOptions_ShadowSchemaRegistryApi => {
+export const buildShadowSchemaRegistryApiOptions = (sr: SchemaRegistryFormValues) => {
   const rate = sr.syncBehavior.maxSourceRequestRate.trim();
 
   return create(SchemaRegistrySyncOptions_ShadowSchemaRegistryApiSchema, {
@@ -230,7 +224,7 @@ export const buildShadowSchemaRegistryApiOptions = (
  * enableSchemaRegistrySync mirrored (mode === 'topic') — so the legacy switch
  * path below produces the exact same request as before.
  */
-export const buildSchemaRegistrySyncOptions = (values: FormValues): SchemaRegistrySyncOptions | undefined => {
+export const buildSchemaRegistrySyncOptions = (values: FormValues) => {
   if (values.schemaRegistry.mode === SCHEMA_REGISTRY_MODE.API) {
     return create(SchemaRegistrySyncOptionsSchema, {
       schemaRegistryShadowingMode: {

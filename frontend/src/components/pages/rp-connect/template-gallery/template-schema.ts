@@ -15,12 +15,12 @@ import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 import { checkRequired, findConnectComponent, resolveFieldByPath } from '../utils/schema';
 
 // Slot help renders as plain text, and the fallback is often multi-paragraph AsciiDoc.
-const slotDescription = (field: RawFieldSpec): string | undefined =>
+const slotDescription = (field: RawFieldSpec) =>
   field.shortDescription?.trim() || markdownToPlainText(asciidocToMarkdown(field.description ?? '')) || undefined;
 
 // Slot-level values win; schema only fills unset `description` / `required` /
 // Pass enriched specs (enrichComponentsWithConfigSchema) so `required` uses the
-export function applySchemaToSlots(template: PipelineTemplate, components?: ConnectComponentSpec[]): TemplateSlot[] {
+export function applySchemaToSlots(template: PipelineTemplate, components?: ConnectComponentSpec[]) {
   if (!components?.length) {
     return template.slots;
   }

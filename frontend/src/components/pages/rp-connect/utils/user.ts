@@ -76,11 +76,7 @@ export const getACLOperationName = (operation: ACL_Operation) => {
 /**
  * Helper function to check if an ACL resource pattern matches a given topic name
  */
-const doesPatternMatchTopic = (
-  resourceName: string,
-  patternType: ACL_ResourcePatternType,
-  topicName: string
-): boolean => {
+const doesPatternMatchTopic = (resourceName: string, patternType: ACL_ResourcePatternType, topicName: string) => {
   switch (patternType) {
     case ACL_ResourcePatternType.LITERAL:
       return resourceName === topicName || resourceName === '*';
@@ -94,11 +90,7 @@ const doesPatternMatchTopic = (
 };
 
 /** Operations `username` holds an ALLOW for across `resources`; ALL/ANY stand for `impliedByAll`. */
-const allowedOperations = (
-  resources: ListACLsResponse_Resource[],
-  username: string,
-  impliedByAll: ACL_Operation[]
-): Set<ACL_Operation> => {
+const allowedOperations = (resources: ListACLsResponse_Resource[], username: string, impliedByAll: ACL_Operation[]) => {
   const allowed = new Set<ACL_Operation>();
   const principal = `User:${username}`;
 
@@ -328,7 +320,7 @@ const saslMechanismToProtoMapping: Record<SaslMechanism, SASLMechanism> = {
 };
 
 /** The SCRAM mechanism a user was created with, if it is one. */
-export const saslMechanismFromProto = (mechanism: SASLMechanism | undefined): SaslMechanism | undefined =>
+export const saslMechanismFromProto = (mechanism: SASLMechanism | undefined) =>
   (Object.keys(saslMechanismToProtoMapping) as SaslMechanism[]).find(
     (name) => saslMechanismToProtoMapping[name] === mechanism
   );
@@ -395,7 +387,7 @@ const ensureUser = async (
   userData: AddUserFormData,
   existingUserSelected: boolean,
   createUserMutation: ReturnType<typeof useCreateUserMutation>
-): Promise<boolean> => {
+) => {
   if (existingUserSelected) {
     toast.success(`Using existing user "${userData.username}"`);
     return true;
@@ -408,7 +400,7 @@ const grantTopicAccess = async (
   userData: AddUserFormData,
   topicName: string | undefined,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
-): Promise<boolean> => {
+) => {
   if (!(topicName && userData.grantTopicPermissions)) {
     return true;
   }
@@ -421,7 +413,7 @@ const grantConsumerGroupAccess = async (
   consumerGroup: string | undefined,
   createACLMutation: ReturnType<typeof useCreateACLMutation>,
   queryClient: QueryClient
-): Promise<boolean> => {
+) => {
   if (!consumerGroup) {
     return true;
   }

@@ -44,7 +44,7 @@ function pairSegment(keyNode: RangedStringKey, value: unknown, path: string[], l
 
 // Record a segment per mapping pair, recursing into nested mappings. Children are deeper, so the
 // deepest segment containing a line wins during lookup.
-function walkMapping(node: unknown, prefix: string[], out: FieldSegment[], lineCounter: LineCounter): void {
+function walkMapping(node: unknown, prefix: string[], out: FieldSegment[], lineCounter: LineCounter) {
   if (!isMap(node)) {
     return;
   }
@@ -60,7 +60,7 @@ function walkMapping(node: unknown, prefix: string[], out: FieldSegment[], lineC
 }
 
 // The key itself when rendered, else its closest rendered ancestor (a group section), else nothing.
-function nearestRenderedAncestor(key: string, fieldKeys: ReadonlySet<string>): string | undefined {
+function nearestRenderedAncestor(key: string, fieldKeys: ReadonlySet<string>) {
   const path = key.split('/');
   while (path.length > 0) {
     const candidate = path.join('/');
@@ -72,7 +72,7 @@ function nearestRenderedAncestor(key: string, fieldKeys: ReadonlySet<string>): s
 }
 
 // The deepest field whose YAML range contains the line.
-function fieldKeyForLine(segments: readonly FieldSegment[], line: number): string | undefined {
+function fieldKeyForLine(segments: readonly FieldSegment[], line: number) {
   let best: FieldSegment | undefined;
   for (const segment of segments) {
     if (line >= segment.startLine && line <= segment.endLine && (!best || segment.depth > best.depth)) {
@@ -92,7 +92,7 @@ const MIN_MENTION_NAME_LENGTH = 3;
 const FIELD_TOKEN_RE = /\bfield\s+[`'"]?(?<field>[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)/giu;
 
 // Lower-cased names the hint references as "field X".
-function fieldTokens(hintText: string): Set<string> {
+function fieldTokens(hintText: string) {
   const tokens = new Set<string>();
   for (const match of hintText.matchAll(FIELD_TOKEN_RE)) {
     tokens.add(match[1].toLowerCase());
@@ -101,7 +101,7 @@ function fieldTokens(hintText: string): Set<string> {
 }
 
 // Fields the hint names via the exact "field X" convention — precise, so any name length counts.
-function fieldKeysNamedExplicitly(hintText: string, fieldKeys: ReadonlySet<string>): string[] {
+function fieldKeysNamedExplicitly(hintText: string, fieldKeys: ReadonlySet<string>) {
   const tokens = fieldTokens(hintText);
   if (tokens.size === 0) {
     return [];
@@ -117,7 +117,7 @@ function fieldKeysNamedExplicitly(hintText: string, fieldKeys: ReadonlySet<strin
   return matches;
 }
 
-function fieldKeysMentioned(hintText: string, fieldKeys: ReadonlySet<string>): string[] {
+function fieldKeysMentioned(hintText: string, fieldKeys: ReadonlySet<string>) {
   const matches: string[] = [];
   for (const key of fieldKeys) {
     const name = key.split('/').at(-1) ?? key;
@@ -134,12 +134,7 @@ function fieldKeysMentioned(hintText: string, fieldKeys: ReadonlySet<string>): s
 }
 
 // The `label` line plus every field of the inner config (paths relative to it).
-function pushComponentSegments(
-  wrapper: YAMLMap,
-  componentName: string,
-  out: FieldSegment[],
-  lineCounter: LineCounter
-): void {
+function pushComponentSegments(wrapper: YAMLMap, componentName: string, out: FieldSegment[], lineCounter: LineCounter) {
   for (const pair of wrapper.items) {
     const keyNode = pair.key;
     if (!isRangedStringKey(keyNode)) {
@@ -156,7 +151,7 @@ function pushComponentSegments(
 
 // Segments for the component entry at `target`: its `label` line plus every field of the inner
 // config (paths relative to it, matching the form's leaf keys).
-function collectFieldSegments(yaml: string, target: EditTarget, componentName: string): FieldSegment[] {
+function collectFieldSegments(yaml: string, target: EditTarget, componentName: string) {
   const segments: FieldSegment[] = [];
   try {
     const lineCounter = new LineCounter();
@@ -213,7 +208,7 @@ function resolveHint(hint: LintHint, segments: readonly FieldSegment[], fieldKey
   );
 }
 
-function appendFieldMessages(byField: Map<string, string[]>, anchors: ResolvedHint['anchors']): void {
+function appendFieldMessages(byField: Map<string, string[]>, anchors: ResolvedHint['anchors']) {
   for (const { key, message } of anchors) {
     byField.set(key, [...(byField.get(key) ?? []), message]);
   }

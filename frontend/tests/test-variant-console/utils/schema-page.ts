@@ -351,13 +351,13 @@ export class SchemaPage {
   /**
    * Helper methods
    */
-  async getCurrentVersion(): Promise<number> {
+  async getCurrentVersion() {
     const versionSelect = this.page.getByTestId('schema-definition-version-select');
     const selectedValue = await versionSelect.inputValue();
     return Number.parseInt(selectedValue, 10);
   }
 
-  async getSchemaId(): Promise<number> {
+  async getSchemaId() {
     const schemaIdElement = this.page.getByTestId('schema-definition-schema-id');
     const text = await schemaIdElement.textContent();
     return Number.parseInt(text?.trim() || '0', 10);

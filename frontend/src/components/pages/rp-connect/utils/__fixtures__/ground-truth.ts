@@ -28,7 +28,7 @@ export const groundTruthComponents = groundTruthComponentsJson as unknown as Con
 export const groundTruthConfigSchema = JSON.stringify(groundTruthConfigSchemaJson);
 
 // node-environment unit tests, and utils/schema transitively pulls in DOM-only modules (sonner).
-export function getGroundTruthComponent(type: ConnectComponentType, name: string): ConnectComponentSpec {
+export function getGroundTruthComponent(type: ConnectComponentType, name: string) {
   const component = groundTruthComponents.find((c) => c.type === type && c.name === name);
   if (!component) {
     throw new Error(`ground-truth fixture missing component ${type}:${name}`);

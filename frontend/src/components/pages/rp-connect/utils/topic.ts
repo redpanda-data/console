@@ -20,7 +20,7 @@ export const TOPIC_FORM_DEFAULTS = {
   retentionSizeUnit: DEFAULT_RETENTION_SIZE_UNIT,
 } as const;
 
-export const isUsingDefaultRetentionSettings = (data: AddTopicFormData): boolean =>
+export const isUsingDefaultRetentionSettings = (data: AddTopicFormData) =>
   data.retentionTimeMs === DEFAULT_RETENTION_TIME_MS &&
   data.retentionTimeUnit === DEFAULT_RETENTION_TIME_UNIT &&
   data.retentionSize === DEFAULT_RETENTION_SIZE &&
@@ -166,4 +166,4 @@ export const getRetentionSizeUnitOptions = () => {
     }));
 };
 
-export const isRetentionUnitDisabled = (unit: string): boolean => unit === 'default' || unit === 'infinite';
+export const isRetentionUnitDisabled = (unit: string) => unit === 'default' || unit === 'infinite';

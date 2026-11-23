@@ -94,11 +94,11 @@ html.__debug-a11y [tabindex]:not([tabindex='0']):not([tabindex='-1']) {
 
 const KNOWN_IDS: ReadonlySet<string> = new Set(VISUAL_DEBUGGERS.map((d) => d.id));
 
-function classFor(id: VisualDebuggerId): string {
+function classFor(id: VisualDebuggerId) {
   return `__debug-${id}`;
 }
 
-function readEnabled(): VisualDebuggerId[] {
+function readEnabled() {
   try {
     const raw = window.sessionStorage.getItem(STORAGE_KEY);
     if (!raw) {
@@ -114,7 +114,7 @@ function readEnabled(): VisualDebuggerId[] {
   }
 }
 
-function writeEnabled(ids: VisualDebuggerId[]): void {
+function writeEnabled(ids: VisualDebuggerId[]) {
   if (ids.length === 0) {
     window.sessionStorage.removeItem(STORAGE_KEY);
   } else {
@@ -122,7 +122,7 @@ function writeEnabled(ids: VisualDebuggerId[]): void {
   }
 }
 
-function ensureStyles(): void {
+function ensureStyles() {
   if (document.querySelector(`#${STYLE_ELEMENT_ID}`)) {
     return;
   }
@@ -132,18 +132,18 @@ function ensureStyles(): void {
   document.head.appendChild(el);
 }
 
-function applyDomState(enabled: VisualDebuggerId[]): void {
+function applyDomState(enabled: VisualDebuggerId[]) {
   ensureStyles();
   for (const { id } of VISUAL_DEBUGGERS) {
     document.documentElement.classList.toggle(classFor(id), enabled.includes(id));
   }
 }
 
-export function getEnabledVisualDebuggers(): VisualDebuggerId[] {
+export function getEnabledVisualDebuggers() {
   return readEnabled();
 }
 
-export function setVisualDebugger(id: VisualDebuggerId, enabled: boolean): void {
+export function setVisualDebugger(id: VisualDebuggerId, enabled: boolean) {
   const current = new Set(readEnabled());
   if (enabled) {
     current.add(id);
@@ -155,7 +155,7 @@ export function setVisualDebugger(id: VisualDebuggerId, enabled: boolean): void 
   applyDomState(next);
 }
 
-export function clearVisualDebuggers(): void {
+export function clearVisualDebuggers() {
   writeEnabled([]);
   applyDomState([]);
 }

@@ -4,7 +4,6 @@ import {
   ACL_PermissionType,
   ACL_ResourcePatternType,
   ACL_ResourceType,
-  type DeleteACLsRequest,
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { toast } from 'sonner';
@@ -25,7 +24,7 @@ export type AclRowActionsContextValue = {
 };
 
 /** Every ACL bound to this principal on this host, whatever the resource or operation. */
-const allAclsFor = (principal: string, host: string): DeleteACLsRequest =>
+const allAclsFor = (principal: string, host: string) =>
   create(DeleteACLsRequestSchema, {
     filter: {
       principal,

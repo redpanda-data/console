@@ -64,7 +64,7 @@ export function useCreateUserForm(onCreated: () => void) {
   };
 
   /** Resolves to whether the user was created. */
-  const createUser = async (): Promise<boolean> => {
+  const createUser = async () => {
     setIsSubmitting(true);
     let created = false;
     try {

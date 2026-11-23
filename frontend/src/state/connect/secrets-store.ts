@@ -24,7 +24,7 @@ export class SecretsStore {
     return secret;
   }
 
-  get ids(): string[] {
+  get ids() {
     return Array.from(this.secrets, ([_key, secret]) => secret.id).filter((secret): secret is string =>
       Boolean(secret)
     );

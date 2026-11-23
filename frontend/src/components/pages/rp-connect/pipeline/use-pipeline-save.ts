@@ -135,7 +135,7 @@ type SaveAttempt = {
 
 type StopOutcome = { stopped: boolean; stopFailed: boolean };
 
-function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, string> {
+function buildUserTags(formTags: PipelineFormValues['tags']) {
   const userTags: Record<string, string> = {};
   for (const { key, value } of formTags) {
     if (key) {
@@ -224,7 +224,7 @@ async function nextUntitledName(fetchPipelineNames: ReturnType<typeof useFetchPi
   }
 }
 
-function invalidSettingsMessage(fieldErrors: FieldErrors<PipelineFormValues>): string {
+function invalidSettingsMessage(fieldErrors: FieldErrors<PipelineFormValues>) {
   const firstError = fieldErrors.name?.message ?? fieldErrors.computeUnits?.message ?? fieldErrors.tags?.message;
   return typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.';
 }
@@ -244,7 +244,7 @@ function deployBlockerMessage(isDraftSave: boolean, yamlContent: string, hasServ
 }
 
 /** Why the save must not go ahead, or null when it can; an unnamed draft is named first. */
-async function saveBlockerMessage(flow: SaveFlow, isDraftSave: boolean, yamlContent: string): Promise<string | null> {
+async function saveBlockerMessage(flow: SaveFlow, isDraftSave: boolean, yamlContent: string) {
   if (isDraftSave && flow.mode === 'create' && isBlankConfig(yamlContent) && !flow.form.getValues('name').trim()) {
     return NOTHING_TO_SAVE_MESSAGE;
   }
@@ -288,7 +288,7 @@ function saveAttempt(
   };
 }
 
-async function stopQuietly(stopPipeline: SaveFlow['stopPipeline'], id: string): Promise<boolean> {
+async function stopQuietly(stopPipeline: SaveFlow['stopPipeline'], id: string) {
   try {
     await stopPipeline(create(StopPipelineRequestSchema, { request: { id } }));
     return true;
@@ -353,7 +353,7 @@ async function requestCreate(flow: SaveFlow, write: PipelineWrite) {
   return response.response?.pipeline;
 }
 
-async function createAndFinish(flow: SaveFlow, attempt: SaveAttempt): Promise<boolean> {
+async function createAndFinish(flow: SaveFlow, attempt: SaveAttempt) {
   const createdPipeline = await requestCreate(flow, attempt.write);
   const draftWasIgnored = wasDraftIgnored(attempt.isDraftSave, createdPipeline);
   const stopOutcome = await stopCreatedPipeline(flow, attempt, createdPipeline?.id, draftWasIgnored);
@@ -390,7 +390,7 @@ function reportRunFailure(flow: SaveFlow, run: SaveRunIntent, runError: ConnectE
  * UpdatePipeline keeps the run state; on a draft, `start` is promotion and validates first. Resolves
  * to false when the start or stop failed, which the saved configuration survives.
  */
-async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: string): Promise<boolean> {
+async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: string) {
   try {
     if (run === 'start') {
       await flow.startPipeline(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
@@ -426,7 +426,7 @@ async function requestUpdate(flow: SaveFlow, write: PipelineWrite, pipelineId: s
   return response.response?.pipeline;
 }
 
-async function updateAndFinish(flow: SaveFlow, attempt: SaveAttempt, pipelineId: string): Promise<boolean> {
+async function updateAndFinish(flow: SaveFlow, attempt: SaveAttempt, pipelineId: string) {
   const updatedPipeline = await requestUpdate(flow, attempt.write, pipelineId);
   const draftWasIgnored = wasDraftIgnored(attempt.isDraftSave, updatedPipeline);
   const runSucceeded = await applyRunIntent(flow, attempt.run, pipelineId);
@@ -462,7 +462,7 @@ function reportSaveFailure(flow: SaveFlow, err: unknown, isDraftSave: boolean): 
   return false;
 }
 
-async function submitSave(flow: SaveFlow, attempt: SaveAttempt): Promise<boolean> {
+async function submitSave(flow: SaveFlow, attempt: SaveAttempt) {
   try {
     if (flow.mode === 'create') {
       return await createAndFinish(flow, attempt);
@@ -474,7 +474,7 @@ async function submitSave(flow: SaveFlow, attempt: SaveAttempt): Promise<boolean
 }
 
 /** Resolves to whether the configuration was persisted; a failed start/stop after the write still counts. */
-async function savePipeline(flow: SaveFlow, intent?: SaveIntent): Promise<boolean> {
+async function savePipeline(flow: SaveFlow, intent?: SaveIntent) {
   const run: SaveRunIntent = intent?.run ?? primaryRunIntent(flow.saveContext);
   flow.editorStore.getState().pendingEditCommit?.();
   const { yamlContent } = flow.editorStore.getState();

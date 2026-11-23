@@ -23,7 +23,7 @@ function addListTableFields(group: GroupDescription) {
   }
 }
 
-async function fetchConsumerGroupsFull(): Promise<GetConsumerGroupsResponse> {
+async function fetchConsumerGroupsFull() {
   const headers: HeadersInit = {};
   if (config.jwt) {
     headers.Authorization = `Bearer ${config.jwt}`;

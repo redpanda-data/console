@@ -95,7 +95,7 @@ function useClampedPageIndex({
   pageSize: number;
   rowCount: number;
   enabled: boolean;
-}): number {
+}) {
   const lastPageIndex = enabled && rowCount > 0 ? Math.ceil(rowCount / pageSize) - 1 : 0;
   const clampedPageIndex = enabled ? Math.max(0, Math.min(pageIndex, lastPageIndex)) : pageIndex;
 

@@ -18,11 +18,7 @@ export class RestTimeoutError extends Error {
   }
 }
 
-export default function fetchWithTimeout(
-  url: RequestInfo,
-  timeoutMs: number,
-  options?: RequestInit
-): Promise<Response> {
+export default function fetchWithTimeout(url: RequestInfo, timeoutMs: number, options?: RequestInit) {
   return new Promise<Response>((resolve, reject) => {
     let hasSettled = false;
     config.fetch(url, options).then(

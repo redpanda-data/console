@@ -36,7 +36,7 @@ const INDENT_STEP = 14;
 const INDENT_BASE = 8;
 const MAX_INDENT_DEPTH = 6;
 
-function indentFor(depth: number): number {
+function indentFor(depth: number) {
   return INDENT_BASE + Math.min(depth, MAX_INDENT_DEPTH) * INDENT_STEP;
 }
 
@@ -45,7 +45,7 @@ type NodeMaps = {
   byId: Map<string, PipelineFlowNode>;
 };
 
-function editableAncestorId(node: PipelineFlowNode, maps: NodeMaps): string | undefined {
+function editableAncestorId(node: PipelineFlowNode, maps: NodeMaps) {
   let current: PipelineFlowNode | undefined = node;
   while (current && !current.editTarget) {
     current = current.parentId ? maps.byId.get(current.parentId) : undefined;
@@ -53,11 +53,11 @@ function editableAncestorId(node: PipelineFlowNode, maps: NodeMaps): string | un
   return current?.id;
 }
 
-function sectionRows(maps: NodeMaps, sectionId: string): PipelineFlowNode[] {
+function sectionRows(maps: NodeMaps, sectionId: string) {
   return maps.childrenOf(sectionId).filter((n) => n.label !== 'none');
 }
 
-function collectVisibleIds(maps: NodeMaps, collapsedIds: Set<string>): string[] {
+function collectVisibleIds(maps: NodeMaps, collapsedIds: Set<string>) {
   const ids: string[] = [];
   const visit = (node: PipelineFlowNode) => {
     ids.push(node.id);
@@ -100,7 +100,7 @@ const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boo
   return null;
 };
 
-function useStopDescriptionId(node: PipelineFlowNode): string | undefined {
+function useStopDescriptionId(node: PipelineFlowNode) {
   const id = useId();
   return hasStopSlot(node) ? id : undefined;
 }
@@ -151,11 +151,7 @@ const NodeDocsLink = ({ label, href }: { label: string; href: string }) => (
 
 type TreeKeyNav = { visibleIds: string[]; maps: NodeMaps; collapsedIds: Set<string> };
 
-function keyboardFocusTarget(
-  key: string,
-  node: PipelineFlowNode,
-  { visibleIds, maps, collapsedIds }: TreeKeyNav
-): string | undefined {
+function keyboardFocusTarget(key: string, node: PipelineFlowNode, { visibleIds, maps, collapsedIds }: TreeKeyNav) {
   const index = visibleIds.indexOf(node.id);
   switch (key) {
     case 'ArrowDown':

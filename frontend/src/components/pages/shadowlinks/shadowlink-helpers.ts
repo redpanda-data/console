@@ -120,5 +120,5 @@ export const getPermissionTypeLabel = (permissionType: ACLPermissionType | undef
 };
 
 /** Shadow linking is switched off on the cluster, which then can't have shadow links of its own. */
-export const isShadowLinkingDisabledError = (error: ConnectError | null | undefined): boolean =>
+export const isShadowLinkingDisabledError = (error: ConnectError | null | undefined) =>
   error?.code === Code.FailedPrecondition && error.message.includes('Cluster link feature is disabled');

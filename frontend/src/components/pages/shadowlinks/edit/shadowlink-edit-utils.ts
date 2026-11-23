@@ -131,7 +131,7 @@ export const buildTLSSettings = (
   };
 };
 
-export const hasAuthChanged = (values: FormValues, originalValues: FormValues): boolean => {
+export const hasAuthChanged = (values: FormValues, originalValues: FormValues) => {
   if (values.authMethod !== originalValues.authMethod) {
     return true;
   }
@@ -199,7 +199,7 @@ export const buildClientOptions = (values: FormValues) =>
     fetchPartitionMaxBytes: values.advanceClientOptions.fetchPartitionMaxBytes,
   });
 
-const hasTlsChanged = (values: FormValues, originalValues: FormValues): boolean => {
+const hasTlsChanged = (values: FormValues, originalValues: FormValues) => {
   const hasCertificates =
     values.mtlsMode === TLS_MODE.FILE_PATH
       ? Boolean(values.mtls.ca?.filePath || values.mtls.clientCert?.filePath || values.mtls.clientKey?.filePath)
@@ -225,7 +225,7 @@ const ADVANCED_CLIENT_OPTION_MASK_PATHS = [
   ['fetchPartitionMaxBytes', 'configurations.client_options.fetch_partition_max_bytes'],
 ] as const;
 
-const getConnectionFieldMaskPaths = (values: FormValues, originalValues: FormValues): string[] => {
+const getConnectionFieldMaskPaths = (values: FormValues, originalValues: FormValues) => {
   const bootstrapServersChanged = !arraysEqual(
     values.bootstrapServers.map((s) => s.value),
     originalValues.bootstrapServers.map((s) => s.value)
@@ -476,7 +476,7 @@ export const getUpdateValuesForACLs = (
 const srSyncOptionsChanged = (
   next: SchemaRegistrySyncOptions | undefined,
   previous: SchemaRegistrySyncOptions | undefined
-): boolean => {
+) => {
   if (next === undefined || previous === undefined) {
     return next !== previous;
   }

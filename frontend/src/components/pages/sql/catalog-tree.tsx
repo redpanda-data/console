@@ -89,7 +89,7 @@ type CatalogTreeContextValue = {
 
 const CatalogTreeContext = createContext<CatalogTreeContextValue | null>(null);
 
-function useCatalogTree(): CatalogTreeContextValue {
+function useCatalogTree() {
   const ctx = useContext(CatalogTreeContext);
   if (!ctx) {
     throw new Error('useCatalogTree must be used within CatalogTree');

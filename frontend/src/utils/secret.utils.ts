@@ -20,7 +20,7 @@ const TRAILING_UNDERSCORES_REGEX = /_+$/u;
  * Coerces a string to the secret-ID pattern `^[A-Z][A-Z0-9_]*$`: upper-cased, non-alphanumerics
  * collapsed to single underscores, trailing underscores dropped. `test@#$agent` -> `TEST_AGENT`.
  */
-export function sanitizeSecretId(value: string): string {
+export function sanitizeSecretId(value: string) {
   let sanitized = value.toUpperCase().replace(ALPHANUMERIC_WITH_HYPHENS, '_');
 
   sanitized = sanitized.replace(/_+/gu, '_');

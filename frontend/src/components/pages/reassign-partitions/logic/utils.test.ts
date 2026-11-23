@@ -33,7 +33,7 @@ const makeTopic = (topicName: string, replicationFactor: number): Topic => ({
   allowedActions: undefined,
 });
 
-const makePartition = (id: number, replicas: number[]): Partition =>
+const makePartition = (id: number, replicas: number[]) =>
   ({ id, replicas, leader: replicas[0], partitionLogDirs: [], replicaSize: 10 }) as unknown as Partition;
 
 const brokers = [0, 1, 2, 3].map(makeBroker);

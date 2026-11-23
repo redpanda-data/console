@@ -86,7 +86,7 @@ const SECTION_ACCENT: Record<string, string> = {
   resource: 'var(--color-warning)',
 };
 
-export function sectionAccent(section?: string): string | undefined {
+export function sectionAccent(section?: string) {
   return section ? SECTION_ACCENT[section] : undefined;
 }
 
@@ -110,7 +110,7 @@ function branchChipText(data: FlowCardData) {
   return 'on error';
 }
 
-function branchChipTone(data: FlowCardData): 'error' | 'muted' | 'condition' {
+function branchChipTone(data: FlowCardData) {
   if (data.isErrorPath) {
     return 'error';
   }
@@ -294,7 +294,7 @@ const TopicChips = ({ topics }: { topics?: string[] }) => {
   );
 };
 
-function cardHasMeta(data: FlowCardData): boolean {
+function cardHasMeta(data: FlowCardData) {
   return Boolean(data.meta?.length || data.topics?.length || data.missingTopic || data.missingSasl);
 }
 
@@ -617,7 +617,7 @@ const LinkLabel = ({
 
 type ControlFlowPresentation = { Icon: LucideIcon; descriptor: string };
 
-function plural(n: number, noun: string): string {
+function plural(n: number, noun: string) {
   return pluralizeWithNumber(n, noun, noun.endsWith('h') ? 'es' : 's');
 }
 
@@ -837,7 +837,7 @@ function smoothGraphPath(points: { x: number; y: number }[]) {
 }
 
 // An emphasized edge takes the highlight stroke — except error edges, which keep their own tone.
-function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone): string {
+function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone) {
   if (d?.emphasized && tone !== 'error') {
     return HIGHLIGHT_STROKE;
   }

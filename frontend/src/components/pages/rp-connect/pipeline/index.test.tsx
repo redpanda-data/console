@@ -10,7 +10,7 @@
  */
 
 import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
-import { create, type DescMethodUnary, type MessageShape } from '@bufbuild/protobuf';
+import { create, type DescMethodUnary, type MessageInitShape, type MessageShape } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { Code, ConnectError, type ConnectRouter, createRouterTransport, type MethodImpl } from '@connectrpc/connect';
 import type { Monaco } from '@monaco-editor/react';
@@ -19,7 +19,6 @@ import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { config, type FeatureFlagKey } from 'config';
 import type { editor } from 'monaco-editor';
-// Console-layer response schemas
 import {
   CreatePipelineResponseSchema as ConsoleCreatePipelineResponseSchema,
   DeletePipelineResponseSchema as ConsoleDeletePipelineResponseSchema,
@@ -30,7 +29,6 @@ import {
   StopPipelineResponseSchema as ConsoleStopPipelineResponseSchema,
   UpdatePipelineResponseSchema as ConsoleUpdatePipelineResponseSchema,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
-// Console-layer RPC methods (used by mutation/query hooks in react-query/api/pipeline)
 import {
   getPipelineServiceConfigSchema as consoleGetPipelineServiceConfigSchema,
   createPipeline,
@@ -41,7 +39,6 @@ import {
   stopPipeline,
   updatePipeline,
 } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
-// Dataplane response/entity schemas
 import {
   ComponentStatus,
   CreatePipelineResponseSchema,
@@ -54,7 +51,6 @@ import {
   PipelineSchema,
   UpdatePipelineResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-// Dataplane RPC methods (used by query hooks in react-query/api/connect)
 import {
   getPipelineServiceConfigSchema,
   lintPipelineConfig,
@@ -74,11 +70,12 @@ import {
 import { MISSING_SERVICE_ACCOUNT_MESSAGE, NO_LONGER_DRAFT_MESSAGE } from './save-actions';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 import { takeStartLintHints } from './use-start-draft';
+import type { usePipelineMode } from '../utils/use-pipeline-mode';
 import PipelinePage from '.';
 
-const mockUsePipelineMode = rs.fn(() => ({ mode: 'create' as const }));
+const mockUsePipelineMode = rs.fn<typeof usePipelineMode>(() => ({ mode: 'create' }));
 rs.mock('../utils/use-pipeline-mode', () => ({
-  usePipelineMode: (...args: unknown[]) => mockUsePipelineMode(...args),
+  usePipelineMode: () => mockUsePipelineMode(),
 }));
 
 const initialConfig = { featureFlags: config.featureFlags, jwt: config.jwt, isServerless: config.isServerless };
@@ -126,7 +123,6 @@ const mockEditorInstance = {
   getPosition: rs.fn(() => ({ lineNumber: 1, column: 4 })),
   getModel: rs.fn(() => ({
     getLineContent: rs.fn(() => '  /'),
-    // Large enough that node ranges from any test YAML are never clamped.
     getLineCount: rs.fn(() => 1000),
     getLineMaxColumn: rs.fn(() => 1),
   })),
@@ -134,7 +130,6 @@ const mockEditorInstance = {
     contentChangeListeners.push(cb);
     return { dispose: rs.fn() };
   }),
-  // Cursor → structure-tree highlight sync subscribes to this.
   onDidChangeCursorPosition: rs.fn((cb: CursorPositionCallback) => {
     cursorPositionListeners.push(cb);
     return { dispose: rs.fn() };
@@ -147,12 +142,10 @@ const mockEditorInstance = {
     }
   }),
   revealLineInCenterIfOutsideViewport: rs.fn(),
-  // A quick action's patch moves the cursor to the end of the document.
   setPosition: rs.fn(),
   revealLine: rs.fn(),
   executeEdits: rs.fn(),
   focus: rs.fn(),
-  // Scroll API used by the read-only viewer's vertical overflow shadows.
   onDidScrollChange: rs.fn(() => ({ dispose: rs.fn() })),
   onDidContentSizeChange: rs.fn(() => ({ dispose: rs.fn() })),
   onDidLayoutChange: rs.fn(() => ({ dispose: rs.fn() })),
@@ -223,9 +216,7 @@ function MockPipelineFlowCanvas(props: {
 rs.mock('./pipeline-flow-canvas', () => ({
   PipelineFlowCanvas: MockPipelineFlowCanvas,
 }));
-// The Add user dialog's form, reduced to what the editor hands it and what it submits back.
 const userStep: { submission: unknown; props: Record<string, unknown> } = { submission: undefined, props: {} };
-// React 19 hands `ref` to a function component as a prop, so the stub needs no forwardRef.
 function MockAddUserStep({ ref, ...props }: Record<string, unknown> & { ref?: React.Ref<unknown> }) {
   userStep.props = props;
   React.useImperativeHandle(ref, () => ({
@@ -242,11 +233,7 @@ function MockPipelineThroughputCard() {
 }
 
 rs.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: MockPipelineThroughputCard }));
-function MockAddConnectorsCard() {
-  return null;
-}
 
-rs.mock('../onboarding/add-connectors-card', () => ({ AddConnectorsCard: MockAddConnectorsCard }));
 // Counted, not just queried: mounting is what fires the logs and throughput requests.
 const logsTabRenders = { count: 0 };
 function MockLogsTab() {
@@ -262,23 +249,6 @@ function MockLogExplorer() {
 }
 
 rs.mock('components/ui/connect/log-explorer', () => ({ LogExplorer: MockLogExplorer }));
-function MockAddConnectorDialog(props: {
-  isOpen: boolean;
-  onAddConnector?: (name: string, type: string) => void;
-  onCloseAddConnector?: () => void;
-}) {
-  return props.isOpen ? (
-    <div data-testid="add-connector-dialog">
-      <button data-testid="select-connector" onClick={() => props.onAddConnector?.('generate', 'input')} type="button">
-        Select
-      </button>
-    </div>
-  ) : null;
-}
-
-rs.mock('../onboarding/add-connector-dialog', () => ({
-  AddConnectorDialog: MockAddConnectorDialog,
-}));
 
 // Simplified stub — the real menu needs secrets/topics/users RPCs; variant distinguishes dialog vs popover.
 function MockPipelineCommandMenu(props: {
@@ -402,14 +372,12 @@ function createTransport(overrides?: TransportOverrides) {
   });
 }
 
-/** How the save sends a service account secret's field. */
 const secretRef = (secretName: string, key: string) => `\${secrets.${secretName}.${key}}`;
 
 /** Logs its output in with the pipeline's service account, which the YAML itself doesn't carry. */
 const SERVICE_ACCOUNT_LOGIN_YAML =
   'input:\n  stdin: {}\noutput:\n  redpanda:\n    topic: orders\n    sasl:\n      - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n';
 
-/** A stored draft: unfinished, unlintable, and never deployed. */
 const draftPipeline = () =>
   create(ConsoleGetPipelineResponseSchema, {
     response: create(GetPipelineResponseSchema, {
@@ -423,7 +391,6 @@ const draftPipeline = () =>
     }),
   });
 
-// The pipeline name lives in the settings dialog (opened via "Edit settings"), not an inline header field.
 const setPipelineNameViaDialog = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
   await user.click(screen.getByRole('button', { name: /edit settings/iu }));
   const nameInput = await screen.findByPlaceholderText('Enter pipeline name');
@@ -468,7 +435,9 @@ const createdPipelineResponse = (id: string, state: Pipeline_State = Pipeline_St
     response: create(CreatePipelineResponseSchema, { pipeline: create(PipelineSchema, { id, state }) }),
   });
 
-const pipelineResponse = (overrides: Partial<{ state: Pipeline_State; configYaml: string; updateTime: unknown }>) =>
+const pipelineResponse = (
+  overrides: Pick<MessageInitShape<typeof PipelineSchema>, 'state' | 'configYaml' | 'updateTime'>
+) =>
   create(ConsoleGetPipelineResponseSchema, {
     response: create(GetPipelineResponseSchema, {
       pipeline: create(PipelineSchema, {
@@ -514,7 +483,6 @@ const seedBuffer = (
   });
 };
 
-/** A pipeline whose `update_time` the server reports as the given epoch ms. */
 const pipelineAt = (updateTimeMs: number) =>
   create(ConsoleGetPipelineResponseSchema, {
     response: create(GetPipelineResponseSchema, {
@@ -570,7 +538,6 @@ function resetRouterMocks() {
   mockBlocker.mockReturnValue({ status: 'idle', proceed: undefined, reset: undefined });
 }
 
-/** Back to a create page with every flag off, outside the embedded shell, with no editor listeners. */
 function resetPageEnvironment() {
   config.featureFlags = { ...initialConfig.featureFlags };
   for (const key of Object.keys(config.featureFlags) as FeatureFlagKey[]) {
@@ -596,7 +563,6 @@ afterEach(() => {
   useRpcnWizardStore.getState().reset();
 });
 
-/** Renders the page as the router would for `mode`; edit and view open the stored `test-pipeline`. */
 function renderPipelinePage(mode: 'create' | 'edit' | 'view', overrides?: TransportOverrides) {
   mockUsePipelineMode.mockReturnValue(mode === 'create' ? { mode } : { mode, pipelineId: 'test-pipeline' });
   const user = userEvent.setup();
@@ -608,29 +574,24 @@ function renderPipelineFromWizard(overrides?: TransportOverrides) {
   return renderPipelinePage('create', overrides);
 }
 
-/** Re-renders the page as the router would once it has navigated to `mode` on `test-pipeline`. */
 const rerenderInMode = (rerender: (ui: React.ReactElement) => void, mode: 'edit' | 'view') => {
   mockUsePipelineMode.mockReturnValue({ mode, pipelineId: 'test-pipeline' });
   rerender(<PipelinePage />);
 };
 
-/** Types `configYaml` into the YAML lane's editor. */
 const typeConfig = (configYaml: string) =>
   fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: configYaml } });
 
-/** Names the pipeline through its settings dialog, then types its configuration. */
 const nameAndConfigure = async (user: UserSession, name: string, configYaml: string) => {
   await setPipelineNameViaDialog(user, name);
   typeConfig(configYaml);
 };
 
-/** Waits for the editor to hold `loaded`, then replaces it with `next`. */
 const replaceLoadedConfig = async (next: string, loaded = DEPLOYED_YAML) => {
   await waitFor(() => expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(loaded));
   typeConfig(next);
 };
 
-/** Saves, and returns the pipeline carried by the first request `rpcMock` received. */
 const saveAndCapturePipeline = async (user: UserSession, operation: 'createPipeline' | 'updatePipeline') => {
   await user.click(await screen.findByTestId('save-pipeline'));
   const sent = await waitFor(() => {
@@ -644,7 +605,6 @@ const saveAndCapturePipeline = async (user: UserSession, operation: 'createPipel
   return sent;
 };
 
-/** Picks "Save and start" from the save button's options. */
 const chooseSaveAndStart = async (user: UserSession) => {
   await user.click(screen.getByTestId('save-pipeline-options'));
   await user.click(await screen.findByRole('menuitem', { name: 'Save and start' }));
@@ -658,7 +618,6 @@ const expectToastInsteadOfSuccess = async (severity: 'error' | 'warning', expect
   expect(toastMessages('success')).toHaveLength(0);
 };
 
-/** A CreatePipeline that comes back already starting, and the StopPipeline the editor may follow it with. */
 const deployingCreate = (
   id = 'new-pipeline',
   stopPipelineHandler = () => create(ConsoleStopPipelineResponseSchema, {})
@@ -667,7 +626,6 @@ const deployingCreate = (
   stopPipelineHandler,
 });
 
-/** An UpdatePipeline held in flight until `releaseUpdate` is called. */
 function deferredUpdatePipeline() {
   let release: (() => void) | undefined;
   const updatePipelineHandler = () =>
@@ -677,7 +635,6 @@ function deferredUpdatePipeline() {
   return { updatePipelineHandler, releaseUpdate: () => release?.() };
 }
 
-/** Saves a rename of the stored pipeline, renames it again while that save is in flight, then lets it land. */
 async function renameWhileSaveInFlight(state: Pipeline_State) {
   const { updatePipelineHandler, releaseUpdate } = deferredUpdatePipeline();
   const { user } = renderPipelinePage('edit', {
@@ -739,13 +696,11 @@ async function refetchPipelineOnFocus() {
 const autosaveEntry = (targetKey: string) =>
   useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === targetKey);
 
-/** Opens the Add user dialog from the `section` component's node action. */
 const openAddUserDialog = async (user: UserSession, section: 'input' | 'output') => {
   await user.click(await screen.findByTestId(`add-user-${section}`));
   await screen.findByTestId('add-user-step');
 };
 
-/** Submits the open Add user dialog, and waits for the service-account login to land in the YAML. */
 const submitServiceAccountLogin = async (user: UserSession) => {
   await user.click(await screen.findByRole('button', { name: 'Add' }));
   await waitFor(() =>
@@ -758,7 +713,6 @@ const submitServiceAccountLogin = async (user: UserSession) => {
 describe('the PipelinePage', () => {
   beforeEach(resetPipelinePageMocks);
 
-  // LintHintList has no tests of its own.
   describe('lint panel', () => {
     it('lists deprecated components under the lint issues and marks them in the editor', async () => {
       const listComponentsHandler = () =>
@@ -794,13 +748,11 @@ describe('the PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport({ lintHandler }) });
 
-      // Typing triggers the debounced lint query.
       const yamlEditor = screen.getByTestId('yaml-editor');
       act(() => {
         fireEvent.change(yamlEditor, { target: { value: 'input:\n  stdin: {}' } });
       });
 
-      // LintHintList renders hints as "Line N, Col N: hint".
       expect(await screen.findByText('Line 1, Col 1: response lint warning')).toBeInTheDocument();
     });
 
@@ -817,7 +769,6 @@ describe('the PipelinePage', () => {
         fireEvent.change(yamlEditor, { target: { value: 'bad: yaml' } });
       });
 
-      // When line is 0, LintHintList renders just the hint text (no "Line N, Col N:" prefix)
       expect(await screen.findByText('general config warning')).toBeInTheDocument();
     });
 
@@ -861,7 +812,6 @@ describe('the PipelinePage', () => {
 
       await setPipelineNameViaDialog(user, 'my-pipeline');
 
-      // Typing triggers the lint query → response warning.
       typeConfig('input:\n  bad_config: {}');
 
       await waitFor(() => {
@@ -870,7 +820,6 @@ describe('the PipelinePage', () => {
 
       await user.click(screen.getByRole('button', { name: 'Save' }));
 
-      // Both the save-error hint and the response lint hint stay visible.
       await waitFor(() => {
         expect(screen.getByText(/invalid config/u)).toBeInTheDocument();
       });
@@ -897,7 +846,6 @@ describe('the PipelinePage', () => {
         expect(screen.getByText(/invalid config/u)).toBeInTheDocument();
       });
 
-      // Editing YAML clears the stale error hints (setErrorLintHints({})).
       typeConfig('input:\n  fixed: {}');
 
       await waitFor(() => {
@@ -960,7 +908,6 @@ describe('the PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // Name set directly in the inline title, no settings dialog needed.
       fireEvent.change(screen.getByRole('textbox', { name: 'Pipeline name' }), { target: { value: 'inline-named' } });
 
       fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
@@ -990,24 +937,12 @@ describe('the PipelinePage', () => {
 
       await setPipelineNameViaDialog(user, 'my-pipeline');
 
-      // Name is valid, so nothing else blocks the save — only the empty config does.
       await user.click(screen.getByRole('button', { name: 'Save' }));
 
       await waitFor(() => {
         expect(screen.getByTestId('save-pipeline')).toBeEnabled();
       });
       expect(pipelineRequests.createPipeline).toHaveLength(0);
-    });
-
-    it('renders AddConnectorDialog inline and generates YAML on connector selection', () => {
-      enableFeatures('enablePipelineDiagrams');
-      mockUsePipelineMode.mockReturnValue({ mode: 'create' });
-
-      render(<PipelinePage />, { transport: createTransport() });
-
-      // AddConnectorDialog only renders when addConnectorType is non-null; with AddConnectorsCard
-      // mocked to null nothing sets it, so the dialog stays absent.
-      expect(screen.queryByTestId('add-connector-dialog')).not.toBeInTheDocument();
     });
   });
 
@@ -1035,7 +970,6 @@ describe('the PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // The pipeline name is the page title (level-1 heading), not a generic "Pipeline view" heading.
       expect(await screen.findByRole('heading', { level: 1, name: 'Test Pipeline' })).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'Pipeline view' })).not.toBeInTheDocument();
     });
@@ -1047,7 +981,6 @@ describe('the PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // The sidebar structure-tree hydrates from the config: input/output components appear as tree rows.
       await waitFor(() => expect(screen.getByText('stdin')).toBeInTheDocument());
       expect(screen.getByText('stdout')).toBeInTheDocument();
       expect(screen.getAllByRole('tree').length).toBeGreaterThan(0);
@@ -1072,11 +1005,9 @@ describe('the PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // Monitor is the default lane — no YAML editor shown yet.
       expect(await screen.findByRole('tab', { name: 'YAML' })).toBeInTheDocument();
       expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
 
-      // Switching to the YAML lane shows the pipeline config read-only.
       await user.click(screen.getByRole('tab', { name: 'YAML' }));
       const yaml = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
       expect(yaml.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}');
@@ -1094,7 +1025,6 @@ describe('the PipelinePage', () => {
     it('view page Visual lane renders the full pipeline diagram from the pipeline config', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-      // The visual editor builds on the diagrams flag, so both are required.
       enableFeatures('enableRpcnVisualEditor', 'enablePipelineDiagrams');
       config.jwt = 'embedded-test-session';
 
@@ -1115,11 +1045,9 @@ describe('the PipelinePage', () => {
       // The running pipeline's run control is named for what it does, not for where the pipeline is.
       await user.click(await screen.findByTestId('pipeline-stop'));
 
-      // It must not stop immediately — a confirmation dialog appears first.
       expect(pipelineRequests.stopPipeline).toHaveLength(0);
       expect(await screen.findByText('Stop pipeline?')).toBeInTheDocument();
 
-      // Confirming actually issues the stop.
       await user.click(screen.getByTestId('confirm-stop-pipeline'));
       await waitFor(() => {
         expect(pipelineRequests.stopPipeline.length).toBeGreaterThan(0);
@@ -1172,7 +1100,6 @@ describe('the PipelinePage', () => {
       const switchRow = await screen.findByRole('treeitem', { name: 'switch' });
       await user.click(switchRow);
 
-      // The reveal ran, and the programmatic cursor move did not steal the explicit tree selection.
       expect(mockEditorInstance.setSelection).toHaveBeenCalled();
       expect(switchRow).toHaveAttribute('aria-selected', 'true');
       expect(screen.getByRole('treeitem', { name: 'log' })).toHaveAttribute('aria-selected', 'false');
@@ -1189,10 +1116,8 @@ describe('the PipelinePage', () => {
       // The template CTA lives alongside the YAML lane (not the default Visual lane), so switch there first.
       await user.click(await screen.findByRole('tab', { name: 'YAML' }));
 
-      // Empty pipeline → the template gallery entry is offered.
       expect(await screen.findByTestId('browse-templates-cta')).toBeInTheDocument();
 
-      // Once the pipeline has real content, the entry animates away.
       fireEvent.change(screen.getByTestId('yaml-editor'), {
         target: { value: 'input:\n  generate:\n    mapping: root = {}' },
       });
@@ -1202,17 +1127,14 @@ describe('the PipelinePage', () => {
     it('opens editing on the Visual lane when the visual editor is enabled, and YAML swaps in the editor', async () => {
       const user = userEvent.setup();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      // The visual editor builds on the diagrams flag, so both are required.
       enableFeatures('enableRpcnVisualEditor', 'enablePipelineDiagrams');
       config.jwt = 'embedded-test-session';
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // Visual is the default edit lane when the flag is on — the editor is not shown.
       expect(await screen.findByTestId('flow-canvas')).toBeInTheDocument();
       expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
 
-      // Switching to YAML swaps in the editor.
       await user.click(await screen.findByRole('tab', { name: 'YAML' }));
       expect(await screen.findByTestId('yaml-editor')).toBeInTheDocument();
     });
@@ -1268,14 +1190,12 @@ describe('the PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // The tips bar leads with the slash tip (rotation starts at index 0).
       await waitFor(() => {
         expect(screen.getByText(/to insert variables/u)).toBeInTheDocument();
       });
     });
 
     it('omits the slash-command tip when the feature is disabled', async () => {
-      // Default: all flags return false
       render(<PipelinePage />, { transport: createTransport() });
 
       await waitFor(() => {
@@ -1300,7 +1220,6 @@ describe('the PipelinePage', () => {
 
     it('uses the legacy logs tab when the new log explorer flag is off', async () => {
       mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-      // Default: all flags return false
 
       render(<PipelinePage />, { transport: createTransport() });
 
@@ -1316,7 +1235,6 @@ describe('the PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // In edit mode the name is pre-filled from the server into the inline-editable title.
       await waitFor(() => {
         expect(screen.getByRole('textbox', { name: 'Pipeline name' })).toHaveValue('Test Pipeline');
       });
@@ -1619,14 +1537,12 @@ describe('pipelinePage saving and recovering work', () => {
         const sent = await saveAndCapturePipeline(user, 'createPipeline');
 
         expect(sent.draft).toBe(true);
-        // A draft never runs, so it needs no follow-up stop to make it stand still.
         expect(pipelineRequests.stopPipeline).toHaveLength(0);
         // Parking work keeps the editor open, now bound to the draft so the next save updates it rather
         // than forking a second one.
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' }));
       });
 
-      // A draft never runs, so it can wait for the account its login needs.
       it("saves a draft that logs in with a service account the pipeline doesn't have yet", async () => {
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
         const { user } = renderPipelinePage('create', { createPipelineHandler });
@@ -1694,7 +1610,6 @@ describe('pipelinePage saving and recovering work', () => {
         answerSample();
         await waitFor(() => expect(screen.getByTestId('save-pipeline')).toBeEnabled());
         expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft');
-        // The held ⌘S was dropped, not queued.
         expect(pipelineRequests.createPipeline).toHaveLength(0);
       });
     });
@@ -1711,11 +1626,9 @@ describe('pipelinePage saving and recovering work', () => {
         const sent = await saveAndCapturePipeline(user, 'createPipeline');
 
         expect(sent.draft).toBe(true);
-        // The crux: the pipeline the user asked to park does not stay running.
         await waitFor(() => expect(pipelineRequests.stopPipeline.length).toBeGreaterThan(0));
         expect(pipelineRequests.stopPipeline[0]?.request?.id).toBe('new-pipeline');
         await expectToastInsteadOfSuccess('error', DRAFT_UNSUPPORTED_STOPPED_MESSAGE);
-        // Sent to the pipeline's page, not the draft editor: it is a deployed pipeline now.
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
         expect(mockNavigate).not.toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' });
       });
@@ -1789,7 +1702,6 @@ describe('pipelinePage saving and recovering work', () => {
     });
 
     describe('parking unfinished work', () => {
-      // The crux: an invalid config is the normal state of unfinished work, and it must still save.
       it.each([
         ['a half-written config', 'input:\n  kafka_'],
         ['a config the linter rejects', 'input:\n  stdin: {}'],
@@ -1807,7 +1719,6 @@ describe('pipelinePage saving and recovering work', () => {
         await waitFor(() => expect(pipelineRequests.createPipeline.length).toBeGreaterThan(0));
         const sent = pipelineRequests.createPipeline[0]?.request?.pipeline;
         expect(sent?.draft).toBe(true);
-        // Byte-for-byte, so returning to the draft returns to exactly what was typed.
         expect(sent?.configYaml).toBe(configYaml);
       });
 
@@ -1825,12 +1736,10 @@ describe('pipelinePage saving and recovering work', () => {
         await waitFor(() =>
           expect(toastMessages('error')).toContainEqual(expect.stringMatching(/nothing to save yet/iu))
         );
-        // Names the way out, rather than only refusing.
         expect(toastMessages('error')).toContainEqual(expect.stringMatching(/add a name or some configuration/iu));
         expect(pipelineRequests.createPipeline).toHaveLength(0);
       });
 
-      // A name is enough to be worth keeping: it is somewhere to come back to.
       it('parks a named draft with no configuration at all', async () => {
         const user = userEvent.setup();
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
@@ -1867,7 +1776,6 @@ describe('pipelinePage saving and recovering work', () => {
         const { user } = renderPipelinePage('create', { createPipelineHandler, listPipelinesHandler });
 
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
-        // No name lookup just by opening the editor.
         expect(requests).toHaveLength(0);
 
         await user.click(screen.getByTestId('save-pipeline'));
@@ -1956,7 +1864,6 @@ describe('pipelinePage saving and recovering work', () => {
 
         await waitFor(() => expect(screen.queryByRole('menuitem', { name: 'Save and start' })).not.toBeInTheDocument());
         expect(pipelineRequests.createPipeline).toHaveLength(0);
-        // Still here, with the work intact.
         expect(mockNavigate).not.toHaveBeenCalled();
       });
 
@@ -2020,7 +1927,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(toastMessages('success')).toHaveLength(0);
       });
 
-      // Create first, stop second, so the stop can fail on its own.
       it('does not claim success when the pipeline it created could not be stopped', async () => {
         config.featureFlags.enableRpcnPipelineDrafts = false;
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate('new-pipeline', () => {
@@ -2033,7 +1939,6 @@ describe('pipelinePage saving and recovering work', () => {
 
         await waitFor(() => expect(pipelineRequests.stopPipeline.length).toBeGreaterThan(0));
         await expectToastInsteadOfSuccess('warning', expect.stringMatching(/may be running/iu));
-        // Still routed to the pipeline's page, which is where it can be stopped by hand.
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
       });
     });
@@ -2056,7 +1961,6 @@ describe('pipelinePage saving and recovering work', () => {
         await user.click(saveButton);
 
         await waitFor(() => expect(pipelineRequests.updatePipeline.length).toBeGreaterThan(0));
-        // Asserted, so a draft that someone else started is refused rather than deployed.
         expect(pipelineRequests.updatePipeline[0]?.request?.pipeline?.draft).toBe(true);
       });
 
@@ -2120,7 +2024,6 @@ describe('pipelinePage saving and recovering work', () => {
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  edited: {}' } });
         await user.click(await screen.findByTestId('save-pipeline'));
 
-        // The rejection lands in the issues panel, and nothing was deployed.
         expect(await screen.findByText(/not a draft/iu)).toBeInTheDocument();
         expect(toastMessages('error')).toContainEqual(NO_LONGER_DRAFT_MESSAGE);
         expect(mockNavigate).not.toHaveBeenCalledWith(expect.objectContaining({ to: '/rp-connect/test-pipeline' }));
@@ -2169,7 +2072,6 @@ describe('pipelinePage saving and recovering work', () => {
 
         await waitFor(() => expect(pipelineRequests.startPipeline.length).toBeGreaterThan(0));
         expect(await screen.findByText(/an explicit output type must be specified/u)).toBeInTheDocument();
-        // Still in the editor: a refused start is only actionable here.
         expect(mockNavigate).not.toHaveBeenCalledWith(expect.objectContaining({ to: '/rp-connect/test-pipeline' }));
       });
     });
@@ -2191,7 +2093,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(screen.queryByRole('tab', { name: 'Visual' })).not.toBeInTheDocument();
       });
 
-      // Nothing to compare against on a read-only page.
       it('is not offered in view mode', async () => {
         mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
 
@@ -2210,7 +2111,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(screen.queryByRole('tab', { name: /unsaved changes/iu })).not.toBeInTheDocument();
       });
 
-      // Nothing to compare until something is edited.
       it('is disabled while the editor matches what is saved', async () => {
         mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
@@ -2228,7 +2128,6 @@ describe('pipelinePage saving and recovering work', () => {
         );
       });
 
-      // A draft save stays in the editor, and the lane is disabled again once nothing is unsaved.
       it('returns to the YAML lane once the edits are saved', async () => {
         const { user } = renderPipelinePage('edit', {
           getPipelineHandler: () =>
@@ -2264,7 +2163,6 @@ describe('pipelinePage saving and recovering work', () => {
         const edited = 'input:\n  generate: {}\noutput:\n  stdout: {}';
         await replaceLoadedConfig(edited);
 
-        // The count rides on the tab, so a change is visible without opening the lane.
         await waitFor(() => expect(screen.getByRole('tab', { name: /changes/iu })).toHaveTextContent('1'));
 
         await openChanges(user);
@@ -2275,7 +2173,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(screen.getByText('Changed')).toBeInTheDocument();
       });
 
-      // One save writes the settings and the configuration, so a settings-only edit is unsaved work.
       it('counts and itemises a settings-only change', async () => {
         const user = userEvent.setup();
         mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
@@ -2295,7 +2192,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(screen.queryByTestId('changes-panel-empty')).not.toBeInTheDocument();
       });
 
-      // A running pipeline has no apply-later, so the lane has to say what applying costs.
       it('warns that applying to a running pipeline restarts it', async () => {
         const user = userEvent.setup();
         mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
@@ -2380,7 +2276,6 @@ describe('pipelinePage saving and recovering work', () => {
 
         await user.click(await screen.findByText('Changed'));
 
-        // Back on the YAML lane, which is where a change is actually fixed.
         await waitFor(() => expect(screen.getByTestId('yaml-editor')).toBeInTheDocument());
         expect(screen.queryByTestId('diff-editor')).not.toBeInTheDocument();
       });
@@ -2402,7 +2297,6 @@ describe('pipelinePage saving and recovering work', () => {
 
       await user.click(await screen.findByTestId('delete-draft'));
 
-      // Confirmed, not typed: a draft is unfinished work, but nothing is deployed.
       expect(await screen.findByText(/delete draft\?/iu)).toBeInTheDocument();
       expect(screen.queryByPlaceholderText(/delete/iu)).not.toBeInTheDocument();
       expect(pipelineRequests.deletePipeline).toHaveLength(0);
@@ -2457,7 +2351,6 @@ describe('pipelinePage saving and recovering work', () => {
       });
 
       await replaceLoadedConfig('input:\n  half_typed', 'input:\n  kafka_');
-      // The guard is armed while the edits are unsaved — that part is meant to happen.
       expect(lastShouldBlockFn()()).toBe(true);
 
       await user.click(await screen.findByTestId('delete-draft'));
@@ -2522,7 +2415,6 @@ describe('pipelinePage saving and recovering work', () => {
 
       await waitFor(() => expect(pipelineRequests.createPipeline.length).toBeGreaterThan(0));
       expect(proceed).not.toHaveBeenCalled();
-      // The dialog is still up, so the work is still on screen and can be retried or discarded.
       expect(screen.getByTestId('save-draft-and-leave')).toBeInTheDocument();
       expect(mockNavigate).not.toHaveBeenCalled();
     });
@@ -2539,7 +2431,6 @@ describe('pipelinePage saving and recovering work', () => {
       await replaceLoadedConfig('input:\n  half_typed');
       await user.click(await screen.findByTestId('save-draft-and-leave'));
 
-      // Offered beside the failed action, not instead of it: retrying is still reasonable.
       const leaveForNow = await screen.findByTestId('leave-and-keep-edits');
       expect(screen.getByTestId('save-draft-and-leave')).toBeInTheDocument();
 
@@ -2549,7 +2440,6 @@ describe('pipelinePage saving and recovering work', () => {
       expect(proceed).toHaveBeenCalled();
     });
 
-    // Saving would restart it, so offering "save and leave" here would be a trap.
     it('offers no draft on a running pipeline, and says why', async () => {
       blocked();
       mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
@@ -2579,7 +2469,6 @@ describe('pipelinePage saving and recovering work', () => {
       expect(proceed).toHaveBeenCalled();
     });
 
-    // Or the next visit offers back the very edits the user chose to throw away.
     it('drops the recovery buffer when the changes are discarded on purpose', async () => {
       const { proceed } = blocked();
 
@@ -2681,7 +2570,6 @@ describe('pipelinePage saving and recovering work', () => {
         );
       });
 
-      // Buffers written before the baseline existed have nothing to compare.
       it('treats a buffer with no recorded baseline as not stale', async () => {
         mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', null);
@@ -2694,7 +2582,6 @@ describe('pipelinePage saving and recovering work', () => {
     });
 
     describe('writing and offering the buffer', () => {
-      // The acceptance criterion for a refresh mid-edit: whatever was typed is still reachable.
       it('mirrors the editor into local storage as the user types', async () => {
         renderPipelineFromWizard();
 
@@ -2722,7 +2609,6 @@ describe('pipelinePage saving and recovering work', () => {
 
         await user.click(screen.getByTestId('restore-autosave'));
         await waitFor(() => expect(yamlEditor.value).toBe('input:\n  recovered: {}'));
-        // Nothing left to offer once it's loaded.
         expect(screen.queryByTestId('autosave-restore-notice')).not.toBeInTheDocument();
       });
 
@@ -2734,7 +2620,6 @@ describe('pipelinePage saving and recovering work', () => {
           targetKey: 'test-pipeline',
           name: 'Test Pipeline',
           description: '',
-          // The loaded pipeline is 1 compute unit; everything else matches what is saved.
           computeUnits: 6,
           tags: [],
           configYaml: 'input:\n  stdin: {}\noutput:\n  stdout: {}',
@@ -2794,7 +2679,6 @@ describe('pipelinePage saving and recovering work', () => {
 
           expect(screen.queryByTestId('autosave-restore-notice')).not.toBeInTheDocument();
 
-          // And it stays away across the next write, rather than blinking once per debounce.
           await rs.advanceTimersByTimeAsync(AUTOSAVE_DEBOUNCE_MS + 500);
           expect(screen.queryByTestId('autosave-restore-notice')).not.toBeInTheDocument();
         });
@@ -2855,7 +2739,6 @@ describe('pipelinePage saving and recovering work', () => {
         const yamlEditor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
         expect(await screen.findByTestId('autosave-restore-notice')).toBeInTheDocument();
 
-        // Typing here overwrites the stored buffer with something else entirely.
         fireEvent.change(yamlEditor, { target: { value: 'input:\n  typed_instead' } });
         await waitFor(
           () =>
@@ -2870,7 +2753,6 @@ describe('pipelinePage saving and recovering work', () => {
         await waitFor(() => expect(yamlEditor.value).toBe('input:\n  from_last_session: {}'));
       });
 
-      // Saving clears the buffer, or the snapshot outlives what it was protecting.
       it('withdraws the offer once the work it was protecting is saved', async () => {
         const user = userEvent.setup();
         mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
@@ -2945,7 +2827,6 @@ describe('pipelinePage saving and recovering work', () => {
       render(<PipelinePage />, { transport: draftTransport() });
 
       expect(await screen.findByTestId('draft-view-notice')).toBeInTheDocument();
-      // No Monitor lane: it has never run, so there is no throughput and no logs.
       expect(screen.queryByRole('tab', { name: 'Monitor' })).not.toBeInTheDocument();
       expect(screen.queryByTestId('log-explorer')).not.toBeInTheDocument();
       expect(screen.queryByTestId('logs-tab')).not.toBeInTheDocument();

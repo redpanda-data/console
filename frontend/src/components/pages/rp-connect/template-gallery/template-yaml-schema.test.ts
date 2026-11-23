@@ -85,7 +85,7 @@ function collectUnknownFieldPaths(node: unknown, componentConfig: FieldNode | un
 
 type StitchedComponent = { type: 'input' | 'output'; name: string; config: unknown };
 
-function stitchedComponents(doc: Document): StitchedComponent[] {
+function stitchedComponents(doc: Document) {
   const components: StitchedComponent[] = [];
   for (const type of ['input', 'output'] as const) {
     const section = doc.get(type, true);
@@ -102,7 +102,7 @@ function stitchedComponents(doc: Document): StitchedComponent[] {
   return components;
 }
 
-function missingRequiredFields(config: unknown, comp: ReturnType<typeof findComponentByName>): string[] {
+function missingRequiredFields(config: unknown, comp: ReturnType<typeof findComponentByName>) {
   const present = new Set(
     isMap(config)
       ? config.items.map((p) => (p.key as { value?: unknown } | null)?.value).filter((k) => typeof k === 'string')
@@ -114,7 +114,7 @@ function missingRequiredFields(config: unknown, comp: ReturnType<typeof findComp
     .filter((name): name is string => !!name && !present.has(name));
 }
 
-function requireTemplate(id: string): PipelineTemplate {
+function requireTemplate(id: string) {
   const template = PIPELINE_TEMPLATES.find((t) => t.id === id);
   expect(template).toBeDefined();
   if (!template) {

@@ -46,5 +46,4 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
   redpandaMirrorTemplate,
 ];
 
-export const getTemplateById = (id: string): PipelineTemplate | undefined =>
-  PIPELINE_TEMPLATES.find((t) => t.id === id);
+export const getTemplateById = (id: string) => PIPELINE_TEMPLATES.find((t) => t.id === id);

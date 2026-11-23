@@ -244,7 +244,7 @@ export const TopicConfigTab = () => {
   /**
    * Check if a property is currently selected for replication
    */
-  const isPropertySelected = (propertyName: string): boolean => {
+  const isPropertySelected = (propertyName: string) => {
     if (isPropertyAlwaysReplicated(propertyName)) {
       return true;
     }

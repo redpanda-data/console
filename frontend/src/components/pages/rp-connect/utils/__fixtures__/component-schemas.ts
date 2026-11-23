@@ -11,7 +11,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import {
-  type ComponentList,
   ComponentListSchema,
   type ComponentSpec,
   ComponentSpecSchema,
@@ -25,7 +24,7 @@ import type { ConnectComponentSpec } from '../../types/schema';
 /**
  * Helper to create a FieldSpec for testing
  */
-function createField(field: Partial<FieldSpec>): FieldSpec {
+function createField(field: Partial<FieldSpec>) {
   const baseSpec: Record<string, unknown> = {
     name: field.name || '',
     type: field.type || 'string',
@@ -660,7 +659,7 @@ export const mockRedpandaCommonInput = create(ComponentSpecSchema, {
 /**
  * Create a mock ComponentList with all test fixtures
  */
-export function createMockComponentList(): ComponentList {
+export function createMockComponentList() {
   return create(ComponentListSchema, {
     version: '1.0.0',
     inputs: [mockRedpandaInput],
@@ -685,7 +684,7 @@ export function createMockComponentList(): ComponentList {
  *
  * Reference: src/assets/rp-connect-schema-full.json
  */
-function createSchemaField(field: Record<string, unknown>): FieldSpec {
+function createSchemaField(field: Record<string, unknown>) {
   return field as unknown as FieldSpec;
 }
 
@@ -765,7 +764,7 @@ export const mockHttpClientInput: ConnectComponentSpec = {
 export function mockComponentToConnectSpec(
   component: ComponentSpec,
   type: 'input' | 'output' | 'cache' | 'processor' | 'scanner'
-): ConnectComponentSpec {
+) {
   return {
     ...component,
     type,

@@ -28,7 +28,7 @@ import { closeToast, showToast, updateToast } from 'utils/toast.utils';
 
 import { ActiveReassignments } from './components/active-reassignments';
 import { WizardSteps } from './components/wizard-steps';
-import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassign-logic';
+import { type ApiData, computeReassignments } from './logic/reassign-logic';
 import { ReassignmentTracker } from './logic/reassignment-tracker';
 import {
   computeMovedReplicas,
@@ -37,13 +37,12 @@ import {
 } from './logic/utils';
 import { StepSelectPartitions } from './step1-partitions';
 import { StepSelectBrokers } from './step2-brokers';
-import { StepReview, type TopicWithMoves } from './step3-review';
+import { StepReview } from './step3-review';
 import { appGlobal } from '../../../state/app-global';
 import { api, partialTopicConfigs } from '../../../state/backend-api';
 import type {
   AlterPartitionReassignmentsPartitionResponse,
   AlterPartitionReassignmentsResponse,
-  Broker,
   PartialTopicConfigsResponse,
   Partition,
   PartitionReassignmentRequest,
@@ -109,7 +108,7 @@ class ReassignPartitions extends PageComponent {
     super(p);
   }
 
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Reassign Partitions';
     p.addBreadcrumb('Reassign Partitions', '/reassign-partitions');
 
@@ -456,7 +455,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   /** Computes the reassignment request for the selection. Returns false when the selection had to be reset instead. */
-  planReassignment(): boolean {
+  planReassignment() {
     const topicPartitions = this.selectedTopicPartitions;
     if (topicPartitions === null || topicPartitions === undefined) {
       this.resetSelectionAndPage(true, true);
@@ -478,7 +477,7 @@ class ReassignPartitions extends PageComponent {
     return true;
   }
 
-  selectedTargetBrokers(): Broker[] {
+  selectedTargetBrokers() {
     const targetBrokers = this.state.selectedBrokerIds
       .map((id) => api.clusterInfo?.brokers.first((b) => b.brokerId === id))
       .filterFalsy();
@@ -528,7 +527,7 @@ class ReassignPartitions extends PageComponent {
     this.setState({ currentStep: this.state.currentStep - 1 });
   }
 
-  async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
+  async startReassignment(request: PartitionReassignmentRequest) {
     if (uiSettings.reassignment.maxReplicationTraffic !== null && uiSettings.reassignment.maxReplicationTraffic > 0) {
       const success = await this.setTrafficLimit(request);
       if (!success) {
@@ -550,7 +549,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   /** Settles the toast, and lists the failed partitions when there are any. Fails only when no partition started. */
-  reportReassignmentResult(toastRef: string, response: AlterPartitionReassignmentsResponse): boolean {
+  reportReassignmentResult(toastRef: string, response: AlterPartitionReassignmentsResponse) {
     const errors = reassignmentErrors(response);
     const startedCount = response.reassignPartitionsResponses.sum((x) => x.partitions.count((p) => !p.errorCode));
 
@@ -605,7 +604,7 @@ class ReassignPartitions extends PageComponent {
     this.setState({ removeThrottleFromTopicsContent: clone(this.state.topicsWithThrottle) });
   }
 
-  get selectedTopicPartitions(): TopicPartitions[] | undefined {
+  get selectedTopicPartitions() {
     const apiTopics = api.topics;
     const apiPartitions = api.topicPartitions;
 
@@ -617,7 +616,7 @@ class ReassignPartitions extends PageComponent {
     return partitionSelectionToTopicPartitions(this.state.partitionSelection, apiPartitions, apiTopics);
   }
 
-  get maximumSelectedReplicationFactor(): number {
+  get maximumSelectedReplicationFactor() {
     let maxRf = 0;
     for (const topicName in this.state.partitionSelection) {
       if (Object.hasOwn(this.state.partitionSelection, topicName)) {
@@ -630,7 +629,7 @@ class ReassignPartitions extends PageComponent {
     return maxRf;
   }
 
-  get topicsWithMoves(): TopicWithMoves[] {
+  get topicsWithMoves() {
     if (this.state.reassignmentRequest === null) {
       return [];
     }
@@ -645,7 +644,7 @@ class ReassignPartitions extends PageComponent {
     );
   }
 
-  get topicPartitionsInProgress(): string[] {
+  get topicPartitionsInProgress() {
     return this.api.partitionReassignments?.map((r) => r.topicName) ?? [];
   }
 }
@@ -727,7 +726,7 @@ function ClusterStatistics({ brokerCount, topics }: { brokerCount: number; topic
 }
 
 /** True when no topic has a selected partition. */
-function isPartitionSelectionEmpty(partitionSelection: PartitionSelection): boolean {
+function isPartitionSelectionEmpty(partitionSelection: PartitionSelection) {
   const selectedTopicPartitions = Object.values(partitionSelection);
   return selectedTopicPartitions.length === 0 || selectedTopicPartitions.all((x) => x.length === 0);
 }
@@ -740,7 +739,7 @@ function throttleRemovalOutcome(baseText: string, errorCount: number) {
 }
 
 /** The loaded partitions of every topic, without the partitions that report errors. */
-function partitionsWithoutErrors(topicPartitions: Map<string, Partition[] | null>): Map<string, Partition[]> {
+function partitionsWithoutErrors(topicPartitions: Map<string, Partition[] | null>) {
   const apiTopicPartitions = new Map<string, Partition[]>();
   for (const [topicName, partitions] of topicPartitions) {
     if (!partitions) {
@@ -848,7 +847,7 @@ async function applyReplicationThrottle(toastRef: string, request: PartitionReas
 function throttledTopicNames(
   topicDescriptions: PartialTopicConfigsResponse['topicDescriptions'],
   topicsInProgress: string[]
-): string[] {
+) {
   // Only get the names of the topics that have throttles applied
   const newThrottledTopics = topicDescriptions
     .filter((t) => t.configEntries.any((x) => Boolean(x.value)))
@@ -859,7 +858,7 @@ function throttledTopicNames(
   return newThrottledTopics.filter((t) => !topicsInProgress.includes(t));
 }
 
-async function setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
+async function setTrafficLimit(request: PartitionReassignmentRequest) {
   const toastRef = showToast({
     status: 'loading',
     description: 'Setting bandwidth throttle... 1/2',

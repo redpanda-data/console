@@ -145,7 +145,7 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
  * For reactive usage in React components, prefer using the store selector directly:
  *   useSupportedFeaturesStore((s) => s.schemaRegistryACLApi)
  */
-export function isSupported(f: FeatureEntry): boolean {
+export function isSupported(f: FeatureEntry) {
   const state = useSupportedFeaturesStore.getState();
   const result = computeSupported(f, state.endpointCompatibility);
   if (result.error) {
@@ -158,7 +158,7 @@ export function isSupported(f: FeatureEntry): boolean {
  * A list of features we should hide instead of showing a disabled message.
  */
 const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.SQLService];
-export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
+export function shouldHideIfNotSupported(f: FeatureEntry) {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }
 

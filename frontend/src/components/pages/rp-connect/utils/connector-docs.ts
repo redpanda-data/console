@@ -18,7 +18,7 @@ const DOCS_SECTIONS = new Set(['input', 'output', 'processor', 'cache', 'rate_li
 const RESOURCES_KEY_SUFFIX = /_resources$/u;
 
 /** Docs URL for a connector, or undefined for sections whose upstream path isn't the naive plural. */
-export function getConnectorDocsUrl(section: string, connectorName: string): string | undefined {
+export function getConnectorDocsUrl(section: string, connectorName: string) {
   if (!DOCS_SECTIONS.has(section)) {
     return;
   }
@@ -31,11 +31,7 @@ export function getConnectorDocsUrl(section: string, connectorName: string): str
  * collides with a prose section on the page is anchored `-2` there instead (~0.2% of fields), and a
  * missed anchor lands at the top of the right page.
  */
-export function getFieldDocsUrl(
-  section: string,
-  connectorName: string,
-  fieldPath: readonly string[]
-): string | undefined {
+export function getFieldDocsUrl(section: string, connectorName: string, fieldPath: readonly string[]) {
   const base = getConnectorDocsUrl(section, connectorName);
   if (!base || fieldPath.length === 0) {
     return base;
@@ -46,7 +42,7 @@ export function getFieldDocsUrl(
 type DocsNode = Pick<PipelineFlowNode, 'kind' | 'label' | 'section' | 'isCase' | 'resourceKey'>;
 
 /** Docs URL for a parsed pipeline node, or undefined when the node names no documented component. */
-export function getNodeDocsUrl(node: DocsNode): string | undefined {
+export function getNodeDocsUrl(node: DocsNode) {
   if (node.kind === 'section' || node.isCase || node.label === 'none') {
     return;
   }

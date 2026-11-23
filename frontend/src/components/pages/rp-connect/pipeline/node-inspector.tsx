@@ -81,7 +81,7 @@ import {
   targetComponentType,
 } from '../utils/yaml';
 
-const nodeIdentity = (target: EditTarget, nodeId?: string): string => nodeId ?? JSON.stringify(editTargetPath(target));
+const nodeIdentity = (target: EditTarget, nodeId?: string) => nodeId ?? JSON.stringify(editTargetPath(target));
 
 const DEFAULT_RESOURCE_COMPONENT: Record<ResourceKind, string> = { cache: 'memory', rate_limit: 'local' };
 
@@ -146,10 +146,10 @@ export type PendingNodeCommit = {
   discard: () => void;
 };
 
-const topLevelSection = (target: EditTarget | null): 'input' | 'output' | undefined =>
+const topLevelSection = (target: EditTarget | null) =>
   target?.kind === 'input' || target?.kind === 'output' ? target.kind : undefined;
 
-function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?: LintHint[]): string | undefined {
+function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?: LintHint[]) {
   if (!lintHints?.length) {
     return;
   }
@@ -176,7 +176,7 @@ type InspectorDraftsArgs = Pick<
 
 type DraftRef = RefObject<Record<string, unknown> | null>;
 
-function flushConditionDraft(draftRef: DraftRef, yaml: string, caseTarget?: EditTarget | null): string {
+function flushConditionDraft(draftRef: DraftRef, yaml: string, caseTarget?: EditTarget | null) {
   const cond = draftRef.current;
   if (!(cond && caseTarget)) {
     return yaml;
@@ -191,12 +191,7 @@ function flushConditionDraft(draftRef: DraftRef, yaml: string, caseTarget?: Edit
   return applied;
 }
 
-function flushComponentDraft(
-  draftRef: DraftRef,
-  yaml: string,
-  target: EditTarget | null,
-  originalLabel?: string
-): string {
+function flushComponentDraft(draftRef: DraftRef, yaml: string, target: EditTarget | null, originalLabel?: string) {
   const comp = draftRef.current;
   if (!(comp && target)) {
     return yaml;
@@ -245,7 +240,7 @@ function useInspectorDrafts({
       : undefined;
 
   const commit = useCallback(
-    (input: string): string => {
+    (input: string) => {
       const withCondition = flushConditionDraft(conditionDraftRef, input, caseTarget);
       return flushComponentDraft(componentDraftRef, withCondition, target, resourceLabel0);
     },
@@ -268,7 +263,7 @@ function useInspectorDrafts({
   }, [commit, commitRef]);
   useClearDraftsOnNodeChange({ target, nodeId, caseTarget }, [componentDraftRef, conditionDraftRef]);
 
-  const commitField = useCallback((): boolean => {
+  const commitField = useCallback(() => {
     if (!onRequestCommit) {
       return false;
     }
@@ -365,7 +360,7 @@ function createTopicHandler(
   section: 'input' | 'output' | undefined,
   readOnly?: boolean,
   onAddTopic?: (section: string, componentName: string) => void
-): (() => void) | undefined {
+) {
   if (readOnly || !(onAddTopic && section)) {
     return;
   }
@@ -376,7 +371,7 @@ function findDanglingResourceRef(
   component: Record<string, unknown>,
   componentName: string,
   resourceLabels: Record<ResourceKind, string[]>
-): { ref: string; kind: ResourceKind } | undefined {
+) {
   const refKind = resourceKindForComponentName(componentName);
   const innerConfig = component[componentName];
   const refValue =
@@ -392,7 +387,7 @@ function yamlWithMissingResource(
   yaml: string,
   danglingRef: { ref: string; kind: ResourceKind },
   components: ConnectComponentSpec[]
-): string | undefined {
+) {
   const obj = buildInsertableComponent(DEFAULT_RESOURCE_COMPONENT[danglingRef.kind], danglingRef.kind, components);
   if (!obj) {
     return;
@@ -677,7 +672,7 @@ function applyComponentDraft(
   target: EditTarget,
   config: Record<string, unknown>,
   originalLabel?: string
-): string | null {
+) {
   const applied = setComponentAt(yaml, target, config);
   if (applied === null) {
     toast.error('Couldn’t apply this edit to the YAML — edit the component in the YAML view instead.');
@@ -984,7 +979,7 @@ function parseComponentDraft(draft: string): ComponentDraft {
   return { config: parsed as Record<string, unknown>, error: null };
 }
 
-function draftMatches(draft: string, yaml: string): boolean {
+function draftMatches(draft: string, yaml: string) {
   if (draft === yaml) {
     return true;
   }

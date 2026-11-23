@@ -4,7 +4,7 @@ const IS_DEV = process.env.NODE_ENV !== 'production';
 const STORAGE_KEY = 'dv';
 const TYPING_TARGET = 'input, textarea, select, [contenteditable], [role="textbox"], [role="combobox"]';
 
-const readStored = (): boolean => {
+const readStored = () => {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     return stored === 'true';
@@ -14,7 +14,7 @@ const readStored = (): boolean => {
 };
 
 /** `?` toggles the developer view; the choice persists so a reload keeps it. */
-const useDeveloperViewDev = (): boolean => {
+const useDeveloperViewDev = () => {
   const [developerView, setDeveloperView] = useState(readStored);
 
   useEffect(() => {
@@ -49,7 +49,7 @@ const useDeveloperViewDev = (): boolean => {
   return developerView;
 };
 
-const useDeveloperViewProd = (): boolean => useState(readStored)[0];
+const useDeveloperViewProd = () => useState(readStored)[0];
 
 const useDeveloperView = IS_DEV ? useDeveloperViewDev : useDeveloperViewProd;
 

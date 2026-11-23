@@ -26,7 +26,7 @@ export function addSeriesToMap(map: Map<number, MergedPoint>, results: TimeSerie
   }
 }
 
-function inferStepMs(points: MergedPoint[]): number | null {
+function inferStepMs(points: MergedPoint[]) {
   if (points.length < 2) {
     return null;
   }
@@ -41,7 +41,7 @@ function inferStepMs(points: MergedPoint[]): number | null {
 }
 
 /** Insert a null marker into any larger-than-step gap so recharts breaks the line at no-data stretches. */
-export function insertGapMarkers(points: MergedPoint[]): MergedPoint[] {
+export function insertGapMarkers(points: MergedPoint[]) {
   const step = inferStepMs(points);
   if (step === null) {
     return points;
@@ -57,7 +57,7 @@ export function insertGapMarkers(points: MergedPoint[]): MergedPoint[] {
   return result;
 }
 
-export function mergeTimeSeries(ingressResults: TimeSeriesResult[], egressResults: TimeSeriesResult[]): MergedPoint[] {
+export function mergeTimeSeries(ingressResults: TimeSeriesResult[], egressResults: TimeSeriesResult[]) {
   const map = new Map<number, MergedPoint>();
   addSeriesToMap(map, ingressResults, 'ingress');
   addSeriesToMap(map, egressResults, 'egress');
@@ -65,11 +65,11 @@ export function mergeTimeSeries(ingressResults: TimeSeriesResult[], egressResult
   return insertGapMarkers(sorted);
 }
 
-export function formatChartTimestamp(value: number): string {
+export function formatChartTimestamp(value: number) {
   return new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function formatTooltipLabel(timestamp: number): string {
+export function formatTooltipLabel(timestamp: number) {
   return new Date(timestamp).toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',

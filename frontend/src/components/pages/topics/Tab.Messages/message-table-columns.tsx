@@ -41,7 +41,7 @@ function preparePayloadForCopy(payload: Payload) {
   }
 }
 
-function getMessageAsString(value: string | TopicMessage): string {
+function getMessageAsString(value: string | TopicMessage) {
   if (typeof value === 'string') {
     return value;
   }
@@ -63,7 +63,7 @@ function getMessageAsString(value: string | TopicMessage): string {
   return JSON.stringify(obj, null, 4);
 }
 
-function getPayloadAsString(value: string | Uint8Array | object): string {
+function getPayloadAsString(value: string | Uint8Array | object) {
   if (value === null) {
     return '';
   }
@@ -97,7 +97,7 @@ export function onCopyKey(original: TopicMessage) {
     .catch(navigatorClipboardErrorHandler);
 }
 
-function isDeserializerActive(deserializer: PayloadEncoding): boolean {
+function isDeserializerActive(deserializer: PayloadEncoding) {
   return deserializer !== null && deserializer !== undefined && deserializer !== PayloadEncoding.UNSPECIFIED;
 }
 

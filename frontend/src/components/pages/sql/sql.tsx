@@ -22,7 +22,7 @@ const LEADING_COMMENTS = /^(?:\s+|--[^\n]*\n?|\/\*[\s\S]*?\*\/|\()*/u;
 const FIRST_KEYWORD_RE = /^[A-Za-z_][A-Za-z0-9_]*/u;
 
 // First meaningful keyword of a statement (used to gate which statements run).
-export function firstKeyword(stmt: string): string {
+export function firstKeyword(stmt: string) {
   const word = stmt.replace(LEADING_COMMENTS, '').match(FIRST_KEYWORD_RE);
   return word ? word[0].toUpperCase() : '';
 }
@@ -45,12 +45,12 @@ const WRITE_KEYWORDS = new Set([
   'REVOKE',
 ]);
 
-export function isWriteKeyword(stmt: string): boolean {
+export function isWriteKeyword(stmt: string) {
   return WRITE_KEYWORDS.has(firstKeyword(stmt));
 }
 
 // Error copy for a statement the editor refuses to run.
-export function blockedStatementError(keyword: string): { title: string; message: string } {
+export function blockedStatementError(keyword: string) {
   if (keyword === 'REVOKE') {
     return { title: 'Manage access in Security', message: 'Grants are managed in Security in this release.' };
   }
@@ -64,7 +64,7 @@ export function blockedStatementError(keyword: string): { title: string; message
 // tree must be refetched after they succeed.
 const CATALOG_CHANGING_KEYWORDS = new Set(['CREATE', 'DROP', 'ALTER', 'RENAME']);
 
-export function isCatalogChangingKeyword(stmt: string): boolean {
+export function isCatalogChangingKeyword(stmt: string) {
   return CATALOG_CHANGING_KEYWORDS.has(firstKeyword(stmt));
 }
 
@@ -77,7 +77,7 @@ const SQL_NOISE_RE = /--[^\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'/gu;
 const BRIDGE_REF_RE = /(?<catalog>[A-Za-z_][\w$]*)\s*=>\s*"?(?<bridgeName>[a-zA-Z0-9._-]+)/gu;
 
 // The statement's only `catalog=>table` reference, or null when it has none or several.
-function singleCatalogTableRef(stmt: string): { catalogName: string; tableName: string } | null {
+function singleCatalogTableRef(stmt: string) {
   const cleaned = stmt.replace(SQL_NOISE_RE, ' ');
   const matches = [...cleaned.matchAll(BRIDGE_REF_RE)];
   if (matches.length !== 1) {
@@ -93,7 +93,7 @@ function singleCatalogTableRef(stmt: string): { catalogName: string; tableName: 
 
 // Topic backing `tableName` (bare or `namespace.table`) in the catalog; the
 // name itself when the catalog doesn't list the table.
-function topicForCatalogTable(catalog: Catalog, tableName: string): string {
+function topicForCatalogTable(catalog: Catalog, tableName: string) {
   for (const namespace of catalog.namespaces) {
     const table = namespace.tables.find((t) => t.name === tableName || `${t.namespaceName}.${t.name}` === tableName);
     if (table) {
@@ -103,7 +103,7 @@ function topicForCatalogTable(catalog: Catalog, tableName: string): string {
   return tableName;
 }
 
-export function bridgeTopicForQuery(stmt: string, catalogs: Catalog[]): string | null {
+export function bridgeTopicForQuery(stmt: string, catalogs: Catalog[]) {
   const ref = singleCatalogTableRef(stmt);
   if (!ref) {
     return null;

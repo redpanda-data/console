@@ -40,7 +40,7 @@ type FilterTab = keyof typeof FILTER_TABS;
 
 const isFilterTab = (value: string): value is FilterTab => value in FILTER_TABS;
 
-const getFilterTab = (patternType: unknown, filterType: unknown): FilterTab =>
+const getFilterTab = (patternType: unknown, filterType: unknown) =>
   (Object.keys(FILTER_TABS) as FilterTab[]).find(
     (tab) => FILTER_TABS[tab].patternType === patternType && FILTER_TABS[tab].filterType === filterType
   ) ?? 'include-specific';

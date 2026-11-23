@@ -27,7 +27,7 @@ export function getRedpandaContainerId(variantName = 'console') {
  * @param variantName - The test variant name (e.g., 'console', 'console-enterprise')
  * @returns Command stdout
  */
-export async function execRpk(command: string, variantName = 'console'): Promise<string> {
+export async function execRpk(command: string, variantName = 'console') {
   const containerId = getRedpandaContainerId(variantName);
   const rpkCommand = `docker exec ${containerId} rpk ${command} ${SASL_FLAGS}`;
   const { stdout } = await execAsync(rpkCommand);

@@ -59,9 +59,9 @@ export type SrCertificate = z.infer<typeof srCertificateSchema>;
 // Single source of truth for "is a certificate present": the UI badges,
 // validation, and request building must all agree that a whitespace-only
 // upload counts as absent.
-export const srCertificatePem = (cert: SrCertificate | undefined): string => cert?.pemContent.trim() ?? '';
+export const srCertificatePem = (cert: SrCertificate | undefined) => cert?.pemContent.trim() ?? '';
 
-export const hasSrCertificate = (cert: SrCertificate | undefined): boolean => srCertificatePem(cert).length > 0;
+export const hasSrCertificate = (cert: SrCertificate | undefined) => srCertificatePem(cert).length > 0;
 
 const schemaRegistrySchema = z.object({
   mode: z.enum([SCHEMA_REGISTRY_MODE.TOPIC, SCHEMA_REGISTRY_MODE.API, SCHEMA_REGISTRY_MODE.NONE]),
@@ -124,7 +124,7 @@ export type SchemaRegistryFormValues = z.infer<typeof schemaRegistrySchema>;
 
 // The key side of the mTLS pair is satisfied by a fresh upload or by a key
 // already stored server-side (edit flow).
-export const hasSrClientKeyMaterial = (mtls: SchemaRegistryFormValues['mtls']): boolean =>
+export const hasSrClientKeyMaterial = (mtls: SchemaRegistryFormValues['mtls']) =>
   hasSrCertificate(mtls.clientKey) || mtls.existingKeyConfigured;
 
 // Form schema with validation
@@ -372,7 +372,7 @@ const SR_MAX_REQUEST_RATE = 2_147_483_647;
 const SR_CONTEXT_MESSAGE = 'Context must start with a dot, e.g. . or .prod';
 
 // Schema Registry contexts are dot-prefixed (the default context is `.`).
-const isValidSchemaRegistryContext = (value: string): boolean => value.trim().startsWith('.');
+const isValidSchemaRegistryContext = (value: string) => value.trim().startsWith('.');
 
 const addSrContextIssue = (value: string, path: (string | number)[], ctx: z.RefinementCtx) => {
   if (!isValidSchemaRegistryContext(value)) {
@@ -380,7 +380,7 @@ const addSrContextIssue = (value: string, path: (string | number)[], ctx: z.Refi
   }
 };
 
-const urlProtocol = (value: string): string | null => {
+const urlProtocol = (value: string) => {
   try {
     return new URL(value).protocol;
   } catch {

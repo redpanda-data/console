@@ -257,7 +257,7 @@ export class StepSelectPartitions extends Component<{
     return partitions.includes(partition);
   }
 
-  getTopicCheckState(topicName: string): { checked: boolean; indeterminate: boolean } {
+  getTopicCheckState(topicName: string) {
     const tp = this.topicPartitions.first((t) => t.topicName === topicName);
     if (!tp) {
       return { checked: false, indeterminate: false };

@@ -67,7 +67,7 @@ export const RouterSync = () => {
  * Detect MFv2 federated mode. In federated mode, console-app.tsx sets up its own
  * navigation sync via onRouteChange — the legacy window event dispatch is not needed.
  */
-function isFederatedMode(): boolean {
+function isFederatedMode() {
   // config.clusterId is only set in federated mode (via setup() in console-app.tsx).
   return appConfig.clusterId !== undefined && appConfig.clusterId !== '';
 }

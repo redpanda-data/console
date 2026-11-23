@@ -29,11 +29,7 @@ import { editTargetPath, READ_UNTIL, readStopCondition, type StopCondition, slot
 
 type NodeRange = { id: string; start: number; end: number; span: number };
 
-function yamlNodeLines(
-  doc: Document,
-  lineCounter: LineCounter,
-  path: (string | number)[]
-): { start: number; end: number } | undefined {
+function yamlNodeLines(doc: Document, lineCounter: LineCounter, path: (string | number)[]) {
   const yamlNode = doc.getIn(path, true) as { range?: [number, number, number] } | undefined;
   const range = yamlNode?.range;
   if (!range) {
@@ -45,12 +41,12 @@ function yamlNodeLines(
   return { start, end };
 }
 
-function caseEntryId(node: PipelineFlowNode, nodes: PipelineFlowNode[]): string {
+function caseEntryId(node: PipelineFlowNode, nodes: PipelineFlowNode[]) {
   const entryId = node.kind === 'leaf' ? node.id : nodes.find((n) => n.parentId === node.id)?.id;
   return entryId ?? node.id;
 }
 
-export function nodeLineRanges(yaml: string): NodeRange[] {
+export function nodeLineRanges(yaml: string) {
   const lineCounter = new LineCounter();
   const { doc, nodes } = parseEditableNodes(yaml, lineCounter);
   const ranges: NodeRange[] = [];
@@ -68,7 +64,7 @@ export function nodeLineRanges(yaml: string): NodeRange[] {
   return ranges;
 }
 
-function nodeRangePaths(node: PipelineFlowNode, nodes: PipelineFlowNode[]): [string, (string | number)[]][] {
+function nodeRangePaths(node: PipelineFlowNode, nodes: PipelineFlowNode[]) {
   const paths: [string, (string | number)[]][] = [];
   if (node.editTarget && node.editTarget.kind !== 'switchCase') {
     paths.push([node.id, editTargetPath(node.editTarget)]);
@@ -87,7 +83,7 @@ export function mergeLintHints(
   errorHints: Record<string, LintHint>,
   queryHints: readonly LintHint[],
   localHints: readonly LintHint[] = []
-): Record<string, LintHint> {
+) {
   const merged: Record<string, LintHint> = {};
   const seen = new Set<string>();
   addUnseenHints(merged, seen, Object.entries(errorHints), 'error_');
@@ -115,7 +111,7 @@ function addUnseenHints(
  * Client-side YAML syntax lint (1-based line/column) so invalid YAML shows without a save round-trip.
  * `prettyErrors: false` keeps each message to a single clean line (no embedded code snippet).
  */
-export function localYamlLintHints(configYaml: string): LintHint[] {
+export function localYamlLintHints(configYaml: string) {
   if (!configYaml.trim()) {
     return [];
   }
@@ -134,7 +130,7 @@ export function localYamlLintHints(configYaml: string): LintHint[] {
 
 const READ_UNTIL_ROOTS: ReadonlySet<unknown> = new Set(['input', 'input_resources']);
 
-const lintAt = (lineCounter: LineCounter, node: unknown, hint: string): LintHint => {
+const lintAt = (lineCounter: LineCounter, node: unknown, hint: string) => {
   const offset = (node as { range?: [number, number, number] } | undefined)?.range?.[0] ?? 0;
   const pos = lineCounter.linePos(offset);
   return create(LintHintSchema, { line: pos.line, column: pos.col, hint, lintType: 'config' });
@@ -146,7 +142,7 @@ const IDLE_TIMEOUT_PROBLEM: Partial<Record<IdleTimeoutKind, string>> = {
   negative: 'A negative idle_timeout is ignored. Use a duration such as 30s.',
 };
 
-function missingWrapperParts(resolved: Record<string, unknown>, stop: StopCondition): string[] {
+function missingWrapperParts(resolved: Record<string, unknown>, stop: StopCondition) {
   const missing: string[] = [];
   const idle = classifyIdleTimeout(stop.idleTimeout);
   const idleGiven = idle !== 'unset' && idle !== 'negative';
@@ -159,12 +155,7 @@ function missingWrapperParts(resolved: Record<string, unknown>, stop: StopCondit
   return missing;
 }
 
-function readUntilProblems(
-  lineCounter: LineCounter,
-  doc: Document,
-  keyNode: unknown,
-  value: YAMLMap | null
-): LintHint[] {
+function readUntilProblems(lineCounter: LineCounter, doc: Document, keyNode: unknown, value: YAMLMap | null) {
   const resolved = (value?.toJS(doc) ?? {}) as Record<string, unknown>;
   const stop = readStopCondition(resolved);
   const hints = missingWrapperParts(resolved, stop).map((hint) => lintAt(lineCounter, keyNode, hint));
@@ -181,7 +172,7 @@ function readUntilProblems(
  * nothing to stop on or no input, an `idle_timeout` that isn't a duration) or never fire (a zero or
  * negative `idle_timeout`).
  */
-export function localStopConditionLintHints(configYaml: string): LintHint[] {
+export function localStopConditionLintHints(configYaml: string) {
   if (!configYaml.includes(READ_UNTIL)) {
     return [];
   }
@@ -197,7 +188,7 @@ export function localStopConditionLintHints(configYaml: string): LintHint[] {
   }
 }
 
-function readUntilHints(doc: Document, lineCounter: LineCounter): LintHint[] {
+function readUntilHints(doc: Document, lineCounter: LineCounter) {
   const hints: LintHint[] = [];
   visit(doc, {
     Pair(_, pair, path) {
@@ -214,7 +205,7 @@ function readUntilHints(doc: Document, lineCounter: LineCounter): LintHint[] {
   return hints;
 }
 
-export function enclosingNodeId(line: number, ranges: NodeRange[]): string | undefined {
+export function enclosingNodeId(line: number, ranges: NodeRange[]) {
   let best: NodeRange | undefined;
   for (const range of ranges) {
     if (line >= range.start && line <= range.end && (!best || range.span < best.span)) {
@@ -224,13 +215,13 @@ export function enclosingNodeId(line: number, ranges: NodeRange[]): string | und
   return best?.id;
 }
 
-function nodeLineRangesOrUndefined(yaml: string): NodeRange[] | undefined {
+function nodeLineRangesOrUndefined(yaml: string) {
   try {
     return nodeLineRanges(yaml);
   } catch {}
 }
 
-function groupHintsByNode(hints: LintHint[], ranges: NodeRange[]): Map<string, LintHint[]> {
+function groupHintsByNode(hints: LintHint[], ranges: NodeRange[]) {
   const byNode = new Map<string, LintHint[]>();
   for (const hint of hints) {
     const id = enclosingNodeId(hint.line, ranges);

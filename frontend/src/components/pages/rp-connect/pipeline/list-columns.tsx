@@ -73,7 +73,7 @@ const inSelectionFilterFn: FilterFn<DataTableFeatures, PipelineRow> = (row, colu
   filterValue.includes(row.getValue<string>(columnId));
 inSelectionFilterFn.autoRemove = (value) => !value || (Array.isArray(value) && value.length === 0);
 
-const sortPriority = (row: PipelineRow): number => PIPELINE_STATE_SORT_PRIORITY[row.state] ?? Number.MAX_SAFE_INTEGER;
+const sortPriority = (row: PipelineRow) => PIPELINE_STATE_SORT_PRIORITY[row.state] ?? Number.MAX_SAFE_INTEGER;
 
 type CreateColumnsOptions = {
   navigate: ReturnType<typeof useNavigate>;

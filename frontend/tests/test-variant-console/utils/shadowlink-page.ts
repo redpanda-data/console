@@ -42,7 +42,7 @@ const isChevronButton = (button: Element) => {
 };
 
 // Checks the buttons recursively in DOM order and stops at the first chevron button.
-const findFirstChevronButton = async ([btn, ...remainingButtons]: Locator[]): Promise<Locator | undefined> => {
+const findFirstChevronButton = async ([btn, ...remainingButtons]: Locator[]) => {
   if (!btn) {
     return;
   }
@@ -113,7 +113,7 @@ const findContainerIdInStateFiles = async () => {
 const findContainerIdByPort = async (
   execAsync: ExecAsync,
   [port, ...remainingPorts]: string[] = ['19193', '19093']
-): Promise<string | undefined> => {
+) => {
   if (port === undefined) {
     return;
   }

@@ -33,7 +33,7 @@ export const DEFAULT_DETAIL_VIEW_STATE: DetailViewState = {
 
 const STORAGE_KEY = 'messages.detailView';
 
-export const readDetailViewState = (): DetailViewState => {
+export const readDetailViewState = () => {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {

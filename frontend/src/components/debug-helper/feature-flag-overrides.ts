@@ -19,7 +19,7 @@ const STORAGE_KEY = '__debug_feature_flag_overrides';
 
 export type FeatureFlagOverrides = Partial<Record<FeatureFlagKey, boolean>>;
 
-export function getOverrides(): FeatureFlagOverrides {
+export function getOverrides() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
@@ -59,7 +59,7 @@ export function clearOverrides() {
   installFeatureFlagAccessor();
 }
 
-export function getEffectiveFlags(): Record<FeatureFlagKey, boolean> {
+export function getEffectiveFlags() {
   const overrides = getOverrides();
   const result = { ...baseFlags } as Record<FeatureFlagKey, boolean>;
   for (const k of Object.keys(overrides) as FeatureFlagKey[]) {
@@ -71,7 +71,7 @@ export function getEffectiveFlags(): Record<FeatureFlagKey, boolean> {
   return result;
 }
 
-export function getAllFlagKeys(): FeatureFlagKey[] {
+export function getAllFlagKeys() {
   return (Object.keys(FEATURE_FLAGS) as FeatureFlagKey[]).sort((a, b) => a.localeCompare(b));
 }
 
@@ -88,7 +88,7 @@ function installFeatureFlagAccessor() {
   Object.defineProperty(config, 'featureFlags', {
     configurable: true,
     enumerable: true,
-    get(): Record<FeatureFlagKey, boolean> {
+    get() {
       const overrides = getOverrides();
       if (Object.keys(overrides).length === 0) {
         return baseFlags;

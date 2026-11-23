@@ -72,7 +72,7 @@ export type SchemaRegistrySyncOptionsMessage = {
  * Convert a proto Duration to seconds.
  * Zero or unset durations map to undefined so the cluster default applies.
  */
-export function durationToSeconds(duration: Duration | undefined): number | undefined {
+export function durationToSeconds(duration: Duration | undefined) {
   if (!duration) {
     return;
   }
@@ -201,7 +201,7 @@ const formatWholeSecondsDuration = (seconds: number) => {
  * (which rpk accepts and so must round-trip), pretty-ms emits either rejected multi-unit strings
  * ("1m 30s") or lossy ones (90s -> "1m"), and date-fns produces prose.
  */
-export function formatDurationForInput(duration: Duration | undefined): string {
+export function formatDurationForInput(duration: Duration | undefined) {
   if (!duration) {
     return '';
   }
@@ -216,7 +216,7 @@ export function formatDurationForInput(duration: Duration | undefined): string {
   return formatWholeSecondsDuration(seconds);
 }
 
-function mapTlsToMtlsSlice(tls: TLSSettings | undefined): SchemaRegistryFormValues['mtls'] {
+function mapTlsToMtlsSlice(tls: TLSSettings | undefined) {
   const base = structuredClone(initialValues.schemaRegistry.mtls);
   base.doNotSetSniHostname = Boolean(tls?.doNotSetSniHostname);
   const settings = tls?.tlsSettings;

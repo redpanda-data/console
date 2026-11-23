@@ -303,7 +303,7 @@ const isFirstLoad = ({ isLoading, isFetched }: ReturnType<typeof useListShadowLi
 const opensOnFence = (
   { known, summary, unreadable, blocking, isLoading, isError }: ReturnType<typeof useClusterFenceStatusQuery>,
   topology: ShadowLinkTopology | null
-): boolean | undefined => {
+) => {
   const fenceInUse = (known && hasFenceActivity(summary.phase)) || unreadable || blocking;
   if (fenceInUse || (topology?.readers.length ?? 0) > 0) {
     return true;

@@ -19,7 +19,7 @@ import type { PreviewTagV2 } from '../../../../../state/ui';
 import { cullText, prettyBytes } from '../../../../../utils/utils';
 import { EmptyBadge } from '../common/empty-badge';
 
-function isEmptyValue(value: Payload): boolean {
+function isEmptyValue(value: Payload) {
   return (
     value.encoding === 'null' ||
     value.payload === null ||
@@ -27,11 +27,11 @@ function isEmptyValue(value: Payload): boolean {
   );
 }
 
-function isPrimitivePayload(payload: unknown): boolean {
+function isPrimitivePayload(payload: unknown) {
   return typeof payload === 'string' || typeof payload === 'number' || typeof payload === 'boolean';
 }
 
-function getValuePreviewText(msg: TopicMessage): ReactNode {
+function getValuePreviewText(msg: TopicMessage) {
   if (msg.value.encoding === 'binary') {
     return msg.valueBinHexPreview as React.ReactNode;
   }

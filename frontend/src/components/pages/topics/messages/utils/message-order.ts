@@ -23,15 +23,9 @@ import type { TopicMessage } from '../../../../../state/rest-interfaces';
  * (e.g. defaulting an unrecognized id to `offset`) would select rows in an order the table itself
  * never rendered.
  */
-export const isSortableColumnId = (id: string, sortingDisabled: boolean): boolean =>
-  id === 'timestamp' && !sortingDisabled;
+export const isSortableColumnId = (id: string, sortingDisabled: boolean) => id === 'timestamp' && !sortingDisabled;
 
-const compareBySorting = (
-  a: TopicMessage,
-  b: TopicMessage,
-  sorting: SortingState,
-  sortingDisabled: boolean
-): number => {
+const compareBySorting = (a: TopicMessage, b: TopicMessage, sorting: SortingState, sortingDisabled: boolean) => {
   for (const sort of sorting) {
     if (!isSortableColumnId(sort.id, sortingDisabled)) {
       continue;
@@ -55,7 +49,7 @@ export function orderForContinuousNewest<T extends { timestamp: number; offset: 
   messages: readonly T[],
   continuousActive: boolean,
   readScopeMode: string
-): readonly T[] {
+) {
   if (!(continuousActive && readScopeMode === 'newest')) {
     return messages;
   }
@@ -76,7 +70,7 @@ export type VisiblePageKeysOptions = {
  * re-applying `sorting` here would select rows in a different order than what's actually
  * displayed.
  */
-export function visiblePageKeys(messages: readonly TopicMessage[], options: VisiblePageKeysOptions): string[] {
+export function visiblePageKeys(messages: readonly TopicMessage[], options: VisiblePageKeysOptions) {
   const { sorting, sortingDisabled, pageIndex, pageSize } = options;
   const sorted = sortingDisabled
     ? [...messages]

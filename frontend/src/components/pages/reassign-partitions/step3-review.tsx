@@ -344,7 +344,7 @@ const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[
   );
 };
 
-function potentialTransferBandwidth(p: PartitionWithMoves, maxReplicationTraffic: number): number {
+function potentialTransferBandwidth(p: PartitionWithMoves, maxReplicationTraffic: number) {
   const senders = p.brokersBefore.except(p.brokersAfter);
   const receivers = p.brokersAfter.except(p.brokersBefore);
 

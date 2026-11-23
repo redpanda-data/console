@@ -51,7 +51,7 @@ const NO_TLS_CERTIFICATES: TlsCertificateSummary = {
   hasClientCertificates: false,
 };
 
-const summarizeTlsCertificates = (tlsSettings?: UnifiedTLSSettings): TlsCertificateSummary => {
+const summarizeTlsCertificates = (tlsSettings?: UnifiedTLSSettings) => {
   const settings = tlsSettings?.tlsSettings;
   switch (settings?.case) {
     case 'tlsFileSettings': {

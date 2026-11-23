@@ -31,7 +31,7 @@ import { ShadowLinkLoadErrorState } from '../list/shadowlink-empty-state';
 /**
  * Map form field to its corresponding tab
  */
-const getTabForField = (fieldName: string): string => {
+const getTabForField = (fieldName: string) => {
   const fieldToTabMap: Record<string, string> = {
     name: 'source',
     bootstrapServers: 'source',

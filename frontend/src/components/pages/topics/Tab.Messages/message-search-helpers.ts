@@ -14,7 +14,7 @@ import type { FilterEntry } from '../../../../state/ui';
 import { wrapFilterFragment } from '../../../../utils/filter-helper';
 
 // proper Error, so never assume `.message` exists on it.
-export function getSearchErrorMessage(error: unknown): string {
+export function getSearchErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {
     return error.message;
   }
@@ -24,7 +24,7 @@ export function getSearchErrorMessage(error: unknown): string {
   return 'Unknown error';
 }
 
-export function toDisplayError(error: unknown): Error {
+export function toDisplayError(error: unknown) {
   return error instanceof Error ? error : new Error(getSearchErrorMessage(error));
 }
 
@@ -32,7 +32,7 @@ export function toDisplayError(error: unknown): Error {
  * Combines the active JavaScript filters into one filter program: each filter becomes a named
  * function, and the program returns whether all of them accept the message.
  */
-export function buildFilterCode(filters: FilterEntry[]): { filterCode: string; functionCount: number } {
+export function buildFilterCode(filters: FilterEntry[]) {
   const activeFilters = filters.filter(
     (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
   );

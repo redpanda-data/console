@@ -263,7 +263,7 @@ const columns: DataTableColumnDef<Pipeline>[] = [
 
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesList extends pageWithContent(() => <RpConnectPipelinesListContent />) {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.addBreadcrumb('Redpanda Connect Pipelines', '/rp-connect');
 
     this.refreshData(true);
@@ -295,7 +295,7 @@ class RpConnectPipelinesList extends pageWithContent(() => <RpConnectPipelinesLi
 }
 
 /** The quick-search text as a case-insensitive pattern, or `null` when it is not a valid one. */
-const toQuickSearchRegExp = (quickSearch: string): RegExp | null => {
+const toQuickSearchRegExp = (quickSearch: string) => {
   try {
     return new RegExp(quickSearch, 'iu');
   } catch {

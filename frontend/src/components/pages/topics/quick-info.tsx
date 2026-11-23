@@ -128,7 +128,7 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   );
 };
 
-function filterTopicConfig(config: ConfigEntry[] | null | undefined): ConfigEntry[] | null | undefined {
+function filterTopicConfig(config: ConfigEntry[] | null | undefined) {
   if (!config) {
     return config;
   }

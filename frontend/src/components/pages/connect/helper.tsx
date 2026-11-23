@@ -380,7 +380,7 @@ function trimConnectorMetadataCache() {
 }
 
 // An exact match wins over a prefix match; anything else gets the fallback icon.
-function matchConnectorMetadata(className: string): ConnectorMetadata {
+function matchConnectorMetadata(className: string) {
   return (
     connectorMetadata.find((e) => e.className && e.className === className) ??
     connectorMetadata.find((e) => e.classNamePrefix && className.startsWith(e.classNamePrefix)) ??
@@ -437,7 +437,7 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
   );
 };
 
-export function removeNamespace(className: string): string {
+export function removeNamespace(className: string) {
   if (!className) {
     return className;
   }
@@ -546,14 +546,14 @@ type ConfirmModalProps<T> = {
   onSuccess?: (target: T) => void; // called after the success toast; use for navigation
 };
 
-function parseApiError(text: string): ApiError | undefined {
+function parseApiError(text: string) {
   try {
     const apiErr = JSON.parse(text) as ApiError;
     return apiErr?.message && apiErr.statusCode ? apiErr : undefined;
   } catch {}
 }
 
-function describeConfirmError(error: string | Error): { title: string; content: string } {
+function describeConfirmError(error: string | Error) {
   const txt = typeof error === 'string' ? error : error.message;
 
   const apiErr = parseApiError(txt);
@@ -722,7 +722,7 @@ export const ConnectorsColumn = (props: { observable: ConnectorInfo | ConnectorI
 
 type TaskStateValue = ClusterConnectorTaskInfo['state'];
 
-function taskStateIcon(state: TaskStateValue): JSX.Element | null {
+function taskStateIcon(state: TaskStateValue) {
   switch (state) {
     case ConnectorState.Running:
       return okIcon;

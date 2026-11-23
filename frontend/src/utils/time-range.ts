@@ -33,7 +33,7 @@ const ALL_TIME_RANGES: TimeRangeConfig[] = [
   { value: '24h', label: 'Last 24 hours', ms: 24 * 60 * 60 * 1000 },
 ];
 
-export function getTimeRanges(maxMs: number): TimeRangeConfig[] {
+export function getTimeRanges(maxMs: number) {
   return ALL_TIME_RANGES.filter((range) => range.ms <= maxMs);
 }
 
@@ -52,7 +52,7 @@ export function calculateTimeRange(selectedTimeRange: TimeRange): TimeRangeDates
 }
 
 /** Evenly spaced timestamps (ms) across [startMs, endMs] inclusive, for chart axis ticks. */
-export function getEvenlySpacedTimeTicks(startMs: number, endMs: number, count = 6): number[] {
+export function getEvenlySpacedTimeTicks(startMs: number, endMs: number, count = 6) {
   if (count < 2 || endMs <= startMs) {
     return [startMs];
   }
