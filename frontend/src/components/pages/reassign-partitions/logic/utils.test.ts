@@ -14,24 +14,26 @@ import { computeMovedReplicas, partitionSelectionToTopicPartitions, removeRedund
 import { describe, expect, test } from 'bun:test';
 import type { Broker, Partition, Topic } from '../../../../state/rest-interfaces';
 
-const makeBroker = (brokerId: number): Broker => ({
-  brokerId,
-  logDirSize: 0,
-  address: `broker-${brokerId}`,
-  rack: null,
-  config: { configs: undefined, error: undefined },
-});
+const makeBroker = (brokerId: number) =>
+  ({
+    brokerId,
+    logDirSize: 0,
+    address: `broker-${brokerId}`,
+    rack: null,
+    config: { configs: undefined, error: undefined },
+  }) satisfies Broker;
 
-const makeTopic = (topicName: string, replicationFactor: number): Topic => ({
-  topicName,
-  isInternal: false,
-  partitionCount: 3,
-  replicationFactor,
-  cleanupPolicy: 'delete',
-  documentation: 'UNKNOWN',
-  logDirSummary: { totalSizeBytes: 0, replicaErrors: null, hint: null },
-  allowedActions: undefined,
-});
+const makeTopic = (topicName: string, replicationFactor: number) =>
+  ({
+    topicName,
+    isInternal: false,
+    partitionCount: 3,
+    replicationFactor,
+    cleanupPolicy: 'delete',
+    documentation: 'UNKNOWN',
+    logDirSummary: { totalSizeBytes: 0, replicaErrors: null, hint: null },
+    allowedActions: undefined,
+  }) satisfies Topic;
 
 const makePartition = (id: number, replicas: number[]) =>
   ({ id, replicas, leader: replicas[0], partitionLogDirs: [], replicaSize: 10 }) as unknown as Partition;
