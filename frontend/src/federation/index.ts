@@ -9,11 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Federation module public exports.
- * Used by Module Federation v2.0 for Cloud UI integration.
- */
-
 // biome-ignore lint/performance/noBarrelFile: required for Module Federation exports
 export { ConsoleApp, default } from './console-app';
 export type { Breadcrumb, ConsoleAppProps, SidebarItem } from './types';

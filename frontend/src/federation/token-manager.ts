@@ -35,7 +35,7 @@ export class TokenManager {
    * @returns Promise resolving to the new access token
    * @throws Error if token refresh fails
    */
-  refresh(): Promise<string> {
+  refresh() {
     if (this.refreshPromise !== null) {
       return this.refreshPromise;
     }
@@ -84,7 +84,7 @@ export class TokenManager {
   /**
    * Returns whether a token refresh is currently in progress.
    */
-  get isRefreshing(): boolean {
+  get isRefreshing() {
     return this.refreshPromise !== null;
   }
 }

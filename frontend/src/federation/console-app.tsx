@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-// Array prototype extensions (must be imported early)
+// WARNING: Keep the array extensions ahead of modules that use them at load time.
 import '../utils/array-extensions';
 import 'clipboard-polyfill/overwrite-globals';
 
@@ -28,18 +28,13 @@ import {
 import '@xyflow/react/dist/base.css';
 import '@xyflow/react/dist/style.css';
 
-/* start global stylesheets */
 import '../index.scss';
 import '../index-cloud-integration.scss';
 import '../assets/fonts/open-sans.css';
 import '../assets/fonts/poppins.css';
 import '../assets/fonts/quicksand.css';
 import '../assets/fonts/kumbh-sans.css';
-/* end global stylesheet */
-
-/* start tailwind styles */
 import '../globals.css';
-/* end tailwind styles */
 
 import { Code, ConnectError, type Interceptor, type Transport } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
@@ -61,14 +56,7 @@ import { routeTree } from '../routeTree.gen';
 import { installUISettingsSideEffects } from '../state/ui';
 import { useClusterFenceStore } from '../stores/cluster-fence-store';
 
-/**
- * Re-root the generated route tree onto Console's federated root.
- *
- * Both apps compile a module with the id `./src/routes/__root.tsx`, and in the shared MF dev
- * runtime the host's wins — so the embedded Console would render Cloud UI's root chrome instead of
- * its own (breaking nuqs, crashing KBar, emptying the sidebar). `federatedRootRoute` sits at a
- * Console-unique path that cannot collide. Standalone and legacy-embedded entries keep `routeTree`.
- */
+// WARNING: The federated root must use a Console-only module path; Cloud UI's __root module otherwise shadows Console's in the shared dev runtime.
 function createFederatedRouteTree() {
   const childRoutes = routeTree.children ? Object.values(routeTree.children) : [];
   for (const child of childRoutes) {
@@ -79,16 +67,11 @@ function createFederatedRouteTree() {
 
 const federatedRouteTree = createFederatedRouteTree();
 
-/**
- * Creates an interceptor that refreshes the token on 401 and retries the request.
- * Uses TokenManager for deduplication and abort support.
- */
-function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor {
-  return (next) => async (request) => {
+function createTokenRefreshInterceptor(tokenManager: TokenManager) {
+  const interceptor: Interceptor = (next) => async (request) => {
     try {
       return await next(request);
     } catch (error) {
-      // Only handle Unauthenticated errors
       if (!(error instanceof ConnectError && error.code === Code.Unauthenticated)) {
         throw error;
       }
@@ -96,24 +79,18 @@ function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor 
       try {
         await tokenManager.refresh();
       } catch {
-        throw error; // Throw original error if refresh fails
+        throw error;
       }
 
-      // Retry the request with refreshed token.
-      // Header mutation is necessary because the original request was created
       if (config.jwt) {
         request.header.set('Authorization', `Bearer ${config.jwt}`);
       }
       return await next(request);
     }
   };
+  return interceptor;
 }
 
-/**
- * Error boundary for the federated Console app.
- * Reports errors to host via onError callback.
- * Supports recovery via retry button.
- */
 class ConsoleErrorBoundary extends Component<
   {
     children: ReactNode;
@@ -164,10 +141,6 @@ class ConsoleErrorBoundary extends Component<
   }
 }
 
-/**
- * Create an isolated QueryClient for federated mode.
- * This ensures Console doesn't interfere with host's React Query state.
- */
 function createFederatedQueryClient() {
   return new QueryClient({
     defaultOptions: {
@@ -183,10 +156,6 @@ const setConfigJwt = (token: string) => {
   config.jwt = token;
 };
 
-/**
- * Federated Console App component for Module Federation v2.0.
- * This is the main entry point for Cloud UI integration.
- */
 function ConsoleAppInner({
   getAccessToken,
   clusterId,
@@ -248,6 +217,7 @@ function ConsoleAppInner({
   );
 }
 
+/** Cloud UI's Module Federation v2 entry point. Switching clusters starts a fresh Console instance. */
 export function ConsoleApp(props: ConsoleAppProps) {
   return <ConsoleAppInner key={props.clusterId} {...props} />;
 }
@@ -367,8 +337,6 @@ function useFederatedInitialization({
 }
 
 function useFederatedRouter(queryClient: QueryClient, dataplaneTransport: Transport, initialPath: string) {
-  // Capture initialPath on first render only — subsequent navigation is handled
-
   const initialPathRef = useRef(initialPath);
   const router = useMemo(() => {
     const memoryHistory = createMemoryHistory({
@@ -404,7 +372,6 @@ function useHostNavigation(
       return;
     }
 
-    // history: a replace (like a page writing its default tab) must replace on the host too, or
     let replaced = false;
     const unsubscribeHistory = router.history.subscribe(({ action }) => {
       replaced = action.type === 'REPLACE';

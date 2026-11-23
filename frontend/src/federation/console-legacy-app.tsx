@@ -35,7 +35,7 @@ interface LegacyReactElement {
 
 const roots = new WeakMap<HTMLDivElement, LegacyRootState>();
 
-function renderIntoLegacyHostContainer(node: HTMLDivElement, props: ConsoleAppProps): number {
+function renderIntoLegacyHostContainer(node: HTMLDivElement, props: ConsoleAppProps) {
   const existingState = roots.get(node);
   const state = existingState ?? { root: createRoot(node), version: 0 };
   state.version += 1;
@@ -81,8 +81,8 @@ function createLegacyHostRef(props: ConsoleAppProps) {
  * hooks. It returns the React 18 element object shape directly and uses the div
  * ref to mount the real React 19 Console tree with this bundle's `createRoot`.
  */
-export default function ConsoleCompatApp(props: ConsoleAppProps): LegacyReactElement {
-  return {
+export default function ConsoleCompatApp(props: ConsoleAppProps) {
+  const element: LegacyReactElement = {
     $$typeof: LEGACY_REACT_ELEMENT_TYPE,
     _owner: null,
     _store: {},
@@ -91,4 +91,5 @@ export default function ConsoleCompatApp(props: ConsoleAppProps): LegacyReactEle
     ref: createLegacyHostRef(props),
     type: 'div',
   };
+  return element;
 }

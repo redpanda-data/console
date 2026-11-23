@@ -57,48 +57,36 @@ export type FederatedRouterContext = {
 };
 
 /**
- * Root route for federated Console app.
- * Minimal layout without sidebar (host provides sidebar navigation).
+ * Root route for the federated Console. The host supplies navigation; Console's
+ * auth check loads user data before publishing endpoint-compatible sidebar items.
+ * Console owns its notifications because Sonner is not shared across the host.
+ *
+ * @remarks Console measures the host shell's side and bottom padding and cancels
+ * it without hardcoding values from another deployment. Keep top padding for the
+ * host header. The host must use padding, not margins, gaps, or max-width, on
+ * those wrappers, keep them free of overflow clipping, and release its max-width
+ * when `html[data-page-expanded]` is set.
  */
 export const federatedRootRoute = createRootRouteWithContext<FederatedRouterContext>()({
   component: FederatedRootLayout,
 });
 
-/**
- * Federated root layout component.
- * Renders content without sidebar - host application provides navigation.
- */
 function FederatedRootLayout() {
   return (
     <>
       <RouterSync />
       <NuqsAdapter>
         <ErrorBoundary>
-          {/* RequireAuth triggers the user-data fetch (api.refreshUserData) that
-              gates Console's endpoint-compatibility fetch and, in turn, the
-              embedded sidebar items. The standalone root (__root.tsx) wraps its
-              embedded layout the same way. */}
           <RequireAuth>
             <FederatedAppContent />
           </RequireAuth>
         </ErrorBoundary>
-        {/* Cmd+Shift+D debug dialog — mirrors __root.tsx; dev-only. */}
         {process.env.NODE_ENV === 'development' && <DebugHelper />}
       </NuqsAdapter>
     </>
   );
 }
 
-/**
- * Fits `#mainLayout` into the host's shell. Can't be CSS: every wrapper above it belongs to the
- * host, so there is no chain to inherit from. Cancels the host's side/bottom padding with measured
- * negative margins (measured, not hardcoded, so either project can deploy first) and stretches the
- * layout to the viewport bottom so the footer's `margin-top: auto` lands there. Top padding stays —
- * cancelling it pulls Console under the host header; pages size off it (layout/page-column.tsx).
- *
- * Requires of the host: spacing as `padding` (margin/gap/max-width aren't cancellable here), no
- * `overflow` on those ancestors, and its own `html[data-page-expanded]` max-width release.
- */
 const useHostShellFit = () => {
   const layoutRef = useRef<HTMLDivElement>(null);
 
@@ -119,16 +107,11 @@ const useHostShellFit = () => {
   return layoutRef;
 };
 
-/**
- * App content for federated mode.
- * Similar to EmbeddedLayout from __root.tsx but optimized for MF v2.0.
- */
 function FederatedAppContent() {
   const toasterTheme = useThemeAppearance();
   const layoutRef = useHostShellFit();
 
   return (
-    // Flex column so the footer's `margin-top: auto` pins it to the bottom. px-12 is
     <div
       className="page-expanded-flush flex flex-col px-12 transition-[padding] duration-300 ease-in-out"
       id="mainLayout"
@@ -156,8 +139,6 @@ function FederatedAppContent() {
 
       <ErrorModalsRenderer />
 
-      {/* sonner isn't an MF-shared singleton, so the host's <Toaster> can't
-          surface Console's toasts; mirror __root.tsx's AppContent. */}
       <Toaster position="top-right" richColors theme={toasterTheme} />
     </div>
   );
@@ -177,7 +158,7 @@ function getHostPadding(wrappers: HTMLElement[]) {
 }
 
 function createHostShellUpdater(layoutEl: HTMLDivElement, hostWrappers: HTMLElement[]) {
-  // Both writes resize the wrappers being observed, so only write on change.
+  // WARNING: Repeated style writes here can retrigger the ResizeObserver on the same wrappers.
   let lastMargin = '';
   let lastMinHeight = '';
   return () => {
@@ -188,7 +169,6 @@ function createHostShellUpdater(layoutEl: HTMLDivElement, hostWrappers: HTMLElem
       lastMargin = margin;
       layoutEl.style.margin = margin;
     }
-    // dvh, so viewport changes need no JS; only the offset from the top can move.
     const minHeight = `calc(100dvh - ${documentTop(layoutEl)}px)`;
     if (minHeight !== lastMinHeight) {
       lastMinHeight = minHeight;

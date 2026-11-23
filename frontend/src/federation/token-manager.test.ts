@@ -10,168 +10,99 @@
  */
 
 import { TokenManager } from './token-manager';
-import { describe, expect, mock, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 describe('the TokenManager', () => {
-  describe('refresh', () => {
-    test('calls getAccessToken and returns the token', async () => {
-      const mockGetToken = mock().mockResolvedValue('test-token-123');
-      const tokenManager = new TokenManager(mockGetToken);
-
-      const result = await tokenManager.refresh();
-
-      expect(mockGetToken).toHaveBeenCalledTimes(1);
-      expect(result).toBe('test-token-123');
+  test('shares one in-flight refresh and clears its pending state on completion', async () => {
+    const host = { token: Promise.withResolvers<string>(), requests: 0 };
+    const manager = new TokenManager(() => {
+      host.requests += 1;
+      return host.token.promise;
     });
 
-    test('deduplicates concurrent refresh calls', async () => {
-      let resolveToken: (value: string) => void;
-      const tokenPromise = new Promise<string>((resolve) => {
-        resolveToken = resolve;
-      });
-      const mockGetToken = mock().mockReturnValue(tokenPromise);
-      const tokenManager = new TokenManager(mockGetToken);
-
-      const promises = [tokenManager.refresh(), tokenManager.refresh(), tokenManager.refresh()];
-
-      expect(mockGetToken).toHaveBeenCalledTimes(1);
-
-      resolveToken!('deduplicated-token');
-
-      const results = await Promise.all(promises);
-      expect(results).toEqual(['deduplicated-token', 'deduplicated-token', 'deduplicated-token']);
-    });
-
-    test('allows new refresh after previous completes', async () => {
-      const mockGetToken = mock().mockResolvedValueOnce('token-1').mockResolvedValueOnce('token-2');
-      const tokenManager = new TokenManager(mockGetToken);
-
-      const result1 = await tokenManager.refresh();
-      const result2 = await tokenManager.refresh();
-
-      expect(mockGetToken).toHaveBeenCalledTimes(2);
-      expect(result1).toBe('token-1');
-      expect(result2).toBe('token-2');
-    });
-
-    test('propagates errors from getAccessToken', async () => {
-      const mockError = new Error('Token fetch failed');
-      const mockGetToken = mock().mockRejectedValue(mockError);
-      const tokenManager = new TokenManager(mockGetToken);
-
-      await expect(tokenManager.refresh()).rejects.toThrow('Token fetch failed');
-    });
-
-    test('clears state after error allowing retry', async () => {
-      const mockGetToken = mock()
-        .mockRejectedValueOnce(new Error('First attempt failed'))
-        .mockResolvedValueOnce('retry-token');
-      const tokenManager = new TokenManager(mockGetToken);
-
-      await expect(tokenManager.refresh()).rejects.toThrow('First attempt failed');
-
-      const result = await tokenManager.refresh();
-      expect(result).toBe('retry-token');
-      expect(mockGetToken).toHaveBeenCalledTimes(2);
-    });
+    expect(manager.isRefreshing).toBe(false);
+    const pending = manager.refresh();
+    expect(manager.refresh()).toBe(pending);
+    expect({ refreshing: manager.isRefreshing, requests: host.requests }).toEqual({ refreshing: true, requests: 1 });
+    host.token.resolve('host-token');
+    await expect(pending).resolves.toBe('host-token');
+    expect(manager.isRefreshing).toBe(false);
   });
 
-  describe('reset', () => {
-    test('clears refresh state and invalidates the pending request', async () => {
-      const token = Promise.withResolvers<string>();
-      const manager = new TokenManager(() => token.promise);
-      const pending = manager.refresh().catch((error: unknown) => error);
-      expect(manager.isRefreshing).toBe(true);
-      manager.reset();
-      expect(manager.isRefreshing).toBe(false);
-      token.resolve('token');
-      expect(await pending).toMatchObject({ message: 'Token refresh cancelled' });
+  test('obtains a new token after a successful refresh', async () => {
+    const hostTokens = ['first-token', 'second-token'].values();
+    const manager = new TokenManager(() => {
+      const response = hostTokens.next();
+      if (response.done) {
+        throw new Error('Unexpected token request');
+      }
+      return Promise.resolve(response.value);
     });
-
-    test('does not commit stale tokens or clear a newer refresh', async () => {
-      const race = startReplacementRefresh();
-      race.stale.resolve('stale-token');
-      expect(await race.cancelled).toMatchObject({ message: 'Token refresh cancelled' });
-      expect(race.manager.refresh()).toBe(race.newRefresh);
-      expect(race.manager.isRefreshing).toBe(true);
-      race.current.resolve('current-token');
-      await expect(race.newRefresh).resolves.toBe('current-token');
-      expect(race.getToken).toHaveBeenCalledTimes(2);
-      expect(race.commitToken).toHaveBeenCalledTimes(1);
-      expect(race.commitToken).toHaveBeenCalledWith('current-token');
-    });
-
-    test('is safe to call when no refresh is in progress', () => {
-      const mockGetToken = mock();
-      const tokenManager = new TokenManager(mockGetToken);
-
-      expect(() => tokenManager.reset()).not.toThrow();
-    });
-
-    test('is safe to call multiple times', () => {
-      const mockGetToken = mock();
-      const tokenManager = new TokenManager(mockGetToken);
-
-      expect(() => {
-        tokenManager.reset();
-        tokenManager.reset();
-        tokenManager.reset();
-      }).not.toThrow();
-    });
+    await expect(manager.refresh()).resolves.toBe('first-token');
+    await expect(manager.refresh()).resolves.toBe('second-token');
   });
 
-  describe('isRefreshing', () => {
-    test('returns false when no refresh is in progress', () => {
-      const mockGetToken = mock();
-      const tokenManager = new TokenManager(mockGetToken);
+  test('propagates the host error and releases in-flight state for a retry', async () => {
+    const first = Promise.withResolvers<string>();
+    const error = new Error('Token service unavailable');
+    const manager = new TokenManager(() => first.promise);
 
-      expect(tokenManager.isRefreshing).toBe(false);
-    });
+    const pending = manager.refresh();
+    first.reject(error);
+    await expect(pending).rejects.toBe(error);
+    expect(manager.isRefreshing).toBe(false);
 
-    test('returns true during refresh', async () => {
-      let resolveToken: (value: string) => void;
-      const tokenPromise = new Promise<string>((resolve) => {
-        resolveToken = resolve;
-      });
-      const mockGetToken = mock().mockReturnValue(tokenPromise);
-      const tokenManager = new TokenManager(mockGetToken);
+    manager.setGetAccessToken(() => Promise.resolve('retry-token'));
+    await expect(manager.refresh()).resolves.toBe('retry-token');
+  });
 
-      const pending = tokenManager.refresh();
-      expect(tokenManager.isRefreshing).toBe(true);
+  test('clears pending state immediately on reset and rejects the late token', async () => {
+    const token = Promise.withResolvers<string>();
+    const manager = new TokenManager(() => token.promise);
 
-      resolveToken!('token');
-      await pending;
-      expect(tokenManager.isRefreshing).toBe(false);
-    });
+    const pending = manager.refresh();
+    manager.reset();
+    expect(manager.isRefreshing).toBe(false);
 
-    test('returns false after refresh completes', async () => {
-      const mockGetToken = mock().mockResolvedValue('token');
-      const tokenManager = new TokenManager(mockGetToken);
+    token.resolve('stale-token');
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  });
 
-      await tokenManager.refresh();
-      expect(tokenManager.isRefreshing).toBe(false);
-    });
+  test('never commits a retired token or clears the replacement refresh', async () => {
+    const { manager, committed, retired, current, stale, replacement } = startReplacementRefresh();
 
-    test('returns false after refresh fails', async () => {
-      const mockGetToken = mock().mockRejectedValue(new Error('Failed'));
-      const tokenManager = new TokenManager(mockGetToken);
+    retired.resolve('stale-token');
+    await expect(stale).rejects.toMatchObject({ name: 'AbortError' });
+    expect(committed).toEqual([]);
+    expect(manager.isRefreshing).toBe(true);
+    expect(manager.refresh()).toBe(replacement);
 
-      try {
-        await tokenManager.refresh();
-      } catch {}
-      expect(tokenManager.isRefreshing).toBe(false);
-    });
+    current.resolve('current-token');
+    await expect(replacement).resolves.toBe('current-token');
+    expect(committed).toEqual(['current-token']);
+  });
+
+  test('can be reset repeatedly when idle and still refreshes', async () => {
+    const manager = new TokenManager(() => Promise.resolve('current-token'));
+    manager.reset();
+    manager.reset();
+    expect(manager.isRefreshing).toBe(false);
+    await expect(manager.refresh()).resolves.toBe('current-token');
   });
 });
 
 function startReplacementRefresh() {
-  const stale = Promise.withResolvers<string>();
+  const retired = Promise.withResolvers<string>();
   const current = Promise.withResolvers<string>();
-  const getToken = mock().mockReturnValueOnce(stale.promise).mockReturnValueOnce(current.promise);
-  const commitToken = mock();
-  const manager = new TokenManager(getToken, commitToken);
-  const cancelled = manager.refresh().catch((error: unknown) => error);
+  const committed: string[] = [];
+  const manager = new TokenManager(
+    () => retired.promise,
+    (token) => committed.push(token)
+  );
+
+  const stale = manager.refresh();
   manager.reset();
-  const newRefresh = manager.refresh();
-  return { stale, current, getToken, commitToken, manager, cancelled, newRefresh };
+  manager.setGetAccessToken(() => current.promise);
+  const replacement = manager.refresh();
+  return { manager, committed, retired, current, stale, replacement };
 }
