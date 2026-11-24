@@ -50,7 +50,7 @@ function cleanPayload(p: Payload, includeRawContent: boolean) {
   return cleanedPayload;
 }
 
-function cleanMessage(src: TopicMessage, includeRawContent: boolean): Partial<TopicMessage> {
+function cleanMessage(src: TopicMessage, includeRawContent: boolean) {
   return {
     partitionID: src.partitionID,
     offset: src.offset,
@@ -63,7 +63,7 @@ function cleanMessage(src: TopicMessage, includeRawContent: boolean): Partial<To
     })),
     key: cleanPayload(src.key, includeRawContent),
     value: cleanPayload(src.value, includeRawContent),
-  };
+  } satisfies Partial<TopicMessage>;
 }
 
 function csvHeaders(firstMessage: TopicMessage) {

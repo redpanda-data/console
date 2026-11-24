@@ -355,7 +355,7 @@ type TreeRovingFocusOptions = {
   onSelectNode?: (highlightId: string, editableId?: string) => void;
 };
 
-function useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode }: TreeRovingFocusOptions): TreeNav {
+function useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode }: TreeRovingFocusOptions) {
   const visibleIds = useMemo(() => collectVisibleIds(maps, collapsedIds), [maps, collapsedIds]);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
@@ -387,7 +387,7 @@ function useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode }: TreeRo
     }
   };
 
-  return { tabbableId, registerRow, onRowKeyDown: handleRowKeyDown, onRowFocus: setFocusedId };
+  return { tabbableId, registerRow, onRowKeyDown: handleRowKeyDown, onRowFocus: setFocusedId } satisfies TreeNav;
 }
 
 type PipelineStructureTreeProps = {

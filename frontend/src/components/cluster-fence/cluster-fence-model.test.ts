@@ -133,8 +133,8 @@ describe('summarizeFence', () => {
   });
 });
 
-const progress = (...entries: [number, BrokerProgress['status'], boolean | undefined][]): BrokerProgress[] =>
-  entries.map(([nodeId, status, blocks]) => ({ nodeId, status, blocks }));
+const progress = (...entries: [number, BrokerProgress['status'], boolean | undefined][]) =>
+  entries.map(([nodeId, status, blocks]) => ({ nodeId, status, blocks })) satisfies BrokerProgress[];
 
 describe('describeFencePhase', () => {
   test('says each broker blocks writes and reads as soon as the fence reaches it, without naming the phase', () => {

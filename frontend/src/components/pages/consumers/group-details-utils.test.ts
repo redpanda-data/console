@@ -19,15 +19,16 @@ import {
 } from './group-details-utils';
 import { describe, expect, test } from 'bun:test';
 
-const member = (id: string, memberEpoch?: number): GroupMemberDescription => ({
-  id,
-  clientId: `${id}-client`,
-  clientHost: '/10.0.0.1',
-  assignments: [],
-  memberEpoch,
-  hasMissingPartitionIds: false,
-  hasMissingAssignments: false,
-});
+const member = (id: string, memberEpoch?: number) =>
+  ({
+    id,
+    clientId: `${id}-client`,
+    clientHost: '/10.0.0.1',
+    assignments: [],
+    memberEpoch,
+    hasMissingPartitionIds: false,
+    hasMissingAssignments: false,
+  }) satisfies GroupMemberDescription;
 
 const group: (overrides: Partial<GroupDescription>) => GroupDescription = (overrides) => ({
   groupId: 'g',

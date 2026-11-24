@@ -117,7 +117,7 @@ function getDefaultValueType(entry: ConfigEntryExtended) {
   return entryHasInfiniteValue(entry) ? 'infinite' : 'custom';
 }
 
-function getEditorDefaultValues(entry: ConfigEntryExtended): Inputs {
+function getEditorDefaultValues(entry: ConfigEntryExtended) {
   const defaultConfigSynonym = getDefaultConfigSynonym(entry);
   const explicitCustomValue = entry.isExplicitlySet && !entryHasInfiniteValue(entry) ? entry.value : '';
   // doesn't silently overwrite a non-default BOOLEAN/SELECT value. Only fall back to the
@@ -125,7 +125,7 @@ function getEditorDefaultValues(entry: ConfigEntryExtended): Inputs {
   return {
     valueType: getDefaultValueType(entry),
     customValue: resolvedValue || getFirstSelectOption(entry) || '',
-  };
+  } satisfies Inputs;
 }
 
 function getValueTypeOptions(entry: ConfigEntryExtended) {

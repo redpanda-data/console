@@ -763,7 +763,7 @@ function restartConnectorLogSearch(
 }
 
 // Streams the connector's log messages from the logs topic, restarting for another connector or on refresh.
-function useConnectorLogs(connectorName: string): ConnectorLogs {
+function useConnectorLogs(connectorName: string) {
   const [logState, setLogState] = useState<ConnectorLogState>(EMPTY_CONNECTOR_LOGS);
   const searchRef = useRef<MessageSearch | null>(null);
 
@@ -826,10 +826,10 @@ function useConnectorLogs(connectorName: string): ConnectorLogs {
       setLogState(EMPTY_CONNECTOR_LOGS);
       restartConnectorLogSearch(searchRef, connectorName, setLogState);
     },
-  };
+  } satisfies ConnectorLogs;
 }
 
-function useLogMessageColumns(topic: Topic | undefined): DataTableColumnDef<TopicMessage>[] {
+function useLogMessageColumns(topic: Topic | undefined) {
   // Memoised: a new columns array per render makes the table re-create every header and cell, which
   // this tab would do every 200 ms while logs stream (the sort menu could never stay open).
   return useMemo(
@@ -884,7 +884,7 @@ function useLogMessageColumns(topic: Topic | undefined): DataTableColumnDef<Topi
       },
     ],
     [topic]
-  );
+  ) satisfies DataTableColumnDef<TopicMessage>[];
 }
 
 const LogsTab = (p: {

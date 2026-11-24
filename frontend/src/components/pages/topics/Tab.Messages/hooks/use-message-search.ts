@@ -215,14 +215,14 @@ type SearchRunContext = Pick<
     pageSize: number;
   };
 
-function reportSearchError(error: unknown, ctx: SearchRunContext): TopicMessage[] {
+function reportSearchError(error: unknown, ctx: SearchRunContext) {
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.error(`error in searchTopicMessages: ${getSearchErrorMessage(error)}`);
   if (ctx.isMountedRef.current) {
     ctx.setFetchError(toDisplayError(error));
     ctx.setSearchPhase(null);
   }
-  return [];
+  return [] satisfies TopicMessage[];
 }
 
 function applySearchResult(search: MessageSearch, result: TopicMessage[], startTime: number, ctx: SearchRunContext) {

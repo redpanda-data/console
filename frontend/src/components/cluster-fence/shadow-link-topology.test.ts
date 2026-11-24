@@ -77,22 +77,23 @@ const listItem = ({ id, name, shadowRedpandaId }: ShadowLink, state = ShadowLink
 
 const ready = <T>(value: T): Loaded<T> => ({ status: 'ready', value });
 
-const inputs = (overrides: Partial<TopologyInputs> = {}): TopologyInputs => ({
-  clusterId: 'dr',
-  links: { items: [listItem(toProd), listItem(external)], loading: false, complete: true },
-  details: new Map([
-    ['orders-dr', ready(toProd)],
-    ['vendor-dr', ready(external)],
-  ]),
-  self: ready(dr),
-  clusterNames: new Map([
-    ['prod', 'prod-cluster'],
-    ['dr', 'dr-cluster'],
-  ]),
-  clusterNamesSettled: true,
-  candidates: { clusters: [prod], complete: true, failed: false },
-  ...overrides,
-});
+const inputs = (overrides: Partial<TopologyInputs> = {}) =>
+  ({
+    clusterId: 'dr',
+    links: { items: [listItem(toProd), listItem(external)], loading: false, complete: true },
+    details: new Map([
+      ['orders-dr', ready(toProd)],
+      ['vendor-dr', ready(external)],
+    ]),
+    self: ready(dr),
+    clusterNames: new Map([
+      ['prod', 'prod-cluster'],
+      ['dr', 'dr-cluster'],
+    ]),
+    clusterNamesSettled: true,
+    candidates: { clusters: [prod], complete: true, failed: false },
+    ...overrides,
+  }) satisfies TopologyInputs;
 
 describe('buildShadowLinkTopology', () => {
   test('resolves a Cloud source with its fence still loading, and one Cloud doesn’t manage', () => {

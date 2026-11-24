@@ -517,7 +517,7 @@ function buildTopicConfigs(values: CreateTopicFormValues) {
 }
 
 /** Config entries derived from the form fields, in the order they are applied; `undefined` skips one. */
-function formConfigEntries(values: CreateTopicFormValues): [string, string | number | undefined][] {
+function formConfigEntries(values: CreateTopicFormValues) {
   return [
     [
       'retention.ms',
@@ -533,7 +533,7 @@ function formConfigEntries(values: CreateTopicFormValues): [string, string | num
     ],
     ['min.insync.replicas', values.minInSyncReplicas],
     ['cleanup.policy', values.cleanupPolicy],
-  ];
+  ] satisfies [string, string | number | undefined][];
 }
 
 function tryGetBrokerConfig(configName: string) {

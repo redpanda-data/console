@@ -227,7 +227,7 @@ function useTopicNameFilter(setPageIndex: SetPageIndex) {
   return { columnFilters, handleColumnFiltersChange };
 }
 
-function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColumnDef<Topic>[] {
+function buildTopicColumns(onDeleteTopic: (topic: Topic) => void) {
   return [
     {
       accessorKey: 'topicName',
@@ -312,7 +312,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
         </DropdownMenu>
       ),
     },
-  ];
+  ] satisfies DataTableColumnDef<Topic>[];
 }
 
 function useTopicListTable({

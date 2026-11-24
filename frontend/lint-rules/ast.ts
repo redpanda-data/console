@@ -164,8 +164,8 @@ export function globalPath(sourceCode: SourceCode, node: Node | null | undefined
   return names.join('.');
 }
 
-function children(node: Node): unknown[] {
-  return Object.entries(node).flatMap(([key, value]) => (key === 'parent' ? [] : [value]));
+function children(node: Node) {
+  return Object.entries(node).flatMap<unknown>(([key, value]) => (key === 'parent' ? [] : [value]));
 }
 
 /** Depth-first search that does not enter nested functions, which run on their own schedule. */

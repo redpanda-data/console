@@ -213,7 +213,7 @@ function getRawErrorStack(error: Error) {
   return error.message && stack.startsWith(error.message) ? stack.slice(error.message.length).trimStart() : stack;
 }
 
-function getComponentStackInfo(errorInfo: object): InfoItem {
+function getComponentStackInfo(errorInfo: object) {
   return {
     name: 'Components',
     value:
@@ -222,7 +222,7 @@ function getComponentStackInfo(errorInfo: object): InfoItem {
         : errorInfo
           ? `(componentStack not set) errorInfo as Json: \n${toJson(errorInfo)}`
           : '(errorInfo was not set)',
-  };
+  } satisfies InfoItem;
 }
 
 function getEnvironmentInfo(): InfoItem {

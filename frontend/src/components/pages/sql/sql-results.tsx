@@ -287,7 +287,7 @@ function buildRowKeys(rows: ResultRow[]) {
 // Key for the synthetic row-number column; double underscores avoid
 const ROWNUM_KEY = '__rownum__';
 
-function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
+function buildColumns(cols: ColumnDef[]) {
   const rowNum: Column<ResultRow> = {
     key: ROWNUM_KEY,
     name: '',
@@ -319,7 +319,7 @@ function buildColumns(cols: ColumnDef[]): Column<ResultRow>[] {
       cellClass: cn('font-mono text-body-sm', alignRight && 'text-right'),
     };
   });
-  return [rowNum, ...dataCols];
+  return [rowNum, ...dataCols] satisfies Column<ResultRow>[];
 }
 
 function SuccessGrid({ run }: { run: QueryRunSuccess }) {

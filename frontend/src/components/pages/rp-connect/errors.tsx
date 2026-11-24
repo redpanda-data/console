@@ -50,8 +50,8 @@ function errorHint(hint: string) {
   return create(LintHintSchema, { line: 0, column: 0, hint, lintType: 'error' });
 }
 
-function toHintRecord(hints: LintHint[]): Record<string, LintHint> {
-  return Object.fromEntries(hints.map((hint, index) => [`hint_${index}`, hint]));
+function toHintRecord(hints: LintHint[]) {
+  return Object.fromEntries(hints.map((hint, index) => [`hint_${index}`, hint])) satisfies Record<string, LintHint>;
 }
 
 /** Lint hints carried by the error details, with each field violation converted to a hint. */

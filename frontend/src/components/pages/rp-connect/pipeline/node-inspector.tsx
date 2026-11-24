@@ -689,7 +689,7 @@ function applyComponentDraft(
   return applied;
 }
 
-function caseWithCheck(caseObject: Record<string, unknown>, check: string): Record<string, unknown> {
+function caseWithCheck(caseObject: Record<string, unknown>, check: string) {
   const trimmed = check.trim();
   const entries = Object.entries(caseObject);
   if (!Object.hasOwn(caseObject, 'check')) {
@@ -699,7 +699,7 @@ function caseWithCheck(caseObject: Record<string, unknown>, check: string): Reco
     entries
       .map(([key, value]): [string, unknown] => (key === 'check' ? [key, trimmed] : [key, value]))
       .filter(([key]) => key !== 'check' || trimmed !== '')
-  );
+  ) satisfies Record<string, unknown>;
 }
 
 function useCaseCheckDraft(

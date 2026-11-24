@@ -19,50 +19,51 @@ const DOLLAR = '$';
 const secretRef = (name: string) => `${DOLLAR}{secrets.${name}}`;
 const slotToken = (id: string) => `${DOLLAR}{slot.${id}}`;
 
-const buildTemplate = (overrides?: Partial<PipelineTemplate>): PipelineTemplate => ({
-  id: 'test-template',
-  name: 'Test',
-  description: 'A test template',
-  category: 'cdc',
-  source: { component: 'redpanda', type: 'input' },
-  sink: { component: 'redpanda', type: 'output' },
-  setupTimeMinutes: 3,
-  defaultPipelineName: 'test',
-  slots: [
-    {
-      id: 'dsn',
-      kind: 'secret',
-      section: 'source',
-      label: 'DSN',
-      required: true,
-      suggestedName: 'TEST_DSN',
-    },
-    {
-      id: 'topic',
-      kind: 'topic',
-      section: 'sink',
-      label: 'Topic',
-      required: true,
-    },
-    {
-      id: 'optionalNote',
-      kind: 'string',
-      section: 'options',
-      label: 'Optional',
-    },
-  ],
-  baseYaml: [
-    'input:',
-    '  postgres_cdc:',
-    `    dsn: ${slotToken('dsn')}`,
-    'output:',
-    '  redpanda:',
-    `    topic: ${slotToken('topic')}`,
-    `    note: ${slotToken('optionalNote')}`,
-    '',
-  ].join('\n'),
-  ...overrides,
-});
+const buildTemplate = (overrides?: Partial<PipelineTemplate>) =>
+  ({
+    id: 'test-template',
+    name: 'Test',
+    description: 'A test template',
+    category: 'cdc',
+    source: { component: 'redpanda', type: 'input' },
+    sink: { component: 'redpanda', type: 'output' },
+    setupTimeMinutes: 3,
+    defaultPipelineName: 'test',
+    slots: [
+      {
+        id: 'dsn',
+        kind: 'secret',
+        section: 'source',
+        label: 'DSN',
+        required: true,
+        suggestedName: 'TEST_DSN',
+      },
+      {
+        id: 'topic',
+        kind: 'topic',
+        section: 'sink',
+        label: 'Topic',
+        required: true,
+      },
+      {
+        id: 'optionalNote',
+        kind: 'string',
+        section: 'options',
+        label: 'Optional',
+      },
+    ],
+    baseYaml: [
+      'input:',
+      '  postgres_cdc:',
+      `    dsn: ${slotToken('dsn')}`,
+      'output:',
+      '  redpanda:',
+      `    topic: ${slotToken('topic')}`,
+      `    note: ${slotToken('optionalNote')}`,
+      '',
+    ].join('\n'),
+    ...overrides,
+  }) satisfies PipelineTemplate;
 
 const stitch = (template: PipelineTemplate, values: Record<string, string>) =>
   stitchTemplateYaml({ template, values, pipelineName: 'test-pipeline' });

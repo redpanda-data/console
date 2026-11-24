@@ -143,7 +143,7 @@ function mapDestinationMapping(
  * Map API-mode schema registry options to unified type.
  * The password itself is never mapped — only password_set/password_set_at.
  */
-function mapSchemaRegistryApiOptions(api: SchemaRegistryApiOptionsMessage): UnifiedSchemaRegistryApiOptions {
+function mapSchemaRegistryApiOptions(api: SchemaRegistryApiOptionsMessage) {
   const basic = api.authOptions?.authOptions?.case === 'basic' ? api.authOptions.authOptions.value : undefined;
 
   return {
@@ -169,7 +169,7 @@ function mapSchemaRegistryApiOptions(api: SchemaRegistryApiOptionsMessage): Unif
     destinationMapping: mapDestinationMapping(api.destination),
     unsupportedSchemaFeaturePolicy: api.unsupportedSchemaFeaturePolicy,
     paused: api.paused,
-  };
+  } satisfies UnifiedSchemaRegistryApiOptions;
 }
 
 const formatSubSecondDuration = (totalNs: number) => {
@@ -243,7 +243,7 @@ function mapTlsToMtlsSlice(tls: TLSSettings | undefined) {
   return base;
 }
 
-function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage): SchemaRegistryFormValues {
+function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage) {
   const basic = api.authOptions?.authOptions?.case === 'basic' ? api.authOptions.authOptions.value : undefined;
   const filter = api.sourceFilter;
   const hasFilter = Boolean(filter && ((filter.contexts?.length ?? 0) > 0 || (filter.subjects?.length ?? 0) > 0));
@@ -271,7 +271,7 @@ function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage): Schem
         api.unsupportedSchemaFeaturePolicy === UnsupportedSchemaFeaturePolicy.REMOVE ? 'remove' : 'fail',
     },
     paused: api.paused,
-  };
+  } satisfies SchemaRegistryFormValues;
 }
 
 /**

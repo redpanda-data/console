@@ -19,12 +19,13 @@ import {
 } from './schema-registry-request';
 import { describe, expect, test } from 'bun:test';
 
-const createApiFormValues = (overrides: Partial<SchemaRegistryFormValues> = {}): SchemaRegistryFormValues => ({
-  ...initialValues.schemaRegistry,
-  mode: SCHEMA_REGISTRY_MODE.API,
-  sourceUrl: 'https://schema-registry.example.com:8081',
-  ...overrides,
-});
+const createApiFormValues = (overrides: Partial<SchemaRegistryFormValues> = {}) =>
+  ({
+    ...initialValues.schemaRegistry,
+    mode: SCHEMA_REGISTRY_MODE.API,
+    sourceUrl: 'https://schema-registry.example.com:8081',
+    ...overrides,
+  }) satisfies SchemaRegistryFormValues;
 
 describe('durationFromString', () => {
   test('parses supported units', () => {

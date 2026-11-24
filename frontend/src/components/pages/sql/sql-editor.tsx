@@ -150,17 +150,17 @@ function sqlHighlight() {
 const LIGHT_THEME: Extension = [editorChrome('light'), sqlHighlight()];
 const DARK_THEME: Extension = [editorChrome('dark'), sqlHighlight()];
 
-function tableNamespace(table: TableRef): SQLNamespace {
+function tableNamespace(table: TableRef) {
   return {
     self: { label: table.name, type: 'class' },
     children: (table.columns ?? []).map((col) => ({ label: col.name, type: 'property', detail: col.short })),
-  };
+  } satisfies SQLNamespace;
 }
 
 // Bare table name → columns. Powers alias/column resolution only
 // (schemaColumnSource); tables aren't nested under catalogs since Oxla uses
 // `catalog=>table` arrow notation, handled by catalogArrowSource.
-function buildSchema(catalogs: Catalog[]): SQLNamespace {
+function buildSchema(catalogs: Catalog[]) {
   const root: Record<string, SQLNamespace> = {};
   for (const catalog of catalogs) {
     for (const ns of catalog.namespaces) {
@@ -171,7 +171,7 @@ function buildSchema(catalogs: Catalog[]): SQLNamespace {
       }
     }
   }
-  return root;
+  return root satisfies SQLNamespace;
 }
 
 // Schema completion limited to dotted members (`c.` → columns); bare table
@@ -201,11 +201,7 @@ const AFTER_FROM_OR_JOIN_RE = /\b(?:from|join)\s+["\w$]*$/iu;
 // the moment to auto-open the catalog (`catalog=>`) helper.
 const FROM_JOIN_TRIGGER_RE = /\b(?:from|join)\s$/iu;
 
-function catalogTableCompletionResult(
-  catalog: Catalog,
-  ref: RegExpExecArray,
-  cursorPosition: number
-): CompletionResult {
+function catalogTableCompletionResult(catalog: Catalog, ref: RegExpExecArray, cursorPosition: number) {
   const [, , gap1, separator, gap2, quote, partial] = ref;
   const separatorFrom = cursorPosition - partial.length - quote.length - gap2.length - separator.length;
 
@@ -226,10 +222,10 @@ function catalogTableCompletionResult(
         },
       })),
     validFor: VALID_COMPLETION_RE,
-  };
+  } satisfies CompletionResult;
 }
 
-function catalogNameCompletionResult(catalogs: Catalog[], from: number, before: string): CompletionResult {
+function catalogNameCompletionResult(catalogs: Catalog[], from: number, before: string) {
   const afterFromClause = AFTER_FROM_OR_JOIN_RE.test(before);
   return {
     from,
@@ -248,7 +244,7 @@ function catalogNameCompletionResult(catalogs: Catalog[], from: number, before: 
       },
     })),
     validFor: VALID_COMPLETION_RE,
-  };
+  } satisfies CompletionResult;
 }
 
 // A `catalog=>` or `catalog.` reference ending at the cursor whose name is a

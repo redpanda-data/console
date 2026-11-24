@@ -560,7 +560,7 @@ function fillNewTopicSettingsDefaults(ts: StoredTopicDetailsSettings) {
   }
 }
 
-function previewTagV2From(tag: PreviewTag): PreviewTagV2 {
+function previewTagV2From(tag: PreviewTag) {
   return {
     id: tag.id,
     isActive: tag.isActive,
@@ -569,7 +569,7 @@ function previewTagV2From(tag: PreviewTag): PreviewTagV2 {
     searchInMessageHeaders: false,
     searchInMessageKey: false,
     searchInMessageValue: true,
-  };
+  } satisfies PreviewTagV2;
 }
 
 function upgradePreviewTags(ts: TopicDetailsSettings) {

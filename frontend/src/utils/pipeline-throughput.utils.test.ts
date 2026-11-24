@@ -98,7 +98,7 @@ describe('mergeTimeSeries', () => {
 });
 
 describe('insertGapMarkers', () => {
-  const pt = (timestamp: number, ingress: number): MergedPoint => ({ timestamp, ingress, egress: ingress });
+  const pt = (timestamp: number, ingress: number) => ({ timestamp, ingress, egress: ingress }) satisfies MergedPoint;
 
   test('leaves evenly spaced points untouched', () => {
     const points = [pt(0, 1), pt(60, 2), pt(120, 3)];

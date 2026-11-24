@@ -539,8 +539,11 @@ function VisualPanel({ onMutate }: { onMutate: () => void }) {
   );
 }
 
-function dumpStorage(storage: Storage): Record<string, string> {
-  return Object.fromEntries(readStorageEntries(storage).map(({ key, value }) => [key, value]));
+function dumpStorage(storage: Storage) {
+  return Object.fromEntries(readStorageEntries(storage).map(({ key, value }) => [key, value])) satisfies Record<
+    string,
+    string
+  >;
 }
 
 function tryFormatValue(raw: string) {

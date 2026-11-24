@@ -39,11 +39,7 @@ type UseUrlTableStateResult = {
 type SetPageIndex = (pageIndex: number) => unknown;
 
 /** Sorting in `?{prefix}SortId=` / `?{prefix}SortDesc=`, mirrored to the settings slice; a re-sort returns to the first page. */
-function useUrlSorting(
-  keyPrefix: string,
-  settings: TableSettings,
-  setPageIndex: SetPageIndex
-): Pick<UseUrlTableStateResult, 'sorting' | 'onSortingChange'> {
+function useUrlSorting(keyPrefix: string, settings: TableSettings, setPageIndex: SetPageIndex) {
   const [sortId, setSortId] = useQueryStateWithCallback<string>(
     {
       onUpdate: (val) => {
@@ -80,7 +76,7 @@ function useUrlSorting(
     setPageIndex(0);
   };
 
-  return { sorting, onSortingChange };
+  return { sorting, onSortingChange } satisfies Pick<UseUrlTableStateResult, 'sorting' | 'onSortingChange'>;
 }
 
 function useClampedPageIndex({

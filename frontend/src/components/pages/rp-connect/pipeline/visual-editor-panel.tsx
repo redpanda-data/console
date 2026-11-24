@@ -495,11 +495,7 @@ function liveSelectionOf(
     : null;
 }
 
-function useLiveSelection(
-  selection: InspectorSelection,
-  yamlContent: string,
-  flowNodes: PipelineFlowNode[]
-): SelectedNode | null {
+function useLiveSelection(selection: InspectorSelection, yamlContent: string, flowNodes: PipelineFlowNode[]) {
   const { selected, setSelected, dropSelection } = selection;
   const liveSelected = useMemo(
     () => liveSelectionOf(selected, yamlContent, flowNodes),
@@ -515,7 +511,7 @@ function useLiveSelection(
       dropSelection();
     }
   }, [liveSelected, selected, setSelected, dropSelection]);
-  return liveSelected;
+  return liveSelected satisfies SelectedNode | null;
 }
 
 function useCanvasHistory(

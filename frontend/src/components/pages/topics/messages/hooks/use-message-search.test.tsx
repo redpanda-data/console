@@ -48,10 +48,11 @@ const dataFrame: (partitionID: number, offset: number) => Frame = (partitionID, 
   value: { partitionID, offset },
 });
 
-const doneFrame = (nextPageToken = ''): Frame => ({
-  case: 'done',
-  value: { bytesConsumed: 1024n, elapsedMs: 42n, nextPageToken, isCancelled: false },
-});
+const doneFrame = (nextPageToken = '') =>
+  ({
+    case: 'done',
+    value: { bytesConsumed: 1024n, elapsedMs: 42n, nextPageToken, isCancelled: false },
+  }) satisfies Frame;
 
 function scriptStream(...frames: Frame[]) {
   listMessagesMock.mockImplementation((_req: unknown, _opts: { signal?: AbortSignal; timeoutMs: number }) =>

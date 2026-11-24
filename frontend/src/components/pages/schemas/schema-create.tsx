@@ -74,7 +74,7 @@ export { SchemaAddVersionPage } from './schema-add-version';
 
 type SetSchemaState = Dispatch<SetStateAction<SchemaEditorStateData>>;
 
-function createInitialSchemaState(): SchemaEditorStateData {
+function createInitialSchemaState() {
   return {
     strategy: 'TOPIC',
     userInput: '',
@@ -85,7 +85,7 @@ function createInitialSchemaState(): SchemaEditorStateData {
     normalize: false,
     metadataProperties: [{ id: crypto.randomUUID(), key: '', value: '' }],
     context: '',
-  };
+  } satisfies SchemaEditorStateData;
 }
 
 export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {

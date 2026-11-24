@@ -44,7 +44,7 @@ function findPartitionIds(entries: { topicName: string; partitionIds: number[] }
 function buildPartitionColumns(
   leaderlessPartitions: number[] | undefined,
   underReplicatedPartitions: number[] | undefined
-): DataTableColumnDef<Partition>[] {
+) {
   return [
     {
       accessorKey: 'id',
@@ -89,7 +89,7 @@ function buildPartitionColumns(
       enableSorting: false,
       cell: ({ row: { original: partition } }) => <BrokerList partition={partition} />,
     },
-  ];
+  ] satisfies DataTableColumnDef<Partition>[];
 }
 
 function usePartitionsTable(topicName: string, partitions: Partition[] | null | undefined) {

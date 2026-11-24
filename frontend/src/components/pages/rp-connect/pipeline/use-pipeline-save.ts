@@ -262,12 +262,7 @@ async function saveBlockerMessage(flow: SaveFlow, isDraftSave: boolean, yamlCont
 }
 
 /** The validated settings, read after the checks so a just-assigned name is included. */
-function saveAttempt(
-  flow: SaveFlow,
-  run: SaveRunIntent,
-  yamlContent: string,
-  intent: SaveIntent | undefined
-): SaveAttempt {
+function saveAttempt(flow: SaveFlow, run: SaveRunIntent, yamlContent: string, intent: SaveIntent | undefined) {
   const submittedSettings = flow.form.getValues();
   const { name, description, computeUnits, tags, egressGatewayIds } = submittedSettings;
   return {
@@ -285,7 +280,7 @@ function saveAttempt(
       serviceAccount: flow.attachedServiceAccount,
       egressGatewayIds: egressGatewayIds ?? [],
     },
-  };
+  } satisfies SaveAttempt;
 }
 
 async function stopQuietly(stopPipeline: SaveFlow['stopPipeline'], id: string) {
@@ -531,7 +526,7 @@ function useMarkSaved({
   mode: string;
   pipelineId: string | undefined;
   attachedServiceAccount: AttachedServiceAccount | undefined;
-}): MarkSaved {
+}) {
   const latestServiceAccount = useRef(attachedServiceAccount);
   useLayoutEffect(
     function syncSavedServiceAccount() {
@@ -561,7 +556,7 @@ function useMarkSaved({
       });
     },
     [editorStore, form, mode, pipelineId]
-  );
+  ) satisfies MarkSaved;
 }
 
 function useSaveMutations() {

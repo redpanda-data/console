@@ -229,7 +229,7 @@ type ConnectCommandPaletteProps = {
 
 type CategoryGroup = { id: string; name: string; components: ConnectComponentSpec[] };
 
-function groupByCategory(components: ConnectComponentSpec[]): CategoryGroup[] {
+function groupByCategory(components: ConnectComponentSpec[]) {
   const groups = new Map<string, ConnectComponentSpec[]>();
   for (const component of components) {
     const cats = component.categories?.length ? component.categories : ['other'];
@@ -244,10 +244,10 @@ function groupByCategory(components: ConnectComponentSpec[]): CategoryGroup[] {
   }
   return [...groups.entries()]
     .map(([id, list]) => ({ id, name: getCategoryDisplayName(id), components: list.sort(byProminence) }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => a.name.localeCompare(b.name)) satisfies CategoryGroup[];
 }
 
-function dedupeAcrossGroups(grouped: CategoryGroup[]): CategoryGroup[] {
+function dedupeAcrossGroups(grouped: CategoryGroup[]) {
   const seen = new Set<string>();
   return grouped
     .map((group) => ({
@@ -261,7 +261,7 @@ function dedupeAcrossGroups(grouped: CategoryGroup[]): CategoryGroup[] {
         return true;
       }),
     }))
-    .filter((group) => group.components.length > 0);
+    .filter((group) => group.components.length > 0) satisfies CategoryGroup[];
 }
 
 function buildTabs(

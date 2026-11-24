@@ -42,8 +42,8 @@ type SavedSlashRange = { start: SlashPosition; endColumn: number };
 
 const hasTypedSlash = (e: editor.IModelContentChangedEvent) => e.changes.some((change) => change.text.includes('/'));
 
-function lineRange(lineNumber: number, startColumn: number, endColumn: number): IRange {
-  return { startLineNumber: lineNumber, startColumn, endLineNumber: lineNumber, endColumn };
+function lineRange(lineNumber: number, startColumn: number, endColumn: number) {
+  return { startLineNumber: lineNumber, startColumn, endLineNumber: lineNumber, endColumn } satisfies IRange;
 }
 
 /**

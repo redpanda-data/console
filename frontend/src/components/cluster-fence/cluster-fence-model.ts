@@ -506,7 +506,7 @@ export const getClientEffects = ({
   summary: Pick<FenceSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads'>;
   brokers: readonly BrokerProgress[];
   links?: readonly (LinkIdentity & { linkName: string })[];
-}): ClientEffect[] => {
+}) => {
   const knownLinks = links ?? [];
   const linkRows: ClientEffect[] = knownLinks.map((link) => ({
     id: `link-${link.linkName}`,
@@ -543,5 +543,5 @@ export const getClientEffects = ({
     { id: 'schema', label: 'A Schema Registry write', ...rejected },
     { id: 'transaction', label: 'An open transaction', ...transactionVerdict(summary, brokers) },
     ...anyLinkRow,
-  ];
+  ] satisfies ClientEffect[];
 };

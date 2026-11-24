@@ -158,30 +158,31 @@ const DEFAULT_SEARCH_PARAMS: TopicSearchParams = {
   schemaContext: '',
 };
 
-const createDefaultTopicSettings = (topicName: string, overrides: Partial<TopicSettings> = {}): TopicSettings => ({
-  topicName,
-  searchParams: { ...DEFAULT_SEARCH_PARAMS },
-  dynamicFilters: [],
-  messagesPageSize: 20,
-  favConfigEntries: ['cleanup.policy', 'segment.bytes', 'segment.ms'],
-  previewTags: [],
-  previewTagsCaseSensitive: 'ignoreCase',
-  previewMultiResultMode: 'showAll',
-  previewDisplayMode: 'wrap',
-  previewShowEmptyMessages: true,
-  showMessageMetadata: true,
-  showMessageHeaders: false,
-  searchParametersLocalTimeMode: true,
-  previewTimestamps: 'default',
-  previewColumnFields: [],
-  consumerPageSize: 20,
-  partitionPageSize: 20,
-  aclPageSize: 20,
-  produceRecordEncoding: PayloadEncoding.TEXT,
-  produceRecordCompression: CompressionType.SNAPPY,
-  quickSearch: '',
-  ...overrides,
-});
+const createDefaultTopicSettings = (topicName: string, overrides: Partial<TopicSettings> = {}) =>
+  ({
+    topicName,
+    searchParams: { ...DEFAULT_SEARCH_PARAMS },
+    dynamicFilters: [],
+    messagesPageSize: 20,
+    favConfigEntries: ['cleanup.policy', 'segment.bytes', 'segment.ms'],
+    previewTags: [],
+    previewTagsCaseSensitive: 'ignoreCase',
+    previewMultiResultMode: 'showAll',
+    previewDisplayMode: 'wrap',
+    previewShowEmptyMessages: true,
+    showMessageMetadata: true,
+    showMessageHeaders: false,
+    searchParametersLocalTimeMode: true,
+    previewTimestamps: 'default',
+    previewColumnFields: [],
+    consumerPageSize: 20,
+    partitionPageSize: 20,
+    aclPageSize: 20,
+    produceRecordEncoding: PayloadEncoding.TEXT,
+    produceRecordCompression: CompressionType.SNAPPY,
+    quickSearch: '',
+    ...overrides,
+  }) satisfies TopicSettings;
 
 /**
  * Cap on retained per-topic settings. This persisted store appends one entry per distinct topic

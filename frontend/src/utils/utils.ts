@@ -522,12 +522,12 @@ export function base64ToUInt8Array(base64: string) {
   return Base64.toUint8Array(base64);
 }
 
-function binaryStringToBytes(binary: string): Uint8Array {
+function binaryStringToBytes(binary: string) {
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index++) {
     bytes[index] = binary.charCodeAt(index);
   }
-  return bytes;
+  return bytes satisfies Uint8Array;
 }
 
 function formatHexBytes(bytes: Uint8Array) {

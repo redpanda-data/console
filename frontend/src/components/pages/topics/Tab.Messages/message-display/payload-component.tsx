@@ -50,7 +50,7 @@ function formatHexBytes(payload: Payload): PayloadRenderData {
   return { type: 'rawBytesUnavailable' };
 }
 
-function formatAsciiBytes(val: unknown): PayloadRenderData {
+function formatAsciiBytes(val: unknown) {
   const str = String(val);
   let result = '';
   for (let i = 0; i < str.length; i++) {
@@ -58,7 +58,7 @@ function formatAsciiBytes(val: unknown): PayloadRenderData {
     ch = PRINTABLE_CHAR_REGEX.test(ch) ? ch : '. ';
     result += `${ch} `;
   }
-  return { type: 'code', content: result };
+  return { type: 'code', content: result } satisfies PayloadRenderData;
 }
 
 function prepareBinaryPayload(payload: Payload, val: unknown): PayloadRenderData {

@@ -68,12 +68,13 @@ const mockStatus = (
     brokers,
   } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
 
-const confirmed = (nodeId: number, phase: FencePhase = 'fenced'): BrokerProgress => ({
-  nodeId,
-  status: 'confirmed',
-  copy: { phase, revision: 18n },
-  blocks: isBlockingPhase(phase),
-});
+const confirmed = (nodeId: number, phase: FencePhase = 'fenced') =>
+  ({
+    nodeId,
+    status: 'confirmed',
+    copy: { phase, revision: 18n },
+    blocks: isBlockingPhase(phase),
+  }) satisfies BrokerProgress;
 
 const readers = [
   {

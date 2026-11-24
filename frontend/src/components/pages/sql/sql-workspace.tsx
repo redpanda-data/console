@@ -81,14 +81,14 @@ import { createTableSql, SqlWizard, type WizardTopic } from './sql-wizard';
 
 const INITIAL_QUERY = '';
 
-function columnDefFromProto(column: SqlColumn): ColumnDef {
+function columnDefFromProto(column: SqlColumn) {
   return {
     name: column.name,
     type: column.type,
     kind: columnKindForPgType(column.type),
     short: column.type.toLowerCase(),
     isArray: isArrayPgType(column.type),
-  };
+  } satisfies ColumnDef;
 }
 
 function cellValueForColumn(value: SqlValue, column: ColumnDef) {
@@ -229,7 +229,7 @@ function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null) {
 type ExecuteQueryMutation = ReturnType<typeof useExecuteQueryMutation>;
 type InvalidateSqlCatalog = ReturnType<typeof useInvalidateSqlCatalog>;
 
-function successRun(res: ExecuteQueryResponse, token: number, start: number): QueryRun {
+function successRun(res: ExecuteQueryResponse, token: number, start: number) {
   const columns = res.columns.map(columnDefFromProto);
   const rows = res.rows.map((row) => resultRowFromProto(row, columns));
   return {
@@ -240,7 +240,7 @@ function successRun(res: ExecuteQueryResponse, token: number, start: number): Qu
     totalRows: rows.length,
     elapsedMs: Math.round(performance.now() - start),
     truncated: res.truncated,
-  };
+  } satisfies QueryRun;
 }
 
 function failedRun(error: ConnectError, token: number): QueryRun {

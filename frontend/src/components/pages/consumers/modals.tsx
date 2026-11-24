@@ -986,13 +986,13 @@ type TopicPartitionResults = {
 };
 
 /** Keeps only the partitions that report an error, and only the topics that have any. */
-function topicsWithPartitionErrors(topics: TopicPartitionResults[]): TopicPartitionResults[] {
+function topicsWithPartitionErrors(topics: TopicPartitionResults[]) {
   return topics
     .map((t) => ({
       ...t,
       partitions: t.partitions.filter((x) => x.error),
     }))
-    .filter((t) => t.partitions.length > 0);
+    .filter((t) => t.partitions.length > 0) satisfies TopicPartitionResults[];
 }
 
 async function applyOffsetEdit(groupId: string, topics: EditConsumerGroupOffsetsTopic[]) {
@@ -1058,7 +1058,7 @@ function appendMissingOffsets(currentOffsets: GroupOffset[], other: GroupDescrip
     }
   }
 }
-function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
+function createEditRequest(offsets: GroupOffset[]) {
   const getOffset = (x: GroupOffset['newOffset']) => {
     if (x === null) {
       return;
@@ -1097,10 +1097,10 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
     }[];
   }[];
 
-  return cleanOffsets.filter((t) => t.partitions.length > 0);
+  return cleanOffsets.filter((t) => t.partitions.length > 0) satisfies EditConsumerGroupOffsetsTopic[];
 }
 
-function createDeleteRequest(offsets: GroupOffset[]): DeleteConsumerGroupOffsetsTopic[] {
+function createDeleteRequest(offsets: GroupOffset[]) {
   const topicOffsets = offsets
     .groupInto((x) => x.topicName)
     .map((t) => ({
@@ -1110,5 +1110,5 @@ function createDeleteRequest(offsets: GroupOffset[]): DeleteConsumerGroupOffsets
       })),
     }));
 
-  return topicOffsets.filter((t) => t.partitions.length > 0);
+  return topicOffsets.filter((t) => t.partitions.length > 0) satisfies DeleteConsumerGroupOffsetsTopic[];
 }

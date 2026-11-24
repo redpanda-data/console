@@ -436,12 +436,12 @@ function skipDot(str: string, pos: number): PathStep {
 }
 
 // We're at a simple character, just collect everything until the next dot or quote
-function readPlainSegment(str: string, pos: number): PathStep {
+function readPlainSegment(str: string, pos: number) {
   const end = indexOfMany(str, splitChars, pos); // collect until dot or quote
 
   const segment = end >= 0 ? str.slice(pos, end) : str.slice(pos, str.length);
 
-  return { next: end === -1 ? str.length : end, segment }; // continue after the end
+  return { next: end === -1 ? str.length : end, segment } satisfies PathStep; // continue after the end
 }
 
 function indexOfMany(str: string, matches: string[], position: number) {

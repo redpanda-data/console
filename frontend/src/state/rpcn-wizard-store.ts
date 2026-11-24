@@ -83,7 +83,7 @@ export const useRpcnWizardStore = create<RpcnWizardStore>()(
 export const useResetRpcnWizardStore = () => useCallback(() => useRpcnWizardStore.getState().reset(), []);
 
 // Strip store metadata, leaving only the data fields.
-function rpcnWizardData(state: RpcnWizardStore): RpcnWizardData {
+function rpcnWizardData(state: RpcnWizardStore) {
   const {
     setWizardData: _setWizardData,
     setTopicData: _setTopicData,
@@ -94,7 +94,7 @@ function rpcnWizardData(state: RpcnWizardStore): RpcnWizardData {
     hasHydrated: _hasHydrated,
     ...data
   } = state;
-  return data;
+  return data satisfies RpcnWizardData;
 }
 
 /**

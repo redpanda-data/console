@@ -29,7 +29,7 @@ function isRangedStringKey(key: unknown): key is RangedStringKey {
 }
 
 // The segment one mapping pair covers: from its key's line through the end of its value.
-function pairSegment(keyNode: RangedStringKey, value: unknown, path: string[], lineCounter: LineCounter): FieldSegment {
+function pairSegment(keyNode: RangedStringKey, value: unknown, path: string[], lineCounter: LineCounter) {
   const valueRange = (value as RangedNode)?.range;
   // Value-end (range[1]), not node-end (range[2]) — node-end swallows trailing blank lines,
   // which would bleed a hint on the next sibling's line into this field.
@@ -39,7 +39,7 @@ function pairSegment(keyNode: RangedStringKey, value: unknown, path: string[], l
     depth: path.length,
     startLine: lineCounter.linePos(keyNode.range[0]).line,
     endLine: lineCounter.linePos(Math.max(endOffset - 1, keyNode.range[0])).line,
-  };
+  } satisfies FieldSegment;
 }
 
 // Record a segment per mapping pair, recursing into nested mappings. Children are deeper, so the

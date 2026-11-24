@@ -364,7 +364,7 @@ export async function handleExpiredLicenseError(r: Response) {
 }
 
 // Embedded in Cloud, a failed identity call means "no Console permissions", not "log in".
-function embeddedUserData(): UserData {
+function embeddedUserData() {
   return {
     displayName: '',
     avatarUrl: '',
@@ -386,7 +386,7 @@ function embeddedUserData(): UserData {
     canDeleteTransforms: false,
     canViewDebugBundle: false,
     canViewConsoleUsers: false,
-  };
+  } satisfies UserData;
 }
 
 type IdentityError = Parameters<typeof getOidcSubject>[0] & { code?: Code };
@@ -1921,14 +1921,14 @@ async function fetchRolesPage(client: SecurityClient, pageToken: string, onError
   return res?.response;
 }
 
-function listAllRoleNames(client: SecurityClient, onError: (error: ConnectError) => void): Promise<string[]> {
+function listAllRoleNames(client: SecurityClient, onError: (error: ConnectError) => void) {
   const roles: string[] = [];
   const nextPage: (pageToken: string) => Promise<string[]> = async (pageToken) => {
     const page = await fetchRolesPage(client, pageToken, onError);
     roles.push(...(page?.roles.map((x) => x.name) ?? []));
     return page?.nextPageToken ? nextPage(page.nextPageToken) : roles;
   };
-  return nextPage('');
+  return nextPage('') satisfies Promise<string[]>;
 }
 
 function parseRolePrincipal(roleName: string, principal: string): RolePrincipal | null {
@@ -2252,14 +2252,14 @@ async function fetchTransformsPage(client: TransformsClient, pageToken: string) 
   return res?.response;
 }
 
-function listAllTransforms(client: TransformsClient): Promise<TransformMetadata[]> {
+function listAllTransforms(client: TransformsClient) {
   const transforms: TransformMetadata[] = [];
   const nextPage: (pageToken: string) => Promise<TransformMetadata[]> = async (pageToken) => {
     const page = await fetchTransformsPage(client, pageToken);
     transforms.push(...(page?.transforms ?? []));
     return page?.nextPageToken ? nextPage(page.nextPageToken) : transforms;
   };
-  return nextPage('');
+  return nextPage('') satisfies Promise<TransformMetadata[]>;
 }
 
 type TransformsState = ReturnType<typeof _transformsCreator>;
@@ -2366,7 +2366,7 @@ function requireConsoleClient() {
   return client;
 }
 
-function withCloudAccessToken(searchRequest: MessageSearchRequest): MessageSearchRequest {
+function withCloudAccessToken(searchRequest: MessageSearchRequest) {
   return {
     ...searchRequest,
     ...(appConfig.jwt
@@ -2378,7 +2378,7 @@ function withCloudAccessToken(searchRequest: MessageSearchRequest): MessageSearc
           },
         }
       : {}),
-  };
+  } satisfies MessageSearchRequest;
 }
 
 function toListMessagesRequest(searchRequest: MessageSearchRequest) {
