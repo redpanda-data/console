@@ -320,7 +320,6 @@ output:
 
     describe('broker input (multiple inputs from docs)', () => {
       test('extracts child inputs from broker with amqp and kafka', () => {
-        // From https://docs.redpanda.com/redpanda-connect/components/inputs/broker/
         const yaml = `
 input:
   broker:
@@ -369,7 +368,6 @@ output:
 
     describe('sequence input (multiple inputs from docs)', () => {
       test('extracts child inputs from sequence with file and generate', () => {
-        // From https://docs.redpanda.com/redpanda-connect/components/inputs/sequence/
         const yaml = `
 input:
   sequence:
@@ -391,7 +389,6 @@ output:
       });
 
       test('extracts child inputs from sequence with sharded join', () => {
-        // From https://docs.redpanda.com/redpanda-connect/components/inputs/sequence/
         const yaml = `
 input:
   sequence:
@@ -460,7 +457,6 @@ output:
 
     describe('broker output (fan_out pattern from docs)', () => {
       test('extracts child outputs from broker with resource outputs', () => {
-        // From https://docs.redpanda.com/redpanda-connect/components/outputs/broker/
         const yaml = `
 output:
   broker:
@@ -552,7 +548,6 @@ output:
 
     describe('switch output', () => {
       test('extracts outputs from switch cases', () => {
-        // From https://docs.redpanda.com/redpanda-connect/components/outputs/switch/
         const yaml = `
 output:
   switch:
@@ -584,7 +579,6 @@ output:
       });
 
       test('handles switch with continue flag', () => {
-        // From https://docs.redpanda.com/redpanda-connect/components/outputs/switch/
         const yaml = `
 output:
   switch:
@@ -610,7 +604,6 @@ output:
 
     describe('fallback output', () => {
       test('extracts outputs from fallback with http_client and file', () => {
-        // From https://docs.redpanda.com/redpanda-connect/components/outputs/fallback/
         const yaml = `
 output:
   fallback:
@@ -632,7 +625,6 @@ output:
       });
 
       test('extracts outputs from fallback with dynamodb and file', () => {
-        // From https://docs.redpanda.com/redpanda-connect/components/outputs/fallback/
         const yaml = `
 output:
   fallback:

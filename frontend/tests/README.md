@@ -48,6 +48,13 @@ Bundle and full-stack E2E require a built frontend.
 Use `bun run test:unit:watch` or `bun run test:watch` for integration watch mode.
 Pass file paths to `bun run test:file:unit` or `bun run test:file:integration`.
 
+The [pipeline YAML fixtures](../src/components/pages/rp-connect/utils/yaml.test.ts) retain
+examples from the Connect docs: [broker input](https://docs.redpanda.com/redpanda-connect/components/inputs/broker/),
+[sequence input](https://docs.redpanda.com/redpanda-connect/components/inputs/sequence/),
+and [broker](https://docs.redpanda.com/redpanda-connect/components/outputs/broker/),
+[switch](https://docs.redpanda.com/redpanda-connect/components/outputs/switch/), and
+[fallback](https://docs.redpanda.com/redpanda-connect/components/outputs/fallback/) outputs.
+
 ## Real end-to-end variants
 
 ```sh

@@ -9,13 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/*
- For local debugging after `npm run build`
-
- > node --inspect ./scripts/serve.mjs
-
- */
-
 import express from 'express';
 import fetch from 'node-fetch';
 

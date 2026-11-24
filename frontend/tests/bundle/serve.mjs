@@ -13,8 +13,7 @@ const CONTENT_TYPES = {
   '.svg': 'image/svg+xml',
 };
 
-// Maps a request URL to a file inside the build directory; extensionless paths are SPA
-// routes served by index.html. Returns null for paths that escape the build directory.
+// WARNING: Reject requests outside the build directory before using the SPA fallback.
 function resolveRequestFile(url) {
   const { pathname } = new URL(url, 'http://localhost');
   const file = resolve(root, `.${pathname}`);

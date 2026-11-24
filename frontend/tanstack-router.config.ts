@@ -16,9 +16,7 @@ export const TANSTACK_CHUNK_PATTERN = /[\\/]node_modules[\\/]@tanstack[\\/]/u;
 export const tanstackRouterConfig = {
   target: 'react',
   autoCodeSplitting: true,
-  // Route-level HMR finds its router through window.__TSR_ROUTER__; embedded in
-  // cloud-ui's dev server that is the host's router and Console fails to load.
-  // Component edits still hot-swap through Fast Refresh with this off.
+  // WARNING: Disable route-level HMR on an embedded dev server; the global router is the host's. Component Fast Refresh still works.
   codeSplittingOptions: { addHmr: !process.env.PROXY_TARGET },
   routesDirectory: './src/routes',
   generatedRouteTree: './src/routeTree.gen.ts',

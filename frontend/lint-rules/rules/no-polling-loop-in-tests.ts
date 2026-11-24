@@ -48,7 +48,6 @@ function advances(loop: ESTree.ForStatement, name: string) {
   );
 }
 
-/** `i < 3` or `i < items.length` advanced by the loop bounds it without asking the system anything. */
 function isCounted(loop: Loop) {
   const test = loop.type === 'ForStatement' ? unwrap(loop.test) : undefined;
   if (loop.type !== 'ForStatement' || test?.type !== 'BinaryExpression' || !COUNTER_OPERATORS.has(test.operator)) {
@@ -63,7 +62,6 @@ function isCounted(loop: Loop) {
   });
 }
 
-/** A loop is polling when a predicate about the system decides whether it keeps going. */
 function polls(loop: Loop) {
   if (hasConditionalExit(loop.body)) {
     return true;
@@ -75,6 +73,9 @@ function polls(loop: Loop) {
   return !((test?.type === 'Literal' && test.value === true) || isCounted(loop));
 }
 
+/**
+ * A counted loop over a fixed number or collection is not polling; a loop that stops when the system reaches a state is.
+ */
 export default defineRule({
   meta: {
     type: 'problem',

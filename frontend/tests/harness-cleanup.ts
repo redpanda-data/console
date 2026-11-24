@@ -9,18 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Side-effect-free module for tracking and tearing down QueryClients and
- * routers created by the test harness.
- *
- * Kept separate from `src/test-utils.tsx` on purpose: that file transitively
- * imports `routeTree.gen` (and from there, nearly the whole app, including
- * `config` / `isEmbedded` live bindings). Importing
- * `cleanupTestHarness` from here in `rstest.setup.ts` avoids
- * pinning those bindings before any test file's `rs.mock('config', ...)`
- * has a chance to take effect.
- */
-
 import type { QueryClient } from '@tanstack/react-query';
 
 export const trackedQueryClients = new Set<QueryClient>();
@@ -52,9 +40,7 @@ function collectFailure(errors: unknown[], operation: () => void) {
   }
 }
 
-// Cancellation is asynchronous. Clearing a QueryClient before its active
-// ConnectRPC requests settle leaves their AbortSignal races and retry
-// promises alive after the test has finished.
+// WARNING: Await query cancellation before clearing clients; active Connect requests and retries can otherwise outlive the test.
 async function cancelQueries(clients: QueryClient[], errors: unknown[]) {
   await Promise.all(
     clients.map(async (client) => {
@@ -90,6 +76,9 @@ function runTrackedTeardowns(errors: unknown[]) {
   trackedTeardowns.clear();
 }
 
+/**
+ * Import this module from runner setup, not the render helpers, which import the application route graph eagerly. Cancels queries before releasing clients and routers.
+ */
 export async function cleanupTestHarness() {
   const errors: unknown[] = [];
   const clients = [...trackedQueryClients];

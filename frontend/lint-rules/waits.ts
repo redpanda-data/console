@@ -17,7 +17,6 @@ import {
 } from './ast.ts';
 import type { ClockKind } from './test-code.ts';
 
-// Callbacks that, handed a promise's `resolve`, turn the passage of time into completion.
 const SCHEDULERS: Record<string, ClockKind> = {
   'process.nextTick': 'tick',
   queueMicrotask: 'tick',
@@ -41,7 +40,6 @@ export function schedulerKind(sourceCode: SourceCode, callee: Node | null | unde
   return path === undefined ? undefined : SCHEDULERS[path];
 }
 
-/** The exported path a callee reaches inside `module`, through named, namespace or default imports. */
 function importedPath(sourceCode: SourceCode, callee: Node, modules: Set<string>) {
   const member = memberPath(callee);
   const binding = member && importOf(sourceCode, member.root);
@@ -60,7 +58,6 @@ function isPromisifiedTimer(sourceCode: SourceCode, call: ESTree.CallExpression)
   return schedulerKind(sourceCode, call.arguments[0]) === 'timer';
 }
 
-/** `Bun.sleep()` off the global, or `sleep` imported from `bun` under any alias. */
 function isBunSleep(sourceCode: SourceCode, callee: Node) {
   const path = globalPath(sourceCode, callee);
   if (path !== undefined && BUN_GLOBAL_SLEEPS.has(path)) {
@@ -94,7 +91,6 @@ function isWithResolvers(sourceCode: SourceCode, node: Node | null | undefined) 
   return call?.type === 'CallExpression' && globalPath(sourceCode, call.callee) === 'Promise.withResolvers';
 }
 
-/** The first parameter of a `new Promise(executor)`, which is its `resolve`. */
 function isExecutorResolve(definition: Definition) {
   const fn = definition.node;
   if (definition.type !== 'Parameter' || !isFunction(fn) || !isPromiseExecutor(fn)) {
@@ -103,7 +99,6 @@ function isExecutorResolve(definition: Definition) {
   return fn.params[0] !== undefined && definition.name.range[0] === fn.params[0].range[0];
 }
 
-/** `const { resolve } = Promise.withResolvers()`, under any local name. */
 function isDestructuredResolve(sourceCode: SourceCode, definition: Definition) {
   const declarator = definition.node.type === 'VariableDeclarator' ? definition.node : undefined;
   if (declarator?.id.type !== 'ObjectPattern' || !isWithResolvers(sourceCode, declarator.init)) {
@@ -117,7 +112,6 @@ function isDestructuredResolve(sourceCode: SourceCode, definition: Definition) {
   );
 }
 
-/** `resolve` from `new Promise((resolve) => ...)` or `Promise.withResolvers()`, under any name. */
 function isResolve(sourceCode: SourceCode, node: Node | null | undefined) {
   const target = unwrap(node);
   if (target?.type === 'MemberExpression') {
@@ -142,7 +136,11 @@ export function settlesOnSchedule(sourceCode: SourceCode, call: ESTree.CallExpre
   return isResolve(sourceCode, callback);
 }
 
-/** `new Promise(setImmediate)`: the scheduler itself receives `resolve`. */
+/**
+ * `new Promise(setImmediate)`: the scheduler itself receives `resolve`.
+ *
+ * The scheduler must resolve the promise, not merely appear alongside its executor. Resolvers can come from new Promise or Promise.withResolvers.
+ */
 export function executorSchedulerKind(sourceCode: SourceCode, node: ESTree.NewExpression) {
   const callee = unwrap(node.callee);
   if (!(callee?.type === 'Identifier' && callee.name === 'Promise' && isGlobal(sourceCode, callee))) {
@@ -182,7 +180,6 @@ function isMicrotaskTick(sourceCode: SourceCode, node: Node) {
   return node.arguments.every((argument) => unwrap(argument)?.type === 'Literal');
 }
 
-/** A local helper whose result, or awaited statement, is itself a wait. */
 function isWaitHelper(sourceCode: SourceCode, callee: Node | undefined, depth: number) {
   const target = unwrap(callee);
   const definition = target?.type === 'Identifier' ? findVariable(sourceCode, target)?.defs[0] : undefined;
@@ -202,7 +199,11 @@ function isWaitHelper(sourceCode: SourceCode, callee: Node | undefined, depth: n
   });
 }
 
-/** Anything awaiting which only lets time or the scheduler pass: sleeps, ticks, frames, microtasks. */
+/**
+ * Anything awaiting which only lets time or the scheduler pass: sleeps, ticks, frames, microtasks.
+ *
+ * Follows locally resolved helpers and scheduler calls, including Bun sleep imported under an alias.
+ */
 export function isWait(sourceCode: SourceCode, value: Node | null | undefined, depth = 0): boolean {
   const node = unwrap(value);
   if (!node) {

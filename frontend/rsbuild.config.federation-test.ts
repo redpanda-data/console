@@ -46,7 +46,7 @@ export default defineConfig({
     },
   },
   resolve: {
-    // Spread, not shared: rspack normalises resolve.alias in place.
+    // WARNING: Copy aliases for each build; Rspack normalizes the input object in place.
     alias: { ...sharedAliases },
   },
   output: {

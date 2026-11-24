@@ -94,7 +94,6 @@ const responses: Record<string, unknown> = {
   GetPipelinesBySecrets: { response: { pipelinesForSecret: [] } },
 };
 
-// Third-party telemetry and content are stubbed so tests never depend on hosted services.
 async function fulfillThirdPartyRequest(route: Route) {
   const response =
     route.request().resourceType() === 'script'
@@ -103,7 +102,6 @@ async function fulfillThirdPartyRequest(route: Route) {
   await route.fulfill(response);
 }
 
-// An empty Connect server stream: one end-of-stream envelope with no messages.
 async function fulfillEmptyMessageStream(route: Route) {
   const end = Buffer.from('{"metadata":{}}');
   const header = Buffer.alloc(5);
@@ -146,6 +144,9 @@ async function routeBundleRequest(route: Route) {
   await routeLocalRequest(route, url.pathname);
 }
 
+/**
+ * Runs the bundle against local fixtures without depending on hosted telemetry or content. Empty message streams still contain a Connect end envelope.
+ */
 export const test = base.extend<{ errors: string[] }>({
   errors: [
     async ({ context, page }, use) => {

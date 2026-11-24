@@ -6,8 +6,6 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Each fixture is linted through `bun run lint:policy` in an OS-temp project whose
-// config extends the checked-in one, so the real script, config and plugin run.
 type Fixture = { file: string; source: string; reports: string[] };
 type Diagnostic = { code?: string; message: string; severity: string; filename: string };
 type PolicyRun = { exitCode: number; stderr: string; files: number; diagnostics: Diagnostic[] };
@@ -244,7 +242,6 @@ test('waits a frame after faking only timeouts', async () => {
 `,
   },
   {
-    // One test's fake timers, or an after hook's, do not cover module code or other tests.
     file: 'wait-mixed.test.tsx',
     reports: times(W, 3),
     source: `
@@ -405,7 +402,6 @@ test('reads before pinning', () => {
 `,
   },
   {
-    // A pinned clock covers the rest of its own test only, through aliased or namespaced Bun APIs.
     file: 'clock-mixed.test.ts',
     reports: times(C, 2),
     source: `
