@@ -40,10 +40,6 @@ const describeBanner = (summary: FenceSummary, brokers: BrokerProgress[]) => {
     : describeFencePhase(summary, brokers);
 };
 
-/**
- * With no controller leader there's no cluster fence to read, but a broker's own blocking copy still
- * rejects writes. Until every broker answers, the last status read still counts.
- */
 const describeOwnCopies = (copies: BrokerOwnCopy[], lastRead: FencePhase) => {
   const reporting = copies.flatMap(({ nodeId, phase }) => {
     if (!phase) {
@@ -80,6 +76,8 @@ const bannerTitle = (known: boolean, summary: FenceSummary, brokers: BrokerProgr
  * Shown on every page while a fence is anywhere but released, because writes start failing as soon
  * as fencing begins and keep failing on some brokers until unfencing finishes. Not on the Cluster fence
  * tab, which shows the same and more.
+ *
+ * During controller loss, brokers can still reject traffic using their local copy. The last cluster status remains relevant until all brokers answer.
  */
 export const ClusterFenceBanner = () => {
   const { known, summary, brokers, blocking, ownCopies } = useClusterFenceStatusQuery();
@@ -96,8 +94,7 @@ export const ClusterFenceBanner = () => {
     <div data-testid="cluster-fence-banner">
       <Alert
         aria-label={title}
-        // my-4 on the Alert, not the wrapper: the wrapper is a direct child of #mainLayout, whose
-        // `margin: 0 !important` (index-cloud-integration.scss) would drop it.
+        // WARNING: Keep the margin on Alert; the Cloud host resets margins on direct children of mainLayout.
         className="my-4"
         data-phase={known ? phase : 'no-leader'}
         icon={unfencing ? <InfoIcon /> : <TriangleAlertIcon />}

@@ -18,9 +18,11 @@ const READ_ONLY_EDITOR_OPTIONS = {
   domReadOnly: true,
   // WARNING: Keep fixed-column wrapping; wordWrap 'on' can blank the viewer for large single-line payloads.
   wordWrap: 'wordWrapColumn',
-  wordWrapColumn: 120, // Lines >120 chars wrap. Prevents blank screen with large payloads
-  wrappingStrategy: 'simple', // 'advanced' causes 2s+ delays on large content
-  stopRenderingLineAfter: 10_000, // DO NOT set to -1: causes severe performance issues
+  wordWrapColumn: 120,
+  // WARNING: Keep simple wrapping; advanced wrapping stalls on large payloads.
+  wrappingStrategy: 'simple',
+  // WARNING: Keep the line rendering cap; disabling it can make the large-payload viewer unresponsive.
+  stopRenderingLineAfter: 10_000,
   maxTokenizationLineLength: 20_000,
   automaticLayout: false,
   folding: false,

@@ -50,7 +50,6 @@ const ObservabilityPage: FC = () => {
   } = useListQueries({
     filter: {
       tags: {
-        // We show in the cluster observability page only metric charts marked with (all) the following tags.
         component: 'cluster',
         category: 'overview',
       },

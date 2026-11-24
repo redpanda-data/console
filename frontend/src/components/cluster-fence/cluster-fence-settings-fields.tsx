@@ -57,7 +57,6 @@ type ClusterFenceSettingsFieldsProps = {
 
 export const WARNING_VARIANT = { danger: 'destructive', warning: 'warning', info: 'informative' } as const;
 
-/** Which links each principal lets finish copying, so a pre-added name explains itself. */
 const linkNotesFor = (suggestions: PrincipalSuggestion[]) => {
   const notes = new Map<string, string>();
   for (const { principal, linkName } of suggestions) {
@@ -75,7 +74,6 @@ type PolicyFieldProps = {
 const ExemptUsersField = ({ value, setPrincipals, suggestions }: PolicyFieldProps) => {
   const blankExempt = value.exemptPrincipals.includes('');
   const named = value.exemptPrincipals.filter(Boolean);
-  /** Redpanda matches bare user names, so a typed `User:` prefix is dropped rather than warned about. */
   const setNamed = (names: string[]) => {
     const bare = Array.from(new Set(names.map(toExemptName).filter(Boolean)));
     setPrincipals(blankExempt ? [...bare, ''] : bare);
@@ -233,6 +231,8 @@ const AdvancedOptions = ({ value, onChange }: Pick<ClusterFenceSettingsFieldsPro
  * The read policy, with the warnings the broker would otherwise only log on
  * the controller leader. The empty name, which exempts clients without SASL or mTLS, can't be typed
  * as a chip, so it has its own switch.
+ *
+ * Shows which links an exempt principal lets finish copying. Redpanda matches bare user names, so typed User: prefixes are removed.
  */
 export const ClusterFenceSettingsFields = ({ value, onChange, suggestions }: ClusterFenceSettingsFieldsProps) => {
   const setPrincipals = (exemptPrincipals: string[]) => onChange({ ...value, exemptPrincipals });

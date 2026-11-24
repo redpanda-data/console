@@ -1,11 +1,3 @@
-/**
- * Builder.io nurture panel component.
- * Displays resources and updates for the overview page.
- * Only used in standalone mode - not imported in federated/embedded routes.
- *
- * @see https://www.builder.io/c/docs/integrate-section-building
- * @see https://www.builder.io/c/blueprints/announcement-bar
- */
 import { type BuilderContent, Content, fetchOneEntry, isPreviewing } from '@builder.io/sdk-react';
 import { builderCustomComponents } from 'components/builder-io/builder-custom-components';
 import { BUILDER_API_KEY } from 'components/constants';
@@ -18,6 +10,8 @@ import { api } from 'state/backend-api';
  * NurturePanel displays Builder.io content for resources and updates.
  * Returns null in embedded mode - use conditional rendering at the route level
  * to avoid loading Builder.io dependencies in federated bundles.
+ *
+ * Fetches the Builder.io overview panel only in the standalone overview. Embedded and federated routes do not import it.
  */
 export default function NurturePanel() {
   const embedded = isEmbedded();

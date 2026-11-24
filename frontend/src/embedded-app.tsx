@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-// Array prototype extensions (must be imported early)
+// WARNING: Load the legacy array extensions before the embedded app and its dependencies run.
 import './utils/array-extensions';
 import 'clipboard-polyfill/overwrite-globals';
 
@@ -18,16 +18,12 @@ import { useEffect, useMemo } from 'react';
 import '@xyflow/react/dist/base.css';
 import '@xyflow/react/dist/style.css';
 
-/* start global stylesheets */
-
 import './index.scss';
 import './index-cloud-integration.scss';
 import './assets/fonts/open-sans.css';
 import './assets/fonts/poppins.css';
 import './assets/fonts/quicksand.css';
 import './assets/fonts/kumbh-sans.css';
-
-/* end global stylesheet */
 
 import './globals.css';
 
@@ -141,7 +137,6 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
 
   return (
     <CustomFeatureFlagProvider initialFlags={p.featureFlags}>
-      {/* showToast viewport, above the router so the error boundary and login can toast */}
       <BaseUiToaster testId="console-toasts" />
       <TransportProvider transport={dataplaneTransport}>
         <QueryClientProvider client={queryClient}>
@@ -152,4 +147,7 @@ function EmbeddedApp({ basePath = '', ...p }: EmbeddedProps) {
   );
 }
 
+/**
+ * Keep the toaster outside router content so login and route errors can still show a notice.
+ */
 export default EmbeddedApp;

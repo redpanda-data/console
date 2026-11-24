@@ -67,10 +67,8 @@ export function range(start: number, end: number) {
   return ar;
 }
 
-/*
- * TODO:
- * Reloading the page does not ensure we'll get the update!
- * If there are multiple backend instances, we might get connected to an old instance again when we trigger a reload.
+/**
+ * A browser reload does not guarantee an upgrade: a load balancer may still select a backend instance on the older version.
  */
 export const UpdatePopup = () => {
   const [isUpdateDialogOpen, setUpdateDialogOpen] = useState(true);
@@ -91,7 +89,6 @@ export const UpdatePopup = () => {
 
   return (
     <Dialog onOpenChange={setUpdateDialogOpen} open={isUpdateDialogOpen}>
-      {/* Nearest rung above the old 36rem minimum. */}
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Redpanda Console has been updated</DialogTitle>

@@ -19,7 +19,6 @@ export const Route = createFileRoute('/sql')({
   staticData: {
     title: 'SQL',
     icon: Database,
-    // The studio has its own title bar; otherwise a normal in-flow page.
     breadcrumbOnlyHeader: true,
   },
   beforeLoad: () => {

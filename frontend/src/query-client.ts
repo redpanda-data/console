@@ -16,7 +16,6 @@ const queryClient = new QueryClient({
         }
 
         if (isConnectError(error)) {
-          // Retry only gRPC errors that map to 5xx HTTP error codes
           return error.code === Code.Internal || error.code === Code.Unknown;
         }
 
@@ -30,7 +29,6 @@ const queryClient = new QueryClient({
         }
 
         if (isConnectError(error)) {
-          // Retry PermissionDenied errors to ensure we have some wiggle room for role propagation/RBAC
           return error.code === Code.PermissionDenied;
         }
 
@@ -40,4 +38,8 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Queries retry internal and unknown Connect errors. Mutations retry permission
+ * denials to allow RBAC changes to propagate.
+ */
 export default queryClient;

@@ -15,7 +15,6 @@ import type { CSSProperties } from 'react';
 
 type SectionProps = Pick<CardProps, 'children' | 'id' | 'className'> & {
   padding?: 'compact' | 'normal';
-  // Grid placement only; everything else is a class.
   style?: Pick<CSSProperties, 'gridArea'>;
 };
 

@@ -26,7 +26,7 @@ function loginHandling() {
   const path = window.location.pathname.removePrefix(getBasePath() ?? '');
 
   if (path.startsWith('/login')) {
-    return null; // already in login process, don't interrupt!
+    return null;
   }
 
   // WARNING: Let license recovery routes render before identity resolves; expired licenses can make the identity request fail.
@@ -41,7 +41,7 @@ function renderAuthenticatedState(path: string) {
   const preLogin = <div style={{ background: 'var(--color-page)', height: '100vh' }} />;
   if (api.userData === null && !path.startsWith('/login')) {
     logLoginState(path, 'known not logged in, hard redirect');
-    window.location.pathname = `${getBasePath()}/login`; // definitely not logged in, and in wrong url: hard redirect!
+    window.location.pathname = `${getBasePath()}/login`;
     return preLogin;
   }
 
@@ -55,10 +55,10 @@ function renderAuthenticatedState(path: string) {
 }
 
 const RequireAuth = ({ children }: { children: ReactNode }) => {
-  useApiStoreHook((s) => s.userData); // re-render when userData changes
+  useApiStoreHook((s) => s.userData);
   useApiStoreHook((s) => s.userDataError);
 
-  const r = loginHandling(); // Complete login, or fetch user if needed
+  const r = loginHandling();
   if (r) {
     return r;
   }
@@ -80,6 +80,9 @@ const FeatureErrorCheck = () => {
   return null;
 };
 
+/**
+ * Don't interrupt login already in progress. Once signed-out status is known, redirect to the login URL and preserve the requested path.
+ */
 export default RequireAuth;
 
 function logLoginState(path: string, message: string) {
@@ -95,10 +98,10 @@ function requestInitialUserData() {
     throw new Error('security client is not initialized');
   }
 
-  // Only fetch if not already fetching to prevent redirect loops
+  // WARNING: Do not start a second profile request; duplicate requests can cause a redirect loop.
   if (!api.isUserDataFetchInProgress) {
     api.refreshUserData().catch(() => {
-      // Intentionally ignore errors during initial load
+      // WARNING: The initial-login UI reads the API error state so it can offer Retry.
     });
   }
 }

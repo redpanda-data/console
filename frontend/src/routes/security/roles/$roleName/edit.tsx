@@ -16,10 +16,12 @@ const searchSchema = z.object({
   host: z.string().optional().catch(undefined),
 });
 
+/**
+ * Compatibility redirect for existing edit links; new links use the update route.
+ */
 export const Route = createFileRoute('/security/roles/$roleName/edit')({
   validateSearch: searchSchema,
   beforeLoad: ({ params, search }) => {
-    // Backward-compatibility shim — navigate to /update directly in new code.
     throw redirect({
       to: '/security/roles/$roleName/update',
       params,

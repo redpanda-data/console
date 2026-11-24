@@ -141,7 +141,7 @@ const onClose = (key: number) => {
   if (next) {
     current.animate = false;
     next.animate = false;
-    afterClose(key); // immediately switch to next
+    afterClose(key);
   } else {
     current.animate = true;
     current.isVisible = false;

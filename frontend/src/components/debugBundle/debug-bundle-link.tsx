@@ -53,7 +53,6 @@ const DebugBundleLink = ({
                 a.href = url;
                 a.download = downloadFilename;
 
-                // Append the anchor to the document body (necessary for Firefox)
                 document.body.appendChild(a);
 
                 a.click();
@@ -94,4 +93,7 @@ const DebugBundleLink = ({
   );
 };
 
+/**
+ * The temporary download anchor is attached to the document for Firefox compatibility.
+ */
 export default DebugBundleLink;

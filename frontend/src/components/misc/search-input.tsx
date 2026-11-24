@@ -114,7 +114,9 @@ export function SearchInput({
           {icon ?? <SearchIcon className="size-4" />}
         </span>
       </InputStart>
-      {/* Always mounted: InputEnd never resets the padding it measured. Click-through while empty. */}
+      {
+        // WARNING: Keep InputEnd mounted; removing it leaves its measured padding behind.
+      }
       <InputEnd className={cn(!isEmpty && 'pointer-events-auto')}>
         <ElementTooltip content="Clear (Esc)">
           <Button

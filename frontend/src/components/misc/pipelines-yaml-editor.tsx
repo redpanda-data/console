@@ -96,7 +96,6 @@ function useDocumentedCatalog(yaml: MonacoYaml | undefined) {
   useEffect(
     function updateYamlDocumentation() {
       if (yaml && components) {
-        // The schema applies before update settles; a failed revalidation only leaves stale markers.
         yaml
           .update(buildMonacoYamlOptions(withYamlDocumentation(benthosSchema, components)))
           .catch((error: unknown) => {
@@ -110,12 +109,14 @@ function useDocumentedCatalog(yaml: MonacoYaml | undefined) {
   return components;
 }
 
+/**
+ * Tracks typed text for defaultValue-only callers so deprecation markers stay current. Catalog refresh revalidates markers after the YAML schema has already been applied.
+ */
 export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   const { options: givenOptions, beforeMount, onMount, onChange, ...rest } = props;
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const monacoTheme = useMonacoTheme();
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
-  // Callers pass `value` or only `defaultValue`, so track what's typed for the latter.
   const [typedText, setTypedText] = useState<string>();
   const components = useDocumentedCatalog(yaml);
   const deprecations = useDeprecationMarkers(rest.value ?? typedText ?? rest.defaultValue ?? '', components);
@@ -123,7 +124,7 @@ export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   useEffect(() => {
     return () => {
       if (yaml) {
-        // avoid duplicate yaml option registration
+        // WARNING: Dispose the Monaco YAML registration before replacing it so providers do not stack.
         yaml.dispose();
       }
     };

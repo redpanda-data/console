@@ -1,7 +1,7 @@
-import type { Transport } from '@connectrpc/connect';
-import { TransportProvider } from '@connectrpc/connect-query';
 // Copyright 2026 Redpanda Data, Inc.
 
+import type { Transport } from '@connectrpc/connect';
+import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
@@ -181,8 +181,8 @@ function TransportQueryProviders({
       defaultOptions: {
         queries: {
           retry: false,
-          gcTime: 0, // Immediately garbage collect query caches (prevents memory accumulation across tests)
-          staleTime: 0, // Mark data stale immediately (ensures fresh data per test)
+          gcTime: 0,
+          staleTime: 0,
         },
         mutations: {
           retry: false,

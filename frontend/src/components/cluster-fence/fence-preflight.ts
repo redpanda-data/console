@@ -39,7 +39,6 @@ type PreflightInput = {
   readersIncomplete: boolean;
 };
 
-/** Only says something when Fence might fail: a pass would only restate that this isn't a shadow cluster. */
 const ownLinksCheck: (links: PreflightInput['linksThatStopFence']) => PreflightCheck | undefined = (links) => {
   if (links === 'loading') {
     return { id: 'own-links', status: 'pending', message: 'Checking whether this cluster is a shadow cluster…' };
@@ -91,7 +90,6 @@ const FINDING_READERS_CHECK: PreflightCheck = {
   message: 'Finding the shadow links that read from this cluster…',
 };
 
-/** Before any reader is found, says whether Console is still looking, gave up early, or found none. */
 const noReadersCheck = ({ resolving, incomplete }: { resolving: boolean; incomplete: boolean }): PreflightCheck => {
   if (resolving) {
     return FINDING_READERS_CHECK;
@@ -137,7 +135,6 @@ const readerChecks = (
     return [noReadersCheck({ resolving, incomplete })];
   }
   const problems = readers.flatMap((reader) => readerProblems(reader, linkCanRead(policy, reader)));
-  /** Until every link is resolved, a reader still to come may be blocked, so nothing passes yet. */
   if (resolving) {
     return [...problems, FINDING_READERS_CHECK];
   }
@@ -157,6 +154,8 @@ const readerChecks = (
  * knows; anything else, such as an unfinished data migration, comes back from Fence itself. Warnings
  * about the exempt names themselves show in the settings fields, not here. The links that read from
  * this cluster are only checked when Console knows them; the other checks only appear for a problem.
+ *
+ * Only reports an own-links check when it could block Fence. Do not show a final pass while an unresolved reader might still be blocked.
  */
 export const getFencePreflightChecks = ({
   linksThatStopFence,

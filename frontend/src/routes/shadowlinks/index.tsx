@@ -21,14 +21,13 @@ import { z } from 'zod';
 
 const searchSchema = z.object({
   tab: z.enum(['links', 'source']).optional().catch(undefined),
-  /**
-   * On the Cluster fence tab, opens a dialog: `exempt` its settings with `principal` added to the
-   * exempt users, `fence` Fence, and `unfence` Unfence unless the cluster is already unfenced.
-   */
   action: z.enum(['exempt', 'fence', 'unfence']).optional().catch(undefined),
   principal: z.string().optional().catch(undefined),
 });
 
+/**
+ * Source-tab deep links can open the fence settings, Fence, or Unfence dialogs. The exempt action carries the principal from the failover flow.
+ */
 export const Route = createFileRoute('/shadowlinks/')({
   staticData: {
     title: 'Shadow Links',

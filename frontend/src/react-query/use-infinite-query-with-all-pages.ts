@@ -19,6 +19,8 @@ export type UseInfiniteQueryWithAllPagesOptions<
  * incrementally when the query is executed. This uses the ConnectRPC
  * package's useInfiniteQuery hook but adds automatic pagination by monitoring
  * the hasNextPage property and triggering fetchNextPage when appropriate.
+ *
+ * Stops draining after a page error so the caller can display or retry it.
  */
 export function useInfiniteQueryWithAllPages<
   I extends DescMessage,
@@ -38,7 +40,7 @@ export function useInfiniteQueryWithAllPages<
       !queryResult.isFetching &&
       !queryResult.isFetchingNextPage &&
       !queryResult.isError &&
-      !queryResult.isFetchNextPageError && // Stop on page fetch errors too
+      !queryResult.isFetchNextPageError &&
       queryResult.data
     ) {
       queryResult.fetchNextPage();

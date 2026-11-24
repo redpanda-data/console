@@ -34,7 +34,6 @@ export const UNAVAILABLE_THEME_INIT = {
   storageKey: 'redpanda-ui-theme-unavailable',
 } as const satisfies ThemeInit;
 
-/** Safari in private mode throws on `localStorage`; without storage, dark mode stays unavailable. */
 const readDarkModeAvailable = () => {
   try {
     return localStorage.getItem(DARK_MODE_AVAILABLE_KEY) === 'true';
@@ -48,6 +47,8 @@ let availableThisLoad: boolean | undefined;
 /**
  * Read once per page load, so index.html's inline script, the pre-paint `initTheme` in bootstrap.tsx,
  * app.tsx's ThemeProvider and the header's switch agree until the next load.
+ *
+ * When browser storage cannot be read, assume dark mode is unavailable.
  */
 export const isDarkModeAvailable = () => {
   availableThisLoad ??= readDarkModeAvailable();

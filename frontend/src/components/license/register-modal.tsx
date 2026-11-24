@@ -55,6 +55,9 @@ type RegisterModalProps = {
   onClose: () => void;
 };
 
+/**
+ * Keeps Register accessibly named while the registry button hides its label during submission.
+ */
 export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -268,8 +271,6 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
               <Button onClick={handleClose} variant="ghost">
                 Close
               </Button>
-              {/* isLoading hides the label with `visibility: hidden`, which also removes it from the
-                  accessibility tree — so the name is set explicitly and stays "Register" while busy. */}
               <Button
                 aria-label="Register"
                 isLoading={isSubmitting || signupMutation.isPending}

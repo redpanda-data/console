@@ -84,7 +84,6 @@ class TransformsList extends pageWithContent(() => <TransformsListContent />) {
   }
 }
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
@@ -188,7 +187,6 @@ const compileQuickSearch = (quickSearch: string) => {
   }
 };
 
-// Compiled once, not once per row. An invalid pattern matches nothing, as before.
 const filterByQuickSearch = (transforms: TransformMetadata[], quickSearch: string) => {
   if (!quickSearch) {
     return transforms;
@@ -253,4 +251,7 @@ const TransformsListContent: FC = () => {
   );
 };
 
+/**
+ * An invalid quick-search pattern matches no rows rather than throwing during render.
+ */
 export default TransformsList;

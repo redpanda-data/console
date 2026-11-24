@@ -45,8 +45,6 @@ import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
 import { CompactSection } from '../shared/compact-section';
 import { TonedIcon } from '../shared/toned-icon';
 
-// Shared placeholder for any metric that isn't available (cluster unreachable,
-// brokers not loaded, or backend simply didn't report a value).
 const NOT_AVAILABLE = 'N/A';
 
 const clusterStatusOf = (status?: StatusType) => {
@@ -96,18 +94,18 @@ class Overview extends PageComponent {
   refreshData(force: boolean) {
     this.api.refreshCluster(force);
     this.api.refreshClusterOverview().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: The API layer records overview errors; do not handle them a second time here.
     });
 
     this.api.refreshBrokers(force);
     this.api.refreshClusterHealth().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: A failed health refresh must not prevent the other overview data from rendering.
     });
     this.api.refreshDebugBundleStatuses().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: Debug bundle status errors must not take down the overview.
     });
     this.api.listLicenses().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: The API layer owns license errors; keep rendering the rest of the overview.
     });
   }
 
@@ -120,9 +118,6 @@ class Overview extends PageComponent {
     const brokers = api.brokers ?? [];
     const clusterStatus = clusterStatusOf(overview.kafka?.status?.status);
 
-    // On an unreachable cluster the brokers request fails and `api.brokers` stays
-    // null forever, so there is no storage to report — fall back to the same N/A
-    // placeholder as every other stat rather than a "..." that never resolves.
     const brokerSize =
       api.brokers && brokers.length > 0 ? prettyBytes(brokers.sum((x) => x.totalLogDirSizeBytes ?? 0)) : NOT_AVAILABLE;
 
@@ -137,7 +132,6 @@ class Overview extends PageComponent {
 
         <PageContent className="overviewGrid">
           <div className="my-4">
-            {/* Card padding (py-4) plus this row's py-1 keeps the stats band's 20px inset. */}
             <CompactSection>
               <div className="flex gap-8 py-1">
                 <Stat
@@ -263,6 +257,9 @@ class Overview extends PageComponent {
   }
 }
 
+/**
+ * Brokers may never load for an unreachable cluster. Show available metrics and mark missing storage N/A rather than leaving a spinner or reporting zero.
+ */
 export default Overview;
 
 type DetailsBlockProps = { title: string; children?: React.ReactNode };
@@ -273,7 +270,6 @@ const DetailsBlock: FC<DetailsBlockProps> = ({ title, children }) => (
       <h4 className="pb-1 text-body-sm font-semibold text-subtle uppercase">{title}</h4>
     </div>
     {children}
-    {/* Hairline between blocks. */}
     <div className="col-span-1 my-4 h-px bg-border lg:col-span-3" />
   </>
 );
@@ -327,7 +323,6 @@ const kafkaConnectLines: (kafkaConnect: ClusterOverview['kafkaConnect']) => Deta
   return clusters.map((c) => [c.name, formatStatus(c.status)]);
 };
 
-// Without broker data, a "0 B" total would be wrong — report N/A instead.
 const storageSummaryOf = (brokers: BrokerWithConfigAndStorage[] | null) => {
   const storageOrNA = (bytes: number) => (brokers == null ? NOT_AVAILABLE : prettyBytesOrNA(bytes));
   const brokerList = brokers ?? [];
@@ -345,9 +340,7 @@ function ClusterDetails() {
   const brokers = api.brokers;
   const licenses = api.licenses;
 
-  // Only the cluster overview gates the skeleton. `brokers` can stay null on an
-  // unreachable cluster (the request fails and never resolves), so waiting for it
-  // would spin this panel forever — render what we have and mark the rest N/A.
+  // WARNING: Do not gate the skeleton on brokers; an unreachable cluster can leave the broker list unset indefinitely.
   if (!overview) {
     return <SkeletonText className="mt-5" lines={13} width="full" />;
   }

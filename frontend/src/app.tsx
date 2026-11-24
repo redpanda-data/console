@@ -12,9 +12,7 @@
 // WARNING: Load array extensions before modules that call them at import time.
 import './utils/array-extensions';
 
-/* TLS is optional, so Console is often served over plain HTTP — not a secure context, where
-   `navigator.clipboard` is absent and every copy silently fails. Delegates to native where it exists.
-   Needed in each entry point. */
+// WARNING: Keep clipboard support in this entry point; plain HTTP does not expose navigator.clipboard.
 import 'clipboard-polyfill/overwrite-globals';
 
 import '@xyflow/react/dist/base.css';
@@ -65,7 +63,7 @@ import { installUISettingsSideEffects } from './state/ui';
 import { installDarkModeAvailabilitySync, isDarkModeAvailable, themeInitFor } from './theme-init';
 
 const dataplaneTransport = createConnectTransport({
-  baseUrl: getGrpcBasePath(''), // Embedded mode handles the path separately.
+  baseUrl: getGrpcBasePath(''),
   interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
   jsonOptions: {
     registry: protobufRegistry,
@@ -129,10 +127,7 @@ const App = () => {
   return (
     <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
-      {/* Standalone only: embedded and federated mode leave data-theme to the Cloud UI host. The theme
-          follows this load's dark-mode availability (theme-init.ts). */}
       <ThemeProvider {...themeInitFor(isDarkModeAvailable())}>
-        {/* showToast viewport, above the router so the error boundary and login can toast */}
         <BaseUiToaster testId="console-toasts" />
         <TransportProvider transport={dataplaneTransport}>
           <QueryClientProvider client={queryClient}>
@@ -145,4 +140,7 @@ const App = () => {
   );
 };
 
+/**
+ * Standalone owns the saved theme. Embedded hosts own their own theme. Keep toast rendering above router content so login and route errors can report failures.
+ */
 export default App;

@@ -57,7 +57,6 @@ const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BAS
 export const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
 const getControlplanePath = () => {
-  // TODO: Make this part of config from Cloud UI
   if (window.location.hostname.includes('main')) {
     return 'https://api.ign.cloud.redpanda.com';
   }
@@ -70,6 +69,9 @@ const getControlplanePath = () => {
   return 'https://api.ign.cloud.redpanda.com';
 };
 
+/**
+ * The explicit host override takes precedence over the standalone hostname fallback.
+ */
 export const getControlplaneBasePath = (overrideUrl?: string) => overrideUrl ?? getControlplanePath();
 
 export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
@@ -97,15 +99,6 @@ export const createAuthInjectingFetch: (
   return baseFetch(input, { ...init, headers });
 };
 
-/**
- * Interceptor to handle license expiration errors in gRPC responses.
- *
- * This interceptor checks if the error is of type `ConnectError` with the
- * code `FailedPrecondition` and inspects the `details` array for an entry
- * with type `google.rpc.ErrorInfo` and a reason of `REASON_ENTERPRISE_LICENSE_EXPIRED`.
- * If such an error is detected, it redirects the user to the `/trial-expired` page.
- *
- */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
   try {
@@ -113,7 +106,6 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
   } catch (error) {
     if (error instanceof ConnectError && error.code === Code.FailedPrecondition) {
       for (const detail of error.details) {
-        // TODO fix type checks for IncomingDetail, BE should provide types for debug field
         const detailWithDebug = detail as { type?: string; debug?: { reason?: string } };
         if (
           detailWithDebug?.type &&
@@ -210,7 +202,6 @@ const setConfig = ({
   const assetsUrl =
     urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
 
-  // instantiate the client once, if we need to add more clients you can add them in here, ideally only one transport is necessary
   const dataplaneTransport = createConnectTransport({
     baseUrl: getGrpcBasePath(urlOverride?.grpc),
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
@@ -249,7 +240,7 @@ const setConfig = ({
     serviceAccountClient: createClient(ServiceAccountService, controlplaneTransport),
     roleBindingClient: createClient(RoleBindingService, controlplaneTransport),
     shadowLinkClient: createClient(ShadowLinkService, controlplaneTransport),
-    featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...(window.__E2E_FEATURE_FLAGS__ ?? {}) }, // Needed for legacy UI purposes where we don't use functional components.
+    featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...(window.__E2E_FEATURE_FLAGS__ ?? {}) },
     ...args,
   });
   return config;
@@ -288,8 +279,7 @@ function installUiStateSubscriptions() {
         return;
       }
 
-      // Don't emit sidebar items until endpoint compatibility is known,
-      // otherwise items gated by feature support will flicker.
+      // WARNING: Wait for endpoint compatibility before publishing links; otherwise unsupported links flash in the host sidebar.
       if (!api.endpointCompatibility) {
         return;
       }
@@ -388,6 +378,8 @@ export function teardownSetup() {
 
 /**
  * Reuses setup for identical arguments and replaces the current poll and teardown when the host arguments change.
+ *
+ * Installs one transport per endpoint and resets ownership for fresh login and sidebar state. Legacy UI shares the same clients.
  */
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   // WARNING: Tear down previous setup state before replacing it or the old poll and subscribers can continue running.
@@ -395,7 +387,6 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
 
   setConfig(setupArgs);
 
-  // Reset the cancel flag now that we're installing fresh state.
   checkUserDataCancelled = false;
 
   subscriptionInstallTimeoutId = setTimeout(() => {

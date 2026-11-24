@@ -9,7 +9,6 @@ type ErrorBoundaryState = {
 };
 
 function reportBoundaryError(error: Error, errorInfo: ErrorInfo) {
-  // Log the error to an error reporting service, if needed
   // biome-ignore lint/suspicious/noConsole: error boundary logging for debugging component errors
   console.error('NullFallbackBoundary caught an error', error, errorInfo);
 }

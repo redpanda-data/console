@@ -186,6 +186,9 @@ function getKafkaFeatureAlert(
   }
   return null;
 }
+/**
+ * Treat the trial as baked-in only while all returned licenses are baked-in, and wait for broker distribution before showing a Redpanda license notice.
+ */
 export const FeatureLicenseNotification: FC<{
   featureName: 'reassignPartitions' | 'rbac';
 }> = ({ featureName }) => {
@@ -193,10 +196,10 @@ export const FeatureLicenseNotification: FC<{
 
   useEffect(() => {
     api.refreshClusterOverview().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: The API store owns this refresh failure; do not duplicate the error in the notification.
     });
     api.listLicenses().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: The API store owns license request errors; do not infer an expired license from a failed request.
     });
   }, []);
 
@@ -206,9 +209,6 @@ export const FeatureLicenseNotification: FC<{
 
   const license = getLatestExpiringLicense(licenses);
 
-  // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.
-  // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where,
-  // use has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
   const bakedInTrial = licenses.every((lic) => isBakedInTrial(lic));
 
   const alertContent = getLicenseAlertContentForFeature(
@@ -221,7 +221,6 @@ export const FeatureLicenseNotification: FC<{
     }
   );
 
-  // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
   if (api.clusterOverview === null || !license || alertContent === null) {
     return null;
   }

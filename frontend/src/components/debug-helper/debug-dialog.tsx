@@ -127,8 +127,6 @@ function useForceUpdate() {
   return useCallback(() => setTick((n) => n + 1), []);
 }
 
-// Scale/fade pop for small elements that mount and unmount (badges, count dots).
-// Render inside an <AnimatePresence> so the exit animation can play.
 function PopIn({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <motion.span
@@ -212,7 +210,6 @@ type FixtureEntry = {
   group: FixtureTag;
   end: PipelineEndStatus;
   lineCount: number;
-  /** Console secrets that must exist before Cloud saves it. */
   secrets: string[];
 };
 
@@ -277,7 +274,6 @@ function ConfigFixtureRow({ entry }: { entry: FixtureEntry }) {
                 <>
                   {' '}
                   needs {secrets.length === 1 ? 'the secret' : 'the secrets'}
-                  {/* InlineCode's chip at the row's text size and line height */}
                   {secrets.map((name) => (
                     <code
                       className="relative rounded bg-surface-subtle px-[0.3rem] font-mono text-body-sm leading-normal font-medium"
@@ -335,8 +331,6 @@ function ConnectConfigsPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Stays in view while the list scrolls. Sticky offsets count from inside the scroller's padding,
-          so the negative top and margins cancel it. */}
       <div className="sticky -top-4 z-10 -mx-5 -mt-4 flex flex-wrap items-center gap-2 border-b bg-background px-5 py-2">
         <Input
           aria-label="Filter configs by name, tag, secret or how they run"
@@ -451,7 +445,7 @@ function SimulatePanel({ onClose }: { onClose: () => void }) {
           <Button
             onClick={() => {
               onClose();
-              // Defer the throw so the dialog finishes unmounting before the boundary trips.
+              // WARNING: Let the dialog unmount before throwing into the error boundary.
               setTimeout(() => setRenderThrow(true), 50);
             }}
             size="sm"
@@ -628,8 +622,7 @@ function StorageSection({
   onConfirmClear: () => void;
   filter: string;
 }) {
-  // Computed on every render (no memo): the Storage object is a stable reference,
-  // so memoizing on it would keep serving deleted entries after a Clear.
+  // WARNING: Do not memoize reads by the Storage object; its identity survives Clear and would keep deleted rows visible.
   const q = filter.trim().toLowerCase();
   const entries = readStorageEntries(storage)
     .sort((a, b) => a.key.localeCompare(b.key))
@@ -837,7 +830,6 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
             const effectiveValue = effective[key];
             return (
               <Item className="flex-col items-stretch" key={key} size="xs" variant="outline">
-                {/* h-5 matches the badge so the row doesn't grow when it appears */}
                 <div className="flex h-5 min-w-0 items-center gap-1.5">
                   <ElementTooltip content={key}>
                     <code
@@ -1001,7 +993,6 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
     <ItemGroup className="overflow-hidden">
       {rows.map(({ panel, icon, label, value, active }, index) => (
         <Fragment key={panel}>
-          {/* Bare border-b (not the divider token) so it matches the container's border color in both themes */}
           {index > 0 ? <ItemSeparator /> : null}
           <Item
             className="cursor-pointer text-left"
@@ -1030,6 +1021,9 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
   );
 }
 
+/**
+ * Small transient badges use AnimatePresence so their exit animations can finish. Storage inspection reflects mutations even when the Storage object is unchanged.
+ */
 export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [panel, setPanel] = useState<PanelId>('overview');
   const forceUpdate = useForceUpdate();
@@ -1154,8 +1148,6 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   );
 }
 
-// Floating launcher, portaled to document.body: in embedded mode this component
-// mounts inside a hidden host container (the dialog escapes via its own portal).
 function DebugLauncher({ onClick }: { onClick: () => void }) {
   const activeCount = getEnabledVisualDebuggers().length + Object.keys(getFlagOverrides()).length;
 
@@ -1181,6 +1173,9 @@ function DebugLauncher({ onClick }: { onClick: () => void }) {
   );
 }
 
+/**
+ * Portals the launcher to document.body because embedded Console can mount inside a hidden host container.
+ */
 export function DebugHelperRoot() {
   const [open, setOpen] = useState(false);
 

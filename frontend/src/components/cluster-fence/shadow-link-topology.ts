@@ -55,9 +55,11 @@ export type ShadowLinkPeerFence =
       brokers: ShadowLinkPeerFenceBroker[];
     });
 
+/**
+ * External means the source is not managed by Redpanda Cloud, for example a self-hosted cluster.
+ */
 export type ShadowLinkSource =
   | { kind: 'cloud'; clusterId: string; clusterName: string; fence: ShadowLinkPeerFence }
-  /** A source Redpanda Cloud doesn't manage, such as a link to a self-hosted cluster. */
   | { kind: 'external'; bootstrapServers: string[] };
 
 export type ShadowLinkReader = Required<Pick<LinkIdentity, 'authentication'>> &
@@ -160,11 +162,7 @@ const hasPotentialCloudSource = (
   return candidates.clusters.some((candidate) => candidate.id !== clusterId && matchesHost(endpoints, candidate));
 };
 
-/**
- * Whether a link reads from `self`, or what that waits on. Exact host:port matches never clash. A
- * host-only match only counts once no other cluster matches those servers too: clusters can share a
- * host on different ports, as local ones do.
- */
+// WARNING: Only count a host-only match once it is unique; clusters can share a host on different ports.
 const readsFrom = (
   link: Pick<ShadowLinkListItem, 'shadowRedpandaId'>,
   bootstrapServers: readonly string[],
@@ -280,7 +278,6 @@ const resolveSources = (
 
 type ReaderLookup = Pick<TopologyInputs, 'self' | 'clusterNames' | 'candidates'>;
 
-/** The link as a reader of this cluster, undefined when it reads from elsewhere, or why that isn't known. */
 const readerFrom = (
   link: ShadowLinkListItem,
   details: Loaded<ShadowLink>,
@@ -340,6 +337,8 @@ export const needsOtherClusters = ({
  * Who reads from this cluster and, for each link on it, where that link reads from, with every Cloud
  * source's fence still loading (see `withPeerFences`). A link reads from this cluster when its
  * bootstrap servers match this cluster's seed brokers and no other cluster's.
+ *
+ * A link known to read elsewhere is not a reader. Unresolved source details are tracked separately from a confirmed non-match.
  */
 export const buildShadowLinkTopology = ({
   clusterId,

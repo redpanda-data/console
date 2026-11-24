@@ -26,7 +26,6 @@ export const FENCE_PHASE_LABEL: Record<FencePhase, string> = {
   unfencing: 'Unfencing',
 };
 
-/** A move still waiting on an answering broker after this long names that broker. */
 const BEHIND_NOTICE_MS = 30 * 1000;
 
 const PHASE_BY_STATE: Partial<Record<ClusterFenceState, FencePhase>> = {
@@ -284,10 +283,8 @@ export const toExemptName = (principal: string) => {
 
 type ReadPolicyWarning = {
   id: string;
-  /** `danger` locks out every shadow link; `warning` matches nobody; `info` explains a rule. */
   severity: 'danger' | 'warning' | 'info';
   message: string;
-  /** A one-click correction, such as the bare name for a `User:` entry. */
   fix?: { label: string; principals: (principals: string[]) => string[] };
 };
 
@@ -309,7 +306,11 @@ const userPrefixWarning: (principal: string) => ReadPolicyWarning = (principal) 
   };
 };
 
-/** The cases the broker only logs on the controller leader, plus the rules that surprise people. */
+/**
+ * The cases the broker only logs on the controller leader, plus the rules that surprise people.
+ *
+ * Distinguishes a policy that locks out all readers from an entry that matches nobody. A warning may include a correction for the exemption list.
+ */
 export const getReadPolicyWarnings = (principals: string[], allowAllReads: boolean) => {
   if (allowAllReads) {
     return [];
@@ -337,13 +338,13 @@ const FENCED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|s
  */
 export const isFencedReadError = (message: string) => FENCED_READ_REJECTION.test(message);
 
-/**
- * The Kafka-namespace topics Redpanda doesn't count as user topics. Any other name is fenced,
- * `_`-prefixed or not.
- */
 const NON_USER_TOPICS = new Set(['__consumer_offsets', '_schemas', '_redpanda.audit_log', '_redpanda.transform_logs']);
 
-/** Whether a fence rejects creating, deleting or changing the config of this topic. */
+/**
+ * Whether a fence rejects creating, deleting or changing the config of this topic.
+ *
+ * Only Redpanda's known internal Kafka topics are exempt. An underscore prefix alone doesn't make a topic internal.
+ */
 export const isFencedTopic = (topic: string) => !NON_USER_TOPICS.has(topic);
 
 /** Whether a fence rejects producing to this topic: `_schemas` too, since the fence covers Schema Registry. */
@@ -384,10 +385,6 @@ const moveSplitDetail = (
     ? `${words.allowed} again on ${brokersPhrase(open)}. Still ${words.rejected.toLowerCase()} on ${brokersPhrase(blocking)} until the change reaches ${reach(blocking)}.`
     : `${words.rejected} on ${brokersPhrase(blocking)}. Still ${words.allowed.toLowerCase()} on ${brokersPhrase(open)} until the fence reaches ${reach(open)}.`;
 
-/**
- * During a move only the brokers that already have it reject. The details stay general: the
- * error codes clients get are cluster settings, so Console can't name them.
- */
 const splitVerdict = (
   summary: Pick<FenceSummary, 'phase'>,
   brokers: readonly BrokerProgress[],
@@ -406,7 +403,7 @@ const splitVerdict = (
 
 type ReadCheck = (policy: ReadPolicy) => boolean | undefined;
 
-/** Undefined for a broker that didn't answer, which counts neither way, as with writes. */
+// WARNING: An unanswered broker contributes neither an allow nor a deny verdict.
 const brokerRead = (broker: BrokerProgress, policy: ReadPolicy, canRead: ReadCheck) => {
   if (broker.blocks === undefined) {
     return;
@@ -421,7 +418,6 @@ const brokerRead = (broker: BrokerProgress, policy: ReadPolicy, canRead: ReadChe
   return verdict ? 'allows' : 'rejects';
 };
 
-/** A broker that still enforces settings other than the cluster's, so its reads go by those. */
 const onEarlierSettings = (broker: BrokerProgress, policy: ReadPolicy) =>
   broker.blocks === true && broker.copy?.readPolicy !== undefined && !sameFenceSettings(broker.copy.readPolicy, policy);
 
@@ -443,7 +439,6 @@ const readSplitDetail = (
 
 const UNKNOWN_READ: Verdict = { verdict: 'unknown', detail: MTLS_LINK_NOTE };
 
-/** Without brokers to go by, the cluster's own fence and read policy decide. */
 const clusterReadVerdict = (summary: Pick<FenceSummary, 'phase'> & ReadPolicy, canRead: ReadCheck) => {
   const verdict = isBlockingPhase(summary.phase) ? canRead(summary) : true;
   if (verdict === undefined) {
@@ -452,11 +447,6 @@ const clusterReadVerdict = (summary: Pick<FenceSummary, 'phase'> & ReadPolicy, c
   return verdict ? ALLOWED : REJECTED;
 };
 
-/**
- * Each broker reads by its own copy of the read policy: after a settings change, a broker the new
- * settings haven't reached keeps the old exempt list and Allow all reads until they do. Unknown when
- * a blocking broker can't tell, as for an mTLS link.
- */
 const readVerdict: (
   summary: Pick<FenceSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads'>,
   brokers: readonly BrokerProgress[],
@@ -479,7 +469,6 @@ const readVerdict: (
     : { verdict: 'partly', detail: readSplitDetail(summary, rejecting, allowing) };
 };
 
-/** Each broker ends the open transactions it coordinates as soon as the fence reaches it. */
 const transactionVerdict: (summary: Pick<FenceSummary, 'phase'>, brokers: readonly BrokerProgress[]) => Verdict = (
   summary,
   brokers
@@ -497,6 +486,8 @@ const transactionVerdict: (summary: Pick<FenceSummary, 'phase'>, brokers: readon
 /**
  * What a client sees on this cluster right now, row by row, as the reference player shows it.
  * `links` are the shadow links that read from this cluster, when Console knows them.
+ *
+ * During a move, an answering broker enforces its own fence and read policy, even if it has not received the latest settings. An unanswered broker is unknown. A broker ends its coordinated transactions when the fence reaches it. Without broker copies, use the cluster policy.
  */
 export const getClientEffects = ({
   summary,
@@ -514,7 +505,6 @@ export const getClientEffects = ({
     ...readVerdict(summary, brokers, (policy) => linkCanRead(policy, link)),
   }));
   const consume = readVerdict(summary, brokers, (policy) => policy.allowAllReads);
-  /** Without the links themselves, a reminder that comes last: not every cluster is a link's source. */
   const anyLinkRow: ClientEffect[] =
     knownLinks.length > 0
       ? []

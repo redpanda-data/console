@@ -41,7 +41,6 @@ import { labelsToMap, SCOPE_OPTIONS } from '../secret-form-shared';
 
 const routeApi = getRouteApi('/secrets/$id/edit');
 
-/** The console-managed `owner: console` label is hidden from the form. */
 const toFormValues: (secret: Secret) => SecretUpdateFormValues = (secret) => ({
   id: secret.id,
   value: '',
@@ -208,6 +207,9 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
   );
 };
 
+/**
+ * The Console-owned owner label is not shown or edited in the form.
+ */
 export const SecretEditPage = () => {
   const { id } = routeApi.useParams();
   const navigate = useNavigate();

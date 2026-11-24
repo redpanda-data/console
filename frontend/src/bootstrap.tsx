@@ -14,7 +14,7 @@ import { createRoot } from 'react-dom/client';
 import App from './app';
 import { isDarkModeAvailable, themeInitFor } from './theme-init';
 
-// Pre-paint theme stamp, for a load whose inline index.html script could not run.
+// WARNING: Keep the pre-paint fallback for loads where the inline theme script could not run.
 initTheme(themeInitFor(isDarkModeAvailable()));
 
 const rootElement = document.querySelector('#root');

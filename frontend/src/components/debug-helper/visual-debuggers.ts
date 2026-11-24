@@ -56,8 +56,7 @@ export const VISUAL_DEBUGGERS: VisualDebugger[] = [
 const STORAGE_KEY = '__debug_visual_debuggers';
 const STYLE_ELEMENT_ID = '__debug-visual-styles';
 
-// Root-element filters don't create a containing block for fixed-position
-// descendants, so grayscale/blur on <html> won't break dialogs or toasts.
+// WARNING: Keep visual filters on the root; applying them to a wrapper can trap fixed-position dialogs and toasts.
 const DEBUG_CSS = `
 html.__debug-grayscale { filter: grayscale(1); }
 html.__debug-blur { filter: blur(3px); }
@@ -139,6 +138,9 @@ function applyDomState(enabled: VisualDebuggerId[]) {
   }
 }
 
+/**
+ * Dev-only overlays restore the tab's persisted selections at module load.
+ */
 export function getEnabledVisualDebuggers() {
   return readEnabled();
 }
@@ -160,7 +162,6 @@ export function clearVisualDebuggers() {
   applyDomState([]);
 }
 
-// Re-apply persisted debuggers at module load so overlays survive a reload.
 if (IsDev && typeof window !== 'undefined') {
   try {
     const enabled = readEnabled();
@@ -168,6 +169,6 @@ if (IsDev && typeof window !== 'undefined') {
       applyDomState(enabled);
     }
   } catch {
-    // sessionStorage / DOM unavailable.
+    // WARNING: Browser storage or the DOM can be unavailable; dev overlays must not prevent startup.
   }
 }

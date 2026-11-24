@@ -46,7 +46,6 @@ function TabGo(_p: Record<string, never>) {
         <Alert variant="informative">
           <AlertTitle>Hint</AlertTitle>
           <AlertDescription>
-            {/* One block child: AlertDescription is a grid, so loose text runs each become a row. */}
             <p>
               When creating a custom data transform, initialization steps can be done either in{' '}
               <InlineCode>main</InlineCode> (because it's only run once at the start of the package) or in Go's standard

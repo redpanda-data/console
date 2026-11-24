@@ -25,6 +25,8 @@ import { api } from '../../state/backend-api';
  *
  * In embedded mode, it also notifies the shell (Cloud UI) when Console
  * navigates internally, allowing the shell to sync its router state.
+ *
+ * Federated hosts use onRouteChange; legacy embedded hosts receive the window navigation event instead.
  */
 export const RouterSync = () => {
   const navigate = useNavigate();
@@ -63,10 +65,6 @@ export const RouterSync = () => {
   return null;
 };
 
-/**
- * Detect MFv2 federated mode. In federated mode, console-app.tsx sets up its own
- * navigation sync via onRouteChange — the legacy window event dispatch is not needed.
- */
 function isFederatedMode() {
   return appConfig.clusterId !== undefined && appConfig.clusterId !== '';
 }

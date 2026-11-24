@@ -68,7 +68,7 @@ export const ShadowLinkSection: FC = () => {
     return null;
   }
 
-  const shadowLink = shadowLinks[0]; // Only one shadow link is allowed
+  const shadowLink = shadowLinks[0];
 
   return <ShadowLinkOverviewCard shadowLink={shadowLink} />;
 };

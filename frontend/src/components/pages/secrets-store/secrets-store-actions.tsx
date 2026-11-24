@@ -33,6 +33,9 @@ export type SecretsStoreActionsCellProps = {
   isDeleting: boolean;
 };
 
+/**
+ * Copy keeps the menu open. The confirmation dialog is a sibling of the menu so it survives the menu closing.
+ */
 export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }: SecretsStoreActionsCellProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -67,7 +70,6 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
           }
         />
         <DropdownMenuContent align="end" className="w-[200px]">
-          {/* Stays open after copying, as the copy button it replaced did. */}
           <DropdownMenuItem closeOnClick={false} data-testid="secret-copy-id-button" onClick={handleCopyId}>
             <div className="flex items-center gap-4">
               <CopyIcon className="h-4 w-4" />
@@ -85,7 +87,6 @@ export const SecretsStoreActionsCell = ({ secret, onEdit, onDelete, isDeleting }
           <DeleteResourceMenuItem isDeleting={isDeleting} onSelect={() => setIsDeleteDialogOpen(true)} />
         </DropdownMenuContent>
       </DropdownMenu>
-      {/* Render the dialog as a sibling of the dropdown so the dialog survives the menu's unmount on close. */}
       <DeleteResourceAlertDialog
         isDeleting={isDeleting}
         onDelete={handleDelete}
