@@ -238,10 +238,7 @@ function groupHintsByNode(hints: LintHint[], ranges: NodeRange[]) {
   return byNode;
 }
 
-export function mapLintHintsToNodes(yaml: string, hints: LintHint[]): Map<string, LintHint[]> {
-  if (!yaml || hints.length === 0) {
-    return new Map();
-  }
-  const ranges = nodeLineRangesOrUndefined(yaml);
-  return ranges ? groupHintsByNode(hints, ranges) : new Map();
+export function mapLintHintsToNodes(yaml: string, hints: LintHint[]) {
+  const ranges = yaml && hints.length > 0 ? nodeLineRangesOrUndefined(yaml) : undefined;
+  return ranges ? groupHintsByNode(hints, ranges) : new Map<string, LintHint[]>();
 }

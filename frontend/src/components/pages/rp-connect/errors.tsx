@@ -16,7 +16,7 @@ import { ConnectError } from '@connectrpc/connect';
  * - err.rawMessage: Raw error from server
  * - err.details: Array of error details (LintHint, BadRequest, etc.)
  */
-export function extractLintHintsFromError(err: unknown): Record<string, LintHint> {
+export function extractLintHintsFromError(err: unknown) {
   if (!(err instanceof ConnectError)) {
     return toHintRecord([errorHint(err instanceof Error ? err.message : String(err))]);
   }
@@ -50,7 +50,10 @@ function errorHint(hint: string) {
 }
 
 function toHintRecord(hints: LintHint[]) {
-  return Object.fromEntries(hints.map((hint, index) => [`hint_${index}`, hint])) satisfies Record<string, LintHint>;
+  const byKey: Record<string, LintHint> = Object.fromEntries<LintHint>(
+    hints.map((hint, index) => [`hint_${index}`, hint])
+  );
+  return byKey;
 }
 
 function lintHintsFromDetails(details: ConnectError['details']) {

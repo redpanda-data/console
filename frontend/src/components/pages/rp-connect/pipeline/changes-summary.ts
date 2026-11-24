@@ -51,12 +51,11 @@ const describeChange: (id: string, node: PipelineFlowNode | undefined, kind: Cha
   label: node?.labelText ?? node?.label ?? '',
 });
 
-/** edited one. Unmatched on both sides is a change in place; on one side only, an addition or a removal. */
-export function summarizeComponentChanges(
-  savedYaml: string,
-  editedYaml: string,
-  changedIds: string[]
-): ComponentChange[] {
+/**
+ * Node IDs are positional. Compare both directions: a node unmatched on both
+ * sides changed in place; a node unmatched on just one side was added or removed.
+ */
+export function summarizeComponentChanges(savedYaml: string, editedYaml: string, changedIds: string[]) {
   const saved = componentNodesById(savedYaml);
   const edited = componentNodesById(editedYaml);
   const unmatchedEdited = changedIds.filter((id) => edited.has(id));

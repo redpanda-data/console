@@ -27,7 +27,7 @@ const orElse = <T>(read: () => T, fallback: T) => {
   }
 };
 
-function readConfigFacts(configYaml: string): ConfigListFacts {
+function readConfigFacts(configYaml: string) {
   const config = configYaml
     ? orElse(() => parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null, undefined)
     : undefined;
@@ -35,7 +35,8 @@ function readConfigFacts(configYaml: string): ConfigListFacts {
     return NO_FACTS;
   }
   const end = orElse(() => summarizePipelineEnd(config).status, 'none');
-  return { ...orElse(() => configComponentsOf(config), NO_FACTS), end };
+  const facts: ConfigListFacts = { ...orElse(() => configComponentsOf(config), NO_FACTS), end };
+  return facts;
 }
 
 const configComponentsCache = new Map<string, ConfigListFacts>();
@@ -49,7 +50,7 @@ const CONFIG_COMPONENTS_CACHE_LIMIT = 10_000;
  * the keys, not the parsed values. Past that ceiling the oldest half is evicted and re-parses on the
  * next poll, so a cluster steadily above 10k pays the parse this avoids.
  */
-export function parseConfigComponentsCached(configYaml: string): ConfigListFacts {
+export function parseConfigComponentsCached(configYaml: string) {
   const cached = configComponentsCache.get(configYaml);
   if (cached) {
     return cached;

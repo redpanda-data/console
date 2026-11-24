@@ -22,13 +22,13 @@ export const toReplicationSlotName = (pipelineName: string) => {
   return `rpcn_${sanitized || 'pipeline'}`.slice(0, 63);
 };
 
-export const dsnSlot = (
+export const dsnSlot: (
   id: string,
   dbName: string,
   suggested: string,
   schemaField?: string,
-  section: 'source' | 'sink' = 'source'
-): SecretSlot => ({
+  section?: 'source' | 'sink'
+) => SecretSlot = (id, dbName, suggested, schemaField, section = 'source') => ({
   id,
   section,
   kind: 'secret',

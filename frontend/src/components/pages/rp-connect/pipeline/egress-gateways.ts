@@ -37,17 +37,14 @@ const isUsable = ({ state, status }: ServerlessEgressGateway) =>
  * so saving other settings doesn't silently drop them. Until the gateways load (`undefined`), a
  * selected gateway is labelled by its ID alone.
  */
-export function egressGatewayOptions(
-  gateways: ServerlessEgressGateway[] | undefined,
-  selectedIds: string[]
-): EgressGatewayOption[] {
+export function egressGatewayOptions(gateways: ServerlessEgressGateway[] | undefined, selectedIds: string[]) {
   if (!gateways) {
-    return selectedIds.map((id) => ({ id, label: id, available: false }));
+    return selectedIds.map<EgressGatewayOption>((id) => ({ id, label: id, available: false }));
   }
   const byId = new Map(gateways.map((gateway) => [gateway.id, gateway]));
   const usable = gateways
     .filter(isUsable)
-    .map((gateway) => ({ id: gateway.id, label: gateway.displayName, available: true }))
+    .map<EgressGatewayOption>((gateway) => ({ id: gateway.id, label: gateway.displayName, available: true }))
     .sort((a, b) => a.label.localeCompare(b.label));
   const unusable = selectedIds
     .filter((id) => !usable.some((option) => option.id === id))

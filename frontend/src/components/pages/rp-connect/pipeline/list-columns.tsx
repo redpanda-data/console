@@ -123,13 +123,13 @@ const PipelineNameCell = ({ pipeline, name }: { pipeline: PipelineRow; name: str
 /**
  * Render the metric name and multiplier as one text node to keep them on the same baseline.
  */
-export const createColumns = ({
+export const createColumns: (options: CreateColumnsOptions) => DataTableColumnDef<PipelineRow>[] = ({
   navigate,
   deleteMutation,
   startMutation,
   stopMutation,
   isDeletingPipeline,
-}: CreateColumnsOptions): DataTableColumnDef<PipelineRow>[] => [
+}) => [
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pipeline" />,

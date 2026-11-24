@@ -28,9 +28,12 @@ import type { EgressGatewayNames } from './changes-summary';
 import { egressGatewayOptions, isEgressGatewayPickerEnabled } from './egress-gateways';
 
 /** Names of the gateways this cluster's pipelines can use, by ID; empty unless the picker is enabled. */
-export function useEgressGatewayNames(): EgressGatewayNames {
+export function useEgressGatewayNames() {
   const { gateways } = useControlplaneListServerlessEgressGatewaysQuery({ enabled: isEgressGatewayPickerEnabled() });
-  return useMemo(() => new Map((gateways ?? []).map((gateway) => [gateway.id, gateway.displayName])), [gateways]);
+  return useMemo<EgressGatewayNames>(
+    () => new Map((gateways ?? []).map((gateway) => [gateway.id, gateway.displayName])),
+    [gateways]
+  );
 }
 
 // WARNING: Keep the selected gateway by ID when the list fails; a failed load is not an empty list.
