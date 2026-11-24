@@ -73,9 +73,6 @@ export const getACLOperationName = (operation: ACL_Operation) => {
   }
 };
 
-/**
- * Helper function to check if an ACL resource pattern matches a given topic name
- */
 const doesPatternMatchTopic = (resourceName: string, patternType: ACL_ResourcePatternType, topicName: string) => {
   switch (patternType) {
     case ACL_ResourcePatternType.LITERAL:
@@ -89,7 +86,6 @@ const doesPatternMatchTopic = (resourceName: string, patternType: ACL_ResourcePa
   }
 };
 
-/** Operations `username` holds an ALLOW for across `resources`; ALL/ANY stand for `impliedByAll`. */
 const allowedOperations = (resources: ListACLsResponse_Resource[], username: string, impliedByAll: ACL_Operation[]) => {
   const allowed = new Set<ACL_Operation>();
   const principal = `User:${username}`;
@@ -124,6 +120,9 @@ const TOPIC_ACCESS_OPERATIONS: Record<TopicAccess, ACL_Operation[]> = {
   'read-write': [ACL_Operation.READ, ACL_Operation.WRITE],
 };
 
+/**
+ * An ALLOW for ALL or ANY implies the requested operations after matching the resource pattern.
+ */
 export const checkUserHasTopicPermissions: (
   aclResources: ListACLsResponse_Resource[],
   topicName: string,
@@ -138,13 +137,14 @@ export const checkUserHasTopicPermissions: (
       doesPatternMatchTopic(resource.resourceName, resource.resourcePatternType, topicName)
   );
 
-  // Get all operations that the user has ALLOW permissions for. If user has ALL or ANY operation,
-  // they have all permissions including READ and WRITE.
   const userAllowedOps = allowedOperations(topicACLs, username, [ACL_Operation.READ, ACL_Operation.WRITE]);
 
   return splitByGranted(requiredOps, userAllowedOps);
 };
 
+/**
+ * An ALLOW for ALL or ANY implies the requested operations after matching the resource pattern.
+ */
 export const checkUserHasConsumerGroupPermissions: (
   aclResources: ListACLsResponse_Resource[],
   consumerGroupName: string,
@@ -158,8 +158,6 @@ export const checkUserHasConsumerGroupPermissions: (
       doesPatternMatchTopic(resource.resourceName, resource.resourcePatternType, consumerGroupName)
   );
 
-  // Get all operations that the user has ALLOW permissions for. If user has ALL or ANY operation,
-  // they have all permissions.
   const userAllowedOps = allowedOperations(groupACLs, username, [ACL_Operation.READ, ACL_Operation.DESCRIBE]);
 
   return splitByGranted(requiredOps, userAllowedOps);
@@ -472,7 +470,6 @@ export const useCreateUserWithSecretsMutation = () => {
       return { success: false, data: userData };
     }
 
-    // Only a user created here has a password to store.
     if (!existingUserSelected) {
       await storeUserSecrets(userData, createSecretMutation);
     }

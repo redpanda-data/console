@@ -41,7 +41,6 @@ export function componentStatusToString(status: ComponentStatus) {
   }
 }
 
-/** Maps component type to its plural proto ComponentList key and its YAML config key. */
 const COMPONENT_TYPE_MAPPINGS: Record<
   Exclude<ConnectComponentType, 'custom'>,
   { listKey: keyof ComponentList; yamlKey: ConnectConfigKey }
@@ -243,7 +242,7 @@ function populateWizardFields(spec: RawFieldSpec, componentName?: string, parent
     return userData.consumerGroup;
   }
 
-  // Only inject user/password secret refs in SASL context, to avoid leaking into TLS client_certs.
+  // WARNING: Inject secret references only in SASL; TLS client certificates must not acquire SASL credentials.
   if (
     componentName &&
     REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) &&
@@ -264,7 +263,6 @@ function saslSecretRef(fieldName: string, username: string) {
   }
 }
 
-/** Populates fields with Redpanda contextual variables (e.g. schema_registry.url) for supported components. */
 function populateContextualVariables(
   spec: RawFieldSpec,
   componentName?: string,
@@ -279,7 +277,6 @@ function populateContextualVariables(
   }
 }
 
-/** Redpanda Cloud connection defaults: TLS enabled, SASL mechanism from session or SCRAM-SHA-256. */
 function populateConnectionDefaults(
   spec: RawFieldSpec,
   componentName?: string,
@@ -331,8 +328,7 @@ function generateObjectValue(
   }
 
   const obj: Record<string, unknown> = {};
-  // Pass only this node's optionality; a non-optional child under an optional parent
-  // starts a fresh required boundary rather than inheriting the grandparent's.
+  // WARNING: Use the immediate parent's optionality; inheriting a grandparent's flag changes required-field handling inside an existing object.
   const childAncestorOptional = spec.optional === true;
 
   for (const child of spec.children) {
@@ -367,10 +363,6 @@ type GenerateDefaultValueOptions = {
   ancestorOptional?: boolean;
 };
 
-/**
- * Converts string default values to their proper types.
- * Returns undefined for empty-string defaults on non-string types.
- */
 function convertDefaultValue(defaultValue: string, type: string, kind?: string): unknown {
   if (defaultValue === '' && type !== 'string') {
     return;
@@ -429,7 +421,7 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
 function mayHaveLostDefault(spec: RawFieldSpec, ancestorOptional?: boolean) {
   return (
     (Boolean(ancestorOptional) && spec.kind !== 'scalar') ||
-    // Non-string types lose their defaults in proto (0/false/[] → ""), so can't be deemed required.
+    // WARNING: Do not infer non-string required fields from an empty proto default; serialization also drops false, zero, and empty collections.
     spec.type !== 'string' ||
     (spec.kind !== 'scalar' && Boolean(spec.advanced))
   );
@@ -437,7 +429,6 @@ function mayHaveLostDefault(spec: RawFieldSpec, ancestorOptional?: boolean) {
 
 const SCALAR_FIELD_TYPES = new Set<string>(['string', 'int', 'float', 'bool']);
 
-// Types whose value is a nested component edited on the canvas (all except the wizard-only `custom`).
 const COMPONENT_FIELD_TYPES = new Set<string>(CONNECT_COMPONENT_TYPE.filter((t) => t !== 'custom'));
 
 export function fieldHasOptions(spec: RawFieldSpec) {
@@ -502,7 +493,7 @@ function getRequiredFieldTypeHint(spec: RawFieldSpec) {
       case 'unknown':
         return 'value';
       default:
-        return spec.type; // 'string', 'object'
+        return spec.type;
     }
   })();
   switch (spec.kind) {

@@ -95,7 +95,6 @@ export const findBestRetentionSizeUnit: (bytes: number) => { value: number; unit
 
 type TopicConfigEntries = { configEntries?: Array<{ name: string; value: string | null }> };
 
-// A retention entry's value: -1 = infinite, otherwise the best-fitting unit; defaults when unset.
 function parseRetention<Unit extends string>(
   raw: string | null | undefined,
   defaults: { value: number; unit: Unit },

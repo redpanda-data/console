@@ -311,7 +311,6 @@ function usePaletteCatalog({
     const builtIn = components ? parseSchema(components) : [];
     return [...builtIn, ...(additionalComponents ?? [])];
   }, [components, additionalComponents]);
-  // Deprecated components can't be picked for new work; `allComponents` keeps them for the search hint.
   const pickable = useMemo(() => allComponents.filter((c) => !isDeprecatedComponent(c)), [allComponents]);
 
   const typeAllowed = useMemo(() => {
@@ -580,7 +579,6 @@ export const ConnectCommandPalette = ({
   const { q, results, outOfScopeTypes, deprecatedMatch } = usePaletteSearch(catalog, query, allowedTypes);
   const { allGroups, tabs, currentTab, browseItems } = usePaletteFacets({ catalog, recents, allowedTypes, tab });
 
-  // Enter commits the highlighted component; a single click only previews, double-click commits.
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.nativeEvent.isComposing && activeComponent) {
       event.preventDefault();
@@ -617,7 +615,6 @@ export const ConnectCommandPalette = ({
               allGroups={allGroups}
               browseItems={browseItems}
               onCommit={commit}
-              // Clicking a row only previews it; cmdk also drives this via hover/arrow nav through `onValueChange`.
               onPreview={(component) => setActiveValue(`${component.type}:${component.name}`)}
               query={q}
               results={results}

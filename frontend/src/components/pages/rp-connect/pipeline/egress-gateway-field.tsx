@@ -33,7 +33,7 @@ export function useEgressGatewayNames(): EgressGatewayNames {
   return useMemo(() => new Map((gateways ?? []).map((gateway) => [gateway.id, gateway.displayName])), [gateways]);
 }
 
-/** A failed list must not read as an empty one; the selection stays, labelled by ID. */
+// WARNING: Keep the selected gateway by ID when the list fails; a failed load is not an empty list.
 function LoadError({ error }: { error: ConnectError | null }) {
   return error ? (
     <p className="text-sm text-destructive">Couldn't load egress gateways: {error.rawMessage || error.message}</p>

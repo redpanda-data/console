@@ -52,7 +52,6 @@ export const AdvancedTopicSettings = memo<AdvancedTopicSettingsProps>(({ form, i
         disabled={isExistingTopic || disabled}
         name="replicationFactor"
         render={({ field }) => (
-          // Dimmed while creating a topic: the replication factor is read-only there.
           <div className={isExistingTopic ? undefined : 'opacity-70'}>
             <FormItem>
               <FormLabel>Replication factor</FormLabel>

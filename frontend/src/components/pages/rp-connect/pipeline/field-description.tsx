@@ -40,7 +40,6 @@ const MARKDOWN_COMPONENTS: Components = {
       <>{children}</>
     ),
   code: ({ children }) => (
-    // break-words, not break-all: only unbreakable strings (DSNs, URLs) wrap mid-token.
     <code className="rounded bg-muted px-1 py-0.5 font-mono text-body-sm wrap-break-word text-foreground">
       {children}
     </code>
@@ -64,11 +63,6 @@ const MarkdownBody = ({ markdown }: { markdown: string }) => (
   </div>
 );
 
-/**
- * Link to the field's own heading on the connector's docs page. Inline, not inline-flex: a flex box
- * baselines on the icon's bottom edge, which drops the word below the prose it follows. `tone="current"`
- * takes the muted help-text ink of whichever block it sits in.
- */
 const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }) => (
   <Link
     aria-label={fieldName ? `${fieldName} documentation` : 'Field documentation'}
@@ -77,7 +71,6 @@ const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }
     target="_blank"
     tone="current"
   >
-    {/* size-3 is the text's own rung; -0.15em centres it on the cap height. */}
     <BookOpenIcon className="mr-1 inline size-3 align-[-0.15em]" />
     Docs
   </Link>
@@ -89,7 +82,6 @@ const InlineHelp = ({ children, docsLink }: { children: React.ReactNode; docsLin
   </div>
 );
 
-/** AsciiDoc `description`, rendered as Markdown and collapsed to two lines when it runs long. */
 const LongDescription = ({ source, docsLink }: { source: string; docsLink: React.ReactNode }) => {
   const [expanded, setExpanded] = useState(false);
   const bodyId = useId();

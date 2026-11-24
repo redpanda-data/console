@@ -39,7 +39,6 @@ export function useCreateModeInitialYaml(opts: {
   const [resolved, setResolved] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
 
-  // Timeout: only applies to serverless mode where we wait for async prerequisites
   useEffect(() => {
     if (!(enabled && isServerlessMode) || resolved) {
       return;

@@ -102,7 +102,6 @@ type PipelineWrite = {
   egressGatewayIds: string[];
 };
 
-/** What a save reads and reports through, fixed for the save's duration. */
 type SaveFlow = {
   form: PipelineForm;
   editorStore: EditorStoreApi;
@@ -123,7 +122,6 @@ type SaveFlow = {
   assignUntitledName: () => Promise<void>;
 };
 
-/** One save that passed its checks: how it runs, and what it sends. */
 type SaveAttempt = {
   run: SaveRunIntent;
   isDraftSave: boolean;
@@ -152,7 +150,6 @@ function warnIfResized(form: PipelineForm, cpuShares: string | undefined) {
   }
 }
 
-/** The pipeline's service account, which Connect's service-account SASL logs in with, and its tracking tags. */
 function serviceAccountFields(account: AttachedServiceAccount | undefined) {
   if (!account) {
     return {};
@@ -205,7 +202,7 @@ function buildUpdateRequest(id: string, current: Pipeline | undefined, write: Pi
         },
         serviceAccount: account.serviceAccount ?? current?.serviceAccount,
         draft: write.draft ? true : undefined,
-        // Only the picker sets egress; elsewhere (BYOC) the backend owns the refs, and unset leaves them alone.
+        // WARNING: Set egress only from the picker; sending it on other platforms could overwrite backend-owned gateway references.
         egress: isEgressGatewayPickerEnabled()
           ? egressWrite(write.egressGatewayIds, storedEgressGatewayIds(current))
           : undefined,
@@ -214,7 +211,7 @@ function buildUpdateRequest(id: string, current: Pipeline | undefined, write: Pi
   });
 }
 
-// A failed lookup must not fail the save; duplicate display names are legal.
+// WARNING: Do not block saving on a name lookup failure; display names need not be unique.
 async function nextUntitledName(fetchPipelineNames: ReturnType<typeof useFetchPipelineNames>) {
   try {
     return untitledPipelineName(await fetchPipelineNames(UNTITLED_PIPELINE_NAME));
@@ -228,7 +225,6 @@ function invalidSettingsMessage(fieldErrors: FieldErrors<PipelineFormValues>) {
   return typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.';
 }
 
-/** A deploy needs a config to run, and an account for any component that logs in as the pipeline. */
 function deployBlockerMessage(isDraftSave: boolean, yamlContent: string, hasServiceAccount: boolean): string | null {
   if (isDraftSave) {
     return null;
@@ -242,7 +238,6 @@ function deployBlockerMessage(isDraftSave: boolean, yamlContent: string, hasServ
   return null;
 }
 
-/** Why the save must not go ahead, or null when it can; an unnamed draft is named first. */
 async function saveBlockerMessage(flow: SaveFlow, isDraftSave: boolean, yamlContent: string) {
   if (isDraftSave && flow.mode === 'create' && isBlankConfig(yamlContent) && !flow.form.getValues('name').trim()) {
     return NOTHING_TO_SAVE_MESSAGE;
@@ -260,7 +255,6 @@ async function saveBlockerMessage(flow: SaveFlow, isDraftSave: boolean, yamlCont
   );
 }
 
-/** The validated settings, read after the checks so a just-assigned name is included. */
 function saveAttempt(flow: SaveFlow, run: SaveRunIntent, yamlContent: string, intent: SaveIntent | undefined) {
   const submittedSettings = flow.form.getValues();
   const { name, description, computeUnits, tags, egressGatewayIds } = submittedSettings;
@@ -291,12 +285,6 @@ async function stopQuietly(stopPipeline: SaveFlow['stopPipeline'], id: string) {
   }
 }
 
-/**
- * CreatePipeline always starts, so "stopped" is a follow-up stop; a dropped `draft` lands in the same
- * place, and leaving that to the user is the weak link on something irreversible. `stopFailed` covers
- * a stop that was needed and did not happen, including a response with no id to aim one at, so the
- * copy cannot claim it was parked.
- */
 async function stopCreatedPipeline(
   flow: SaveFlow,
   attempt: SaveAttempt,
@@ -379,10 +367,6 @@ function reportRunFailure(flow: SaveFlow, run: SaveRunIntent, runError: ConnectE
   }
 }
 
-/**
- * UpdatePipeline keeps the run state; on a draft, `start` is promotion and validates first. Resolves
- * to false when the start or stop failed, which the saved configuration survives.
- */
 async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: string) {
   try {
     if (run === 'start') {
@@ -466,7 +450,6 @@ async function submitSave(flow: SaveFlow, attempt: SaveAttempt) {
   }
 }
 
-/** Resolves to whether the configuration was persisted; a failed start/stop after the write still counts. */
 async function savePipeline(flow: SaveFlow, intent?: SaveIntent) {
   const run: SaveRunIntent = intent?.run ?? primaryRunIntent(flow.saveContext);
   flow.editorStore.getState().pendingEditCommit?.();
@@ -634,6 +617,11 @@ function usePipelineDelete(pipeline: Pipeline | undefined, onBeforeGuardedNaviga
   return { handleDelete, isDeleting: isPending };
 }
 
+/**
+ * A create can deploy even when draft was requested. When a stopped save comes back running, follow with a stop, and do not report it as parked if the stop fails or its ID is missing.
+ *
+ * Updates keep run state unless explicitly started or stopped. A failed follow-up action does not undo a persisted config.
+ */
 export function usePipelineSave({
   form,
   editorStore,

@@ -55,12 +55,6 @@ import type {
 } from '../types/wizard';
 import { extractAllTopics } from '../utils/yaml';
 
-/**
- * Compute the pixel position of a line/column in the Monaco editor using
- * `getScrolledVisiblePosition`. Returns a fixed-position style for the popover.
- * Re-syncs on editor scroll and window resize.
- * (Rule 4: external system sync — Monaco coordinate API)
- */
 const HIDDEN_STYLE: React.CSSProperties = { position: 'fixed', visibility: 'hidden' };
 
 function useAnchorPosition(
@@ -110,11 +104,6 @@ function useAnchorPosition(
   return style;
 }
 
-/**
- * Close the popover when the user clicks outside of it.
- * Returns a ref to attach to the popover container.
- * (Rule 4: external system sync — document click listener)
- */
 function useClickOutside(open: boolean, onClose: () => void) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -138,7 +127,6 @@ function useClickOutside(open: boolean, onClose: () => void) {
 
 type FilterValue = 'all' | 'variables' | 'secrets' | 'topics' | 'users';
 
-/** The create flow the menu hands off to; it closes itself first. */
 type SubDialog = 'secrets' | 'topic' | 'user';
 
 const CONTEXTUAL_VARIABLES = Object.values(REDPANDA_CONTEXTUAL_VARIABLES);

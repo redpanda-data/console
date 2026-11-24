@@ -62,7 +62,7 @@ export function parseConfigComponentsCached(configYaml: string): ConfigListFacts
   return parsed;
 }
 
-/** Drops the oldest half (Map preserves insertion order) — clearing all would reparse everything next refresh. */
+// WARNING: Evict only the oldest entries; clearing the entire cache forces all pipelines to be reparsed on the next refresh.
 function evictOldestHalf() {
   let surplus = CONFIG_COMPONENTS_CACHE_LIMIT / 2;
   for (const key of configComponentsCache.keys()) {

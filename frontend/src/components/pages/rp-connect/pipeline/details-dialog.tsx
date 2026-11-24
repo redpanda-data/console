@@ -103,7 +103,6 @@ const ComputeUnitsLabel = () => (
     <div className="flex items-center gap-1 text-label text-muted-foreground">
       Compute units
       <TooltipTrigger>
-        {/* The trigger is an unstyled button, so the icon inherits the label's muted ink. */}
         <InfoIcon className="-mt-0.5 size-3 cursor-pointer" />
       </TooltipTrigger>
     </div>
@@ -111,7 +110,6 @@ const ComputeUnitsLabel = () => (
   </Tooltip>
 );
 
-// Badges when populated; otherwise a muted dash to keep the row layout stable.
 const ReferenceList = ({ items }: { items: string[] }) => {
   if (items.length === 0) {
     return <div className="text-body text-muted-foreground">{EMPTY_PLACEHOLDER}</div>;
@@ -139,6 +137,9 @@ const ReferenceList = ({ items }: { items: string[] }) => {
   );
 };
 
+/**
+ * Apply section spacing to the inner wrapper; styling DialogBody would also space out its scroll sentinels and shadow.
+ */
 export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }: DetailsDialogProps) {
   const configYaml = pipeline?.configYaml;
   const secrets = useMemo(
@@ -164,11 +165,6 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }:
 
         {pipeline ? (
           <DialogBody padding="md" spacing="none">
-            {/* Section gaps live on this inner wrapper. Putting them on
-                DialogBody's outer className doesn't work — DialogBody renders
-                sentinels and a sticky shadow alongside the content wrapper,
-                so a flex/gap on the outer would add space between *those*
-                instead of between my sections. */}
             <div className="flex flex-col gap-5">
               <section className="flex flex-col gap-3">
                 <SectionHeading>General</SectionHeading>

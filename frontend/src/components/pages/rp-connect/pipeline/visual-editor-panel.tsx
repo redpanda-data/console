@@ -293,7 +293,6 @@ const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
   </span>
 );
 
-// Classify a canvas keydown; presses inside text fields / Monaco keep their own editing semantics.
 type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
 
 // WARNING: Keep editor hotkeys off focused controls; Delete and / must not remove a node or open the palette while typing.
@@ -350,7 +349,6 @@ function useEditHistory(
   const recordEdit = usePipelineEditorStore((s) => s.recordEdit);
   const commitEditHistory = usePipelineEditorStore((s) => s.commitEditHistory);
 
-  // Observe every document state; recordEdit pushes an undo step only on a real change.
   useEffect(() => {
     recordEdit(yaml);
   }, [yaml, recordEdit]);
@@ -487,7 +485,6 @@ function liveSelectionOf(
   if (comp !== undefined && (selected.name === undefined || componentKeyAt(selected.target, comp) === selected.name)) {
     return selected;
   }
-  // Followed only to a target that really holds the component, so this settles in one sync.
   const moved = flowNodes.find((n) => n.id === selected.id)?.editTarget;
   return moved && !editTargetsEqual(moved, selected.target) && componentNameAt(yamlContent, moved) === selected.name
     ? { ...selected, target: moved }
@@ -554,7 +551,6 @@ function useUnsavedNodes(yamlContent: string, isEditing: boolean, flowNodes: Pip
     () => (baselineSignatures ? new Set(changedNodeIdsFromBaseline(baselineSignatures, yamlContent)) : EMPTY_NODE_IDS),
     [baselineSignatures, yamlContent]
   );
-  // Jumpable list for the floating "unsaved" panel — only nodes with an edit target can be selected.
   const unsavedNodeList = useMemo(
     () =>
       flowNodes
@@ -611,7 +607,6 @@ function hintMessagesByNode(hintsByNode: Map<string, LintHint[]>) {
   return new Map([...hintsByNode].map(([id, hints]) => [id, hints.map((h) => h.hint)]));
 }
 
-// Deprecated components in use, as located hints: they map to nodes and problems the way lint does.
 function useDeprecations(yamlContent: string, components: ConnectComponentSpec[], flowNodes: PipelineFlowNode[]) {
   const hints = useMemo(
     () =>
@@ -685,7 +680,6 @@ function useMissingSecrets(yamlContent: string, isEditing: boolean, onYamlChange
     [secretsResponse]
   );
   const missingSecrets = useMemo(() => {
-    // Only warn once the secrets list has actually loaded.
     if (!(isEditing && secretsResponse)) {
       return [];
     }
@@ -726,14 +720,13 @@ function usePendingDelete(
       : undefined
   );
 
-  // Warn when other nodes still reference the resource by label — deleting would leave them dangling.
   const pendingDeleteRefCount = useMemo(() => {
     if (pendingDelete?.kind !== 'resource') {
       return 0;
     }
     const comp = getComponentAt(yamlContent, pendingDelete);
     const label = comp && typeof comp.label === 'string' ? comp.label : undefined;
-    // Kind-scoped: a same-labelled resource of the other kind must not inflate the warning.
+    // WARNING: Match resource references by kind; a same-labelled resource of a different kind must not trigger a deletion warning.
     return label ? countResourceReferences(yamlContent, label, resourceTargetKind(pendingDelete)) : 0;
   }, [pendingDelete, yamlContent]);
 
@@ -992,7 +985,6 @@ function useSelectionEntryPoints(
   );
   const clearSelection = useCallback(() => selectNode(null), [selectNode]);
 
-  // Command-palette "go to": select + recenter (only nodes with an edit target are listed).
   const jumpToNode = useCallback(
     (node: PipelineFlowNode) => {
       const jump = resolveJumpTarget(node, flowNodes);
@@ -1141,7 +1133,6 @@ function CanvasStage({
 
   return (
     <div className="relative min-w-0 flex-1">
-      {/* Don't mount the canvas pre-hydration — its parse debounce would briefly render a placeholder graph. */}
       {isLoading ? (
         <PipelineFlowSkeleton />
       ) : (
@@ -1245,7 +1236,6 @@ function InspectorRail({
           key="node-inspector"
           transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
         >
-          {/* min-width clips the content instead of reflowing it while the rail width animates. */}
           <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden border-l border-border bg-background">
             <NodeInspector
               caseTarget={selected.caseTarget}
@@ -1333,6 +1323,8 @@ const DeleteNodeDialog = ({ deletion }: { deletion: PendingDelete }) => {
 /**
  * The Visual lane: a pannable canvas laying the pipeline out as a left→right flow. In edit mode,
  * contextual actions (add input/output, insert steps, per-node edit/remove) mutate the canonical YAML.
+ *
+ * After hydration, opens the canvas without first parsing placeholder YAML. Keyboard shortcuts leave focused editing controls alone.
  */
 export function VisualEditorPanel({
   mode,

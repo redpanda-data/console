@@ -159,8 +159,7 @@ function useUserSelection({
   });
 
   const existingUserSelected = useMemo(() => {
-    // Only check if the CURRENT form username matches an existing user
-    // Don't use persisted username to avoid showing existing user state when creating a new one
+    // WARNING: Match the username currently entered, not an earlier saved name; the old account can hide the new-user form.
     if (!watchedUsername) {
       return;
     }
@@ -235,7 +234,6 @@ function useTopicGrant({
     return checkUserHasTopicPermissions(aclData.aclResources, topicName, existingUserSelected.name, topicAccess);
   }, [existingUserSelected, topicName, aclData, topicAccess]);
 
-  // An existing user is granted the topic only if they lack access, which is assumed until their ACLs load.
   const needsTopicGrant =
     Boolean(topicName) && !(existingUserSelected && userTopicPermissions?.missingPermissions.length === 0);
   return { userTopicPermissions, needsTopicGrant };
@@ -282,7 +280,6 @@ function useConsumerGroupAccess({
   return { watchedConsumerGroup, userConsumerGroupPermissions };
 }
 
-// The pipeline reads a user's credentials from secrets, which only exist for users created here.
 function useMissingUserSecrets(existingUserSelected?: User) {
   const { data: secretsData } = useListSecretsQuery({}, { enabled: Boolean(existingUserSelected) });
   return useMemo(() => {
@@ -501,7 +498,6 @@ function useAddUserSubmit({
         });
       }
 
-      // An existing user logs in with the mechanism it was created with; the form only asks for a new one's.
       const existingMechanism = saslMechanismFromProto(existingUserSelected?.mechanism);
       const result = await createUserWithSecrets({
         userData: existingMechanism ? { ...userData, saslMechanism: existingMechanism } : userData,
@@ -533,7 +529,6 @@ function useAddUserSubmit({
   );
 }
 
-// A service account needs no form validation; a SASL user is submitted only once the form is valid.
 async function triggerUserStepSubmit({
   form,
   authMethod,
@@ -622,7 +617,6 @@ function UsernameField({
           }}
           value={users.userSelectionType}
         >
-          {/* h-9 matches the field beside it. */}
           <TabsList className="h-9">
             <TabsTrigger disabled={isPending} value={CreatableSelectionOptions.EXISTING}>
               Existing
@@ -1120,6 +1114,9 @@ function AddUserFormBody({
   );
 }
 
+/**
+ * An existing user's SASL mechanism is reused; optional topic grants are added only when access is missing. Only a user created here has fresh password material to store as secrets.
+ */
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
   (
     {

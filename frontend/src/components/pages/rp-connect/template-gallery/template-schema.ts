@@ -14,7 +14,6 @@ import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 import { checkRequired, findConnectComponent, resolveFieldByPath } from '../utils/schema';
 
-// Slot help renders as plain text, and the fallback is often multi-paragraph AsciiDoc.
 const slotDescription = (field: RawFieldSpec) =>
   field.shortDescription?.trim() || markdownToPlainText(asciidocToMarkdown(field.description ?? '')) || undefined;
 

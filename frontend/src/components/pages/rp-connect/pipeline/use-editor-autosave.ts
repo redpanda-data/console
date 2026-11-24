@@ -41,11 +41,11 @@ export function useEditorAutosave({
   formRef.current = form;
   const serviceAccountRef = useRef(serviceAccount);
   serviceAccountRef.current = serviceAccount;
-  // Only clear a buffer this editor wrote; an earlier session's must survive the load settling.
+  // WARNING: Clear only a buffer this editor wrote; settling a load must not erase an earlier session's recovery.
   const hasWrittenRef = useRef(false);
 
   const write = useCallback(() => {
-    // `baselineUpdateTime` is the version on screen, not the live query: a refetch must not move it.
+    // WARNING: Keep the displayed revision as the recovery baseline; taking a live refetch would mislabel the saved buffer.
     const { yamlContent, initialYaml, baselineUpdateTime } = editorStore.getState();
     const documentChanged = initialYaml === null ? yamlContent.trim() !== '' : yamlContent !== initialYaml;
     if (!(documentChanged || formRef.current.formState.isDirty)) {
@@ -90,7 +90,7 @@ export function useEditorAutosave({
     const unsubscribeForm = formRef.current.subscribe({ formState: { values: true }, callback: schedule });
 
     return () => {
-      // Dropped, not flushed: "Discard changes" must not leave a buffer behind.
+      // WARNING: Cancel pending writes on discard; flushing would recreate the recovery data the user asked to delete.
       clearTimeout(timer);
       unsubscribeStore();
       unsubscribeForm();

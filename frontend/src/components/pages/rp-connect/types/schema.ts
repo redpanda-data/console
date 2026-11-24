@@ -1,8 +1,11 @@
 import type { ComponentSpec, ComponentStatus, FieldSpec } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
+/**
+ * Comment text is retained for YAML generation.
+ */
 export interface RawFieldSpec extends Omit<FieldSpec, 'children'> {
   children?: RawFieldSpec[];
-  comment?: string; // Keep for internal use (YAML generation)
+  comment?: string;
   /**
    * Stamped by enrichComponentsWithConfigSchema from the schema's `required` arrays, which the
    * backend computes with full default knowledge (the proto drops non-string defaults, making
@@ -35,12 +38,12 @@ export const CONNECT_COMPONENT_TYPE = [
 export type ConnectComponentType = (typeof CONNECT_COMPONENT_TYPE)[number];
 
 export const CONNECT_FIELD_TYPE = [
-  'string', // A textual string value. Example: "hello world"
-  'int', // An integer number. Example: 1024
-  'float', // A floating-point number. Example: 3.14
-  'bool', // A boolean value (true or false). Example: true
-  'object', // A structured object with nested fields. Example: { "foo": "bar", "nested": { "a": 1 } }
-  'unknown', // The type is not strictly defined or can vary dynamically.
+  'string',
+  'int',
+  'float',
+  'bool',
+  'object',
+  'unknown',
 
   'input',
   'buffer',
@@ -55,32 +58,29 @@ export const CONNECT_FIELD_TYPE = [
 
 export type ConnectFieldType = (typeof CONNECT_FIELD_TYPE)[number] | (string & {});
 
-export const CONNECT_FIELD_KIND = [
-  'scalar',
-  // Example: `urls: ["http://localhost:4195", "http://localhost:4196"]` (Array of Strings)
-  'array',
-  '2darray',
-  'map',
-] as const;
+export const CONNECT_FIELD_KIND = ['scalar', 'array', '2darray', 'map'] as const;
 
 export type ConnectFieldKind = (typeof CONNECT_FIELD_KIND)[number] | (string & {});
 
 export const CONNECT_VALUE_TYPE = [
-  'String', // A textual string value in Bloblang. Example: `"hello world"`
-  'Number', // A numeric value (can be an integer or floating-point). Example: `42`, `3.14`
-  'Bool', // A boolean value. Example: `true`, `false`
-  'Timestamp', // A timestamp representing a specific moment in time.
-  'Array', // An array (list) of values. Example: `["a", "b", "c"]`
-  'Object', // A structured object (map) of key-value pairs. Example: `{ "key": "value" }`
-  'Null', // The special null value indicating the absence of a value.
-  'Unknown', // The type is not strictly defined or the function/method accepts any type.
-  'Query', // A Bloblang query expression that is evaluated dynamically.
+  'String',
+  'Number',
+  'Bool',
+  'Timestamp',
+  'Array',
+  'Object',
+  'Null',
+  'Unknown',
+  'Query',
 ] as const;
 
 export type ConnectValueType = (typeof CONNECT_VALUE_TYPE)[number] | (string & {});
 
+/**
+ * The logo URL is UI metadata rather than a config value.
+ */
 export interface ConnectComponentSpec extends Omit<ComponentSpec, 'type' | 'status'> {
-  logoUrl?: string; // UI-specific field
+  logoUrl?: string;
   status: ComponentStatus;
   type: ConnectComponentType;
 }
@@ -97,6 +97,9 @@ export type ExtendedConnectComponentSpec = ConnectComponentSpec & {
   };
 };
 
+/**
+ * The redpanda block contains redpanda_common components.
+ */
 export type ConnectConfigKey =
   | 'input'
   | 'output'
@@ -108,6 +111,6 @@ export type ConnectConfigKey =
   | 'metrics'
   | 'tracer'
   | 'scanner'
-  | 'redpanda'; // Top-level block for redpanda_common components
+  | 'redpanda';
 
 export type ConnectConfigObject = Record<ConnectConfigKey, unknown>;

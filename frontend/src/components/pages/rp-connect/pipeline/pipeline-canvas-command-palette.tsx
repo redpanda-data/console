@@ -25,13 +25,11 @@ import { jumpableNodes, searchKeywords, searchValue } from './pipeline-canvas-co
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
 import { type PipelineFlowNode, SECTION_LABEL } from '../utils/pipeline-flow-parser';
 
-// A quick action in the palette (view in YAML, undo/redo, …); listed only when its handler prop was passed.
 type PaletteAction = {
   id: string;
   label: string;
   icon: LucideIcon;
   run: () => void;
-  /** When false the action is shown but disabled (e.g. nothing to undo). */
   enabled?: boolean;
 };
 

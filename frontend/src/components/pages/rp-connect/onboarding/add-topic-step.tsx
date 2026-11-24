@@ -57,7 +57,6 @@ import {
 } from '../types/wizard';
 import { isUsingDefaultRetentionSettings, parseTopicConfigFromExisting, TOPIC_FORM_DEFAULTS } from '../utils/topic';
 
-// Only describe what the mode can actually do — "create a new topic" with no input reads as broken.
 const TOPIC_NAME_DESCRIPTIONS: Record<'new' | 'existing' | 'both', string> = {
   new: 'Enter a name for the new topic.',
   existing: 'Choose an existing topic to read or write data from.',
@@ -420,7 +419,6 @@ function AdvancedSettingsDisclosure({
 }) {
   return (
     <div className="flex flex-col">
-      {/* The negative margin sets the toggle's label flush with the fields above it. */}
       <Button
         aria-controls="add-topic-advanced-settings"
         aria-expanded={open}
@@ -441,10 +439,6 @@ function AdvancedSettingsDisclosure({
         Show advanced settings
       </Button>
 
-      {/* The panel snaps in/out instantly so DialogContent's
-          useAnimatedAutoHeight observes one clean before→after height
-          delta and runs the visible transition. Animating both at once
-          causes the panel's tween to fight the dialog's resize. */}
       {open ? (
         <div className="space-y-6 pt-4" id="add-topic-advanced-settings">
           <AdvancedTopicSettings disabled={isPending} form={form} isExistingTopic={isExistingTopic} />
@@ -454,6 +448,9 @@ function AdvancedSettingsDisclosure({
   );
 }
 
+/**
+ * The advanced panel changes height immediately so the dialog can animate that change once; nested height animations fight its resize.
+ */
 export const AddTopicStep = forwardRef<BaseStepRef<AddTopicFormData>, AddTopicStepProps & MotionProps>(
   (
     {

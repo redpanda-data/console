@@ -19,14 +19,13 @@ export type SlotValues = Record<string, string>;
 export type StitchTemplateArgs = {
   template: PipelineTemplate;
   values: SlotValues;
-  // Labels the generated config and feeds blank-slot fallbacks (TemplateSlot.defaultWhenBlank).
   pipelineName: string;
 };
 
 const SLOT_TOKEN_PATTERN = /\$\{slot\.(?<slotId>[A-Za-z0-9_-]+)\}/gu;
 const EXACT_SLOT_TOKEN_PATTERN = /^\$\{slot\.(?<slotId>[A-Za-z0-9_-]+)\}$/u;
 
-// matchAll avoids the shared-lastIndex hazard of RegExp.test on a global pattern.
+// WARNING: Use matchAll with the global token pattern; test advances lastIndex and makes later slot checks depend on earlier ones.
 const referencedSlotIdsIn = (text: string) => [...text.matchAll(SLOT_TOKEN_PATTERN)].map((m) => m[1]);
 
 const isBlank = (v: string | undefined) => !v?.trim();
@@ -39,7 +38,6 @@ const splitListValue = (value: string) =>
 
 const yamlStringifyConfig = { indent: 2, lineWidth: 120 };
 
-/** Resolve a `${slot.X}` reference to its text, or `null` when blank with no fallback (drop the node). */
 const resolveSlotToken = (slot: TemplateSlot | undefined, raw: string, pipelineName: string) => {
   if (!isBlank(raw)) {
     return slot?.kind === 'secret' ? getSecretSyntax(raw) : raw;
@@ -48,7 +46,6 @@ const resolveSlotToken = (slot: TemplateSlot | undefined, raw: string, pipelineN
   return fallback ? fallback({ pipelineName }) : null;
 };
 
-/** Substitute every slot token in a scalar; `null` if any referenced slot resolves to a drop. */
 const substituteScalar = (
   text: string,
   slotMap: Map<string, TemplateSlot>,
@@ -70,7 +67,6 @@ const substituteScalar = (
   return text.replaceAll(SLOT_TOKEN_PATTERN, (_match, id: string) => resolved.get(id) ?? '');
 };
 
-/** The slot id of a sequence item that is exactly `${slot.X}` for a list slot X. */
 const listSlotItemId = (item: unknown, slotMap: Map<string, TemplateSlot>) => {
   const tokenId =
     isScalar(item) && typeof item.value === 'string' ? item.value.match(EXACT_SLOT_TOKEN_PATTERN)?.[1] : undefined;
@@ -78,18 +74,15 @@ const listSlotItemId = (item: unknown, slotMap: Map<string, TemplateSlot>) => {
   return slot?.kind === 'string' && slot.list ? tokenId : undefined;
 };
 
-/** One item per comma-separated entry of a list slot's value; none when the slot resolves to a drop. */
 const listSlotEntries: (slot: TemplateSlot | undefined, raw: string, pipelineName: string) => Scalar[] = (
   slot,
   raw,
   pipelineName
 ) => {
   const resolved = resolveSlotToken(slot, raw, pipelineName);
-  // No explicit style: the serializer quotes any entry that would parse as a non-string.
   return resolved === null ? [] : splitListValue(resolved).map((entry) => new Scalar(entry));
 };
 
-/** The sequence's items with each list-slot item expanded, or `null` when it holds none. */
 const expandListSlotItems = (
   items: unknown[],
   slotMap: Map<string, TemplateSlot>,
@@ -114,13 +107,14 @@ const expandListSlotItems = (
  * Render `baseYaml` with the user's form values via structure-aware substitution:
  * blank optional fields drop their whole key/sequence-item (and any sequence emptied as a result),
  * rather than leaving a dangling key or empty value. Curated comments and layout are preserved.
+ *
+ * An exact list-slot item expands before the scalar pass; a slot inside longer text stays inline. An empty list drops its pair, but an authored empty map such as memory: {} is retained. The serializer quotes entries that would otherwise parse as another scalar type.
  */
 export const stitchTemplateYaml = ({ template, values, pipelineName }: StitchTemplateArgs) => {
   const slotMap = new Map(template.slots.map((s) => [s.id, s]));
   const doc = parseDocument(template.baseYaml);
 
   visit(doc, {
-    // Drop the whole pair (not just the scalar) so we never emit `key: null`.
     Pair(_, pair) {
       if (
         isScalar(pair.value) &&
@@ -130,10 +124,6 @@ export const stitchTemplateYaml = ({ template, values, pipelineName }: StitchTem
         return visit.REMOVE;
       }
     },
-    // Expand `- ${slot.X}` items of list slots into one item per comma-separated entry. Runs
-    // before the item scalars are visited, so the Scalar pass below sees no tokens for them; a
-    // blank optional list slot drops its item (and the emptied sequence's pair, below). Tokens
-    // embedded in longer text fall through to plain inline substitution.
     Seq(_, seq) {
       const expanded = expandListSlotItems(seq.items, slotMap, values, pipelineName);
       if (expanded) {
@@ -145,19 +135,17 @@ export const stitchTemplateYaml = ({ template, values, pipelineName }: StitchTem
         return;
       }
       const resolved = substituteScalar(node.value, slotMap, values, pipelineName);
-      // null here only reaches sequence items (mapping values handled above); dropping keeps the seq well-formed.
       if (resolved === null) {
         return visit.REMOVE;
       }
       if (resolved !== node.value) {
         node.value = resolved;
-        // Keep interpolation tokens (${secrets.X}) unquoted; PLAIN still quotes values that truly need it.
+        // WARNING: Keep interpolation tokens plain; quoting them here would change the curated template representation.
         node.type = Scalar.PLAIN;
       }
     },
   });
 
-  // Drop keys whose sequence was emptied above; empty maps are left alone (authored intentionally, e.g. `memory: {}`).
   visit(doc, {
     Pair(_, pair) {
       if (isSeq(pair.value) && pair.value.items.length === 0) {

@@ -32,7 +32,6 @@ type DocumentSlice = {
   setYamlContent: (yamlContent: string) => void;
   patchComponent: (section: ConnectorSection, componentName: string, patch: RedpandaSetupResultLike) => boolean;
   hydrateFromServer: (pipelineId: string, configYaml: string, updateTime?: number | null) => void;
-  // Resolve the create-mode starting YAML; seeds the baseline only once.
   resolveInitialYaml: (yaml: string) => void;
   markSavedBaseline: (yaml: string, updateTime?: number | null) => void;
   setAllowNavigation: (allowNavigation: boolean) => void;

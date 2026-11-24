@@ -31,7 +31,6 @@ const COMMON_COMPONENTS = new Set([
   'archive',
 ]);
 
-// Experimental components are de-emphasised: sorted below stable ones. Deprecated ones never reach the palette.
 function isDemoted(status: ComponentStatus) {
   return status === ComponentStatus.EXPERIMENTAL;
 }

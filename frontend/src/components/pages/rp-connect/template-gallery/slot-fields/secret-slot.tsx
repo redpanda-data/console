@@ -33,6 +33,9 @@ export type SecretSlotFieldProps = {
   onRequestCreateSecret?: (slotId: string, suggestedName: string | undefined) => void;
 };
 
+/**
+ * Uses a render-prop child so the current value is labelled even before Base UI first mounts the popup.
+ */
 export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreateSecret }: SecretSlotFieldProps) => {
   const { data: secretsResponse, refetch } = useListSecretsQuery({}, { enabled: true });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -75,8 +78,6 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
               <div className="flex-1">
                 <Select onValueChange={field.onChange} value={selectedValue}>
                   <SelectTrigger data-testid={`slot-${slot.id}`}>
-                    {/* Render-prop child sidesteps Base UI resolving the label only after the
-                        popup first mounts, which would hide the auto-selected secret. */}
                     <SelectValue placeholder="Select an existing secret...">
                       {(value) => (typeof value === 'string' && value !== '' ? value : null)}
                     </SelectValue>

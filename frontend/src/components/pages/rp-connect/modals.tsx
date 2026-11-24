@@ -12,6 +12,9 @@ import { type JSX, useState } from 'react';
 
 import { openModal } from '../../../utils/modal-container';
 
+/**
+ * The header keeps room for the dialog's own close control.
+ */
 export const ExplicitConfirmModal = (p: {
   title: JSX.Element;
   body: JSX.Element;
@@ -39,10 +42,8 @@ export const ExplicitConfirmModal = (p: {
       }}
       open
     >
-      {/* `lg` is `sm:max-w-2xl`. */}
       <DialogContent size="lg">
         <DialogHeader>
-          {/* Room for DialogContent's close button: the header's own `pr-4` plus `mr-6` is `pr-10`. */}
           <DialogTitle className="mr-6">{p.title}</DialogTitle>
         </DialogHeader>
         <DialogBody>

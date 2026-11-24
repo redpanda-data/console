@@ -33,7 +33,6 @@ export function isDeprecatedComponent(component: Pick<ConnectComponentSpec, 'sta
   return component.status === ComponentStatus.DEPRECATED;
 }
 
-// What to use instead, per upstream's deprecation notes: ComponentSpec has no field for it.
 const REPLACEMENTS: Record<string, ComponentRef> = {
   'input:kafka': { name: 'redpanda', type: 'input' },
   'input:kafka_franz': { name: 'redpanda', type: 'input' },
@@ -158,7 +157,6 @@ function lineRange([startOffset, endOffset]: Range, lineCounter: LineCounter) {
 
 /** Every deprecated component the YAML uses, nested ones included, in document order. */
 export function findDeprecatedUsages(yaml: string, components: readonly ConnectComponentSpec[]) {
-  // Most configs use none; skip the parse unless a deprecated name appears at all.
   if (!components.some((c) => isDeprecatedComponent(c) && yaml.includes(c.name))) {
     return [];
   }

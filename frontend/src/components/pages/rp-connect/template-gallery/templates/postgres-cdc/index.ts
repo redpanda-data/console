@@ -30,7 +30,6 @@ export const postgresCdcTemplate: PipelineTemplate = {
       kind: 'string',
       label: 'Schema',
       description: 'Postgres schema the source tables live in.',
-      // Schema-required with no engine default; fall back to the conventional 'public'.
       required: false,
       placeholder: 'public',
       defaultWhenBlank: () => 'public',

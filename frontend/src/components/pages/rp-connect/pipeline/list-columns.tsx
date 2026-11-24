@@ -58,7 +58,6 @@ const ConnectorBadges = ({ names }: { names: string[] }) => {
       {connectors.map((c) => (
         <Badge key={c.name} tone="default" variant="subtle">
           <ConnectorLogo className="size-3.5" fallback={Box} name={c.name as ComponentName} />
-          {/* One text node: as siblings, name and multiplier sit a pixel off each other's baseline. */}
           <span>
             {c.name}
             {c.count > 1 ? <span className="ml-1 text-muted-foreground">×{c.count}</span> : null}
@@ -121,6 +120,9 @@ const PipelineNameCell = ({ pipeline, name }: { pipeline: PipelineRow; name: str
   );
 };
 
+/**
+ * Render the metric name and multiplier as one text node to keep them on the same baseline.
+ */
 export const createColumns = ({
   navigate,
   deleteMutation,

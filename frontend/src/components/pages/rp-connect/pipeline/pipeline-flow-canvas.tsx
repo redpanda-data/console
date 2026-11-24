@@ -499,7 +499,6 @@ function FocusNode({ nodeId, token }: { nodeId?: string; token?: number }) {
     if (!bounds || bounds.width === 0) {
       return;
     }
-    // Keep the current zoom (clamped to a readable band) so jumping doesn't lurch the scale.
     const zoom = Math.min(Math.max(getZoom(), 0.8), 1);
     setCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, { duration: animMs(600), zoom }).catch(
       reportViewportMoveFailure
@@ -616,7 +615,6 @@ type ScopeRegion = {
   entry: ScopeBounds | null;
   accent: string;
   label: string;
-  /** Side / top padding — larger for outer regions so nested ones don't touch. */
   pad: number;
   topPad: number;
 };
@@ -721,7 +719,6 @@ const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boole
   const { body, entry, accent, label, pad, topPad } = region;
   const borderColor = `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`;
   const backgroundColor = `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`;
-  // Geometry is `active`-independent, so hover (colour only) doesn't recompute it.
   const { rects, path, bbox, anchor } = useMemo(
     () => regionGeometry(body, entry, pad, topPad),
     [body, entry, pad, topPad]
@@ -729,7 +726,6 @@ const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boole
 
   return (
     <>
-      {/* Fill in height-capped pieces so a tall area never exceeds the browser paint limit (see MAX_REGION_PIECE_PX). */}
       {rects.flatMap((r) => {
         const width = r.maxX - r.minX;
         const height = r.maxY - r.minY;
@@ -753,7 +749,6 @@ const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boole
           );
         });
       })}
-      {/* Dashed border as one path — no per-piece seams. */}
       <svg
         aria-hidden="true"
         className="pointer-events-none absolute"
@@ -793,7 +788,6 @@ type RegionContext = {
   rfNodes: Node[];
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
   nodeLookup: MeasuredById;
-  /** try marker id → its fused catch marker id, so a try's area also covers its error handling. */
   tryCatchPairs: ReadonlyMap<string, string>;
 };
 
@@ -833,7 +827,6 @@ function ScopeRegions({
   tryCatchPairs: ReadonlyMap<string, string>;
 }) {
   const nodeLookup = useStore((s) => s.nodeLookup);
-  // Only scoped cards affect region geometry, so the digest below covers just those — selector stays cheap.
   const scopedIds = useMemo(() => {
     const ids = new Set<string>();
     for (const node of rfNodes) {
@@ -858,7 +851,6 @@ function ScopeRegions({
     }
     return h;
   });
-  // Geometry depends only on the layout + measurements, so cache it across hover/selection changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: measuredKey re-triggers bounds when cards measure.
   const regions = useMemo<ScopeRegion[]>(() => {
     const absorbed = new Set(tryCatchPairs.values());
@@ -1153,7 +1145,6 @@ type PipelineFlowCanvasProps = {
   onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
   /** Clear the selection (clicking empty canvas). */
   onClearSelection?: () => void;
-  // Edit-mode callbacks. When omitted the canvas is a read-only viewer.
   onInsert?: (processorIndex: number) => void;
   onSlotInsert?: (payload: FlowInsertPayload) => void;
   onAddConnector?: (section: string) => void;
@@ -1199,7 +1190,6 @@ function tryCatchPairsOf(layoutEdges: Edge[]) {
   return pairs;
 }
 
-// Parses (debounced, holding the last good graph) and lays out the YAML, plus each node's scope.
 function useCanvasGraph(configYaml: string, editable: boolean) {
   const debouncedYaml = useLeadingDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
   const { nodes, error, showingStale } = useResilientParse(debouncedYaml);
@@ -1293,15 +1283,14 @@ function useDecoratedNodes({
   }, []);
   const previousIdsRef = useRef<ReadonlySet<string>>(new Set());
 
-  // Cheap decoration memo, keyed on decoration inputs only — a click re-runs this, not the Dagre
-  // layout. Hover is excluded to stay on the cheap edges-only path.
+  // WARNING: Keep hover and selection out of the layout cache key; repeated Dagre runs can churn the graph and drop pointer events.
   const rfNodes = useMemo(() => {
     const callbacks: CanvasCallbacks = {
       onAddConnector,
       onAddTopic,
       onAddSasl,
       onSlotInsert,
-      // A stale layout's paths may no longer match the YAML, so its stop conditions are read-only.
+      // WARNING: Do not edit stop conditions through a stale layout; its paths can now select a different YAML node.
       onSetStopCondition: showingStale ? undefined : onSetStopCondition,
       collapsedIds,
       toggleCollapse,
@@ -1346,6 +1335,9 @@ function useDecoratedNodes({
   return rfNodes;
 }
 
+/**
+ * Uses the last good graph while edited YAML cannot parse, without allowing edits through that stale layout. Region fills are split so tall graphs stay below the paintable height limit; their dashed outline remains one path.
+ */
 export function PipelineFlowCanvas({
   configYaml,
   selectedNodeId,
@@ -1417,13 +1409,11 @@ export function PipelineFlowCanvas({
   if (rfNodes.length === 0) {
     return (
       <div className="relative h-full w-full">
-        {/* Parse error with no last-good graph: keep the notice up (no dismiss) and point at the fix. */}
         {error ? (
           <InvalidConfigNotice className={CANVAS_NOTICE_POSITION} variant="floating">
             Unable to visualize this pipeline — fix the YAML in the YAML tab.
           </InvalidConfigNotice>
         ) : null}
-        {/* Freeze the skeleton under an error (it's a backdrop, not a loading state). */}
         <div className={error ? 'opacity-40 **:animate-none!' : undefined}>
           <PipelineFlowSkeleton />
         </div>
@@ -1455,8 +1445,7 @@ export function PipelineFlowCanvas({
             }
           }}
           onNodeMouseEnter={(_, node) => setHoveredNodeId(node.id)}
-          // Only clear when leaving the tracked node: crossing into a nested child fires
-          // enter(child) then leave(parent), which must not wipe the child's hover.
+          // WARNING: Clear only the tracked node; enter(child) followed by leave(parent) must not clear the child's hover.
           onNodeMouseLeave={(_, node) => setHoveredNodeId((prev) => (prev === node.id ? undefined : prev))}
           onNodesChange={onNodesChange}
           onPaneClick={() => onClearSelection?.()}
@@ -1469,7 +1458,6 @@ export function PipelineFlowCanvas({
           zoomOnPinch
           zoomOnScroll={false}
         >
-          {/* Faint plus-mark texture so the canvas doesn't read as blank — a background hint, not a grid. */}
           <Background
             color="color-mix(in srgb, var(--color-border) 30%, transparent)"
             gap={28}
@@ -1478,7 +1466,6 @@ export function PipelineFlowCanvas({
           />
           <Controls position="bottom-right" showInteractive={false} />
           <PipelineMiniMap nodes={rfNodes} translateExtent={translateExtent} />
-          {/* Renders only for control-flow markers (flowSplit/flowMerge). */}
           <ScopeRegions
             hoveredId={hoveredNodeId}
             rfNodes={rfNodes}

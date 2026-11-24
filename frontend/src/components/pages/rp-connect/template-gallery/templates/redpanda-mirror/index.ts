@@ -43,7 +43,7 @@ export const redpandaMirrorTemplate: PipelineTemplate = {
       required: true,
       schemaField: 'topic',
     },
-    // SASL fields live under sasl[].{username,password} — see note above.
+    // WARNING: Keep these SASL slots explicit: the dotted-path resolver cannot index sasl array items.
     dsnSlot('destUser', 'Destination SASL user', 'DEST_KAFKA_USER'),
     dsnSlot('destPassword', 'Destination SASL password', 'DEST_KAFKA_PASSWORD'),
   ],

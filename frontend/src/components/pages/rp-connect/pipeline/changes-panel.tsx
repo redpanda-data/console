@@ -123,6 +123,9 @@ const GroupLabel = ({ children }: { children: string }) => (
   <h6 className="px-2 pt-1 pb-0.5 text-overline-sm text-muted-foreground">{children}</h6>
 );
 
+/**
+ * Keep Monaco out of flow so its measured content width cannot expand the parent.
+ */
 export function ChangesPanel({
   savedYaml,
   editedYaml,
@@ -239,7 +242,6 @@ export function ChangesPanel({
             ) : null}
           </div>
         ) : null}
-        {/* Out of flow so Monaco can't feed its width up the layout. */}
         <div className="relative min-w-0 flex-1">
           <div className="absolute inset-0">
             {configChanged ? (

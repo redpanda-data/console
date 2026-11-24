@@ -45,10 +45,6 @@ function lineRange(lineNumber: number, startColumn: number, endColumn: number) {
   return { startLineNumber: lineNumber, startColumn, endLineNumber: lineNumber, endColumn } satisfies IRange;
 }
 
-/**
- * What the selected text replaces: the `/` of the active slash session, the `/` saved when the popover
- * closed for a sub-dialog, or (with neither) an empty range at the cursor.
- */
 function slashReplaceRange(
   editorInstance: editor.IStandaloneCodeEditor,
   slashPos: SlashPosition | null,
@@ -120,11 +116,6 @@ export function useSlashCommand(
     return () => disposable.dispose();
   }, [editorInstance, enabled, onOpen]);
 
-  /**
-   * Replace the `/` text with the selected item text and close.
-   * Works both during active slash session (slashPositionRef) and after
-   * the popover has been closed for a sub-dialog (lastSlashRangeRef).
-   */
   const handleSlashSelect = useCallback(
     (text: string) => {
       if (!editorInstance) {

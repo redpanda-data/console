@@ -35,7 +35,7 @@ const LABEL_OVERRIDES: Record<string, string> = {
   error_message: 'error',
 };
 
-// Credentials and generic infra knobs the fallback must never surface.
+// WARNING: Do not expose credential fields in fallback metadata when a component schema is unavailable.
 const NOISE_FIELDS = new Set([
   'api_key',
   'apikey',

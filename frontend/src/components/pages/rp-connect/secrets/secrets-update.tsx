@@ -121,10 +121,8 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
           />
         </Field>
 
-        {/* ButtonGroup attaches its children, so a submit/cancel pair needs its own gap. */}
         <div className="flex gap-2">
           <Button
-            // `isLoading` hides the label, so the button needs its own name.
             aria-label="Update secret"
             disabled={isSecretEmpty}
             isLoading={isUpdating}

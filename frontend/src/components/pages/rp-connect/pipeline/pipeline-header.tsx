@@ -101,7 +101,6 @@ const DetailLine = ({ label, children }: { label: string; children: ReactNode })
 const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) => (
   <div className="flex flex-col gap-0.5 text-body">
     <span className="text-muted-foreground">Description</span>
-    {/* Only a clamped description hides text worth a tooltip. */}
     <ElementTooltip content={clamp ? text : undefined}>
       <p
         className={cn(
@@ -417,6 +416,9 @@ const SaveActions = ({
   );
 };
 
+/**
+ * Positions the unsaved-changes hint independently so toggling it does not shift the actions.
+ */
 export function PipelineEditHeader({
   form,
   saveContext,
@@ -473,7 +475,6 @@ export function PipelineEditHeader({
             </Button>
             {editingDraft && onRequestDelete ? <DeleteDraftButton onClick={onRequestDelete} /> : null}
           </div>
-          {/* Relative anchor: the unsaved-changes hint sits below (absolute) so toggling never shifts the buttons. */}
           <div className="relative flex shrink-0 items-center gap-2">
             <Button
               as="a"

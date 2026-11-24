@@ -120,7 +120,6 @@ function branchChipTone(data: FlowCardData) {
   return 'condition';
 }
 
-// Routing semantics as a chip: `if <check>`, `default`, or `on error`. Display-only; edited in the inspector.
 const BranchConditionChip = ({ data, className }: { data: FlowCardData; className?: string }) => {
   if (!(data.condition || data.isDefault || data.isErrorPath)) {
     return null;
@@ -143,14 +142,12 @@ const BranchConditionChip = ({ data, className }: { data: FlowCardData; classNam
   );
 };
 
-// Routing conditions reuse the `warning` accent, distinct from section accents, so routing is easy to scan.
 const CONDITION_ROW_TONE: Record<'condition' | 'muted' | 'error', string> = {
   condition: 'border-warning/30 bg-warning/10 text-warning',
   muted: 'border-warning/20 bg-warning/5 text-warning/80',
   error: 'border-destructive/20 bg-destructive/10 text-destructive',
 };
 
-// A switch case's condition on its own full-width row. Display-only; inset ring when selected.
 const ConditionRow = ({ data, selected }: { data: FlowCardData; selected?: boolean }) => {
   let tone: 'condition' | 'muted' | 'error' = 'condition';
   if (data.isErrorPath) {
@@ -261,7 +258,7 @@ const NodeHandles = () => (
   <>
     {HANDLE_IDS.map((h) => {
       const horizontal = h.id === 'l' || h.id === 'r';
-      // l/r handles keep RF's default centering so a same-rank spine reads straight; t/b pin to a
+      // WARNING: Keep left and right handles on React Flow's default centerline; pinning them like vertical handles bends a same-rank spine.
       const style = horizontal ? undefined : { left: FLOW_SPINE_HANDLE_LEFT, transform: 'none' };
       return (
         <Handle className={invisibleHandle} id={h.id} key={h.id} position={h.position} style={style} type={h.type} />
@@ -364,7 +361,6 @@ const MissingChip = ({
 const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
   const section = data.section ?? 'connector';
   const onAdd = data.onAddConnector;
-  // Read-only (no handler): plain text, not a disabled button that reads as broken permissions.
   if (!onAdd) {
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-card px-3 py-4 text-muted-foreground shadow-sm">
@@ -458,7 +454,6 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
         cardRing(data)
       )}
     >
-      {/* Routing condition at the TOP — the editable condition is the first, most obvious click target. */}
       {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
       <div className="border-b border-border/60" style={headerTintStyle(accent)}>
         <div className="flex items-center gap-1.5 px-3 pt-2 pb-1">
@@ -468,7 +463,6 @@ const ComponentCard = ({ data }: { data: FlowCardData }) => {
           >
             {kindLabel}
           </span>
-          {/* Non-case condition info stays an inline chip; a switch case's condition uses the row above. */}
           {data.caseEditTarget ? null : <BranchConditionChip data={data} />}
           <LintBadge errors={data.lintErrors} />
           <DeprecatedBadge messages={data.deprecations} />
@@ -509,7 +503,6 @@ const FlowCardNode = ({ data }: { data: FlowCardData }) => {
 type FlowInsertData = {
   label?: string;
   payload?: FlowInsertPayload;
-  /** A "ghost branch" add (e.g. Add case) reached by a dashed connector — styled as a pill. */
   ghost?: boolean;
   onInsert?: (payload: FlowInsertPayload) => void;
 };
@@ -561,7 +554,6 @@ const LINK_LABEL_STYLE: Record<LinkLabelTone, string> = {
   primary: 'border-primary/40 text-primary',
   error: 'border-destructive/40 text-destructive',
   muted: 'border-border text-foreground',
-  // Routing conditions read as the warning accent, matching the legend and the cards' condition chips.
   condition: 'border-warning/40 text-warning',
 };
 const LINK_LABEL_Z = 1000;
@@ -672,7 +664,6 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           cardRing(data)
         )}
       >
-        {/* Routing condition at the TOP, as on leaf cards. */}
         {data.caseEditTarget ? <ConditionRow data={data} selected={data.conditionSelected} /> : null}
         <div className="flex cursor-pointer items-center gap-2.5 px-3 py-2" style={headerTintStyle(accent)}>
           <ControlFlowIconTile accent={accent} Icon={Icon} />
@@ -695,7 +686,6 @@ const FlowSplitNode = ({ data }: { data: FlowCardData }) => {
           <UnsavedDot show={data.unsaved} />
         </div>
         <InputStopRow data={data} isGroup />
-        {/* "Add case / Add input" footer row. Edit mode only. */}
         {data.addAction && data.onAddChild ? (
           <button
             className="nodrag nopan flex w-full cursor-pointer items-center justify-center gap-1.5 border-t border-dashed border-border/70 px-3 py-1.5 text-body-sm font-medium text-primary transition-colors hover:bg-primary/5"
@@ -781,7 +771,6 @@ type FlowGraphEdgeData = {
   faint?: boolean;
   onInsert?: () => void;
   onLabelClick?: () => void;
-  /** Where along the edge (0–1) the label sits; defaults to the midpoint. */
   labelT?: number;
   ghost?: boolean;
 };
@@ -825,7 +814,6 @@ function smoothGraphPath(points: { x: number; y: number }[]) {
   return `${d} L ${last.x} ${last.y}`;
 }
 
-// An emphasized edge takes the highlight stroke — except error edges, which keep their own tone.
 function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone) {
   if (d?.emphasized && tone !== 'error') {
     return HIGHLIGHT_STROKE;

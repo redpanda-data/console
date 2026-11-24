@@ -21,9 +21,6 @@ import {
 
 import type { ConnectComponentSpec } from '../../types/schema';
 
-/**
- * Helper to create a FieldSpec for testing
- */
 function createField(field: Partial<FieldSpec>) {
   const baseSpec: Record<string, unknown> = {
     name: field.name || '',
@@ -302,8 +299,6 @@ export const mockRedpandaMigratorOutput = create(ComponentSpecSchema, {
               }),
             ],
           }),
-          // Non-optional, non-advanced object with a required string grandchild.
-          // Tests: schema_registry (optional) → basic_auth (not optional) → username (required)
           createField({
             name: 'basic_auth',
             type: 'object',
@@ -509,7 +504,7 @@ export const mockAvroScanner = create(ComponentSpecSchema, {
     type: 'object',
     kind: 'scalar',
     optional: false,
-    defaultValue: '', // Empty string default for objects - will generate object from children
+    defaultValue: '',
     children: [
       createField({
         name: 'raw_json',
@@ -675,14 +670,7 @@ export function createMockComponentList() {
   });
 }
 
-/**
- * Helper to create a field matching the actual backend JSON schema shape.
- * Unlike createField (which applies proto3 defaults), this only sets properties
- * that are explicitly provided — `optional` and `defaultValue` are undefined
- * when not set, matching what the real REST schema sends.
- *
- * Reference: src/assets/rp-connect-schema-full.json
- */
+// WARNING: Keep omitted REST fields absent; applying proto defaults here would hide optionality regressions.
 function createSchemaField(field: Record<string, unknown>) {
   return field as unknown as FieldSpec;
 }

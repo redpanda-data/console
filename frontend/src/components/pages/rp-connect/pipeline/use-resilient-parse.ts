@@ -27,7 +27,7 @@ type ResilientParse = { nodes: PipelineFlowNode[]; error?: string; showingStale:
 export function useResilientParse(yaml: string) {
   const parsed = useMemo(() => parsePipelineFlowTree(yaml), [yaml]);
   const lastGoodRef = useRef<PipelineFlowNode[]>([]);
-  // Hold only a real pipeline as the fallback; a blank config resets it (nothing left to fall back to).
+  // WARNING: Clear the last good graph for a blank config; do not restore the previous graph after the user clears YAML.
   if (!(parsed.error || isPipelineEmpty(parsed.nodes))) {
     lastGoodRef.current = parsed.nodes;
   } else if (isConfigTextEmpty(yaml)) {

@@ -23,7 +23,7 @@ import { startBlockedMessage } from './draft-copy';
 import { isInvalidConfigError } from './save-actions';
 import { extractLintHintsFromError } from '../errors';
 
-// A refused start's hints, for the editor it opens; taken once, after hydration.
+// WARNING: Consume the refused-start hints after hydration and only once; the editor resets its diagnostics while loading.
 const pendingStartLintHints = new Map<string, Record<string, LintHint>>();
 
 export function takeStartLintHints(pipelineId: string) {

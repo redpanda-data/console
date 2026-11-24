@@ -25,7 +25,6 @@ export type ComponentChange = {
   label: string;
 };
 
-// Section containers are excluded; only leaf components are listed.
 function componentNodesById(yaml: string) {
   const byId = new Map<string, PipelineFlowNode>();
   if (!yaml.trim()) {

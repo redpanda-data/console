@@ -49,7 +49,6 @@ export const stopFormSchema = z
     if (s.mode === 'check' && s.check.trim() === '') {
       issue('check', 'Enter a Bloblang condition.');
     }
-    // The editor accepts only a timeout that fires: a positive duration or an env var reference.
     if (usesIdle(s) && !idleTimeoutFires(s.idle.trim())) {
       issue('idle', 'Enter a duration such as 30s, 5m or 1h.');
     }

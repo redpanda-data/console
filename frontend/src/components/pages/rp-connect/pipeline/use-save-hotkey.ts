@@ -11,7 +11,7 @@
 
 import { useEffect, useRef } from 'react';
 
-// Modal dialogs only — aria-modal scoping keeps non-modal role="dialog" elements from disabling the shortcut.
+// WARNING: Only modal dialogs disable the save shortcut; non-modal dialog roles must not suppress it.
 const MODAL_DIALOG_SELECTOR = '[role="dialog"][aria-modal="true"], [role="alertdialog"]';
 
 type UseSaveHotkeyOptions = {

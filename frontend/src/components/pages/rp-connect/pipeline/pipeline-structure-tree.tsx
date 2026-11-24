@@ -81,7 +81,6 @@ function stopRowSelectKeys(e: React.KeyboardEvent) {
   }
 }
 
-/** Error takes precedence over the unsaved dot, so a row never shows both. */
 const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boolean }) => {
   if (hasError) {
     return (
@@ -136,7 +135,7 @@ const NodeDocsLink = ({ label, href }: { label: string; href: string }) => (
       aria-label={`${label} documentation`}
       as="a"
       href={href}
-      // Clicking the row jumps the YAML cursor — opening docs must not also do that.
+      // WARNING: Stop docs-link clicks from reaching the tree row; opening documentation must not move the YAML cursor.
       onClick={(e: React.MouseEvent) => e.stopPropagation()}
       onKeyDown={stopRowSelectKeys}
       rel="noopener noreferrer"
@@ -236,8 +235,6 @@ const NodeRow = ({
 
   return (
     <>
-      {/* The row itself is the treeitem: it takes focus and handles select/expand keys; the
-          chevron stays a presentational click target so mouse behaviour is unchanged. */}
       <div
         aria-describedby={stopDescriptionId}
         aria-expanded={hasChildren ? !collapsed : undefined}
@@ -255,8 +252,6 @@ const NodeRow = ({
         style={{ paddingLeft: indentFor(depth) }}
         tabIndex={nav.tabbableId === node.id ? 0 : -1}
       >
-        {/* Toggle is a separate hit target so it doesn't also select the node; the row owns the
-            keyboard/ARIA expansion semantics, so it's hidden from the accessibility tree. */}
         {hasChildren ? (
           <button
             aria-hidden
@@ -406,6 +401,8 @@ type PipelineStructureTreeProps = {
  * Compact outline of a pipeline; shows only structure (icon + name) so deep nesting fits the narrow
  * lane, and rows drive the editor. ARIA tree (flattened): every row is a focusable `treeitem` with
  * aria-level/posinset/setsize; a roving tabindex + Arrow/Home/End/Enter/Space drive focus and selection.
+ *
+ * The treeitem owns keyboard focus, selection, and expansion. The separate pointer-only chevron must not select the row or appear as another accessibility target.
  */
 export function PipelineStructureTree({
   configYaml,
@@ -436,7 +433,6 @@ export function PipelineStructureTree({
     });
 
   const sections = maps.childrenOf(undefined).filter((n) => n.kind === 'section');
-  // Sections with no real component (only a `none` placeholder) read as "empty".
   const isEmptySection = (sectionId: string) => sectionRows(maps, sectionId).length === 0;
 
   const nav = useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode });
@@ -445,7 +441,6 @@ export function PipelineStructureTree({
   return (
     // WARNING: Keep section headings and add actions outside the tree; the tree role may own only tree items and groups.
     <div className="flex flex-col gap-3 py-3 pr-2">
-      {/* Left margin only — the container's `pr-2` supplies the matching right gap. */}
       {notice ? (
         <InvalidConfigNotice className="ml-2" variant="compact">
           {notice}

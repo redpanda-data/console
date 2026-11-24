@@ -12,7 +12,6 @@
 import type { Monaco } from '@monaco-editor/react';
 import { type EditorTheme, editorTheme } from 'components/redpanda-ui/lib/editor-theme';
 
-/** The tokens the diff paints on top of the editor theme, and which theme token each reads. */
 const DIFF_TOKENS = {
   removed: '--color-surface-destructive',
   inserted: '--color-surface-success',
@@ -54,7 +53,6 @@ const hexChannel = (value: number) =>
     .padStart(2, '0');
 const RGB_PARTS = /-?[\d.]+/gu;
 
-/** `rgb(24, 24, 24)` → `#181818`; alpha is dropped since the tiers above supply their own. */
 const toHex = (painted: string) => {
   const parts = (painted.match(RGB_PARTS) ?? []).map(Number);
   if (parts.length < 3) {

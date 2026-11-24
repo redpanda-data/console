@@ -194,7 +194,6 @@ function parseYamlEditorSchema(configSchema: string | undefined) {
 
 type DiagramDialogTarget = { section: 'input' | 'output'; componentName: string };
 
-/** What an Add user result writes into the component, and the new service account it brings. */
 function userDialogSetup(data: UserStepSubmissionData): {
   setupResult: RedpandaSetupResultLike;
   serviceAccount?: AttachedServiceAccount;
@@ -327,10 +326,9 @@ function YamlViewPanel({
   components: ConnectComponentSpec[];
 }) {
   const { attach: attachDeprecationMarkers } = useDeprecationMarkers(configYaml, components);
-  // Top/bottom shadows from Monaco's scroll position (it virtualizes, so onDidScrollChange is the only signal).
+  // WARNING: Read Monaco scroll position from its own event; the virtualized editor does not produce a useful DOM scroll signal.
   const [overflow, setOverflow] = useState({ top: false, bottom: false });
   const scrollSyncSubscriptions = useRef<ReturnType<editor.IStandaloneCodeEditor['onDidScrollChange']>[]>([]);
-  // Register the read-only viewer as the active editor so sidebar/Visual selection can reveal lines here too.
   const setEditorInstance = usePipelineEditorStore((s) => s.setEditorInstance);
   const handleMount = useCallback(
     (instance: editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -367,7 +365,6 @@ function YamlViewPanel({
     'pointer-events-none absolute inset-x-0 h-4 from-static-dark/10 to-transparent transition-opacity duration-150 dark:from-static-dark/40';
   return (
     <div className="relative h-full overflow-hidden [&_.cursors-layer]:opacity-0">
-      {/* Out of flow so Monaco can't feed its width up the layout and latch the page wide. */}
       <div className="absolute inset-0">
         <YamlEditor
           onEditorMount={handleMount}
@@ -487,7 +484,6 @@ function EditorPanel({
               <CountDot count={Object.keys(lintHints).length} variant="destructive" />
             ) : null}
           </div>
-          {/* Its "No issues found" would contradict the deprecations listed below it. */}
           {hasLintHints || isLintPending || deprecations.usages.length === 0 ? (
             <LintHintList isPending={isLintPending} lintHints={lintHints} />
           ) : null}
@@ -553,12 +549,10 @@ function revealNodeLines(
   ed.focus();
 }
 
-/** The attempt for `revealNodeId`, restarted whenever the request changes. */
 function revealAttemptFor(attempt: RevealAttempt, revealNodeId: string | null) {
   return attempt.id === revealNodeId ? attempt : { id: revealNodeId, count: 0 };
 }
 
-/** Counts a reveal that could not resolve yet; true once the request has used its retries. */
 function recordUnresolvedReveal(attempt: RevealAttempt) {
   attempt.count += 1;
   return attempt.count > MAX_REVEAL_ATTEMPTS;
@@ -605,14 +599,13 @@ function usePendingNodeReveal(
       requestRevealNode(null);
       return;
     }
-    // Bounded retry: drop the request so an id that never resolves can't fire a surprise jump later.
+    // WARNING: Drop unresolved reveal requests at their retry limit; an old request can otherwise jump after a later edit.
     if (recordUnresolvedReveal(revealAttemptRef.current)) {
       requestRevealNode(null);
     }
   }, [revealNodeId, editorInstance, nodeRanges, selectNode, requestRevealNode]);
 }
 
-/** Two-way sync: clicking a node reveals/selects its lines; moving the cursor highlights the node. */
 function useEditorNodeSync(yaml: string) {
   const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
@@ -665,7 +658,6 @@ function SidebarPanel({
 
   return (
     <div className="flex w-[300px] shrink-0 flex-col overflow-hidden border-r border-border!">
-      {/* Relative so the template entry point can float pinned at the bottom with an enter/exit animation. */}
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <ScrollShadow className="h-full overflow-x-hidden">
           {showStructureTree ? (
@@ -758,6 +750,9 @@ type LaneTab = {
 const isVisualEditorFeatureEnabled = () =>
   isFeatureFlagEnabled('enableRpcnVisualEditor') && isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
 
+/**
+ * The editor must not propagate Monaco's width into its parent; the back-link inset also keeps its overhang inside the clipped area.
+ */
 export default function PipelinePage() {
   const { pipelineId } = usePipelineMode();
   const isVisualEditorEnabled = isVisualEditorFeatureEnabled();
@@ -1091,7 +1086,7 @@ function useCreateModeBaseline(config: PipelinePageConfig, editorState: Pipeline
   }, [mode, isPipelineDiagramsEnabled, isServerlessMode, initialYaml, yamlContent, resolveInitialYaml]);
 }
 
-// A start refused from the list or detail page hands its hints over; seeded after hydration, which clears them.
+// WARNING: Seed start hints after hydration; hydration clears diagnostics supplied before it.
 function useStartLintHandover(
   mode: PipelineMode,
   pipelineId: string | undefined,
@@ -1109,7 +1104,6 @@ function useStartLintHandover(
   }, [mode, pipelineId, isDocumentLoaded, setErrorLintHints]);
 }
 
-/** The browser buffer captured when the editor opened, until it is restored or dismissed. */
 function useRecoverableAutosave(mode: PipelineMode, isDocumentLoaded: boolean, autosaveTarget: string) {
   const [recoverableEntry, setRecoverableEntry] = useState<EditorAutosaveEntry | null>(null);
   const [isAutosaveDismissed, setIsAutosaveDismissed] = useState(false);
@@ -1181,7 +1175,7 @@ function useAutosaveRecovery({
   );
   const { setYamlContent } = editorState.actions;
 
-  // Restored work is unsaved, so the form must read dirty against the loaded defaults.
+  // WARNING: Restored YAML must stay dirty against the server baseline; restoring it as defaults would hide unsaved changes.
   const handleRestoreAutosave = useCallback(() => {
     if (!recoverableEntry) {
       return;
@@ -1262,7 +1256,6 @@ function usePipelineDocumentSession({ saveSession, ...inputs }: SessionInputs & 
 
 type CommandMenuFilter = 'all' | 'variables' | 'secrets' | 'topics' | 'users';
 
-/** The command menu, opened from the sidebar, and its slash-triggered popover in the YAML editor. */
 function usePipelineCommandMenus(config: PipelinePageConfig, editorState: PipelineEditorState) {
   const { setCommandMenuFilter } = editorState.actions;
   const handleSlashOpen = useCallback(() => setCommandMenuFilter(null), [setCommandMenuFilter]);
@@ -1660,7 +1653,6 @@ function PipelineLaneTabs({ page, expanded, onToggleExpanded }: PageSectionProps
                 </span>
               </TabsTrigger>
             ))}
-            {/* Keeps the triggers clear of the overlaid toggle while the baseline spans the full strip. */}
             <span aria-hidden className="w-12 shrink-0" />
           </TabsList>
         </Tabs>
@@ -1682,7 +1674,7 @@ function PipelineLaneContent({ page }: { page: PipelinePageModel }) {
   const { setYamlContent, setAddConnectorType, setIsTemplateDialogOpen, setIsConfigDialogOpen } = editorState.actions;
   const onBrowseTemplates = config.isTemplateGalleryEnabled ? () => setIsTemplateDialogOpen(true) : undefined;
   return (
-    // min-w-0 + overflow-hidden keep the editor region from propagating width upward.
+    // WARNING: Keep width constraints on the editor region; Monaco can propagate its content width upward and widen the whole page.
     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
       {lanes.showSidebar ? (
         <div className={cn(lanes.isMonitorLane && 'relative w-[300px] shrink-0', !lanes.isMonitorLane && 'contents')}>
@@ -1772,8 +1764,6 @@ function PipelineEditorSurface({
   const { tipsContext } = page.lanes;
   return (
     <div className="flex min-h-[600px] min-w-0 flex-1 flex-col gap-2">
-      {/* Boxed: rounded frame. Fullscreen: flush sides, top/bottom borders kept so the
-          clipped scroll area still has a visible edge. */}
       <div
         className={cn(
           'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border border-border! transition-[border-radius,border-color] duration-300 ease-in-out',
@@ -1862,7 +1852,7 @@ function UnsavedChangesDialog({
   onSave: (intent?: SaveIntent) => Promise<boolean>;
 }) {
   const { blocker, unsavedChanges } = guard;
-  // After a failed draft save the browser buffer is offered beside it, so Discard is never the only exit.
+  // WARNING: Keep browser recovery available after a draft save fails; Discard must not become the user's only exit.
   const [hasDraftEscapeFailed, setHasDraftEscapeFailed] = useState(false);
   const canSaveDraftAndLeave = unsavedChanges.escape === 'save-draft';
   useEffect(() => {
@@ -1876,7 +1866,7 @@ function UnsavedChangesDialog({
     blocker.proceed?.();
   }, [autosaveTarget, blocker]);
 
-  // Flushed, not debounced: the pending write dies with the page.
+  // WARNING: Flush before navigating; unmount cancels the pending debounce.
   const handleLeaveAndKeepEdits = useCallback(() => {
     if (!flushAutosave()) {
       showToast({
@@ -2128,7 +2118,6 @@ function PipelinePageContent() {
   const { server, saveSession, documentSession, actions } = page;
 
   return (
-    // The -ml-3.5/pl-3.5 pair keeps the back button's overhang inside the overflow-x-clip region.
     <div
       className="page-fill-viewport-min -ml-3.5 flex min-w-0 flex-col gap-4 overflow-x-clip pl-3.5"
       ref={expandedModeRef}

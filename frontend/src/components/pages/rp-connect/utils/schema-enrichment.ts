@@ -11,18 +11,6 @@
 
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
-/**
- * Adds per-field signals that only the raw config-schema JSON carries, not the proto: `required`
- * arrays (the proto FieldSpec serializes only string defaults, so a dropped int/bool/collection
- * default looks identical to a genuinely required field) and `is_secret` (absent from the proto
- * entirely).
- *
- * Shape walked, per benthos internal/docs/json_schema.go:
- * `definitions.<type>.allOf[].anyOf[].properties.<name>` — object nodes carry `properties` +
- * `required`; array/2darray wrap under `items` (twice for 2darray); maps under
- * `patternProperties["."]`; component-typed fields are `$ref`s.
- */
-
 type JsonSchemaNode = {
   is_optional?: boolean;
   is_secret?: boolean;
@@ -35,7 +23,6 @@ type JsonSchemaNode = {
   anyOf?: JsonSchemaNode[];
 };
 
-/** Unwraps array/map wrappers so the node's `properties` line up with the proto field's `children`. */
 function unwrapStructural(node: JsonSchemaNode) {
   let current = node;
   while (current.items) {
@@ -78,22 +65,10 @@ function collectComponentNodes(definitions: Record<string, JsonSchemaNode>) {
   return nodes;
 }
 
-/**
- * Fields the engine's schema can't mark required because a runtime lint enforces a conditional
- * rule instead — e.g. the redpanda input lints "either topics or regexp_topics_include must be
- * specified" and "a consumer group is mandatory when not using explicit topic partitions", yet
- * its schema flags both fields optional. The common case is unconditional in practice, so the
- * console surfaces them as required rather than burying a pipeline's primary knobs under
- * "Optional" while lint demands them. Keyed `type:name`, listing top-level field names.
- */
 const LINT_REQUIRED_FIELDS: Record<string, readonly string[]> = {
   'input:redpanda': ['topics', 'consumer_group'],
 };
 
-/**
- * Stamps `requiredBySchema: true` on the curated fields. Runs even when the raw schema is
- * missing or too old to stamp from (the flags are console knowledge, not schema knowledge).
- */
 function applyLintRequiredFields(components: ConnectComponentSpec[]) {
   return components.map((component) => {
     const fieldNames = LINT_REQUIRED_FIELDS[`${component.type}:${component.name}`];
@@ -112,14 +87,6 @@ function applyLintRequiredFields(components: ConnectComponentSpec[]) {
   });
 }
 
-/**
- * Stamps from the raw schema; returns the input untouched when the schema is missing, unparsable,
- * or carries no signal. `required` arrays are the load-bearing signal and benthos has emitted them
- * (computed knowing every default) far longer than the per-field flags (`is_optional`/`is_secret`,
- * 4.59+) — so a mid-generation document still fixes required-ness even though it can't flag
- * secrets (the name heuristic still covers those). A document with no `required` keys at all
- * predates the arrays; stamping `requiredBySchema: false` everywhere from it would be a lie.
- */
 function stampFromConfigSchema(components: ConnectComponentSpec[], configSchema: string | undefined) {
   if (!configSchema?.includes('"required"')) {
     return components;
@@ -154,6 +121,10 @@ function stampFromConfigSchema(components: ConnectComponentSpec[], configSchema:
  * Returns specs with `secret` / `requiredBySchema` stamped onto every field the raw schema knows,
  * then overlays the curated lint-required flags (which win — they exist precisely because the
  * schema calls those fields optional).
+ *
+ * Reads required arrays and per-field secret markers from the raw JSON schema, following object, array, and map wrappers. If required arrays are missing entirely, do not stamp fields as optional: older schemas omit that data.
+ *
+ * The curated conditional lint requirements still apply without that JSON. Missing secret metadata falls back to the field-name heuristic.
  */
 export function enrichComponentsWithConfigSchema(components: ConnectComponentSpec[], configSchema: string | undefined) {
   return applyLintRequiredFields(stampFromConfigSchema(components, configSchema));

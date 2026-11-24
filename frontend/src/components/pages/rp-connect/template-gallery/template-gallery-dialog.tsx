@@ -98,7 +98,6 @@ const viewFlagsFor = (view: DialogView, selectedTemplate: PipelineTemplate | nul
   };
 };
 
-/** The dialog's current step, the template being filled in, and what the steps hand to each other. */
 const useTemplateDialogSteps = (open: boolean) => {
   const [view, setView] = useState<DialogView>({ kind: 'gallery' });
   const [selectedTemplate, setSelectedTemplate] = useState<PipelineTemplate | null>(null);
@@ -147,6 +146,9 @@ const useExistingSecretIds = (open: boolean) => {
   return useMemo(() => (secretsResponse?.secrets ?? []).map((s) => s?.id ?? '').filter(Boolean), [secretsResponse]);
 };
 
+/**
+ * Keep the form mounted during the add-secret and create-topic subflows; hiding the wrapper preserves slot values.
+ */
 export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalleryDialogProps) => {
   const {
     view,
@@ -263,8 +265,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
           />
         ) : null}
 
-        {/* Stays mounted across addSecret/createTopic to preserve form state; */}
-        {/* hidden via inline style (className targets the inner element). */}
         {isFormMounted && selectedTemplate ? (
           <DialogBody style={isFormViewActive ? undefined : { display: 'none' }}>
             <TemplateFormPanel

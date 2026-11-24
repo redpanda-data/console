@@ -118,13 +118,11 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
     >
       <DialogContent size="md">
         <DialogHeader>
-          {/* Room for DialogContent's close button: the header's own padding plus this margin clear its 2.5rem. */}
           <DialogTitle className="mr-6">Select or add secret</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <div className="flex w-[300px] flex-col gap-5">
             <Text>Select an existing secret or create a new one. Secrets are available across all pipelines.</Text>
-            {/* The Combobox exposes no `id`, so this label cannot be wired with `htmlFor`. */}
             <Field data-invalid={hasNameError}>
               <FieldLabel>Secret name</FieldLabel>
               <Combobox

@@ -14,10 +14,6 @@ import { ChevronDown } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 
-/**
- * Popover-style dismissal for a floating chip's expanded list: close on outside click or Escape.
- * Returns the ref to attach to the chip's container.
- */
 function useChipDismissal(open: boolean, setOpen: (next: boolean) => void) {
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {

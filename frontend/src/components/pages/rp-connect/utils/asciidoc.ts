@@ -9,28 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Connect schema prose is AsciiDoc, not Markdown — component `summary`/`description` and per-field
- * `description`. `short_description` carries no markup by contract and must not come through here.
- */
-
-// Macro label, allowing AsciiDoc's `\]` escape.
 const MACRO_LABEL = String.raw`((?:\\.|[^\]\\])*)`;
 const XREF_MACRO = new RegExp(String.raw`(?:xref|link):[^\s[\]]*\[${MACRO_LABEL}\]`, 'gu');
 const URL_MACRO = new RegExp(String.raw`(https?://[^\s[\]]+)\[${MACRO_LABEL}\]`, 'gu');
-// Lazy up to the `](`, so brackets nested in the label (code-spanned DSN examples) stay part of it.
 const MARKDOWN_LINK = /\[(?<label>[^\n]*?)\]\([^)\n]*\)/gu;
 const INTERNAL_XREF = /<<(?<anchor>[^>,\n]+)(?:,\s*(?<label>[^>\n]+))?>>/gu;
 const NEW_WINDOW_FLAG = /\^$/u;
 
-// So "found in xref:…[]." doesn't render as "found in .".
 const EMPTY_XREF_LABEL = 'the documentation';
 
 const ATTRIBUTE_LINE = /^:[a-zA-Z][\w-]*:.*$/gmu;
-// Admonitions keep their label; every other block attribute (`[source,yaml]`) is docs noise.
 const ADMONITION_LINE = /^\[(?<kind>NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]$/gmu;
 const BLOCK_ATTRIBUTE_LINE = /^\[[^\]]*\]$/gmu;
-// `-{4,}` leaves a Markdown `---` alone.
 const BLOCK_DELIMITER = /^(?:={2,}|-{4,}|\*{4,}|_{4,}|\+{4,})$/gmu;
 const BLOCK_TITLE_LINE = /^\.(?<title>[A-Z][^\n]*)$/gmu;
 const SECTION_TITLE = /^=+\s+(?<title>.{1,60})$/gmu;
@@ -42,7 +32,6 @@ const TABLE_FENCE = /^\|===$/u;
 const TABLE_RULE_ROW = /^\|[\s:|-]+$/u;
 const TABLE_CELL_MARKERS = /^\|\s*|\s*\|$/gu;
 const TABLE_CELL_SEPARATOR = /\s*\|\s*/u;
-// `[%header,format=dsv]` tables separate cells with `:` instead.
 const DSV_TABLE_ATTRIBUTE = /^\[.*format=dsv.*\]$/u;
 const DSV_CELL_SEPARATOR = /\s*:\s*/u;
 
@@ -64,10 +53,6 @@ const macrosToLabels = (text: string) =>
     .replace(XREF_MACRO, (_match, label: string) => macroLabel(label) || EMPTY_XREF_LABEL)
     .replace(INTERNAL_XREF, (_match, anchor: string, label?: string) => (label ?? anchor).trim());
 
-/**
- * Flattens `|===` and Markdown pipe tables to one bullet per row — react-markdown is mounted without
- * remark-gfm. Outside a fence a row must be pipe-delimited at both ends, so prose keeps its `|`.
- */
 function flattenTables(text: string) {
   if (!text.includes('|')) {
     return text;
@@ -85,7 +70,6 @@ function flattenTables(text: string) {
 
 type TableState = { inFence: boolean; separator: RegExp };
 
-// What one line becomes, undefined to drop it; tracks the enclosing `|===` fence in `state`.
 function flattenTableLine(line: string, state: TableState) {
   const trimmed = line.trim();
   if (TABLE_FENCE.test(trimmed)) {
@@ -100,7 +84,6 @@ function flattenTableLine(line: string, state: TableState) {
   return isRow ? tableRowBullet(trimmed, state) : line;
 }
 
-// Closing a fence resets the cell separator a DSV attribute may have switched.
 function toggleTableFence(state: TableState) {
   state.inFence = !state.inFence;
   if (!state.inFence) {
@@ -109,7 +92,6 @@ function toggleTableFence(state: TableState) {
 }
 
 function tableRowBullet(trimmed: string, state: TableState) {
-  // A Markdown header rule (`|---|---|`) carries no content; inside a fence it could be a row.
   if (!state.inFence && TABLE_RULE_ROW.test(trimmed)) {
     return;
   }
@@ -117,7 +99,6 @@ function tableRowBullet(trimmed: string, state: TableState) {
   return cells ? `- ${cells.split(state.separator).join(' — ')}` : '';
 }
 
-/** Escapes `<placeholder>` outside code: remark reads it as inline HTML and, with HTML off, drops it. */
 function escapePlaceholders(text: string) {
   return text
     .split(CODE_BLOCK_OR_SPAN)
@@ -125,7 +106,13 @@ function escapePlaceholders(text: string) {
     .join('');
 }
 
-/** AsciiDoc to Markdown for react-markdown; newlines survive, so titles and paragraphs stay distinct. */
+/**
+ * AsciiDoc to Markdown for react-markdown; newlines survive, so titles and paragraphs stay distinct.
+ *
+ * Only pass marked-up schema prose such as descriptions and summaries; short_description is already plain. Table rows (including DSV) are flattened because react-markdown is mounted without GFM.
+ *
+ * Fence state controls row parsing so prose pipes survive. Placeholders outside code are escaped because disabled HTML rendering would otherwise drop them.
+ */
 export function asciidocToMarkdown(raw: string) {
   return escapePlaceholders(
     macrosToLabels(flattenTables(raw.replace(CRLF, '\n')))

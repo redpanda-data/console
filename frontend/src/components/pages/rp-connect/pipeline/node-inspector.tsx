@@ -183,7 +183,7 @@ function flushConditionDraft(draftRef: DraftRef, yaml: string, caseTarget?: Edit
   }
   const applied = setComponentAt(yaml, caseTarget, cond);
   if (applied === null) {
-    // Surgical editor couldn't rewrite this YAML; keep the draft (next flush retries) and warn.
+    // WARNING: Keep the draft when a rewrite fails; dropping it would lose the user's edits before the next flush.
     toast.error('Couldn’t apply the condition edit to the YAML — edit it in the YAML view instead.');
     return yaml;
   }
@@ -464,7 +464,6 @@ function ComponentInspector(props: ComponentInspectorProps) {
         target={target}
         yaml={yaml}
       />
-      {/* Field-anchored problems render under their fields; the banner keeps only what didn't map. */}
       {lintMapping.unmapped.length > 0 ? <InspectorLintErrors hints={lintMapping.unmapped} /> : null}
       {danglingRef && !readOnly ? (
         <DanglingRefBanner
@@ -530,7 +529,6 @@ type InspectorBodyProps = {
   resetToken?: number;
 };
 
-// Case-condition section (if any) plus the most specific of: schema form, read-only view, child list, raw YAML.
 const InspectorBody = ({
   conditionSection,
   identity,
@@ -578,7 +576,6 @@ const InspectorBody = ({
       />
     );
   }
-  // Fan-out container with no schema form (fallback / broker / output switch): list members instead of raw YAML.
   if (childItems && childItems.length > 0 && onSelectChild) {
     const listLabel = componentName === 'switch' || componentName === 'group_by' ? 'Cases' : 'Outputs';
     return (
@@ -595,7 +592,7 @@ const InspectorBody = ({
       {conditionSection}
       <RawComponentEditor
         component={component}
-        // Same keying as NodeConfigForm: remount on node identity or undo/redo, re-sync in place otherwise.
+        // WARNING: Remount only when node identity or undo/redo changes; remounting on each update loses current inspector edits.
         key={`${identity}:${resetToken ?? 0}`}
         onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
@@ -610,8 +607,6 @@ const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () =>
   }
   return (
     <DropdownMenu>
-      {/* Base UI `render` (not Radix `asChild`): the trigger IS our icon-sm Button, not a nested one. */}
-      {/* `current-ghost`: the trigger takes the muted ink of the header's action group. */}
       <DropdownMenuTrigger render={<Button aria-label="More actions" size="icon-sm" variant="current-ghost" />}>
         <EllipsisVertical />
       </DropdownMenuTrigger>
@@ -677,7 +672,7 @@ function applyComponentDraft(
   if (refKind && originalLabel) {
     const nextLabel = typeof config.label === 'string' ? config.label : undefined;
     if (nextLabel && nextLabel !== originalLabel) {
-      // Kind-scoped: renaming a cache must not rewrite a same-labelled rate limit's (or input's) references.
+      // WARNING: Scope renames by component kind; same-labelled caches and rate limits are distinct resources.
       return renameResourceReferences(applied, originalLabel, nextLabel, refKind) ?? applied;
     }
   }
@@ -765,7 +760,6 @@ const SwitchCaseEditor = ({
           <span className="text-body-sm font-medium tracking-wide text-muted-foreground uppercase">Switch</span>
           <span className="text-body font-semibold">Routing condition</span>
         </div>
-        {/* Muted actions: the `current-ghost` buttons take this group's ink. */}
         <div className="ml-auto flex shrink-0 items-center gap-1 text-muted-foreground">
           <InspectorActionsMenu onDelete={onDelete} onOpenInYaml={onOpenInYaml} />
           {onClose ? (
@@ -825,7 +819,6 @@ const CaseConditionSection = ({
         </TooltipProvider>
       </div>
       <CaseCheckInput check={check} id={inputId} invalid={Boolean(error)} readOnly={readOnly} setCheck={setCheck} />
-      {/* The field's own error, shown where it's fixed. Hidden once editing starts — they're addressing it. */}
       {error && !dirty ? (
         <div className="flex items-center gap-1 pt-1.5 text-body-sm text-destructive">
           <AlertCircle className="size-3.5 shrink-0" />
@@ -851,7 +844,6 @@ const DanglingRefBanner = ({ refLabel, onCreate }: { refLabel: string; onCreate:
   </InspectorBanner>
 );
 
-// The component still loads and saves; this only steers the user toward the replacement.
 const DeprecatedComponentBanner = ({ messages }: { messages: string[] }) => (
   <InspectorBanner title="Deprecated component" tone="warning">
     {[...new Set(messages)].map((message) => (
@@ -917,7 +909,6 @@ const InspectorHeader = ({
         <span className="min-w-0 truncate text-body font-semibold">{componentName}</span>
       </ElementTooltip>
     </div>
-    {/* Muted actions: the `current-ghost` buttons take this group's ink. */}
     <div className="ml-auto flex shrink-0 items-center gap-1 text-muted-foreground">
       {docsUrl ? (
         <Button
@@ -997,7 +988,6 @@ function useComponentDraft(component: Record<string, unknown>) {
   return { draft, setDraft, config, error };
 }
 
-// Fallback editor for components without a known schema (e.g. bloblang mappings): scoped, editable YAML.
 const RawComponentEditor = ({
   component,
   onConfigChange,
@@ -1037,7 +1027,6 @@ const RawComponentEditor = ({
         }
       }}
     >
-      {/* Flex column so the editor shrinks to leave room for the error row below it. */}
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
           <YamlEditor

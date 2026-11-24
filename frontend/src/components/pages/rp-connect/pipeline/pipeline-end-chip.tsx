@@ -185,7 +185,11 @@ export function PipelineEndChip({
   );
 }
 
-/** The pipeline's end status for a page header's meta row; the reason is its tooltip. */
+/**
+ * The pipeline's end status for a page header's meta row; the reason is its tooltip.
+ *
+ * The reason is exposed through a focusable trigger for keyboard users.
+ */
 export function PipelineEndMeta({ summary }: { summary: PipelineEndSummary }) {
   if (summary.status === 'none') {
     return null;
@@ -194,7 +198,6 @@ export function PipelineEndMeta({ summary }: { summary: PipelineEndSummary }) {
   const reason = summary.behavior?.reason;
   return (
     <Tooltip>
-      {/* A button, so the reason is in reach of the keyboard too. */}
       <TooltipTrigger
         render={
           <button className="flex cursor-default items-center gap-1.5" data-testid="pipeline-end-meta" type="button" />

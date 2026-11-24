@@ -99,7 +99,6 @@ const ListStatusAnnouncements = ({
   </>
 );
 
-// Pages still unfetched means partial data; otherwise a background refresh failed and it's stale.
 const listErrorMessageFor = (error: { message: string } | null, hasNextPage: boolean | undefined) => {
   if (!error) {
     return null;
@@ -227,7 +226,6 @@ const usePipelinesTable = (pipelines: PipelineRow[], isLoading: boolean) => {
       const next = functionalUpdate(updater, pagination);
       update({ page: next.pageIndex + 1, size: next.pageSize }, { keepPage: true });
     },
-    // Pages stream in behind the first; the page only resets when the view changes.
     autoResetPageIndex: false,
   });
 
@@ -546,6 +544,9 @@ const RedpandaConnectContent = () => (
   </div>
 );
 
+/**
+ * Keeps the pipeline list mounted when switching tabs so visiting Kafka Connect does not reset the list.
+ */
 export const PipelineListPage = () => {
   const { data: kafkaConnectors, isLoading: isLoadingKafkaConnect } = useKafkaConnectConnectorsQuery();
 
@@ -583,8 +584,6 @@ export const PipelineListPage = () => {
         </TabsList>
         <TabsContents>
           <div className="p-6">
-            {/* keepMounted: a trip to the Kafka Connect tab and back keeps the list as it was, rather than
-                rebuilding it. */}
             <TabsContent keepMounted value="redpanda-connect">
               <RedpandaConnectContent />
             </TabsContent>

@@ -177,7 +177,6 @@ type PipelineThroughputCardProps = {
   pipelineId: string;
 };
 
-// Which throughput queries the observability catalog serves; a range query only runs for a served one.
 function useThroughputQueryCatalog() {
   const { data, isLoading, isError, refetch } = useListQueries({
     filter: {
@@ -233,7 +232,7 @@ function usePipelineThroughput(pipelineId: string, selectedTimeRange: TimeRange)
   return {
     chartData,
     domain: [timeRange.start.getTime(), timeRange.end.getTime()] satisfies [number, number],
-    // isPending stays true for disabled queries, so only count enabled ones to avoid an infinite skeleton.
+    // WARNING: Count only enabled pending queries; a disabled query stays pending and would leave the skeleton up forever.
     isLoading:
       catalog.isLoading || (catalog.hasInputQuery && ingress.isPending) || (catalog.hasOutputQuery && egress.isPending),
     isError: catalog.isError || ingress.isError || egress.isError,

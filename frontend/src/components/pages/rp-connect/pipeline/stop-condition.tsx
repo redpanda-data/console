@@ -151,7 +151,6 @@ const ModeOption = ({
       )}
     >
       <Label className={cn('items-start', disabled ? 'cursor-not-allowed' : 'cursor-pointer')} htmlFor={id}>
-        {/* mr-0.5 widens the label's gap to line the text up with the fields below. */}
         <RadioGroupItem
           aria-describedby={description ? `${id}-description` : undefined}
           aria-label={title}
@@ -263,7 +262,7 @@ function submitOnModEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
   }
 }
 
-// Clicks inside the portaled popup still bubble through React to the canvas node — keep them there.
+// WARNING: Stop portal click propagation; React can otherwise deliver the click to the canvas card.
 const stopReactBubble = (e: SyntheticEvent) => e.stopPropagation();
 
 const RestartToggle = ({ control }: FormPartProps) => (
@@ -383,7 +382,7 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
       <form
         noValidate
         onSubmit={(e) => {
-          // React bubbles the submit out of the portal — keep it off any enclosing form.
+          // WARNING: Stop portal submit propagation; otherwise it can submit the enclosing editor form.
           e.stopPropagation();
           apply(e).catch((error: unknown) => {
             showToast({ status: 'error', title: 'Failed to apply the stop condition', description: String(error) });
@@ -398,7 +397,6 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
               <FormControl
                 render={
                   <RadioGroup aria-label="Stop condition" onValueChange={field.onChange} value={field.value}>
-                    {/* Sets the options' padding and spacing; the group's own gap acts on this one child. */}
                     <div className="grid gap-0.5 p-1.5">
                       <ModeOption
                         description={<RichText text={slot.unwrapLock ?? none.description} />}
@@ -460,8 +458,6 @@ function StopEditorForm({ slot, isGroup, onApply, onClose }: StopEditorFormProps
                           name="check"
                           render={({ field: checkField }) => (
                             <FormItem spacing="tight">
-                              {/* Multi-line: a check can span lines (`let` statements, comments). */}
-                              {/* The field inherits its mono font from here. */}
                               <div className="font-mono">
                                 <FormControl
                                   render={
@@ -570,9 +566,7 @@ function StopConditionPopover({
         side={side}
         sideOffset={6}
       >
-        {/* The editor's sections run edge to edge, over the popover's padding. */}
         <div className="-m-4">
-          {/* Keyed per open, so a cancelled edit never lingers into the next one. */}
           <StopConditionEditor {...editor} key={opens} onClose={() => setOpen(false)} />
         </div>
       </PopoverContent>
@@ -617,7 +611,7 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
           )}
           data-end={effective.kind}
           data-testid="stop-row"
-          // A quick action: opening it must not also select the card it sits on.
+          // WARNING: Do not let the quick action click select the containing card; opening the condition control is a separate action.
           onClick={stopReactBubble}
           style={{ height: FLOW_STOP_ROW_H }}
           type="button"
@@ -629,7 +623,6 @@ export function StopRow({ name, slot, effective, onApply, isGroup }: StopRowProp
             tone={tone === 'set' || tone === 'natural' ? 'success' : 'default'}
           />
           <span className="shrink-0 text-2xs font-semibold tracking-wide uppercase opacity-80">{eyebrow}</span>
-          {/* Keyed on the text so a changed condition fades in rather than switching silently. */}
           <span className="min-w-0 flex-1 animate-in truncate duration-200 fade-in" key={text}>
             {text}
           </span>

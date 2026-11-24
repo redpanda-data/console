@@ -82,7 +82,6 @@ const slotSchema: (slot: TemplateSlot) => z.ZodTypeAny = (slot) => {
 
   let field = requiredSlotSchema(slot, isList);
   if (entryPattern) {
-    // Validate each trimmed entry; blanks are the required check's concern, not the pattern's.
     const entriesOf = (v: string) => (isList ? v.split(',') : [v]).map((part) => part.trim()).filter(Boolean);
     field = field.refine((v) => entriesOf(v).every((entry) => entryPattern.regex.test(entry)), entryPattern.message);
   }
@@ -152,11 +151,6 @@ export type TemplateFormPanelProps = {
   onSlotValueApplied?: () => void;
 };
 
-/**
- * The template's slots, with the connector schema applied once it loads, and a form validating them.
- * Schema-driven defaults can arrive after mount, so they are reapplied once per template while the
- * form is pristine.
- */
 const useTemplateForm = (template: PipelineTemplate) => {
   const { components, isLoading: isComponentsLoading } = useEnrichedComponents();
   const effectiveSlots = useMemo(
@@ -175,7 +169,7 @@ const useTemplateForm = (template: PipelineTemplate) => {
 
   const lastAppliedTemplateId = useRef<string | null>(null);
   useEffect(() => {
-    // required-ness/defaults rather than locking in values derived from proto flags alone.
+    // WARNING: Apply raw-schema defaults once while pristine; applying them again can overwrite an in-progress slot edit.
     if (isComponentsLoading || components.length === 0 || lastAppliedTemplateId.current === template.id) {
       return;
     }

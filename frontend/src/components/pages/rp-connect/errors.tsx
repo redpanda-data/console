@@ -65,7 +65,6 @@ function lintHintsFromDetails(details: ConnectError['details']) {
   return hints;
 }
 
-/** The error message, prefixed with the error code when the message doesn't already mention it. */
 function connectErrorHintText(err: ConnectError) {
   const code = String(err.code);
   if (err.code && !err.message.toLowerCase().includes(code.toLowerCase())) {

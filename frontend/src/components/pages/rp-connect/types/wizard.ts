@@ -17,7 +17,7 @@ const connectTilesListFormSchema = z.object({
 });
 
 export type OperationResult = {
-  operation: string; // e.g., "Create user", "Create ACL", "Create secret"
+  operation: string;
   success: boolean;
   message?: string;
   error?: string;

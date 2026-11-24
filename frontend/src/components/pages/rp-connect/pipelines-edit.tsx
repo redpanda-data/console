@@ -73,7 +73,6 @@ type PipelineUpdateInput = {
   editorContent: string;
 };
 
-/** Saves the edits, keeping the pipeline's tags and service account, then returns to its page. */
 const useUpdatePipeline = (pipeline: Pipeline, pipelineId: string) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const { tags } = pipeline;
@@ -91,7 +90,8 @@ const useUpdatePipeline = (pipeline: Pipeline, pipelineId: string) => {
           description,
           resources: {
             cpuShares: tasksToCPU(tasks) || '0',
-            memoryShares: '0', // still required by API but unused
+            // WARNING: The API still requires memoryShares; send the zero sentinel even though it is unused.
+            memoryShares: '0',
           },
           tags: {
             ...tags,
@@ -211,7 +211,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
             setTasksDraft(String(clampTasks(tasksDraft)));
           }}
           onChange={(e) => {
-            // Clamp on blur, not here: clamping per keystroke makes the field unclearable.
+            // WARNING: Clamp on blur; applying the minimum during typing prevents replacing the whole input value.
             setTasksDraft(e.target.value);
             setField('tasks', clampTasks(e.target.value));
           }}
@@ -236,7 +236,6 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
       </div>
 
       <div className="flex items-center gap-4">
-        {/* `isLoading` hides the label, so the pending text is a child. */}
         <Button disabled={isNameEmpty || isUpdating} onClick={() => updatePipeline(formState)} variant="primary">
           {isUpdating ? (
             <>
