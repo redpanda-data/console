@@ -182,6 +182,12 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Run integration tests
         run: bun run test:integration -- --shard=${{ matrix.shard }}/2
+      - name: Install Chromium for component tests
+        if: matrix.shard == 1
+        run: bun run install:chromium --with-deps
+      - name: Run native browser component tests
+        if: matrix.shard == 1
+        run: bun run test:browser:components
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

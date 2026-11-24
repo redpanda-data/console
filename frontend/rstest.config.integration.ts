@@ -25,7 +25,7 @@ export default defineConfig({
     maxWorkers: '50%',
   },
   include: ['src/**/*.test.tsx', 'src/**/*.integration.test.ts', 'tests/**/*.integration.test.ts'],
-  exclude: ['src/**/*.federation.test.tsx'],
+  exclude: ['src/**/*.federation.test.tsx', 'src/**/*.browser.test.tsx'],
   setupFiles: './rstest.setup.ts',
   testTimeout: 30_000,
   reporters: [['md', { preset: 'compact' }], ...(process.env.CI ? ['github-actions' as const] : [])],

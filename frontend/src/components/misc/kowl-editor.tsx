@@ -9,11 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-import type { DiffEditorProps, EditorProps } from '@monaco-editor/react';
+import type { DiffEditorProps, EditorProps, Monaco } from '@monaco-editor/react';
 import { LoadingBoundary } from 'components/ui/loading-boundary';
 import { useMonacoTheme } from 'hooks/use-monaco-theme';
 import type { editor } from 'monaco-editor';
-import { lazy } from 'react';
+import { lazy, useEffectEvent, useLayoutEffect, useRef } from 'react';
 
 type IStandaloneCodeEditor = editor.IStandaloneCodeEditor;
 type IStandaloneDiffEditor = editor.IStandaloneDiffEditor;
@@ -78,8 +78,36 @@ export default function KowlEditor(props: KowlEditorProps) {
   );
 }
 
+function useDiffModelCleanup({ keepCurrentOriginalModel, keepCurrentModifiedModel }: KowlDiffEditorProps) {
+  const instanceRef = useRef<editor.IDiffEditor | null>(null);
+  const detachModels = useEffectEvent(() => {
+    const instance = instanceRef.current;
+    const models = instance?.getModel();
+    if (!(instance && models)) {
+      return;
+    }
+    instance.setModel(null);
+    instanceRef.current = null;
+    if (!keepCurrentOriginalModel) {
+      models.original.dispose();
+    }
+    if (!(keepCurrentModifiedModel || models.modified.isDisposed())) {
+      models.modified.dispose();
+    }
+  });
+
+  // WARNING: Detach in layout cleanup; the React Monaco adapter disposes models before its editor in passive cleanup.
+  useLayoutEffect(() => () => detachModels(), []);
+
+  return (monaco: Monaco) => {
+    // WARNING: The adapter calls beforeMount synchronously after creating the diff editor, before assigning its models.
+    instanceRef.current = monaco.editor.getDiffEditors().at(-1) ?? null;
+  };
+}
+
 export function KowlDiffEditor(props: KowlDiffEditorProps) {
   const { options: givenOptions, beforeMount, ...rest } = props;
+  const captureCreatedEditor = useDiffModelCleanup(props);
   const options = { ...defaultOptions, ...(givenOptions ?? {}) };
   const monacoTheme = useMonacoTheme();
 
@@ -91,6 +119,7 @@ export function KowlDiffEditor(props: KowlDiffEditorProps) {
         wrapperProps={{ className: 'kowlEditor' }}
         {...rest}
         beforeMount={(monaco) => {
+          captureCreatedEditor(monaco);
           monacoTheme.beforeMount(monaco);
           beforeMount?.(monaco);
         }}
