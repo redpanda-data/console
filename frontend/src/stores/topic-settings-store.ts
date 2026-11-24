@@ -66,7 +66,8 @@ export type TopicSearchParams = {
   filters: FilterEntry[];
   keyDeserializer: PayloadEncoding;
   valueDeserializer: PayloadEncoding;
-  schemaContext: string; // '' resolves the topic's context, '.' forces the default.
+  /** Empty resolves the topic's schema context; `.` forces the default. */
+  schemaContext: string;
 };
 
 /**
@@ -194,15 +195,13 @@ const createDefaultTopicSettings = (topicName: string, overrides: Partial<TopicS
  */
 export const MAX_PER_TOPIC_SETTINGS = 200;
 
-/**
- * Subscribe to Zustand store changes and sync them to the legacy MobX uiSettings store.
- * This ensures that changes made via Zustand are persisted by MobX's autorun mechanism.
- */
 const syncPerTopicSettingsToMobX = (state: TopicSettingsStore) => {
-  // Type assertion is safe here because TopicSettings matches TopicDetailsSettings structure
   uiSettings.perTopicSettings = state.perTopicSettings as unknown as TopicDetailsSettings[];
 };
 
+/**
+ * Writes only the topic slice of the shared settings key, and keeps the legacy MobX consumers in sync.
+ */
 export const useTopicSettingsStore = create<TopicSettingsStore>()(
   devtools(
     persist(
@@ -475,7 +474,7 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
       {
         name: 'uiSettings-v3',
         version: 1,
-        // Custom storage to read/write only perTopicSettings from the full uiSettings-v3 object
+        // WARNING: Keep unrelated fields when writing uiSettings-v3; the legacy store also persists to this key.
         storage: {
           getItem: (name) => {
             const str = localStorage.getItem(name);

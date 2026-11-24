@@ -11,9 +11,6 @@
 
 import { ALPHANUMERIC_WITH_HYPHENS } from './regex';
 
-/**
- * Regex to remove trailing underscores from secret IDs
- */
 const TRAILING_UNDERSCORES_REGEX = /_+$/u;
 
 /**

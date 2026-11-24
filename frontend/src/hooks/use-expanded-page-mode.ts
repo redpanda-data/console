@@ -11,12 +11,6 @@
 
 import { useCallback, useLayoutEffect, useState } from 'react';
 
-/**
- * Set on `<html>` while an expanded page is on screen. Each shell releases its horizontal
- * constraints off it in CSS: Console's gutter and width cap (`page-expanded-*` in
- * globals.css), Cloud UI's embedded wrapper (`expandableWidth` in cloud-ui layout.tsx).
- * Must not outlive the page — a stale attribute bleeds full width onto the next one.
- */
 const PAGE_EXPANDED_ATTR = 'data-page-expanded';
 
 const clearPageExpanded = () => document.documentElement.removeAttribute(PAGE_EXPANDED_ATTR);
@@ -25,7 +19,7 @@ const readStoredExpanded = (storageKey: string) => {
   try {
     return localStorage.getItem(storageKey) === 'full';
   } catch {
-    return false; // storage blocked (private mode / cookie settings)
+    return false;
   }
 };
 
@@ -36,6 +30,9 @@ const readStoredExpanded = (storageKey: string) => {
  * Attach `ref` to the page root: the attribute is held only while that root is on
  * screen, because embedded Cloud UI keeps Console mounted but hidden on host routes.
  * Applies the attribute in the same frame as the page resize; cleanup also handles the element detaching.
+ *
+ * The `data-page-expanded` attribute releases width constraints in both shells.
+ * If storage is blocked, expansion still works but doesn't survive a reload.
  */
 export function useExpandedPageMode({ storageKey }: { storageKey: string }) {
   const [expanded, setExpanded] = useState(() => readStoredExpanded(storageKey));

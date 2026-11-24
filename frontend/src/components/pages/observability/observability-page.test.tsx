@@ -28,7 +28,6 @@ import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import ObservabilityPage from './observability-page';
 
-// so the inner LineChart gets a positive layout and the warning stops.
 function MockResponsiveContainer({ children }: { children: React.ReactNode }) {
   return React.createElement('div', { style: { width: 800, height: 600 } }, children);
 }

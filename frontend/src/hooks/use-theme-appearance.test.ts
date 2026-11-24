@@ -3,11 +3,6 @@
 import { classifyGround } from './use-theme-appearance';
 import { describe, expect, it } from 'bun:test';
 
-/**
- * Keeps theming name-agnostic: a theme called `midnight` has to come out dark with nothing matching
- * on the string `dark`. The threshold also has to agree with `isDarkGround` in
- * redpanda-ui/lib/editor-theme, or Monaco and the shell disagree on one page.
- */
 describe('classifyGround', () => {
   it('classifies the shipped grounds', () => {
     expect(classifyGround([22, 22, 22])).toBe('dark');

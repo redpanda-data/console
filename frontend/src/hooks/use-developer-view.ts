@@ -13,7 +13,6 @@ const readStored = () => {
   }
 };
 
-/** `?` toggles the developer view; the choice persists so a reload keeps it. */
 const useDeveloperViewDev = () => {
   const [developerView, setDeveloperView] = useState(readStored);
 
@@ -53,4 +52,7 @@ const useDeveloperViewProd = () => useState(readStored)[0];
 
 const useDeveloperView = IS_DEV ? useDeveloperViewDev : useDeveloperViewProd;
 
+/**
+ * Reads the saved developer-view preference. In development, `?` toggles it outside editable controls and saves the new choice.
+ */
 export default useDeveloperView;

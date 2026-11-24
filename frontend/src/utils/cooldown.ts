@@ -7,11 +7,12 @@
  * As of the Change Date specified in that file, in accordance with
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
+ *
+ * Elapsed-time gate. Consuming it when ready starts another interval; forcing consumption restarts it immediately.
  */
-
 export class Cooldown {
-  timestamp = 0; // time of last trigger
-  duration = 0; // how long the CD takes to charge
+  timestamp = 0;
+  duration = 0;
 
   /**
    * @description Create a cooldown with the given duration
@@ -43,7 +44,6 @@ export class Cooldown {
     return this.timeLeft <= 0;
   }
 
-  // 'Use' the cooldown. Check if ready, and if it is also trigger it
   consume(force = false) {
     if (this.timeLeft <= 0 || force) {
       this.timestamp = Date.now();

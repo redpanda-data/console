@@ -128,9 +128,6 @@ export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonVal
   return mutableObj;
 }
 
-/**
- * Updates an array at a specific path
- */
 function updateArray(array: JsonValue[], path: string[], value: JsonValue) {
   const [index, ...restPath] = path;
   const arrayIndex = Number(index);
@@ -156,9 +153,6 @@ function copyDenseArray(array: JsonValue[], length: number) {
   return copy;
 }
 
-/**
- * Updates an object at a specific path
- */
 function updateObject(obj: JsonObject, path: string[], value: JsonValue) {
   const [key, ...restPath] = path;
 

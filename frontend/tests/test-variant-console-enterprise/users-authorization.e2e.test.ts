@@ -15,7 +15,7 @@ import { test as base, expect, type Locator } from '../shared/e2e';
 
 const test = base.extend({ playwright: definePlaywrightOptions({ storageState: 'playwright/.auth/view-only.json' }) });
 
-// TODO(UX-1209): flip to true once the view-only fixture lands. All assertions below are
+// WARNING: Do not enable these UX-1209 checks before the view-only role and its storageState are seeded.
 const VIEW_ONLY_FIXTURE_READY = false;
 
 const expectHiddenOrDisabled = async (control: Locator) => {

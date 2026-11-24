@@ -38,7 +38,6 @@ type UseUrlTableStateResult = {
 
 type SetPageIndex = (pageIndex: number) => unknown;
 
-/** Sorting in `?{prefix}SortId=` / `?{prefix}SortDesc=`, mirrored to the settings slice; a re-sort returns to the first page. */
 function useUrlSorting(keyPrefix: string, settings: TableSettings, setPageIndex: SetPageIndex) {
   const [sortId, setSortId] = useQueryStateWithCallback<string>(
     {
@@ -110,6 +109,8 @@ function useClampedPageIndex({
  * Since tables set `autoResetPageIndex: false`, a stale `?{prefix}Page=` from a shared link can
  * point past the last page and render empty — so the index is clamped and the URL repaired once
  * data arrives.
+ *
+ * Changing the sort returns to the first page.
  */
 export function useUrlTableState({ keyPrefix, settings, rowCount, enabled = true }: UseUrlTableStateParams) {
   const [pageIndex, setPageIndex] = useQueryState(`${keyPrefix}Page`, parseAsInteger.withDefault(0));

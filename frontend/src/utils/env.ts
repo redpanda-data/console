@@ -16,14 +16,14 @@ const envNames = [
   'NODE_ENV',
 
   'REACT_APP_CONSOLE_GIT_SHA',
-  'REACT_APP_CONSOLE_GIT_REF', // 'master' or 'v1.2.3'
+  'REACT_APP_CONSOLE_GIT_REF',
   'REACT_APP_BUILD_TIMESTAMP',
   'REACT_APP_CONSOLE_PLATFORM_VERSION',
 
-  'REACT_APP_BUILT_FROM_PUSH', // was built by 'image-on-push'?
+  'REACT_APP_BUILT_FROM_PUSH',
 
-  'REACT_APP_DEV_HINT', // for debugging, since we can't override NODE_ENV
-  'REACT_APP_ENABLED_FEATURES', // for debugging, used to set/override enabled feautures while developing
+  'REACT_APP_DEV_HINT',
+  'REACT_APP_ENABLED_FEATURES',
 ] as const;
 
 type Environment = { [key in (typeof envNames)[number]]: string };

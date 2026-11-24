@@ -1,9 +1,4 @@
 const MAC_OS_USER_AGENT_REGEX = /Mac/iu;
-/**
- * Test the user agent string against a regex pattern.
- * Mirrors the approach used by React Spectrum (@react-aria/utils) which
- * moved from the deprecated `navigator.platform` to `navigator.userAgent`.
- */
 function testUserAgent(re: RegExp) {
   if (typeof navigator === 'undefined' || !navigator.userAgent) {
     return false;

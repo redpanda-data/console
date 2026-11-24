@@ -19,9 +19,11 @@ React Doctor does not adopt this config (`adoptExistingLintConfig: false` in
 Both read-only checks run from `bun run lint`, `lint:fix`, and `lint:check`. Landmines
 shares Console's file exclusions; all ten rules are errors. The root `tests/`
 harness still needs semantic filenames; first-party registry contract tests stay
-outside vendored source. The comment rule keeps actual Biome directives and
-Redpanda license headers, not prose. Package exports are checked from linted
-source files.
+outside vendored source. The comment rule keeps functional directives, Redpanda
+license headers, TSDoc on exported APIs, and single-line `WARNING:` notes for
+recurring footguns. Preserve the whole rationale or remove it; a standalone
+block comment does not make prose exempt. Package exports are checked from
+linted source files.
 
 ## Rules
 

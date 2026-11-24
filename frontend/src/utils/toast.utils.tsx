@@ -92,8 +92,8 @@ export const closeToast = (id: string) => {
 
 type FormatToastMessageProps = {
   error: Omit<ErrorHttpPayload, 'userMessage'>;
-  action: string; // verb (fetch, upgrade, delete, edit, get)
-  entity: string; // noun (cluster, token, namespace, organization)
+  action: string;
+  entity: string;
   customReason?: string;
   customCode?: number;
 };
@@ -142,9 +142,6 @@ function collectResourceInfoDetails(error: ConnectError) {
   });
 }
 
-/**
- * Extracts human-readable detail strings from well-known gRPC error detail types.
- */
 function collectErrorDetails(error: ConnectError) {
   return [
     ...collectBadRequestDetails(error),
@@ -153,25 +150,10 @@ function collectErrorDetails(error: ConnectError) {
   ];
 }
 
-/**
- * The Kafka error name Redpanda answers with when a fence rejects a request. Produce is rejected with a
- * timeout instead, but produce errors don't come through these toasts, and a timeout is too common
- * a failure to blame on the fence.
- */
 const FENCE_REJECTION_REASONS = new Set(['POLICY_VIOLATION']);
-/**
- * Redpanda's own text when the fence refuses a request outside Kafka: a role change (FAILED_PRECONDITION
- * from Admin API v2, 409 from v1) or a new shadow link. The fence's own errors, such as a stale revision,
- * say "Cluster fence" and must not match.
- */
 const FENCE_REFUSAL = /operation blocked by the cluster fence|the cluster is fenced/iu;
 const TRAILING_PERIOD = /\.$/u;
 
-/**
- * A fence rejection reads as a policy violation, which looks like an outage. Only when
- * the cluster is known to be fenced, and the error is one a fence produces, is the fence named as the
- * likely cause, after the broker's own message.
- */
 const clusterFenceHint: (error: ConnectError) => string | undefined = (error) => {
   const { phase } = useClusterFenceStore.getState();
   if (!(phase && hasFenceActivity(phase))) {
@@ -188,6 +170,9 @@ const clusterFenceHint: (error: ConnectError) => string | undefined = (error) =>
     : 'This cluster is fenced, which rejects writes and most changes a shadow link copies until it’s unfenced.';
 };
 
+/**
+ * Adds a fence hint only when the cluster is known to be fenced and the broker specifically reports a policy violation or fence refusal. Ordinary timeouts and errors changing the fence itself must not be attributed to it.
+ */
 export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToastMessageGRPCProps) {
   const message = formatGRPCErrorMessage({ error, action, entity });
   const hint = clusterFenceHint(error);

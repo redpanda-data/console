@@ -11,22 +11,19 @@ export type ThemeAppearance = 'light' | 'dark';
 type Srgb = [r: number, g: number, b: number];
 
 const GROUND_TOKEN = '--color-background';
-/** Keep in step with `isDarkGround` in redpanda-ui/lib/editor-theme, or Monaco disagrees with the shell. */
+// WARNING: Keep the cutoff aligned with the registry editor's isDarkGround so Monaco and Console agree on the same theme.
 const DARK_BELOW = 0.4;
 
-/** Painting resolves the token whatever it is — a hex, a `var()` chain, a wash. */
 const paintGround = () => {
   const probe = document.createElement('span');
   probe.style.display = 'none';
   probe.style.color = `var(${GROUND_TOKEN})`;
-  // `body` is missing only if this runs before mount; the root carries the same palette.
   (document.body ?? document.documentElement).append(probe);
   const painted = getComputedStyle(probe).color;
   probe.remove();
   return painted;
 };
 
-/** One pixel is all a single colour needs to rasterise. */
 const createPixelCanvas = () => {
   const canvas = document.createElement('canvas');
   canvas.width = 1;
@@ -34,12 +31,6 @@ const createPixelCanvas = () => {
   return canvas;
 };
 
-/**
- * Canvas rather than a regex: a computed colour can come back as `rgb()`, `color(srgb …)` from a
- * `color-mix()`, or `oklch()` verbatim, and reading the first three numbers out of the last two
- * misreads them badly — `color(srgb 0.9 0.9 0.9)` is near-white, not near-black. Rasterising hands
- * back sRGB bytes for every format. Null when there is no canvas, as in jsdom.
- */
 const toSrgb: (painted: string) => Srgb | null = (painted) => {
   const canvas = createPixelCanvas();
   const context = canvas.getContext('2d', { willReadFrequently: true });
@@ -71,7 +62,6 @@ export const classifyGround: (ground: Srgb | null) => ThemeAppearance = (ground)
   return luminance < DARK_BELOW ? 'dark' : 'light';
 };
 
-/** Shared: the appearance belongs to the document, not to any one subscriber. */
 let cached: ThemeAppearance | null = null;
 
 const THEME_ATTRIBUTES = ['class', 'data-theme', 'data-theme-palette', 'style'];
@@ -91,6 +81,9 @@ const getSnapshot = () => {
   return cached;
 };
 
+/**
+ * Derives appearance from the painted background, not a theme name or assumed CSS color syntax. Canvas normalizes variable-backed and wide-gamut colors to sRGB before classification. The snapshot is document-wide.
+ */
 export function useThemeAppearance(): ThemeAppearance {
   return useSyncExternalStore(subscribe, getSnapshot, () => 'light');
 }

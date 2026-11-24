@@ -17,9 +17,6 @@ type TopicFiltersMap = {
   [topicName: string]: FilterEntry[];
 };
 
-/**
- * Get all filters from sessionStorage
- */
 function getAllFilters() {
   try {
     const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
@@ -34,9 +31,6 @@ function getAllFilters() {
   }
 }
 
-/**
- * Save all filters to sessionStorage
- */
 function saveAllFilters(filters: TopicFiltersMap) {
   try {
     sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(filters));

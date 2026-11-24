@@ -42,7 +42,6 @@ describe('shadowlinks route loader', () => {
     await expect(runLoader(Code.Unavailable, 'admin api unavailable')).resolves.toBeUndefined();
   });
 
-  // Bug UX-1392: on large clusters Redpanda aggregates shadow link status from
   test('swallows DeadlineExceeded (status aggregation timeout on large clusters)', async () => {
     await expect(
       runLoader(Code.DeadlineExceeded, 'context deadline exceeded while awaiting headers')

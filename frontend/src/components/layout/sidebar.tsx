@@ -189,7 +189,7 @@ function SidebarNavItem({ item, isActive, onNavClick }: NavItemProps) {
 const SidebarNavigation = () => {
   const location = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
-  useSupportedFeaturesStore((s) => s.endpointCompatibility); // re-render when endpoint compatibility loads
+  useSupportedFeaturesStore((s) => s.endpointCompatibility);
   const groupedItems = createGroupedSidebarItems();
 
   const handleNavClick = () => {
@@ -263,7 +263,7 @@ function useAuthenticatedUser() {
   const user = useApiStoreHook((state) => state.userData);
   useEffect(function loadUserProfile() {
     api.refreshUserData().catch(() => {
-      // The API layer records authentication failures in its error state.
+      // WARNING: The API layer records authentication failures in its error state; don't surface a second error here.
     });
   }, []);
   return AppFeatures.SINGLE_SIGN_ON && user && user.authenticationMethod !== AuthenticationMethod.NONE ? user : null;

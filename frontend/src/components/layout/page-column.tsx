@@ -15,11 +15,6 @@ import { chainToBody, documentTop } from '../../utils/dom-position';
 
 const PAGE_TOP_VAR = '--console-page-top';
 
-/**
- * Publishes `--console-page-top`: where page content starts, from the document top.
- * Measured, not hardcoded — the chrome above a page differs per shell and per route, and
- * the host's share of it can change without Console shipping.
- */
 const usePublishPageTop = () => {
   const [columnEl, setColumnEl] = useState<HTMLDivElement | null>(null);
 
@@ -29,7 +24,7 @@ const usePublishPageTop = () => {
       return;
     }
 
-    // The write resizes the page, which resizes observed elements, so only write on change.
+    // WARNING: Only publish changed offsets to keep layout updates from feeding back into resize observations.
     const publish = createPageTopPublisher(columnEl);
 
     const observer = new ResizeObserver(publish);
@@ -63,6 +58,8 @@ const usePublishPageTop = () => {
  * the `page-fill-viewport` utilities size against. Must sit directly inside `#mainLayout`.
  * Remeasures when ancestors or preceding siblings resize. The callback ref
  * also triggers measurement when the API error view swaps the column back in.
+ *
+ * Publishes the measured offset as `--console-page-top` because the host shell can resize independently.
  */
 export const PageColumn = ({ children }: { children: ReactNode }) => {
   const ref = usePublishPageTop();

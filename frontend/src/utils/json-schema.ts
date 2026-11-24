@@ -1,8 +1,3 @@
-/**
- * Shared JSON Schema utilities for generating defaults and working with schemas
- * Used by Redpanda Connect features
- */
-
 import type { JsonObject, JsonValue } from './json-utils';
 
 export type JsonSchemaConst = {
@@ -43,15 +38,11 @@ export type JsonSchemaType = {
   $ref?: string;
 };
 
-/**
- * Generates a default value based on a JSON schema type
- *
- * @param schema The JSON schema definition
- * @param propertyName Optional property name for checking if it's required in parent schema
- * @param parentSchema Optional parent schema to check required array
- * @returns A default value matching the schema type
- */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
+/**
+ * An explicit default takes precedence. Otherwise the parent schema determines
+ * whether the property needs a fallback.
+ */
 export function generateDefaultFromJsonSchema(
   schema: JsonSchemaType,
   propertyName?: string,

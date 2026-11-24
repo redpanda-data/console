@@ -2,7 +2,6 @@ import { useLocation } from '@tanstack/react-router';
 import { type UseQueryStateReturn, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
-// Memoize searchParams to avoid creating a new URLSearchParams object on every render
 function useLocationSearchParams() {
   const location = useLocation();
   const searchStr = location.searchStr ?? '';
@@ -12,6 +11,8 @@ function useLocationSearchParams() {
 /**
  * `useQueryState`, plus an `onUpdate` callback on every change and a `getDefaultValue` fallback for
  * when the parameter is absent from the URL — for keeping URL state and an external store in sync.
+ *
+ * Reads the latest callbacks without requiring callers to memoize their options.
  */
 export function useQueryStateWithCallback<T, U = null>(
   params: {
@@ -24,7 +25,6 @@ export function useQueryStateWithCallback<T, U = null>(
   const [value, setValue] = useQueryState<T>(key, ...otherOptions);
   const searchParams = useLocationSearchParams();
 
-  // Use ref to store params to avoid dependency issues with unstable config objects
   const paramsRef = useRef(params);
   paramsRef.current = params;
 

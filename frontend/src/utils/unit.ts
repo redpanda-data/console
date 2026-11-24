@@ -9,9 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Unit abbreviations map
- */
 const UNIT_ABBREV: Record<string, string> = {
   byte: 'B',
   bytes: 'B',
@@ -39,9 +36,6 @@ const UNIT_ABBREV: Record<string, string> = {
   d: 'd',
 };
 
-/**
- * Abbreviate a single unit
- */
 function abbreviateUnit(unit: string) {
   const normalized = unit.toLowerCase().trim();
 
@@ -52,9 +46,6 @@ function abbreviateUnit(unit: string) {
   return normalized.substring(0, 3);
 }
 
-/**
- * Canonicalize a unit to form "x" or "x/y"
- */
 function canonicalizeUnit(unit: string) {
   if (!unit) {
     return '';
@@ -70,9 +61,6 @@ function canonicalizeUnit(unit: string) {
   return abbreviateUnit(normalized);
 }
 
-/**
- * Format a number and return formatted value and scale
- */
 function formatNumber(value: number) {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';

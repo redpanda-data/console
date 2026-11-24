@@ -15,7 +15,6 @@ import prettyMillisecondsOriginal, { type Options as PrettyMillisecondsOptions }
 
 import type { TopicMessage } from '../state/rest-interfaces';
 
-// Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
 export const nameof = <T>(name: Extract<keyof T, string>): string => name;
 
 export { Cooldown } from './cooldown';
@@ -62,13 +61,19 @@ export class Timer {
   }
 }
 
-let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
+let refreshCounter = 0;
 const REFRESH_COUNTER_MAX = 1000;
+/**
+ * Returns a different value on each successive call so consumers can force a refresh.
+ */
 export const alwaysChanging = () => {
   refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX;
   return refreshCounter;
 };
 
+/**
+ * Replaces arrays rather than merging them by index so reordering settings preserves the identities of their elements.
+ */
 export function assignDeep(target: Record<string, unknown>, source: Record<string, unknown>) {
   for (const key in source) {
     if (!Object.hasOwn(source, key) || key === '__proto__' || key === 'constructor') {
@@ -93,7 +98,6 @@ function assignDeepValue(target: Record<string, unknown>, key: string, value: un
 }
 
 function assignDeepObject(target: Record<string, unknown>, key: string, value: object | null, existing: unknown) {
-  // Replacing arrays preserves shared element identities when settings reorder them.
   if (Array.isArray(value) || !existing || typeof existing !== 'object') {
     target[key] = value;
     return;
@@ -207,6 +211,9 @@ function collectDirectProperties(property: CollectedProperty, segment: string, i
   return results;
 }
 
+/**
+ * Walks a snapshot of the messages so collecting keys does not traverse the live observable list.
+ */
 export function getAllMessageKeys(messages: TopicMessage[]) {
   const ctx: GetAllKeysContext = {
     currentFullPath: '',
@@ -215,7 +222,6 @@ export function getAllMessageKeys(messages: TopicMessage[]) {
     existingPaths: new Set<string>(),
   };
 
-  // slice is needed because messages array is observable
   for (const m of messages.slice()) {
     const payload = m.value.payload;
     getAllKeysRecursive(ctx, payload as Record<string, unknown>);
@@ -229,14 +235,13 @@ export function getAllMessageKeys(messages: TopicMessage[]) {
 
 type Property = {
   propertyName: string;
-  /** path to the property (excluding 'prop' itself) */
   path: string[];
   fullPath: string;
 };
 type GetAllKeysContext = {
-  currentPath: string[]; // complete, real path
-  currentFullPath: string; // string path, with array indices replaced by a start
-  existingPaths: Set<string>; // list of 'currentFullPath' entries, used to filter duplicates
+  currentPath: string[];
+  currentFullPath: string;
+  existingPaths: Set<string>;
   results: Property[];
 };
 
@@ -322,7 +327,10 @@ export type PrettyValueOptions = {
   /** A fallback to show when the value is `undefined` or `null` */
   showNullAs?: string;
 };
-export const UInt64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
+/**
+ * Maximum unsigned 64-bit value as text; a JavaScript number cannot represent it exactly.
+ */
+export const UInt64Max = '18446744073709551615';
 function isUInt64Maximum(str: string) {
   if (str === UInt64Max) {
     return true;
@@ -488,7 +496,9 @@ export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 
   });
 }
 
-// See: https://stackoverflow.com/questions/30106476/using-javascripts-atob-to-decode-base64-doesnt-properly-decode-utf-8-strings
+/**
+ * Decodes bytes as UTF-8 instead of treating the output of `atob` as the decoded text.
+ */
 export function decodeBase64(base64: string) {
   if (!base64) {
     return base64;
@@ -565,7 +575,6 @@ export function setHeader(init: RequestInit, name: string, value: string) {
   }
 }
 
-// very simple retrier utility for allowing some retries, if we ended up using it more often we should consider making it more elaborate
 export function retrier<T>(operation: () => Promise<T>, { attempts = Number.POSITIVE_INFINITY, delayTime = 100 }) {
   return new Promise<T>((resolve, reject) => {
     operation()
@@ -596,21 +605,16 @@ export type ElementOf<T> = T extends (infer E)[] ? E : T extends readonly (infer
  * @returns {string} The truncated string with ellipsis if truncation was necessary, otherwise the original string.
  */
 export function substringWithEllipsis(input: string, maxLength: number) {
-  // Check if the input length is greater than the maxLength
-  // Note: We account for the length of the ellipsis in the comparison
   if (input.length > maxLength) {
-    // Subtract 3 from maxLength to accommodate the ellipsis
-    // Ensure maxLength is at least 4 to avoid negative substring lengths
     const effectiveLength = Math.max(maxLength - 3, 1);
     return `${input.substring(0, effectiveLength)}...`;
   }
   return input;
 }
 
-// If the schemaName contains an escape character (%) we need to protect the url from getting auto decoded by react router.
-// Otherwise we cannot tell the difference between '/' and '%2F' and '%252F'
-// https://github.com/remix-run/react-router/issues/10213
-// https://github.com/remix-run/history/issues/874
+/**
+ * Double-encodes an escaped percent so the router can decode once without conflating a slash with the literal text `%2F`.
+ */
 export function encodeURIComponentPercents(rawStr: string) {
   const encoded = encodeURIComponent(rawStr);
   return encoded.replace(/%/gu, '﹪');

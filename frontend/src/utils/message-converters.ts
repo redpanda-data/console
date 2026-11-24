@@ -64,11 +64,12 @@ function mapPayloadEncoding(encoding: PayloadEncoding | undefined): Payload['enc
 /**
  * Converts a proto `ListMessagesResponse.DataMessage` to a legacy `TopicMessage`.
  * Pure function — shared by `createMessageSearch` (MobX) and `useLogSearch` (React).
+ *
+ * Preserves non-JSON payloads as text. Hex previews are populated by the viewer, not by the conversion.
  */
 export function convertListMessageData(data: ListMessagesResponse_DataMessage) {
   const keyJson = textDecoder.decode(data.key?.normalizedPayload);
   const valueJson = textDecoder.decode(data.value?.normalizedPayload);
-  // Hex previews are populated by the message viewer, as in the legacy search adapter.
   return {
     partitionID: data.partitionId,
     compression: mapCompression(data.compression),
@@ -113,7 +114,6 @@ function parseNormalizedPayload(payload: string): unknown {
   try {
     return JSONBigInt.parse(payload);
   } catch {
-    // Non-JSON payloads intentionally remain readable text.
     return payload;
   }
 }

@@ -25,7 +25,7 @@ import type { TimestampDisplayFormat } from '../state/ui';
 const defaultLocale = 'en';
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
 
-const nbsp = '\xA0'; // non breaking space
+const nbsp = '\xA0';
 
 export function numberToThousandsString(n: number) {
   if (typeof n !== 'number') {
@@ -38,7 +38,6 @@ export function numberToThousandsString(n: number) {
   for (let i = 0; i < parts.length; i++) {
     const last = i === parts.length - 1;
 
-    // Add the number block itself; React.Fragment is used explicitly to avoid missing key warning
     result.push(<React.Fragment key={i}>{parts[i]}</React.Fragment>);
 
     if (!last) {
@@ -288,6 +287,9 @@ export const InfoText = (p: {
   );
 };
 
+/**
+ * A single selection cannot be cleared by clicking the active option again.
+ */
 export function OptionGroup<T extends string>(p: {
   label: string;
   options: { [key: string]: string };
@@ -307,7 +309,6 @@ export function OptionGroup<T extends string>(p: {
         <ToggleGroup
           aria-labelledby={captionId}
           onValueChange={([next]) => {
-            // Single-select: ignore the deselect that toggling the active segment reports.
             if (next !== undefined && next !== p.value) {
               p.onChange(next as T);
             }
@@ -342,6 +343,9 @@ type SearchToast = {
   lastUpdateTimestamp: number;
 };
 
+/**
+ * Dismissing the progress toast keeps it closed for the rest of the current search.
+ */
 export function StatusIndicator(props: StatusIndicatorProps) {
   const [showWaitingText, setShowWaitingText] = useState(false);
   const search = useRef<SearchToast>({
@@ -392,7 +396,7 @@ function updateSearchToast(status: SearchToast, props: StatusIndicatorProps, sho
   const percent = Math.round(props.fillFactor * 100);
   const showCounters = Boolean(props.bytesConsumed && props.messagesConsumed);
 
-  // The toast description is a <p>, so this stays phrasing content (spans, no Progress).
+  // WARNING: The toast description already renders a paragraph; use phrasing content here to avoid invalid nesting.
   const content = (
     <span className="flex flex-col gap-1 text-body text-foreground">
       <span
@@ -433,7 +437,6 @@ function updateSearchToast(status: SearchToast, props: StatusIndicatorProps, sho
       status: 'info',
       description: content,
       duration: null,
-      // A closed progress toast stays closed for this search.
       onClose: () => {
         status.toastRef = null;
         status.dismissed = true;

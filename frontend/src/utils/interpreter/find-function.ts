@@ -11,10 +11,10 @@
 
 import { IsDev } from '../env';
 
-declare let value: unknown; // set/injected by backend
+// WARNING: The backend supplies the interpreter's root value; the root call reaches it through a null receiver.
+declare let value: unknown;
 
 function find(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown {
-  // `this` is null when called in root, otherwise the object it was called on
   const self = this === null ? value : this;
 
   const results = findGeneric(self, arg1, arg2, true);
@@ -25,7 +25,6 @@ function find(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown 
 }
 
 function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown[] {
-  // `this` is null when called in root, otherwise the object it was called on
   const self = this === null ? value : this;
 
   const results = findGeneric(self, arg1, arg2, false);
@@ -79,7 +78,7 @@ const logPatternMatch: (...args: unknown[]) => void = IsDev
   ? // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.debug
   : (..._args: unknown[]) => {
-      /* do nothing */
+      // WARNING: Do not log pattern matches in production; the arguments can contain message payloads.
     };
 
 type PatternMatchOptions = { caseSensitive: boolean };
@@ -141,8 +140,6 @@ function patternPropertyMatches(
 ): boolean {
   const patternValue = (currentPattern as Record<string, unknown>)[key];
 
-  // don't require objects to have the same functions
-  // todo: later we might want to have special functions that can compare against the actual value!
   if (typeof patternValue === 'function') {
     return true;
   }
