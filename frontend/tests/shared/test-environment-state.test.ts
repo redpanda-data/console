@@ -14,108 +14,118 @@ import {
   cleanupStartedResources,
   createEnvironmentState,
   rememberContainer,
+  serializeEnvironmentState,
 } from './test-environment-state.mjs';
-import { describe, expect, mock, test } from 'bun:test';
+import { describe, expect, onTestFinished, test } from 'bun:test';
+import { existsSync } from 'node:fs';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-function trackBothBackends() {
-  const state = createEnvironmentState();
-  const sourceBackend = { getId: () => 'source-id' };
-  const destinationBackend = { getId: () => 'destination-id' };
-
-  rememberContainer(state, 'sourceBackend', sourceBackend);
-  rememberContainer(state, 'backend', destinationBackend);
-
-  return { state, sourceBackend, destinationBackend };
+async function createWorkspace() {
+  const root = await mkdtemp(join(tmpdir(), 'console-env-cleanup-'));
+  onTestFinished(async () => {
+    await rm(root, { force: true, recursive: true });
+  });
+  return root;
 }
 
-function createDeferredStopFixture() {
-  const state = createEnvironmentState();
-  let finishFirst: (() => void) | undefined;
-  const firstStop = mock(
-    () =>
-      new Promise<void>((resolve) => {
-        finishFirst = resolve;
-      })
+async function createResourceDirectory(root: string, key: string) {
+  const path = join(root, key);
+  await mkdir(path);
+  return path;
+}
+
+const removeResource = (path: string) => rm(path, { recursive: true });
+
+function directoryHandle(path: string, mayRemove?: Promise<void>) {
+  let stopping = false;
+  return {
+    getId: () => path,
+    isStopping: () => stopping,
+    stop: async () => {
+      stopping = true;
+      await mayRemove;
+      await removeResource(path);
+    },
+  };
+}
+
+async function stageParallelCleanup() {
+  const root = await createWorkspace();
+  const paths = await Promise.all(
+    ['redpanda', 'backend', 'network'].map((name) => createResourceDirectory(root, name))
   );
-  const secondStop = mock().mockResolvedValue(undefined);
-  const networkStop = mock().mockResolvedValue(undefined);
-
-  rememberContainer(state, 'redpanda', { getId: () => 'redpanda-id', stop: firstStop });
-  rememberContainer(state, 'backend', { getId: () => 'backend-id', stop: secondStop });
-  Object.assign(state, { network: { stop: networkStop } });
-
-  return { state, firstStop, secondStop, networkStop, finishFirst: () => finishFirst?.() };
+  const canRemoveRedpanda = Promise.withResolvers<void>();
+  const redpanda = directoryHandle(paths[0], canRemoveRedpanda.promise);
+  const backend = directoryHandle(paths[1]);
+  const network = directoryHandle(paths[2]);
+  const state = Object.assign(createEnvironmentState(), { network });
+  rememberContainer(state, 'redpanda', redpanda);
+  rememberContainer(state, 'backend', backend);
+  return { state, redpanda, backend, network, paths, releaseRedpanda: canRemoveRedpanda.resolve };
 }
 
 describe('test environment state', () => {
-  test('tracks source and destination backends independently', () => {
-    const { state, sourceBackend, destinationBackend } = trackBothBackends();
+  test('tracks and serializes source and destination backends independently', async () => {
+    const root = await createWorkspace();
+    const [source, destination] = await Promise.all(
+      ['source', 'destination'].map((name) => createResourceDirectory(root, name))
+    );
+    const state = createEnvironmentState();
+    rememberContainer(state, 'sourceBackend', directoryHandle(source));
+    rememberContainer(state, 'backend', directoryHandle(destination));
 
-    if (!('sourceBackendContainer' in state && 'backendContainer' in state)) {
-      throw new Error('Expected both live container handles');
-    }
-    expect(state.sourceBackendId).toBe('source-id');
-    expect(state.sourceBackendContainer).toBe(sourceBackend);
-    expect(state.backendId).toBe('destination-id');
-    expect(state.backendContainer).toBe(destinationBackend);
+    const serialized = serializeEnvironmentState(state);
+    expect(serialized).toMatchObject({ sourceBackendId: source, backendId: destination });
+    expect(Object.keys(serialized).filter((key) => key.endsWith('Container'))).toEqual([]);
+    await cleanupStartedResources(state);
+    expect([source, destination].filter(existsSync)).toEqual([]);
   });
 
   test('stops containers in parallel before removing the network', async () => {
-    const { state, firstStop, secondStop, networkStop, finishFirst } = createDeferredStopFixture();
-
+    const { state, redpanda, backend, network, paths, releaseRedpanda } = await stageParallelCleanup();
     const cleanup = cleanupStartedResources(state);
-
-    expect(firstStop).toHaveBeenCalledTimes(1);
-    expect(secondStop).toHaveBeenCalledTimes(1);
-    expect(networkStop).not.toHaveBeenCalled();
-
-    finishFirst();
-    await cleanup;
-
-    expect(networkStop).toHaveBeenCalledTimes(1);
+    try {
+      expect(redpanda.isStopping()).toBe(true);
+      expect(backend.isStopping()).toBe(true);
+      expect(network.isStopping()).toBe(false);
+      expect(existsSync(paths[0])).toBe(true);
+    } finally {
+      releaseRedpanda();
+      await cleanup;
+    }
+    expect(paths.filter(existsSync)).toEqual([]);
   });
 
   test('attempts all cleanup and reports failures', async () => {
-    const state = createEnvironmentState();
-    const firstError = new Error('first stop failed');
-    const secondStop = mock().mockResolvedValue(undefined);
-    const networkStop = mock().mockRejectedValue(new Error('network stop failed'));
-
-    rememberContainer(state, 'redpanda', {
-      getId: () => 'redpanda-id',
-      stop: mock().mockRejectedValue(firstError),
-    });
-    rememberContainer(state, 'backend', { getId: () => 'backend-id', stop: secondStop });
-    Object.assign(state, { network: { stop: networkStop } });
+    const root = await createWorkspace();
+    const backend = await createResourceDirectory(root, 'backend');
+    const missingRedpanda = join(root, 'missing-redpanda');
+    const missingNetwork = join(root, 'missing-network');
+    const state = Object.assign(createEnvironmentState(), { network: directoryHandle(missingNetwork) });
+    rememberContainer(state, 'redpanda', directoryHandle(missingRedpanda));
+    rememberContainer(state, 'backend', directoryHandle(backend));
 
     await expect(cleanupStartedResources(state)).rejects.toMatchObject({
-      errors: [firstError, expect.objectContaining({ message: 'network stop failed' })],
+      errors: [
+        { code: 'ENOENT', path: missingRedpanda },
+        { code: 'ENOENT', path: missingNetwork },
+      ],
     });
-    expect(secondStop).toHaveBeenCalledTimes(1);
-    expect(networkStop).toHaveBeenCalledTimes(1);
+    expect(existsSync(backend)).toBe(false);
   });
 
   test('removes every serialized resource and temporary path after a crashed run', async () => {
-    const state = createEnvironmentState({
-      networkId: 'network-id',
-      redpandaId: 'redpanda-id',
-      backendId: 'backend-id',
-      tempPaths: ['/tmp/license-one', '/tmp/license-two'],
-    });
-    const removeContainer = mock().mockResolvedValue(undefined);
-    const removeNetwork = mock().mockResolvedValue(undefined);
-    const removePath = mock().mockResolvedValue(undefined);
+    const root = await createWorkspace();
+    const [networkId, redpandaId, backendId, ...tempPaths] = await Promise.all(
+      ['network', 'redpanda', 'backend', 'license-one', 'license-two'].map((name) =>
+        createResourceDirectory(root, name)
+      )
+    );
+    const state = createEnvironmentState({ networkId, redpandaId, backendId, tempPaths });
 
-    await cleanupSerializedResources(state, {
-      removeContainer,
-      removeNetwork,
-      removePath,
-    });
-
-    expect(removeContainer).toHaveBeenCalledTimes(2);
-    expect(removeContainer).toHaveBeenCalledWith('redpanda-id');
-    expect(removeContainer).toHaveBeenCalledWith('backend-id');
-    expect(removeNetwork).toHaveBeenCalledWith('network-id');
-    expect(removePath).toHaveBeenCalledTimes(2);
+    await cleanupSerializedResources(state, { removeContainer: removeResource, removeNetwork: removeResource });
+    expect([networkId, redpandaId, backendId, ...tempPaths].filter(existsSync)).toEqual([]);
   });
 });
