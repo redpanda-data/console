@@ -1,26 +1,13 @@
 // Copyright 2026 Redpanda Data, Inc.
 
-import { afterAll, afterEach, beforeEach, expect, rs } from '@rstest/core';
+import { afterAll, afterEach, expect, rs } from '@rstest/core';
 import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
 import './src/utils/array-extensions';
-import './tests/mock-document';
 
 import { cleanupTestHarness } from './tests/harness-cleanup';
-import { createMemoryStorage } from './tests/memory-storage';
 
 expect.extend(jestDomMatchers);
-
-// WARNING: Use worker-owned storage; Node can expose undefined localStorage when no --localstorage-file is provided.
-const testLocalStorage = createMemoryStorage();
-Object.defineProperty(globalThis, 'localStorage', {
-  configurable: true,
-  value: testLocalStorage,
-});
-Object.defineProperty(window, 'localStorage', {
-  configurable: true,
-  value: testLocalStorage,
-});
 
 // WARNING: Keep Happy DOM resource loading disabled; implicit script and CSS loads can reach the network outside the fetch guard.
 if (typeof window !== 'undefined' && 'happyDOM' in window) {
@@ -102,50 +89,12 @@ if (typeof Animation !== 'undefined') {
   };
 }
 
-// WARNING: Keep baseline media queries deterministic; ambient color scheme and viewport matches make integration tests order-dependent.
-beforeEach(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: rs.fn().mockImplementation((query) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: rs.fn(),
-      removeListener: rs.fn(),
-      addEventListener: rs.fn(),
-      removeEventListener: rs.fn(),
-      dispatchEvent: rs.fn(),
-    })),
-  });
-});
-
-// WARNING: Lottie animation frames can outlive the test even if canvas is stubbed; remove the fixture only with real teardown.
-rs.mock('lottie-react', () => ({
-  useLottie: () => ({
-    View: null,
-    play: rs.fn(),
-    stop: rs.fn(),
-    pause: rs.fn(),
-    setSpeed: rs.fn(),
-    goToAndStop: rs.fn(),
-    goToAndPlay: rs.fn(),
-    setDirection: rs.fn(),
-    playSegments: rs.fn(),
-    setSubframe: rs.fn(),
-    destroy: rs.fn(),
-    getDuration: rs.fn(),
-    animationItem: null,
-    animationContainerRef: { current: null },
-    animationLoaded: false,
-  }),
-}));
-
 // WARNING: Unmount rendered trees before clearing query and router resources; otherwise live subscribers can restart work.
 // WARNING: Do not import stores for global resets; it pins config bindings before per-file module fixtures are applied.
 afterEach(async () => {
   cleanup();
   await cleanupTestHarness();
-  testLocalStorage.clear();
+  window.localStorage.clear();
   rs.clearAllMocks();
   rs.clearAllTimers();
 });
@@ -157,9 +106,7 @@ afterEach(() => {
   }
 });
 
-// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
 const originalWarn = console.warn;
-// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
 const originalError = console.error;
 
 const SUPPRESSED_PATTERNS = [

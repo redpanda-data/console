@@ -75,10 +75,10 @@ Located in `src/test-utils/`:
 | `test-utils.tsx` | Custom render with providers |
 | `mock-react-select.ts` | React Select mocks |
 | `mock-redpanda-ui.ts` | UI library mocks |
-| `mock-lottie-react.ts` | Animation mocks |
-| `mock-document.ts` | Document API mocks |
-| `mock-local-storage.ts` | localStorage mocks |
 | `mock-crypto.ts` | Crypto API mocks |
+
+Rstest uses Happy DOM's media queries and storage. Use the environment APIs
+directly; the shared setup clears local storage between cases.
 
 ## Reference
 
