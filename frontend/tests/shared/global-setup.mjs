@@ -6,6 +6,7 @@ import {
   createEnvironmentState,
   rememberContainer,
   serializeEnvironmentState,
+  withSetupRollback,
 } from './test-environment-state.mjs';
 import { KAFKA_CONNECT_IMAGE, KAFKA_IMAGE, OWL_SHOP_IMAGE, REDPANDA_IMAGE } from './test-images.mjs';
 import { exec, execFile } from 'node:child_process';
@@ -1324,15 +1325,6 @@ async function startTestEnvironment(setup) {
   return createTeardown(variantName, state);
 }
 
-async function cleanupAfterSetupFailure(error, state) {
-  console.error('Failed to start environment:', error);
-  try {
-    await cleanupOnFailure(state);
-  } catch (cleanupError) {
-    throw new AggregateError([error, cleanupError], 'Test environment setup and cleanup both failed');
-  }
-}
-
 /**
  * Starts and tracks the selected variant. Dynamic host-port overrides take
  * precedence over its JSON config; the test runner uses them for the browser origin.
@@ -1353,10 +1345,12 @@ export default async function globalSetup(config = {}) {
     needsShadowlink: metadata.needsShadowlink,
   });
 
-  try {
-    return await startTestEnvironment({ ...metadata, ports, state, variantConfig });
-  } catch (error) {
-    await cleanupAfterSetupFailure(error, state);
-    throw error;
-  }
+  return await withSetupRollback(
+    () => startTestEnvironment({ ...metadata, ports, state, variantConfig }),
+    async (error) => {
+      console.error('Failed to start environment:', error);
+      await cleanupOnFailure(state);
+    },
+    'Test environment setup and cleanup both failed'
+  );
 }

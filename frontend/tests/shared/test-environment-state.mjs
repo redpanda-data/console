@@ -42,6 +42,26 @@ function removeTempPath(path) {
   return rm(path, { force: true, recursive: true });
 }
 
+/**
+ * Unwinds acquired test resources before propagating setup failure. Both causes are retained if rollback also fails.
+ * @template T
+ * @param {() => Promise<T>} prepare
+ * @param {(error: unknown) => Promise<void>} rollback
+ * @param {string} aggregateMessage
+ */
+export async function withSetupRollback(prepare, rollback, aggregateMessage) {
+  try {
+    return await prepare();
+  } catch (error) {
+    try {
+      await rollback(error);
+    } catch (cleanupError) {
+      throw new AggregateError([error, cleanupError], aggregateMessage);
+    }
+    throw error;
+  }
+}
+
 export function createEnvironmentState(initial = {}) {
   return {
     networkId: '',

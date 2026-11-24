@@ -2,8 +2,7 @@ import { chromium } from 'playwright';
 
 import { authenticate } from './auth.setup';
 import globalSetup from '../shared/global-setup.mjs';
-
-type Teardown = Awaited<ReturnType<typeof globalSetup>>;
+import { withSetupRollback } from '../shared/test-environment-state.mjs';
 
 async function publishAuthenticatedStorage() {
   const browser = await chromium.launch({ headless: true });
@@ -13,14 +12,6 @@ async function publishAuthenticatedStorage() {
     await page.context().storageState({ path: 'playwright/.auth/user.json' });
   } finally {
     await browser.close();
-  }
-}
-
-async function teardownAfterAuthenticationFailure(error: unknown, teardown: Teardown) {
-  try {
-    await teardown();
-  } catch (cleanupError) {
-    throw new AggregateError([error, cleanupError], 'Enterprise authentication and environment cleanup failed');
   }
 }
 
@@ -34,11 +25,10 @@ export default async function setup() {
       needsConnect: false,
     },
   });
-  try {
-    await publishAuthenticatedStorage();
-  } catch (error) {
-    await teardownAfterAuthenticationFailure(error, teardown);
-    throw error;
-  }
+  await withSetupRollback(
+    publishAuthenticatedStorage,
+    teardown,
+    'Enterprise authentication and environment cleanup failed'
+  );
   return teardown;
 }

@@ -16,7 +16,8 @@ export default defineConfig({
   passWithNoTests: false,
   reporters: [['md', { preset: 'compact' }], ...(process.env.CI ? ['github-actions' as const] : [])],
   plugins: [pluginReact(), pluginTailwindcss()],
-  resolve: { alias: { ...sharedAliases } },
+  // WARNING: Use Monaco's package entry; the minimal core entry lacks the YAML worker adapter.
+  resolve: { alias: { '@bufbuild/buf$': sharedAliases['@bufbuild/buf$'] } },
   source: { define: { ...publicVars } },
   setupFiles: './tests/browser/components.setup.ts',
 });

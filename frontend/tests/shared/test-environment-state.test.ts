@@ -15,10 +15,11 @@ import {
   createEnvironmentState,
   rememberContainer,
   serializeEnvironmentState,
+  withSetupRollback,
 } from './test-environment-state.mjs';
 import { describe, expect, onTestFinished, test } from 'bun:test';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, rmdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -67,6 +68,32 @@ async function stageParallelCleanup() {
 }
 
 describe('test environment state', () => {
+  test('rolls back after setup fails and reports both failures in order', async () => {
+    const root = await createWorkspace();
+    const temp = await createResourceDirectory(root, 'temp');
+    const retained = await createResourceDirectory(root, 'retained');
+    await writeFile(join(retained, 'manifest'), 'active');
+    const session = join(root, 'missing-auth-directory', 'user.json');
+
+    await expect(
+      withSetupRollback(
+        () => writeFile(session, '{}'),
+        async () => {
+          await removeResource(temp);
+          await rmdir(retained);
+        },
+        'Test setup and cleanup failed'
+      )
+    ).rejects.toMatchObject({
+      message: 'Test setup and cleanup failed',
+      errors: [
+        { code: 'ENOENT', path: session },
+        { code: 'ENOTEMPTY', path: retained },
+      ],
+    });
+    expect(existsSync(temp)).toBe(false);
+  });
+
   test('tracks and serializes source and destination backends independently', async () => {
     const root = await createWorkspace();
     const [source, destination] = await Promise.all(
