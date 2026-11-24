@@ -9,108 +9,86 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { render, screen, waitFor } from '@testing-library/react';
+import { createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, onTestFinished, test } from '@rstest/core';
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  RouterProvider,
+} from '@tanstack/react-router';
+import {
+  ACL_Operation,
+  ACL_PermissionType,
+  ACL_ResourcePatternType,
+  ACL_ResourceType,
+  type ListACLsRequest,
+} from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import { listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
+import { Route as aclDetailsRoute } from 'routes/security/acls/$aclName/details';
+import { useUIStateStore } from 'state/ui-state';
+import { render, screen } from 'test-utils';
 
 import AclDetailPage from './acl-detail-page';
 
-const { mockUseGetAclsByPrincipal, mockNavigate } = rs.hoisted(() => ({
-  mockUseGetAclsByPrincipal: rs.fn(),
-  mockNavigate: rs.fn(() => Promise.resolve()),
-}));
-
-rs.mock('react-query/api/acl', () => {
-  const actual = rs.requireActual<typeof import('react-query/api/acl')>('react-query/api/acl');
-  return { ...actual, useGetAclsByPrincipal: mockUseGetAclsByPrincipal };
-});
-
-let currentAclName = '';
-let currentHost: string | undefined;
-
-rs.mock('@tanstack/react-router', () => {
-  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
+function aclFixture(principal: string, host: string) {
   return {
-    ...actual,
-    getRouteApi: () => ({
-      useParams: () => ({ aclName: currentAclName }),
-      useSearch: () => ({ host: currentHost }),
-    }),
-    useNavigate: () => mockNavigate,
+    resources: [
+      {
+        resourceType: ACL_ResourceType.TOPIC,
+        resourceName: 'orders',
+        resourcePatternType: ACL_ResourcePatternType.LITERAL,
+        acls: [{ principal, host, operation: ACL_Operation.READ, permissionType: ACL_PermissionType.ALLOW }],
+      },
+    ],
   };
-});
-
-rs.mock('state/ui-state', () => ({
-  setPageHeader: rs.fn(),
-  uiState: { pageBreadcrumbs: [] },
-}));
-
-rs.mock('./acl-details', () => ({
-  ACLDetails: MockACLDetails,
-}));
-
-const singleHostAclDetail = (principal: string) => ({
-  sharedConfig: { principal, host: '*' },
-  rules: [],
-});
-
-const aclDetailResult = (principal: string) => ({
-  data: [singleHostAclDetail(principal)],
-  isLoading: false,
-});
-
-const loadingResult = { data: undefined, isLoading: true };
-
-describe('the AclDetailPage — principal URL encoding', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    mockUseGetAclsByPrincipal.mockReturnValue(loadingResult);
-  });
-
-  test('group principal in URL is passed to the API as-is', async () => {
-    currentAclName = 'Group:mygroup';
-    currentHost = '*';
-
-    render(<AclDetailPage />);
-
-    await waitFor(() => {
-      expect(mockUseGetAclsByPrincipal).toHaveBeenCalledWith('Group:mygroup', '*');
-    });
-  });
-
-  test('bare User name (no prefix) defaults to User: principal type', async () => {
-    currentAclName = 'alice';
-    currentHost = '*';
-
-    render(<AclDetailPage />);
-
-    await waitFor(() => {
-      expect(mockUseGetAclsByPrincipal).toHaveBeenCalledWith('User:alice', '*');
-    });
-  });
-
-  test('explicit User: prefix is preserved correctly', async () => {
-    currentAclName = 'User:alice';
-    currentHost = '*';
-
-    render(<AclDetailPage />);
-
-    await waitFor(() => {
-      expect(mockUseGetAclsByPrincipal).toHaveBeenCalledWith('User:alice', '*');
-    });
-  });
-
-  test('edit button navigates to update page preserving aclName and host for Group principal', async () => {
-    currentAclName = 'Group:mygroup';
-    currentHost = '*';
-    mockUseGetAclsByPrincipal.mockReturnValue(aclDetailResult('Group:mygroup'));
-
-    render(<AclDetailPage />);
-
-    const editButton = await screen.findByTestId('update-acl-button');
-    expect(editButton).toHaveAttribute('href', '/security/acls/Group:mygroup/update?host=*');
-  });
-});
-
-function MockACLDetails() {
-  return <div data-testid="acl-details" />;
 }
+
+function renderAcl(aclName: string, host: string) {
+  const reads: ListACLsRequest[] = [];
+  const transport = createRouterTransport(({ rpc }) => {
+    rpc(listACLs, (request) => {
+      reads.push(request);
+      return aclFixture(aclName.includes(':') ? aclName : 'User:alice', host);
+    });
+  });
+  const root = createRootRoute();
+  const route = createRoute({
+    getParentRoute: () => root,
+    path: '/security/acls/$aclName/details',
+    validateSearch: aclDetailsRoute.options.validateSearch,
+    component: AclDetailPage,
+  });
+  const history = createMemoryHistory({ initialEntries: [`/security/acls/${aclName}/details?host=${host}`] });
+  const router = createRouter({ history, routeTree: root.addChildren([route]) });
+  const previousHeader = useUIStateStore.getState();
+  onTestFinished(() => {
+    history.destroy();
+    useUIStateStore.setState(previousHeader, true);
+  });
+  render(<RouterProvider router={router} />, { transport });
+  return reads;
+}
+
+describe('the ACL details route', () => {
+  test('reads a Group ACL for its selected host and preserves it in the edit link', async () => {
+    const reads = renderAcl('Group:mygroup', '*');
+
+    const edit = await screen.findByRole('button', { name: 'Edit' });
+    expect(edit).toHaveAttribute('href', '/security/acls/Group:mygroup/update?host=*');
+    expect(screen.getByRole('heading', { name: 'ACL: mygroup' })).toBeVisible();
+    expect(reads).toEqual([
+      expect.objectContaining({ filter: expect.objectContaining({ principal: 'Group:mygroup', host: '*' }) }),
+    ]);
+  });
+
+  test.each(['alice', 'User:alice'])('reads the same User ACL for legacy and prefixed URLs: %s', async (aclName) => {
+    const reads = renderAcl(aclName, '10.0.0.5');
+
+    expect(await screen.findByRole('heading', { name: 'ACL: alice' })).toBeVisible();
+    expect(reads).toEqual([
+      expect.objectContaining({ filter: expect.objectContaining({ principal: 'User:alice', host: '10.0.0.5' }) }),
+    ]);
+  });
+});

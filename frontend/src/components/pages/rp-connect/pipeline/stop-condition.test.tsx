@@ -17,6 +17,7 @@ import { render, screen } from 'test-utils';
 import { StopConditionEditor, StopConditionSection } from './stop-condition';
 import type { InputEndBehavior } from '../utils/input-end-behavior';
 import type { StopSlot } from '../utils/pipeline-flow-parser';
+import { resolveStopCondition, type StopConditionDraft, setStopCondition } from '../utils/read-until';
 
 const continuous: InputEndBehavior = {
   kind: 'continuous',
@@ -191,11 +192,22 @@ describe('the StopConditionEditor', () => {
 
 describe('the StopConditionEditor when it can’t make the edit', () => {
   test('stays open with its choices when the YAML edit is refused', async () => {
-    const { user, onApply, onClose } = renderEditor();
-    onApply.mockReturnValue(false);
+    const edits: (StopConditionDraft | null)[] = [];
+    const { user, onClose } = renderEditor({
+      onApply: (draft) => {
+        edits.push(draft);
+        return (
+          setStopCondition(
+            'input: [unclosed',
+            openSlot.path,
+            draft ? resolveStopCondition(openSlot.condition, draft) : null
+          ) !== null
+        );
+      },
+    });
     await user.click(screen.getByRole('radio', { name: 'After a number of messages' }));
     await replaceLimit(user, '500{enter}');
-    expect(onApply).toHaveBeenCalledWith({ messageLimit: 500 });
+    expect(edits).toEqual([{ messageLimit: 500 }]);
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole('textbox', { name: 'Message limit' })).toHaveValue('500');
   });
