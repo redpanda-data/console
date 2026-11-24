@@ -63,6 +63,9 @@ function topicConfigOrRefresh(topicName: string) {
   return topicConfig;
 }
 
+/**
+ * Refresh topic configuration on visibility changes so the throttle state is accurate. A reassignment is throttled only if a moving partition/broker pair matches: leader entries cover source replicas, follower entries cover new replicas.
+ */
 export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentState | null; onClose: () => void }> {
   lastState: ReassignmentState | null;
   wasVisible = false;
@@ -93,7 +96,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         }}
         open={visible}
       >
-        {/* Nearest rung to the old 48rem minimum. */}
         <DialogContent size="lg">
           <DialogHeader>
             <DialogTitle>Reassignment: {state.topicName}</DialogTitle>
@@ -134,8 +136,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
     const visible = this.props.state !== null;
     if (this.wasVisible !== visible) {
-      // became visible or invisible
-      // force update of topic config, so isThrottle has up to date information
       setTimeout(async () => {
         api.topicConfig.delete(state.topicName);
         await api.refreshTopicConfig(state.topicName, true);
@@ -189,7 +189,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
   }
 
   isThrottled() {
-    // Reassignment is throttled when the topic contains any partition/broker pair that is currently being reassigned
     if (!this.lastState) {
       return false;
     }
@@ -205,8 +204,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       config.configEntries.first((e) => e.name === 'follower.replication.throttled.replicas')?.value
     );
 
-    // Go through all partitions that are being reassigned, and check if a broker-partition combo is being throttled:
-    // leader throttles apply to the source brokers, follower throttles to the brokers being added.
     return (
       anyPartitionThrottled(leaderThrottleEntries, this.lastState.partitions, (p) => p.replicas) ||
       anyPartitionThrottled(followerThrottleEntries, this.lastState.partitions, (p) => p.addingReplicas)
@@ -289,10 +286,8 @@ function throttledReplicasOf(state: ReassignmentState) {
       continue;
     }
 
-    // leader throttling is applied to all sources (all brokers that have a replica of this partition)
     leaderReplicas.push(...brokersOld.map((sourceBroker) => ({ partitionId, brokerId: sourceBroker })));
 
-    // follower throttling is applied only to target brokers that do not yet have a copy
     followerReplicas.push(
       ...brokersNew.except(brokersOld).map((targetBroker) => ({ partitionId, brokerId: targetBroker }))
     );
@@ -300,7 +295,6 @@ function throttledReplicasOf(state: ReassignmentState) {
   return { leaderReplicas, followerReplicas };
 }
 
-/** Cancels every partition reassignment of the topic, reporting progress in a toast. Returns whether it worked. */
 async function cancelReassignmentWithToast(state: ReassignmentState) {
   const toastRef = showToast({
     status: 'loading',

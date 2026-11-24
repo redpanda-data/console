@@ -31,7 +31,6 @@ import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { renderLogDirSummary, WarningToolip } from '../../misc/common';
 import { TonedIcon } from '../shared/toned-icon';
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
@@ -51,8 +50,7 @@ export class StepSelectPartitions extends Component<{
 }> {
   private readonly api = api;
 
-  // Built once: the page force-updates on every poll, and a fresh `header`/`cell` identity
-  // remounts the header's sort menu out from under the pointer.
+  // WARNING: Keep column identities stable; a polling render must not remount an open sort menu.
   private readonly columns: DataTableColumnDef<TopicWithPartitions>[];
 
   constructor(props: {
@@ -68,7 +66,6 @@ export class StepSelectPartitions extends Component<{
     this.getSelectedPartitions = this.getSelectedPartitions.bind(this);
     this.getTopicCheckState = this.getTopicCheckState.bind(this);
     this.columns = [
-      // `subComponent` renders no affordance of its own, so the expander is explicit.
       {
         id: 'expander',
         enableSorting: false,
@@ -157,8 +154,7 @@ export class StepSelectPartitions extends Component<{
         },
       },
       {
-        // Distinct id: the "Partitions" column above also keyed off `partitions`, so both
-        // resolved to the same TanStack column id.
+        // WARNING: Keep this column ID distinct from the partition-count column; duplicate IDs share table state.
         id: 'brokers',
         enableSorting: false,
         header: 'Brokers',
@@ -281,7 +277,7 @@ export class StepSelectPartitions extends Component<{
     return api.topics.flatMap((topic) => {
       const partitions = api.topicPartitions.get(topic.topicName);
       if (!partitions) {
-        return []; // skip topics whose partitions haven't loaded yet (e.g. newly created)
+        return [];
       }
       const activeReassignments = this.inProgress.get(topic.topicName) ?? [];
       if (activeReassignments.length > 0) {
@@ -307,7 +303,6 @@ function getTopicRowKey(r: TopicWithPartitions) {
 function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
   return (
     <Popover>
-      {/* Hover-to-open. */}
       <PopoverTrigger
         delay={200}
         openOnHover
@@ -319,7 +314,6 @@ function PartitionErrorsForTopic(_props: { partitionsWithErrors: number }) {
           </button>
         }
       />
-      {/* PopoverContent is a fixed w-72; the error text needs the room. */}
       <PopoverContent align="start" className="w-auto max-w-[500px]" side="right">
         <PopoverTitle>Partition Error</PopoverTitle>
         <div className="whitespace-pre-wrap">

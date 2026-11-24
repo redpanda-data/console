@@ -30,7 +30,6 @@ import { prettyBytesOrNA, prettyMilliseconds } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
@@ -42,7 +41,7 @@ export type PartitionWithMoves = Partition & {
   numAddedBrokers: number;
   numRemovedBrokers: number;
   changedLeader: boolean;
-  anyChanges: boolean; // if false, replica assignment is exactly as before
+  anyChanges: boolean;
 };
 export type TopicWithMoves = {
   topicName: string;
@@ -55,7 +54,7 @@ type StepReviewProps = {
   partitionSelection: PartitionSelection;
   topicsWithMoves: TopicWithMoves[];
   assignments: PartitionReassignmentRequest;
-  reassignPartitions: ReassignPartitions; // since api is still changing, we pass parent down so we can call functions on it directly
+  reassignPartitions: ReassignPartitions;
 };
 
 export function StepReview(props: StepReviewProps) {

@@ -129,7 +129,6 @@ type EditOffsetsState = {
   partition: number | null;
 };
 
-/** Which offsets the edit modal is open for, and the topic/partition it starts on. */
 const useEditOffsetsState = () => {
   const [editState, setEditState] = useState<EditOffsetsState>({ offsets: null, topic: null, partition: null });
   const setEditingOffsets = (v: GroupOffset[] | null) => setEditState((prev) => ({ ...prev, offsets: v }));
@@ -146,7 +145,6 @@ const useEditOffsetsState = () => {
   };
 };
 
-/** Which offsets the delete modal is open for, and whether it deletes a group, topic or partition. */
 const useDeleteOffsetsState = () => {
   const [deletingState, setDeletingState] = useState<{ mode: GroupDeletingMode; offsets: GroupOffset[] | null }>({
     mode: 'group',
@@ -163,7 +161,6 @@ const useDeleteOffsetsState = () => {
   };
 };
 
-/** Every committed partition offset of the group, as the modals expect them. */
 const toGroupOffsets = (group: GroupDescription) =>
   group.topicOffsets.flatMap((x) =>
     x.partitionOffsets.map(
@@ -181,10 +178,8 @@ const GroupStatisticsCard = ({ group }: { group: GroupDescription }) => {
   const isConsumerGroup = group.groupType === 'consumer';
 
   return (
-    // The small card carries px-6 py-4; max-w-none lifts its width cap. Its single child makes the gap moot.
     <Card className="max-w-none" size="sm" variant="standard">
       <CardContent>
-        {/* The stats sit in a row, so they need a flex child rather than CardContent's vertical stack. */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <Stat label="State" value={<ConsumerGroupStateCell groupType={group.groupType} state={group.state} />} />
           <Stat label="Type" value={formatGroupType(group.groupType)} />
@@ -720,7 +715,6 @@ const PartitionTable = ({
   );
 };
 
-/** One row per committed partition offset, joined with the member the partition is assigned to. */
 const toPartitionRows: (group: GroupDescription) => PartitionRow[] = (group) => {
   const allAssignments = group.members.flatMap((m) =>
     m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds ?? [] }))
@@ -748,7 +742,6 @@ const toPartitionRows: (group: GroupDescription) => PartitionRow[] = (group) => 
   );
 };
 
-/** Rows whose member matches the quick search (unassigned rows always pass), grouped by topic in name order. */
 const groupPartitionRowsByTopic = (rows: PartitionRow[], quickSearchRegExp: RegExp) =>
   rows
     .filter((x) => !x.assignedMember || x.assignedMember?.id.match(quickSearchRegExp))
@@ -756,7 +749,6 @@ const groupPartitionRowsByTopic = (rows: PartitionRow[], quickSearchRegExp: RegE
     .sort((a, b) => a.key.localeCompare(b.key))
     .map((x) => ({ topicName: x.key, partitions: x.items }));
 
-/** Per-topic totals; with `onlyShowPartitionsWithLag`, topics left without partitions are dropped. */
 const toTopicEntries = (
   lagGroupsByTopic: ReturnType<typeof groupPartitionRowsByTopic>,
   onlyShowPartitionsWithLag: boolean
@@ -815,7 +807,6 @@ const GroupByTopics = (groupProps: {
     );
   }
 
-  // Only one topic -> expand it by default; otherwise leave all collapsed.
   const defaultOpen = topicEntries.length === 1 ? [topicEntries[0].topicName] : [];
 
   return (
@@ -832,7 +823,6 @@ const GroupByTopics = (groupProps: {
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            {/* Topic-level actions live in the content (not nested inside the trigger button). */}
             <div className="mb-3 flex items-center justify-end gap-1">
               <DisabledReasonButton
                 focusableWhenDisabled={Boolean(offsetsFencedReason)}
@@ -894,7 +884,6 @@ const renderMergedID = (id?: string, clientId?: string) => {
       </span>
     );
   }
-  // A client might be connected but it hasn't any assignments yet because it just joined the group
   if (clientId) {
     return <span className="consumerGroupCompleteID">{clientId ?? id ?? ''}</span>;
   }
@@ -961,4 +950,7 @@ function cannotDeleteGroupOffsetsReason(
   return fencedReason;
 }
 
+/**
+ * Topic actions belong in the accordion content, not inside its trigger. A newly joined member can be connected without an assignment, and unassigned partitions remain visible in the member quick search.
+ */
 export default GroupDetails;

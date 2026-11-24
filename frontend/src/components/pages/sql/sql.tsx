@@ -9,15 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-// SQL helpers for the query workspace. Highlighting (editor: CodeMirror's
-// Lezer SQL grammar, wizard preview: shiki via DynamicCodeBlock), keyword
-// completion (lang-sql's PostgreSQL dialect) and formatting (sql-formatter)
-// are handled by the libraries directly.
-
 import type { Catalog } from './sql-types';
 
-// Leading whitespace, line/block comments, and opening parens — so a query
-// wrapped like `(SELECT …)` still resolves to its first keyword.
 const LEADING_COMMENTS = /^(?:\s+|--[^\n]*\n?|\/\*[\s\S]*?\*\/|\()*/u;
 const FIRST_KEYWORD_RE = /^[A-Za-z_][A-Za-z0-9_]*/u;
 
@@ -27,10 +20,6 @@ export function firstKeyword(stmt: string) {
   return word ? word[0].toUpperCase() : '';
 }
 
-// Statements that mutate state or manage access. These are blocked in the
-// editor in this release — the server is the authority on what can run; this is
-// a UX guard rail, not a security control. Everything else (SELECT, WITH/CTE,
-// EXPLAIN, SHOW, …) is read-shaped and allowed through.
 const WRITE_KEYWORDS = new Set([
   'INSERT',
   'UPDATE',
@@ -45,6 +34,9 @@ const WRITE_KEYWORDS = new Set([
   'REVOKE',
 ]);
 
+/**
+ * This is a UI guard for writes and access-changing statements, not authorization. The SQL service makes the actual execution decision.
+ */
 export function isWriteKeyword(stmt: string) {
   return WRITE_KEYWORDS.has(firstKeyword(stmt));
 }
@@ -60,23 +52,16 @@ export function blockedStatementError(keyword: string) {
   };
 }
 
-// Statements that can add, remove or rename catalog objects, so the catalog
-// tree must be refetched after they succeed.
 const CATALOG_CHANGING_KEYWORDS = new Set(['CREATE', 'DROP', 'ALTER', 'RENAME']);
 
 export function isCatalogChangingKeyword(stmt: string) {
   return CATALOG_CHANGING_KEYWORDS.has(firstKeyword(stmt));
 }
 
-// Strip line/block comments and single-quoted string literals so `=>` inside
-// them isn't mistaken for a catalog reference. Leaves the structural SQL intact.
 const SQL_NOISE_RE = /--[^\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'/gu;
 
-// Oxla addresses catalog tables as `catalog=>table`. A bridge indicator is
-// only meaningful for a single Redpanda-catalog table reference.
 const BRIDGE_REF_RE = /(?<catalog>[A-Za-z_][\w$]*)\s*=>\s*"?(?<bridgeName>[a-zA-Z0-9._-]+)/gu;
 
-// The statement's only `catalog=>table` reference, or null when it has none or several.
 function singleCatalogTableRef(stmt: string) {
   const cleaned = stmt.replace(SQL_NOISE_RE, ' ');
   const matches = [...cleaned.matchAll(BRIDGE_REF_RE)];
@@ -91,8 +76,6 @@ function singleCatalogTableRef(stmt: string) {
   return { catalogName, tableName };
 }
 
-// Topic backing `tableName` (bare or `namespace.table`) in the catalog; the
-// name itself when the catalog doesn't list the table.
 function topicForCatalogTable(catalog: Catalog, tableName: string) {
   for (const namespace of catalog.namespaces) {
     const table = namespace.tables.find((t) => t.name === tableName || `${t.namespaceName}.${t.name}` === tableName);
@@ -103,6 +86,9 @@ function topicForCatalogTable(catalog: Catalog, tableName: string) {
   return tableName;
 }
 
+/**
+ * The bridge indicator is meaningful only for a single Redpanda catalog table reference. Ignore explicitly quoted strings and comments when looking for catalog notation; use the table name when the catalog does not include its backing topic.
+ */
 export function bridgeTopicForQuery(stmt: string, catalogs: Catalog[]) {
   const ref = singleCatalogTableRef(stmt);
   if (!ref) {

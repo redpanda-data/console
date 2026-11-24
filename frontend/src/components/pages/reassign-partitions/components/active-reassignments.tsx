@@ -88,20 +88,17 @@ export class ActiveReassignments extends Component<{
         <div className="currentReassignments">
           <span className="title">Current Reassignments</span>
 
-          {
-            // RedPand cluster throttles as needed, the api does not support setting the throttle manually
-            !api.isRedpanda && (
-              <Button
-                onClick={() => {
-                  this.setState({ showThrottleDialog: true });
-                }}
-                size="xs"
-                variant="link"
-              >
-                {throttleText}
-              </Button>
-            )
-          }
+          {!api.isRedpanda && (
+            <Button
+              onClick={() => {
+                this.setState({ showThrottleDialog: true });
+              }}
+              size="xs"
+              variant="link"
+            >
+              {throttleText}
+            </Button>
+          )}
         </div>
 
         <DataTable<ReassignmentState>
@@ -112,7 +109,6 @@ export class ActiveReassignments extends Component<{
             },
             {
               header: 'Progress',
-              // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
               cell: ({ row: { original } }) => (
                 <div className="w-screen max-w-full">
                   <ProgressCol state={original} />
@@ -164,6 +160,9 @@ export class ActiveReassignments extends Component<{
   }
 }
 
+/**
+ * Applies a positive rate to every broker, or resets the rate for a nonpositive value. Redpanda manages its own throttling rather than accepting a manual rate.
+ */
 export const ThrottleDialog: FC<{
   visible: boolean;
   lastKnownMinThrottle: number | undefined;
@@ -176,7 +175,7 @@ export const ThrottleDialog: FC<{
   const throttleValue = newThrottleValue ?? 0;
   const noChange = newThrottleValue === lastKnownMinThrottle || newThrottleValue === null;
 
-  // Takes the value explicitly: 'Remove throttle' clears state and applies in the same tick.
+  // WARNING: Apply the chosen value directly; clearing the throttle and setting state happen in one tick.
   const applyBandwidthThrottle = async (value: number | null) => {
     toastRef.current = showToast({
       status: 'loading',
@@ -207,7 +206,6 @@ export const ThrottleDialog: FC<{
       }}
       open={visible}
     >
-      {/* Nearest rung to the old 48rem minimum. */}
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Throttle Settings</DialogTitle>
@@ -238,7 +236,7 @@ export const ThrottleDialog: FC<{
             onClick={() => {
               setNewThrottleValue(null);
               applyBandwidthThrottle(null).catch(() => {
-                // Error handling managed by API layer
+                // WARNING: The throttle operation owns failure reporting; do not replace its toast outcome here.
               });
             }}
             variant="destructive-outline"
@@ -254,7 +252,7 @@ export const ThrottleDialog: FC<{
               disabled={noChange}
               onClick={() => {
                 applyBandwidthThrottle(newThrottleValue).catch(() => {
-                  // Error handling managed by API layer
+                  // WARNING: The throttle operation owns failure reporting; do not replace its toast outcome here.
                 });
               }}
               variant="primary"
@@ -268,7 +266,6 @@ export const ThrottleDialog: FC<{
   );
 };
 
-/** Sets the throttle rate on every broker, or resets it when `value` is not positive, reporting the outcome in the toast. */
 async function changeThrottleRate(toastId: string, brokerIds: number[], value: number | null) {
   const shouldSet = value !== null && value > 0;
   try {

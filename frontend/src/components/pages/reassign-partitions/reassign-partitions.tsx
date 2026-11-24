@@ -64,7 +64,7 @@ import { PageComponent, type PageInitHelper } from '../page';
 import { CompactSection } from '../shared/compact-section';
 
 export type PartitionSelection = {
-  [topicName: string]: number[]; // topicName -> array of partitionIds
+  [topicName: string]: number[];
 };
 
 const reassignmentTracker = new ReassignmentTracker();
@@ -95,7 +95,6 @@ class ReassignPartitions extends PageComponent {
     requestInProgress: false,
   };
 
-  // Getter wrappers so the steps[] isEnabled functions can read rp.partitionSelection etc.
   get partitionSelection() {
     return this.state.partitionSelection;
   }
@@ -160,7 +159,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    this.api.refreshCluster(force); // need to know brokers for reassignment calculation, will also refresh config
+    this.api.refreshCluster(force);
     this.api.refreshTopics(force);
     this.api.refreshPartitions('all', force);
     this.api.refreshPartitionReassignments(force);
@@ -191,10 +190,8 @@ class ReassignPartitions extends PageComponent {
             <FeatureLicenseNotification featureName="reassignPartitions" />
           </NullFallbackBoundary>
 
-          {/* Statistics */}
           <ClusterStatistics brokerCount={api.clusterInfo.brokers.length} topics={api.topics} />
 
-          {/* Active Reassignments */}
           <Section id="activeReassignments">
             <ActiveReassignments
               onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
@@ -202,20 +199,16 @@ class ReassignPartitions extends PageComponent {
             />
           </Section>
 
-          {/* Content */}
           <Section id="wizard">
-            {/* Steps */}
             <div style={{ margin: '.75em 1em 1em 1em' }}>
               <WizardSteps currentStep={this.state.currentStep} steps={steps} />
             </div>
 
-            {/* Content */}
             <motion.div {...animProps} key={`step${this.state.currentStep}`}>
               {' '}
               {this.renderStepContent()}
             </motion.div>
 
-            {/* Navigation */}
             {this.renderNavigation()}
           </Section>
         </PageContent>
@@ -276,7 +269,6 @@ class ReassignPartitions extends PageComponent {
           height: '2.5em',
         }}
       >
-        {/* Back */}
         {Boolean(step.backButton) && (
           <Button className="min-w-56" disabled={currentStep <= 0 || requestInProgress} onClick={this.onPreviousPage}>
             <span>
@@ -286,7 +278,6 @@ class ReassignPartitions extends PageComponent {
           </Button>
         )}
 
-        {/* Next */}
         <div className="ml-auto flex items-center gap-8">
           <div>{nextButtonHelp}</div>
           <Button
@@ -315,7 +306,6 @@ class ReassignPartitions extends PageComponent {
         }}
         open={this.state.removeThrottleFromTopicsContent !== null}
       >
-        {/* Nearest rung to the old 64rem minimum. */}
         <DialogContent size="xl">
           <DialogHeader>
             <DialogTitle>
@@ -495,7 +485,6 @@ class ReassignPartitions extends PageComponent {
   async runReassignment(request: PartitionReassignmentRequest) {
     try {
       this.setState({ requestInProgress: true });
-      // todo: Don't use returns and execeptions for control flow
       const success = await this.startReassignment(request);
       if (success) {
         this.resetSelectionAndPage(true, false);
@@ -637,6 +626,9 @@ class ReassignPartitions extends PageComponent {
     return this.api.partitionReassignments?.map((r) => r.topicName) ?? [];
   }
 }
+/**
+ * Refresh cluster brokers before planning an assignment. Throttle leaders on all source replica brokers and followers only on brokers gaining a copy. Clearing stale throttles must exclude topics still being reassigned.
+ */
 export default ReassignPartitions;
 
 type WizardStep = {
@@ -664,8 +656,7 @@ const steps: WizardStep[] = [
     backButton: 'Select Partitions',
     nextButton: {
       text: 'Review Plan',
-      // Can only continue if enough brokers are selected,
-      // so all replicas of each partitions can be put on a different broker.
+      // WARNING: Require enough distinct brokers for all replicas; otherwise a target assignment cannot put each replica on a different broker.
       isEnabled: (rp) => {
         const maxRf = rp.maximumSelectedReplicationFactor;
 
@@ -694,7 +685,6 @@ function ClusterStatistics({ brokerCount, topics }: { brokerCount: number; topic
 
   return (
     <CompactSection>
-      {/* Scoped: step 1's SelectionInfoBar repeats these labels. */}
       <div className="flex gap-8" data-testid="cluster-statistics">
         <Stat label="Broker Count" size="lg" value={brokerCount} />
         <Stat label="Leader Partitions" size="lg" value={partitionCountLeaders ?? '...'} />
@@ -756,7 +746,6 @@ function reassignmentErrors(response: AlterPartitionReassignmentsResponse) {
     .filterNull();
 }
 
-/** Replaces the loading toast with an error toast carrying the failure's message, and logs the details. */
 function showRequestFailure(toastRef: string, logMessage: string, title: string, err: unknown) {
   closeToast(toastRef);
   // biome-ignore lint/suspicious/noConsole: the toast promises console detail
@@ -783,10 +772,8 @@ function throttledTopicReplicas(t: PartitionReassignmentRequest['topics'][number
       continue;
     }
 
-    // leader throttling is applied to all sources (all brokers that have a replica of this partition)
     leaderReplicas.push(...brokersOld.map((sourceBroker) => ({ partitionId, brokerId: sourceBroker })));
 
-    // follower throttling is applied only to target brokers that do not yet have a copy
     followerReplicas.push(
       ...brokersNew.except(brokersOld).map((targetBroker) => ({ partitionId, brokerId: targetBroker }))
     );
@@ -806,7 +793,6 @@ function throwOnPatchErrors(response: PatchConfigsResponse) {
   }
 }
 
-/** Sets the broker-wide throttle rate, then marks the moving replicas as throttled, reporting progress in the toast. */
 async function applyReplicationThrottle(toastRef: string, request: PartitionReassignmentRequest) {
   const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic ?? 0);
   const topicReplicas = request.topics.map((t) => throttledTopicReplicas(t));
@@ -828,7 +814,6 @@ async function applyReplicationThrottle(toastRef: string, request: PartitionReas
   });
 }
 
-/** The topics with a throttle applied, by name, leaving out those still being reassigned. */
 function throttledTopicNames(
   topicDescriptions: PartialTopicConfigsResponse['topicDescriptions'],
   topicsInProgress: string[]
@@ -850,8 +835,7 @@ async function setTrafficLimit(request: PartitionReassignmentRequest) {
     await applyReplicationThrottle(toastRef, request);
     return true;
   } catch (err) {
-    // The per-broker patch fails outright on Redpanda ("Setting broker properties on named
-    // brokers is unsupported"), so the message itself is what an operator needs.
+    // WARNING: Keep the backend error visible; Redpanda rejects named-broker rate updates and the operator needs that reason.
     showRequestFailure(toastRef, 'setTrafficLimit failed', 'Could not set the bandwidth throttle', err);
     return false;
   }

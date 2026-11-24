@@ -151,7 +151,6 @@ function useSqlCatalogs() {
   const { data: catalogsData, isLoading, isFetching: isFetchingCatalogs } = useListCatalogsQuery();
 
   const catalogs = useMemo<Catalog[]>(() => {
-    // MVP surfaces only the Redpanda catalog; Iceberg catalog support lands later.
     const list = (catalogsData?.catalogs ?? []).filter((c) => c.type === CatalogType.REDPANDA);
     return list.map((c) => ({
       name: c.name,
@@ -278,7 +277,6 @@ function executeRun(sql: string, token: number, deps: ExecuteRunDeps) {
   );
 }
 
-// Editor runs: the current run state, its bridge indicator, and run/cancel actions.
 function useSqlRun(
   completionCatalogs: Catalog[],
   executeQuery: ExecuteQueryMutation,
@@ -388,6 +386,8 @@ function useAddTopicWizard(
 /**
  * The bridge indicator follows the executed topic’s tiering configuration, independent of lag samples.
  * Cancelling, superseding, or unmounting an editor run aborts its request so the engine can stop the query.
+ *
+ * The catalog tree currently exposes Redpanda catalogs only.
  */
 export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   useSqlStudioPage();

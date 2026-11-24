@@ -25,7 +25,6 @@ type SettingsCallback = {
 const SLIDER_MIN = 2;
 const SLIDER_MAX = 12;
 
-/** Marks are positioned by value. */
 const MARKS: { value: number; label: string }[] = [
   { value: 2, label: '-' },
   { value: 3, label: '1kB' },
@@ -36,6 +35,9 @@ const MARKS: { value: number; label: string }[] = [
 
 const percentOf = (value: number) => ((value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * 100;
 
+/**
+ * Positions marks and the drag-only value bubble on the same scale as the registry thumb.
+ */
 export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback) {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -78,11 +80,6 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
         setIsDragging(false);
       }}
     >
-      {/*
-        The Registry Slider renders its own track and thumb and has no mark or thumb-tooltip slot,
-        so the marks and the value bubble are positioned against the same value scale here. The
-        bubble follows the thumb and is shown only while dragging.
-      */}
       {isDragging && tipText(sliderValue) ? (
         <div
           className="pointer-events-none absolute -top-7 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-body-sm whitespace-nowrap text-primary-foreground shadow-md"

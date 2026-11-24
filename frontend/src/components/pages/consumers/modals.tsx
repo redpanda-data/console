@@ -84,25 +84,15 @@ const InfoTooltip = ({ text, children }: { text: string; children: ReactNode }) 
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup' | 'shiftBy';
 
-// props:
-// - consumer group
-// - topics
-//      - partitionIds
-
+/**
+ * A partition copied from another group may not have a current offset. New values can be concrete offsets (or Kafka's earliest/latest markers), a Date placeholder while looking up a timestamp, or the resulting partition offset.
+ */
 export type GroupOffset = {
   topicName: string;
   partitionId: number;
 
-  // Current Offset
-  // Can be undefined when we extend our offsets using another group,
-  // in that case we don't have a "Current Offset"
   offset?: number;
 
-  // start/end/other:
-  // undefined  =>
-  // number     => concrete offset from other consumer group
-  // Date       => placeholder for 'specific time' until real offsets are loaded
-  // PartitionOffset => real offsets for Date
   newOffset?: number | Date | PartitionOffset;
 };
 
@@ -120,6 +110,9 @@ type EditOffsetsModalState = {
   isApplyingEdit: boolean;
 };
 
+/**
+ * Reads watermarks for all affected topics and supports selecting offsets from another group. If there is no record at or after the requested timestamp, the latest offset is used.
+ */
 export class EditOffsetsModal extends Component<{
   group: GroupDescription;
   offsets: GroupOffset[] | null;
@@ -129,7 +122,6 @@ export class EditOffsetsModal extends Component<{
 }> {
   lastOffsets!: GroupOffset[];
   lastVisible = false;
-  // Class component: generate the per-instance id prefix once instead of `useId()`.
   readonly fieldId = simpleUniqueId('edit-offsets');
   offsetsByTopic: {
     topicName: string;
@@ -534,11 +526,8 @@ export class EditOffsetsModal extends Component<{
 
     if (visible) {
       setTimeout(() => {
-        // need all groups for "other groups" dropdown
         api.refreshConsumerGroups();
 
-        // need watermarks for all topics the group consumes
-        // in order to know earliest/latest offsets
         const topics = this.props.group.topicOffsets.map((x) => x.topic).distinct();
         api.refreshPartitions(topics, true).catch((error: unknown) => {
           toast.error('Failed to load partition offsets', { description: String(error) });
@@ -603,7 +592,6 @@ const SkipIconTooltip = ({ text }: { text: string }) => (
 
 const unknownNewOffsetText = (val: unknown) => `Unknown type in 'newOffset' type='${typeof val}' value='{v}'`;
 
-/** An offset with a muted note on where it came from, such as "(Earliest)" or the message timestamp. */
 const OffsetWithNote = ({ offset, note }: { offset: ReactNode; note: ReactNode }) => (
   <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
     <span>{offset}</span>
@@ -620,7 +608,6 @@ const OffsetWithNote = ({ offset, note }: { offset: ReactNode; note: ReactNode }
   </div>
 );
 
-/** New offset set by timestamp: a Date placeholder while loading, then the fetched partition offset. */
 const TimestampNewOffset = ({
   record,
   val,
@@ -648,8 +635,6 @@ const TimestampNewOffset = ({
     );
   }
 
-  // not found - no message after given timestamp
-  // use 'latest'
   const partition = api.topicPartitions.get(record.topicName)?.first((p) => p.id === record.partitionId);
   return (
     <TooltipProvider>
@@ -672,7 +657,6 @@ const TimestampNewOffset = ({
   );
 };
 
-/** New offset copied from another group (a concrete offset), or Earliest (-2) / Latest (-1). */
 const NumericNewOffset = ({ record, val }: { record: GroupOffset; val: number }) => {
   if (val >= 0) {
     return numberToThousandsString(val);
@@ -786,21 +770,12 @@ const OffsetPreviewTable = ({ items, selectedTime }: { items: GroupOffset[]; sel
 };
 
 export type GroupDeletingMode = 'group' | 'topic' | 'partition';
-// Why do we pass 'mode'?
-//   It is the users "intent" (where he clicked).
-//   Without it, we'd have to infer it, which is possible, but will result in strange wording.
-//   For example:
-//     - user is viewing a group that has offsets for only one topic
-//     - user clicks 'delete' on the topic
-//     - dialog would show "you want to delete ALL offsets for this group"
-//       which is technically correct, but might give the impression of deleting more than he wanted
 const DELETE_LEAD_TEXT: Record<GroupDeletingMode, string> = {
   group: 'This action will delete the following consumer group:',
   topic: 'Group offsets will be deleted for topic:',
   partition: 'Group offsets will be deleted for partition:',
 };
 
-/** The latest non-null offsets, so the dialog content doesn't flash empty during the close animation. */
 const useLastOffsets = (offsets: GroupOffset[] | null) => {
   const lastOffsetsRef = useRef<GroupOffset[]>([]);
   if (offsets) {
@@ -809,7 +784,6 @@ const useLastOffsets = (offsets: GroupOffset[] | null) => {
   return offsets ?? lastOffsetsRef.current;
 };
 
-/** Deletes the whole group in `group` mode, otherwise only the given offsets. Throws if the backend reports partition errors. */
 async function deleteGroupOrOffsets(group: GroupDescription, mode: GroupDeletingMode, offsets: GroupOffset[]) {
   if (mode === 'group') {
     await api.deleteConsumerGroup(group.groupId);
@@ -864,9 +838,9 @@ const useDeleteOffsets = ({
       console.error(err);
     } finally {
       setIsDeleting(false);
-      // Returns nothing to await: its request failures land in the API error store.
+      // WARNING: The legacy refresh reports request failures through the API error store and does not return a promise.
       api.refreshConsumerGroups(true);
-      // Caught here so a failed refresh can't replace the delete's own outcome or escape the click.
+      // WARNING: Report refresh failure separately; it must not replace the outcome of deleting offsets.
       await queryClient.invalidateQueries({ queryKey: ['consumer-groups'] }).catch((error: unknown) => {
         toast.error('Failed to refresh consumer groups', { description: String(error) });
       });
@@ -876,6 +850,9 @@ const useDeleteOffsets = ({
   return { isDeleting, handleDelete };
 };
 
+/**
+ * Mode is the action the user chose, not inferred from the number of remaining topics. Group mode deletes the group; topic and partition modes delete only their selected offsets. Keep the last non-null offsets through the close animation.
+ */
 export const DeleteOffsetsModal = (props: {
   group: GroupDescription;
   mode: GroupDeletingMode;
@@ -954,7 +931,6 @@ export const DeleteOffsetsModal = (props: {
           </div>
         </AlertDialogBody>
 
-        {/* Following AlertDialogBody, the footer draws its own top border. */}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
           <UiButton
@@ -1025,7 +1001,6 @@ function groupOffsetOf(group: GroupDescription, topicName: string, partitionId: 
   );
 }
 
-/** Appends every committed offset of `other` that `currentOffsets` doesn't have yet, as a new offset with no current one. */
 function appendMissingOffsets(currentOffsets: GroupOffset[], other: GroupDescription) {
   const otherFlat = other.topicOffsets.flatMap((x) =>
     x.partitionOffsets

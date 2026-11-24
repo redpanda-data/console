@@ -64,7 +64,6 @@ const groupIdFilterFn = (row: DataTableRow<GroupDescription>, _columnId: string,
 
 const DEFAULT_PAGE_SIZE = 10;
 
-/** Faceted filter for the state and type columns: the row passes when its value is one of the picked values. */
 const facetFilterFn = (row: DataTableRow<GroupDescription>, columnId: string, filterValues: string[]) => {
   if (!filterValues?.length) {
     return true;
@@ -156,7 +155,6 @@ export const computeGroupStatistics = (consumerGroups: GroupDescription[]) => {
   };
 };
 
-/** Sets the page header and points the global refresh button at this page's query. */
 const useGroupListPageSetup = (refetch: () => unknown) => {
   useLayoutEffect(() => {
     setPageHeader('Consumer Groups', [{ title: 'Consumer Groups', linkTo: '/groups' }]);
@@ -232,7 +230,6 @@ const useColumnFiltersSearchParams = (setPageIndex: SetPageIndex) => {
   return { columnFilters, onColumnFiltersChange };
 };
 
-/** Table sorting, filters and pagination, kept in the URL search params. Any sort or filter change resets the page. */
 const useGroupListTableParams = () => {
   const { pagination, setPageIndex, onPaginationChange } = usePaginationSearchParams();
   const { sorting, onSortingChange } = useSortingSearchParams(setPageIndex);
@@ -409,4 +406,7 @@ const GroupList: FC = () => {
   );
 };
 
+/**
+ * Sorting, filters, and page state are kept in the URL. Changing the sort or a filter resets pagination.
+ */
 export default GroupList;

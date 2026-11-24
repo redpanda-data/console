@@ -304,8 +304,6 @@ function buildColumns(cols: ColumnDef[]) {
       name: c.name,
       width: 'minmax(max-content, 1fr)',
       minWidth: 96,
-      // Headers stay left-aligned for every kind; only numeric cell values
-      // right-align (so digits line up) — keep the column name readable.
       renderHeaderCell: () => (
         <span className="flex h-full flex-col items-start justify-center gap-[3px] font-sans leading-none">
           <span className="font-mono text-body-sm font-semibold text-strong">{c.name}</span>
@@ -371,8 +369,6 @@ function SuccessGrid({ run }: { run: QueryRunSuccess }) {
 
         {bridge ? <BridgeTimeline bridge={bridge} /> : null}
 
-        {/* Virtualized grid: rdg renders only visible rows, so the full result
-          set is handed over with no client-side pagination. */}
         <div className="relative flex min-h-0 flex-1 flex-col">
           <DataGrid
             className="sql-results-grid"
@@ -465,6 +461,9 @@ function RunningResults({ onCancel }: Pick<SqlResultsProps, 'onCancel'>) {
   );
 }
 
+/**
+ * Headers are left-aligned even for numeric columns; right-align their values only. Supply the full result to the virtual grid rather than paging it again.
+ */
 export function SqlResults({ run, sqlRole, onAddTable, onCancel, hasTables = true }: SqlResultsProps) {
   if (run.state === 'idle') {
     return <IdleResults hasTables={hasTables} onAddTable={onAddTable} sqlRole={sqlRole} />;

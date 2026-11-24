@@ -55,7 +55,6 @@ export type TableRef = {
   columns?: ColumnDef[];
 };
 
-// A table as ListTables returns it.
 export type FetchedTable = { name: string; catalogNamespace: string; topic?: string };
 
 function groupFetchedTables(catalog: Catalog, tables: FetchedTable[]) {
@@ -117,7 +116,6 @@ export type ColumnDef = {
  */
 export type CellValue = string | boolean | null;
 
-// A result row keyed by column name.
 export type ResultRow = Record<string, CellValue>;
 
 /** Iceberg-lag snapshot for a bridge query. Offset-based, captured at query time. */
@@ -160,11 +158,11 @@ export type QueryRun = QueryRunIdle | QueryRunRunning | QueryRunCanceled | Query
 /** Drives admin-only affordances (e.g. the "Add a topic" CTA). */
 export type SqlRole = 'admin' | 'viewer';
 
-// Unwraps one level of array syntax — "TEXT[]", "_TEXT" (pg wire naming), or
-// "ARRAY<TEXT>"/"LIST<TEXT>" (Iceberg) — returning the element type, or null
-// when the type is not an array.
 const ARRAY_WRAPPER_RE = /^(?:ARRAY|LIST)\s*<(?<elementType>.+)>$/iu;
 
+/**
+ * Unwraps TEXT[], wire names such as _TEXT, and Iceberg ARRAY<TEXT> or LIST<TEXT>.
+ */
 export function arrayElementPgType(pgType: string) {
   const t = pgType.trim();
   if (t.endsWith('[]')) {
@@ -181,13 +179,10 @@ export function isArrayPgType(pgType: string) {
   return arrayElementPgType(pgType) !== null;
 }
 
-// Checked in order against the upper-cased type name; the first match wins.
 const SCALAR_KIND_MATCHERS: [ColumnKind, (upperType: string) => boolean][] = [
-  // Temporal first: INTERVAL would otherwise match the INT substring in NUMERIC.
   ['time', (t) => TEMPORAL_TYPE.test(t)],
   ['num', (t) => NUMERIC_TYPE.test(t)],
   ['bool', (t) => BOOL_TYPE.test(t)],
-  // RECORD/RECORD[] are composite columns; JSON kept for any real json scalar.
   ['json', (t) => t.includes('RECORD') || t.includes('JSON')],
 ];
 
@@ -196,6 +191,8 @@ const SCALAR_KIND_MATCHERS: [ColumnKind, (upperType: string) => boolean][] = [
  * literal "record"/"record[]" (the backend parses structure into Column.fields)
  * and render with the JSON tree viewer. Arrays map to their element kind;
  * anything unrecognized defaults to a string.
+ *
+ * Temporal kinds take precedence; numeric matching is word-boundary anchored so names such as POINT and INTERVAL do not look numeric.
  */
 export function columnKindForPgType(pgType: string) {
   const element = arrayElementPgType(pgType);
@@ -217,8 +214,6 @@ export function hintFromError(error: unknown) {
   }
 }
 
-// Word-boundary anchored so geometric/temporal names that merely contain a
-// numeric token (POINT → INT, INTERVAL → INT) don't get misread as numeric.
 const NUMERIC_TYPE = /\b(?:INT|INTEGER|SMALLINT|BIGINT|FLOAT|NUMERIC|DECIMAL|DOUBLE|REAL|SERIAL|MONEY)/u;
 const BOOL_TYPE = /BOOL/u;
 const TEMPORAL_TYPE = /(?:TIMESTAMP|DATE|TIME|INTERVAL)/u;

@@ -72,18 +72,14 @@ type CatalogTreeContextValue = {
   role: SqlRole;
   query: string;
   activeTableId?: string | null;
-  /** Expand state per node id. Undefined => default open (`!== false`). */
   open: Record<string, boolean>;
-  /** Expand state per table id. Undefined => closed. */
   openTables: Record<string, boolean>;
-  /** Pagination window per namespace id. */
   shown: Record<string, number>;
   toggle: (id: string) => void;
   toggleTable: (id: string) => void;
   loadMore: (namespaceId: string) => void;
   onQueryTable: (catalog: Catalog, table: TableRef) => void;
   onAddTable?: () => void;
-  /** tabIndex for a treeitem so the tree is a single tab stop (roving). */
   rowTabIndex: (id: string) => 0 | -1;
 };
 
@@ -499,6 +495,8 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
 
 /**
  * Keyboard re-entry returns to the last focused catalog row, not always the first row.
+ *
+ * Catalog nodes default open while table nodes default closed. Roving tabindex keeps the entire tree a single tab stop.
  */
 export function CatalogTree({
   catalogs,

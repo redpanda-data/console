@@ -27,7 +27,6 @@ import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { BrokerList } from '../../misc/broker-list';
 import { TonedIcon } from '../shared/toned-icon';
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
@@ -102,7 +101,6 @@ function renderPartitionError(partition: Partition) {
 
   return (
     <Popover>
-      {/* Hover-to-open. */}
       <PopoverTrigger
         delay={200}
         openOnHover
@@ -114,7 +112,6 @@ function renderPartitionError(partition: Partition) {
           </button>
         }
       />
-      {/* PopoverContent is a fixed w-72; the error text needs the room. */}
       <PopoverContent align="start" className="w-auto max-w-[500px]" side="right">
         <PopoverTitle>Partition Error</PopoverTitle>
         <div className="whitespace-pre-wrap">{txt}</div>

@@ -14,6 +14,9 @@ import type { Broker, Partition } from '../../../../state/rest-interfaces';
 import { prettyBytesOrNA } from '../../../../utils/utils';
 import type { PartitionSelection } from '../reassign-partitions';
 
+/**
+ * Counts the brokers leading or hosting selected replicas; broker and rack figures stay in their loading state until broker data arrives.
+ */
 export function SelectionInfoBar(props: { partitionSelection: PartitionSelection; margin?: string }) {
   const topicPartitions = useApiStoreHook((s) => s.topicPartitions);
   const clusterInfo = useApiStoreHook((s) => s.clusterInfo);
@@ -53,7 +56,6 @@ export function SelectionInfoBar(props: { partitionSelection: PartitionSelection
 
 type SelectedTopicPartitions = { topic: string; partitions: Partition[] };
 
-/** The figures shown for the selection; broker and rack counts stay '...' until the brokers are known. */
 function selectionStatistics(selectedPartitions: SelectedTopicPartitions[], involvedBrokers: Broker[] | null) {
   const allSelectedPartitions = selectedPartitions.flatMap((p) => p.partitions);
   const partitionCountLeaders = allSelectedPartitions.length;
@@ -90,7 +92,6 @@ function selectedTopicPartitions(
   return selectedPartitions;
 }
 
-/** The brokers leading or hosting a replica of any selected partition. */
 function brokersInvolvedIn(selectedPartitions: SelectedTopicPartitions[], brokers: Broker[]) {
   const brokerIds = new Set<number>();
   for (const t of selectedPartitions) {
