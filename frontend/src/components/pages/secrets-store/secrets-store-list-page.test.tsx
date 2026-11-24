@@ -19,29 +19,10 @@ import {
 } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { Scope, type Secret, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import React from 'react';
 import { SECRETS_LIST_PAGE_SIZE } from 'react-query/api/secret';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { SecretsStoreListPage } from './secrets-store-list-page';
-
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
-
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
-  return {
-    ...actual,
-    config: {
-      jwt: 'test-jwt-token',
-    },
-    isFeatureFlagEnabled: rs.fn(() => false),
-  };
-});
 
 const createListSecretsTransport = (handler: MethodImpl<typeof listSecrets>) =>
   createRouterTransport(({ rpc }) => {
