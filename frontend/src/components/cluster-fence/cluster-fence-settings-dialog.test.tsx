@@ -9,103 +9,87 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { act, screen, waitFor } from '@testing-library/react';
+import { beforeEach, expect, test } from '@rstest/core';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Button } from 'components/redpanda-ui/components/button';
+import {
+  ClusterFenceState,
+  type UpdateClusterFenceSettingsRequest,
+} from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
+import { updateClusterFenceSettings } from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
 import { useState } from 'react';
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { toast } from 'sonner';
-import { useClusterFenceStore } from 'stores/cluster-fence-store';
-import { renderWithFileRoutes } from 'test-utils';
+import { Toaster } from 'sonner';
 
-import type { FencePhase } from './cluster-fence-model';
+import { enableFenceFixtures, fenceStatus, renderWithFenceStatus, serveFenceStatus } from './cluster-fence.test-utils';
 import { ClusterFenceSettingsDialog } from './cluster-fence-settings-dialog';
 
-const mutate = rs.fn();
-const mutation = { mutate, reset: rs.fn(), isPending: false, isSuccess: false, error: null as unknown };
+const SAVE = 'save-cluster-fence-settings';
+const DIALOG = 'cluster-fence-settings-dialog';
 
-rs.mock('react-query/api/cluster-fence', () => {
-  const actual = rs.requireActual<typeof import('react-query/api/cluster-fence')>('react-query/api/cluster-fence');
-  return {
-    ...actual,
-    useClusterFenceStatusQuery: rs.fn(),
-    useUpdateClusterFenceSettingsMutation: rs.fn(() => mutation),
-  };
-});
-rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
+beforeEach(enableFenceFixtures);
 
-const mockStatus = (phase: FencePhase, revision = 4) =>
-  rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-    summary: {
-      phase,
-      revision: BigInt(revision),
-      exemptPrincipals: ['shadow-orders'],
-      allowAllReads: false,
-    },
-  } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
-
-let reopen: () => void = () => undefined;
-
-const Harness = () => {
+function SettingsHarness() {
   const [open, setOpen] = useState(true);
-  reopen = () => setOpen(true);
-  return <ClusterFenceSettingsDialog onOpenChange={setOpen} open={open} />;
-};
+  return (
+    <>
+      <Toaster />
+      <Button onClick={() => setOpen(true)}>Open fence settings</Button>
+      <ClusterFenceSettingsDialog onOpenChange={setOpen} open={open} />
+    </>
+  );
+}
 
-describe('the ClusterFenceSettingsDialog', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    mutation.error = null;
-    useClusterFenceStore.setState({ topology: null });
-  });
-
-  test('saves the edited settings at the revision it opened with', async () => {
-    const user = userEvent.setup();
-    mockStatus('unfenced');
-    mutate.mockImplementation((_variables, options) => options?.onSuccess?.());
-    renderWithFileRoutes(<Harness />);
-
-    const save = await screen.findByTestId('save-cluster-fence-settings');
-    expect(save).toBeDisabled();
-    await user.type(screen.getByLabelText('Exempt users'), 'shadow-telemetry{Enter}');
-    await user.click(save);
-
-    expect(mutate.mock.calls[0]?.[0]).toEqual({
-      settings: {
-        exemptPrincipals: ['shadow-orders', 'shadow-telemetry'],
-        allowAllReads: false,
-      },
-      expectedRevision: 4n,
-    });
-    expect(toast.success).toHaveBeenCalledWith('Cluster fence settings saved', {
-      description: 'The next Fence uses them.',
+async function renderSettings(state: ClusterFenceState) {
+  const requests: UpdateClusterFenceSettingsRequest[] = [];
+  const server = serveFenceStatus(fenceStatus(state), ({ rpc }) => {
+    rpc(updateClusterFenceSettings, (request) => {
+      requests.push(request);
+      const saved = fenceStatus(state, 5n, request.settings?.readPolicy?.exemptPrincipals);
+      server.publish(saved);
+      return { fence: saved.fence };
     });
   });
+  await renderWithFenceStatus(<SettingsHarness />, server.transport);
+  return requests;
+}
 
-  test.each([
-    ['fenced', true],
-    ['unfencing', false],
-  ] as const)('a save while %s re-applies the fence: %s', async (phase, refences) => {
-    mockStatus(phase);
-    renderWithFileRoutes(<Harness />);
+test('saves the whole read policy at the revision the dialog opened with', async () => {
+  const user = userEvent.setup();
+  const requests = await renderSettings(ClusterFenceState.UNFENCED);
+  const save = await screen.findByTestId(SAVE);
+  expect(save).toBeDisabled();
+  await user.type(screen.getByLabelText('Exempt users'), 'shadow-telemetry{Enter}');
+  await user.click(save);
 
-    await screen.findByTestId('save-cluster-fence-settings');
-    expect(screen.queryByText('back in Fencing', { exact: false }) !== null).toBe(refences);
+  expect(await screen.findByText('The next Fence uses them.')).toBeVisible();
+  expect(requests).toHaveLength(1);
+  expect(requests[0]).toMatchObject({
+    settings: { readPolicy: { exemptPrincipals: ['shadow-orders', 'shadow-telemetry'], allowAllReads: false } },
+    expectedRevision: 4n,
+    updateMask: { paths: ['read_policy'] },
   });
+});
 
-  test('drops unsaved edits on Cancel', async () => {
-    const user = userEvent.setup();
-    mockStatus('unfenced');
-    renderWithFileRoutes(<Harness />);
+test.each([
+  [ClusterFenceState.FENCED, true],
+  [ClusterFenceState.UNFENCING, false],
+] as const)('warns that a save re-applies the fence only in a blocking state: %s', async (phase, refences) => {
+  await renderSettings(phase);
+  await screen.findByTestId(SAVE);
+  expect(screen.queryByText('back in Fencing', { exact: false }) !== null).toBe(refences);
+});
 
-    await user.type(await screen.findByLabelText('Exempt users'), 'scratch{Enter}');
-    expect(screen.getByTestId('cluster-fence-exempt-principals-chip-scratch')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(screen.queryByTestId('cluster-fence-settings-dialog')).not.toBeInTheDocument());
+test('drops unsaved settings on Cancel', async () => {
+  const user = userEvent.setup();
+  const requests = await renderSettings(ClusterFenceState.UNFENCED);
+  await user.type(await screen.findByLabelText('Exempt users'), 'scratch{Enter}');
+  expect(screen.getByTestId('cluster-fence-exempt-principals-chip-scratch')).toBeVisible();
+  await user.click(screen.getByRole('button', { name: 'Cancel' }));
+  await waitFor(() => expect(screen.queryByTestId(DIALOG)).not.toBeInTheDocument());
 
-    act(() => reopen());
-
-    await screen.findByTestId('save-cluster-fence-settings');
-    expect(screen.queryByTestId('cluster-fence-exempt-principals-chip-scratch')).not.toBeInTheDocument();
-  });
+  await user.click(screen.getByRole('button', { name: 'Open fence settings' }));
+  await screen.findByTestId(SAVE);
+  expect(screen.queryByTestId('cluster-fence-exempt-principals-chip-scratch')).not.toBeInTheDocument();
+  expect(requests).toHaveLength(0);
 });

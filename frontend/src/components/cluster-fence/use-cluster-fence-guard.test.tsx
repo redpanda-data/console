@@ -9,71 +9,67 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { beforeEach, expect, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
+import { ClusterFenceState } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
+import { connectQueryWrapper } from 'test-utils';
 
-import { type FencePhase, isBlockingPhase } from './cluster-fence-model';
+import { enableFenceFixtures, fenceStatus, readFenceStatus, serveFenceStatus } from './cluster-fence.test-utils';
 import { useClusterFenceGuard } from './use-cluster-fence-guard';
-
-rs.mock('react-query/api/cluster-fence', () => ({ useClusterFenceStatusQuery: rs.fn() }));
 
 const POLICY_VIOLATION = 'POLICY_VIOLATION: fetch rejected by the configured cluster policy';
 
-const mockStatus = (phase: FencePhase, { allowAllReads = false } = {}) =>
-  rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-    blocking: isBlockingPhase(phase),
-    summary: { phase, allowAllReads },
-  } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+beforeEach(enableFenceFixtures);
 
-describe('useClusterFenceGuard', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-  });
+async function renderGuard(state: ClusterFenceState, allowAllReads = false) {
+  const response = fenceStatus(state);
+  if (response.fence?.settings?.readPolicy) {
+    response.fence.settings.readPolicy.allowAllReads = allowAllReads;
+  }
+  const { transport } = serveFenceStatus(response);
+  const { wrapper, queryClient } = connectQueryWrapper({}, transport);
+  await readFenceStatus(queryClient, transport);
+  return renderHook(() => useClusterFenceGuard(), { wrapper });
+}
 
-  test.each([
-    ['fencing', true],
-    ['fenced', true],
-    ['unfencing', false],
-    ['unfenced', false],
-  ] as const)('while %s, disables writes: %s', (phase, disabled) => {
-    mockStatus(phase);
-    const { result } = renderHook(() => useClusterFenceGuard());
+test.each([
+  [ClusterFenceState.FENCING, true],
+  [ClusterFenceState.FENCED, true],
+  [ClusterFenceState.UNFENCING, false],
+  [ClusterFenceState.UNFENCED, false],
+] as const)('enables or disables writes from the server fence phase: %s', async (phase, disabled) => {
+  const { result } = await renderGuard(phase);
+  expect(result.current.reasonFor('createTopic') !== undefined).toBe(disabled);
+});
 
-    expect(result.current.reasonFor('createTopic') !== undefined).toBe(disabled);
-  });
+test('names the blocked action and how to unblock it', async () => {
+  const { result } = await renderGuard(ClusterFenceState.FENCED);
 
-  test('names the action it blocks and how to undo it', () => {
-    mockStatus('fenced');
-    const { result } = renderHook(() => useClusterFenceGuard());
+  expect(result.current.reasonFor('editAcls')).toBe(
+    'You can’t create or delete ACLs while this cluster is fenced. Unfence it first.'
+  );
+  expect(result.current.reasonFor('createShadowLink')).toBe(
+    'A fenced cluster rejects new shadow links, and retrying won’t help. Unfence it first.'
+  );
+});
 
-    expect(result.current.reasonFor('editAcls')).toBe(
-      'You can’t create or delete ACLs while this cluster is fenced. Unfence it first.'
-    );
-    expect(result.current.reasonFor('createShadowLink')).toBe(
-      'A fenced cluster rejects new shadow links, and retrying won’t help. Unfence it first.'
-    );
-  });
+test('still allows internal-topic operations except produce to _schemas', async () => {
+  const { result } = await renderGuard(ClusterFenceState.FENCED);
 
-  test('only user topics are fenced: Redpanda’s internal topics stay open, and _schemas only takes no produce', () => {
-    mockStatus('fenced');
-    const { result } = renderHook(() => useClusterFenceGuard());
+  expect(result.current.reasonFor('editTopicConfig', '_orders')).toBeDefined();
+  expect(result.current.reasonFor('deleteTopic', 'orders')).toBeDefined();
+  expect(result.current.reasonFor('editTopicConfig', '_schemas')).toBeUndefined();
+  expect(result.current.reasonFor('deleteTopic', '__consumer_offsets')).toBeUndefined();
+  expect(result.current.reasonFor('produce', '_redpanda.audit_log')).toBeUndefined();
+  expect(result.current.reasonFor('produce', '_schemas')).toBeDefined();
+});
 
-    expect(result.current.reasonFor('editTopicConfig', '_orders')).toBeDefined();
-    expect(result.current.reasonFor('deleteTopic', 'orders')).toBeDefined();
-    expect(result.current.reasonFor('editTopicConfig', '_schemas')).toBeUndefined();
-    expect(result.current.reasonFor('deleteTopic', '__consumer_offsets')).toBeUndefined();
-    expect(result.current.reasonFor('produce', '_redpanda.audit_log')).toBeUndefined();
-    expect(result.current.reasonFor('produce', '_schemas')).toBeDefined();
-  });
+test('blames a rejected fetch on the fence only while it blocks reads', async () => {
+  const blocked = await renderGuard(ClusterFenceState.FENCED);
+  expect(blocked.result.current.isFencedRead(POLICY_VIOLATION)).toBe(true);
+  blocked.unmount();
 
-  test('blames the fence for a rejected fetch only while it blocks reads', () => {
-    mockStatus('fenced');
-    expect(renderHook(() => useClusterFenceGuard()).result.current.isFencedRead(POLICY_VIOLATION)).toBe(true);
-
-    mockStatus('fenced', { allowAllReads: true });
-    const { result } = renderHook(() => useClusterFenceGuard());
-    expect(result.current.isFencedRead(POLICY_VIOLATION)).toBe(false);
-    expect(result.current.reasonFor('produce')).toBeDefined();
-  });
+  const { result } = await renderGuard(ClusterFenceState.FENCED, true);
+  expect(result.current.isFencedRead(POLICY_VIOLATION)).toBe(false);
+  expect(result.current.reasonFor('produce')).toBeDefined();
 });
