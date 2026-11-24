@@ -107,7 +107,10 @@ const allowedOperations = (resources: ListACLsResponse_Resource[], username: str
   return allowed;
 };
 
-const splitByGranted = (requiredOps: ACL_Operation[], allowed: Set<ACL_Operation>): TopicPermissionCheck => ({
+const splitByGranted: (requiredOps: ACL_Operation[], allowed: Set<ACL_Operation>) => TopicPermissionCheck = (
+  requiredOps,
+  allowed
+) => ({
   hasPermissions: requiredOps.filter((op) => allowed.has(op)),
   missingPermissions: requiredOps.filter((op) => !allowed.has(op)),
 });
@@ -121,12 +124,12 @@ const TOPIC_ACCESS_OPERATIONS: Record<TopicAccess, ACL_Operation[]> = {
   'read-write': [ACL_Operation.READ, ACL_Operation.WRITE],
 };
 
-export const checkUserHasTopicPermissions = (
+export const checkUserHasTopicPermissions: (
   aclResources: ListACLsResponse_Resource[],
   topicName: string,
   username: string,
   access: TopicAccess
-): TopicPermissionCheck => {
+) => TopicPermissionCheck = (aclResources, topicName, username, access) => {
   const requiredOps = TOPIC_ACCESS_OPERATIONS[access];
 
   const topicACLs = aclResources.filter(
@@ -142,11 +145,11 @@ export const checkUserHasTopicPermissions = (
   return splitByGranted(requiredOps, userAllowedOps);
 };
 
-export const checkUserHasConsumerGroupPermissions = (
+export const checkUserHasConsumerGroupPermissions: (
   aclResources: ListACLsResponse_Resource[],
   consumerGroupName: string,
   username: string
-): TopicPermissionCheck => {
+) => TopicPermissionCheck = (aclResources, consumerGroupName, username) => {
   const requiredOps = [ACL_Operation.READ, ACL_Operation.DESCRIBE];
 
   const groupACLs = aclResources.filter(
@@ -162,11 +165,11 @@ export const checkUserHasConsumerGroupPermissions = (
   return splitByGranted(requiredOps, userAllowedOps);
 };
 
-const configureUserPermissions = async (
+const configureUserPermissions: (
   topicName: string,
   username: string,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
-): Promise<OperationResult> => {
+) => Promise<OperationResult> = async (topicName, username, createACLMutation) => {
   try {
     const aclConfigs = {
       resourceType: ACL_ResourceType.TOPIC,
@@ -211,11 +214,11 @@ const createACLsInOrder = async (
   await createACLsInOrder(rest, createACLMutation);
 };
 
-const configureConsumerGroupPermissions = async (
+const configureConsumerGroupPermissions: (
   consumerGroupName: string,
   username: string,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
-): Promise<OperationResult> => {
+) => Promise<OperationResult> = async (consumerGroupName, username, createACLMutation) => {
   try {
     await createACLsInOrder(createConsumerGroupACLs(consumerGroupName, username), createACLMutation);
 
@@ -238,10 +241,10 @@ const configureConsumerGroupPermissions = async (
   }
 };
 
-const createUsernameSecret = async (
+const createUsernameSecret: (
   username: string,
   createSecretMutation: ReturnType<typeof useCreateSecretMutation>
-): Promise<OperationResult> => {
+) => Promise<OperationResult> = async (username, createSecretMutation) => {
   try {
     const usernameSecretRequest = create(CreateSecretRequestSchemaConsole, {
       request: create(CreateSecretRequestSchema, {
@@ -275,11 +278,11 @@ const createUsernameSecret = async (
   }
 };
 
-const createPasswordSecret = async (
+const createPasswordSecret: (
   username: string,
   password: string,
   createSecretMutation: ReturnType<typeof useCreateSecretMutation>
-): Promise<OperationResult> => {
+) => Promise<OperationResult> = async (username, password, createSecretMutation) => {
   try {
     const passwordSecretRequest = create(CreateSecretRequestSchemaConsole, {
       request: create(CreateSecretRequestSchema, {
@@ -324,10 +327,10 @@ export const saslMechanismFromProto = (mechanism: SASLMechanism | undefined) =>
     (name) => saslMechanismToProtoMapping[name] === mechanism
   );
 
-const createKafkaUser = async (
+const createKafkaUser: (
   userData: AddUserFormData,
   createUserMutation: ReturnType<typeof useCreateUserMutation>
-): Promise<OperationResult> => {
+) => Promise<OperationResult> = async (userData, createUserMutation) => {
   try {
     const createUserRequest = create(CreateUserRequestSchema, {
       user: {

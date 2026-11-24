@@ -32,22 +32,20 @@ const hasConnectCode = (body: unknown) =>
  * 404 still goes through: a Console without the API, not serving the frontend, answers it from its
  * router with JSON but no code, and Connect reads it as unimplemented.
  */
-const consoleErrorsOnly =
-  (fetchImpl: Fetch): Fetch =>
-  async (input, init) => {
-    const response = await fetchImpl(input, init);
-    if (response.status === 200 || response.status === 404 || !response.headers.get('content-type')?.includes('json')) {
-      return response;
-    }
-    const body: unknown = await response
-      .clone()
-      .json()
-      .catch(() => undefined);
-    if (hasConnectCode(body)) {
-      return response;
-    }
-    throw new Error(`HTTP ${response.status} without a Connect error code, so not from the cluster’s Console`);
-  };
+const consoleErrorsOnly: (fetchImpl: Fetch) => Fetch = (fetchImpl) => async (input, init) => {
+  const response = await fetchImpl(input, init);
+  if (response.status === 200 || response.status === 404 || !response.headers.get('content-type')?.includes('json')) {
+    return response;
+  }
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined);
+  if (hasConnectCode(body)) {
+    return response;
+  }
+  throw new Error(`HTTP ${response.status} without a Connect error code, so not from the cluster’s Console`);
+};
 
 /** A new transport to the Console at `consoleUrl`, answered by `fetchImpl` in tests. */
 export const createPeerConsoleTransport = (

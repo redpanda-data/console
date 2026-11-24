@@ -45,13 +45,13 @@ import {
 import { CollapsibleSectionCard } from '../collapsible-section-card';
 import type { FormValues } from '../model';
 
-const renderResourceTypeLabel = (value: unknown): React.ReactNode =>
+const renderResourceTypeLabel: (value: unknown) => React.ReactNode = (value) =>
   value === undefined || value === null || value === '' ? null : getResourceTypeLabel(Number(value) as ACLResource);
-const renderPatternTypeLabel = (value: unknown): React.ReactNode =>
+const renderPatternTypeLabel: (value: unknown) => React.ReactNode = (value) =>
   value === undefined || value === null || value === '' ? null : getPatternTypeLabel(Number(value) as ACLPattern);
-const renderOperationLabel = (value: unknown): React.ReactNode =>
+const renderOperationLabel: (value: unknown) => React.ReactNode = (value) =>
   value === undefined || value === null || value === '' ? null : getOperationLabel(Number(value) as ACLOperation);
-const renderPermissionTypeLabel = (value: unknown): React.ReactNode =>
+const renderPermissionTypeLabel: (value: unknown) => React.ReactNode = (value) =>
   value === undefined || value === null || value === ''
     ? null
     : getPermissionTypeLabel(Number(value) as ACLPermissionType);

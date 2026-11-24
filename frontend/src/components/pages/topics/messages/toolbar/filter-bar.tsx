@@ -72,11 +72,11 @@ const externalChanges = (incoming: EmittedState, prev: EmittedState, last: Emitt
 
 /** Picks, per piece, the external incoming value or a fallback — shared by the "what should
  * `rawText` become" and "what should we now consider last-emitted" resync computations. */
-const mergeExternal = (
+const mergeExternal: (
   external: ReturnType<typeof externalChanges>,
   incoming: EmittedState,
   fallback: { partitionId: number; fieldTokens: FieldFilterToken[]; quickSearch: string }
-): EmittedState => ({
+) => EmittedState = (external, incoming, fallback) => ({
   partitionId: external.partitionId ? incoming.partitionId : fallback.partitionId,
   fieldTokens: external.fieldTokens ? incoming.fieldTokens : fallback.fieldTokens,
   quickSearch: external.quickSearch ? incoming.quickSearch : fallback.quickSearch,
@@ -193,13 +193,13 @@ const insertSuggestion = (edit: LineEdit, action: SuggestionAction, range: TextR
  * When some piece changed outside the bar: the line to show now and what to treat as last
  * emitted. Null when every piece is unchanged or still catching up to the bar's own emission.
  */
-const resyncFromProps = (
+const resyncFromProps: (
   incoming: EmittedState,
   prev: EmittedState,
   last: EmittedState,
   rawText: string,
   partitionCount: number | undefined
-): { text: string; emitted: EmittedState } | null => {
+) => { text: string; emitted: EmittedState } | null = (incoming, prev, last, rawText, partitionCount) => {
   const external = externalChanges(incoming, prev, last);
   if (!(external.partitionId || external.fieldTokens || external.quickSearch)) {
     return null;

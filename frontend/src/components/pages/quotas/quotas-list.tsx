@@ -170,7 +170,7 @@ const columns: DataTableColumnDef<QuotaRow>[] = [
   },
 ];
 
-const toQuotaRow = (quota: ListQuotasResponse_QuotaEntry): QuotaRow => {
+const toQuotaRow: (quota: ListQuotasResponse_QuotaEntry) => QuotaRow = (quota) => {
   const entityType = quota.entity?.entityType ?? Quota_EntityType.UNSPECIFIED;
   const entityName = quota.entity?.entityName;
 

@@ -19,7 +19,7 @@ import { ConnectorLogo } from '../onboarding/connector-logo';
 
 type SetupTier = { label: string; Icon: LucideIcon };
 
-const setupTierFor = (minutes: number): SetupTier => {
+const setupTierFor: (minutes: number) => SetupTier = (minutes) => {
   if (minutes <= 5) {
     return { label: 'Quick', Icon: SignalLow };
   }

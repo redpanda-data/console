@@ -70,7 +70,9 @@ type ConnectView = (typeof ConnectView)[keyof typeof ConnectView];
  * this logic determines which tab should be opened based on the `defaultTab`
  * query parameter in the URL.
  */
-const getDefaultView = (defaultView: string): { initialTab: ConnectView; redpandaConnectTab: ConnectView } => {
+const getDefaultView: (defaultView: string) => { initialTab: ConnectView; redpandaConnectTab: ConnectView } = (
+  defaultView
+) => {
   const showKafkaTab = { initialTab: ConnectView.KafkaConnect, redpandaConnectTab: ConnectView.RedpandaConnect };
   const showRedpandaConnectTab = {
     initialTab: ConnectView.RedpandaConnect,

@@ -79,7 +79,11 @@ const listSlotItemId = (item: unknown, slotMap: Map<string, TemplateSlot>) => {
 };
 
 /** One item per comma-separated entry of a list slot's value; none when the slot resolves to a drop. */
-const listSlotEntries = (slot: TemplateSlot | undefined, raw: string, pipelineName: string): Scalar[] => {
+const listSlotEntries: (slot: TemplateSlot | undefined, raw: string, pipelineName: string) => Scalar[] = (
+  slot,
+  raw,
+  pipelineName
+) => {
   const resolved = resolveSlotToken(slot, raw, pipelineName);
   // No explicit style: the serializer quotes any entry that would parse as a non-string.
   return resolved === null ? [] : splitListValue(resolved).map((entry) => new Scalar(entry));

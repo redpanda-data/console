@@ -322,7 +322,7 @@ describe('getClientEffects', () => {
 
   describe('while new read settings reach the brokers, each broker reads by the settings it has', () => {
     const settingsChange = (earlier: Partial<typeof settings>, now: Partial<typeof settings>) => {
-      const fenced = (nodeId: number, readPolicy: typeof settings): BrokerProgress => ({
+      const fenced: (nodeId: number, readPolicy: typeof settings) => BrokerProgress = (nodeId, readPolicy) => ({
         nodeId,
         status: nodeId === 1 ? 'confirmed' : 'behind',
         copy: { phase: nodeId === 1 ? 'fencing' : 'fenced', revision: nodeId === 1 ? 19n : 18n, readPolicy },

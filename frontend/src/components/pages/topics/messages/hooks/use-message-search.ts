@@ -133,7 +133,7 @@ type SearchSession = {
   trackNew: boolean;
 };
 
-const createSearchSession = (): SearchSession => ({
+const createSearchSession: () => SearchSession = () => ({
   buffer: [],
   pendingNewKeys: new Set(),
   flushTimer: null,
@@ -251,12 +251,12 @@ const resetRunState = (session: SearchSession, setters: SearchSetters, append: b
 };
 
 /** Aborts any in-flight stream, claims the session for a new run and resets the visible state. */
-const beginRun = (
+const beginRun: (
   session: SearchSession,
   setters: SearchSetters,
   params: MessageSearchParams,
   options: RunOptions
-): StreamRun => {
+) => StreamRun = (session, setters, params, options) => {
   abortSession(session, 'stopped by user');
   const abortController = new AbortController();
   session.abortController = abortController;

@@ -25,7 +25,7 @@ const link = { name: 'orders-dr' } as UnifiedShadowLink;
 
 const sasl: LinkIdentity = { authentication: 'sasl', principal: 'shadow-orders' };
 
-const topics = (lags: number[]): FailoverTopic[] =>
+const topics: (lags: number[]) => FailoverTopic[] = (lags) =>
   lags.map((lag, index) => ({
     topicName: index === 0 ? 'orders-events' : `orders-${index}`,
     state: ShadowTopicState.ACTIVE,

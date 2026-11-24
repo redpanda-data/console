@@ -17,7 +17,7 @@ import type { EditTarget } from '../utils/yaml';
 const ZWSP = '\u200B';
 const TARGET = { kind: 'component', section: 'input', path: ['input'] } as unknown as EditTarget;
 
-const node = (overrides: Partial<PipelineFlowNode>): PipelineFlowNode => ({
+const node: (overrides: Partial<PipelineFlowNode>) => PipelineFlowNode = (overrides) => ({
   id: 'n',
   kind: 'leaf',
   label: 'node',

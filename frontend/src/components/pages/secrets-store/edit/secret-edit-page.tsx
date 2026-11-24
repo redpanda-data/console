@@ -42,7 +42,7 @@ import { labelsToMap, SCOPE_OPTIONS } from '../secret-form-shared';
 const routeApi = getRouteApi('/secrets/$id/edit');
 
 /** The console-managed `owner: console` label is hidden from the form. */
-const toFormValues = (secret: Secret): SecretUpdateFormValues => ({
+const toFormValues: (secret: Secret) => SecretUpdateFormValues = (secret) => ({
   id: secret.id,
   value: '',
   scopes: secret.scopes,

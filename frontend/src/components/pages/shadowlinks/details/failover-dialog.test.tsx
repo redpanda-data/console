@@ -18,7 +18,7 @@ import type { ComponentProps } from 'react';
 import { FailoverDialog } from './failover-dialog';
 import { type CloudSource, getFailoverReadiness, getSourceFenceStep } from './failover-model';
 
-const source = (state: 'fenced' | 'unfenced', allowAllReads: boolean): CloudSource => ({
+const source: (state: 'fenced' | 'unfenced', allowAllReads: boolean) => CloudSource = (state, allowAllReads) => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',

@@ -37,7 +37,7 @@ export type PipelineRow = {
   end: PipelineEndStatus;
 };
 
-export const toPipelineRow = (apiPipeline: APIPipeline): PipelineRow => {
+export const toPipelineRow: (apiPipeline: APIPipeline) => PipelineRow = (apiPipeline) => {
   const { inputs, outputs, end } = parseConfigComponentsCached(apiPipeline.configYaml);
   const tags = getUserTagEntries(apiPipeline.tags);
   const draft = isDraft(apiPipeline);

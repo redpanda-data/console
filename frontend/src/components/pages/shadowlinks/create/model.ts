@@ -404,7 +404,7 @@ const addSrDurationIssues = (value: string, path: (string | number)[], ctx: z.Re
 // connects over the wrong transport with no feedback: an http:// endpoint
 // can't be reached over TLS, and an https:// endpoint won't be reached
 // without it.
-const srTlsSchemeMismatch = (protocol: string, useTls: boolean): string | null => {
+const srTlsSchemeMismatch: (protocol: string, useTls: boolean) => string | null = (protocol, useTls) => {
   if (useTls && protocol === 'http:') {
     return 'Use an https:// URL when TLS is enabled, or turn off Enable TLS';
   }
@@ -414,7 +414,7 @@ const srTlsSchemeMismatch = (protocol: string, useTls: boolean): string | null =
   return null;
 };
 
-const srSourceUrlIssue = (sourceUrl: string, useTls: boolean): string | null => {
+const srSourceUrlIssue: (sourceUrl: string, useTls: boolean) => string | null = (sourceUrl, useTls) => {
   const trimmed = sourceUrl.trim();
   if (!trimmed) {
     return 'Source URL is required';

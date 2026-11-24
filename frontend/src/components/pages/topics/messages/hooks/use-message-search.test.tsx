@@ -43,7 +43,7 @@ rs.mock('../../../../../config', () => ({
   },
 }));
 
-const dataFrame = (partitionID: number, offset: number): Frame => ({
+const dataFrame: (partitionID: number, offset: number) => Frame = (partitionID, offset) => ({
   case: 'data',
   value: { partitionID, offset },
 });

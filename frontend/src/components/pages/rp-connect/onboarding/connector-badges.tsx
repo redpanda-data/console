@@ -7,7 +7,7 @@ export type ConnectorProps = {
   text: string;
 };
 
-export const getConnectorTypeProps = (type: ConnectComponentType): ConnectorProps => {
+export const getConnectorTypeProps: (type: ConnectComponentType) => ConnectorProps = (type) => {
   switch (type) {
     case 'input':
       return {

@@ -85,7 +85,7 @@ const isMissingRoute = (error: ConnectError) => error.code === Code.Unimplemente
  * so the query retries and keeps the last fence it read. Only the code counts, never the message:
  * Redpanda's wording varies.
  */
-const settledReading = (error: unknown): ShadowLinkPeerFence => {
+const settledReading: (error: unknown) => ShadowLinkPeerFence = (error) => {
   if (error instanceof PeerFenceReadError) {
     throw error;
   }
@@ -111,7 +111,7 @@ const settledReading = (error: unknown): ShadowLinkPeerFence => {
   }
 };
 
-const toKnownFence = (response: GetClusterFenceStatusResponse): ShadowLinkPeerFence => {
+const toKnownFence: (response: GetClusterFenceStatusResponse) => ShadowLinkPeerFence = (response) => {
   const summary = summarizeFence(response.fence);
   if (!summary) {
     throw new PeerFenceReadError('The cluster answered without a fence this Console can read', { reason: 'error' });
@@ -152,7 +152,7 @@ export const readPeerClusterFence = async (
 const failureOf = (error: unknown) => (error instanceof PeerFenceReadError ? error.reason : 'error');
 
 /** What a failed read with nothing to show reads as, so the page says why instead of loading. */
-export const unreadablePeerFence = (error: unknown): ShadowLinkPeerFence => ({
+export const unreadablePeerFence: (error: unknown) => ShadowLinkPeerFence = (error) => ({
   status: 'unavailable',
   reason: failureOf(error) === 'no-leader' ? 'no-leader' : 'error',
 });
@@ -170,7 +170,7 @@ type PeerFenceQueryState = {
  * refresh still shows the last fence, slow after a failure with nothing to show or while the feature
  * isn't on yet, and not at all once the API is known to be missing or the viewer can't read it.
  */
-export const peerFenceRefetchInterval = (query: PeerFenceQueryState): number | false => {
+export const peerFenceRefetchInterval: (query: PeerFenceQueryState) => number | false = (query) => {
   if (query.state.status === 'error') {
     if (failureOf(query.state.error) === 'no-leader') {
       return NO_LEADER_POLL_MS;

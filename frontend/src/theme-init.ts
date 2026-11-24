@@ -54,7 +54,7 @@ export const isDarkModeAvailable = () => {
   return availableThisLoad;
 };
 
-export const themeInitFor = (available: boolean): ThemeInit =>
+export const themeInitFor: (available: boolean) => ThemeInit = (available) =>
   available ? AVAILABLE_THEME_INIT : UNAVAILABLE_THEME_INIT;
 
 /**

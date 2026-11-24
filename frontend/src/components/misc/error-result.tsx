@@ -35,7 +35,7 @@ const HTTP_BAD_REQUEST = 400;
 const HTTP_INTERNAL_ERROR = 500;
 const HTTP_SERVICE_UNAVAILABLE = 503;
 
-const getStatusCode = (code: Code): number => {
+const getStatusCode: (code: Code) => number = (code) => {
   switch (code) {
     case Code.Unauthenticated:
       return HTTP_UNAUTHORIZED;

@@ -70,7 +70,9 @@ export type BrokerProgress = {
   errorMessage?: string;
 };
 
-export const getBrokerProgress = (response: GetClusterFenceStatusResponse | undefined): BrokerProgress[] => {
+export const getBrokerProgress: (response: GetClusterFenceStatusResponse | undefined) => BrokerProgress[] = (
+  response
+) => {
   const fence = response?.fence;
   return (response?.brokers ?? []).map((broker): BrokerProgress => {
     if (!broker.fence) {
@@ -113,7 +115,7 @@ export const UNFENCED_SUMMARY: FenceSummary = {
 };
 
 /** Undefined when the response has no fence, or a state Console doesn't know. */
-export const summarizeFence = (fence: ClusterFence | undefined): FenceSummary | undefined => {
+export const summarizeFence: (fence: ClusterFence | undefined) => FenceSummary | undefined = (fence) => {
   const phase = toFencePhase(fence?.state);
   if (!(fence && phase)) {
     return;
@@ -294,7 +296,7 @@ const EMPTY_EXEMPT_WARNING =
 
 export const SUPERUSERS_NOT_EXEMPT = 'Superusers aren’t exempt unless they’re on the list.';
 
-const userPrefixWarning = (principal: string): ReadPolicyWarning => {
+const userPrefixWarning: (principal: string) => ReadPolicyWarning = (principal) => {
   const bare = toExemptName(principal);
   return {
     id: `prefix-${principal}`,
@@ -455,11 +457,11 @@ const clusterReadVerdict = (summary: Pick<FenceSummary, 'phase'> & ReadPolicy, c
  * settings haven't reached keeps the old exempt list and Allow all reads until they do. Unknown when
  * a blocking broker can't tell, as for an mTLS link.
  */
-const readVerdict = (
+const readVerdict: (
   summary: Pick<FenceSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads'>,
   brokers: readonly BrokerProgress[],
   canRead: ReadCheck
-): Verdict => {
+) => Verdict = (summary, brokers, canRead) => {
   if (brokers.length === 0) {
     return clusterReadVerdict(summary, canRead);
   }
@@ -478,7 +480,10 @@ const readVerdict = (
 };
 
 /** Each broker ends the open transactions it coordinates as soon as the fence reaches it. */
-const transactionVerdict = (summary: Pick<FenceSummary, 'phase'>, brokers: readonly BrokerProgress[]): Verdict => {
+const transactionVerdict: (summary: Pick<FenceSummary, 'phase'>, brokers: readonly BrokerProgress[]) => Verdict = (
+  summary,
+  brokers
+) => {
   const verdict = splitVerdict(summary, brokers, { allowed: 'Open', rejected: 'Ended' });
   if (verdict.verdict === 'rejected') {
     return {

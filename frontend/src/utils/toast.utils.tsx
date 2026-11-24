@@ -172,7 +172,7 @@ const TRAILING_PERIOD = /\.$/u;
  * the cluster is known to be fenced, and the error is one a fence produces, is the fence named as the
  * likely cause, after the broker's own message.
  */
-const clusterFenceHint = (error: ConnectError): string | undefined => {
+const clusterFenceHint: (error: ConnectError) => string | undefined = (error) => {
   const { phase } = useClusterFenceStore.getState();
   if (!(phase && hasFenceActivity(phase))) {
     return;

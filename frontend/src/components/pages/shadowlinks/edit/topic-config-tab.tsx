@@ -38,7 +38,9 @@ import { CollapsibleSectionCard } from '../create/collapsible-section-card';
 import type { FormValues } from '../create/model';
 
 /** Tone + emphasis for a status badge. `optional` carries no tone, so it stays a plain outline. */
-const getBadgeStyle = (status: ShadowingStatus): { tone?: BadgeTone; variant: BadgeEmphasis | BadgeVariant } => {
+const getBadgeStyle: (status: ShadowingStatus) => { tone?: BadgeTone; variant: BadgeEmphasis | BadgeVariant } = (
+  status
+) => {
   switch (status) {
     case 'always':
       return { tone: 'success', variant: 'subtle' };
@@ -54,7 +56,7 @@ const getBadgeStyle = (status: ShadowingStatus): { tone?: BadgeTone; variant: Ba
 /**
  * Format status label for display
  */
-const formatStatusLabel = (status: ShadowingStatus): string => {
+const formatStatusLabel: (status: ShadowingStatus) => string = (status) => {
   switch (status) {
     case 'always':
       return 'Always';
@@ -72,7 +74,7 @@ const formatStatusLabel = (status: ShadowingStatus): string => {
 /**
  * Get tooltip message for disabled properties
  */
-const getTooltipMessage = (property: { status: ShadowingStatus[] }): string | null => {
+const getTooltipMessage: (property: { status: ShadowingStatus[] }) => string | null = (property) => {
   if (property.status.includes('always')) {
     return 'Required property - always replicated to shadow cluster';
   }

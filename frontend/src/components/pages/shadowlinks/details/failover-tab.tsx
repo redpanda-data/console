@@ -371,7 +371,7 @@ const LAG_BADGE: Partial<Record<LagStep['status'], BadgeSpec>> = {
   blocked: { label: 'Link can’t read', variant: 'warning' },
 };
 
-const lagBadge = (lag: LagStep, failedOver: boolean): BadgeSpec | undefined => {
+const lagBadge: (lag: LagStep, failedOver: boolean) => BadgeSpec | undefined = (lag, failedOver) => {
   if (failedOver) {
     return;
   }

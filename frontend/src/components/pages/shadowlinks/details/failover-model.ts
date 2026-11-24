@@ -92,7 +92,7 @@ const FAILING_OVER_STATES = new Set([ShadowTopicState.FAILING_OVER, ShadowTopicS
  * How the link authenticates to its source: its SASL user, or a client certificate (whose principal
  * the source's mapping rules decide), or neither.
  */
-export const getLinkIdentity = (link: UnifiedShadowLink | undefined): LinkIdentity => {
+export const getLinkIdentity: (link: UnifiedShadowLink | undefined) => LinkIdentity = (link) => {
   const clientOptions = link?.configurations?.clientOptions;
   const username = clientOptions?.authenticationConfiguration?.authentication?.value.username;
   if (username) {
@@ -107,11 +107,11 @@ export const getLinkIdentity = (link: UnifiedShadowLink | undefined): LinkIdenti
   return link ? { authentication: 'none' } : {};
 };
 
-const cloudSourceStep = (
+const cloudSourceStep: (
   source: CloudSource,
   link: LinkIdentity,
   lastKnown: CloudSource | undefined
-): SourceFenceStep | undefined => {
+) => SourceFenceStep | undefined = (source, link, lastKnown) => {
   if (source.fence.status === 'loading') {
     return { kind: 'loading', source };
   }
@@ -164,7 +164,7 @@ export const isSourceFenceReady = (step: SourceFenceStep) =>
 /** `blocked` when the fence is in place but stops this link reading, so its lag can't drain. */
 type FenceProgress = 'waiting' | 'ready' | 'blocked';
 
-export const getFenceProgress = (step: SourceFenceStep): FenceProgress => {
+export const getFenceProgress: (step: SourceFenceStep) => FenceProgress = (step) => {
   if (isSourceFenceReady(step)) {
     return 'ready';
   }
@@ -178,7 +178,11 @@ const byLagDescending = (a: { lag: bigint }, b: { lag: bigint }) => {
   return a.lag > b.lag ? -1 : 1;
 };
 
-const lagStatus = (behind: number, faulted: number, fence: FenceProgress): LagStep['status'] => {
+const lagStatus: (behind: number, faulted: number, fence: FenceProgress) => LagStep['status'] = (
+  behind,
+  faulted,
+  fence
+) => {
   if (fence === 'waiting') {
     return 'waiting-for-fence';
   }
@@ -231,7 +235,7 @@ export const topicsSubject = (names: readonly string[], one: string, many: strin
 export const pausedTopicsReason = (paused: readonly string[]) =>
   `${topicsSubject(paused, 'is', 'are')} paused, and Fail over all topics is refused while any topic is paused. Resume ${paused.length === 1 ? 'it' : 'them'} first.`;
 
-const sourceFenceReason = (fence: SourceFenceStep): string | undefined => {
+const sourceFenceReason: (fence: SourceFenceStep) => string | undefined = (fence) => {
   if (fence.kind === 'unreadable') {
     return 'Not ready until Console can read the source’s fence again.';
   }
@@ -307,7 +311,7 @@ type FailoverStepId = 'settings' | 'fence' | 'fenced' | 'lag' | 'failover' | 'cl
 type SourceStepStates = Pick<Record<FailoverStepId, StepState>, 'settings' | 'fence' | 'fenced'>;
 
 /** The three steps on the source, as its fence reports them. */
-const getSourceStepStates = (fence: SourceFenceStep): SourceStepStates => {
+const getSourceStepStates: (fence: SourceFenceStep) => SourceStepStates = (fence) => {
   if (fence.kind !== 'cloud') {
     return { settings: 'current', fence: 'pending', fenced: 'pending' };
   }

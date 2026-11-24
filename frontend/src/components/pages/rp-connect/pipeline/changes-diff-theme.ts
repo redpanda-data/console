@@ -80,7 +80,7 @@ const resolveDiffBase = () => {
 
 export const DIFF_THEME = 'rpcn-changes-diff';
 
-export const diffTheme = (editor: EditorTheme, base: DiffBase): EditorTheme => {
+export const diffTheme: (editor: EditorTheme, base: DiffBase) => EditorTheme = (editor, base) => {
   const colors = diffColors(base);
   return {
     ...editor,

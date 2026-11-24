@@ -40,7 +40,7 @@ type PreflightInput = {
 };
 
 /** Only says something when Fence might fail: a pass would only restate that this isn't a shadow cluster. */
-const ownLinksCheck = (links: PreflightInput['linksThatStopFence']): PreflightCheck | undefined => {
+const ownLinksCheck: (links: PreflightInput['linksThatStopFence']) => PreflightCheck | undefined = (links) => {
   if (links === 'loading') {
     return { id: 'own-links', status: 'pending', message: 'Checking whether this cluster is a shadow cluster…' };
   }
@@ -56,7 +56,7 @@ const ownLinksCheck = (links: PreflightInput['linksThatStopFence']): PreflightCh
   }
 };
 
-const brokersCheck = (brokers: BrokerProgress[]): PreflightCheck | undefined => {
+const brokersCheck: (brokers: BrokerProgress[]) => PreflightCheck | undefined = (brokers) => {
   const down = brokers.filter((broker) => broker.status === 'not-answering').map((broker) => broker.nodeId);
   if (down.length === 0) {
     return;
@@ -106,7 +106,10 @@ const noReadersCheck = ({ resolving, incomplete }: { resolving: boolean; incompl
   };
 };
 
-const readerProblems = (reader: ShadowLinkReader, canRead: boolean | undefined): PreflightCheck[] => {
+const readerProblems: (reader: ShadowLinkReader, canRead: boolean | undefined) => PreflightCheck[] = (
+  reader,
+  canRead
+) => {
   if (canRead === false) {
     return [{ id: `reader-${reader.linkName}`, status: 'warn', message: blockedReaderMessage(reader) }];
   }

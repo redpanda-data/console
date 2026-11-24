@@ -52,7 +52,7 @@ const components = [
 const slot = (overrides: Partial<TemplateSlot> & Pick<TemplateSlot, 'id' | 'kind' | 'section' | 'label'>) =>
   ({ ...overrides }) as TemplateSlot;
 
-const buildTemplate = (slots: TemplateSlot[]): PipelineTemplate => ({
+const buildTemplate: (slots: TemplateSlot[]) => PipelineTemplate = (slots) => ({
   id: 'postgres-cdc-to-redpanda',
   name: 'Postgres CDC to Redpanda',
   description: 'A test template',

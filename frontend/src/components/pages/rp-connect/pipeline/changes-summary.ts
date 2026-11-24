@@ -41,7 +41,11 @@ function componentNodesById(yaml: string) {
   return byId;
 }
 
-const describeChange = (id: string, node: PipelineFlowNode | undefined, kind: ChangeKind): ComponentChange => ({
+const describeChange: (id: string, node: PipelineFlowNode | undefined, kind: ChangeKind) => ComponentChange = (
+  id,
+  node,
+  kind
+) => ({
   id,
   kind,
   section: sectionLabel(node?.section),

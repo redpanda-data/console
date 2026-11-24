@@ -65,7 +65,7 @@ type ExecAsync = (command: string) => Promise<{ stdout: string }>;
 
 const DESTINATION_SASL_FLAGS = '--user e2euser --password very-secret --sasl-mechanism SCRAM-SHA-256';
 
-const createExecAsync = async (): Promise<ExecAsync> => {
+const createExecAsync: () => Promise<ExecAsync> = async () => {
   const { exec } = await import('node:child_process');
   const { promisify } = await import('node:util');
   return promisify(exec);

@@ -116,7 +116,7 @@ const hostOf = (endpoint: string) => {
 
 type Endpoints = { exact: ReadonlySet<string>; hosts: ReadonlySet<string> };
 
-const endpointsOf = (bootstrapServers: readonly string[]): Endpoints => ({
+const endpointsOf: (bootstrapServers: readonly string[]) => Endpoints = (bootstrapServers) => ({
   exact: new Set(bootstrapServers.map(normalizeEndpoint)),
   hosts: new Set(bootstrapServers.map(hostOf)),
 });
@@ -201,34 +201,31 @@ type LinkResolution = { kind: 'source'; source: ShadowLinkSource } | { kind: 'pe
 
 const LOADING_FENCE: ShadowLinkPeerFence = { status: 'loading' };
 
-const resolveOwnLink = (
-  details: Loaded<ShadowLink>,
-  candidates: SourceCandidates,
-  clusterId: string
-): LinkResolution => {
-  if (details.status !== 'ready') {
-    return details.status === 'failed' ? { kind: 'unresolved' } : { kind: 'pending' };
-  }
-  const bootstrapServers = details.value.clientOptions?.bootstrapServers ?? [];
-  const cluster = findSourceCluster(
-    bootstrapServers,
-    candidates.clusters,
-    clusterId,
-    candidates.complete && !candidates.failed
-  );
-  if (cluster) {
-    return {
-      kind: 'source',
-      source: { kind: 'cloud', clusterId: cluster.id, clusterName: cluster.name, fence: LOADING_FENCE },
-    };
-  }
-  if (candidates.complete && !candidates.failed) {
-    return hasPotentialCloudSource(bootstrapServers, candidates, clusterId)
-      ? { kind: 'unresolved' }
-      : { kind: 'source', source: { kind: 'external', bootstrapServers } };
-  }
-  return candidates.failed ? { kind: 'unresolved' } : { kind: 'pending' };
-};
+const resolveOwnLink: (details: Loaded<ShadowLink>, candidates: SourceCandidates, clusterId: string) => LinkResolution =
+  (details, candidates, clusterId) => {
+    if (details.status !== 'ready') {
+      return details.status === 'failed' ? { kind: 'unresolved' } : { kind: 'pending' };
+    }
+    const bootstrapServers = details.value.clientOptions?.bootstrapServers ?? [];
+    const cluster = findSourceCluster(
+      bootstrapServers,
+      candidates.clusters,
+      clusterId,
+      candidates.complete && !candidates.failed
+    );
+    if (cluster) {
+      return {
+        kind: 'source',
+        source: { kind: 'cloud', clusterId: cluster.id, clusterName: cluster.name, fence: LOADING_FENCE },
+      };
+    }
+    if (candidates.complete && !candidates.failed) {
+      return hasPotentialCloudSource(bootstrapServers, candidates, clusterId)
+        ? { kind: 'unresolved' }
+        : { kind: 'source', source: { kind: 'external', bootstrapServers } };
+    }
+    return candidates.failed ? { kind: 'unresolved' } : { kind: 'pending' };
+  };
 
 const readerOf = (link: ShadowLinkListItem, details: ShadowLink, clusterNames: ReadonlyMap<string, string>) => {
   const { authentication = 'none', principal } = getLinkIdentity(fromControlplaneShadowLink(details));
@@ -381,10 +378,10 @@ export const sourceClusterIds = (topology: ShadowLinkTopology) => [
 ];
 
 /** Fills in each Cloud source's fence; one with no reading yet stays loading. */
-export const withPeerFences = (
+export const withPeerFences: (
   topology: ShadowLinkTopology,
   fences: ReadonlyMap<string, ShadowLinkPeerFence>
-): ShadowLinkTopology => ({
+) => ShadowLinkTopology = (topology, fences) => ({
   ...topology,
   sources: Object.fromEntries(
     Object.entries(topology.sources).map(([linkName, source]) => [

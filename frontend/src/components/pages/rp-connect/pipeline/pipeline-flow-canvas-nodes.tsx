@@ -799,7 +799,7 @@ type FlowGraphEdgeData = {
 
 type FlowPoint = { x: number; y: number };
 
-const lerpPoint = (a: FlowPoint, b: FlowPoint, f: number): FlowPoint => ({
+const lerpPoint: (a: FlowPoint, b: FlowPoint, f: number) => FlowPoint = (a, b, f) => ({
   x: a.x + (b.x - a.x) * f,
   y: a.y + (b.y - a.y) * f,
 });

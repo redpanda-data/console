@@ -152,11 +152,11 @@ export const useCreateServiceAccountMutation = (options?: {
   });
 };
 
-export const useUpdateServiceAccountMutation = (): UseMutationResult<
+export const useUpdateServiceAccountMutation: () => UseMutationResult<
   UpdateServiceAccountResponse,
   ConnectError,
   MessageInit<UpdateServiceAccountRequest>
-> => {
+> = () => {
   const queryClient = useQueryClient();
   const { invalidate } = useInvalidateServiceAccountsList();
 
@@ -185,11 +185,11 @@ export const useUpdateServiceAccountMutation = (): UseMutationResult<
   });
 };
 
-export const useRotateServiceAccountSecretMutation = (): UseMutationResult<
+export const useRotateServiceAccountSecretMutation: () => UseMutationResult<
   RotateServiceAccountSecretResponse,
   ConnectError,
   MessageInit<RotateServiceAccountSecretRequest>
-> => {
+> = () => {
   const queryClient = useQueryClient();
 
   return useMutation(rotateServiceAccountSecret, {

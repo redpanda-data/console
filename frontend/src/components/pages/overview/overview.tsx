@@ -318,7 +318,9 @@ const formatStatus = (overviewStatus?: ComponentStatus): React.ReactNode => {
   return status;
 };
 
-const kafkaConnectLines = (kafkaConnect: ClusterOverview['kafkaConnect']): DetailsProps['content'] => {
+const kafkaConnectLines: (kafkaConnect: ClusterOverview['kafkaConnect']) => DetailsProps['content'] = (
+  kafkaConnect
+) => {
   const clusters = kafkaConnect?.clusters ?? [];
   if (kafkaConnect === null || clusters.length === 0) {
     return [['Not configured']];

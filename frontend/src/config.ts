@@ -87,15 +87,15 @@ export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async 
  * Read lazily, since the host may refresh `config.jwt` in place; an existing `Authorization` header
  * from a legacy V1 authenticatedFetch is never overwritten.
  */
-export const createAuthInjectingFetch =
-  (baseFetch: WindowOrWorkerGlobalScope['fetch']): WindowOrWorkerGlobalScope['fetch'] =>
-  (input, init) => {
-    const headers = new Headers(init?.headers);
-    if (config.jwt && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${config.jwt}`);
-    }
-    return baseFetch(input, { ...init, headers });
-  };
+export const createAuthInjectingFetch: (
+  baseFetch: WindowOrWorkerGlobalScope['fetch']
+) => WindowOrWorkerGlobalScope['fetch'] = (baseFetch) => (input, init) => {
+  const headers = new Headers(init?.headers);
+  if (config.jwt && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${config.jwt}`);
+  }
+  return baseFetch(input, { ...init, headers });
+};
 
 /**
  * Interceptor to handle license expiration errors in gRPC responses.

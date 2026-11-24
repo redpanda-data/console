@@ -74,14 +74,14 @@ const sourceVerdict = ({ fence }: FailoverReadiness): Verdict => {
   };
 };
 
-const behindVerdict = (behind: LagStep['behind'], topicName: string | undefined): Verdict => ({
+const behindVerdict: (behind: LagStep['behind'], topicName: string | undefined) => Verdict = (behind, topicName) => ({
   status: 'not-ready',
   text: topicName
     ? `${topicName} is still behind, so its newest records won’t be on this cluster.`
     : `${behind.length} ${behind.length === 1 ? 'topic is' : 'topics are'} still behind, so their newest records won’t be on this cluster.`,
 });
 
-const faultedVerdict = (faulted: string[], topicName: string | undefined): Verdict => {
+const faultedVerdict: (faulted: string[], topicName: string | undefined) => Verdict = (faulted, topicName) => {
   const subject = topicName ? `${topicName} has` : topicsSubject(faulted, 'has', 'have');
   return {
     status: 'not-ready',
@@ -90,7 +90,7 @@ const faultedVerdict = (faulted: string[], topicName: string | undefined): Verdi
 };
 
 /** A topic still behind or faulted, among the one being failed over or all of them. */
-const lagProblemVerdict = (lag: LagStep, topicName: string | undefined): Verdict | undefined => {
+const lagProblemVerdict: (lag: LagStep, topicName: string | undefined) => Verdict | undefined = (lag, topicName) => {
   const behind = topicName ? lag.behind.filter((topic) => topic.topicName === topicName) : lag.behind;
   if (behind.length > 0) {
     return behindVerdict(behind, topicName);
@@ -101,7 +101,7 @@ const lagProblemVerdict = (lag: LagStep, topicName: string | undefined): Verdict
   }
 };
 
-const caughtUpVerdict = (lag: LagStep, topicName: string | undefined): Verdict => {
+const caughtUpVerdict: (lag: LagStep, topicName: string | undefined) => Verdict = (lag, topicName) => {
   if (lag.stale) {
     return {
       status: 'unknown',

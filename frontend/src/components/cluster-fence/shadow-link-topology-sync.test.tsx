@@ -19,7 +19,7 @@ import { ShadowLinkTopologySync } from './shadow-link-topology-sync';
 
 rs.mock('react-query/api/shadow-link-topology', () => ({ useShadowLinkTopology: rs.fn() }));
 
-const topology = (revision: bigint): ShadowLinkTopology => ({
+const topology: (revision: bigint) => ShadowLinkTopology = (revision) => ({
   clusterName: 'dr-us-west-2',
   readers: [],
   sources: {

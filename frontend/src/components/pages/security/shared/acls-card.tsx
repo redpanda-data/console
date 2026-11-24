@@ -100,7 +100,7 @@ type AclsCardProps = {
   isLoading?: boolean;
 };
 
-const toAclRows = (list: AclDetail[]): AclRow[] =>
+const toAclRows: (list: AclDetail[]) => AclRow[] = (list) =>
   list
     .flatMap((detail) =>
       detail.rules.flatMap((rule) =>

@@ -22,7 +22,7 @@ import { type FormValues, SCHEMA_REGISTRY_MODE, type SchemaRegistryMode } from '
  * Direct topic<->api switches are not supported; the link must go through
  * None (and a save) first. From None both modes are reachable.
  */
-const lockedModes = (originalMode: SchemaRegistryMode): SchemaRegistryMode[] => {
+const lockedModes: (originalMode: SchemaRegistryMode) => SchemaRegistryMode[] = (originalMode) => {
   if (originalMode === SCHEMA_REGISTRY_MODE.TOPIC) {
     return [SCHEMA_REGISTRY_MODE.API];
   }

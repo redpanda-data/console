@@ -24,7 +24,7 @@ export type QuotaSortField = 'entityType' | 'entityName' | 'producerRate' | 'con
 export type QuotaSortDirection = 'asc' | 'desc';
 
 /** Maps protobuf EntityType enum to its display string. */
-export const mapEntityTypeToDisplay = (entityType: Quota_EntityType): QuotaEntityDisplay => {
+export const mapEntityTypeToDisplay: (entityType: Quota_EntityType) => QuotaEntityDisplay = (entityType) => {
   switch (entityType) {
     case Quota_EntityType.CLIENT_ID:
     case Quota_EntityType.CLIENT_ID_PREFIX:
@@ -66,9 +66,10 @@ export const searchToSorting = (sortField?: QuotaSortField, sortDirection?: Quot
   sortField ? [{ id: sortField, desc: sortDirection === 'desc' }] : [];
 
 /** Derives the URL search params from TanStack's SortingState. */
-export const sortingToSearch = (
-  sorting: SortingState
-): { sortField: QuotaSortField | undefined; sortDirection: QuotaSortDirection | undefined } => {
+export const sortingToSearch: (sorting: SortingState) => {
+  sortField: QuotaSortField | undefined;
+  sortDirection: QuotaSortDirection | undefined;
+} = (sorting) => {
   const first = sorting.at(0);
   if (!first) {
     return { sortField: undefined, sortDirection: undefined };

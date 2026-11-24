@@ -721,7 +721,7 @@ const PartitionTable = ({
 };
 
 /** One row per committed partition offset, joined with the member the partition is assigned to. */
-const toPartitionRows = (group: GroupDescription): PartitionRow[] => {
+const toPartitionRows: (group: GroupDescription) => PartitionRow[] = (group) => {
   const allAssignments = group.members.flatMap((m) =>
     m.assignments.map((as) => ({ member: m, topicName: as.topicName, partitions: as.partitionIds ?? [] }))
   );

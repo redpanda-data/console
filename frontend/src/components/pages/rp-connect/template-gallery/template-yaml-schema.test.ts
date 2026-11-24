@@ -40,7 +40,7 @@ const snapshotRequired = (f: SnapshotField) => {
   return f.children.some(snapshotRequired);
 };
 
-const toRawFieldSpec = (f: SnapshotField): RawFieldSpec =>
+const toRawFieldSpec: (f: SnapshotField) => RawFieldSpec = (f) =>
   ({
     ...f,
     optional: f.is_optional,
@@ -53,7 +53,7 @@ const toRawFieldSpec = (f: SnapshotField): RawFieldSpec =>
 
 const FRAMEWORK_KEYS = new Set(['label', 'processors']);
 
-const sampleValues = (slotIds: string[]): Record<string, string> =>
+const sampleValues: (slotIds: string[]) => Record<string, string> = (slotIds) =>
   Object.fromEntries(slotIds.map((id) => [id, `value_${id}`]));
 
 type FieldNode = { children?: { name: string }[] };
@@ -194,7 +194,7 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     return field ? checkRequired(toRawFieldSpec(field as unknown as SnapshotField)) : false;
   };
 
-  const minimalValues = (template: PipelineTemplate): Record<string, string> =>
+  const minimalValues: (template: PipelineTemplate) => Record<string, string> = (template) =>
     Object.fromEntries(template.slots.map((s) => [s.id, isSlotRequired(template, s) ? `value_${s.id}` : '']));
 
   test.each(PIPELINE_TEMPLATES.map((t) => ({ id: t.id, template: t })))(

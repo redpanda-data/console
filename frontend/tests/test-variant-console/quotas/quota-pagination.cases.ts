@@ -15,7 +15,7 @@ const PAGE_1_REGEX = /page=1/u;
 /** Quotas of one test run: client IDs `<label>-<uuid>-001`, `-002`, and so on. */
 type QuotaBatch = { label: string; prefix: string };
 
-const quotaBatch = (label: string): QuotaBatch => ({ label, prefix: `${label}-${crypto.randomUUID()}` });
+const quotaBatch: (label: string) => QuotaBatch = (label) => ({ label, prefix: `${label}-${crypto.randomUUID()}` });
 
 /**
  * Creates `count` client ID quotas in order and resolves with their client IDs.

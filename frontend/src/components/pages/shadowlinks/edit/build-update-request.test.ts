@@ -711,7 +711,7 @@ describe('buildDataplaneUpdateRequest', () => {
 });
 
 describe('schema registry api mode through both builders', () => {
-  const apiFormValues = (): FormValues => ({
+  const apiFormValues: () => FormValues = () => ({
     ...baseFormValues,
     schemaRegistry: {
       ...initialValues.schemaRegistry,

@@ -23,11 +23,14 @@ import { RegisterModal } from './register-modal';
 import { type License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api, useApiStoreHook } from '../../state/backend-api';
 
-const getLicenseAlertContent = (
+const getLicenseAlertContent: (
   licenses: License[],
   onRegisterModalOpen: () => void
+) => { message: ReactElement; status: 'warning' | 'informative' } | null = (
+  licenses,
+  onRegisterModalOpen
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-): { message: ReactElement; status: 'warning' | 'informative' } | null => {
+) => {
   if (licenses.length === 0) {
     return null;
   }

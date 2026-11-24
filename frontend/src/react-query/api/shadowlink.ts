@@ -346,7 +346,7 @@ function unifyShadowLink(
   return unifiedData;
 }
 
-export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadowLinkResult => {
+export const useGetShadowLinkUnified: (params: { name: string }) => UnifiedShadowLinkResult = (params) => {
   const embedded = isEmbedded();
 
   // In embedded mode, use retry: 1 to fail fast and fallback to controlplane data sooner
@@ -439,9 +439,7 @@ function useShadowLinkUpdate({
  * Shadow-link editing for both console and controlplane modes, picking the API off embedded mode and
  * bundling the fetch, form values, update mutation and loading/error state.
  */
-export const useEditShadowLink = (
-  name: string
-): {
+export const useEditShadowLink: (name: string) => {
   formValues: FormValues | undefined;
   isLoading: boolean;
   error: ConnectError | null;
@@ -450,7 +448,7 @@ export const useEditShadowLink = (
   updateShadowLink: (values: FormValues) => Promise<unknown>;
   dataplaneUpdate: ReturnType<typeof useUpdateShadowLinkMutation>;
   controlplaneUpdate: ReturnType<typeof useControlplaneUpdateShadowLinkMutation>;
-} => {
+} = (name) => {
   const embedded = isEmbedded();
 
   const dataplaneQuery = useGetShadowLinkQuery({ name }, { retry: embedded ? 1 : undefined, enabled: !embedded });

@@ -28,7 +28,7 @@ type ResourceTypeInfo = {
   icon: ReactNode;
 };
 
-const getResourceTypeInfo = (type: ListResourcesResponse_Type): ResourceTypeInfo => {
+const getResourceTypeInfo: (type: ListResourcesResponse_Type) => ResourceTypeInfo = (type) => {
   switch (type) {
     case ListResourcesResponse_Type.PIPELINE:
       return {

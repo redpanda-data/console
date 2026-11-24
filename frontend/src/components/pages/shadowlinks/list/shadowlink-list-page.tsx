@@ -319,7 +319,7 @@ const opensOnFence = (
  * Open on the fence where it matters, unless this cluster has shadow links of its own; otherwise
  * Links on this cluster, with its Create shadow link prompt. Undefined until that's decided.
  */
-const useDefaultTab = (): ShadowLinksTab | undefined => {
+const useDefaultTab: () => ShadowLinksTab | undefined = () => {
   const fenceFirst = opensOnFence(
     useClusterFenceStatusQuery(),
     useClusterFenceStore((state) => state.topology)
@@ -334,7 +334,7 @@ const useDefaultTab = (): ShadowLinksTab | undefined => {
   return fenceFirst ? 'source' : 'links';
 };
 
-const useRequestedTab = (): ShadowLinksTab | undefined => {
+const useRequestedTab: () => ShadowLinksTab | undefined = () => {
   const searchTab = (useLocation().search as { tab?: unknown }).tab;
   return searchTab === 'links' || searchTab === 'source' ? searchTab : undefined;
 };

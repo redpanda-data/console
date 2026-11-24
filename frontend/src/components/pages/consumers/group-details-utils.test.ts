@@ -29,7 +29,7 @@ const member = (id: string, memberEpoch?: number): GroupMemberDescription => ({
   hasMissingAssignments: false,
 });
 
-const group = (overrides: Partial<GroupDescription>): GroupDescription => ({
+const group: (overrides: Partial<GroupDescription>) => GroupDescription = (overrides) => ({
   groupId: 'g',
   groupType: 'consumer',
   state: 'Stable',

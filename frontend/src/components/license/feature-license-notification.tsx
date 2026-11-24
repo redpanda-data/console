@@ -28,14 +28,20 @@ import { Alert, AlertDescription } from '../redpanda-ui/components/alert';
 const WARNING_THRESHOLD_DAYS = 5;
 
 // biome-ignore lint/nursery/useMaxParams: Refactoring to options object would require updating all call sites
-const getLicenseAlertContentForFeature = (
+const getLicenseAlertContentForFeature: (
   _featureName: 'rbac' | 'reassignPartitions',
   license: License | undefined,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
   bakedInTrial: boolean,
   onRegisterModalOpen: () => void
+) => { message: ReactElement; variant: 'destructive' | 'informative' } | null = (
+  _featureName,
+  license,
+  enterpriseFeaturesUsed,
+  bakedInTrial,
+  onRegisterModalOpen
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-): { message: ReactElement; variant: 'destructive' | 'informative' } | null => {
+) => {
   if (license === undefined) {
     return null;
   }

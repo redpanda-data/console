@@ -17,7 +17,7 @@ type CreateUserFormState = {
   selectedRoles: string[];
 };
 
-const getInitialFormState = (): CreateUserFormState => ({
+const getInitialFormState: () => CreateUserFormState = () => ({
   username: '',
   password: generatePassword(30, false),
   mechanism: 'SCRAM-SHA-256',

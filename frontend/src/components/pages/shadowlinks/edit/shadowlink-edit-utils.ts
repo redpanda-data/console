@@ -95,12 +95,12 @@ const arraysEqual = (a: string[], b: string[]) => {
  * Build TLS settings based on mTLS configuration
  * mTLS is determined by presence of certificates
  */
-export const buildTLSSettings = (
+export const buildTLSSettings: (
   values: FormValues
-):
+) =>
   | { case: 'tlsFileSettings'; value: ReturnType<typeof create<typeof TLSFileSettingsSchema>> }
   | { case: 'tlsPemSettings'; value: ReturnType<typeof create<typeof TLSPEMSettingsSchema>> }
-  | undefined => {
+  | undefined = (values) => {
   const hasCertificates =
     values.mtlsMode === TLS_MODE.FILE_PATH
       ? Boolean(values.mtls.ca?.filePath || values.mtls.clientCert?.filePath || values.mtls.clientKey?.filePath)
@@ -250,10 +250,10 @@ const getConnectionFieldMaskPaths = (values: FormValues, originalValues: FormVal
  * Get update values for connection category (source/client options)
  * Compares form values with original values and returns schema + field mask paths
  */
-export const getUpdateValuesForConnection = (
+export const getUpdateValuesForConnection: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof ShadowLinkClientOptionsSchema>>> => ({
+) => UpdateResult<ReturnType<typeof create<typeof ShadowLinkClientOptionsSchema>>> = (values, originalValues) => ({
   value: buildClientOptions(values),
   fieldMaskPaths: getConnectionFieldMaskPaths(values, originalValues),
 });
@@ -262,10 +262,10 @@ export const getUpdateValuesForConnection = (
  * Get update values for topics category
  * Compares form values with original values and returns schema + field mask paths
  */
-export const getUpdateValuesForTopics = (
+export const getUpdateValuesForTopics: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof TopicMetadataSyncOptionsSchema>>> => {
+) => UpdateResult<ReturnType<typeof create<typeof TopicMetadataSyncOptionsSchema>>> = (values, originalValues) => {
   const fieldMaskPaths: string[] = [];
 
   const topicFiltersChanged =
@@ -316,10 +316,10 @@ export const getUpdateValuesForTopics = (
  * Get update values for consumer groups category
  * Compares form values with original values and returns schema + field mask paths
  */
-export const getUpdateValuesForConsumerGroups = (
+export const getUpdateValuesForConsumerGroups: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof ConsumerOffsetSyncOptionsSchema>>> => {
+) => UpdateResult<ReturnType<typeof create<typeof ConsumerOffsetSyncOptionsSchema>>> = (values, originalValues) => {
   const fieldMaskPaths: string[] = [];
 
   const consumerFiltersChanged =
@@ -359,10 +359,10 @@ export const getUpdateValuesForConsumerGroups = (
  * Get update values for roles category
  * Compares form values with original values and returns schema + field mask paths
  */
-export const getUpdateValuesForRoles = (
+export const getUpdateValuesForRoles: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof RoleSyncOptionsSchema>>> => {
+) => UpdateResult<ReturnType<typeof create<typeof RoleSyncOptionsSchema>>> = (values, originalValues) => {
   const fieldMaskPaths: string[] = [];
 
   const roleFiltersChanged =
@@ -402,10 +402,10 @@ export const getUpdateValuesForRoles = (
  * Get update values for ACLs category
  * Compares form values with original values and returns schema + field mask paths
  */
-export const getUpdateValuesForACLs = (
+export const getUpdateValuesForACLs: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof SecuritySettingsSyncOptionsSchema>>> => {
+) => UpdateResult<ReturnType<typeof create<typeof SecuritySettingsSyncOptionsSchema>>> = (values, originalValues) => {
   const fieldMaskPaths: string[] = [];
 
   const currentACLFilters = values.aclFilters || [];
@@ -489,10 +489,10 @@ const srSyncOptionsChanged = (
  * values typed into a mode that isn't submitted never produce a mask. The
  * mask replaces the whole message, hence the single parent path.
  */
-export const getUpdateValuesForSchemaRegistry = (
+export const getUpdateValuesForSchemaRegistry: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<SchemaRegistrySyncOptions | undefined> => {
+) => UpdateResult<SchemaRegistrySyncOptions | undefined> = (values, originalValues) => {
   const value = buildSchemaRegistrySyncOptions(values);
   const original = buildSchemaRegistrySyncOptions(originalValues);
 

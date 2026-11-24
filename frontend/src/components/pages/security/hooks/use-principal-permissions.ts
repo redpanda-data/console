@@ -63,7 +63,10 @@ const ROLE_PRINCIPAL_PREFIX = 'RedpandaRole:';
 
 type RoleMembers = Map<string, RolePrincipal[]>;
 
-const toFlatAclEntry = (resource: ListACLsResponse_Resource, acl: ListACLsResponse_Policy): FlatAclEntry => ({
+const toFlatAclEntry: (resource: ListACLsResponse_Resource, acl: ListACLsResponse_Policy) => FlatAclEntry = (
+  resource,
+  acl
+) => ({
   resourceType: RESOURCE_TYPE_LABELS[resource.resourceType] ?? String(resource.resourceType),
   resourceName: resource.resourceName || '*',
   operation: getACLOperation(acl.operation),
@@ -93,11 +96,11 @@ const getRoleAcls = (aclsByPrincipal: Map<string, FlatAclEntry[]>) =>
   );
 
 /** The ACLs a principal inherits, one group per role it belongs to that grants any. */
-const getRoleAclGroups = (
+const getRoleAclGroups: (
   roleMembers: RoleMembers,
   roleAcls: Map<string, FlatAclEntry[]>,
   principal: RolePrincipal
-): RoleAclGroup[] =>
+) => RoleAclGroup[] = (roleMembers, roleAcls, principal) =>
   [...roleMembers]
     .filter(([, members]) =>
       members.some((m: RolePrincipal) => m.name === principal.name && m.principalType === principal.principalType)
@@ -105,11 +108,11 @@ const getRoleAclGroups = (
     .map(([roleName]) => ({ roleName, acls: roleAcls.get(roleName) ?? [] }))
     .filter((g) => g.acls.length > 0);
 
-const toPrincipalPermissionGroup = (
+const toPrincipalPermissionGroup: (
   p: PrincipalEntry,
   aclsByPrincipal: Map<string, FlatAclEntry[]>,
   roleAclGroups: RoleAclGroup[]
-): PrincipalPermissionGroup => {
+) => PrincipalPermissionGroup = (p, aclsByPrincipal, roleAclGroups) => {
   const principalKey = `${p.principalType}:${p.name}`;
   const directAcls = aclsByPrincipal.get(principalKey) ?? [];
   const allAcls = [...directAcls, ...roleAclGroups.flatMap((g) => g.acls)];

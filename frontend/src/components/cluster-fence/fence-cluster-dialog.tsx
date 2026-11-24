@@ -103,7 +103,10 @@ const ownLinksState = (query: ReturnType<typeof useListShadowLinksQuery>) => {
   return query.isError ? 'error' : 'loading';
 };
 
-const seedSettings = (summary: FenceSummary, suggestions: PrincipalSuggestion[]): ReadPolicy => ({
+const seedSettings: (summary: FenceSummary, suggestions: PrincipalSuggestion[]) => ReadPolicy = (
+  summary,
+  suggestions
+) => ({
   exemptPrincipals: Array.from(
     new Set([...summary.exemptPrincipals, ...suggestions.map(({ principal }) => principal)])
   ),

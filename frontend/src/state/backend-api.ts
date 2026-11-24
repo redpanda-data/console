@@ -1923,7 +1923,7 @@ async function fetchRolesPage(client: SecurityClient, pageToken: string, onError
 
 function listAllRoleNames(client: SecurityClient, onError: (error: ConnectError) => void): Promise<string[]> {
   const roles: string[] = [];
-  const nextPage = async (pageToken: string): Promise<string[]> => {
+  const nextPage: (pageToken: string) => Promise<string[]> = async (pageToken) => {
     const page = await fetchRolesPage(client, pageToken, onError);
     roles.push(...(page?.roles.map((x) => x.name) ?? []));
     return page?.nextPageToken ? nextPage(page.nextPageToken) : roles;
@@ -2254,7 +2254,7 @@ async function fetchTransformsPage(client: TransformsClient, pageToken: string) 
 
 function listAllTransforms(client: TransformsClient): Promise<TransformMetadata[]> {
   const transforms: TransformMetadata[] = [];
-  const nextPage = async (pageToken: string): Promise<TransformMetadata[]> => {
+  const nextPage: (pageToken: string) => Promise<TransformMetadata[]> = async (pageToken) => {
     const page = await fetchTransformsPage(client, pageToken);
     transforms.push(...(page?.transforms ?? []));
     return page?.nextPageToken ? nextPage(page.nextPageToken) : transforms;

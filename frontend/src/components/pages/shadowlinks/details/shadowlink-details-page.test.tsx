@@ -88,7 +88,7 @@ const FENCED_SOURCE: ShadowLinkSource = {
   fence: { status: 'known', state: 'fenced', revision: 3n, exemptPrincipals: [], allowAllReads: true, brokers: [] },
 };
 
-const unavailable = (reason: 'error' | 'unsupported' | 'no-leader'): ShadowLinkSource => ({
+const unavailable: (reason: 'error' | 'unsupported' | 'no-leader') => ShadowLinkSource = (reason) => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod',

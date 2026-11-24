@@ -67,7 +67,7 @@ const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
 const PIPELINE_NAME_FIELD = '__pipelineName';
 
 // non-blank entry (",," must not pass).
-const requiredSlotSchema = (slot: TemplateSlot, isList: boolean): z.ZodType<string> => {
+const requiredSlotSchema: (slot: TemplateSlot, isList: boolean) => z.ZodType<string> = (slot, isList) => {
   if (!slot.required) {
     return z.string();
   }
@@ -77,7 +77,7 @@ const requiredSlotSchema = (slot: TemplateSlot, isList: boolean): z.ZodType<stri
   return z.string().min(1, `${slot.label} is required`);
 };
 
-const slotSchema = (slot: TemplateSlot): z.ZodTypeAny => {
+const slotSchema: (slot: TemplateSlot) => z.ZodTypeAny = (slot) => {
   const isList = slot.kind === 'string' && Boolean(slot.list);
   const entryPattern = slot.kind === 'string' ? slot.entryPattern : undefined;
 

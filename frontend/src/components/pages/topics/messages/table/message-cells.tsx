@@ -54,7 +54,7 @@ export const SizeCell = ({ size }: { size: number }) => (
 type PayloadText = { text: string; muted: boolean; error?: boolean };
 
 /** Payloads with nothing to preview inline: a null record, or one too large to have been fetched. */
-const unavailablePayloadText = (payload: Payload): PayloadText | undefined => {
+const unavailablePayloadText: (payload: Payload) => PayloadText | undefined = (payload) => {
   if (payload.isPayloadNull) {
     return { text: 'null', muted: true };
   }
@@ -64,7 +64,11 @@ const unavailablePayloadText = (payload: Payload): PayloadText | undefined => {
 };
 
 /** The best decoded form: JSON, then the hex preview, then a deserialization-failure hint. */
-const decodedPayloadText = (payload: Payload, json: string, hexPreview: string): PayloadText => {
+const decodedPayloadText: (payload: Payload, json: string, hexPreview: string) => PayloadText = (
+  payload,
+  json,
+  hexPreview
+) => {
   if (json) {
     return { text: json, muted: false };
   }
@@ -77,7 +81,7 @@ const decodedPayloadText = (payload: Payload, json: string, hexPreview: string):
   return { text: '', muted: true };
 };
 
-const payloadText = (payload: Payload, json: string, hexPreview: string): PayloadText =>
+const payloadText: (payload: Payload, json: string, hexPreview: string) => PayloadText = (payload, json, hexPreview) =>
   unavailablePayloadText(payload) ?? decodedPayloadText(payload, json, hexPreview);
 
 /**

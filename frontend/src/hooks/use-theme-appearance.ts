@@ -40,7 +40,7 @@ const createPixelCanvas = () => {
  * misreads them badly — `color(srgb 0.9 0.9 0.9)` is near-white, not near-black. Rasterising hands
  * back sRGB bytes for every format. Null when there is no canvas, as in jsdom.
  */
-const toSrgb = (painted: string): Srgb | null => {
+const toSrgb: (painted: string) => Srgb | null = (painted) => {
   const canvas = createPixelCanvas();
   const context = canvas.getContext('2d', { willReadFrequently: true });
   if (!(context && painted)) {
@@ -62,7 +62,7 @@ const toLinear = (value: number) => {
  * Exported for tests — the DOM and canvas halves can't run in jsdom. An unreadable ground counts as
  * light: a light surface in a dark shell is untidy, the reverse can be unreadable.
  */
-export const classifyGround = (ground: Srgb | null): ThemeAppearance => {
+export const classifyGround: (ground: Srgb | null) => ThemeAppearance = (ground) => {
   if (!ground) {
     return 'light';
   }

@@ -46,7 +46,7 @@ const STEADY_POLL_MS = 15_000;
 const STALLED_TRANSITION_MS = 2 * 60 * 1000;
 const STALLED_POLL_MS = 10_000;
 
-const transitionPollMs = (data: GetClusterFenceStatusResponse | undefined): number => {
+const transitionPollMs: (data: GetClusterFenceStatusResponse | undefined) => number = (data) => {
   const changedAt = data?.fence?.stateChangedAt;
   const stalled = changedAt !== undefined && Date.now() - timestampDate(changedAt).getTime() > STALLED_TRANSITION_MS;
   return stalled ? STALLED_POLL_MS : TRANSITION_POLL_MS;

@@ -172,12 +172,12 @@ const combineCandidates = (results: UseQueryResult<GetClusterResponse>[]) => {
  * carry. Only read when needed: for this cluster's own links' sources, or to tell which of several
  * clusters on one host a link reads from.
  */
-const useSourceCandidates = (
+const useSourceCandidates: (
   transport: Transport,
   clusterId: string,
   clusters: AllPages<Cluster>,
   enabled: boolean
-): SourceCandidates => {
+) => SourceCandidates = (transport, clusterId, clusters, enabled) => {
   const ids = useMemo(
     () =>
       enabled
@@ -239,7 +239,11 @@ const usePeerFences = (sources: readonly Cluster[]) => {
 const hasClusterId = (clusterId: string | undefined): clusterId is string =>
   Boolean(clusterId) && clusterId !== 'default';
 
-const useSelfCluster = (transport: Transport, clusterId: string, enabled: boolean): Loaded<Cluster> => {
+const useSelfCluster: (transport: Transport, clusterId: string, enabled: boolean) => Loaded<Cluster> = (
+  transport,
+  clusterId,
+  enabled
+) => {
   const query = useQuery(getCluster, { id: clusterId }, { transport, enabled, staleTime: STALE_MS });
   return useMemo(() => loadedOf(query.data?.cluster, query.isError), [query.data, query.isError]);
 };

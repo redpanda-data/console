@@ -126,7 +126,7 @@ export const useSchemaCompatibilityQuery = () =>
     refetchOnMount: true,
   });
 
-const fetchSchemaDetails = async (subjectName: string): Promise<SchemaRegistrySubjectDetails> => {
+const fetchSchemaDetails: (subjectName: string) => Promise<SchemaRegistrySubjectDetails> = async (subjectName) => {
   const response = await fetch(
     `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/all`,
     {

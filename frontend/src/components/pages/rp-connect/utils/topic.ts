@@ -35,7 +35,7 @@ export const resetToDefaults = (form: UseFormReturn<AddTopicFormData>) => {
   form.setValue('retentionSizeUnit', TOPIC_FORM_DEFAULTS.retentionSizeUnit);
 };
 
-export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: RetentionTimeUnit } => {
+export const findBestRetentionTimeUnit: (ms: number) => { value: number; unit: RetentionTimeUnit } = (ms) => {
   const validUnits = Object.entries(timeFactors)
     .filter(([unit]) => unit !== 'default' && unit !== 'infinite')
     .map(([unit, factor]) => ({
@@ -64,7 +64,7 @@ export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: Re
   return { value, unit: best.unit };
 };
 
-export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit: RetentionSizeUnit } => {
+export const findBestRetentionSizeUnit: (bytes: number) => { value: number; unit: RetentionSizeUnit } = (bytes) => {
   const validUnits = Object.entries(sizeFactors)
     .filter(([unit]) => unit !== 'default' && unit !== 'infinite')
     .map(([unit, factor]) => ({
