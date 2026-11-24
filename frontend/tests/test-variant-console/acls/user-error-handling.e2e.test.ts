@@ -28,12 +28,10 @@ test.describe('user creation - Connect RPC error handling', () => {
     await page.getByTestId('create-user-name').fill(username);
     await page.getByTestId('create-user-submit').click();
 
-    // Structural: remain on create form (server error must NOT navigate to detail).
     await expect(page).toHaveURL(appURL('/security/users/create'));
 
     await expect(page.getByTestId('create-user-name')).toHaveValue(username);
 
-    // Success sentinel must not appear.
     await expect(page.getByTestId('user-created-successfully')).not.toBeVisible();
 
     await expect(page.getByText(CREATE_USER_FAILURE_TOAST_PREFIX).first()).toBeVisible({ timeout: 10_000 });

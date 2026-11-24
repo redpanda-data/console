@@ -48,7 +48,6 @@ const getCachedPrincipals = (queryClient: ReturnType<typeof connectQueryWrapper>
   return entries.flatMap(([, data]) => data?.pages.flatMap((p) => p.members.map((m) => m.principal)) ?? []);
 };
 
-/** A transport whose update call stays pending until `unblock` is called, so the cache can be inspected mid-flight. */
 const blockedUpdateTransport = () => {
   let unblock!: () => void;
   const blocked = new Promise<void>((res) => {
@@ -96,7 +95,6 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
       expect(getCachedPrincipals(queryClient)).toContain('User:bob');
     });
 
-    // Existing member must still be present
     expect(getCachedPrincipals(queryClient)).toContain('User:alice');
 
     unblock();
@@ -117,7 +115,6 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
       expect(getCachedPrincipals(queryClient)).not.toContain('User:alice');
     });
 
-    // bob must remain
     expect(getCachedPrincipals(queryClient)).toContain('User:bob');
 
     unblock();
@@ -145,7 +142,6 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
       create: false,
     });
 
-    // After mutation resolves, the optimistic data must still be present
     expect(getCachedPrincipals(queryClient)).toContain('User:bob');
     expect(getCachedPrincipals(queryClient)).toContain('User:alice');
   });
@@ -172,7 +168,6 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
       create: false,
     });
 
-    // alice must stay gone after the mutation resolves — not brought back by a refetch
     expect(getCachedPrincipals(queryClient)).not.toContain('User:alice');
     expect(getCachedPrincipals(queryClient)).toContain('User:bob');
   });
@@ -206,7 +201,6 @@ describe('useUpdateRoleMembershipMutation — optimistic updates', () => {
       })
       .catch(() => {});
 
-    // Cache must be rolled back — bob should not be present
     await waitFor(() => {
       expect(getCachedPrincipals(queryClient)).not.toContain('User:bob');
     });

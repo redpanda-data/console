@@ -94,7 +94,6 @@ async function openExpandedSheet(user: UserEvent) {
   await user.click(expandButton());
 }
 
-/** From the docked panel with focus on Expand: Enter re-expands it, then one of the sheet's buttons is clicked. */
 async function reExpandThenClick(user: UserEvent, name: string) {
   await user.keyboard('{Enter}');
   await user.click(screen.getByRole('button', { name, exact: true }));

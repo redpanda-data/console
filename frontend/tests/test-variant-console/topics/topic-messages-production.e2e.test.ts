@@ -111,7 +111,6 @@ test.describe('produce Messages', () => {
     await step('Load large message', async () => {
       await page.getByLabel('Expand row').first().click();
 
-      // Should show warning about performance
       await page
         .getByText(
           'Because this message size exceeds the display limit, loading it could cause performance degradation.'

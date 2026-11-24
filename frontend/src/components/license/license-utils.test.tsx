@@ -424,7 +424,6 @@ describe('licenseUtils', () => {
       });
 
       expect(screen.getByText(LICENSE_EXPIRE_MESSAGE_REGEX)).toBeInTheDocument();
-      // The Registry Alert carries its tone in the variant classes, not a data-status attribute.
       expect(screen.queryByTestId('license-alert')).toHaveClass('bg-informative-wash');
       expect(screen.getAllByRole('link').find((el) => el.textContent === 'Request a license')).toHaveAttribute(
         'href',

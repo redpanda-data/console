@@ -194,7 +194,6 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
           useTls: false,
           mtls: {
             ...initialValues.schemaRegistry.mtls,
-            // Hydrated material carries no fileName.
             ca: { pemContent: 'CA_PEM', fileName: '' },
             clientCert: { pemContent: 'CERT_PEM', fileName: '' },
             existingKeyConfigured: true,

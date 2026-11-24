@@ -43,7 +43,6 @@ const sidebarSelectionSelectors = () => {
     .filter(Boolean);
 };
 
-/** Console's shell: the provider wraps both the sidebar and every page. */
 const renderShell = () => {
   const wrapper = document.createElement('div');
   wrapper.dataset.slot = 'sidebar-wrapper';

@@ -103,7 +103,6 @@ describe('fromControlplaneShadowLink schema registry sync options', () => {
 
     expect(api.sourceUrl).toBe('https://sr.example.com');
     expect(api.basicAuth).toEqual({ username: 'sr-user', passwordSet: true, passwordSetAt });
-    // The password must never reach the unified model
     expect(api.basicAuth && 'password' in api.basicAuth).toBe(false);
     expect(api).toMatchObject({
       tlsSettings: { enabled: true, tlsSettings: { case: 'tlsPemSettings' } },
@@ -246,7 +245,6 @@ describe('buildDefaultFormValuesFromControlplane schema registry hydration', () 
     expect(formValues.schemaRegistry.contextMappings).toEqual([{ source: '.prod', destination: '.dr' }]);
     expect(formValues.schemaRegistry.syncBehavior.fullSyncInterval).toBe('5m');
     expect(formValues.schemaRegistry.paused).toBe(true);
-    // The hydrated form must be submittable without touching unrelated fields.
     expect(FormSchema.safeParse(formValues).success).toBe(true);
   });
 

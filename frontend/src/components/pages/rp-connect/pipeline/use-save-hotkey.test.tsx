@@ -71,7 +71,6 @@ describe('useSaveHotkey', () => {
     renderHook(() => useSaveHotkey({ enabled: true, isSaving: false, onSave }));
 
     pressSave();
-    // Holding the key fires repeats faster than isSaving can re-render — they must not re-save,
     const repeatEvent = pressSave({ repeat: true });
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(repeatEvent.defaultPrevented).toBe(true);

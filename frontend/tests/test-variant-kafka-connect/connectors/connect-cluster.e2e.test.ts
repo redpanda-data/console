@@ -83,7 +83,6 @@ test.describe('kafka Connect Wizard', () => {
     await page.goto(CREATE_URL);
     await expect(page.getByText('Heartbeat', { exact: true })).toBeVisible({ timeout: 15_000 });
     await page.getByRole('tab', { name: 'Export to' }).click();
-    // Heartbeat is a source (import) connector — must not appear under "Export to"
     await expect(page.getByText('Heartbeat', { exact: true })).not.toBeVisible();
   });
 

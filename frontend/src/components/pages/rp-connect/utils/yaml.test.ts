@@ -242,7 +242,6 @@ output:
       const longValue = 'x'.repeat(200);
       const yaml = configToYaml({ pipeline: { processors: [{ mapping: `root = "${longValue}"` }] } });
 
-      // lineWidth: 0 — the stringifier must not fold a >120-char scalar across lines.
       expect(yaml).toContain(longValue);
     });
   });
@@ -264,7 +263,6 @@ output:
       });
 
       const parsed = parseYaml(mergedYaml as string) as { input: { file: { scanner: Record<string, unknown> } } };
-      // The scanner config must stay wrapped in its name — `scanner: { avro: {…} }`, not the bare fields.
       expect(Object.keys(parsed.input.file.scanner)).toEqual(['avro']);
     });
 
@@ -1940,7 +1938,6 @@ output:
       });
 
       test('refuses to insert into a container that exists as a non-sequence (no clobbering)', () => {
-        // A `fallback` hand-authored as a map, not a list. Inserting must not overwrite it away.
         const malformed = `output:
   fallback:
     stdout: {}`;
@@ -2049,7 +2046,6 @@ rate_limit_resources:
     });
 
     describe('references held in named fields', () => {
-      // must follow a rename too — leaving them behind strands the pipeline at deploy time.
       const fieldRefYaml = `input:
   mongodb_cdc:
     url: mongodb://x
@@ -2073,7 +2069,6 @@ cache_resources:
         };
         expect(parsed.input.mongodb_cdc.checkpoint_cache).toBe('renamed');
         expect(parsed.pipeline.processors[0].dedupe.cache).toBe('renamed');
-        // An unrelated field with a matching value must NOT be rewritten.
         expect(parsed.input.mongodb_cdc.url).toBe('mongodb://x');
       });
 
@@ -2083,7 +2078,6 @@ cache_resources:
     });
 
     describe('section resources', () => {
-      // label must cascade to those references (kind-scoped by section) just like cache/rate_limit.
       const sectionResourceYaml = `input:
   resource: src
 pipeline:
@@ -2175,7 +2169,6 @@ output_resources:
     });
 
     test('keeps the component key for a field-less component (drop output)', () => {
-      // drop has no config fields; the generated object must still carry `drop: {}` — without it
       const step = buildInsertableComponent('drop', 'output', Object.values(mockComponents));
       expect(step?.drop).toEqual({});
     });

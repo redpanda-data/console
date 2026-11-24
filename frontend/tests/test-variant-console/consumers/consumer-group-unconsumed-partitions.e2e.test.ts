@@ -23,7 +23,6 @@ import { execRpk, getRedpandaContainerId } from '../../shared/rpk.utils';
 const TOPIC_NAME = `e2e-unconsumed-${crypto.randomUUID()}`;
 const GROUP_NAME = `e2e-unconsumed-group-${crypto.randomUUID()}`;
 
-/** Column indices (0-based td positions within a data row) */
 const COL = {
   PARTITION: 0,
   ASSIGNED_MEMBER: 1,
@@ -31,7 +30,6 @@ const COL = {
   LOG_END_OFFSET: 3,
   GROUP_OFFSET: 4,
   LAG: 5,
-  // index 6 is the actions cell
 } as const;
 
 /**
@@ -94,7 +92,6 @@ test.describe('consumer Group Details - Unconsumed Partitions', () => {
   });
 
   test.afterAll(async () => {
-    // Best-effort cleanup: remove remaining offsets, then delete topic
     await execRpk(`group offset-delete ${GROUP_NAME} -t ${TOPIC_NAME}:0`).catch(() => {});
     await execRpk(`topic delete ${TOPIC_NAME}`).catch(() => {});
   });
@@ -106,7 +103,6 @@ test.describe('consumer Group Details - Unconsumed Partitions', () => {
     });
 
     await step('Ensure the topic accordion is expanded', async () => {
-      // With a single topic the accordion auto-expands, but click if collapsed
       const accordionButton = page.getByRole('button', { name: new RegExp(TOPIC_NAME, 'u') });
       await expect(accordionButton).toBeVisible();
 

@@ -93,7 +93,6 @@ describe('the PipelineStructureTree', () => {
       expect(chevron).not.toBeNull();
       await userEvent.click(chevron as HTMLElement);
       expect(screen.queryByText('http')).not.toBeInTheDocument();
-      // Collapsing must not also select the node.
       expect(onSelectNode).not.toHaveBeenCalled();
     });
   });
@@ -189,7 +188,6 @@ describe('the PipelineStructureTree', () => {
       const { rerender } = render(<PipelineStructureTree configYaml={NESTED} />);
       expect(screen.getByText('switch')).toBeInTheDocument();
 
-      // A syntax error mid-edit: the lane must not blank out — it holds the outline and flags it.
       rerender(<PipelineStructureTree configYaml={'input: [unclosed'} />);
       expect(screen.getByText(HOLDING_NOTICE_RE)).toBeInTheDocument();
       expect(screen.getByText('switch')).toBeInTheDocument();

@@ -67,7 +67,6 @@ describe('diffTheme', () => {
   };
   const theme = diffTheme(editor, BASE);
 
-  // The ground decides light/dark, so the diff must not pin a base of its own.
   it('keeps the editor theme base, syntax rules, and chrome', () => {
     expect(theme.base).toBe(editor.base);
     expect(theme.inherit).toBe(editor.inherit);

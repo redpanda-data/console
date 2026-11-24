@@ -43,7 +43,6 @@ test.describe('user deletion - error paths', () => {
 
     await deleteUserFromDetails(page, username);
 
-    // Structural: must not navigate to list on failed delete.
     await expect(page).toHaveURL(appURL(`/security/users/${username}/details`));
 
     await expect(page.getByText('Failed to delete user: user has dependent ACLs').first()).toBeVisible({

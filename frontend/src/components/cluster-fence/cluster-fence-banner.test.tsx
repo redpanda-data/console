@@ -24,7 +24,6 @@ rs.mock('react-query/api/cluster-fence', () => {
   return { ...actual, useClusterFenceStatusQuery: rs.fn() };
 });
 
-// The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
 const routeLoaderTransport = createRouterTransport(({ rpc }) => {
   rpc(listShadowLinks, () => ({ shadowLinks: [] }));
 });

@@ -473,7 +473,6 @@ describe('the VisualEditorPanel', () => {
       await user.click(screen.getByRole('button', { name: 'save-flush' }));
       expect(yamlOnCanvas()).toContain('10m');
 
-      // Edit the (still-selected, re-keyed) node again; leaving it must commit this edit too.
       await retype(user, await screen.findByDisplayValue('10m'), '15m');
       await user.click(screen.getByRole('button', { name: 'deselect' }));
       expect(yamlOnCanvas()).toContain('15m');
@@ -509,7 +508,6 @@ describe('the VisualEditorPanel', () => {
 
     test('view mode keeps field-mappable lint hints in the banner (no form renders them)', async () => {
       const user = userEvent.setup();
-      // read-only inspector renders no form fields, so the banner must keep it.
       render(
         <PipelineEditorProvider>
           <VisualEditorPanel
@@ -622,7 +620,6 @@ output:
 
       await openNodeInspector(user, 'select-proc0');
 
-      // Delete must not stage the node for removal, and `/` must not open the command palette.
       await user.keyboard('{Delete}');
       expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument();
       await user.keyboard('/');
@@ -652,7 +649,6 @@ output:
       await user.click(screen.getByText('select-proc0'));
       expect(((await screen.findByTestId('node-yaml')) as HTMLTextAreaElement).value).toContain('message: hi');
 
-      // An in-place edit keeps proc-0 a `log`, so the selection survives.
       rerender(
         <PipelineEditorProvider>
           <VisualEditorPanel {...panelProps} yamlContent={twoProcs('log:\n        message: bye', mappingProc)} />
@@ -660,7 +656,6 @@ output:
       );
       expect(screen.getByTestId('node-yaml')).toBeInTheDocument();
 
-      // A reorder (e.g. undo of a head insert, YAML-lane edit) puts `mapping` at proc-0 → deselect.
       rerender(
         <PipelineEditorProvider>
           <VisualEditorPanel {...panelProps} yamlContent={twoProcs(mappingProc, logProc)} />

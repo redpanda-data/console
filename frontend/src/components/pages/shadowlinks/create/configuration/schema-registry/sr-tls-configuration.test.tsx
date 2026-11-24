@@ -187,7 +187,6 @@ describe('the SrTlsConfiguration', () => {
       expect(screen.queryByTestId('add-sr-clientKey-button')).not.toBeInTheDocument();
       expect(screen.getByTestId('add-sr-clientCert-button')).toBeInTheDocument();
 
-      // Queried by accessible name: form wiring must reach the trigger.
       await user.click(screen.getByRole('combobox', { name: /client private key secret/iu }));
       await user.click(await screen.findByRole('option', { name: 'SR_MTLS_CLIENT_KEY' }));
 

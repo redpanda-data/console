@@ -32,7 +32,6 @@ rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 const status = (phase: FencePhase, revision: number) =>
   ({ summary: { phase, revision: BigInt(revision) } }) as unknown as ReturnType<typeof useClusterFenceStatusQuery>;
 
-/** Lets a test rerender the open dialog after it changes the mocked status. */
 const harness = { rerender: () => undefined };
 
 function Harness() {

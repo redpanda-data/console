@@ -81,15 +81,12 @@ test.describe('topic Details - Navigation and Tabs', () => {
       await expect(page.getByRole('tablist')).toBeVisible({ timeout: 10_000 });
       await expect(page.getByTestId('config-group-table')).toBeVisible({ timeout: 15_000 });
 
-      // The grouped layout shows a category sidebar plus titled sections.
-      // Note: This test is flexible and will pass even if new categories are added.
       const sidebar = page.getByRole('navigation', { name: 'Configuration categories' });
       await expect(sidebar).toBeVisible();
       const categoryCount = await sidebar.getByRole('button').count();
 
       expect(categoryCount).toBeGreaterThan(0);
 
-      // Verify Retention group is present (a core group that should always exist)
       await expect(page.getByRole('heading', { name: 'Retention' })).toBeVisible();
     });
 

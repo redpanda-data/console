@@ -36,7 +36,6 @@ function createFakeLogSearch() {
   return search;
 }
 
-/** The decoded backend filter of the most recent log search. */
 function lastLogFilter() {
   const request = logSearches.at(-1)?.searchRequest;
   if (!request) {

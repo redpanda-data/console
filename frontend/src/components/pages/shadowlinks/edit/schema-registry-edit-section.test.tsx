@@ -132,7 +132,6 @@ describe('the SchemaRegistryEditSection', () => {
     });
 
     test('reconciles a legacy switch-off made before the gate opened', () => {
-      // false but the mode still says topic. The tabs must not disagree with
       const staleValues = hydratedTopicValues();
       staleValues.enableSchemaRegistrySync = false;
 

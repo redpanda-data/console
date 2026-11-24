@@ -100,7 +100,6 @@ const renderGroupDetails = (search: { tab?: 'topics' | 'members' | 'acl' } = {})
 
 type GroupSearch = ComponentProps<typeof GroupDetails>['search'];
 
-/** Holds the search params in state, as the route does, so a tab switch really changes the tab. */
 const StatefulGroupDetails = () => {
   const [search, setSearch] = useState<GroupSearch>({ tab: 'topics' });
   return (

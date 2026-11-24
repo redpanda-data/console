@@ -233,7 +233,6 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     const postgres = requireTemplate('postgres-cdc-to-redpanda');
     const yaml = stitchTemplateYaml({
       template: postgres,
-      // Ragged whitespace and a trailing comma must not produce blank entries.
       values: { dsn: 'PG_DSN', slotName: '', includedTable: ' users,  orders ,invoices, ', targetTopic: 'orders' },
       pipelineName: 'my-pipeline',
     });

@@ -109,7 +109,6 @@ describe('the SCOPE_OPTIONS labels', () => {
     expect(SCOPE_OPTIONS.map((o) => o.label)).toEqual(expectedLabels);
 
     for (const option of SCOPE_OPTIONS) {
-      // Icons can be functions (lucide) or objects (forwardRef components)
       expect(['function', 'object']).toContain(typeof option.icon);
     }
   });

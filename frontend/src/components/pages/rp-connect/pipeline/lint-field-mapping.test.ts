@@ -92,7 +92,6 @@ describe('mapLintHintsToFields', () => {
 
   describe('anchor precedence', () => {
     test('an explicit field reference beats the line anchor', () => {
-      // field's line — the named field must win (observed with aws_s3's "field bucket is required"
       const message = 'field seed_brokers is required';
       const { byField } = run([hint(6, message)]); // line 6 is `topics:`
       expect(byField.get('seed_brokers')).toEqual([message]);

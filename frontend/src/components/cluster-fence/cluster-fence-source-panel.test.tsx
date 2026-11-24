@@ -292,7 +292,6 @@ describe('the ClusterFenceSourcePanel', () => {
   });
 
   describe('a link that opens a dialog', () => {
-    // The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
     const routeLoaderTransport = createRouterTransport(({ rpc }) => {
       rpc(listShadowLinks, () => ({ shadowLinks: [] }));
     });

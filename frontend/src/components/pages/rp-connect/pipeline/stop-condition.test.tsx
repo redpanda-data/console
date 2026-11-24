@@ -145,7 +145,6 @@ describe('the StopConditionEditor', () => {
     await user.click(screen.getByRole('radio', { name: 'After a number of messages' }));
     const limit = screen.getByRole('textbox', { name: 'Message limit' });
     await user.click(limit);
-    // Past the end, as the radio group would otherwise take it.
     await user.keyboard('{End}{ArrowRight}');
     expect(screen.getByRole('radio', { name: 'After a number of messages' })).toBeChecked();
     expect(limit).toHaveFocus();

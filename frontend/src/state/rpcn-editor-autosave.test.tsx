@@ -177,7 +177,6 @@ describe('rpcn-editor-autosave', () => {
       expect(rpcnEditorAutosave.get('p1')).toBeNull();
     });
 
-    // Another tab's buffer must not be clobbered by this tab's stale snapshot.
     it('writes through storage rather than over an in-memory snapshot', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
       const otherTab = [

@@ -61,7 +61,6 @@ const doneFrame = () =>
 
 const originalConsoleClient = config.consoleClient;
 
-/** Points the page's stream at an in-memory ConsoleService that answers every search with the same rows. */
 function serveMessages() {
   const transport = createRouterTransport(({ service }) => {
     service(ConsoleService, {

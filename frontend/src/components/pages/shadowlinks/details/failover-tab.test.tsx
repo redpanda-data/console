@@ -32,7 +32,6 @@ const topics: (lags: number[]) => FailoverTopic[] = (lags) =>
     totalLag: BigInt(lag),
   }));
 
-/** orders-events, then orders-audit, each with no lag, in these states. */
 const inStates = (...states: ShadowTopicState[]): FailoverTopic[] =>
   states.map((state, index) => ({ topicName: ['orders-events', 'orders-audit'][index] ?? '', state, totalLag: 0n }));
 

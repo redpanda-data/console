@@ -326,7 +326,6 @@ describe('the ShadowLinkEditPage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
     mockUpdateShadowLink.mockImplementation((_request) => Promise.resolve({}));
-    // The SR and role sync feature gates default to closed; api-mode tests seed SR open.
     useSupportedFeaturesStore.setState({
       endpointCompatibility: null,
       shadowLinkSchemaRegistrySync: false,
@@ -403,7 +402,6 @@ describe('the ShadowLinkEditPage', () => {
     test('edits an api-mode link with a retyped password and emits only the SR mask', async () => {
       const { user, mockShadowLink } = await renderApiModeSyncBehavior();
 
-      // The topic tab is locked for an api-mode link.
       expect(screen.getByTestId('sr-mode-topic-tab')).toHaveAttribute('aria-disabled', 'true');
       expect(screen.getByTestId('sr-source-url-input')).toHaveValue('https://sr.example.com');
 
@@ -422,7 +420,6 @@ describe('the ShadowLinkEditPage', () => {
         value: {
           tailInterval: { seconds: 30n },
           authOptions: { authOptions: { case: 'basic', value: { password: 'retyped-secret' } } },
-          // paused was hydrated and must survive the rebuild
           paused: true,
         },
       });
@@ -466,7 +463,6 @@ describe('the ShadowLinkEditPage', () => {
 
       const updateRequest = await saveAndBuildUpdateRequest(user, mockUpdateShadowLink, mockShadowLink);
 
-      // Only the topic change goes out; the untouched SR slice emits no mask.
       expect(updateRequest.updateMask?.paths).toEqual(['configurations.topic_metadata_sync_options']);
     });
   });

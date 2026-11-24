@@ -170,7 +170,6 @@ describe('useRefFormDialog', () => {
       await submitPromise;
     });
 
-    // onSuccess should NOT have been called because abort happened
     expect(onSuccess).not.toHaveBeenCalled();
     expect(result.current.isOpen).toBe(false);
   });

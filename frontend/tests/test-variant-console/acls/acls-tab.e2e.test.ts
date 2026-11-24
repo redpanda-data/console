@@ -13,7 +13,6 @@ test.describe('security ACLs tab', () => {
     await expect(page.getByTestId('create-acls')).toBeVisible();
     await expect(page.getByPlaceholder('Filter by name')).toBeVisible();
 
-    // Both sortable columns must expose a trigger; the action column must not.
     const table = page.getByRole('table');
     await expect(table.getByRole('button', { name: PRINCIPAL_HEADER })).toBeVisible();
     await expect(table.getByRole('button', { name: HOST_HEADER })).toBeVisible();

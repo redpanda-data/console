@@ -1339,7 +1339,6 @@ describe('generateDefaultValue with enriched ground-truth specs', () => {
     });
 
     test('root array-of-objects config (switch-like) always yields an array, never undefined', () => {
-      // but inserting it must still emit a type-correct value (`[]`/`[{…}]`), not YAML null.
       const switchLike: ConnectComponentSpec = {
         name: 'switch',
         type: 'processor',

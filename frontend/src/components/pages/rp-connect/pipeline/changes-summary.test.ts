@@ -38,7 +38,6 @@ output:
   ${output}: {}
 `;
 
-/** The summary is always fed the ids the diff reports, so the tests do the same. */
 const summarize = (savedYaml: string, editedYaml: string) =>
   summarizeComponentChanges(savedYaml, editedYaml, changedNodeIds(savedYaml, editedYaml));
 
@@ -84,7 +83,6 @@ describe('summarizeComponentChanges', () => {
     expect(changes).toEqual([expect.objectContaining({ kind: 'added', id: 'proc-0' })]);
   });
 
-  // The section headings exist to hold children; counting them would double-report every change.
   it('never reports a section container', () => {
     const changes = summarize(config({ input: 'generate' }), config({ input: 'kafka_franz' }));
 
@@ -129,7 +127,6 @@ describe('summarizeSettingsChanges', () => {
     expect(changes.map((c) => c.from)).toEqual(['not set', 'none']);
   });
 
-  // A field the form has never populated is not a change from an empty one.
   it('treats an absent value and an empty one as the same', () => {
     expect(summarizeSettingsChanges({ description: '' }, {})).toEqual([]);
   });
@@ -167,7 +164,6 @@ describe('summarizeSettingsChanges', () => {
 });
 
 describe('changesImpactMessage', () => {
-  // The running case is the one worth a warning: there is no apply-later.
   it('warns that applying to a running pipeline restarts it', () => {
     for (const state of [Pipeline_State.RUNNING, Pipeline_State.STARTING]) {
       const message = changesImpactMessage(state);
@@ -204,7 +200,6 @@ describe('changesImpactTone', () => {
 });
 
 describe('the NO_CHANGES_COPY', () => {
-  // The lane covers both halves of a save, so the empty state has to claim both are unchanged.
   it('accounts for the settings as well as the configuration', () => {
     expect(NO_CHANGES_COPY.title).toMatch(/no unsaved changes/iu);
     expect(NO_CHANGES_COPY.body).toMatch(/settings/iu);

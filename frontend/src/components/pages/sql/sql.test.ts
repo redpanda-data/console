@@ -113,7 +113,6 @@ describe('sql helpers', () => {
   });
 
   test('bridgeTopicForQuery ignores `=>` inside comments and strings', () => {
-    // A second `=>` in a trailing comment must not count as a second ref.
     expect(
       bridgeTopicForQuery('SELECT * FROM default_redpanda_catalog=>cars_table -- TODO cat=>orders', CATALOGS)
     ).toBe('cars-telemetry.v1');

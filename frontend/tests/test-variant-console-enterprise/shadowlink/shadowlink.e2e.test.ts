@@ -5,7 +5,6 @@ import { step } from '../../shared/e2e';
 import { generateShadowlinkName, ShadowlinkPage } from '../../test-variant-console/utils/shadowlink-page';
 import { expect, test } from '../console-enterprise.fixture';
 
-/** Fails over `owlshop-orders` alone, then every topic once all 7 have synced, and verifies the result. */
 const failOverOneTopicThenAll = async (shadowlinkPage: ShadowlinkPage, shadowlinkName: string) => {
   await step('Failover single topic and wait for all topics', async () => {
     await shadowlinkPage.gotoDetails(shadowlinkName);

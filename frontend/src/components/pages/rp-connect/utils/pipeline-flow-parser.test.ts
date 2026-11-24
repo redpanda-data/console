@@ -10,7 +10,6 @@ import {
 } from './pipeline-flow-parser';
 import { describe, expect, it } from 'bun:test';
 
-/** Narrows a lookup the next assertion reads through, failing with `what` instead of a TypeError. */
 function present<T>(value: T | undefined, what: string) {
   if (value === undefined) {
     throw new Error(`Expected ${what}`);
@@ -315,7 +314,6 @@ output:
       expect(result.error).toBeUndefined();
       const leaf = result.nodes.find((n) => n.label === 'kafka_franz');
       expect(leaf).toBeDefined();
-      // The real case is the SECOND array entry: its edit path must keep index 1, not shift to 0.
       expect(leaf?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
     });
 
@@ -1093,7 +1091,6 @@ output:
 
     it('pairs try→catch: the catch marker is an error path reached by a red "on error" edge', () => {
       const layout = computeGraphLayout(parsePipelineFlowTree(ENRICHMENT).nodes);
-      // proc-2 = try, proc-3 = catch; they fuse into a success/error structure at a merge.
       expect(layout.rfNodes.find((n) => n.id === 'proc-3')?.data.isErrorPath).toBe(true);
       const onError = layout.rfEdges.find((e) => e.id === 'error-proc-2-proc-3');
       expect(onError).toMatchObject({ source: 'proc-2', target: 'proc-3' });
@@ -1346,7 +1343,6 @@ output:
   drop: {}`;
       const { nodes } = parsePipelineFlowTree(yaml);
       const mapping = nodes.find((n) => n.label === 'mapping');
-      // The mapping is index 1; its edit target must not compact past the unparseable `- null`, or edits land wrong.
       expect(mapping?.editTarget).toMatchObject({
         kind: 'path',
         path: ['pipeline', 'processors', 0, 'switch', 0, 'processors', 1],
@@ -1361,7 +1357,6 @@ output:
     });
 
     it('connects an input to a cache referenced via a non-`resource` field (checkpoint_cache)', () => {
-      // CDC inputs name their cache via `checkpoint_cache`, not `resource` — the edge must still be drawn.
       const yaml = `input:
   mongodb_cdc:
     url: mongodb://x
@@ -1512,7 +1507,6 @@ cache_resources:
     });
 
     it('never promotes an unrelated string field that happens to match a resource label', () => {
-      // `client_id` is not a reference field — a coincidental value match must not draw an edge.
       const yaml = `input:
   kafka_franz:
     client_id: prod

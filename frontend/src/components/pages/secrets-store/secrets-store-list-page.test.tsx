@@ -187,7 +187,6 @@ describe('the SecretsStoreListPage', () => {
   });
 
   test('should display loading state while fetching secrets', async () => {
-    // The test settles the request itself, so loading lasts exactly until it says so.
     const pendingList = Promise.withResolvers<ListSecretsResponse>();
     const transport = createListSecretsTransport(() => pendingList.promise);
 
@@ -281,7 +280,6 @@ describe('the SecretsStoreListPage', () => {
       expect(screen.getByText('mcp-secret')).toBeVisible();
     });
 
-    // Click the "Scope" faceted filter button (not the column header one in <thead>)
     const scopeFilterButton = screen.getAllByRole('button', { name: /scope/iu }).find((btn) => !btn.closest('thead'))!;
     await user.click(scopeFilterButton);
 

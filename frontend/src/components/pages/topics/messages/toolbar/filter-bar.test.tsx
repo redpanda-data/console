@@ -36,7 +36,6 @@ const makeMsg = (partitionID: number, offset: number, value: unknown) =>
 
 const messages = [makeMsg(0, 1, { type: 'INVOICE' }), makeMsg(1, 2, { type: 'ORDER' })];
 
-/** Stateful wrapper: the bar's inputs are controlled, so tests need live state. */
 const StatefulBar = (props: Partial<FilterBarProps> & { spies: FilterBarProps }) => {
   const [quickSearch, setQuickSearch] = useState(props.quickSearch ?? '');
   const [fieldTokens, setFieldTokens] = useState<FieldFilterToken[]>(props.fieldTokens ?? []);

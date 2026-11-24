@@ -171,7 +171,6 @@ describe('the NodeConfigForm — full schema', () => {
       renderForm({ kafka: { topic: 't', addresses: ['a:9092'], batching: { count: '1000$' } } });
       await user.click(screen.getByText('batching'));
       expect(screen.getByDisplayValue('1000$')).toBeInTheDocument();
-      // …and flags it inline as not a valid integer (with the not-saved warning).
       expect(screen.getByText(NOT_VALID_INTEGER_RE)).toBeInTheDocument();
     });
 
@@ -372,7 +371,6 @@ describe('the NodeConfigForm — list-valued components (switch/try/…)', () =>
 
   test('hides the (misleading) per-case fields and shows a canvas hint instead', () => {
     render(<NodeConfigForm componentName="switch" spec={switchSpec} value={switchValue()} />);
-    // The case-level `check` field must not appear on the container.
     expect(screen.queryByText('check')).toBeNull();
     expect(screen.getByText(EDITED_ON_CANVAS_RE)).toBeInTheDocument();
   });
@@ -444,7 +442,6 @@ describe('the NodeConfigForm — field-anchored lint errors', () => {
     expect(screen.getByText('expected number value')).toBeInTheDocument();
     expect(screen.getByDisplayValue('5')).toBeInTheDocument();
 
-    // Lint clears (e.g. after a blur-commit): the group must NOT slam shut around the user.
     rerender(renderProps(undefined));
     expect(screen.queryByText('expected number value')).not.toBeInTheDocument();
     expect(screen.getByDisplayValue('5')).toBeInTheDocument();
@@ -516,7 +513,6 @@ describe('the NodeConfigForm — field-level commit', () => {
     await user.type(screen.getByDisplayValue('orig'), '-2');
     await user.tab();
     expect(onCommitField).toHaveBeenCalled();
-    // Write failed: the draft must survive so the node-leave flush can retry it.
     expect(lastReported(onConfigChange)).not.toBeNull();
   });
 

@@ -77,7 +77,6 @@ describe('getUpdateValuesForSchemaRegistry', () => {
       if (result.value?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryApi') {
         const api = result.value.schemaRegistryShadowingMode.value;
         expect(api.sourceUrl).toBe('https://sr.example.com');
-        // paused survives the rebuild instead of resetting to false
         expect(api.paused).toBe(true);
       }
     });
@@ -136,7 +135,6 @@ describe('getUpdateValuesForSchemaRegistry', () => {
     });
 
     test('scratch values typed into a mode that is not submitted emit no mask', () => {
-      // The user toured the api tab on a topic link, typed, then switched back.
       const touredButTopic = topicValues();
       touredButTopic.schemaRegistry.sourceUrl = 'https://left-over.example.com';
       touredButTopic.schemaRegistry.contexts = ['.scratch'];

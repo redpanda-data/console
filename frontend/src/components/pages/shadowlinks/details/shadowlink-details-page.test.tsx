@@ -106,7 +106,6 @@ const hostWith = (source: ShadowLinkSource | undefined, resolving = false) =>
     },
   });
 
-/** Opens the page at ?tab=failover, which only means something with the Failover tab. */
 const renderAtFailoverTab = (clusterFencing: boolean) => {
   const user = userEvent.setup();
   flags.enableClusterFencing = clusterFencing;
@@ -115,7 +114,6 @@ const renderAtFailoverTab = (clusterFencing: boolean) => {
   return user;
 };
 
-/** As before cluster fencing: no Failover tab, no lag polling, and the original confirmation. */
 const expectPageAsBefore = async (user: ReturnType<typeof userEvent.setup>) => {
   expect(screen.queryByTestId('failover-tab-trigger')).not.toBeInTheDocument();
   expect(screen.getByTestId('overview-stub')).toBeInTheDocument();

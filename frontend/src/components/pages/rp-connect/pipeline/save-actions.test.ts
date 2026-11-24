@@ -221,7 +221,6 @@ describe('unsavedChangesCopy', () => {
     expect(unsavedChangesCopy(creating).body).toMatch(/does not run/iu);
   });
 
-  // Saving a stopped pipeline is not destructive, so the copy must not borrow the running one's warning.
   it('does not warn about restarts on a stopped pipeline', () => {
     expect(unsavedChangesCopy(stopped).body).not.toMatch(/restart/iu);
   });

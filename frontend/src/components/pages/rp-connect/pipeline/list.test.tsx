@@ -385,7 +385,6 @@ describe('the PipelineListPage', () => {
         expect(screen.getByText('nightly-export')).toBeInTheDocument();
       });
 
-      // ⌘-click means "open in a new tab": soft-navigating would swallow it.
       const description = within(rowFor('orders-enrichment')).getByText('aaa111');
       await user.keyboard('{Meta>}');
       await user.click(description);
@@ -551,7 +550,6 @@ describe('the PipelineListPage', () => {
         ]);
       });
 
-      // Age, not the author: what decides whether to pick a draft up or bin it.
       it('says when a draft was last edited, and nothing about who', async () => {
         renderList({ withDraft: true });
 
@@ -649,7 +647,6 @@ describe('the PipelineListPage', () => {
         await waitFor(() => expect(deleted).toEqual(['draft777']));
       });
 
-      // The dialog's line about unsaved edits is only true when this browser holds a buffer for the draft.
       it('says when deleting the draft also drops edits this browser was keeping', async () => {
         const user = userEvent.setup();
         localStorage.clear();

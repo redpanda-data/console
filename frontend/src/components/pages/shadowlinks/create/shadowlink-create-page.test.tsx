@@ -387,7 +387,6 @@ const testCases: CreateTestCase[] = [
       { type: 'addACLFilterCreate', principal: 'User:alice' },
     ],
     verify: (createRequest, exp) => {
-      // Specify mode must send the user's filter, not the match-all one
       exp(createRequest.shadowLink.configurations.securitySyncOptions?.aclFilters).toHaveLength(1);
       const aclFilter = createRequest.shadowLink.configurations.securitySyncOptions?.aclFilters[0];
       exp(aclFilter.accessFilter?.principal).toBe('User:alice');

@@ -33,7 +33,6 @@ function createFakeLogSearch() {
   return search;
 }
 
-/** The decoded backend filter of the most recent log search. */
 function lastLogFilter() {
   const request = logSearches.at(-1)?.searchRequest;
   if (!request) {
@@ -61,7 +60,6 @@ function loadedConnectClusterStore() {
   const store = new ConnectClusterStore('cluster');
   const remoteConnectors = [connectorNamed('example'), connectorNamed('other')];
   store.isInitialized = true;
-  // No installed plugins, so no connector has a config form to load.
   store.additionalClusterInfo = { clusterName: 'cluster', host: '', clusterVersion: '', plugins: [] };
   rs.spyOn(store, 'cluster', 'get').mockReturnValue(null);
   rs.spyOn(store, 'setup').mockResolvedValue(undefined);

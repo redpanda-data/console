@@ -17,7 +17,6 @@ import { render, screen, waitFor } from 'test-utils';
 
 import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipeline-flow-canvas';
 
-// The merge/join node's tooltip title; matched loosely so wording tweaks don't break the test.
 const JOIN_NAME_RE = /branches reconverge/iu;
 
 // React Flow needs ResizeObserver + measurable container dimensions to mount nodes in Happy DOM.
@@ -50,8 +49,6 @@ afterAll(() => {
   }
 });
 
-// Exercises every control-flow construct: broker (fan-in), branch, switch (with a default and an
-// errored() error lane), and try/catch.
 const CONTROL_FLOW_YAML = `input:
   broker:
     inputs:
@@ -103,8 +100,6 @@ function tallSwitchYaml(caseCount: number) {
   return `input:\n  generate:\n    mapping: 'root = {}'\npipeline:\n  processors:\n    - switch:\n${cases}\noutput:\n  drop: {}`;
 }
 
-// Fill pieces render into React Flow's viewport portal, tagged data-region-fill (the border is a
-// single SVG path, excluded here).
 function regionFillPieces(container: HTMLElement) {
   const portal = container.querySelector('.react-flow__viewport-portal');
   return portal ? Array.from(portal.querySelectorAll<HTMLElement>('[data-region-fill]')) : [];
@@ -192,8 +187,6 @@ describe('the PipelineFlowCanvas — deprecated components', () => {
 
 describe('the PipelineFlowCanvas — invalid YAML from the start', () => {
   it('shows a persistent (non-dismissible) banner pointing at the YAML tab', async () => {
-    // Unparseable from the first render: no last-good graph to fall back to, so the banner must
-    // stay up (no close button).
     const { container } = render(<PipelineFlowCanvas configYaml={'input: [unclosed'} />);
     expect(await screen.findByText(YAML_TAB_HINT_RE)).toBeInTheDocument();
     expect(container.querySelectorAll('button')).toHaveLength(0);
@@ -206,8 +199,6 @@ describe('the PipelineFlowCanvas — resilient parse', () => {
     expect(await screen.findByText('generate')).toBeInTheDocument();
     expect(screen.queryByText(NO_OUTPUT_NOTE_RE)).not.toBeInTheDocument();
 
-    // One bad edit: still valid YAML, but the input/output/pipeline sections are gone. The canvas
-    // must NOT collapse to `input: none` placeholders — it holds the last valid layout and flags it.
     rerender(<PipelineFlowCanvas configYaml={'renamed_root:\n  generate: {}'} />);
     expect(await screen.findByText(STALE_LAYOUT_RE)).toBeInTheDocument();
     expect(screen.getByText('generate')).toBeInTheDocument();
@@ -216,8 +207,6 @@ describe('the PipelineFlowCanvas — resilient parse', () => {
 
   it('does not flag a valid but still-incomplete pipeline as stale while authoring from blank', async () => {
     const { rerender } = render(<PipelineFlowCanvas configYaml={''} />);
-    // `input:` is valid YAML, just not yet a pipeline — a blank start has no real layout to fall back
-    // to, so this must render as the empty state, NOT a false "last valid layout" banner.
     rerender(<PipelineFlowCanvas configYaml={'input:'} />);
     expect(await screen.findByText(NO_OUTPUT_NOTE_RE)).toBeInTheDocument();
     expect(screen.queryByText(STALE_LAYOUT_RE)).not.toBeInTheDocument();
@@ -248,7 +237,6 @@ describe('the PipelineFlowCanvas — control-flow render', () => {
   // pieces so the background always renders.
   it('caps every scope-region fill piece so a tall area still renders its background', async () => {
     const { container } = render(<PipelineFlowCanvas configYaml={tallSwitchYaml(60)} />);
-    // The switch marker also surfaces as a faint scope-region label, so there are several matches.
     await screen.findAllByText('switch');
 
     const pieces = regionFillPieces(container);
@@ -318,7 +306,6 @@ describe('the PipelineMiniMap — viewport outside the pan extent', () => {
     const svg = screen.getByRole('img', { name: OVERVIEW_LABEL_RE });
     const svgWidth = Number(svg.getAttribute('width'));
     const svgHeight = Number(svg.getAttribute('height'));
-    // With no nodes there are no blips, so the only rect is the viewport rect.
     const view = svg.querySelector('rect');
     if (!view) {
       throw new Error('viewport rect not rendered');

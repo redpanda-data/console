@@ -29,7 +29,6 @@ const edges: Edge[] = [
 const refData = (decorated: Edge[]) =>
   decorated.find((e) => e.id.startsWith('ref-'))?.data as { dimmed?: boolean; emphasized?: boolean; faint?: boolean };
 
-/** The data of edge `id`, failing loudly (rather than reading through `undefined`) when there is none. */
 const edgeData = (decorated: Edge[], id: string) => {
   const data = decorated.find((e) => e.id === id)?.data;
   if (!data) {

@@ -14,7 +14,6 @@ import type { editor } from 'monaco-editor';
 import { detectSlashTrigger, SLASH_TRIGGER_PATTERN } from './use-slash-command';
 import { describe, expect, it } from 'bun:test';
 
-/** Minimal mock satisfying detectSlashTrigger's editor API usage. */
 function mockEditor(lineContent: string, cursorColumn: number, lineNumber = 1) {
   return {
     getPosition: () => ({ lineNumber, column: cursorColumn }),

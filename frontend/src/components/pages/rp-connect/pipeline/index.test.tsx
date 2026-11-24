@@ -295,7 +295,6 @@ const DRAFT_ERA_PIPELINE = create(PipelineSchema, {
 const listPipelinesResponse = (pipelines: ReturnType<typeof create<typeof PipelineSchema>>[]) =>
   create(ConsoleListPipelinesResponseSchema, { response: create(ListPipelinesResponseSchema, { pipelines }) });
 
-/** Answers the create page's draft-support sample with a draft-era pipeline; name lookups go to `lookup`. */
 const routeNameLookups = (lookup: MethodImpl<typeof listPipelines>) => {
   const handler: MethodImpl<typeof listPipelines> = (request, context) =>
     request.request?.filter?.nameContains ? lookup(request, context) : listPipelinesResponse([DRAFT_ERA_PIPELINE]);
@@ -406,7 +405,6 @@ const setPipelineNameViaDialog = async (user: ReturnType<typeof userEvent.setup>
   await user.clear(nameInput);
   await user.type(nameInput, name);
   await user.click(screen.getByRole('button', { name: /save settings/iu }));
-  // Wait for the dialog to close so its "Save settings" button can't collide with the header's "Save".
   await waitFor(() => expect(screen.queryByPlaceholderText('Enter pipeline name')).not.toBeInTheDocument());
 };
 
@@ -701,7 +699,6 @@ function recordedNameLookups() {
   return { listPipelinesHandler, requests };
 }
 
-/** An untitled-name lookup held in flight until `releaseLookup` is called; the draft-support sample still answers. */
 function pendingNameLookups() {
   let release: (() => void) | undefined;
   const listPipelinesHandler = routeNameLookups(
@@ -1171,7 +1168,6 @@ describe('the PipelinePage', () => {
 
       await mountPipelinePage('create', { transport: createTransport() });
 
-      // Wait for the editor mock to mount so useSlashCommand subscribes.
       await waitFor(() => {
         expect(contentChangeListeners.length).toBeGreaterThan(0);
       });
@@ -1270,8 +1266,6 @@ describe('the PipelinePage', () => {
     });
 
     describe('the service account it attaches', () => {
-      // Connect's service-account login uses the pipeline's account, so without it the component
-      // cannot authenticate at all.
       it('attaches the service account it created to the pipeline being edited', async () => {
         const user = userEvent.setup();
 
@@ -1291,7 +1285,6 @@ describe('the PipelinePage', () => {
         expect(sent?.tags).toMatchObject({ rp_cloud_service_account_id: 'sa-123', rp_cloud_secret_id: 'ORDERS_SA' });
       });
 
-      // The save already read the account, so the edits it leaves behind must carry the new one.
       it('keeps an account attached during an in-flight save recoverable', async () => {
         const { updatePipelineHandler, releaseUpdate } = deferredUpdatePipeline();
         const { user } = await renderPipelinePage('edit', {
@@ -1348,8 +1341,6 @@ describe('the PipelinePage', () => {
         expect(userStep.props.hasServiceAccount).toBe(true);
       });
 
-      // The YAML only names the login mechanism, so recovering it without the account restores a
-      // config that can't log in.
       it('keeps the account it attached in the recovery buffer', async () => {
         const user = userEvent.setup();
         localStorage.clear();
@@ -1476,7 +1467,6 @@ describe('pipelinePage saving and recovering work', () => {
       enableFeatures('enableRpcnPipelineDrafts');
     });
 
-    // Unset egress leaves the stored gateways alone, so a save that never touched them must not send one.
     it("keeps the pipeline's egress gateways on a save that doesn't change them", async () => {
       const getPipelineHandler = () =>
         create(ConsoleGetPipelineResponseSchema, {
@@ -1499,8 +1489,6 @@ describe('pipelinePage saving and recovering work', () => {
       expect(sent.egress).toBeUndefined();
     });
 
-    // BYOC infers its gateway refs from the config, so a save without the picker must never send egress,
-    // even when restored work names different gateways from the stored ones.
     it('never sends egress from a save without the egress gateway picker', async () => {
       const getPipelineHandler = () =>
         create(ConsoleGetPipelineResponseSchema, {
@@ -1577,8 +1565,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(screen.getByTestId('save-pipeline')).toHaveTextContent(/^Save$/u);
       });
 
-      // A brand-new cluster has no pipeline to lend an answer, and hiding drafts there would hide them
-      // from every first pipeline.
       it('offers a draft on a cluster with no pipelines yet', async () => {
         const user = userEvent.setup();
         const listPipelinesHandler = () => listPipelinesResponse([]);
@@ -1681,8 +1667,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
       });
 
-      // The settings stay editable while the request is in flight, so what is on screen when it
-      // resolves can hold an edit the request never carried.
       it('keeps a setting typed while the save was in flight unsaved', async () => {
         const { sent, title } = await renameWhileSaveInFlight(Pipeline_State.DRAFT);
         expect(sent.displayName).toBe('submitted-name');
@@ -1724,8 +1708,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(sent?.configYaml).toBe(configYaml);
       });
 
-      // "Save draft" is the primary button, so a curious click lands on it. Parking an untouched page
-      // would spend one of the cluster's pipeline slots on nothing, and there is no work to protect.
       it('refuses to park a create page with nothing on it, and says what would make it savable', async () => {
         const user = userEvent.setup();
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
@@ -1806,7 +1788,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(pipelineRequests.createPipeline[0]?.request?.pipeline?.displayName).toBe('Untitled pipeline 2');
       });
 
-      // The lookup runs before any mutation is pending, so nothing else marks the button busy.
       it('shows the save as busy while the untitled name is being looked up', async () => {
         const { listPipelinesHandler, releaseLookup } = pendingNameLookups();
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
@@ -1898,8 +1879,6 @@ describe('pipelinePage saving and recovering work', () => {
     });
 
     describe('without server-side drafts', () => {
-      // Without server-side drafts there is nowhere to park work, so create keeps its old shape:
-      // deployed, then stopped.
       it('falls back to deploy-then-stop when drafts are unavailable', async () => {
         config.featureFlags.enableRpcnPipelineDrafts = false;
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate();
@@ -2192,8 +2171,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(await screen.findByTestId('changes-impact')).toHaveTextContent(/applying them restarts the pipeline/iu);
       });
 
-      // A comment-only edit changes no component, and the diff should then take the full width rather
-      // than sit beside an empty column with a heading over it.
       it('drops the component column when nothing component-level changed', async () => {
         const user = userEvent.setup();
 
@@ -2295,7 +2272,6 @@ describe('pipelinePage saving and recovering work', () => {
       expect(screen.queryByTestId('delete-draft')).not.toBeInTheDocument();
     });
 
-    // The buffer would otherwise outlive the pipeline and offer to restore edits to something gone.
     it('drops the recovery buffer for a deleted draft', async () => {
       const user = userEvent.setup();
       localStorage.clear();
@@ -2332,8 +2308,6 @@ describe('pipelinePage saving and recovering work', () => {
       expect(lastShouldBlockFn()()).toBe(true);
 
       await user.click(await screen.findByTestId('delete-draft'));
-      // The confirmation says the unsaved edits go too: a trash icon in an editor can read as
-      // "throw away my changes".
       expect(await screen.findByText(/unsaved changes go with it/iu)).toBeInTheDocument();
       await user.click(screen.getByTestId('confirm-delete-draft'));
 
@@ -2429,8 +2403,6 @@ describe('pipelinePage saving and recovering work', () => {
       expect(screen.getByRole('button', { name: /discard changes/iu })).toBeInTheDocument();
     });
 
-    // No draft is possible on a deployed pipeline, so leaving on purpose is the only exit that keeps
-    // the work, and it has to say so.
     it('lets a deployed pipeline be left with the edits kept in this browser', async () => {
       const { proceed } = blocked();
       const { user } = await renderPipelinePage('edit');
@@ -2463,8 +2435,6 @@ describe('pipelinePage saving and recovering work', () => {
       expect(proceed).toHaveBeenCalled();
     });
 
-    // A save that navigates stands the guard down for its own departure; coming back to edit must not
-    // find it still standing down.
     it('re-arms the guard when the page returns to editing after a save', async () => {
       const { user, router } = await renderPipelinePage('edit', {
         getPipelineHandler: editablePipeline(DEPLOYED_YAML),
@@ -2489,9 +2459,6 @@ describe('pipelinePage saving and recovering work', () => {
       enableFeatures('enableRpcnPipelineDrafts');
     });
 
-    // Stale means "someone saved this pipeline since these edits were captured": the pipeline's
-    // `update_time` against the one the buffer recorded, two server values. The buffer's own
-    // `updatedAt` is a browser clock and is never compared against either.
     describe('staleness is judged on server timestamps, not the browser clock', () => {
       const SAVED_AT = 1_700_000_000_000;
 
@@ -2522,8 +2489,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(notice).not.toHaveTextContent(/Someone else saved this pipeline/u);
       });
 
-      // The baseline is the version that was hydrated. A refetch landing mid-edit (focus, an invalidation)
-      // must not move it, or a colleague's save is adopted unseen and the warning it exists for never shows.
       it('stamps the buffer with the version on screen, not the one the query last fetched', async () => {
         let updatedAt = SAVED_AT;
         const getPipelineHandler = () => pipelineAt(updatedAt);
@@ -2584,8 +2549,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(screen.queryByTestId('autosave-restore-notice')).not.toBeInTheDocument();
       });
 
-      // A save writes the settings as well as the configuration, so an unsaved resize is recoverable work.
-      // Offering the buffer only when the YAML differed dropped it silently.
       it('offers to restore a buffer whose settings differ, even with identical configuration', async () => {
         useRpcnEditorAutosaveStore.getState().save({
           targetKey: 'test-pipeline',
@@ -2611,8 +2574,6 @@ describe('pipelinePage saving and recovering work', () => {
           };
         });
 
-        // Loading a pipeline settles the document back to "nothing to recover". Tidying up on that signal
-        // would delete the recovery buffer about a second before the user could click Restore.
         it('keeps a buffer left by an earlier session while the editor just sits there', async () => {
           seedBuffer('test-pipeline', 'input:\n  recovered: {}');
 
@@ -2626,8 +2587,6 @@ describe('pipelinePage saving and recovering work', () => {
           expect(screen.getByTestId('autosave-restore-notice')).toBeInTheDocument();
         });
 
-        // The notice is for work left by an *earlier* session. Comparing live buffer against live editor
-        // made this session's own buffer look recoverable, so the banner blinked once per debounce.
         it('never offers to recover the buffer this editor just wrote', async () => {
           await mountPipelinePage('edit', { transport: createTransport() });
 
@@ -2673,8 +2632,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(sent?.tags).toMatchObject({ rp_cloud_service_account_id: 'sa-123', rp_cloud_secret_id: secretName });
       });
 
-      // The reset must recompute `isDirty` from the restored values; keeping the pre-restore flag left the
-      // guard disarmed when only a setting differed.
       it('arms the unsaved-changes guard after restoring a settings-only buffer', async () => {
         const user = userEvent.setup();
         useRpcnEditorAutosaveStore.getState().save({
@@ -2694,7 +2651,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(lastShouldBlockFn()()).toBe(true);
       });
 
-      // A snapshot, so the version the user was shown survives autosave overwriting the stored copy.
       it('restores the version it offered, even after autosave has moved on', async () => {
         const user = userEvent.setup();
         seedBuffer('test-pipeline', 'input:\n  from_last_session: {}');
@@ -2779,7 +2735,6 @@ describe('pipelinePage saving and recovering work', () => {
       enableFeatures('enableRpcnPipelineDrafts');
     });
 
-    // Drain the hand-off, so a refusal in one test can't seed the editor in another.
     afterEach(() => {
       takeStartLintHints('test-pipeline');
     });
@@ -2829,8 +2784,6 @@ describe('pipelinePage saving and recovering work', () => {
       );
     });
 
-    // The toast promises the editor opens on the issues, so it must show the server's refusal — not
-    // whatever the editor's own lint happens to find.
     it("hands the refused start's hints to the editor it opens", async () => {
       const user = userEvent.setup();
       const startPipelineHandler = () => {

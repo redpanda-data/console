@@ -158,7 +158,6 @@ describe('the SourceConnectionSection', () => {
       });
       expect(screen.queryByTestId('sr-basic-password-input')).not.toBeInTheDocument();
 
-      // Queried by accessible name: form wiring must reach the trigger.
       await user.click(screen.getByRole('combobox', { name: /password/iu }));
       await user.click(await screen.findByRole('option', { name: 'SR_PASSWORD' }));
 

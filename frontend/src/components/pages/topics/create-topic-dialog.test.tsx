@@ -114,7 +114,6 @@ async function enterTopicName(user: User, name: string) {
   return input;
 }
 
-/** Submits the form that owns `input` directly, bypassing the disabled Create button. */
 async function submitOwningForm(input: HTMLElement) {
   const form = input.closest('form');
   if (!form) {
@@ -219,7 +218,6 @@ describe('the CreateTopicDialog', () => {
       const user = userEvent.setup();
       renderDialog();
 
-      // Type a valid topic name first so form is otherwise valid
       const topicNameInput = screen.getByTestId('topic-name');
       await user.type(topicNameInput, 'valid-topic');
 

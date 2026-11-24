@@ -18,7 +18,6 @@ const test = base.extend({ playwright: definePlaywrightOptions({ storageState: '
 // TODO(UX-1209): flip to true once the view-only fixture lands. All assertions below are
 const VIEW_ONLY_FIXTURE_READY = false;
 
-/** Structural: the control is either absent or disabled — both acceptable. */
 const expectHiddenOrDisabled = async (control: Locator) => {
   const isVisible = await control.isVisible().catch(() => false);
   if (isVisible) {
@@ -28,7 +27,6 @@ const expectHiddenOrDisabled = async (control: Locator) => {
   }
 };
 
-/** The control may be hidden entirely; when it is rendered, it must be disabled. */
 const expectDisabledIfShown = async (control: Locator) => {
   const isVisible = await control.isVisible().catch(() => false);
   if (isVisible) {

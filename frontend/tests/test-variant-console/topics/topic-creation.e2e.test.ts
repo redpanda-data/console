@@ -22,7 +22,6 @@ test.describe('topic Creation', () => {
       await page.goto('/topics');
       await page.getByTestId('create-topic-button').click();
 
-      // Modal opens with create topic form - wait for modal animation
       await expect(page.getByTestId('topic-name')).toBeVisible({ timeout: 5000 });
       await expect(page.getByTestId('topic-name')).toBeFocused();
     });
