@@ -9,343 +9,293 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { act, type RenderHookResult, renderHook, waitFor } from '@testing-library/react';
+import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
+import { createAsyncIterable } from '@connectrpc/connect/protocol';
+import { afterEach, beforeEach, expect, rs, test } from '@rstest/core';
+import { act, cleanup, type RenderHookResult, renderHook, waitFor } from '@testing-library/react';
+import { config } from 'config';
+import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
+import { ConsoleService } from 'protogen/redpanda/api/console/v1alpha1/console_service_pb';
+import {
+  type ListMessagesRequest,
+  type ListMessagesResponse,
+  ListMessagesResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import { toast } from 'sonner';
+import { PartitionOffsetOrigin } from 'state/ui';
 
 import { type MessageSearchParams, type MessageSearchResult, useMessageSearch } from './use-message-search';
 import { messageKey } from '../utils/message-key';
 
-// The hook feeds raw data frames through convertListMessageData; identity-mock it so
-// tests can use plain {partitionID, offset} stubs without building full proto payloads.
-rs.mock('../../../../../utils/message-converters', () => ({
-  convertListMessageData: (value: unknown) => value,
-}));
-
-rs.mock('sonner', () => ({
-  toast: { error: rs.fn() },
-}));
-
-type Frame =
-  | { case: 'phase'; value: { phase: string } }
-  | { case: 'progress'; value: { bytesConsumed: bigint; messagesConsumed: bigint } }
-  | { case: 'done'; value: { bytesConsumed: bigint; elapsedMs: bigint; nextPageToken: string; isCancelled: boolean } }
-  | { case: 'error'; value: { message: string } }
-  | { case: 'data'; value: { partitionID: number; offset: number } };
-
-const listMessagesMock = rs.fn();
-
-rs.mock('../../../../../config', () => ({
-  config: {
-    get consoleClient() {
-      return { listMessages: listMessagesMock };
-    },
-  },
-}));
-
-const dataFrame: (partitionID: number, offset: number) => Frame = (partitionID, offset) => ({
-  case: 'data',
-  value: { partitionID, offset },
-});
-
-const doneFrame = (nextPageToken = '') =>
-  ({
-    case: 'done',
-    value: { bytesConsumed: 1024n, elapsedMs: 42n, nextPageToken, isCancelled: false },
-  }) satisfies Frame;
-
-function scriptStream(...frames: Frame[]) {
-  listMessagesMock.mockImplementation((_req: unknown, _opts: { signal?: AbortSignal; timeoutMs: number }) =>
-    (function* streamMessages() {
-      for (const frame of frames) {
-        yield { controlMessage: frame };
-      }
-    })()
-  );
-}
-
-/**
- * One-shot listMessages implementation that yields the given frames, then hangs until the
- * returned `release` is called — lets a test hold a stream open mid-flight (so it's still
- * running, not yet at its `finally`) while a second, newer call supersedes it.
- */
-function pausedStream(...framesBeforePause: Frame[]) {
-  let release = () => {
-    // replaced synchronously below
-  };
-  const gate = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  listMessagesMock.mockImplementationOnce(() =>
-    (async function* streamMessages() {
-      for (const frame of framesBeforePause) {
-        yield { controlMessage: frame };
-      }
-      await gate;
-    })()
-  );
-  return () => release();
-}
-
-const baseParams: MessageSearchParams = {
+const TOPIC = 'orders';
+const BASE_PARAMS = {
   startOffset: -1,
   startTimestamp: -1,
   partitionId: -1,
   maxResults: 50,
   filterInterpreterCode: '',
-};
+} satisfies MessageSearchParams;
+const LIVE_PARAMS = { ...BASE_PARAMS, startOffset: PartitionOffsetOrigin.End };
+const originalClient = config.consoleClient;
 
-type SearchHookResult = RenderHookResult<MessageSearchResult, unknown>['result'];
+type Stream = () => AsyncIterable<ListMessagesResponse>;
+const replies: Stream[] = [];
+const attempts: { request: ListMessagesRequest; timeoutMs: number | undefined; signal: AbortSignal }[] = [];
+const openGates = new Set<() => void>();
 
-async function startSearch(params = baseParams) {
-  const { result } = renderHook(() => useMessageSearch('test-topic'));
-  await act(() => result.current.start(params));
+beforeEach(() => {
+  config.consoleClient = createClient(
+    ConsoleService,
+    createRouterTransport(({ service }) => {
+      service(ConsoleService, {
+        listMessages(request, context) {
+          attempts.push({ request, timeoutMs: context.timeoutMs(), signal: context.signal });
+          const reply = replies.shift();
+          if (!reply) {
+            throw new ConnectError('Unexpected message search request', Code.FailedPrecondition);
+          }
+          return reply();
+        },
+      });
+    })
+  );
+});
+
+afterEach(() => {
+  try {
+    cleanup();
+    for (const release of openGates) {
+      release();
+    }
+    toast.dismiss();
+  } finally {
+    replies.length = 0;
+    attempts.length = 0;
+    config.consoleClient = originalClient;
+    rs.useRealTimers();
+  }
+});
+
+function dataFrame(partitionId: number, offset: number, status = 'created') {
+  const json = JSON.stringify({ status });
+  return create(ListMessagesResponseSchema, {
+    controlMessage: {
+      case: 'data',
+      value: {
+        partitionId,
+        offset: BigInt(offset),
+        value: {
+          encoding: PayloadEncoding.JSON,
+          normalizedPayload: new TextEncoder().encode(json),
+          payloadSize: json.length,
+        },
+      },
+    },
+  });
+}
+
+const doneFrame = (nextPageToken = '') =>
+  create(ListMessagesResponseSchema, {
+    controlMessage: {
+      case: 'done',
+      value: { bytesConsumed: 1024n, elapsedMs: 42n, nextPageToken, isCancelled: false },
+    },
+  });
+
+const errorFrame = (message: string) =>
+  create(ListMessagesResponseSchema, { controlMessage: { case: 'error', value: { message } } });
+
+function replyWith(...frames: ListMessagesResponse[]) {
+  replies.push(() => createAsyncIterable(frames));
+}
+
+function holdStream(beforePause: ListMessagesResponse[] = [], afterPause: ListMessagesResponse[] = []) {
+  const gate = Promise.withResolvers<void>();
+  const release = () => {
+    openGates.delete(release);
+    gate.resolve();
+  };
+  openGates.add(release);
+  replies.push(async function* heldReply() {
+    yield* beforePause;
+    await gate.promise;
+    yield* afterPause;
+  });
+  return release;
+}
+
+type SearchResult = RenderHookResult<MessageSearchResult, unknown>['result'];
+const rowKeys = (result: SearchResult) => result.current.messages.map(messageKey);
+
+async function startSearch() {
+  const { result } = renderHook(() => useMessageSearch(TOPIC));
+  await act(() => result.current.start(BASE_PARAMS));
   return result;
 }
 
-/** Starts a run inside act() without awaiting it, returning the run's promise. */
-function startInBackground(result: SearchHookResult) {
-  let started: Promise<void> = Promise.resolve();
+function startInBackground(result: SearchResult) {
+  let started = Promise.resolve();
   act(() => {
-    started = result.current.start(baseParams);
+    started = result.current.start(BASE_PARAMS);
   });
   return started;
 }
 
-function renderWithRunningSearch() {
-  const { result } = renderHook(() => useMessageSearch('test-topic'));
-  return { result, started: startInBackground(result) };
+async function finishStream(release: () => void, started: Promise<void>) {
+  await act(async () => {
+    release();
+    await started;
+  });
 }
 
-const requestAt = (index: number) => listMessagesMock.mock.calls[index][0];
+test('collects streamed rows and reports completion without flashing paged results', async () => {
+  replyWith(
+    create(ListMessagesResponseSchema, { controlMessage: { case: 'phase', value: { phase: 'Consuming messages' } } }),
+    create(ListMessagesResponseSchema, {
+      controlMessage: { case: 'progress', value: { bytesConsumed: 512n, messagesConsumed: 2n } },
+    }),
+    dataFrame(0, 1),
+    dataFrame(0, 2),
+    dataFrame(1, 7),
+    doneFrame('token-1')
+  );
 
-describe('useMessageSearch', () => {
-  beforeEach(() => {
-    listMessagesMock.mockReset();
+  const result = await startSearch();
+
+  expect(rowKeys(result)).toEqual(['0-1', '0-2', '1-7']);
+  expect(result.current).toMatchObject({
+    phase: 'done',
+    bytesConsumed: 1024,
+    elapsedMs: 42,
+    nextPageToken: 'token-1',
+    error: null,
+  });
+  expect(result.current.newKeys.size).toBe(0);
+});
+
+test('loads the next page with the backend token and appends its rows', async () => {
+  replyWith(dataFrame(0, 1), doneFrame('page-2'));
+  const result = await startSearch();
+  expect(result.current.nextPageToken).toBe('page-2');
+
+  replyWith(dataFrame(0, 2), doneFrame());
+  await act(() => result.current.loadMore(25));
+
+  expect(attempts).toHaveLength(2);
+  expect(attempts[1]?.request).toMatchObject({ topic: TOPIC, pageToken: 'page-2', pageSize: 25 });
+  expect(rowKeys(result)).toEqual(['0-1', '0-2']);
+  expect(result.current.nextPageToken).toBeNull();
+});
+
+test('a superseded stream cannot overwrite the replacement search', async () => {
+  const releaseOld = holdStream([dataFrame(0, 1)]);
+  const { result } = renderHook(() => useMessageSearch(TOPIC));
+  const startedOld = startInBackground(result);
+  await waitFor(() => expect(rowKeys(result)).toEqual(['0-1']));
+
+  const releaseNew = holdStream([], [dataFrame(2, 9), doneFrame()]);
+  const startedNew = startInBackground(result);
+  await finishStream(releaseOld, startedOld);
+  expect(result.current).toMatchObject({ phase: 'connecting', messages: [] });
+
+  await finishStream(releaseNew, startedNew);
+  expect(rowKeys(result)).toEqual(['2-9']);
+});
+
+test('reloads a large message in place using a single raw, size-unlimited request', async () => {
+  replyWith(dataFrame(0, 1), dataFrame(0, 2), doneFrame());
+  const result = await startSearch();
+
+  replyWith(dataFrame(0, 2, 'reloaded'));
+  await act(() => result.current.loadLargeMessage(0, 2));
+
+  expect(attempts.at(-1)?.request).toMatchObject({
+    topic: TOPIC,
+    partitionId: 0,
+    startOffset: 2n,
+    ignoreMaxSizeLimit: true,
+    includeOriginalRawPayload: true,
+    maxResults: 1,
+  });
+  expect(rowKeys(result)).toEqual(['0-1', '0-2']);
+  expect(result.current.messages.map(({ valueJson }) => valueJson)).toEqual([
+    '{"status":"created"}',
+    '{"status":"reloaded"}',
+  ]);
+});
+
+test('a transport failure rejects, keeps received rows, and exposes the error', async () => {
+  replies.push(async function* interruptedReply() {
+    for await (const frame of createAsyncIterable([dataFrame(0, 1)])) {
+      yield frame;
+    }
+    throw new ConnectError('connection lost', Code.Unavailable);
+  });
+  const { result } = renderHook(() => useMessageSearch(TOPIC));
+
+  await act(async () => {
+    await expect(result.current.start(BASE_PARAMS)).rejects.toThrow('connection lost');
   });
 
-  describe('results', () => {
-    test('collects data frames and finishes with done stats', async () => {
-      scriptStream(
-        { case: 'phase', value: { phase: 'Consuming messages' } },
-        { case: 'progress', value: { bytesConsumed: 512n, messagesConsumed: 2n } },
-        dataFrame(0, 1),
-        dataFrame(0, 2),
-        dataFrame(1, 7),
-        doneFrame('token-1')
-      );
+  expect(rowKeys(result)).toEqual(['0-1']);
+  expect(result.current.phase).toBe('done');
+  expect(result.current.error?.message).toContain('connection lost');
+});
 
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-      await act(() => result.current.start(baseParams));
+test('a backend error followed by completion publishes a toast without failing the search', async () => {
+  replyWith(errorFrame('N partitions offline'), doneFrame());
 
-      expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2', '1-7']);
-      expect(result.current.phase).toBe('done');
-      expect(result.current.bytesConsumed).toBe(1024);
-      expect(result.current.elapsedMs).toBe(42);
-      expect(result.current.nextPageToken).toBe('token-1');
-      expect(result.current.error).toBeNull();
-    });
+  const result = await startSearch();
 
-    test('loadMore appends using the next page token', async () => {
-      scriptStream(dataFrame(0, 1), doneFrame('page-2'));
-      const result = await startSearch();
-      expect(result.current.nextPageToken).toBe('page-2');
+  expect(result.current.error).toBeNull();
+  expect(toast.getToasts()).toContainEqual(
+    expect.objectContaining({ type: 'error', title: 'Backend error', description: 'N partitions offline' })
+  );
+});
 
-      scriptStream(dataFrame(0, 2), doneFrame(''));
-      await act(() => result.current.loadMore(25));
+test('a backend error without completion rejects the search', async () => {
+  replyWith(errorFrame('permission denied'));
+  const { result } = renderHook(() => useMessageSearch(TOPIC));
 
-      expect(listMessagesMock).toHaveBeenCalledTimes(2);
-      expect(requestAt(1).pageToken).toBe('page-2');
-      expect(requestAt(1).pageSize).toBe(25);
-      expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2']);
-      expect(result.current.nextPageToken).toBeNull();
-    });
-
-    test('a new start clears previous results', async () => {
-      scriptStream(dataFrame(0, 1), doneFrame());
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-      await act(() => result.current.start(baseParams));
-      expect(result.current.messages).toHaveLength(1);
-
-      scriptStream(dataFrame(2, 9), doneFrame());
-      await act(() => result.current.start(baseParams));
-      expect(result.current.messages.map(messageKey)).toEqual(['2-9']);
-    });
-
-    test('start with append:true keeps previous results (live tail restarting after hitting maxResults)', async () => {
-      scriptStream(dataFrame(0, 1), doneFrame());
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-      await act(() => result.current.start(baseParams, { live: true }));
-      expect(result.current.messages).toHaveLength(1);
-
-      scriptStream(dataFrame(0, 2), doneFrame());
-      await act(() => result.current.start(baseParams, { live: true, append: true }));
-      expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2']);
-    });
-
-    test('a superseded run must not finalize state (phase/backendPhase/messages) after a newer run replaces it', async () => {
-      const releaseA = pausedStream(dataFrame(0, 1));
-      const { result, started: startA } = renderWithRunningSearch();
-      await waitFor(() => expect(result.current.phase).toBe('streaming'));
-
-      // B replaces A while A is still paused mid-stream (not yet at its `finally`).
-      const releaseB = pausedStream();
-      startInBackground(result);
-      expect(result.current.phase).toBe('connecting');
-
-      // A's abort now resolves (on a later microtask, as it would for a real aborted fetch) —
-      // its `finally` runs after B has already taken over.
-      await act(async () => {
-        releaseA();
-        await startA;
-      });
-
-      // B's in-progress state must survive; A's stale completion must not have overwritten it.
-      expect(result.current.phase).toBe('connecting');
-
-      releaseB(); // let B settle so it doesn't dangle past the test
-      await waitFor(() => expect(result.current.phase).toBe('done'));
-    });
-
-    test('loadLargeMessage replaces the matching row in place', async () => {
-      scriptStream(dataFrame(0, 1), dataFrame(0, 2), doneFrame());
-      const result = await startSearch();
-
-      listMessagesMock.mockImplementation(() =>
-        (async function* streamMessages() {
-          await Promise.resolve();
-          yield { controlMessage: { case: 'data', value: { partitionID: 0, offset: 2, reloaded: true } } };
-        })()
-      );
-      await act(() => result.current.loadLargeMessage(0, 2));
-
-      const replaced = result.current.messages[1] as { reloaded?: boolean };
-      expect(replaced.reloaded).toBe(true);
-      // The one-off fetch must lift the size limit and request the raw payload
-      const req = listMessagesMock.mock.calls.at(-1)?.[0];
-      expect(req.ignoreMaxSizeLimit).toBe(true);
-      expect(req.includeOriginalRawPayload).toBe(true);
-      expect(req.maxResults).toBe(1);
-    });
+  await act(async () => {
+    await expect(result.current.start(BASE_PARAMS)).rejects.toThrow('permission denied');
   });
 
-  describe('failures', () => {
-    test('stream failure surfaces as error state', async () => {
-      listMessagesMock.mockImplementation(() =>
-        (async function* streamMessages() {
-          await Promise.resolve();
-          yield { controlMessage: dataFrame(0, 1) };
-          throw new Error('connection lost');
-        })()
-      );
+  expect(result.current.error?.message).toBe('permission denied');
+});
 
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-      await act(async () => {
-        await expect(result.current.start(baseParams)).rejects.toThrow('connection lost');
-      });
+test('stopping an open search aborts the RPC without reporting a failure', async () => {
+  const release = holdStream([dataFrame(0, 1)]);
+  const { result } = renderHook(() => useMessageSearch(TOPIC));
+  const started = startInBackground(result);
+  await waitFor(() => expect(result.current.phase).toBe('streaming'));
 
-      expect(result.current.error?.message).toBe('connection lost');
-      expect(result.current.messages).toHaveLength(1);
-    });
+  act(() => result.current.stop());
+  expect(attempts[0]?.signal.aborted).toBe(true);
+  await finishStream(release, started);
 
-    // Regression: `start()` used to resolve identically whether the stream completed cleanly
-    // or failed outright, so a caller that restarts on completion (live tail) couldn't tell a
-    // hard failure apart from a normal finish and looped on it at RTT speed. `start()` must now
-    // reject when the stream actually failed.
-    test('start() rejects on a real stream failure, not just resolve-and-setError', async () => {
-      listMessagesMock.mockImplementation(() =>
-        (async function* streamMessages() {
-          await Promise.resolve();
-          throw new Error('connection lost');
-        })()
-      );
+  expect(result.current.error).toBeNull();
+});
 
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-      await act(async () => {
-        await expect(result.current.start(baseParams)).rejects.toThrow('connection lost');
-      });
-      expect(result.current.phase).toBe('done');
-    });
+test('live search marks arriving rows as new', async () => {
+  replyWith(dataFrame(0, 5), dataFrame(0, 6), doneFrame());
+  const { result } = renderHook(() => useMessageSearch(TOPIC));
 
-    // A backend `error` frame doesn't necessarily mean the request failed (e.g. "N partitions
-    // offline") — same rule the legacy engine applies. When `done` still follows, it's toasted
-    // but must not reject or leave the error state set, otherwise a single offline partition
-    // breaks live tail's retry budget and shows a false error alongside real rows in paged mode.
-    test('start() does not reject on a backend `error` frame when `done` still follows', async () => {
-      scriptStream({ case: 'error', value: { message: 'N partitions offline' } }, doneFrame());
+  await act(() => result.current.start(LIVE_PARAMS, { live: true }));
 
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-      await act(async () => {
-        await expect(result.current.start(baseParams)).resolves.toBeUndefined();
-      });
-      expect(result.current.error).toBeNull();
-      expect(toast.error).toHaveBeenCalledWith('Backend error', { description: 'N partitions offline' });
-    });
+  expect(result.current.newKeys).toEqual(new Set(['0-5', '0-6']));
+});
 
-    // Without a following `done`, the error frame was the last thing the stream said before
-    // ending — that's the genuinely fatal case, and callers that auto-restart on completion
-    // (live tail) must still be able to tell it apart from a clean finish.
-    test('start() rejects on a backend `error` control frame when the stream ends without `done`', async () => {
-      scriptStream({ case: 'error', value: { message: 'permission denied' } });
+test('normal searches use a short deadline and filtered and live searches use a longer one', async () => {
+  rs.useFakeTimers();
+  replyWith(doneFrame());
+  const result = await startSearch();
 
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-      await act(async () => {
-        await expect(result.current.start(baseParams)).rejects.toThrow('permission denied');
-      });
-      expect(result.current.error?.message).toBe('permission denied');
-    });
+  replyWith(doneFrame());
+  await act(() => result.current.start({ ...BASE_PARAMS, filterInterpreterCode: 'cmV0dXJuIHRydWU=' }));
+  replyWith(doneFrame());
+  await act(() => result.current.start(LIVE_PARAMS, { live: true }));
 
-    test('start() does not reject when stopped deliberately (abort is not a failure)', async () => {
-      const releaseA = pausedStream(dataFrame(0, 1));
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-
-      let startPromise: Promise<void> = Promise.resolve();
-      act(() => {
-        startPromise = result.current.start(baseParams);
-      });
-      await waitFor(() => expect(result.current.phase).toBe('streaming'));
-
-      act(() => {
-        result.current.stop();
-      });
-      await act(async () => {
-        releaseA();
-        await expect(startPromise).resolves.toBeUndefined();
-      });
-    });
-  });
-
-  describe('live tail and timeouts', () => {
-    test('live mode marks arriving rows as new', async () => {
-      scriptStream(dataFrame(0, 5), dataFrame(0, 6), doneFrame());
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-      await act(() => result.current.start({ ...baseParams, startOffset: -3 }, { live: true }));
-
-      expect(result.current.newKeys.has('0-5')).toBe(true);
-      expect(result.current.newKeys.has('0-6')).toBe(true);
-    });
-
-    test('non-live paged searches do not flash rows', async () => {
-      scriptStream(dataFrame(0, 5), doneFrame());
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-      await act(() => result.current.start(baseParams));
-      expect(result.current.newKeys.size).toBe(0);
-    });
-
-    test('uses the long timeout for live and filtered streams, short otherwise', async () => {
-      const { result } = renderHook(() => useMessageSearch('test-topic'));
-
-      scriptStream(doneFrame());
-      await act(() => result.current.start(baseParams));
-      expect(listMessagesMock.mock.calls[0][1].timeoutMs).toBe(30 * 1000);
-
-      scriptStream(doneFrame());
-      await act(() => result.current.start({ ...baseParams, filterInterpreterCode: 'cmV0dXJuIHRydWU=' }));
-      expect(listMessagesMock.mock.calls[1][1].timeoutMs).toBe(30 * 60 * 1000);
-
-      scriptStream(doneFrame());
-      await act(() => result.current.start(baseParams, { live: true }));
-      expect(listMessagesMock.mock.calls[2][1].timeoutMs).toBe(30 * 60 * 1000);
-    });
-  });
+  expect(attempts.map(({ timeoutMs }) => timeoutMs)).toEqual([30_000, 1_800_000, 1_800_000]);
 });
