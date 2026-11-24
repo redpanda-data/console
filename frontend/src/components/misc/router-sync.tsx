@@ -68,6 +68,5 @@ export const RouterSync = () => {
  * navigation sync via onRouteChange — the legacy window event dispatch is not needed.
  */
 function isFederatedMode() {
-  // config.clusterId is only set in federated mode (via setup() in console-app.tsx).
   return appConfig.clusterId !== undefined && appConfig.clusterId !== '';
 }

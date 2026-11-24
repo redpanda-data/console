@@ -45,7 +45,7 @@ export type TemplateGalleryDialogProps = {
   onSubmit: (payload: TemplateFormSubmitPayload) => void;
 };
 
-// `selectedTemplate` is tracked outside `view` so `TemplateFormPanel` stays
+// WARNING: Keep the selected template separate from the current step so opening a nested form cannot discard unsaved inputs.
 type DialogView =
   | { kind: 'gallery' }
   | { kind: 'form' }
@@ -191,7 +191,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
       return;
     }
     if (!result.success && result.error) {
-      // AddTopicStep shows field-level validation in its own form; only toast
       toast.error(result.message ?? result.error);
     }
   };

@@ -3,6 +3,11 @@ export const DEFAULT_API_BASE = './api' as const;
 
 export const BUILDER_API_KEY = '4abd0efa0759420b88149ada5c1eb216';
 
+/**
+ * Default Console feature flags.
+ * Dark mode is standalone-only: the next load shows the theme switch and defaults to the OS preference.
+ * Embedded Console uses the host theme.
+ */
 export const FEATURE_FLAGS = {
   enableRpcnPipelineDrafts: false,
   enableRpcnTemplateGallery: false,
@@ -16,7 +21,6 @@ export const FEATURE_FLAGS = {
   // Embedded only: self-hosted Console shows cluster fencing wherever the cluster supports it.
   enableClusterFencing: false,
   enableServerlessEgressGateway: false,
-  // Standalone only: from the next page load, shows the header's theme switch and defaults the theme to
   enableDarkMode: false,
 };
 

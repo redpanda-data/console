@@ -693,7 +693,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           return;
         }
 
-        // Keep userData as undefined and store error for UI to display
+        // WARNING: Do not redirect on transient identity failures; redirecting retries the failing request in a loop.
         set({ userDataError: err });
       })
       .finally(() => {
@@ -954,7 +954,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       if (!r) {
         return null;
       }
-      // IMPORTANT: Update useSupportedFeaturesStore BEFORE useApiStore.
+      // WARNING: Publish capability state before API state; synchronous sidebar subscribers read the capability store.
       useSupportedFeaturesStore.getState().setEndpointCompatibility(r.endpointCompatibility);
       set({ endpointCompatibility: r.endpointCompatibility });
       return r;
@@ -2534,7 +2534,6 @@ async function streamSearchMessages(
   } catch (e) {
     failSearch(search, abortSignal, e);
   } finally {
-    // This ensures cleanup happens whether the stream completes, errors, or is cancelled
     search.abortController = null;
   }
 }

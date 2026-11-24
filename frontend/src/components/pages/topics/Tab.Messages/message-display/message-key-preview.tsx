@@ -23,7 +23,6 @@ function isPrimitivePayload(payload: unknown) {
   return typeof payload === 'string' || typeof payload === 'number' || typeof payload === 'boolean';
 }
 
-// Only 'object' is left after binary, control-character text, and primitives.
 function isObjectKey(key: Payload) {
   return !(key.encoding === 'binary' || key.encoding === 'utf8WithControlChars' || isPrimitivePayload(key.payload));
 }

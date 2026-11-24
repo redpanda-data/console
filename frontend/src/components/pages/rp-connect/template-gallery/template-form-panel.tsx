@@ -66,7 +66,6 @@ const EndpointBadge = ({ endpoint }: { endpoint: TemplateEndpoint }) => {
 
 const PIPELINE_NAME_FIELD = '__pipelineName';
 
-// non-blank entry (",," must not pass).
 const requiredSlotSchema: (slot: TemplateSlot, isList: boolean) => z.ZodType<string> = (slot, isList) => {
   if (!slot.required) {
     return z.string();

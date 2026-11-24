@@ -96,13 +96,11 @@ describe('orderForContinuousNewest', () => {
 });
 
 describe('orderForContinuousNewest composed with applyDisplayWindow (topic-messages-view order of operations)', () => {
-  // Regression for: continuous + "Newest" trimmed the newest rows instead of the oldest.
   const newestPageFirst = [
     ...Array.from({ length: 5 }, (_, i) => msg(0, i, 100 + i * 10)),
     ...Array.from({ length: 5 }, (_, i) => msg(1, i, i * 10)),
   ];
 
-  // Regression: keeping the head of the newest-first ordering pinned the window to the first
   test('windowing after ordering reveals the freshly loaded older page once past the cap', () => {
     const ordered = orderForContinuousNewest(newestPageFirst, true, 'newest');
     const { rows, trimmed } = applyDisplayWindow(ordered, 4);

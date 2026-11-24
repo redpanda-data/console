@@ -518,7 +518,6 @@ function useNodeLineRanges(yaml: string) {
   }, [yaml]);
 }
 
-// is enough to keep it from re-deriving the highlight from the (possibly ancestor) range.
 function selectWithoutCursorSync(
   ed: editor.IStandaloneCodeEditor,
   selection: IRange,
@@ -761,7 +760,6 @@ type LaneTab = {
   disabled?: boolean;
 };
 
-// The visual editor builds on the diagram parsing, so it also requires the diagrams flag and the
 const isVisualEditorFeatureEnabled = () =>
   isFeatureFlagEnabled('enableRpcnVisualEditor') && isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded();
 
@@ -1510,7 +1508,7 @@ function usePipelineLanes({
       if (mode === 'view') {
         setActiveViewLane('configuration');
       } else {
-        // otherwise the lane switch discards it (no commit-on-unmount).
+        // WARNING: Commit pending edits before switching to YAML; unmounting the visual editor discards them.
         editorStore.getState().pendingEditCommit?.();
         setActiveEditLane('yaml');
       }
@@ -1660,7 +1658,6 @@ function PipelineLaneTabs({ page, expanded, onToggleExpanded }: PageSectionProps
   const { lanes } = page.lanes;
   const { activeViewLane, activeEditLane } = page.editorState;
   return (
-    // Lane tabs with the fullscreen toggle overlaid at the right end. Lane-less modes keep an empty
     <div className="relative shrink-0">
       {lanes.length > 0 ? (
         <Tabs value={page.config.mode === 'view' ? activeViewLane : activeEditLane}>

@@ -145,7 +145,6 @@ describe('decorateEdges', () => {
   });
 
   it("keeps a selected container's internal wiring lit (scope includes descendants)", () => {
-    // Selecting container 'a' (subtree includes 'b','c'): the fan edge between its children must
     const decorated = decorateEdges(edges, { selectedScope: scope('a', 'b', 'c') });
     const fanout = decorated.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean; emphasized?: boolean };
     expect(fanout.emphasized).toBe(true);

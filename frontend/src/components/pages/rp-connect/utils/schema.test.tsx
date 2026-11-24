@@ -1315,7 +1315,6 @@ describe('generateDefaultValue with enriched ground-truth specs', () => {
       const config = result?.config as Record<string, any>;
       const stream = config?.input?.http_client?.stream;
 
-      // stamped required) must both be absent.
       expect(stream?.codec).toBeUndefined();
       expect(stream?.max_buffer).toBeUndefined();
     });

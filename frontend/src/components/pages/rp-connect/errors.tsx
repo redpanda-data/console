@@ -21,7 +21,6 @@ export function extractLintHintsFromError(err: unknown): Record<string, LintHint
     return toHintRecord([errorHint(err instanceof Error ? err.message : String(err))]);
   }
 
-  // Specific hints (validation errors with line/column info, field violations) win; otherwise fall
   const hints = lintHintsFromDetails(err.details);
   return toHintRecord(hints.length > 0 ? hints : [errorHint(connectErrorHintText(err))]);
 }

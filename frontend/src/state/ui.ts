@@ -689,7 +689,7 @@ export const useUISettingsStore = create<UISettingsStore>()(
  * Installs side-effects for the UI-settings store:
  *   - debounced auto-save on store change
  *   - immediate auto-save on visibility change
- *   - cross-tab settings sync via the `storage` event
+ *   - reload settings via the `storage` event so edits in another tab are not overwritten
  *
  * Returns a teardown function that removes all listeners / subscribers and
  * clears any pending save timer.
@@ -719,7 +719,6 @@ export function installUISettingsSideEffects() {
   };
   window.addEventListener('visibilitychange', onVisibilityChange);
 
-  // So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
   const onStorage = (e: StorageEvent) => {
     if (e.key !== settingsName || e.newValue === null) {
       return;

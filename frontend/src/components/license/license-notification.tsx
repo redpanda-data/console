@@ -128,7 +128,6 @@ function preferCoreLicenseForSharedExpiry(licenses: License[]) {
 }
 
 function getLicenseExpirationInfo(licenses: License[], licenseViolation: boolean | undefined) {
-  // This Global License Notification banner is used only for Enterprise licenses
   const enterpriseLicenses = licenses.filter((license) => license.type === License_Type.ENTERPRISE);
 
   const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];

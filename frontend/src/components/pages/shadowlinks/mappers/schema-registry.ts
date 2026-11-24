@@ -235,7 +235,7 @@ function mapTlsToMtlsSlice(tls: TLSSettings | undefined) {
       ca: pem.ca ? { pemContent: pem.ca, fileName: '' } : undefined,
       clientCert: pem.cert ? { pemContent: pem.cert, fileName: '' } : undefined,
       clientKey: pem.key ? { pemContent: pem.key, fileName: '' } : undefined,
-      // server-side. A returned cert implies the same (the proto requires
+      // WARNING: A redacted key can still exist on the server; a returned certificate implies a retained key even without a fingerprint.
       existingKeyConfigured: !pem.key && Boolean(pem.keyFingerprint || pem.cert),
       existingKeyFingerprint: pem.keyFingerprint ?? '',
     };

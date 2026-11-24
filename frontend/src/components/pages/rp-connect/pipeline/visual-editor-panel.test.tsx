@@ -199,7 +199,6 @@ function StatefulPanel({
   );
 }
 
-// without changing the selection — a regression here silently dropped every edit made after it.
 function SaveFlushButton() {
   const flush = usePipelineEditorStore((s) => s.pendingEditCommit);
   return (

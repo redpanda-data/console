@@ -13,8 +13,6 @@ import { describe, expect, test } from '@rstest/core';
 
 import { Route } from './index';
 
-// Regression test: navigating away from the Messages tab (e.g. clicking the "Topics"
-// This must bounce back to the topic list instead of rendering a 404.
 describe('topic details route', () => {
   test('redirects /topics/undefined back to the topic list', () => {
     expect.assertions(3);

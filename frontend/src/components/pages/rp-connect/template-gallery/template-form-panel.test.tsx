@@ -49,7 +49,6 @@ describe('buildSchema slot validation', () => {
   });
 
   test('the real mysql-cdc template rejects dotted table names in the form', () => {
-    // the form must catch that before deploy.
     const schema = buildSchema(mysqlCdcTemplate.slots);
     const values = { ...NAME, dsn: 'MYSQL_DSN', includedTable: 'mydb.users', targetTopic: 'orders' };
     expect(schema.safeParse(values).success).toBe(false);

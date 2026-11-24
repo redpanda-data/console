@@ -150,8 +150,6 @@ function renderPayloadData(renderData: PayloadRenderData, payload: Payload, view
         </div>
       );
     case 'json':
-      // Latin-1 code points in the viewer so copy-paste yields the original
-      // bytes rather than their UTF-8 encoding.
       return (
         <KowlJsonView escapeLatin1={payload.encoding === 'avro'} srcObj={renderData.content} style={viewerStyle} />
       );

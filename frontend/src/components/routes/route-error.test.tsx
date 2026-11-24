@@ -26,8 +26,6 @@ describe('the RouteError', () => {
     expect(screen.getByText('boom')).toBeVisible();
   });
 
-  // Regression test: clicking away (e.g. a breadcrumb) while a request is in flight
-  // must never render the literal text "undefined".
   test('falls back to a generic message for a non-Error value', () => {
     render(<RouteError error={undefined} />);
 

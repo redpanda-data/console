@@ -481,7 +481,7 @@ async function savePipeline(flow: SaveFlow, intent?: SaveIntent) {
   return submitSave(flow, saveAttempt(flow, run, yamlContent, intent));
 }
 
-// A save that navigates unmounts the editor before the debounced write can run, so edits made
+// WARNING: Persist edits made during a save here; navigation unmounts the editor before its debounced write can run.
 function keepEditsMadeInFlight({
   targetKey,
   savedYaml,

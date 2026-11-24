@@ -43,7 +43,6 @@ describe('the RequireAuth', () => {
   afterEach(() => {
     AppFeatures.SINGLE_SIGN_ON = initialSingleSignOn;
     appConfig.authenticationClient = initialAuthClient;
-    // this reset must be wrapped in act() too.
     act(() => {
       useApiStore.setState({ userData: undefined, userDataError: null, isUserDataFetchInProgress: false });
     });

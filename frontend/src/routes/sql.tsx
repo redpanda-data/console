@@ -14,6 +14,7 @@ import { SqlWorkspace } from 'components/pages/sql/sql-workspace';
 import { Database } from 'lucide-react';
 import { Feature, isSupported, useSupportedFeaturesStore } from 'state/supported-features';
 
+/** Redirect unsupported clusters only after capability discovery; a cold load must stay on the SQL route. */
 export const Route = createFileRoute('/sql')({
   staticData: {
     title: 'SQL',
@@ -21,7 +22,6 @@ export const Route = createFileRoute('/sql')({
     // The studio has its own title bar; otherwise a normal in-flow page.
     breadcrumbOnlyHeader: true,
   },
-  // load off /sql before the answer is known. Only redirect once it's loaded.
   beforeLoad: () => {
     const { endpointCompatibility } = useSupportedFeaturesStore.getState();
     if (endpointCompatibility !== null && !isSupported(Feature.SQLService)) {

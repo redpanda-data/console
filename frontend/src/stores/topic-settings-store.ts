@@ -71,7 +71,8 @@ export type TopicSearchParams = {
 
 /**
  * Complete topic settings structure
- * Matches the structure from uiSettings-v3 perTopicSettings[]
+ * Matches the structure from uiSettings-v3 perTopicSettings[].
+ * Read row density and message columns through the fallback getters for older persisted entries.
  */
 export type TopicSettings = {
   topicName: string;
@@ -95,11 +96,11 @@ export type TopicSettings = {
   produceRecordEncoding: PayloadEncoding | 'base64';
   produceRecordCompression: CompressionType;
   quickSearch: string;
-  // fields existed still typecheck — read through the fallback getters.
   rowDensity?: RowDensity;
   messageColumns?: MessageColumnConfig[];
 };
 
+/** Message column reads restore missing columns and deduplicate persisted IDs from the legacy array merge. */
 export type TopicSettingsStore = {
   perTopicSettings: TopicSettings[];
 
@@ -406,8 +407,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
           if (!columns || columns.length === 0) {
             return DEFAULT_MESSAGE_COLUMNS;
           }
-          // Heal entries corrupted by the legacy assignDeep array merge (which
-          // duplicated some column ids and dropped others): keep the first
           const seen = new Set<MessageColumnConfig['id']>();
           const unique = columns.filter((c) => {
             if (seen.has(c.id)) {
@@ -526,7 +525,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
   )
 );
 
-// This ensures that changes made via Zustand are also reflected in the legacy MobX store
 useTopicSettingsStore.subscribe(syncPerTopicSettingsToMobX);
 
 useTopicSettingsStore.subscribe((state) => {

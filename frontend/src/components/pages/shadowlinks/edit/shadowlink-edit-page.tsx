@@ -171,9 +171,7 @@ const ShadowLinkEditForm = ({ name, formValues, isUpdating, updateShadowLink }: 
 
   const [currentTab, setCurrentTab] = useState<string>('source');
 
-  // section isn't rendered, so its rules must not run: an api-mode link
-  // hydrates a basic-auth password that is never returned and has no input
-  // to re-enter it, which would otherwise block saving every other field.
+  // WARNING: Do not validate hidden Schema Registry fields; a redacted password would block unrelated saves with no way to re-enter it.
   const srGateOpen = useSupportedFeaturesStore((s) => s.shadowLinkSchemaRegistrySync);
 
   const form = useForm<FormValues>({

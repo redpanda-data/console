@@ -251,7 +251,6 @@ describe('the FilterBar', () => {
       await userEvent.click(input());
       await userEvent.keyboard('key:abc');
       await userEvent.keyboard('{Enter}');
-      // still be open showing default suggestions, but a stray Enter must not re-insert anything
       await userEvent.keyboard('{Enter}');
       expect(input()).toHaveValue('key:abc ');
       expect(props.onFieldTokensChange).toHaveBeenLastCalledWith([
@@ -439,7 +438,6 @@ describe('the FilterBar', () => {
       const props = renderBar({ jsFilters: [jsFilter] });
       await userEvent.click(screen.getByTitle('Remove filter'));
       expect(props.onRemoveJsFilter).toHaveBeenCalledWith('js-1');
-      // must not trigger that via a bubbled click.
       expect(input()).not.toHaveFocus();
     });
 

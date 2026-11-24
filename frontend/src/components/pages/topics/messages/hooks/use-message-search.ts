@@ -360,7 +360,7 @@ const settleRun = (session: SearchSession, setters: SearchSetters) => {
 };
 
 const finalizeRun = ({ session, setters, abortController }: StreamRun) => {
-  // the newer run's in-progress state with our own "done". Only finalize when no one else has
+  // WARNING: Old aborts settle on a later microtask; do not let them clear in-progress state for the replacement stream.
   const supersededByNewerRun = session.abortController !== null && session.abortController !== abortController;
   if (session.abortController === abortController) {
     session.abortController = null;

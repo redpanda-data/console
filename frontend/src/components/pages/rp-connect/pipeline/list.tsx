@@ -456,7 +456,6 @@ const PipelineListTable = ({
           </TableRow>
         ) : (
           rows.map((row) => (
-            // Pointer shortcut only: the name cell holds the same link, so a row tab stop would
             <TableRow
               className="cursor-pointer"
               key={row.id}

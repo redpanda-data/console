@@ -353,7 +353,6 @@ describe('the CreateTopicDialog', () => {
 
       (api.refreshClusterOverview as ReturnType<typeof rs.fn>).mockClear();
 
-      // Reopening the dialog (e.g. after closing it without a page refresh) must
       rerender(<CreateTopicDialog isOpen={true} onClose={onClose} />);
 
       await waitFor(() => {

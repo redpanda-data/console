@@ -129,7 +129,6 @@ export type SqlWorkspaceProps = {
 
 function useSqlStudioPage() {
   const navigate = useNavigate();
-  // The route guard skips the redirect while endpoint compatibility is still
   const endpointsLoaded = useSupportedFeaturesStore((s) => s.endpointCompatibility !== null);
   useEffect(() => {
     if (endpointsLoaded && !isSupported(Feature.SQLService)) {

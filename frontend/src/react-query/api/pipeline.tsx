@@ -110,7 +110,7 @@ export const useListPipelinesQuery = (
       : false,
     getNextPageParam: (lastPage, _allPages, _lastPageParam, allPageParams) => {
       const nextPageToken = lastPage?.response?.nextPageToken;
-      // Any token already requested, not just the last one: keyset tokens only move forward, so a
+      // WARNING: Track every requested token; comparing only the latest token misses cycles and can leave pagination running forever.
       if (!nextPageToken || allPageParams.some((param) => param?.pageToken === nextPageToken)) {
         return;
       }

@@ -16,7 +16,7 @@ import KowlEditor, { type IStandaloneCodeEditor } from './kowl-editor';
 const READ_ONLY_EDITOR_OPTIONS = {
   readOnly: true,
   domReadOnly: true,
-  // PERFORMANCE CONFIG: Fixes blank content bug when scrolling large JSON (40-50KB+)
+  // WARNING: Keep fixed-column wrapping; wordWrap 'on' can blank the viewer for large single-line payloads.
   wordWrap: 'wordWrapColumn',
   wordWrapColumn: 120, // Lines >120 chars wrap. Prevents blank screen with large payloads
   wrappingStrategy: 'simple', // 'advanced' causes 2s+ delays on large content
@@ -46,10 +46,13 @@ const READ_ONLY_EDITOR_OPTIONS = {
   scrollBeyondLastLine: false,
 } as const;
 
+/**
+ * Read-only JSON viewer. Enable `escapeLatin1` for Avro JSON bytes so copying text
+ * preserves the original byte escapes instead of yielding UTF-8 glyphs.
+ */
 export const KowlJsonView = (props: {
   srcObj: object | string | null | undefined;
   style?: CSSProperties;
-  // clipboard receives the UTF-8 encoding, not the original byte.
   escapeLatin1?: boolean;
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);

@@ -256,7 +256,6 @@ describe('useListPipelinesQuery', () => {
   });
 });
 
-// The server validates name_contains against ^[A-Za-z0-9-_ /]+$ and rejects anything
 describe('toNameContainsFilter', () => {
   test('passes a name already inside the server pattern through unchanged', () => {
     expect(toNameContainsFilter('Untitled pipeline')).toBe('Untitled pipeline');

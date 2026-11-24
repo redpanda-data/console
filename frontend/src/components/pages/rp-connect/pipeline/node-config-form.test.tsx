@@ -98,7 +98,6 @@ describe('the NodeConfigForm — full schema', () => {
 
       expect(within(fieldLabelRow('topic')).getByText('*')).toBeInTheDocument();
 
-      // unset it must NOT be flagged required.
       await user.click(screen.getByText('Advanced'));
       await user.click(screen.getByText('sasl'));
       expect(within(fieldLabelRow('mechanism')).queryByText('*')).toBeNull();
@@ -339,7 +338,6 @@ describe('the NodeConfigForm — full schema', () => {
 });
 
 describe('the NodeConfigForm — list-valued components (switch/try/…)', () => {
-  // single case's fields, so the form must NOT render them or rebuild the value.
   const switchSpec = {
     name: 'switch',
     type: 'processor',

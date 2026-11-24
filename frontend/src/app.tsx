@@ -121,7 +121,6 @@ const App = () => {
 
   useEffect(() => {
     const setupTeardown = setup(EMPTY_SETUP_ARGS);
-    // config.featureFlags). Dev-only mechanism — see debug-helper/feature-flag-overrides.ts.
     applyDebugFeatureFlagOverrides();
     const uiSettingsTeardown = installUISettingsSideEffects();
     const darkModeSyncTeardown = installDarkModeAvailabilitySync(() => isFeatureFlagEnabled('enableDarkMode'));

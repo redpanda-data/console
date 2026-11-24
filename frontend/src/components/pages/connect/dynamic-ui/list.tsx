@@ -19,7 +19,6 @@ import { type JSX, useEffect, useRef, useState } from 'react';
 
 const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/iu;
 
-// Keep stable reference to the latest onChange so useEffect doesn't re-run on every render
 const useLatestRef = <T,>(value: T) => {
   const ref = useRef(value);
   useEffect(() => {

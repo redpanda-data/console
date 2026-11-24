@@ -21,7 +21,6 @@ describe('classifyGround', () => {
   });
 
   it('counts a near-white ground as light', () => {
-    // What `color-mix(in srgb, #fff 90%, #000)` rasterises to. Read as raw `color(srgb 0.9 …)`
     expect(classifyGround([230, 230, 230])).toBe('light');
   });
 

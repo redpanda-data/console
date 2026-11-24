@@ -29,8 +29,7 @@ function loginHandling() {
     return null; // already in login process, don't interrupt!
   }
 
-  // These pages handle license state themselves and must render even if the
-  // triggering license-expired error left `userData` stuck at `undefined`
+  // WARNING: Let license recovery routes render before identity resolves; expired licenses can make the identity request fail.
   if (path.startsWith('/trial-expired') || path.startsWith('/upload-license')) {
     return null;
   }
@@ -56,7 +55,6 @@ function renderAuthenticatedState(path: string) {
 }
 
 const RequireAuth = ({ children }: { children: ReactNode }) => {
-  // (e.g. from undefined -> null when not authenticated, triggering the login redirect)
   useApiStoreHook((s) => s.userData); // re-render when userData changes
   useApiStoreHook((s) => s.userDataError);
 

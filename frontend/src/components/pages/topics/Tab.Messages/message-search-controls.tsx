@@ -151,7 +151,7 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
   const { startOffset, setStartOffset, startTimestamp, setStartTimestamp, maxResults } = query;
   const [customStartOffsetValue, setCustomStartOffsetValue] = useState<number | string>(0);
 
-  // queues a nuqs update that navigates back to this topic (UX-1514).
+  // WARNING: Reset pagination in setters, not URL effects; a queued nuqs update can navigate back after the topic unmounts.
   const changeStartOffset = (value: number) => {
     if (value !== startOffset) {
       paging.setPageIndex(0);

@@ -32,7 +32,6 @@ describe('applyDisplayWindow', () => {
     expect(applyDisplayWindow(rows, 2)).toEqual({ rows, trimmed: 0 });
   });
 
-  // Regression: continuous + "Newest" orders newest-first, and "Load more" pages sort to the
   test('newest-first ordering: keeps the tail so newly loaded older pages become visible', () => {
     const firstThreePages = Array.from({ length: 10 }, (_, i) => 9 - i);
     const withOlderPage = [...firstThreePages, ...Array.from({ length: 4 }, (_, i) => -1 - i)];

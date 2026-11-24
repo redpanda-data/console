@@ -293,7 +293,7 @@ export function NodeInspector(props: NodeInspectorProps) {
   // A switch case is edited for its routing condition only; its body is separate nodes. Reported
   if (target.kind === 'switchCase') {
     return (
-      // otherwise a typed value leaks to a sibling with an equal saved check, misrouting on save.
+      // WARNING: Keep the case path as the key, or a draft can leak to a sibling case and change its routing on save.
       <SwitchCaseEditor
         caseObject={component}
         key={JSON.stringify(editTargetPath(target))}

@@ -330,7 +330,6 @@ output:
       - check: 'this.region == "us"'
 `;
       const { nodes } = parsePipelineFlowTree(yaml);
-      // A case authored with only a `check` (no output body yet) must not vanish from the canvas —
       const emptyCase = nodes.find((n) => n.id === 'output-switch-1');
       expect(emptyCase).toMatchObject({
         kind: 'group',

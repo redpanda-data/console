@@ -89,7 +89,6 @@ describe('useTopicSettingsStore messages view settings', () => {
   });
 
   test('repeated column reorders survive the legacy uiSettings sync without duplication', () => {
-    // Regression: every store change syncs into the legacy uiSettings store via
     const store = useTopicSettingsStore.getState();
     store.setMessageColumns('topic-a', [...DEFAULT_MESSAGE_COLUMNS]);
 

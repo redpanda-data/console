@@ -180,7 +180,6 @@ function TransportQueryProviders({
       baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
     });
 
-  // Use useState to lazily initialize the QueryClient once and keep it stable across re-renders
   const [queryClient] = useState(() => {
     const client = new QueryClient({
       defaultOptions: {

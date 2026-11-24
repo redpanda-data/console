@@ -22,7 +22,6 @@ const PAGE_TOP_VAR = '--console-page-top';
  * the host's share of it can change without Console shipping.
  */
 const usePublishPageTop = () => {
-  // out while the API is erroring, and it must be re-measured when it comes back.
   const [columnEl, setColumnEl] = useState<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
@@ -34,7 +33,6 @@ const usePublishPageTop = () => {
     // The write resizes the page, which resizes observed elements, so only write on change.
     const publish = createPageTopPublisher(columnEl);
 
-    // Only what sits above can push the page down: the shell's wrappers (the host's too,
     const observer = new ResizeObserver(publish);
     const observeAll = () => {
       observer.disconnect();
@@ -64,6 +62,8 @@ const usePublishPageTop = () => {
 /**
  * The column every page renders into: the gap below the app header, plus the offset
  * the `page-fill-viewport` utilities size against. Must sit directly inside `#mainLayout`.
+ * Remeasures when ancestors or preceding siblings resize. The callback ref
+ * also triggers measurement when the API error view swaps the column back in.
  */
 export const PageColumn = ({ children }: { children: ReactNode }) => {
   const ref = usePublishPageTop();

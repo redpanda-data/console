@@ -39,7 +39,6 @@ const TABLE_OPTIONS = {
 export type PartitionWithMoves = Partition & {
   brokersBefore: number[];
   brokersAfter: number[];
-  // So only *new* brokers, not counting brokers that have previously (and maybe still are) hosted a replica of the partition
   numAddedBrokers: number;
   numRemovedBrokers: number;
   changedLeader: boolean;

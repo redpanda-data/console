@@ -38,7 +38,6 @@ function getValuePreviewText(msg: TopicMessage) {
   if (isPrimitivePayload(msg.value.payload)) {
     return msg.value.payload as React.ReactNode;
   }
-  // Only thing left is 'object'
   return cullText(msg.valueJson, 300);
 }
 

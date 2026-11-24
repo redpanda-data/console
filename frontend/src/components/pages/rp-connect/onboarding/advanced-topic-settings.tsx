@@ -115,7 +115,6 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
       control: form.control,
       name: unitField as 'retentionTimeUnit' | 'retentionSizeUnit',
     });
-    // enter) or when editing an existing topic. The unit selector itself must
     const lockedForEdit = isExistingTopic || disabled;
     const isValueDisabled = isRetentionUnitDisabled(unitValue) || lockedForEdit;
 

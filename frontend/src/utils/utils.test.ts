@@ -16,7 +16,6 @@ describe('assignDeep', () => {
   });
 
   test('reordering an array of shared object references never mutates the elements', () => {
-    // Regression: an index-wise merge of a reordered array would write one
     const a = { id: 'a', visible: true };
     const b = { id: 'b', visible: false };
     const target: Record<string, unknown> = { cols: [a, b] };
@@ -42,7 +41,6 @@ describe('substringWithEllipsis', () => {
   });
 
   test('returns an empty string with ellipsis if maxLength is 0', () => {
-    // This scenario is interesting because the logic dictates a minimum effective length of 1 character.
     expect(substringWithEllipsis('Hello, world!', 0)).toBe('H...');
   });
 
