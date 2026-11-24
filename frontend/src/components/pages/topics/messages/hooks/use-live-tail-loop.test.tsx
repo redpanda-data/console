@@ -9,224 +9,192 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { act, renderHook } from '@testing-library/react';
+import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
+import { afterEach, beforeEach, expect, rs, test } from '@rstest/core';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { config } from 'config';
+import { ConsoleService } from 'protogen/redpanda/api/console/v1alpha1/console_service_pb';
+import {
+  type ListMessagesRequest,
+  ListMessagesResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
+import { useCallback } from 'react';
+import { PartitionOffsetOrigin } from 'state/ui';
 
 import { liveTailRetryDelayMs, useLiveTailLoop } from './use-live-tail-loop';
+import { type MessageSearchParams, useMessageSearch } from './use-message-search';
 
-/** Renders an active loop whose every `start` rejects. */
-function renderFailingLoop(options: { maxRetries?: number } = {}) {
-  const start = rs.fn().mockRejectedValue(new Error('boom'));
-  const stop = rs.fn();
-  const hook = renderHook(() => useLiveTailLoop({ active: true, start, stop, ...options }));
-  return { start, stop, ...hook };
+type TailPage = {
+  outcome: 'complete' | 'fail' | 'open';
+  offsets?: number[];
+};
+
+const TOPIC = 'orders';
+const SEARCH = {
+  startOffset: PartitionOffsetOrigin.End,
+  startTimestamp: -1,
+  partitionId: -1,
+  maxResults: 10,
+  filterInterpreterCode: '',
+} satisfies MessageSearchParams;
+const FAIL = { outcome: 'fail' } satisfies TailPage;
+const OPEN: TailPage = { outcome: 'open' };
+const originalClient = config.consoleClient;
+
+function streamData(offset: number) {
+  return create(ListMessagesResponseSchema, {
+    controlMessage: { case: 'data', value: { partitionId: 0, offset: BigInt(offset) } },
+  });
 }
 
-describe('liveTailRetryDelayMs', () => {
-  test('backs off exponentially, capped at 30s', () => {
-    expect(liveTailRetryDelayMs(1)).toBe(1000);
-    expect(liveTailRetryDelayMs(2)).toBe(2000);
-    expect(liveTailRetryDelayMs(3)).toBe(4000);
-    expect(liveTailRetryDelayMs(6)).toBe(30_000);
-    expect(liveTailRetryDelayMs(10)).toBe(30_000);
+function waitForClientToClose(signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+    signal.addEventListener('abort', () => resolve(), { once: true });
   });
+}
+
+function serveTail(...pages: TailPage[]) {
+  const attempts: { request: ListMessagesRequest; signal: AbortSignal }[] = [];
+  const transport = createRouterTransport(({ service }) => {
+    service(ConsoleService, {
+      async *listMessages(request, context) {
+        attempts.push({ request, signal: context.signal });
+        const page = pages.shift() ?? OPEN;
+        for (const offset of page.offsets ?? []) {
+          yield streamData(offset);
+        }
+        if (page.outcome === 'fail') {
+          throw new ConnectError('broker disconnected', Code.Unavailable);
+        }
+        if (page.outcome === 'complete') {
+          yield create(ListMessagesResponseSchema, { controlMessage: { case: 'done', value: {} } });
+          return;
+        }
+        await waitForClientToClose(context.signal);
+      },
+    });
+  });
+  config.consoleClient = createClient(ConsoleService, transport);
+  return attempts;
+}
+
+function renderTail(maxRetries?: number) {
+  return renderHook(
+    ({ active }) => {
+      const { start: startSearch, stop, messages } = useMessageSearch(TOPIC);
+      const start = useCallback((append: boolean) => startSearch(SEARCH, { live: true, append }), [startSearch]);
+      const loop = useLiveTailLoop({ active, start, stop, maxRetries });
+      return { ...loop, messages };
+    },
+    { initialProps: { active: true } }
+  );
+}
+
+const advance = (ms: number) => act(() => rs.advanceTimersByTimeAsync(ms));
+
+beforeEach(() => {
+  rs.useFakeTimers();
 });
 
-describe('useLiveTailLoop', () => {
-  const noopStop = rs.fn();
-  beforeEach(() => {
-    rs.useFakeTimers();
-  });
-
-  afterEach(() => {
+afterEach(async () => {
+  try {
+    cleanup();
+    await advance(0);
+  } finally {
     rs.useRealTimers();
-  });
+    config.consoleClient = originalClient;
+  }
+});
 
-  describe('restarting', () => {
-    test('inactive: never starts', () => {
-      const start = rs.fn().mockResolvedValue(undefined);
-      renderHook(() => useLiveTailLoop({ active: false, start, stop: noopStop }));
-      expect(start).not.toHaveBeenCalled();
-    });
+test('retry delay doubles up to a thirty second cap', () => {
+  expect([1, 2, 3, 6, 10].map(liveTailRetryDelayMs)).toEqual([1000, 2000, 4000, 30_000, 30_000]);
+});
 
-    // Regression: the tail must keep tailing (restart transparently) for as long as it's
-    test('restarts, appending, on every clean completion', async () => {
-      let calls = 0;
-      const start = rs.fn().mockImplementation(() => {
-        calls += 1;
-        return calls >= 3 ? new Promise<void>(() => {}) : Promise.resolve();
-      });
-      renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop }));
+test('completed pages restart immediately and keep the earlier rows', async () => {
+  const attempts = serveTail({ outcome: 'complete', offsets: [1] }, { outcome: 'complete', offsets: [2] });
+  const { result } = renderTail();
 
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(0);
-      });
+  await advance(0);
 
-      expect(start).toHaveBeenCalledTimes(3);
-      expect(start.mock.calls[0][0]).toBe(false);
-      expect(start.mock.calls[1][0]).toBe(true);
-      expect(start.mock.calls[2][0]).toBe(true);
-    });
+  expect(attempts.map(({ request }) => [request.topic, request.startOffset])).toEqual([
+    [TOPIC, BigInt(PartitionOffsetOrigin.End)],
+    [TOPIC, BigInt(PartitionOffsetOrigin.End)],
+    [TOPIC, BigInt(PartitionOffsetOrigin.End)],
+  ]);
+  expect(result.current.messages.map(({ offset }) => offset)).toEqual([1, 2]);
+  expect(result.current.status).toBe('running');
+});
 
-    test('inactive loop reports idle', () => {
-      const { result } = renderHook(() => useLiveTailLoop({ active: false, start: rs.fn(), stop: noopStop }));
-      expect(result.current.status).toBe('idle');
-    });
-  });
+test('transport failures back off before retrying and exhaust the configured budget', async () => {
+  const attempts = serveTail(FAIL, FAIL, FAIL);
+  const { result } = renderTail(2);
 
-  describe('failures', () => {
-    // Regression for the retry-storm bug: a rejecting `start` must not be retried
-    // behind a fast reset loop. It must back off instead.
-    test('a hard failure backs off instead of restarting immediately', async () => {
-      const start = rs.fn().mockRejectedValue(new Error('boom'));
-      renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop }));
+  await advance(999);
+  expect([attempts.length, result.current.status]).toEqual([1, 'retrying']);
+  await advance(1);
+  expect(attempts).toHaveLength(2);
+  await advance(60_000);
 
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(0);
-      });
-      expect(start).toHaveBeenCalledTimes(1);
+  expect([attempts.length, result.current.status]).toEqual([3, 'exhausted']);
+});
 
-      // Still within the first backoff window (1000ms) — must not have retried yet.
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(500);
-      });
-      expect(start).toHaveBeenCalledTimes(1);
+test('a completed page resets the consecutive failure budget', async () => {
+  const attempts = serveTail(FAIL, { outcome: 'complete', offsets: [2] }, FAIL, { outcome: 'complete', offsets: [3] });
+  const { result } = renderTail(1);
 
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(600);
-      });
-      expect(start).toHaveBeenCalledTimes(2);
-    });
+  await advance(1000);
+  expect([attempts.length, result.current.status]).toEqual([3, 'retrying']);
+  await advance(999);
+  expect(attempts).toHaveLength(3);
+  await advance(1);
 
-    test('gives up after maxRetries consecutive failures instead of retrying forever', async () => {
-      const start = rs.fn().mockRejectedValue(new Error('boom'));
-      renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop, maxRetries: 2 }));
+  expect([attempts.length, result.current.status]).toEqual([5, 'running']);
+});
 
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(5 * 60_000);
-      });
-      // 1 initial attempt + 2 retries, then it must stop scheduling more.
-      expect(start).toHaveBeenCalledTimes(3);
+test('retry after exhaustion starts fresh and can back off again', async () => {
+  const attempts = serveTail({ outcome: 'fail', offsets: [1] }, FAIL, FAIL, { outcome: 'complete', offsets: [2] });
+  const { result } = renderTail(1);
 
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(60_000);
-      });
-      expect(start).toHaveBeenCalledTimes(3);
-    });
+  await advance(60_000);
+  expect([attempts.length, result.current.status]).toEqual([2, 'exhausted']);
+  expect(result.current.messages.map(({ offset }) => offset)).toEqual([1]);
+  act(() => result.current.restart());
+  await advance(0);
+  expect(result.current.messages).toHaveLength(0);
+  await advance(1000);
 
-    test('a clean completion after a failure resets the backoff (no cumulative penalty)', async () => {
-      let calls = 0;
-      const start = rs.fn().mockImplementation(() => {
-        calls += 1;
-        if (calls === 1) {
-          return Promise.reject(new Error('boom'));
-        }
-        return calls >= 3 ? new Promise<void>(() => {}) : Promise.resolve();
-      });
-      renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop }));
+  expect([attempts.length, result.current.status]).toEqual([5, 'running']);
+});
 
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(0);
-      });
-      expect(start).toHaveBeenCalledTimes(1);
+test('manual restart cancels the retry and switching off aborts the new stream', async () => {
+  const attempts = serveTail(FAIL);
+  const { result, rerender } = renderTail();
 
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(1000);
-      });
-      expect(start).toHaveBeenCalledTimes(3);
-    });
+  await advance(0);
+  expect(result.current.status).toBe('retrying');
+  act(() => result.current.restart());
+  await advance(60_000);
+  expect([attempts.length, result.current.status]).toEqual([2, 'running']);
 
-    test('status reports exhausted after the retry budget, not running', async () => {
-      const start = rs.fn().mockRejectedValue(new Error('boom'));
-      const { result } = renderHook(() => useLiveTailLoop({ active: true, start, stop: noopStop, maxRetries: 1 }));
+  rerender({ active: false });
 
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(0);
-      });
-      expect(result.current.status).toBe('retrying');
+  expect(attempts.at(-1)?.signal.aborted).toBe(true);
+});
 
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(60_000);
-      });
-      expect(result.current.status).toBe('exhausted');
-    });
+test('switching off an active tail cancels retry and restart stays inert', async () => {
+  const attempts = serveTail(FAIL);
+  const { result, rerender } = renderTail();
 
-    // Regression: with retries exhausted, the page's Retry action was a no-op — nothing could
-    // re-arm the loop while the live toggle stayed on. restart() must start over with a fresh
-    test('restart() re-arms an exhausted loop with a fresh failure budget', async () => {
-      const { start, result } = renderFailingLoop({ maxRetries: 1 });
+  await advance(0);
+  expect(result.current.status).toBe('retrying');
+  rerender({ active: false });
+  act(() => result.current.restart());
+  await advance(60_000);
 
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(60_000);
-      });
-      expect(result.current.status).toBe('exhausted');
-      expect(start).toHaveBeenCalledTimes(2);
-
-      start.mockImplementation(() => new Promise<void>(() => {})); // recovers: stream stays open
-      act(() => {
-        result.current.restart();
-      });
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(0);
-      });
-
-      expect(start).toHaveBeenCalledTimes(3);
-      expect(start.mock.calls[2][0]).toBe(false); // fresh start, not an append
-      expect(result.current.status).toBe('running');
-    });
-  });
-
-  describe('restart()', () => {
-    test('while backing off, stops the stream and starts fresh without the pending retry', async () => {
-      const { start, stop, result } = renderFailingLoop();
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(0);
-      });
-
-      start.mockImplementation(() => new Promise<void>(() => {})); // recovers: stream stays open
-      act(() => result.current.restart());
-      expect(stop).toHaveBeenCalledTimes(1);
-      expect(start).toHaveBeenCalledTimes(2);
-      expect(start.mock.calls[1][0]).toBe(false);
-
-      // The retry scheduled before the restart must never fire.
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(60_000);
-      });
-      expect(start).toHaveBeenCalledTimes(2);
-    });
-
-    test('does nothing while the loop is inactive', () => {
-      const start = rs.fn().mockResolvedValue(undefined);
-      const stop = rs.fn();
-      const { result } = renderHook(() => useLiveTailLoop({ active: false, start, stop }));
-
-      act(() => result.current.restart());
-
-      expect(start).not.toHaveBeenCalled();
-      expect(stop).not.toHaveBeenCalled();
-      expect(result.current.status).toBe('idle');
-    });
-  });
-
-  describe('teardown', () => {
-    test('deactivating stops the stream and cancels any pending retry', async () => {
-      const start = rs.fn().mockRejectedValue(new Error('boom'));
-      const stop = rs.fn();
-      const { unmount } = renderHook(() => useLiveTailLoop({ active: true, start, stop }));
-
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(0);
-      });
-      expect(start).toHaveBeenCalledTimes(1);
-
-      unmount();
-      expect(stop).toHaveBeenCalledTimes(1);
-
-      await act(async () => {
-        await rs.advanceTimersByTimeAsync(60_000);
-      });
-      expect(start).toHaveBeenCalledTimes(1);
-    });
-  });
+  expect([attempts.length, result.current.status]).toEqual([1, 'idle']);
 });
