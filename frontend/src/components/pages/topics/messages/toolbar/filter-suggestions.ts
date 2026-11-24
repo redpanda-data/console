@@ -40,9 +40,6 @@ export type SuggestionsInput = {
 
 const msgs = (n: number) => (n === 1 ? '1 msg' : `${n} msgs`);
 
-/** A completed `offset:N`/`offset>N`/`offset<N`/`offset=N` word — matched so the dropdown can
- * offer all three comparison alternatives (with match counts) instead of silently committing to
- * whichever operator happened to be typed. */
 const OFFSET_COMPARISON_PATTERN = /^offset[:><=](?<offset>\d+)$/u;
 const NESTED_VALUE_PATTERN = /^value[.:](?<path>[\w.-]*)$/u;
 const EMPTY_VALUE_FIELD_PATTERN = /^(?<field>partition|key|offset|value\.[\w.*-]+):$/u;
@@ -56,7 +53,6 @@ const OFFSET_COMPARISON_OPS = [
   ['eq', '='],
 ] as const;
 
-/** `offset > N` / `offset < N` / `offset = N`, each with its match count. */
 const offsetComparisonItems = (messages: TopicMessage[], value: string) =>
   OFFSET_COMPARISON_OPS.map<SuggestionItem>(([op, symbol]) => ({
     kind: 'item',
@@ -65,7 +61,6 @@ const offsetComparisonItems = (messages: TopicMessage[], value: string) =>
     action: { type: 'commit-field', field: 'offset', op, value },
   }));
 
-/** The field's distinct loaded values, plus a free-text `contains` option for non-numeric fields. */
 const fieldValueItems = (messages: TopicMessage[], field: string, query: string) => {
   const items = distinctFieldValues(messages, field, query).map<SuggestionItem>(({ value, count }) => ({
     kind: 'item',
@@ -89,7 +84,6 @@ const pendingValueItems = ({ query, pendingField, messages }: SuggestionsInput) 
   return field === 'offset' && query ? offsetComparisonItems(messages, query) : fieldValueItems(messages, field, query);
 };
 
-/** `value:` / `value.<path>` traversal: suggest nested paths, then values at a leaf. */
 const nestedValueItems = (input: SuggestionsInput) => {
   const match = NESTED_VALUE_PATTERN.exec(input.query.trim());
   if (!match?.groups) {
@@ -136,7 +130,6 @@ const recentItems = (recents: RecentSearch[]) =>
           .map<SuggestionItem>((recent) => ({ kind: 'item', label: recent.label, action: recent.action })),
       ] satisfies SuggestionItem[]);
 
-/** Offers the typed text as JavaScript when it reads like a predicate. */
 const jsEditorItems = (query: string) =>
   [
     { kind: 'header', label: 'JavaScript' },
@@ -206,7 +199,6 @@ const fieldItems = () =>
     },
   ] satisfies SuggestionItem[];
 
-/** With text typed, full-text (and maybe JavaScript) options lead; otherwise recent searches do. */
 const defaultGroupItems = ({ query, recents, canUseJsFilters, messages }: SuggestionsInput) =>
   [
     ...(query ? fullTextItems(query, messages, canUseJsFilters) : recentItems(recents)),
@@ -216,7 +208,6 @@ const defaultGroupItems = ({ query, recents, canUseJsFilters, messages }: Sugges
 
 type Suggestions = { heading: string; items: SuggestionItem[] };
 
-/** An explicit `js:`/`javascript:` prefix routes straight to the editor — as code if the rest reads like an expression, otherwise as the new filter's name. */
 const explicitJsPrefixItems = (input: SuggestionsInput) => {
   if (!(input.canUseJsFilters && (input.query.startsWith('js:') || input.query.startsWith('javascript:')))) {
     return null;
@@ -249,11 +240,6 @@ const nestedValueSuggestions = (input: SuggestionsInput) => {
   return nested ? ({ heading: 'Suggestions', items: nested } satisfies Suggestions) : null;
 };
 
-/**
- * A bare `field:` with no value yet behaves like picking the field from the list: show the
- * possible values right away. Nested `value.<path>:` counts too (bare `value:` is intentionally
- * excluded — it's a free-text substring search over the whole value, not an enumerable field).
- */
 const emptyValueFieldSuggestions = (input: SuggestionsInput) => {
   const emptyValueField = EMPTY_VALUE_FIELD_PATTERN.exec(input.query.trim());
   if (!emptyValueField) {
@@ -282,7 +268,6 @@ const typedTokenSuggestions = (input: SuggestionsInput) => {
   return typed ? ({ heading: 'Suggestions', items: typed } satisfies Suggestions) : null;
 };
 
-/** Tried in order; the first that applies decides the dropdown, else the default groups show. */
 const SUGGESTION_RESOLVERS: ((input: SuggestionsInput) => Suggestions | null)[] = [
   pendingFieldSuggestions,
   nestedValueSuggestions,
@@ -292,7 +277,11 @@ const SUGGESTION_RESOLVERS: ((input: SuggestionsInput) => Suggestions | null)[] 
   typedTokenSuggestions,
 ];
 
-/** Heading + item list for the autocomplete dropdown, given the current input state. */
+/**
+ * Heading + item list for the autocomplete dropdown, given the current input state.
+ *
+ * A completed offset offers all three comparisons with match counts. Bare text fields offer loaded values; bare value: instead searches the whole payload. Nested value paths can enumerate loaded values. The explicit JavaScript prefix opens the editor, with either code or a proposed filter name.
+ */
 export function buildSuggestions(input: SuggestionsInput) {
   for (const resolve of SUGGESTION_RESOLVERS) {
     const suggestions = resolve(input);
@@ -306,7 +295,6 @@ export function buildSuggestions(input: SuggestionsInput) {
 
 type Ghost = { rest: string; action: SuggestionAction };
 
-/** Completes a pending field's value toward its most common loaded match. */
 const pendingValueGhost = (messages: TopicMessage[], pendingField: string, query: string) => {
   const [first] = distinctFieldValues(messages, pendingField, '', 100).filter(({ value }) =>
     value.toLowerCase().startsWith(query.toLowerCase())
@@ -326,7 +314,6 @@ const pendingValueGhost = (messages: TopicMessage[], pendingField: string, query
   return null;
 };
 
-/** Completes a field name with its trailing colon. */
 const fieldNameGhost = (query: string) => {
   for (const field of ['partition', 'offset', 'key', 'value']) {
     if (field.startsWith(query.toLowerCase()) && field !== query.toLowerCase()) {

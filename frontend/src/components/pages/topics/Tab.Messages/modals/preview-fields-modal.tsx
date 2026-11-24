@@ -24,6 +24,9 @@ import { type FC, useState } from 'react';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import { PreviewSettings } from '../preview-settings';
 
+/**
+ * The settings popover must portal inside the focus lock. Keep the content column scrollable and clear of the dialog's close control.
+ */
 export const PreviewFieldsModal: FC<{
   getShowDialog: () => boolean;
   setShowDialog: (val: boolean) => void;
@@ -41,14 +44,10 @@ export const PreviewFieldsModal: FC<{
       }}
       open={getShowDialog()}
     >
-      {/* `xl` is `sm:max-w-4xl`. */}
       <DialogContent size="xl">
-        {/* The PreviewSettings popover portals in here, inside the dialog's focus lock. */}
-        {/* A flex column, or DialogBody's `flex-1` and its scrolling go inert. */}
         <div className="flex min-h-0 flex-col" ref={setContainer}>
           <PortalContainerProvider value={container ?? undefined}>
             <DialogHeader>
-              {/* Room for DialogContent's close button: the header's own padding plus this makes 40px. */}
               <div className="pr-6">
                 <DialogTitle>Preview fields</DialogTitle>
               </div>

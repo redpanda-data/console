@@ -11,13 +11,6 @@ import { applyDisplayWindow } from '../utils/live-window';
 import { messageKey } from '../utils/message-key';
 import { orderForContinuousNewest, visiblePageKeys } from '../utils/message-order';
 
-/**
- * A deep link (`?page=3`) or filters shrinking the row set can leave `page` past the last
- * real page — tanstack won't self-correct (autoResetPageIndex: false, see
- * messages-table.tsx) and continuous mode's footer has no pager to click back with, so it'd
- * render permanently blank. Clamp once a fetch has actually settled (`done`) so a deep link
- * to a later page isn't wiped out while the real count is still loading.
- */
 function useClampPageIndex(
   phase: MessageSearchPhase,
   rowCount: number,
@@ -38,7 +31,6 @@ function useClampPageIndex(
   );
 }
 
-/** The rows the table renders: ordered for continuous + "Newest", then trimmed to the display window. */
 function useDisplayWindow(
   filteredMessages: TopicMessage[],
   continuousActive: boolean,
@@ -67,7 +59,6 @@ function useDisplayWindow(
   };
 }
 
-/** Table paging and sorting, read from and written back to the URL. */
 function useMessagePaging(urlState: MessagesUrlState, continuousActive: boolean, windowSize: number) {
   const pagination: PaginationState = useMemo(
     () => ({
@@ -99,7 +90,6 @@ function useMessagePaging(urlState: MessagesUrlState, continuousActive: boolean,
   return { pagination, handlePaginationChange, handleSortingChange };
 }
 
-/** The selected row (kept in the URL) and the detail panel's large-payload reload. */
 function useMessageSelection(
   search: Pick<MessageSearchResult, 'messages' | 'loadLargeMessage'>,
   { selectedKey, setSelectedKey }: Pick<MessagesUrlState, 'selectedKey' | 'setSelectedKey'>,
@@ -137,11 +127,6 @@ type MessageKeyboardNavOptions = {
   enabled: boolean;
 };
 
-/**
- * Keyboard nav follows the on-screen order: current sort, then current page.
- * windowedMessages (not orderedMessages) so this matches what the table actually
- * renders — ordered for continuous + Newest, and trimmed to the display window.
- */
 function useMessageKeyboardNav({
   messages,
   windowedMessages,
@@ -186,6 +171,8 @@ export type MessagesTableStateOptions = {
  * The messages table's client-side state: filtering, ordering and windowing of the loaded rows,
  * paging and sorting, row selection, and keyboard navigation over what's on screen.
  * Continuous newest-first results are ordered across partitions before trimming; the kept tail is the load-more frontier.
+ *
+ * Clamp a stale page only after results settle, so a later-page bookmark is not reset during loading. Keyboard navigation follows the sorted, visible window and current page.
  */
 export function useMessagesTableState({
   search,

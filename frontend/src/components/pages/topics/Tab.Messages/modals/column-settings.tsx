@@ -38,6 +38,9 @@ const COLUMN_SETTINGS: ColumnList[] = [
   { title: 'Value Size', dataIndex: 'valueSize' },
 ];
 
+/**
+ * Portal the timestamp picker within the dialog's focus trap; the flex column and header inset keep scrolling and the close button accessible.
+ */
 export const ColumnSettings: FC<{
   getShowDialog: () => boolean;
   setShowDialog: (val: boolean) => void;
@@ -60,14 +63,10 @@ export const ColumnSettings: FC<{
       }}
       open={getShowDialog()}
     >
-      {/* `xl` is `sm:max-w-4xl`. */}
       <DialogContent size="xl">
-        {/* The timestamp select portals in here, inside the dialog's focus lock. */}
-        {/* A flex column, or DialogBody's `flex-1` and its scrolling go inert. */}
         <div className="flex min-h-0 flex-col" ref={setContainer}>
           <PortalContainerProvider value={container ?? undefined}>
             <DialogHeader>
-              {/* Room for DialogContent's close button: the header's own padding plus this makes 40px. */}
               <div className="pr-6">
                 <DialogTitle>Column Settings</DialogTitle>
               </div>
@@ -99,7 +98,6 @@ export const ColumnSettings: FC<{
                             setTopicSettings(topicName, { previewColumnFields: newFields });
                           }}
                         />
-                        {/* The Registry Checkbox does not wire a child label. */}
                         <CheckboxLabel className="cursor-pointer" htmlFor={`column-${dataIndex}`}>
                           {title}
                         </CheckboxLabel>

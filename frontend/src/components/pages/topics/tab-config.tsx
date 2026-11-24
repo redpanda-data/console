@@ -21,8 +21,6 @@ import { toJson } from '../../../utils/json-utils';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 import '../../../utils/array-extensions';
 
-// todo: can we assume that config values for time and bytes will always be provided in the smallest units?
-
 export function TopicConfiguration(props: { topic: Topic }) {
   const config = useApiStoreHook((s) => s.topicConfig.get(props.topic.topicName));
 

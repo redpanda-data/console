@@ -36,7 +36,7 @@ async function tryTranspile(
       return result.outputFiles[0].text;
     }
   } catch (_error) {
-    // Intentionally ignore transpilation errors and fall back to original code
+    // WARNING: Return the original editor text on transpile failure; dropping it would lose the user's code.
   }
   return fallback;
 }
@@ -101,7 +101,7 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
     const editorValue = (await getEditorValue()) ?? '';
     const formattedEditorUri = editorUri?.toString();
 
-    let transpiledCode = editorValue; // Fallback to original code if transpilation fails
+    let transpiledCode = editorValue;
 
     if (formattedEditorUri && tsWorkerClient) {
       transpiledCode = await tryTranspile(tsWorkerClient, formattedEditorUri, editorValue);

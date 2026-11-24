@@ -33,7 +33,6 @@ const focusFilterInput = (e: KeyboardEvent) => {
   document.querySelector<HTMLInputElement>('[data-testid="messages-filter-input"]')?.focus();
 };
 
-/** j/k or ↑/↓ move the selected row by `delta`, clamped to the visible rows. */
 const moveSelection = (e: KeyboardEvent, delta: number, { visibleKeys, selectedKey, onSelect }: KeyContext) => {
   if (visibleKeys.length === 0) {
     return;
@@ -44,11 +43,6 @@ const moveSelection = (e: KeyboardEvent, delta: number, { visibleKeys, selectedK
   onSelect(visibleKeys[nextIndex]);
 };
 
-/**
- * `c` copies the selected row's value. A modifier held down means the browser's own copy shortcut
- * (Cmd/Ctrl+C) — or another OS/browser binding — not this row-copy shortcut; clobbering the user's
- * real clipboard selection with the row's JSON would otherwise be a very unpleasant surprise.
- */
 const copySelectedValue = (e: KeyboardEvent, { selectedKey, getCopyText, copy }: KeyContext) => {
   if (!selectedKey || e.metaKey || e.ctrlKey || e.altKey) {
     return;
@@ -72,6 +66,8 @@ const KEY_HANDLERS = new Map<string, (e: KeyboardEvent, context: KeyContext) => 
  * Table keyboard navigation from the design mock: j/k or ↑/↓ move the selected
  * row, `c` copies the value, `/` focuses the filter input. Escape is handled by
  * the detail panel itself.
+ *
+ * Keyboard movement clamps to visible rows. Only unmodified c copies a row; do not intercept the browser's normal Cmd/Ctrl+C selection-copy action.
  */
 export function useKeyboardNav({ visibleKeys, selectedKey, onSelect, getCopyText, enabled }: KeyboardNavOptions) {
   const { copyToClipboard } = useCopyToClipboard({ onCopy: () => toast.success('Value copied to clipboard') });

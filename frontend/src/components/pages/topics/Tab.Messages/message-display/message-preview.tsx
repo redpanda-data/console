@@ -90,7 +90,6 @@ export const MessagePreview = ({
   if (value.troubleshootReport && value.troubleshootReport.length > 0) {
     return (
       <div className="flex items-center gap-2 text-destructive">
-        {/* fontSize was inert on lucide icons, so master rendered these at 24. */}
         <WarningIcon size={24} />
         There were issues deserializing the value
       </div>

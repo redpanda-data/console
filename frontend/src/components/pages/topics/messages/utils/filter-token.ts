@@ -19,27 +19,11 @@ const NEEDS_QUOTING_PATTERN = /["\s]/u;
  * rather than substring containment (`offset:12` must not match offset 1123). */
 export const NUMERIC_FIELDS = new Set(['partition', 'offset']);
 
-/** Backslash-escapes `\` and `"` so the result can sit safely inside a `"..."`-quoted value. */
 const escapeForQuoting = (value: string) => value.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"');
 
-/**
- * Quotes a value when it needs to be — contains whitespace (including just leading/trailing) or
- * an embedded `"` — so it round-trips exactly through `parseFilterInput` instead of being split
- * on a space or misread at an embedded quote.
- */
 const quoteIfNeeded = (value: string) => (NEEDS_QUOTING_PATTERN.test(value) ? `"${escapeForQuoting(value)}"` : value);
 
-/**
- * Fixed operator↔symbol pairs — the single source of truth `parseOperator` and
- * `fieldTokenText` both read from, so adding an operator is a one-line change instead of
- * needing a matching edit in two independently-hand-written places (how `<=`/`>=` first
- * shipped able to *display* but not *parse*, and vice versa).
- *
- * Order matters for parsing: listed so a multi-character symbol is tried before any
- * shorter symbol it starts with (`>=`/`<=` before `>`/`<`), otherwise the shorter symbol
- * would match first and strand a `=` in the value. `eq`'s `=` is included for parsing,
- * but deliberately left out of `DISPLAY_OP_SYMBOLS` below — see that comment.
- */
+// WARNING: Match longer operator symbols first; putting > before >= strands the equals sign in the value.
 const OPERATOR_SYMBOLS: [symbol: string, op: FilterOp][] = [
   ['!=', 'neq'],
   ['>=', 'gte'],
@@ -49,22 +33,10 @@ const OPERATOR_SYMBOLS: [symbol: string, op: FilterOp][] = [
   ['=', 'eq'],
 ];
 
-/**
- * Reverse lookup for `fieldTokenText`, derived from `OPERATOR_SYMBOLS` minus `eq` — `eq`'s
- * display form collapses to `:` (indistinguishable from `contains`); `tokenQueryText` is the
- * one place that needs `eq` spelled out as `=`, and it does so itself after calling
- * `fieldTokenText`, to keep it round-trippable in the URL.
- */
 const DISPLAY_OP_SYMBOLS = new Map(
   OPERATOR_SYMBOLS.filter(([, op]) => op !== 'eq').map(([symbol, op]) => [op, symbol])
 );
 
-/**
- * Renders `field op value` back to its typed-input spelling for a given operator, e.g.
- * `offset>48210`, `key!=abc`; `eq` and `contains` both fall through to `field:value`.
- * `formatTokenText`/`tokenEditText`/`tokenQueryText` each pass in an already
- * appropriately-encoded `value` (raw, quote-wrapped, or as-is).
- */
 const fieldTokenText = (token: FieldFilterToken, value: string) => {
   const symbol = DISPLAY_OP_SYMBOLS.get(token.op);
   return symbol ? `${token.field}${symbol}${value}` : `${token.field}:${value}`;
@@ -98,6 +70,8 @@ export function tokenEditText(token: FilterToken) {
  * Lossless text form for URL persistence: unlike the display text (which collapses `eq` to `:`),
  * `eq` serializes as `=` so `parseFilterInput` round-trips the operator exactly, and the value is
  * quoted whenever needed (see `quoteIfNeeded`) so it round-trips exactly too, not just the op.
+ *
+ * The toolbar displays both equality and contains with a colon, but serialization spells equality with = so the URL can recover the exact operation.
  */
 export function tokenQueryText(token: FieldFilterToken) {
   const value = quoteIfNeeded(token.value);
@@ -114,10 +88,6 @@ export function sameFieldTokens(a: FieldFilterToken[], b: FieldFilterToken[]) {
   return a.length === b.length && a.every((t, i) => tokenQueryText(t) === tokenQueryText(b[i]));
 }
 
-/**
- * Reads the operator and raw (still-encoded) value off `rest` — the text immediately following
- * the matched field name. Null when `rest` doesn't start with a recognized operator.
- */
 function parseOperator(field: string, rest: string): { op: FilterOp; rawValue: string } | null {
   for (const [symbol, op] of OPERATOR_SYMBOLS) {
     if (rest.startsWith(symbol)) {
@@ -125,15 +95,11 @@ function parseOperator(field: string, rest: string): { op: FilterOp; rawValue: s
     }
   }
   if (rest.startsWith(':')) {
-    // `:` means equality for enumerable/numeric fields (partition, offset) and contains for
-    // free-text fields — `offset:12` matching offset 1123 via substring containment is not
-    // what anyone typing an offset means.
     return { op: NUMERIC_FIELDS.has(field) ? 'eq' : 'contains', rawValue: rest.slice(1) };
   }
   return null;
 }
 
-/** True when a partition value is outside `[0, partitionCount)` — unknowable, so unchecked, when `partitionCount` is omitted. */
 function isOutOfRangePartition(field: string, value: string, partitionCount: number | undefined) {
   return field === 'partition' && partitionCount !== undefined && Number(value) >= partitionCount;
 }
@@ -148,6 +114,10 @@ function isOutOfRangePartition(field: string, value: string, partitionCount: num
  * unterminated quote (`value:"New`) returns null rather than a partial value. That's
  * what lets the filter bar's space-triggered auto-commit safely skip spaces typed
  * inside an open quote without any separate "is a quote open" tracking.
+ *
+ * A colon denotes equality on numeric fields and containment on text fields. Partition accepts only a single exact match in range when the count is known; an unsupported operator or invalid number stays editable rather than becoming an incorrect request.
+ *
+ * Decode complete quoted values with backslash escapes; partial quotes, trailing junk, or malformed numeric values stay unrecognized.
  */
 export function parseFilterInput(
   text: string,
@@ -161,16 +131,12 @@ export function parseFilterInput(
   if (value === null) {
     return null;
   }
-  // Out-of-range partition, when the topic's partition count is known — `partition:9999` on a
-  // 3-partition topic would otherwise reach the backend as a real request instead of staying
-  // live text the user can still correct.
   if (isOutOfRangePartition(head.field, value, options?.partitionCount)) {
     return null;
   }
   return { field: head.field, op: head.op, value };
 }
 
-/** The field name and operator `trimmed` starts with, plus the still-encoded value after them. */
 function parseFieldAndOperator(trimmed: string): { field: string; op: FilterOp; rawValue: string } | null {
   const fieldMatch = FIELD_PATTERN.exec(trimmed);
   if (!fieldMatch) {
@@ -181,34 +147,20 @@ function parseFieldAndOperator(trimmed: string): { field: string; op: FilterOp; 
   if (!operator) {
     return null;
   }
-  // Partition is a single exact match, not a range — `partition>2`/`partition<2`/`partition!=2`
-  // would otherwise silently collapse to "partition equals 2" downstream (parseFilterLine only
-  // ever reads the value, never the operator, for this field). Reject rather than misparse so the
-  // text stays live in the bar instead of quietly doing something other than what was typed.
   if (field === 'partition' && operator.op !== 'eq') {
     return null;
   }
   return { field, ...operator };
 }
 
-/** The decoded value, or null when it's empty, an unterminated quote, or not an integer for a numeric field. */
 function parseFieldValue(field: string, rawValue: string) {
   const value = decodeValue(rawValue.trim());
   if (value === null || (NUMERIC_FIELDS.has(field) && !INTEGER_VALUE_PATTERN.test(value))) {
-    // A non-numeric value for a numeric field (typo, or the incomplete "partition:-" while
-    // typing "partition:-1") must stay unrecognized rather than becoming a token —
-    // `Number(value)` downstream would be NaN, and NaN can never compare equal to
-    // itself, which desyncs every "did this change" check built on top of this.
     return null;
   }
   return value;
 }
 
-/**
- * Reads a `"`-delimited value starting at index 0 of `rawValue` (which must itself start with
- * `"`), honoring `\"`/`\\` escapes. Returns the decoded value and how many characters of
- * `rawValue` the quoted span consumed, or null when the quote never closes.
- */
 function readQuotedValue(rawValue: string) {
   let value = '';
   let i = 1;
@@ -217,13 +169,9 @@ function readQuotedValue(rawValue: string) {
     value += escaped ? rawValue[i + 1] : rawValue[i];
     i += escaped ? 2 : 1;
   }
-  // Stopped short of the end only at the closing quote
   return i < rawValue.length ? { value, length: i + 1 } : null;
 }
 
-/** Strips a value's surrounding quotes if present; null for an empty or unterminated-quote value, or
- * for trailing content after the closing quote (shouldn't happen given a whole tokenized word, but
- * guarded rather than silently dropped). */
 function decodeValue(rawValue: string) {
   if (!rawValue.startsWith('"')) {
     return rawValue.length > 0 ? rawValue : null;

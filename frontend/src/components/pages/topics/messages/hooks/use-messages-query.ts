@@ -77,7 +77,8 @@ export function useAutoSearch({ search, searchParams, refreshCounter, liveTail }
   useEffect(
     function startDebouncedSearch() {
       if (liveTail) {
-        return; // live tail owns the stream (P5)
+        // WARNING: Do not start a bounded fetch here; the live-tail loop already owns the stream.
+        return;
       }
       if (searchParams.startOffset === PartitionOffsetOrigin.Timestamp && searchParams.startTimestamp < 0) {
         return;

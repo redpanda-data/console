@@ -17,21 +17,9 @@ const VALUE_START_PATTERN = /[:=<>]/u;
 
 export type LineWord = { text: string; start: number; end: number };
 
-/**
- * A `"` opens quote mode only where a value can actually start — right at `start`, or right after
- * a `:`/`=`/`<`/`>` operator — so a stray/literal quote elsewhere in a word (`key:a"b`) doesn't get
- * misread as opening a multi-word span and swallow the rest of the line.
- */
 const opensQuote = (text: string, i: number, start: number) =>
   text[i] === '"' && (i === start || VALUE_START_PATTERN.test(text[i - 1]));
 
-/**
- * Scans forward from `start` (a word's first character) to find where it ends — see `opensQuote`
- * for when a `"` starts a multi-word quoted span. Once inside a quote, `\"`/`\\` escapes are
- * skipped over rather than treated as the closing quote, matching how `parseFilterInput`/
- * `decodeValue` decode an escaped value. An unterminated quote (no closing `"` anywhere later)
- * counts as still-being-typed and swallows the rest of the line into one word.
- */
 function findWordEnd(text: string, start: number) {
   let i = start;
   while (i < text.length && !WHITESPACE_PATTERN.test(text[i])) {
@@ -40,7 +28,6 @@ function findWordEnd(text: string, start: number) {
   return i;
 }
 
-/** Index just past the quoted span whose opening `"` is at `openQuote` (see `findWordEnd`). */
 function skipQuotedSpan(text: string, openQuote: number) {
   let i = openQuote + 1;
   while (i < text.length) {
@@ -55,7 +42,6 @@ function skipQuotedSpan(text: string, openQuote: number) {
   return i;
 }
 
-/** Index of the first non-whitespace character at or after `from` (`text.length` when there is none). */
 const skipWhitespace = (text: string, from: number) => {
   let i = from;
   while (i < text.length && WHITESPACE_PATTERN.test(text[i])) {
@@ -64,7 +50,11 @@ const skipWhitespace = (text: string, from: number) => {
   return i;
 };
 
-/** Splits a line into whitespace-delimited words — see `findWordEnd` for the quote-handling rules. */
+/**
+ * Splits a line into whitespace-delimited words — see `findWordEnd` for the quote-handling rules.
+ *
+ * A quote opens a value only at a word start or after an operator, so a literal quote does not swallow later words. Escaped quotes stay inside the span; an unclosed span remains one word while editing.
+ */
 export function tokenizeLine(text: string) {
   const words: LineWord[] = [];
   let start = skipWhitespace(text, 0);

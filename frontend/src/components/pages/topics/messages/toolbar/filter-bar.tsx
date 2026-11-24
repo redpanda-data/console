@@ -56,11 +56,6 @@ const FILTER_BADGE_TEXT_CLASS = 'font-mono text-sm';
 
 type EmittedState = { partitionId: number; fieldTokens: FieldFilterToken[]; quickSearch: string };
 
-/**
- * A piece only counts as genuinely external when it both changed since the previous render AND
- * differs from what the bar itself last emitted — one that's merely still catching up to its own
- * emission is neither (it hasn't changed since last render).
- */
 const externalChanges = (incoming: EmittedState, prev: EmittedState, last: EmittedState) => ({
   partitionId: incoming.partitionId !== prev.partitionId && incoming.partitionId !== last.partitionId,
   fieldTokens: !(
@@ -69,8 +64,6 @@ const externalChanges = (incoming: EmittedState, prev: EmittedState, last: Emitt
   quickSearch: incoming.quickSearch !== prev.quickSearch && incoming.quickSearch !== last.quickSearch,
 });
 
-/** Picks, per piece, the external incoming value or a fallback — shared by the "what should
- * `rawText` become" and "what should we now consider last-emitted" resync computations. */
 const mergeExternal: (
   external: ReturnType<typeof externalChanges>,
   incoming: EmittedState,
@@ -87,7 +80,6 @@ const OVERLAY_FONT_CLASS = 'font-mono text-sm';
 // WARNING: Cancel horizontal padding with a matching negative margin and use an outline so the overlay does not change text widths.
 const PILL_HIGHLIGHT_CLASS = 'rounded-md px-0.5 py-1 -mx-0.5 outline-1 outline-border/60';
 
-/** Text a suggestion/ghost action should splice in at the current word, or `null` for actions handled specially (opening the JS dialog). */
 const replacementTextFor = (action: SuggestionAction) => {
   switch (action.type) {
     case 'set-pending':
@@ -108,7 +100,6 @@ type TextRange = Pick<LineWord, 'start' | 'end'>;
 const spliceRange = (text: string, range: TextRange, replacement: string) =>
   text.slice(0, range.start) + replacement + text.slice(range.end);
 
-/** Every setter and callback applying a suggestion touches, gathered per application. */
 type LineEdit = {
   rawText: string;
   setRawText: (text: string) => void;
@@ -122,13 +113,11 @@ type LineEdit = {
   input: HTMLInputElement | null;
 };
 
-/** Replaces the line's text and reports the pieces it now parses into. */
 const commitLine = (edit: LineEdit, next: string) => {
   edit.setRawText(next);
   edit.deriveAndEmit(next);
 };
 
-/** `open-js`: the word under the caret leaves the line and seeds the JavaScript filter dialog instead. */
 const moveWordToJsEditor = (
   edit: LineEdit,
   range: TextRange,
@@ -140,7 +129,6 @@ const moveWordToJsEditor = (
   edit.onEditJsFilter(null, action.code, action.name);
 };
 
-/** The line with the suggestion's text spliced over `range`, and the caret position just past it. */
 const spliceSuggestion = (rawText: string, action: SuggestionAction, range: TextRange) => {
   const replacement = replacementTextFor(action);
   if (replacement === null) {
@@ -151,7 +139,6 @@ const spliceSuggestion = (rawText: string, action: SuggestionAction, range: Text
   return { next: spliceRange(rawText, range, withSpace), caret: range.start + withSpace.length };
 };
 
-/** A committed field token becomes a recent search; confirming a full-text search closes the popup. */
 const noteAppliedAction = (edit: LineEdit, action: SuggestionAction) => {
   if (action.type === 'commit-field') {
     edit.recordRecent({
@@ -167,7 +154,7 @@ const noteAppliedAction = (edit: LineEdit, action: SuggestionAction) => {
 const placeCaret = (edit: LineEdit, caret: number) => {
   const el = edit.input;
   el?.focus();
-  // caret placement must wait for the controlled value to render
+  // WARNING: Place the caret after the controlled value renders; placing it earlier uses the previous string's range.
   setTimeout(() => el?.setSelectionRange(caret, caret), 0);
   edit.setCaretPos(caret);
 };
@@ -184,10 +171,6 @@ const insertSuggestion = (edit: LineEdit, action: SuggestionAction, range: TextR
   placeCaret(edit, spliced.caret);
 };
 
-/**
- * When some piece changed outside the bar: the line to show now and what to treat as last
- * emitted. Null when every piece is unchanged or still catching up to the bar's own emission.
- */
 const resyncFromProps: (
   incoming: EmittedState,
   prev: EmittedState,
@@ -224,10 +207,6 @@ type FilterLineOptions = Pick<
   | 'onRemoveJsFilter'
 >;
 
-/**
- * The free-text line (`rawText` + caret) and its two-way sync with the partition, field-token
- * and quick-search props it parses into.
- */
 function useFilterLine({
   partitionId,
   fieldTokens,
@@ -304,7 +283,6 @@ function useFilterLine({
   return { rawText, setRawText, caretPos, setCaretPos, deriveAndEmit, highlightRanges, clearAll };
 }
 
-/** The suggestion popup's open state and keyboard cursor; any click outside `containerRef` closes it. */
 function useSuggestionDropdown() {
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -338,7 +316,6 @@ type FilterSuggestionsOptions = Pick<FilterBarProps, 'messages' | 'fieldTokens' 
   recents: RecentSearch[];
 };
 
-/** Suggestions and ghost completion for the word under the caret. */
 function useFilterSuggestions({
   rawText,
   caretPos,
@@ -382,7 +359,6 @@ type SuggestionActionsOptions = {
   onEditJsFilter: FilterBarProps['onEditJsFilter'];
 };
 
-/** Applying suggestions (click, Enter, Tab) and the input's keyboard handling. */
 function useSuggestionActions({
   line,
   dropdown,
@@ -542,6 +518,8 @@ const SuggestionList = ({ id, heading, items, activeIdx, onApply, onHover }: Sug
 
 /**
  * Enter applies a suggestion only after the user types a query or explicitly moves to a suggestion.
+ *
+ * Reconciles partition, field tokens, and quick search separately. An incoming piece is external only if it changed since the last render and differs from the last emitted value; late URL echoes must not overwrite typing.
  */
 export const FilterBar = ({
   messages,

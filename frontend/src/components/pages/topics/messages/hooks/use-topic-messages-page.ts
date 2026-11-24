@@ -13,7 +13,6 @@ import { patchDetailViewState, readDetailViewState } from '../detail/detail-view
 import type { ValuePreviewConfig } from '../table/message-cells';
 import { valuePaths } from '../utils/client-match';
 
-/** Which page-level overlays are open; any of them suspends the table's keyboard shortcuts. */
 function usePageSurfaces() {
   const [docSheetOpen, setDocSheetOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -86,7 +85,6 @@ export function useJsFilters(topicName: string) {
   return { jsFilters, setJsFilters, jsDialog, setJsDialog };
 }
 
-/** The table's look from the per-topic view settings, plus the value paths the settings panel suggests. */
 function useViewSettingsState(topicName: string, messages: TopicMessage[]) {
   const { getRowDensity, getMessageColumns, getTopicSettings } = useTopicSettingsStore();
   const topicSettings = getTopicSettings(topicName);

@@ -50,7 +50,7 @@ import {
 } from '../../../utils/formatters/config-value-formatter';
 
 type ConfigurationEditorProps = {
-  targetTopic: string; // topic name, or null if default configs
+  targetTopic: string;
   entries: ConfigEntryExtended[];
   onForceRefresh: () => void;
 };
@@ -68,19 +68,16 @@ const SOURCE_PRIORITY_ORDER = [
   'DEFAULT_CONFIG',
 ];
 
-/** Highest-priority synonym that represents the inherited (non topic-level) default. */
 function getDefaultConfigSynonym(entry: ConfigEntryExtended) {
   return entry.synonyms
     ?.filter(({ source }) => source !== 'DYNAMIC_TOPIC_CONFIG')
     .sort((a, b) => SOURCE_PRIORITY_ORDER.indexOf(a.source) - SOURCE_PRIORITY_ORDER.indexOf(b.source))[0];
 }
 
-/** A config is "modified" when this topic explicitly overrides the cluster/broker default. */
 function isConfigModified(entry: ConfigEntryExtended) {
   return entry.isExplicitlySet;
 }
 
-/** First option for enum-style editors, used as the fallback when there's no value. */
 function getFirstSelectOption(entry: ConfigEntryExtended) {
   if (entry.frontendFormat === 'BOOLEAN') {
     return 'false';
@@ -637,6 +634,9 @@ const ConfigRow: FC<{
   );
 };
 
+/**
+ * An explicit topic value is an override; the highest-priority inherited synonym supplies the broker default.
+ */
 export default ConfigurationEditor;
 
 function isTopicConfigEdittable(
@@ -944,7 +944,6 @@ function RatioInput(p: { value: number; onChange: (ratio: number) => void; id?: 
             type="number"
             value={pct}
           >
-            {/* The end slot pads the input to fit the unit. */}
             <InputEnd>
               <span className="text-body text-muted-foreground">%</span>
             </InputEnd>

@@ -85,7 +85,6 @@ function useSearchProgress() {
 
 type SearchProgress = ReturnType<typeof useSearchProgress>;
 
-// Refs avoid stale closures in effects and callbacks that outlive a render.
 function useSlidingWindowRefs(pageIndex: number) {
   const virtualStartIndexRef = useRef(0);
   const windowStartPageRef = useRef(0);
@@ -114,7 +113,6 @@ function useSearchRefs(pageIndex: number) {
 
 type SearchRefs = ReturnType<typeof useSearchRefs>;
 
-// The "loading more" indicator only shows once a load takes longer than a second.
 function useLoadingIndicatorDelay(loadMorePhase: SearchState['loadMorePhase'], setSearchState: SetSearchState) {
   useEffect(() => {
     if (loadMorePhase !== 'loading') {
@@ -544,7 +542,6 @@ function startLoadMore({
     });
 }
 
-// Auto-load more messages when user reaches beyond loaded messages (continuous pagination mode only)
 function useContinuousLoadMore(
   { query, paging, filters }: Pick<SearchInputs, 'query' | 'paging' | 'filters'>,
   searchState: SearchState,
@@ -608,7 +605,7 @@ function useContinuousLoadMore(
         loadMoreAbortRef.current = null;
       }
     };
-    // Note: virtualStartIndex intentionally excluded — the effect reads it via ref
+    // WARNING: Read the virtual index through its ref here; changing it must not restart this effect.
   }, [
     pageIndex,
     continuousPaginationEnabled,

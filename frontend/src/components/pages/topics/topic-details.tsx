@@ -121,7 +121,7 @@ const TopicTabPermissionNotice = ({
   );
 };
 
-// A tab without permission stays selectable but renders a notice, so its content never starts requests.
+// WARNING: Render the denial notice before tab content; mounting unauthorized content would start requests even if its UI is hidden.
 const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titleText, disableHooks, children }) => {
   const mode = React.useContext(TopicTabModeCtx);
   const customTitle = findCustomTitle(topic, disableHooks);
@@ -168,22 +168,18 @@ const warnIcon = (
 );
 
 function refreshTopicData(topicName: string, force: boolean) {
-  // must know what distribution we're working with; redpanda has some differences
   api.refreshClusterOverview();
 
   api.refreshTopics(force);
 
   const activeTab = resolveActiveTab();
 
-  // consumers are lazy loaded because they're (relatively) expensive
   if (activeTab === 'consumers') {
     api.refreshTopicConsumers(topicName, force);
   }
 
-  // partitions are required for the Partitions tab
   api.refreshPartitionsForTopic(topicName, force);
 
-  // configuration is always required for the statistics bar
   api.refreshTopicConfig(topicName, force);
 
   api.refreshClusterHealth().catch(() => {});

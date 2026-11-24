@@ -43,8 +43,6 @@ export const MessagesToolbar = ({
     <ReadScopePopover {...scopeProps} />
     <div className="min-w-0 flex-1">{filterSlot}</div>
     {actionsSlot}
-    {/* icon-lg matches the filter bar's min-h-10; the svg override keeps the glyph at the
-        16px the toolbar's other icons use rather than icon-lg's 24px default. */}
     <ElementTooltip content={refreshLabel(isLive)}>
       <Button
         aria-label={refreshLabel(isLive)}

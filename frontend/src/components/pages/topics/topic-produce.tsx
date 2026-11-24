@@ -257,7 +257,7 @@ function tryEncodeData(payload: PayloadInputs): Uint8Array | undefined {
   try {
     return encodeData(payload.data, payload.encoding);
   } catch (err) {
-    // TODO: Handle error
+    // WARNING: Do not turn an encoding failure into an empty payload; undefined lets submission reject invalid input.
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(err);
   }

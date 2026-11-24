@@ -71,7 +71,6 @@ export function offsetForReadScopeMode(mode: ReadScopeMode, customOffset: number
   }
 }
 
-/** Read scope and limits (`p`, `s`, `o`, `t`), mirrored into the per-topic search params. */
 function useReadScopeParams(topicName: string) {
   const { setSearchParams, getSearchParams } = useTopicSettingsStore();
 
@@ -126,7 +125,6 @@ function useReadScopeParams(topicName: string) {
   };
 }
 
-/** Client-side filters (`q`, `f`); URL only, never mirrored into the store. */
 function useFilterParams() {
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
@@ -135,7 +133,6 @@ function useFilterParams() {
   return { quickSearch, setQuickSearch, fieldTokens, setFieldTokens };
 }
 
-/** Decoding (`kd`, `vd`, `sc`), mirrored into the per-topic search params. */
 function useDecodingParams(topicName: string) {
   const { setSearchParams, getSearchParams } = useTopicSettingsStore();
 
@@ -176,7 +173,6 @@ function useDecodingParams(topicName: string) {
   };
 }
 
-/** Table paging and sorting (`page`, `pageSize`, `sort`). */
 function usePagingParams(topicName: string) {
   const { setSearchParams, getSearchParams, setSorting, getSorting } = useTopicSettingsStore();
 
@@ -203,7 +199,6 @@ function usePagingParams(topicName: string) {
   return { pageIndex, setPageIndex, pageSize, setPageSize, sorting, setSortingState };
 }
 
-/** How rows arrive and which one is open (`inf`, `live`, `selected`). */
 function useStreamModeParams(topicName: string) {
   const { setSearchParams, getSearchParams } = useTopicSettingsStore();
 
@@ -225,16 +220,11 @@ function useStreamModeParams(topicName: string) {
 
 type ReadScopeParams = ReturnType<typeof useReadScopeParams>;
 
-/**
- * The toolbar's read-scope mode over the start offset, plus the URL repairs that keep the two
- * consistent.
- */
 function useReadScopeMode(
   { startOffset, setStartOffset, startTimestamp, setStartTimestamp }: ReadScopeParams,
   setLiveTail: ReturnType<typeof useStreamModeParams>['setLiveTail'],
   setPageIndex: ReturnType<typeof usePagingParams>['setPageIndex']
 ) {
-  // Migrate legacy live-tail URLs (`o=-3`) to the orthogonal `live` param
   useEffect(() => {
     if (startOffset === PartitionOffsetOrigin.End) {
       setStartOffset(PartitionOffsetOrigin.EndMinusResults);
@@ -275,9 +265,11 @@ function useReadScopeMode(
  * `live` is new: live tail is orthogonal to the read scope. Legacy URLs with
  * `o=-3` (PartitionOffsetOrigin.End) are migrated to `live=true` + newest scope.
  * Timestamp scope defaults to now when a deep link omits the timestamp, and switching away clears the saved timestamp.
+ *
+ * Scope, limits, and decoders also mirror into per-topic settings; text and field-token filters stay in the URL. Legacy live-tail offsets migrate to the separate live flag.
  */
 export function useMessagesUrlState(topicName: string) {
-  // Grouped in the original query-key order, so the params' first-render URL syncs keep their order.
+  // WARNING: Keep the original query-key order; independent first-render URL synchronizations run in that order.
   const readScope = useReadScopeParams(topicName);
   const filters = useFilterParams();
   const decoding = useDecodingParams(topicName);

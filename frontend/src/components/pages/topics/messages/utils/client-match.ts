@@ -124,7 +124,6 @@ const collectPaths = (obj: unknown, prefix: string, depth: number, out: Set<stri
   }
 };
 
-/** Sorted dotted paths under the decoded value payloads of the first 50 loaded rows. */
 const loadedValuePaths = (messages: TopicMessage[]) => {
   const paths = new Set<string>();
   for (const msg of messages.slice(0, 50)) {

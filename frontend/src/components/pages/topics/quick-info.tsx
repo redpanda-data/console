@@ -34,10 +34,10 @@ const ESTIMATE_HINT =
 
 function formatMessageSum(partitions: Partition[] | null | undefined): ReactNode {
   if (partitions === undefined) {
-    return '...'; // no response yet
+    return '...';
   }
   if (partitions === null) {
-    return 'N/A'; // explicit null -> not allowed
+    return 'N/A';
   }
   const totalMessages = partitions.sum((partition) => partition.waterMarkHigh - partition.waterMarkLow);
   return numberToThousandsString(totalMessages);
@@ -53,7 +53,9 @@ function findQuickInfoEntries(entries: ConfigEntry[] | null | undefined) {
   };
 }
 
-// todo: rename QuickInfo
+/**
+ * Missing responses show loading and explicit unavailable values show N/A. Time and byte retention limits are hidden when the topic is compacted.
+ */
 export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   const topic = p.topic;
 
@@ -137,7 +139,6 @@ function filterTopicConfig(config: ConfigEntry[] | null | undefined) {
   }
 
   if (config.some((e) => e.name === 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
-    // this is a compacted topic, 'retention.bytes', 'retention.ms' don't apply, so hide them
     newConfig.removeAll((e) => e.name === 'retention.bytes' || e.name === 'retention.ms');
   }
 

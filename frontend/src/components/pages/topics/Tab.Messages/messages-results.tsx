@@ -86,8 +86,6 @@ async function loadLargeMessage({
   const result = await search.startSearch(searchReq);
 
   if (result && result.length === 1) {
-    // We must update the old message (that still says "payload too large")
-    // So we just find its index and replace it in the array we are currently displaying
     setSearchState((prev) => {
       const indexOfOldMessage = prev.messages.findIndex(
         (x) => x.partitionID === messagePartitionID && x.offset === offset
@@ -163,8 +161,7 @@ function useMessagesTable({
     },
     getRowCanExpand: () => true,
     autoResetPageIndex: false,
-    // Expanded rows must survive a data swap: loadLargeMessage replaces the message
-    // array, and v9 resets expanded state on every row-structure change.
+    // WARNING: Keep expanded row state across a large-payload reload; the table resets it when the message array changes.
     autoResetExpanded: false,
   });
 }

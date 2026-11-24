@@ -35,12 +35,6 @@ type TopicMessageViewProps = {
   refreshTopicData: (force: boolean) => void;
 };
 
-/*
-    TODO:
-        - when the user has entered a specific offset, we should prevent selecting 'all' partitions, as that wouldn't make any sense.
-        - add back summary of quick search  <this.FilterSummary />
-*/
-
 const MessageSearchErrorAlert = ({ error, onRetry }: { error: Error; onRetry: () => void }) => {
   const fenced = useClusterFenceGuard().isFencedRead(error.message);
   if (fenced) {
@@ -62,6 +56,9 @@ const MessageSearchErrorAlert = ({ error, onRetry }: { error: Error; onRetry: ()
   );
 };
 
+/**
+ * The legacy viewer does not show a separate quick-search summary. An absolute offset is meaningful only against a single partition.
+ */
 export const TopicMessageView: FC<TopicMessageViewProps> = ({ topic }) => {
   const settings = useTopicViewSettings(topic.topicName);
   const query = useMessageQueryParams(topic.topicName);

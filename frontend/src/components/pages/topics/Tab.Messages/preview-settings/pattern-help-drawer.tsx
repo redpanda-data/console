@@ -118,6 +118,9 @@ const globHelp = (
   </div>
 );
 
+/**
+ * Portal outside the transformed and clipped preview dialog; keep the sheet header/footer pinned around the scrollable examples.
+ */
 export const PatternHelpDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const onOpen = () => setIsOpen(true);
@@ -138,10 +141,6 @@ export const PatternHelpDrawer = () => {
         &nbsp;glob patterns
       </button>
       <Sheet onOpenChange={setIsOpen} open={isOpen}>
-        {/* SheetContent is not a flex column, so the header and footer only stay pinned once it is.
-            `container` opts out of the dialog's PortalContainerProvider — DialogContent is
-            transformed and `overflow-hidden`, so it would clip this fixed panel.
-            `size="full"` drops the variant's 36rem cap, which is too narrow for this content. */}
         <SheetContent
           className="flex flex-col overflow-hidden sm:max-w-4xl"
           container={document.body}
@@ -154,7 +153,6 @@ export const PatternHelpDrawer = () => {
 
           <div className="min-h-0 flex-1 overflow-y-auto">{globHelp}</div>
 
-          {/* SheetFooter is a flex column, which would stretch a lone button across the panel. */}
           <SheetFooter className="flex-row justify-end">
             <Button onClick={onClose} variant="outline">
               Close

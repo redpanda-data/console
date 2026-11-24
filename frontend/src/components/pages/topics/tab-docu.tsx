@@ -37,12 +37,6 @@ const CODE_LANGUAGE_REGEX = /language-(?<language>\w+)/u;
 
 const TRAILING_NEWLINE_REGEX = /\n$/u;
 
-/*
-<a href="javascript:alert('h4x0red!');">
-My nonsuspious link
-</a>
-*/
-
 const allowedProtocols = ['http://', 'https://', 'mailto://'];
 
 function sanitizeUrl(uri: string) {
@@ -59,7 +53,7 @@ function sanitizeUrl(uri: string) {
     }
   }
 
-  return ''; // didn't match any allowed protocol, remove the link
+  return '';
 }
 
 export class TopicDocumentation extends Component<{ topic: Topic }> {
@@ -93,7 +87,7 @@ export class TopicDocumentation extends Component<{ topic: Topic }> {
   render() {
     const docu = api.topicDocumentation.get(this.props.topic.topicName);
     if (docu === undefined) {
-      return DefaultSkeleton; // not yet loaded
+      return DefaultSkeleton;
     }
     if (!docu.isEnabled) {
       return errorNotConfigured;
@@ -161,8 +155,6 @@ const errorEmpty = renderDocuError(
   </>
 );
 
-// todo: use common renderError function everywhere
-// todo: use <MotionAlways> for them
 function renderDocuError(title: string, body: JSX.Element) {
   return (
     <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>

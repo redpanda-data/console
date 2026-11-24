@@ -49,7 +49,6 @@ export function useTopicViewSettings(topicName: string) {
     [topicName, topicSettings?.dynamicFilters, setTopicSettings]
   );
 
-  // Convert @computed activePreviewTags to useMemo
   const activePreviewTags = useMemo(
     () => (topicSettings?.previewTags ?? []).filter((t) => t.isActive),
     [topicSettings?.previewTags]

@@ -26,7 +26,6 @@ import type { ReadScopeMode } from '../types';
 
 type AxisMode = ReadScopeMode | 'live';
 
-/** The illustrated partition: cells 0–4 already aged out, 5–14 retained, 15–17 future. */
 const CELL_COUNT = 18;
 const AGED_END = 5;
 const RETAINED_END = 14;
@@ -96,7 +95,6 @@ const DIRECTION_ARROWS: Record<'backward' | 'forward' | 'live', string> = {
   live: '≫',
 };
 
-/** Illustrated partition axis: where the selected mode drops the reading needle. */
 const MiniAxis = ({ mode }: { mode: AxisMode }) => {
   const cfg = AXIS_CONFIGS[mode];
   return (

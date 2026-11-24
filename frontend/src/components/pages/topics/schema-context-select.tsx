@@ -37,6 +37,9 @@ export type SchemaContextSelectProps = {
   title?: string;
 };
 
+/**
+ * Keep a shared URL's current context selectable even if it is not in the fetched list.
+ */
 export const schemaContextOptions = (contexts: string[], value: string) => {
   const options = [
     { value: AUTO_OPTION, label: 'Automatic (topic config)' },
@@ -46,7 +49,6 @@ export const schemaContextOptions = (contexts: string[], value: string) => {
       .sort((a, b) => a.localeCompare(b))
       .map((c) => ({ value: c, label: c })),
   ];
-  // Keep a value that is not in the list (e.g. from a shared URL) selectable.
   if (value !== AUTO_SCHEMA_CONTEXT && !options.some((o) => o.value === value)) {
     options.push({ value, label: value });
   }

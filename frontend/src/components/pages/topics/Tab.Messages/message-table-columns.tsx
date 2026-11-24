@@ -134,7 +134,7 @@ function buildDataColumns(options: MessageColumnOptions) {
     timestamp: {
       header: 'Timestamp',
       accessorKey: 'timestamp',
-      enableSorting: !continuousPaginationEnabled, // Disable sorting in continuous pagination mode
+      enableSorting: !continuousPaginationEnabled,
       cell: ({
         row: {
           original: { timestamp },
@@ -161,7 +161,7 @@ function buildDataColumns(options: MessageColumnOptions) {
         ),
       size: options.hasKeyTags ? 300 : 1,
       accessorKey: 'key',
-      enableSorting: !continuousPaginationEnabled, // Disable sorting in continuous pagination mode
+      enableSorting: !continuousPaginationEnabled,
       cell: ({ row: { original } }) => (
         <MessageKeyPreview
           msg={original}
@@ -189,7 +189,7 @@ function buildDataColumns(options: MessageColumnOptions) {
           'Value'
         ),
       accessorKey: 'value',
-      enableSorting: !continuousPaginationEnabled, // Disable sorting in continuous pagination mode
+      enableSorting: !continuousPaginationEnabled,
       cell: ({ row: { original } }) => (
         <MessagePreview
           isCompactTopic={options.isCompactTopic}

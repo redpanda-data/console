@@ -171,11 +171,6 @@ const LiveWaitingState = () => (
   </Empty>
 );
 
-/**
- * Freshly arrived rows flash green, then fade. The registry row has no flash state, so a native
- * overlay carries the animation: it fills the cell (made `relative isolate`) and sits behind the
- * cell's content.
- */
 const NewRowFlash = () => (
   <span aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 animate-message-flash" />
 );
@@ -194,6 +189,9 @@ const LiveSeparatorRow = ({ columnCount }: { columnCount: number }) => (
   </TableRow>
 );
 
+/**
+ * New rows flash using an overlay behind cell content; the registry row has no flash state.
+ */
 export const MessagesTable = ({
   messages,
   columnConfig,

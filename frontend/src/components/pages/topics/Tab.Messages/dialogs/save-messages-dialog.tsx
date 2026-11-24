@@ -127,7 +127,8 @@ function downloadFile(content: string, type: string, fileName: string) {
   const file = new Blob([content], { type });
   link.href = URL.createObjectURL(file);
   link.download = fileName;
-  document.body.appendChild(link); // required in firefox
+  // WARNING: Attach the download link before clicking it; Firefox requires it to be in the document.
+  document.body.appendChild(link);
   link.click();
 }
 

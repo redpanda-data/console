@@ -46,10 +46,6 @@ type LiveTailSession = Pick<LiveTailLoopOptions, 'start'> & {
   setStatus: (status: LiveTailStatus) => void;
 };
 
-/**
- * Runs one tail session until the returned cancel is called: a clean completion restarts at once
- * (appending), a failure backs off, and `maxRetries` consecutive failures end the session.
- */
 function runLiveTailSession({ start, maxRetries, setStatus }: LiveTailSession) {
   let cancelled = false;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -103,6 +99,8 @@ function runLiveTailSession({ start, maxRetries, setStatus }: LiveTailSession) {
  * instead, and give up after `maxRetries` consecutive failures (the failure itself stays visible
  * through whatever error state `start` already populates). After giving up, `status` reports
  * `'exhausted'` and only `restart()` re-arms the loop.
+ *
+ * Appends after a clean stream end; consecutive failures back off and exhaust a bounded retry budget. Cancelling retires whichever session is currently active.
  */
 export function useLiveTailLoop({
   active,
@@ -111,7 +109,6 @@ export function useLiveTailLoop({
   maxRetries = DEFAULT_LIVE_TAIL_MAX_RETRIES,
 }: LiveTailLoopOptions) {
   const [status, setStatus] = useState<LiveTailStatus>('idle');
-  // Cancels the running session; null while the loop is inactive.
   const cancelSessionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -121,7 +118,7 @@ export function useLiveTailLoop({
     }
     cancelSessionRef.current = runLiveTailSession({ start, maxRetries, setStatus });
     return () => {
-      // `restart` may have replaced the session this run began, so cancel whichever is current.
+      // WARNING: Cancel the current session, not the captured one; restart may have replaced it before cleanup.
       cancelSessionRef.current?.();
       cancelSessionRef.current = null;
       stop();
@@ -130,7 +127,7 @@ export function useLiveTailLoop({
 
   const restart = useCallback(() => {
     if (!cancelSessionRef.current) {
-      return; // inactive: nothing to restart
+      return;
     }
     cancelSessionRef.current();
     stop();

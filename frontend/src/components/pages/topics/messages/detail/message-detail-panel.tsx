@@ -52,7 +52,8 @@ export const downloadRecord = (msg: TopicMessage) => {
   const link = document.createElement('a');
   link.href = url;
   link.download = `record-p${msg.partitionID}-o${msg.offset}.json`;
-  document.body.appendChild(link); // required in firefox
+  // WARNING: Attach the download link before clicking it; Firefox requires it to be in the document.
+  document.body.appendChild(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 0);
@@ -116,7 +117,6 @@ const DetailBody = ({
 }: {
   msg: TopicMessage;
   loadLargeMessage: () => Promise<void>;
-  /** Expanded sheet: the value section stretches to use the full remaining height. */
   fillValue?: boolean;
   sections: Record<DetailSectionKey, boolean>;
   onOpenSectionsChange: (openSections: DetailSectionKey[]) => void;

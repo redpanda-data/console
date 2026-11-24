@@ -200,7 +200,6 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         )}
       </ResizablePanelGroup>
 
-      {/* Expanded presentation replaces the docked slot entirely (fixed full-viewport overlay) */}
       {table.selectedMessage && detail.detailExpanded && (
         <MessageDetailPanel
           expandButtonRef={detail.expandButtonRef}

@@ -54,6 +54,9 @@ function assignFreeIds(tags: PreviewTagV2[]) {
   }
 }
 
+/**
+ * The editor does not currently highlight invalid patterns or scope autocomplete to the current path segment. Its checkbox labels are wired independently of the registry indicator.
+ */
 export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessage[]; topicName: string }) => {
   const [caseSensitive, setCaseSensitive] = usePreviewTagsCaseSensitive(topicName);
   const [multiResultMode, setMultiResultMode] = usePreviewMultiResultMode(topicName);
@@ -64,7 +67,7 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
     .map((p) => p.propertyName)
     .distinct();
 
-  // Access perTopicSettings to trigger re-render when it changes
+  // WARNING: Keep the subscription to per-topic settings; removing it leaves the preview fields stale after an edit.
   const tags = perTopicSettings.find((t) => t.topicName === topicName)?.previewTags ?? [];
 
   assignFreeIds(tags);
@@ -165,12 +168,6 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
   return <div>{content}</div>;
 };
 
-/*
-todo:
-- mark patterns red when they are invalid
-- better auto-complete: get suggestions from current pattern (except for last segment)
--
- */
 const PreviewTagSettings = ({
   tag,
   onRemove,
@@ -213,7 +210,6 @@ const PreviewTagSettings = ({
             </span>
           }
         />
-        {/* PopoverContent is a fixed w-72, so the width is set here to fit the content. */}
         <PopoverContent align="start" className="w-auto" side="bottom">
           <div className="flex flex-col gap-1">
             <Label style={{ marginBottom: '.5em' }} text="Display Name">
@@ -227,7 +223,6 @@ const PreviewTagSettings = ({
               />
             </Label>
 
-            {/* The Registry Checkbox does not wire a child label. */}
             <span className="flex items-center gap-2">
               <Checkbox
                 checked={tag.searchInMessageKey}
@@ -269,13 +264,6 @@ const PreviewTagSettings = ({
   );
 };
 
-/*
-todo:
-- support regex patterns as path elements
-    - `data./pattern/.email`
-    - in order to match `/pattern/` our 'parseJsonPath' must support escaping forward slashes: "\/"
-
-*/
 type TagMatch = { prop: CollectedProperty; tag: PreviewTagV2; fullPath: string };
 
 function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2, caseSensitive: boolean): TagMatch[] {
@@ -285,12 +273,10 @@ function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2
 
   const searchPath = parseJsonPath(tag.pattern.trim());
   if (searchPath === null || typeof searchPath === 'string') {
-    return []; // todo: show error to user
+    return [];
   }
 
   const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName) => {
-    // We'll never get called for '*' or '**' patterns
-    // So we can be sure that the pattern is not just '*'
     const segmentRegex = caseSensitive ? wildcardToRegex(pathElement) : new RegExp(wildcardToRegex(pathElement), 'iu');
     return segmentRegex.test(propertyName);
   });
@@ -311,18 +297,17 @@ function compareTagMatches(tags: PreviewTagV2[]) {
       return pathLengthDiff;
     }
 
-    return a.fullPath.localeCompare(
-      b.fullPath,
-      undefined, // no locales
-      {
-        numeric: true,
-        ignorePunctuation: false,
-        sensitivity: 'base',
-      }
-    );
+    return a.fullPath.localeCompare(b.fullPath, undefined, {
+      numeric: true,
+      ignorePunctuation: false,
+      sensitivity: 'base',
+    });
   };
 }
 
+/**
+ * Dots split path segments except inside a quoted segment. Invalid patterns produce no tags; regular expressions in slash-delimited segments are unsupported.
+ */
 export function getPreviewTags(targetObject: Record<string, unknown>, tags: PreviewTagV2[], caseSensitive: boolean) {
   const results = tags.flatMap((t) => findTagMatches(targetObject, t, caseSensitive));
   results.sort(compareTagMatches(tags));
@@ -340,20 +325,13 @@ export function getPreviewTags(targetObject: Record<string, unknown>, tags: Prev
 }
 
 const splitChars = ["'", '"', '.'];
-// Splits a given path into its path segments.
-// Path segments are seperated by the dot-character.
-// This function also supports quotes, so that the dot can still be used (the path segment just needs to be wrapped in quotes then).
-// Returns:
-// - String array when the path was parsed correctly
-// - Single string as error reason why the path couldn't be parsed
 function parseJsonPath(str: string): string[] | string {
   const segments = splitPathSegments(str);
   if (typeof segments === 'string') {
     return segments;
   }
 
-  // '**' is supported anywhere in a path but must be a whole segment: `a.b.**.c` is valid,
-  // `a.b**` and `a.**b` are not.
+  // WARNING: Accept a recursive wildcard only as its own segment; embedded double stars must not match unrelated fields.
 
   for (const segment of segments) {
     if (segment !== '**' && segment.includes('**')) {
@@ -366,7 +344,6 @@ function parseJsonPath(str: string): string[] | string {
 
 type PathStep = { next: number; segment?: string } | { error: string };
 
-// Collect symbols until we find a dot, single-quote, or double-quote
 function splitPathSegments(str: string): string[] | string {
   const result: string[] = [];
 
@@ -397,11 +374,9 @@ function readPathStep(str: string, pos: number): PathStep {
   }
 }
 
-// A quote is opened
-// Find the closing quote and collect everything in-between
 function readQuotedSegment(str: string, pos: number): PathStep {
-  const start = pos + 1; // start just after the quote
-  const end = str.indexOf(str[pos], start); // and collect until the closing quote
+  const start = pos + 1;
+  const end = str.indexOf(str[pos], start);
 
   if (end === -1) {
     return { error: `missing closing quote, quote was opened at index ${start - 1}` };
@@ -424,24 +399,20 @@ function skipDot(str: string, pos: number): PathStep {
   return { next };
 }
 
-// We're at a simple character, just collect everything until the next dot or quote
 function readPlainSegment(str: string, pos: number) {
-  const end = indexOfMany(str, splitChars, pos); // collect until dot or quote
+  const end = indexOfMany(str, splitChars, pos);
 
   const segment = end >= 0 ? str.slice(pos, end) : str.slice(pos, str.length);
 
-  return { next: end === -1 ? str.length : end, segment } satisfies PathStep; // continue after the end
+  return { next: end === -1 ? str.length : end, segment } satisfies PathStep;
 }
 
 function indexOfMany(str: string, matches: string[], position: number) {
   const indices: number[] = matches.map((_) => -1);
-  // for every string we want to find, record the index of its first occurance
   for (let i = 0; i < matches.length; i++) {
     indices[i] = str.indexOf(matches[i], position);
   }
 
-  // find the first match (smallest value in our results)
-  // but skip over -1, because that means the string didn't contain that match
   let smallest = -1;
   for (const i of indices) {
     if (smallest === -1 || i < smallest) {
@@ -490,7 +461,7 @@ if (IsDev) {
     let result = parseJsonPath(test.input);
 
     if (typeof result === 'string') {
-      result = null as unknown as string[]; // string means error message
+      result = null as unknown as string[];
     }
 
     if (result === null && expected === null) {
@@ -526,9 +497,9 @@ if (IsDev) {
 }
 
 function wildcardToRegex(pattern: string) {
-  const components = pattern.split('*'); // split by '*' symbol
-  const escapedComponents = components.map(regexEscape); // ensure the components don't contain regex special characters
-  const joined = escapedComponents.join('.*'); // join components, adding back the wildcard
+  const components = pattern.split('*');
+  const escapedComponents = components.map(regexEscape);
+  const joined = escapedComponents.join('.*');
   return new RegExp(`^${joined}$`, 'u');
 }
 

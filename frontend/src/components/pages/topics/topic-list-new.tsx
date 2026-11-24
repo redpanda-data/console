@@ -511,7 +511,6 @@ const TopicList: FC = () => {
           }
         >
           <div className="relative">
-            {/* The slots stay mounted so the input's padding follows them: an empty slot measures 0. */}
             <ListLayoutSearchInput
               data-testid="search-field-input"
               onChange={(e) => table.getColumn('topicName')?.setFilterValue(e.target.value || undefined)}
@@ -638,7 +637,6 @@ const iconClosedEye = (
   </span>
 );
 
-// Edit and delete actions are left out so a read-only principal doesn't flag every topic.
 const viewTopicActions: TopicAction[] = [
   'seeTopic',
   'viewPartitions',
@@ -703,7 +701,7 @@ const TopicName = ({ topic }: { topic: Topic }) => {
 };
 
 function hasDeletePrivilege() {
-  // TODO - we will provide ACL for this
+  // WARNING: This placeholder does not prove delete authorization; keep access enforcement at the request boundary.
   return true;
 }
 

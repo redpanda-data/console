@@ -74,7 +74,6 @@ function getOffsetOrigin(startOffset: number) {
   return (startOffset >= 0 ? PartitionOffsetOrigin.Custom : startOffset) as PartitionOffsetOriginType;
 }
 
-// Continuous pagination is only available with Newest or Beginning start offsets.
 function supportsContinuousPagination(origin: PartitionOffsetOriginType) {
   return origin === PartitionOffsetOrigin.EndMinusResults || origin === PartitionOffsetOrigin.Start;
 }
@@ -299,16 +298,6 @@ function ContinuousPaginationControl({ paging, startOffset }: { paging: MessageP
   );
 }
 
-/**
- * A dropdown menu item for the "Add filter" menu. When `disabledReason` is set the item
- * renders as a visually-disabled row that shows a tooltip explaining why on hover.
- *
- * We deliberately do NOT render a disabled `<DropdownMenuItem>` here: Base UI wraps every
- * menu item in a `MotionHighlight` layer that keeps intercepting pointer events even when
- * the item is disabled, so a tooltip attached to a wrapping element never receives hover.
- * Rendering the disabled state as a plain styled `<span>` (mirroring the menu-item styling)
- * lets the tooltip trigger receive hover reliably while the row stays non-interactive.
- */
 const AddFilterMenuItem: FC<{
   testId: string;
   disabledReason?: string;
@@ -548,7 +537,11 @@ type MessageSearchControlsProps = ParamsProps & {
   dialogs: MessageViewDialogs;
 };
 
-/** The search toolbar: start offset, result limit, filters, settings, quick search, and search progress. */
+/**
+ * The search toolbar: start offset, result limit, filters, settings, quick search, and search progress.
+ *
+ * Continuous pagination is only available for beginning/newest. A disabled filter uses a non-interactive tooltip trigger; Base UI's disabled menu layer intercepts hover, hiding the explanation otherwise.
+ */
 export function MessageSearchControls(props: MessageSearchControlsProps) {
   const { topic, query, paging, settings, filters, setFilters, search } = props;
   const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
