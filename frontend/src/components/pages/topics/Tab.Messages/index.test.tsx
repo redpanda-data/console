@@ -9,30 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
+import { createAsyncIterable } from '@connectrpc/connect/protocol';
+import { afterEach, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
+import { config } from 'config';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
-import { CompressionType, type Topic } from 'state/rest-interfaces';
-import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
+import { CompressionType, PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
+import { ConsoleService } from 'protogen/redpanda/api/console/v1alpha1/console_service_pb';
+import {
+  KafkaRecordPayloadSchema,
+  type ListMessagesRequest,
+  type ListMessagesResponse,
+  ListMessagesResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
+import { api } from 'state/backend-api';
+import type { Topic } from 'state/rest-interfaces';
+import { useTopicSettingsStore } from 'stores/topic-settings-store';
+import { cleanup, renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 import { TopicMessageView } from '.';
-
-const { startSearchMock } = rs.hoisted(() => ({ startSearchMock: rs.fn() }));
-
-rs.mock('../../../../state/backend-api', () => {
-  const actual = rs.requireActual<typeof import('../../../../state/backend-api')>('../../../../state/backend-api');
-  return {
-    ...actual,
-    createMessageSearch: () => ({
-      startSearch: startSearchMock,
-      loadMore: rs.fn(),
-      messages: [],
-      nextPageToken: null,
-      bytesConsumed: 2048,
-      totalMessagesConsumed: 2,
-    }),
-  };
-});
 
 const topic: Topic = {
   topicName: 'orders',
@@ -45,140 +42,160 @@ const topic: Topic = {
   allowedActions: undefined,
 };
 
-function buildPayload(payload: string) {
-  return { payload, isPayloadNull: false, encoding: 'text', schemaId: 0, size: payload.length };
-}
+const BROKER_UNAVAILABLE = /broker unavailable/u;
+const FIRST_ORDER_ROW = /\border-1\b/u;
+const originalConsoleClient = config.consoleClient;
+const initialTopicSettings = useTopicSettingsStore.getState();
 
-function buildMessage(offset: number, key: string, value: string) {
-  return {
-    partitionID: 0,
-    offset,
-    timestamp: 1_700_000_000_000 + offset,
-    compression: CompressionType.Uncompressed,
-    isTransactional: false,
-    headers: [],
-    key: buildPayload(key),
-    value: buildPayload(value),
-    valueJson: JSON.stringify(value),
-    valueBinHexPreview: '',
-    keyJson: JSON.stringify(key),
-    keyBinHexPreview: '',
-  };
-}
+afterEach(() => {
+  cleanup();
+  config.consoleClient = originalConsoleClient;
+  useTopicSettingsStore.setState(initialTopicSettings, true);
+});
 
-function renderView() {
-  return renderWithFileRoutes(
+const textPayload = (payload: string, isPayloadTooLarge = false) =>
+  create(KafkaRecordPayloadSchema, {
+    normalizedPayload: new TextEncoder().encode(payload),
+    encoding: PayloadEncoding.TEXT,
+    payloadSize: isPayloadTooLarge ? 128 * 1024 : payload.length,
+    isPayloadTooLarge,
+  });
+
+const dataFrame = (offset: number, key: string, value: string, isPayloadTooLarge = false) =>
+  create(ListMessagesResponseSchema, {
+    controlMessage: {
+      case: 'data',
+      value: {
+        partitionId: 0,
+        offset: BigInt(offset),
+        timestamp: BigInt(1_700_000_000_000 + offset),
+        compression: CompressionType.UNCOMPRESSED,
+        key: textPayload(key),
+        value: textPayload(value, isPayloadTooLarge),
+      },
+    },
+  });
+
+const doneFrame = create(ListMessagesResponseSchema, {
+  controlMessage: { case: 'done', value: { elapsedMs: 5n, bytesConsumed: 64n } },
+});
+
+const orders = () => [dataFrame(1, 'order-1', 'created'), dataFrame(2, 'order-2', 'shipped')];
+
+function renderView(reply: (attempt: number) => ListMessagesResponse[] = () => []) {
+  const requests: ListMessagesRequest[] = [];
+  config.consoleClient = createClient(
+    ConsoleService,
+    createRouterTransport(({ service }) => {
+      service(ConsoleService, {
+        listMessages(request) {
+          requests.push(request);
+          return createAsyncIterable([...reply(requests.length), doneFrame]);
+        },
+      });
+    })
+  );
+  renderWithFileRoutes(
     <NuqsTestingAdapter hasMemory>
-      <TopicMessageView refreshTopicData={rs.fn()} topic={topic} />
+      <TopicMessageView refreshTopicData={api.refreshTopics} topic={topic} />
     </NuqsTestingAdapter>,
     { initialLocation: '/topics/orders' }
   );
+  return { requests, user: userEvent.setup() };
 }
 
-describe('topicMessageView', () => {
-  beforeEach(() => {
-    startSearchMock.mockReset();
+type User = ReturnType<typeof userEvent.setup>;
+
+const saveMessages = () => screen.getByTestId('save-messages-button');
+const results = () => within(screen.getByTestId('messages-table'));
+
+async function chooseStartOffset(user: User, name: string) {
+  await user.click(screen.getByTestId('start-offset-dropdown'));
+  await user.click(await screen.findByRole('option', { name }));
+}
+
+test('requests the newest rows and filters the streamed results', async () => {
+  const { requests, user } = renderView(orders);
+  expect(await screen.findByText('order-1')).toBeVisible();
+  expect(saveMessages()).toBeEnabled();
+  expect(requests).toMatchObject([
+    { topic: 'orders', startOffset: -1n, partitionId: -1, maxResults: 50, includeOriginalRawPayload: true },
+  ]);
+
+  await user.type(screen.getByTestId('message-quick-search-input'), 'shipped');
+
+  await waitFor(() => expect(results().queryByText('order-1')).not.toBeInTheDocument());
+  expect(results().getByText('order-2')).toBeVisible();
+  expect(results().getByText('shipped')).toBeVisible();
+  expect(requests).toHaveLength(1);
+});
+
+test('shows the empty state and keeps column settings reachable without any messages', async () => {
+  const { user } = renderView();
+  expect(await screen.findByText('No messages')).toBeVisible();
+  expect(saveMessages()).toBeDisabled();
+  expect(screen.getByTestId('add-topic-filter')).toBeVisible();
+  expect(screen.getByTestId('start-offset-dropdown')).toHaveTextContent('Newest - 50');
+
+  await user.click(screen.getByTestId('message-settings-button'));
+  await user.click(await screen.findByTestId('column-settings-menu-item'));
+
+  expect(await screen.findByRole('dialog', { name: 'Column Settings' })).toBeVisible();
+});
+
+test('retries the failed stream from the error alert and renders the recovered rows', async () => {
+  const { requests, user } = renderView((attempt) => {
+    if (attempt === 1) {
+      throw new ConnectError('broker unavailable', Code.Unavailable);
+    }
+    return orders();
   });
+  expect(await screen.findByText('Backend Error')).toBeVisible();
+  expect(screen.getByText(BROKER_UNAVAILABLE)).toBeVisible();
 
-  test('searches the topic on mount and lists the returned messages', async () => {
-    startSearchMock.mockResolvedValue([buildMessage(1, 'order-1', 'created'), buildMessage(2, 'order-2', 'shipped')]);
-    renderView();
+  await user.click(screen.getByRole('button', { name: 'Retry Search' }));
 
-    expect(await screen.findByText('order-1')).toBeVisible();
-    expect(screen.getByText('shipped')).toBeVisible();
-    expect(startSearchMock).toHaveBeenCalledWith(
-      expect.objectContaining({ topicName: 'orders', maxResults: 50, partitionId: -1, startOffset: -1 }),
-      expect.any(AbortSignal)
-    );
-    expect(screen.getByTestId('save-messages-button')).toBeEnabled();
+  expect(await screen.findByText('order-1')).toBeVisible();
+  expect(screen.queryByText('Backend Error')).not.toBeInTheDocument();
+  expect(requests).toHaveLength(2);
+  expect(requests[1]).toEqual(requests[0]);
+});
+
+test('sends the selected beginning and custom offsets on the wire', async () => {
+  const { requests, user } = renderView();
+  await screen.findByText('No messages');
+
+  await chooseStartOffset(user, 'Beginning');
+  await waitFor(() => expect(requests.at(-1)).toMatchObject({ startOffset: -2n }));
+
+  await chooseStartOffset(user, 'Offset');
+  await waitFor(() => expect(requests.at(-1)).toMatchObject({ startOffset: 0n }));
+
+  const customOffset = screen.getAllByDisplayValue('0').find((input) => input.getAttribute('data-slot') === 'input');
+  expect(customOffset).toBeVisible();
+});
+
+test('reloads an oversized record in place and opens its single-record download', async () => {
+  const { requests, user } = renderView((attempt) =>
+    attempt === 1
+      ? [dataFrame(1, 'order-1', '', true), dataFrame(2, 'order-2', 'shipped')]
+      : [dataFrame(1, 'order-1', 'full order payload')]
+  );
+  const row = await results().findByRole('row', { name: FIRST_ORDER_ROW });
+  await user.click(within(row).getByRole('button', { name: 'Expand row' }));
+  await user.click(await screen.findByRole('button', { name: 'Load anyway' }));
+
+  expect(await screen.findByTestId('payload-content')).toHaveTextContent('full order payload');
+  expect(requests[1]).toMatchObject({
+    topic: 'orders',
+    startOffset: 1n,
+    partitionId: 0,
+    maxResults: 1,
+    ignoreMaxSizeLimit: true,
   });
+  expect(requests).toHaveLength(2);
+  expect(results().getByText('order-2')).toBeVisible();
 
-  test('shows an empty state when the search finds nothing', async () => {
-    startSearchMock.mockResolvedValue([]);
-    renderView();
-
-    expect(await screen.findByText('No messages')).toBeVisible();
-    expect(screen.getByTestId('save-messages-button')).toBeDisabled();
-  });
-
-  test('narrows the table with the quick search', async () => {
-    const user = userEvent.setup();
-    startSearchMock.mockResolvedValue([buildMessage(1, 'order-1', 'created'), buildMessage(2, 'order-2', 'shipped')]);
-    renderView();
-    await screen.findByText('order-1');
-
-    await user.type(screen.getByTestId('message-quick-search-input'), 'shipped');
-
-    await waitFor(() => expect(screen.queryByText('order-1')).not.toBeInTheDocument());
-    expect(within(screen.getByTestId('messages-table')).getByText('order-2')).toBeVisible();
-  });
-
-  test('reports a failed search with a retry action', async () => {
-    startSearchMock.mockRejectedValue(new Error('broker unavailable'));
-    renderView();
-
-    expect(await screen.findByText('Backend Error')).toBeVisible();
-    expect(screen.getByText('broker unavailable')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Retry Search' })).toBeVisible();
-  });
-
-  test('offers the add filter and settings menus', async () => {
-    startSearchMock.mockResolvedValue([]);
-    renderView();
-    await screen.findByText('No messages');
-
-    expect(screen.getByTestId('add-topic-filter')).toBeVisible();
-    expect(screen.getByTestId('message-settings-button')).toBeVisible();
-    expect(screen.getByTestId('start-offset-dropdown')).toHaveTextContent('Newest - 50');
-  });
-
-  test('searches again from the chosen start offset', async () => {
-    const user = userEvent.setup();
-    startSearchMock.mockResolvedValue([]);
-    renderView();
-    await screen.findByText('No messages');
-
-    await user.click(screen.getByTestId('start-offset-dropdown'));
-    await user.click(await screen.findByRole('option', { name: 'Beginning' }));
-
-    await waitFor(() =>
-      expect(startSearchMock).toHaveBeenLastCalledWith(
-        expect.objectContaining({ startOffset: -2 }),
-        expect.any(AbortSignal)
-      )
-    );
-  });
-
-  test('shows a custom offset input for the Offset origin', async () => {
-    const user = userEvent.setup();
-    startSearchMock.mockResolvedValue([]);
-    renderView();
-    await screen.findByText('No messages');
-
-    await user.click(screen.getByTestId('start-offset-dropdown'));
-    await user.click(await screen.findByRole('option', { name: 'Offset' }));
-
-    await waitFor(() =>
-      expect(startSearchMock).toHaveBeenLastCalledWith(
-        expect.objectContaining({ startOffset: 0 }),
-        expect.any(AbortSignal)
-      )
-    );
-    const customOffsetInput = screen
-      .getAllByDisplayValue('0')
-      .find((input) => input.getAttribute('data-slot') === 'input');
-    expect(customOffsetInput).toBeVisible();
-  });
-
-  test('opens the column settings from the settings menu', async () => {
-    const user = userEvent.setup();
-    startSearchMock.mockResolvedValue([]);
-    renderView();
-    await screen.findByText('No messages');
-
-    await user.click(screen.getByTestId('message-settings-button'));
-    await user.click(await screen.findByTestId('column-settings-menu-item'));
-
-    expect(await screen.findByRole('dialog', { name: 'Column Settings' })).toBeVisible();
-  });
+  await user.click(screen.getByRole('button', { name: 'Download Record' }));
+  expect(await screen.findByRole('dialog', { name: 'Save Message' })).toBeVisible();
 });
