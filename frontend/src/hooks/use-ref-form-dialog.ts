@@ -35,7 +35,7 @@ type UseRefFormDialogReturn<TTarget> = {
 
 const DEFAULT_TIMEOUT = 30_000;
 
-function raceWithTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+function raceWithTimeout<T>(promise: Promise<T>, ms: number) {
   let timerId: ReturnType<typeof setTimeout>;
   return Promise.race([
     promise.finally(() => clearTimeout(timerId)),
@@ -49,7 +49,6 @@ function isTimeoutError(error: unknown) {
   return error instanceof Error && error.message === 'timeout';
 }
 
-/** What the dialog does with each way a submission can end; an aborted one ends silently. */
 type SubmissionHandlers<TData> = {
   onSubmitted: (data: TData) => void;
   onTimeout: () => void;
@@ -90,6 +89,7 @@ async function settleSubmission<TData>(
   }
 }
 
+/** Keeps a failed submission open for retry. Closing ignores any result that arrives later. */
 function useRefFormDialog<TData, TTarget = boolean>(options: UseRefFormDialogOptions<TData, TTarget>) {
   const { ref, onSuccess, timeout = DEFAULT_TIMEOUT } = options;
   const [target, setTarget] = useState<TTarget | null>(null);
@@ -127,6 +127,7 @@ function useRefFormDialog<TData, TTarget = boolean>(options: UseRefFormDialogOpt
         close();
       },
       onFailed: () => {
+        abortRef.current = null;
         setIsSubmitting(false);
       },
     });
