@@ -226,7 +226,6 @@ export const RoleDetailPageNew = () => {
   return (
     <div className="flex flex-col gap-6 pt-4">
       <AclsCard acls={aclData} isLoading={isAclsLoading} principal={`RedpandaRole:${roleName}`} />
-      {/* Principals */}
       <RolePrincipalsSection roleName={roleName} />
     </div>
   );

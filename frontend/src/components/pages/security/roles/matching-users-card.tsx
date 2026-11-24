@@ -200,7 +200,6 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
 
             {isRole && !membership.isLoading && (
               <>
-                {/* Users section */}
                 <span className="text-body-sm font-medium tracking-wide text-foreground uppercase">Users</span>
                 <RoleMemberSection
                   deletingPrincipal={membership.deletingPrincipal}

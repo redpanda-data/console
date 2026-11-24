@@ -83,7 +83,6 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps) => {
         <TooltipContent side="top">[Enter] confirm, [ESC] cancel</TooltipContent>
       </Tooltip>
 
-      {/* Delete */}
       <button className="deleteButton" onClick={onDelete} type="button">
         <CloseIcon />
       </button>

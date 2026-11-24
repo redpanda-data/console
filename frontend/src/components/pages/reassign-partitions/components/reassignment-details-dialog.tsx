@@ -154,7 +154,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
     return (
       <div className="flex flex-col gap-12">
-        {/* Info */}
         <div className="flex flex-col gap-4">
           <div>
             {quickTable([
@@ -165,7 +164,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
           </div>
         </div>
 
-        {/* Throttle */}
         <div className="flex gap-4">
           <Checkbox
             checked={this.state.shouldThrottle}
@@ -185,7 +183,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
           </Label>
         </div>
 
-        {/* Cancel */}
         <CancelReassignmentButton onConfirm={() => this.cancelReassignment()} />
       </div>
     );

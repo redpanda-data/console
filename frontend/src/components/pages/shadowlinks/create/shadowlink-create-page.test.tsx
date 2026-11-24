@@ -516,7 +516,6 @@ describe('the ShadowLinkCreatePage', () => {
 
     mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
 
-    // Mock create mutation - must return the mutation hook properly
     rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
       const wrappedMutateAsync = async (request: any) => {
         const result = await mockMutateAsync(request);

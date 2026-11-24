@@ -159,7 +159,6 @@ class Overview extends PageComponent {
             </CompactSection>
           </div>
 
-          {/* Shadow Link Overview Section */}
           <ShadowLinkSection />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[fit-content(60%)_1fr]">

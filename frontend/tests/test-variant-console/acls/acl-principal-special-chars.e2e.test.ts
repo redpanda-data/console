@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/suspicious/noSkippedTests: ACL list not finding principals with colon in name — see UX-1215 */
+/* biome-ignore-all lint/suspicious/noSkippedTests: ACL list not finding principals with colon in name — see UX-1215 */
 /**
  * spec: UX-1208 — Phase 1 e2e test coverage (CRITICAL + HIGH)
  * parent epic: UX-1198 — REST-to-Connect RPC migration

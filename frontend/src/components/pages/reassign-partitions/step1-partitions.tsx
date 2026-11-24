@@ -180,7 +180,6 @@ export class StepSelectPartitions extends Component<{
 
     return (
       <div style={{ margin: '1em 1em 2em 1em' }}>
-        {/* Current Selection */}
         <SelectionInfoBar margin="2em 0em 1em 0.3em" partitionSelection={this.props.partitionSelection} />
 
         <DataTable<TopicWithPartitions>

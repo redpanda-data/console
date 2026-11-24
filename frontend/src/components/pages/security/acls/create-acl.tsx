@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
+/* biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 
 import clsx from 'clsx';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
@@ -305,7 +305,6 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                 data-testid={`summary-card-${getRuleDataTestId(rule)}`}
                 key={rule.id}
               >
-                {/* Combined Resource and Selector */}
                 <p
                   className="text-body-sm text-subtle first-letter:uppercase"
                   data-testid={`${getRuleDataTestId(rule)}-title`}
@@ -313,7 +312,6 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                   {getRuleSummaryTitle(rule)}
                 </p>
 
-                {/* Operations */}
                 <div>
                   {enabledOperations.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
@@ -394,7 +392,6 @@ const AclRules = ({
             variant={'elevated'}
           >
             <CardContent>
-              {/* Resource Type Selection */}
               <div className="flex items-center justify-between">
                 <div>
                   <FieldTitle className="mb-1.5" id={`${labelIdPrefix}-${rule.id}-resource-type`}>
@@ -421,7 +418,6 @@ const AclRules = ({
                 </Button>
               </div>
 
-              {/* Resource Name Selector */}
               {/* Show selector if resource type is not Cluster or SchemaRegistry */}
               {!(rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) && (
                 <fieldset aria-labelledby={`${labelIdPrefix}-${rule.id}-selector`} className="mb-6 space-y-2">
@@ -484,7 +480,6 @@ const AclRules = ({
                 </fieldset>
               )}
 
-              {/* Permission Mode */}
               <fieldset aria-labelledby={`${labelIdPrefix}-${rule.id}-operations`}>
                 <div className="mb-3 flex items-center justify-between">
                   <FieldTitle id={`${labelIdPrefix}-${rule.id}-operations`}>Operations</FieldTitle>
@@ -531,7 +526,6 @@ const AclRules = ({
                   </div>
                 </div>
 
-                {/* Operations */}
                 <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                   {Object.entries(rule.operations).map(([operation, operationValue]) => (
                     <div className="flex items-center gap-1" key={operation}>
@@ -599,7 +593,6 @@ const AclRules = ({
           </Card>
         ))}
 
-        {/* Add Rule Button */}
         <div className="mt-6">
           <Button className="w-full" data-testid="add-acl-rule-button" onClick={addRule} variant="outline">
             <Plus className="h-4 w-4" />
@@ -805,11 +798,9 @@ export default function CreateACL({
 
   return (
     <div className="relative min-h-screen pb-20">
-      {/* Main Content */}
       <main className="pb-6">
         <div className="mx-auto">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Left Column - Main Form */}
             <div className="space-y-6 lg:col-span-2">
               <p className="h-12 text-body text-subtle">Configure access control rules for your Kafka resources.</p>
 
@@ -825,7 +816,6 @@ export default function CreateACL({
               <AclRules {...rulesEditor} schemaRegistryEnabled={schemaRegistryEnabled} />
             </div>
 
-            {/* Right Column - Summary Card */}
             <div className="lg:col-span-1">
               <div className="sticky top-20">
                 <Summary rules={rules} sharedConfig={sharedConfig} />

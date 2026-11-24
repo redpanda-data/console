@@ -176,7 +176,6 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
 
   return (
     <PageContent key="b">
-      {/* Statistics Bar */}
       <div className="flex items-center gap-4">
         <SmallStat title="Format">{subject.type}</SmallStat>
         <Separator className="h-[2ch]" orientation="vertical" />
@@ -231,7 +230,6 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           {subject.schemas.count((x: { isSoftDeleted?: boolean }) => !x.isSoftDeleted)}
         </SmallStat>
       </div>
-      {/* Buttons */}
       <div className="flex gap-2">
         <Tooltip>
           <TooltipTrigger
@@ -534,7 +532,6 @@ const SubjectVersionDefinition = ({
 
   return (
     <div className="flex gap-10">
-      {/* Left Side */}
       <div className="flex min-w-0 grow flex-col gap-4">
         {/* Version Select / Delete / Recover */}
         <div className="flex items-end gap-2">
@@ -634,7 +631,6 @@ const SubjectVersionDefinition = ({
           )}
         </div>
 
-        {/* Deleted Hint */}
         {Boolean(schema.isSoftDeleted) && (
           <Alert data-testid="schema-definition-soft-deleted-alert" variant="warning">
             <AlertTitle>Soft-deleted schema</AlertTitle>
@@ -644,14 +640,12 @@ const SubjectVersionDefinition = ({
           </Alert>
         )}
 
-        {/* Code Block */}
         <DynamicCodeBlock
           code={getFormattedSchemaText(schema)}
           lang={schemaTypeToCodeBlockLanguage(schema.type)}
           testId="schema-definition-code-block"
         />
       </div>
-      {/* References Box */}
       <div>
         <SchemaReferences schema={schema} subject={subjectData} />
       </div>
@@ -715,7 +709,6 @@ const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
 
   return (
     <div className="flex flex-col gap-10">
-      {/* Two version selectors */}
       <div className="grid min-w-0 grid-cols-2 gap-4">
         <div className="w-full">
           <div className="flex items-end gap-2">
@@ -776,7 +769,6 @@ const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
         </div>
       </div>
 
-      {/* Diff View */}
       <KowlDiffEditor
         data-testid="schema-diff-editor"
         height="800px"

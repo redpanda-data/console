@@ -180,7 +180,6 @@ const ConnectorActions = ({ connectClusterStore, connector, connectorName, setS 
 
   return (
     <div className="flex flex-row items-center gap-3">
-      {/* [Pause/Resume] */}
       {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
         <NoEditPermissionTooltip canEdit={canEdit}>
           <Button
@@ -196,7 +195,6 @@ const ConnectorActions = ({ connectClusterStore, connector, connectorName, setS 
         </NoEditPermissionTooltip>
       ) : null}
 
-      {/* [Restart] */}
       <NoEditPermissionTooltip canEdit={canEdit}>
         <Button
           className="min-w-32"
@@ -210,7 +208,6 @@ const ConnectorActions = ({ connectClusterStore, connector, connectorName, setS 
         </Button>
       </NoEditPermissionTooltip>
 
-      {/* [Delete] */}
       <NoEditPermissionTooltip canEdit={canEdit}>
         <Button
           className="min-w-32"
@@ -266,7 +263,6 @@ const ConnectorTabs = ({
                 )}
               </div>
 
-              {/* Update Config Button */}
               <div className="m-4 mb-6 flex">
                 <NoEditPermissionTooltip canEdit={canEdit}>
                   <Button
@@ -322,7 +318,6 @@ const ConnectorConfirmModals = ({
   refreshData: (force: boolean) => Promise<void>;
 }) => (
   <>
-    {/* Pause/Resume Modal */}
     <ConfirmModal<ClusterConnectorInfo>
       clearTarget={() => {
         setS({ pausingConnector: null });
@@ -351,7 +346,6 @@ const ConnectorConfirmModals = ({
       target={() => $state.pausingConnector}
     />
 
-    {/* Restart */}
     <ConfirmModal<ClusterConnectorInfo>
       clearTarget={() => {
         setS({ restartingConnector: null });
@@ -373,7 +367,6 @@ const ConnectorConfirmModals = ({
       target={() => $state.restartingConnector}
     />
 
-    {/* Update Config */}
     <ConfirmModal<UpdatingConnectorData>
       clearTarget={() => {
         setS({ updatingConnector: null });
@@ -397,7 +390,6 @@ const ConnectorConfirmModals = ({
       target={() => $state.updatingConnector}
     />
 
-    {/* Restart Task */}
     <ConfirmModal<RestartingTaskData>
       clearTarget={() => {
         setS({ restartingTask: null });
@@ -419,7 +411,6 @@ const ConnectorConfirmModals = ({
       target={() => $state.restartingTask}
     />
 
-    {/* Delete Connector */}
     <ConfirmModal<string>
       clearTarget={() => {
         setS({ deletingConnector: null });

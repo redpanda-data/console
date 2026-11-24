@@ -984,7 +984,6 @@ describe('the PipelinePage', () => {
 
       expect(await screen.findByText('Edit pipeline')).toBeInTheDocument();
 
-      // The back button is the first button in the view toolbar.
       const allButtons = screen.getAllByRole('button');
       const backButton = allButtons[0];
       await user.click(backButton);
@@ -1129,7 +1128,6 @@ describe('the PipelinePage', () => {
 
       await mountPipelinePage('create', { transport: createTransport() });
 
-      // The template CTA lives alongside the YAML lane (not the default Visual lane), so switch there first.
       await user.click(await screen.findByRole('tab', { name: 'YAML' }));
 
       expect(await screen.findByTestId('browse-templates-cta')).toBeInTheDocument();
@@ -1591,7 +1589,6 @@ describe('pipelinePage saving and recovering work', () => {
         await waitFor(() => expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft'));
       });
 
-      // Unknown support must not turn the primary save into one that deploys.
       it('offers a draft when the sample fails', async () => {
         const user = userEvent.setup();
         const listPipelinesHandler = () => {
@@ -1641,7 +1638,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(mockNavigate).not.toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' });
       });
 
-      // Nothing else can park it, so the copy has to hand the job back to the user.
       it('tells the user to stop it when the follow-up stop fails', async () => {
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate('new-pipeline', () => {
           throw new ConnectError('nope', Code.Unavailable);
@@ -1655,7 +1651,6 @@ describe('pipelinePage saving and recovering work', () => {
         await expectToastInsteadOfSuccess('error', DRAFT_UNSUPPORTED_MESSAGE);
       });
 
-      // No id to aim the stop at, so it never runs — the copy must not claim the deployment was parked.
       it('does not claim it stopped a deployment it could not address', async () => {
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate('');
         const { user } = await renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
@@ -1920,7 +1915,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(pipelineRequests.createPipeline[0]?.request?.pipeline?.draft).toBe(false);
       });
 
-      // Nothing to aim a stop at, so the deployment stands and the copy must say so.
       it('does not claim a create it could never stop is parked', async () => {
         config.featureFlags.enableRpcnPipelineDrafts = false;
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate('');
@@ -1988,7 +1982,6 @@ describe('pipelinePage saving and recovering work', () => {
         await user.click(saveButton);
 
         await expectToastInsteadOfSuccess('error', DRAFT_UPDATE_UNSUPPORTED_MESSAGE);
-        // Not a draft any more, so the editor's next save would deploy too.
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
       });
 
@@ -2521,7 +2514,6 @@ describe('pipelinePage saving and recovering work', () => {
       });
 
       it('ignores a browser clock that disagrees with the server', async () => {
-        // updatedAt is ~now, decades after SAVED_AT, yet the recorded baseline still matches.
         seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', SAVED_AT);
 
         await mountPipelinePage('edit', { transport: transportWithUpdateTime(SAVED_AT) });
@@ -2642,7 +2634,6 @@ describe('pipelinePage saving and recovering work', () => {
           const yamlEditor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
           await waitFor(() => expect(yamlEditor.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}'));
 
-          // Type, let autosave land, then type again — the buffer is now one keystroke behind the editor.
           fireEvent.change(yamlEditor, { target: { value: 'input:\n  first' } });
           await waitFor(
             () =>

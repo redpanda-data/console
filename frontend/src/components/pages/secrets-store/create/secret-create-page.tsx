@@ -88,7 +88,6 @@ export const SecretCreatePage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
       <header className="flex flex-col gap-2">
         <div className="text-body text-muted-foreground">
           Create a new secret that can be securely accessed by your services.

@@ -47,11 +47,9 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
 
   return (
     <div>
-      {/* Main Content */}
       <main>
         <div className="mx-auto">
           <div className="grid grid-cols-1 gap-8">
-            {/* Left Column - Configuration Details */}
             <div className="space-y-6">
               {/* Shared Configuration */}
               <Card className={isSimpleView ? 'hidden' : ''} size="full">

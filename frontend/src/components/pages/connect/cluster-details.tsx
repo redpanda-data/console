@@ -82,12 +82,9 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
       <PageContent>
         <ClusterStatisticsCard clusterName={clusterName} />
 
-        {/* Main Card */}
         <Section>
-          {/* Connectors List */}
           <ConnectorsList clusterName={clusterName} connectors={connectors ?? []} />
 
-          {/* Plugin List */}
           <div style={{ marginTop: '2em', display: isEmbedded() ? 'none' : 'block' }}>
             <h3 className="ml-1 pb-2.5">Connector Types</h3>
 

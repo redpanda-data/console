@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
+/* biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
 import type { Locator, Page } from '../../shared/e2e';
 import { expect, retryAssertion } from '../../shared/e2e';
 

@@ -193,7 +193,6 @@ export class EditOffsetsModal extends Component<{
               {offsets.length === 1 ? 'partition' : 'partitions'}.
             </p>
 
-            {/* Content */}
             <div className="mt-8">
               {this.state.page === 0 ? <div key="p1">{this.page1()}</div> : <div key="p2">{this.page2()}</div>}
             </div>

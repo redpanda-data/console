@@ -55,7 +55,6 @@ export const AppFooter = () => {
 
   return (
     <footer className="footer">
-      {/* Social Media Links */}
       <div className="links">
         {isEmbedded()
           ? gitHub('https://github.com/redpanda-data/redpanda', "Visit Redpanda's GitHub repository")
@@ -72,7 +71,6 @@ export const AppFooter = () => {
         </ElementTooltip>
       </div>
 
-      {/* Version Info */}
       <div className="versionText">
         <VersionInfo />
       </div>

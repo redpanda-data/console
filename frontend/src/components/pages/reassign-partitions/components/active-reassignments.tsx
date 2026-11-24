@@ -85,7 +85,6 @@ export class ActiveReassignments extends Component<{
 
     return (
       <>
-        {/* Title */}
         <div className="currentReassignments">
           <span className="title">Current Reassignments</span>
 
@@ -105,7 +104,6 @@ export class ActiveReassignments extends Component<{
           }
         </div>
 
-        {/* Table */}
         <DataTable<ReassignmentState>
           columns={[
             {

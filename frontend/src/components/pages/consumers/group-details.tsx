@@ -477,7 +477,6 @@ const GroupDetailsContent = ({
         </DisabledReasonButton>
       </div>
 
-      {/* Statistics Card */}
       <GroupStatisticsCard group={group} />
 
       {isConsumerGroupWithoutDetails(group) && (
@@ -491,7 +490,6 @@ const GroupDetailsContent = ({
         </Alert>
       )}
 
-      {/* Main Card */}
       <GroupDetailsTabs
         group={group}
         onDeleteOffsets={(offsets, mode) => {
@@ -511,7 +509,6 @@ const GroupDetailsContent = ({
         search={search}
       />
 
-      {/* Modals */}
       <EditOffsetsModal
         group={group}
         initialPartition={editedPartition}

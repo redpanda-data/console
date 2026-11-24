@@ -56,15 +56,11 @@ export default function NurturePanel() {
 
 const NurtureItemSkeleton = () => (
   <div className="flex items-start">
-    {/* Left thumbnail placeholder */}
     <Skeleton className="mr-4 h-20 w-[120px]" />
 
-    {/* Right content */}
     <div className="flex-1">
-      {/* Heading */}
       <Skeleton className="mb-2 h-4 w-[60%]" />
 
-      {/* Paragraph */}
       <Skeleton className="mb-1 h-3 w-[90%]" />
       <Skeleton className="h-3 w-[75%]" />
     </div>

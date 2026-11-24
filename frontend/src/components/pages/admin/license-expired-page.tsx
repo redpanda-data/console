@@ -50,10 +50,8 @@ export default class LicenseExpiredPage extends PageComponent {
           <div className="flex flex-col items-center gap-6">
             <img alt="Dev Redpanda" className="w-[300px]" src={devPandaFrontView} />
 
-            {/* Main Heading */}
             <p className="text-heading-lg">Your Redpanda Enterprise license has expired.</p>
 
-            {/* Subtext */}
             <p className="text-body-lg">
               {enabledFeaturesText
                 ? `You were using ${enabledFeaturesText} and your license has expired. To continue using these features, you will need`

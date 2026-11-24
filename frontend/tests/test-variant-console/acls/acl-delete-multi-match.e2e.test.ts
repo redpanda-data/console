@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/suspicious/noSkippedTests: permissions-list delete flow intermittent — see UX-1216 */
+/* biome-ignore-all lint/suspicious/noSkippedTests: permissions-list delete flow intermittent — see UX-1216 */
 /**
  * spec: UX-1208 — Phase 1 e2e test coverage (CRITICAL + HIGH)
  * parent epic: UX-1198 — REST-to-Connect RPC migration

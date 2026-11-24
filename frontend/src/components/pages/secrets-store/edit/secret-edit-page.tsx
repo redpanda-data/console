@@ -103,7 +103,6 @@ const SecretEditForm = ({ secret }: { secret: Secret }) => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
       <header className="flex flex-col gap-2">
         <div className="text-body text-muted-foreground">
           Update the secret value, scopes, or labels. Leave the value empty to keep the existing secret.
