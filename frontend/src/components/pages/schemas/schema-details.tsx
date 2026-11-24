@@ -275,7 +275,6 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           {deleteSubjectFencedReason ? <TooltipContent side="top">{deleteSubjectFencedReason}</TooltipContent> : null}
         </Tooltip>
       </div>
-      {/* Definition / Diff */}
       <Tabs data-testid="schema-details-tabs" defaultValue="definition">
         <TabsList variant="underline">
           <TabsTrigger value="definition">Definition</TabsTrigger>
@@ -533,7 +532,6 @@ const SubjectVersionDefinition = ({
   return (
     <div className="flex gap-10">
       <div className="flex min-w-0 grow flex-col gap-4">
-        {/* Version Select / Delete / Recover */}
         <div className="flex items-end gap-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={versionSelectId}>Version</Label>

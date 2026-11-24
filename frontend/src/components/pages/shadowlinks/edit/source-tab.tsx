@@ -24,7 +24,6 @@ export const SourceTab = () => {
 
   return (
     <div className="space-y-4">
-      {/* Shadow link name (Read-only) */}
       <Card size="full">
         <CardHeader>Name</CardHeader>
         <CardContent>
@@ -44,13 +43,10 @@ export const SourceTab = () => {
         </CardContent>
       </Card>
 
-      {/* Source Cluster Connection and TLS */}
       <BootstrapServers />
 
-      {/* Authentication (None / SCRAM / PLAIN) */}
       <AuthenticationSection />
 
-      {/* Advanced Settings */}
       <AdvancedClientOptions />
     </div>
   );

@@ -53,13 +53,10 @@ export const ShadowLinkDetails = ({ shadowLink, shadowLinkName, onFailoverTopic 
 
   return (
     <>
-      {/* Shadow Link Diagram */}
       <ShadowLinkDiagram shadowLink={shadowLink} />
 
-      {/* Shadow Link Metrics */}
       <ShadowLinkMetrics shadowLink={shadowLink} />
 
-      {/* Topics Section */}
       <ShadowTopicsTable
         getNextTopicPage={async () => {
           await fetchNextPage({ throwOnError: true });

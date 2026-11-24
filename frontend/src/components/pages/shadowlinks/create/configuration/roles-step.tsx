@@ -105,7 +105,6 @@ export const RolesStep = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Resume/summary view when collapsed */}
           {!isOpen && rolesMode === 'specify' && fields.length > 0 && (
             <div className="mt-4 space-y-2">
               {fields.map((field, index) => {
@@ -128,7 +127,6 @@ export const RolesStep = () => {
             </div>
           )}
 
-          {/* Full editable view when expanded */}
           <CollapsibleContent>
             <TabsContent value="all">
               <Alert>

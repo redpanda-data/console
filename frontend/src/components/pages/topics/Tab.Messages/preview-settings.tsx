@@ -195,19 +195,16 @@ const PreviewTagSettings = ({
 
   return (
     <div className="mb-1.5 flex place-items-center gap-1 rounded-sm p-1">
-      {/* Move Handle */}
       <span className="moveHandle" {...draggableProvided.dragHandleProps}>
         <MenuIcon />
       </span>
 
-      {/* Enabled */}
       <Checkbox
         aria-label={`Enable pattern ${tag.pattern || tag.id}`}
         checked={tag.isActive}
         onCheckedChange={(checked) => updateTag({ isActive: checked === true })}
       />
 
-      {/* Settings */}
       <Popover>
         <PopoverTrigger
           render={
@@ -265,7 +262,6 @@ const PreviewTagSettings = ({
         />
       </div>
 
-      {/* Remove */}
       <button className="inlineButton" onClick={onRemove} type="button">
         <CloseIcon />
       </button>

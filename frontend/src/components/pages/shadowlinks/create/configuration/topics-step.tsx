@@ -76,7 +76,6 @@ export const TopicsStep = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Resume/summary view when collapsed */}
           {!isOpen && topicsMode === 'specify' && fields.length > 0 && (
             <div className="mt-4 space-y-2">
               {fields.map((field, index) => {
@@ -99,7 +98,6 @@ export const TopicsStep = () => {
             </div>
           )}
 
-          {/* Full editable view when expanded */}
           <CollapsibleContent>
             <TabsContent value="all">
               <Alert>

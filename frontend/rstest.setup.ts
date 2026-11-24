@@ -26,7 +26,6 @@ Object.defineProperty(window, 'localStorage', {
   value: testLocalStorage,
 });
 
-// ── happy-dom network / resource isolation ───────────────────────────
 // Unlike jsdom, happy-dom attempts real network requests for scripts,
 // images, and fetch calls. Disable external loading + same-origin policy
 // to suppress AbortError / ECONNREFUSED noise from unmocked endpoints.
@@ -114,7 +113,6 @@ if (typeof Animation !== 'undefined') {
   };
 }
 
-// ── Mocks ────────────────────────────────────────────────────────────
 // happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively, but
 // matchMedia must be an rs.fn so media-query reads (the theme provider's
 // prefers-color-scheme, responsive hooks) return a deterministic `matches: false`.
@@ -185,7 +183,6 @@ afterEach(() => {
   }
 });
 
-// ── Console suppression ──────────────────────────────────────────────
 // Suppress library warnings that are not actionable from tests and
 // pollute CI logs. Each pattern maps to a specific upstream issue or
 // migration-in-progress; removing a pattern requires fixing the source

@@ -276,7 +276,6 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
             }
           />
 
-          {/* Expanded ACL table */}
           <CollapsibleContent>
             {hasAcls ? (
               <div className="border-t">

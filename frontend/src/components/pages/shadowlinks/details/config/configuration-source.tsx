@@ -71,7 +71,6 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
       <h2 className="text-heading-lg" data-testid="shadowing-title">
         Source
       </h2>
-      {/* Name Section */}
       <Card size="full" testId="source-name-card">
         <CardHeader>
           <h3 className="text-heading-md">Name</h3>
@@ -83,7 +82,6 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
         </CardContent>
       </Card>
 
-      {/* Source Cluster Section */}
       <Card size="full" testId="source-cluster-card">
         <CardHeader>
           <h3 className="text-heading-md">Source cluster</h3>
@@ -128,7 +126,6 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
         </CardContent>
       </Card>
 
-      {/* Authentication Section */}
       <Card size="full" testId="authentication-card">
         <CardHeader>
           <h3 className="text-heading-md">Authentication</h3>
@@ -161,7 +158,6 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
         </CardContent>
       </Card>
 
-      {/* Advanced Options Section */}
       <Card size="full" testId="advanced-options-card">
         <CardContent>
           <Accordion>

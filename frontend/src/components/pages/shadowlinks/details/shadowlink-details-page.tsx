@@ -318,7 +318,6 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Action Buttons */}
       <div className="flex justify-end gap-3">
         <Button onClick={() => failover.openFailoverDialog()} size="sm" variant="outline">
           {guided ? 'Fail over all topics' : 'Failover all topics'}
@@ -344,7 +343,6 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
         </Button>
       </div>
 
-      {/* Partial Data Warning Banner */}
       {Boolean(hasPartialData) && (
         <Alert testId="partial-data-warning" variant="warning">
           <AlertTriangle className="h-4 w-4" />
@@ -355,7 +353,6 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
         </Alert>
       )}
 
-      {/* Tabs */}
       <ShadowLinkDetailsTabs
         hasPartialData={hasPartialData}
         linkIdentity={linkIdentity}
@@ -369,7 +366,6 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
         tab={tab}
       />
 
-      {/* Delete Dialog */}
       <DeleteShadowLinkDialog
         isLoading={isDeleting}
         onConfirm={handleDelete}
@@ -378,7 +374,6 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
         shadowLinkName={shadowLink.name}
       />
 
-      {/* Failover Dialog */}
       <FailoverDialog
         checkingLag={failover.checkingLag}
         isLoading={failover.isFailingOver}

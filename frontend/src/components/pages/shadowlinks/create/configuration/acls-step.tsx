@@ -136,7 +136,6 @@ export const AclsStep = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Resume/summary view when collapsed */}
           {!isOpen && aclsMode === 'specify' && fields.length > 0 && (
             <div className="mt-4 space-y-3">
               {fields.map((field, index) => (
@@ -145,7 +144,6 @@ export const AclsStep = () => {
             </div>
           )}
 
-          {/* Full editable view when expanded */}
           <CollapsibleContent>
             <TabsContent value="all">
               <Alert>

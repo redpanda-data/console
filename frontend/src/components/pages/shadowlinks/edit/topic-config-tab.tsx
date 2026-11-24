@@ -270,10 +270,8 @@ export const TopicConfigTab = () => {
       toggleTestId="topic-config-toggle-button"
     >
       <CardContent>
-        {/* Exclude Default Toggle */}
         <ExcludeDefaultToggle />
 
-        {/* Summary view when collapsed */}
         {!isOpen && (
           <div className="space-y-2">
             <div className="text-body-sm">
@@ -283,7 +281,6 @@ export const TopicConfigTab = () => {
           </div>
         )}
 
-        {/* Full editable view when expanded */}
         <CollapsibleContent>
           <Accordion defaultValue={CATEGORY_ORDER} multiple>
             {CATEGORY_ORDER.map((category) => {

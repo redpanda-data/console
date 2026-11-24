@@ -57,7 +57,6 @@ export const PropertyGroupComponent = (props: {
               <AccordionItem key={subGroup.group.name} value={subGroup.group.name ?? ''}>
                 <AccordionTrigger>
                   <div className="flex items-center gap-4">
-                    {/* The group name was rendered twice here before the migration. */}
                     <span className="text-heading-sm font-semibold">{subGroup.group.name}</span>
                     <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
                   </div>

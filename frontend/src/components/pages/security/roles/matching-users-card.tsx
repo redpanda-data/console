@@ -209,7 +209,6 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                   testIdPrefix="user"
                 />
 
-                {/* Groups section — only when GBAC is enabled */}
                 {gbacEnabled && (
                   <>
                     <span className="mt-2 text-body-sm font-medium tracking-wide text-foreground uppercase">
@@ -228,7 +227,6 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
             )}
           </div>
 
-          {/* Add member — only for RedpandaRole */}
           {isRole && (
             <div className="border-t border-border pt-2">
               <AddRoleMember

@@ -200,7 +200,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
         Shadowing
       </h2>
 
-      {/* Topic Replication Section */}
       <NameFilterSection
         emptyMessage="No topic filters configured"
         filters={topicFilters}
@@ -209,7 +208,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
         title="Topic replication"
       />
 
-      {/* ACL Replication Section */}
       <ACLFilterSection filters={aclFilters} />
 
       {/* Role Replication Section (hidden when the source API does not expose role sync) */}
@@ -223,7 +221,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
         />
       )}
 
-      {/* Consumer Group Replication Section */}
       <NameFilterSection
         emptyMessage="No consumer group filters configured"
         filters={consumerFilters}
@@ -232,7 +229,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
         title="Consumer group replication"
       />
 
-      {/* Schema Registry Section */}
       <ConfigurationSchemaRegistry syncOptions={schemaRegistrySyncOptions} />
     </div>
   );

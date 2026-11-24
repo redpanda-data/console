@@ -100,7 +100,6 @@ function AppContent() {
     // Flex column + flex-1 so the footer's `margin-top: auto` pins it to the bottom.
     <div className="flex flex-1 flex-col" id="mainLayout">
       <TooltipProvider>
-        {/* Page */}
         <NullFallbackBoundary>
           <LicenseNotification />
         </NullFallbackBoundary>
@@ -122,7 +121,6 @@ function AppContent() {
         {/* <UpdatePopup /> */}
         <ErrorModalsRenderer />
 
-        {/* Toaster for notifications */}
         <Toaster position="top-right" richColors theme={toasterTheme} />
       </TooltipProvider>
     </div>

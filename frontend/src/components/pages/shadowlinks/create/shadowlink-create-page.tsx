@@ -250,14 +250,12 @@ export const ShadowLinkCreatePage = () => {
             <div className="xl:w-2/3">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
-                  {/* CONNECTION STEP */}
                   {methods.current.id === 'shadow-connection' && (
                     <Stepper.Panel>
                       <ConnectionStep />
                     </Stepper.Panel>
                   )}
 
-                  {/* SHADOW CONFIGURATION STEP */}
                   {methods.current.id === 'shadow-configuration' && (
                     <Stepper.Panel>
                       <ConfigurationStep />

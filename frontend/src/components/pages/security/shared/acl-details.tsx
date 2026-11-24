@@ -51,7 +51,6 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
         <div className="mx-auto">
           <div className="grid grid-cols-1 gap-8">
             <div className="space-y-6">
-              {/* Shared Configuration */}
               <Card className={isSimpleView ? 'hidden' : ''} size="full">
                 <CardHeader>
                   <CardTitle data-testid={'share-config-title'} level={3}>
@@ -78,7 +77,6 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
                 </CardContent>
               </Card>
 
-              {/* Rules */}
               <Card size="full" variant={isSimpleView ? 'elevated' : undefined}>
                 <CardHeader>
                   <CardTitle data-testid={'acl-rules-length'} level={3}>

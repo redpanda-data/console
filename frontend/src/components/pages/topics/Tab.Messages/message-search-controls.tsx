@@ -449,7 +449,6 @@ function MessageSettingsMenu({ dialogs }: { dialogs: MessageViewDialogs }) {
 function SearchActionButton({ search }: { search: MessageSearchController }) {
   return (
     <div className="flex items-end">
-      {/* Refresh Button */}
       {search.searchPhase === null && (
         <TooltipProvider>
           <Tooltip>
@@ -509,7 +508,6 @@ function QuickSearchRow({
 }) {
   return (
     <div className="col-span-full mt-4 flex gap-4">
-      {/* Quick Search */}
       <Input
         data-testid="message-quick-search-input"
         onChange={(x) => {
@@ -606,7 +604,6 @@ export function MessageSearchControls(props: MessageSearchControlsProps) {
             topicName={topic.topicName}
           />
 
-          {/* Search Progress Indicator: "Consuming Messages 30/30" */}
           {Boolean(search.searchPhase && search.searchPhase.length > 0) && (
             <StatusIndicator
               bytesConsumed={prettyBytes(search.bytesConsumed)}
@@ -629,7 +626,6 @@ export function MessageSearchControls(props: MessageSearchControlsProps) {
           <SearchActionButton search={search} />
         </div>
 
-        {/* Filter Tags */}
         <MessageSearchFilterBar
           filters={filters}
           onEdit={(filter) => {

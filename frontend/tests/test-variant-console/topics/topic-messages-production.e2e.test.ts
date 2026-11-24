@@ -102,7 +102,6 @@ test.describe('produce Messages', () => {
 
       await page.getByTestId('produce-button').click();
 
-      // Wait for message to appear with size warning
       await page.getByText('Message size exceeds the display limit.').waitFor({
         state: 'visible',
         timeout: 10_000,

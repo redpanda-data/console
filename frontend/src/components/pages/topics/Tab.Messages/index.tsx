@@ -85,7 +85,6 @@ export const TopicMessageView: FC<TopicMessageViewProps> = ({ topic }) => {
         settings={settings}
         topic={topic}
       />
-      {/* Message Table (or error display) */}
       {search.fetchError ? (
         <MessageSearchErrorAlert error={search.fetchError} onRetry={() => search.executeMessageSearch()} />
       ) : (

@@ -245,13 +245,11 @@ function ContinuousPagination({
   return (
     <div className="flex items-center justify-end px-2 py-2">
       <div className="flex items-center space-x-6 lg:space-x-8">
-        {/* Page counter */}
         <div className="flex w-[100px] items-center justify-center text-body font-medium">
           Page {pageIndex + 1}
           {hasMoreData ? '' : ` of ${windowStartPage + loadedPages}`}
         </div>
 
-        {/* Rows per page selector */}
         <div className="flex items-center space-x-2">
           <p className="text-body font-medium">Rows per page</p>
           <Select
@@ -275,7 +273,6 @@ function ContinuousPagination({
           </Select>
         </div>
 
-        {/* Navigation buttons */}
         <div className="flex items-center space-x-2">
           <Button
             className="hidden size-8 lg:flex"
@@ -446,19 +443,16 @@ export function MessagesResults({
         </Table>
       </div>
 
-      {/* Normal pagination */}
       {!continuousPaginationEnabled && filteredMessages.length > 0 && (
         <div className="pt-2">
           <DataTablePagination table={table} />
         </div>
       )}
 
-      {/* Infinite scroll pagination */}
       {continuousPaginationEnabled && filteredMessages.length > 0 && (
         <ContinuousPagination pageWindow={pageWindow} paging={paging} windowStartPage={windowStartPage} />
       )}
 
-      {/* Virtual page indicator for continuous pagination mode */}
       {continuousPaginationEnabled && messages.length > 0 && (
         <div className="mt-2 flex items-center justify-center gap-2 text-body text-muted-foreground">
           <span>
@@ -469,7 +463,6 @@ export function MessagesResults({
         </div>
       )}
 
-      {/* Warning when filters are active with continuous pagination */}
       {continuousPaginationEnabled && filtersCount > 0 && messages.length > 0 && (
         <Alert className="mt-4">
           <AlertDescription>
@@ -478,7 +471,6 @@ export function MessagesResults({
         </Alert>
       )}
 
-      {/* Loading indicator when fetching more pages */}
       <div
         className={clsx(
           'mt-4 flex h-6 items-center justify-center',
