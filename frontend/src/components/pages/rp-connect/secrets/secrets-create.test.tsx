@@ -1,55 +1,69 @@
-import { afterEach, expect, rs, test } from '@rstest/core';
+import { createClient, createRouterTransport } from '@connectrpc/connect';
+import { expect, onTestFinished, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
+import { PipelineService } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
+import { SecretService } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 
 import RpConnectSecretCreate from './secrets-create';
+import { config } from '../../../../config';
+import { appGlobal } from '../../../../state/app-global';
 import { rpcnSecretManagerApi } from '../../../../state/backend-api';
 
 const existingSecret = { id: 'EXISTING_SECRET' };
 const SECRET_NAME_LABEL = /Secret name/u;
 const SECRET_VALUE_LABEL = /Secret value/u;
 
-afterEach(() => {
-  rpcnSecretManagerApi.secrets = undefined;
-  rs.restoreAllMocks();
-});
-
 const renderCreatePage = () => {
-  rpcnSecretManagerApi.secrets = [existingSecret] as never;
-  rs.spyOn(RpConnectSecretCreate.prototype, 'refreshData').mockImplementation(() => undefined);
+  const clients = { pipelinesClient: config.pipelinesClient, rpcnSecretsClient: config.rpcnSecretsClient };
+  const { secrets, secretsByPipeline } = rpcnSecretManagerApi;
+  const { onRefresh } = appGlobal;
+  const transport = createRouterTransport(({ rpc }) => {
+    rpc(PipelineService.method.getPipelinesBySecrets, () => ({ response: {} }));
+    rpc(SecretService.method.listSecrets, () => ({ response: { secrets: [existingSecret] } }));
+  });
+  rpcnSecretManagerApi.secrets = undefined;
+  Object.assign(config, {
+    pipelinesClient: createClient(PipelineService, transport),
+    rpcnSecretsClient: createClient(SecretService, transport),
+  });
+
+  onTestFinished(() => {
+    Object.assign(config, clients);
+    Object.assign(rpcnSecretManagerApi, { secrets, secretsByPipeline });
+    appGlobal.onRefresh = onRefresh;
+  });
+
   render(<RpConnectSecretCreate matchedPath="/rp-connect/secrets/create" />);
+  return screen.findByLabelText(SECRET_NAME_LABEL);
 };
 
-test('labels both fields and marks them required', () => {
-  renderCreatePage();
-
-  const name = screen.getByLabelText(SECRET_NAME_LABEL);
-  const value = screen.getByLabelText(SECRET_VALUE_LABEL);
-
+function expectRequiredCredentials(name: HTMLElement, value: HTMLElement) {
   expect(name).toBeRequired();
   expect(value).toBeRequired();
   expect(value).toHaveAttribute('type', 'password');
-});
+}
 
-test('keeps submit disabled until a valid name and a value are present', async () => {
+test('requires a name and a masked value before enabling submit', async () => {
   const user = userEvent.setup();
-  renderCreatePage();
-
+  const name = await renderCreatePage();
+  const value = screen.getByLabelText(SECRET_VALUE_LABEL);
   const submit = screen.getByTestId('submit-create-rpcn-secret');
+  expectRequiredCredentials(name, value);
   expect(submit).toBeDisabled();
 
-  await user.type(screen.getByLabelText(SECRET_NAME_LABEL), 'NEW_SECRET');
+  await user.type(name, 'NEW_SECRET');
   expect(submit).toBeDisabled();
 
-  await user.type(screen.getByLabelText(SECRET_VALUE_LABEL), 'hunter2');
+  await user.type(value, 'hunter2');
   expect(submit).toBeEnabled();
 });
 
 test('reports a name already in use and blocks submit', async () => {
   const user = userEvent.setup();
-  renderCreatePage();
+  const name = await renderCreatePage();
 
-  await user.type(screen.getByLabelText(SECRET_NAME_LABEL), existingSecret.id);
+  await user.type(name, existingSecret.id);
   await user.type(screen.getByLabelText(SECRET_VALUE_LABEL), 'hunter2');
 
   expect(screen.getByRole('alert')).toHaveTextContent('Secret name is already in use');
@@ -58,9 +72,9 @@ test('reports a name already in use and blocks submit', async () => {
 
 test('reports an invalid name', async () => {
   const user = userEvent.setup();
-  renderCreatePage();
+  const name = await renderCreatePage();
 
-  await user.type(screen.getByLabelText(SECRET_NAME_LABEL), '1_LEADING_DIGIT');
+  await user.type(name, '1_LEADING_DIGIT');
 
   expect(screen.getByRole('alert')).toHaveTextContent('The name you entered is invalid');
 });
