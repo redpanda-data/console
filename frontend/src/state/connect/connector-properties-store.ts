@@ -155,7 +155,7 @@ export class ConnectorPropertiesStore {
     return propertyGroup;
   }
 
-  getConfigObject(): object {
+  getConfigObject() {
     if (this.viewMode === 'json') {
       return { 'connector.class': this.pluginClassName, ...parseConfigJson(this.jsonText) };
     }

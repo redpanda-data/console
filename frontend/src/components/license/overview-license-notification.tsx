@@ -23,10 +23,9 @@ import { RegisterModal } from './register-modal';
 import { type License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api, useApiStoreHook } from '../../state/backend-api';
 
-const getLicenseAlertContent: (
-  licenses: License[],
-  onRegisterModalOpen: () => void
-) => { message: ReactElement; status: 'warning' | 'informative' } | null = (
+type OverviewLicenseAlert = { message: ReactElement; status: 'warning' | 'informative' };
+
+const getLicenseAlertContent: (licenses: License[], onRegisterModalOpen: () => void) => OverviewLicenseAlert | null = (
   licenses,
   onRegisterModalOpen
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
@@ -52,11 +51,7 @@ const getLicenseAlertContent: (
     : getKafkaTrialAlert(license, msToExpiration);
 };
 
-function getBakedTrialAlert(
-  license: License,
-  msToExpiration: number,
-  onRegisterModalOpen: () => void
-): { message: ReactElement; status: 'warning' | 'informative' } | null {
+function getBakedTrialAlert(license: License, msToExpiration: number, onRegisterModalOpen: () => void) {
   if (msToExpiration < 0) {
     return {
       message: (
@@ -73,7 +68,7 @@ function getBakedTrialAlert(
         </div>
       ),
       status: 'warning',
-    };
+    } satisfies OverviewLicenseAlert;
   }
 
   const WARNING_THRESHOLD_DAYS = 5;
@@ -93,7 +88,7 @@ function getBakedTrialAlert(
         </div>
       ),
       status: 'informative',
-    };
+    } satisfies OverviewLicenseAlert;
   }
 
   if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
@@ -113,7 +108,7 @@ function getBakedTrialAlert(
         </div>
       ),
       status: 'warning',
-    };
+    } satisfies OverviewLicenseAlert;
   }
   return {
     message: (
@@ -131,12 +126,9 @@ function getBakedTrialAlert(
       </div>
     ),
     status: 'warning',
-  };
+  } satisfies OverviewLicenseAlert;
 }
-function getExtendedTrialAlert(
-  license: License,
-  msToExpiration: number
-): { message: ReactElement; status: 'warning' | 'informative' } | null {
+function getExtendedTrialAlert(license: License, msToExpiration: number) {
   if (msToExpiration < 0) {
     return {
       message: (
@@ -149,7 +141,7 @@ function getExtendedTrialAlert(
         </div>
       ),
       status: 'warning',
-    };
+    } satisfies OverviewLicenseAlert;
   }
 
   const WARNING_THRESHOLD_DAYS = 5;
@@ -165,7 +157,7 @@ function getExtendedTrialAlert(
         </div>
       ),
       status: 'informative',
-    };
+    } satisfies OverviewLicenseAlert;
   }
 
   if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
@@ -185,7 +177,7 @@ function getExtendedTrialAlert(
         </div>
       ),
       status: 'warning',
-    };
+    } satisfies OverviewLicenseAlert;
   }
   return {
     message: (
@@ -202,12 +194,9 @@ function getExtendedTrialAlert(
       </div>
     ),
     status: 'warning',
-  };
+  } satisfies OverviewLicenseAlert;
 }
-function getKafkaTrialAlert(
-  license: License,
-  msToExpiration: number
-): { message: ReactElement; status: 'warning' | 'informative' } | null {
+function getKafkaTrialAlert(license: License, msToExpiration: number) {
   if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY) {
     if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
       return {
@@ -232,7 +221,7 @@ function getKafkaTrialAlert(
           </div>
         ),
         status: 'warning',
-      };
+      } satisfies OverviewLicenseAlert;
     }
     return {
       message: (
@@ -255,7 +244,7 @@ function getKafkaTrialAlert(
         </div>
       ),
       status: 'warning',
-    };
+    } satisfies OverviewLicenseAlert;
   }
 
   return null;

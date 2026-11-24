@@ -194,10 +194,9 @@ function parseYamlEditorSchema(configSchema: string | undefined) {
 
 type DiagramDialogTarget = { section: 'input' | 'output'; componentName: string };
 
-function userDialogSetup(data: UserStepSubmissionData): {
-  setupResult: RedpandaSetupResultLike;
-  serviceAccount?: AttachedServiceAccount;
-} {
+type PipelineUserSetup = { setupResult: RedpandaSetupResultLike; serviceAccount?: AttachedServiceAccount };
+
+function userDialogSetup(data: UserStepSubmissionData) {
   if ('username' in data) {
     return {
       setupResult: {
@@ -206,7 +205,7 @@ function userDialogSetup(data: UserStepSubmissionData): {
         saslMechanism: data.saslMechanism,
         consumerGroup: data.consumerGroup,
       },
-    };
+    } satisfies PipelineUserSetup;
   }
   return {
     setupResult: { authMethod: 'service-account' },
@@ -214,7 +213,7 @@ function userDialogSetup(data: UserStepSubmissionData): {
       'serviceAccountId' in data
         ? { serviceAccountId: data.serviceAccountId, secretName: data.serviceAccountSecretName }
         : undefined,
-  };
+  } satisfies PipelineUserSetup;
 }
 
 function useDiagramDialogs(

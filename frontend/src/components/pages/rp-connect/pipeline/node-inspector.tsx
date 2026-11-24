@@ -949,17 +949,17 @@ type ComponentDraft = { config: Record<string, unknown> | null; error: string | 
 
 const CLEAN_COMPONENT_DRAFT: ComponentDraft = { config: null, error: null };
 
-function parseComponentDraft(draft: string): ComponentDraft {
+function parseComponentDraft(draft: string) {
   let parsed: unknown;
   try {
     parsed = parseYaml(draft);
   } catch (e) {
-    return { config: null, error: e instanceof Error ? e.message : 'Invalid YAML' };
+    return { config: null, error: e instanceof Error ? e.message : 'Invalid YAML' } satisfies ComponentDraft;
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return { config: null, error: 'Configuration must be a YAML mapping.' };
+    return { config: null, error: 'Configuration must be a YAML mapping.' } satisfies ComponentDraft;
   }
-  return { config: parsed as Record<string, unknown>, error: null };
+  return { config: parsed as Record<string, unknown>, error: null } satisfies ComponentDraft;
 }
 
 function draftMatches(draft: string, yaml: string) {

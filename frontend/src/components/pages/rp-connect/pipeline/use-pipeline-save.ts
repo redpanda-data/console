@@ -290,15 +290,15 @@ async function stopCreatedPipeline(
   attempt: SaveAttempt,
   newPipelineId: string | undefined,
   draftWasIgnored: boolean
-): Promise<StopOutcome> {
+) {
   if (!(attempt.run === 'stopped' || draftWasIgnored)) {
-    return { stopped: false, stopFailed: false };
+    return { stopped: false, stopFailed: false } satisfies StopOutcome;
   }
   const stopped = newPipelineId ? await stopQuietly(flow.stopPipeline, newPipelineId) : false;
   if (!(stopped || draftWasIgnored)) {
     toast.warning('Pipeline created, but stopping it failed — it may be running. Stop it from its page.');
   }
-  return { stopped, stopFailed: !stopped };
+  return { stopped, stopFailed: !stopped } satisfies StopOutcome;
 }
 
 function toastCreateOutcome(flow: SaveFlow, attempt: SaveAttempt, draftWasIgnored: boolean, outcome: StopOutcome) {

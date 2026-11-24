@@ -306,8 +306,8 @@ function ConfigFixtureRow({ entry }: { entry: FixtureEntry }) {
 function ConnectConfigsPanel() {
   const [filter, setFilter] = useState('');
   const [shown, setShown] = useState<'all' | FixtureTag>('all');
-  const entries = useMemo(
-    (): FixtureEntry[] =>
+  const entries = useMemo<FixtureEntry[]>(
+    () =>
       CONNECT_CONFIG_FIXTURES.map((fixture) => ({
         fixture,
         group: groupOf(fixture),

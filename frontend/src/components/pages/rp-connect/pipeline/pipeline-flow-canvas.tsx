@@ -648,15 +648,15 @@ function armSpan(entry: ScopeBounds, pb: ScopeBounds, pad: number) {
   return { top: Math.max(top, pb.minY), bottom: Math.min(bottom, pb.maxY) };
 }
 
-function entryArm(entry: ScopeBounds, body: ScopeBounds, pb: ScopeBounds, pad: number): ScopeArm | undefined {
+function entryArm(entry: ScopeBounds, body: ScopeBounds, pb: ScopeBounds, pad: number) {
   const side = entrySide(entry, body);
   if (!side) {
     return;
   }
   const { top, bottom } = armSpan(entry, pb, pad);
-  return bottom > top
-    ? { side, outerX: side === 'left' ? entry.minX - pad : entry.maxX + pad, top, bottom }
-    : undefined;
+  return (
+    bottom > top ? { side, outerX: side === 'left' ? entry.minX - pad : entry.maxX + pad, top, bottom } : undefined
+  ) satisfies ScopeArm | undefined;
 }
 
 function armRect(arm: ScopeArm, pb: ScopeBounds) {
@@ -791,7 +791,7 @@ type RegionContext = {
   tryCatchPairs: ReadonlyMap<string, string>;
 };
 
-function scopeRegionDraft(node: Node, ctx: RegionContext): ScopeRegionDraft | null {
+function scopeRegionDraft(node: Node, ctx: RegionContext) {
   const { rfNodes, scopeOf, nodeLookup, tryCatchPairs } = ctx;
   const own = scopeOf(node.id);
   if (!own || own.size < 2) {
@@ -810,7 +810,7 @@ function scopeRegionDraft(node: Node, ctx: RegionContext): ScopeRegionDraft | nu
     entry: geom.entry,
     accent: constructAccent(node),
     label: (node.data as FlowCardData).label,
-  };
+  } satisfies ScopeRegionDraft;
 }
 
 function ScopeRegions({
@@ -972,7 +972,7 @@ function applyStatusMarks(data: FlowCardData, node: Node, cb: CanvasCallbacks) {
   }
 }
 
-export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
+export function injectNodeData(node: Node, cb: CanvasCallbacks) {
   const data = { ...node.data } as FlowCardData;
   applyInteractionState(data, node, cb);
   applyStatusMarks(data, node, cb);
@@ -984,9 +984,9 @@ export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
       ...node,
       data,
       style: { ...(node.style as Record<string, unknown>), transition: undefined },
-    };
+    } satisfies Node;
   }
-  return { ...node, data };
+  return { ...node, data } satisfies Node;
 }
 
 type LegendFlags = { condition: boolean; error: boolean; reference: boolean };
@@ -1192,8 +1192,8 @@ function useCanvasGraph(configYaml: string, editable: boolean) {
   const { nodes, error, showingStale } = useResilientParse(debouncedYaml);
 
   const childrenByParent = useMemo(() => buildChildrenMap(nodes), [nodes]);
-  const scopeOf = useCallback(
-    (id: string | undefined): ReadonlySet<string> | undefined => {
+  const scopeOf = useCallback<(id: string | undefined) => ReadonlySet<string> | undefined>(
+    (id: string | undefined) => {
       if (id === undefined) {
         return;
       }

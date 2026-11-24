@@ -273,11 +273,7 @@ function populateContextualVariables(spec: RawFieldSpec, componentName?: string,
   }
 }
 
-function populateConnectionDefaults(
-  spec: RawFieldSpec,
-  componentName?: string,
-  parentName?: string
-): string | boolean | string[] | Record<string, unknown> | undefined {
+function populateConnectionDefaults(spec: RawFieldSpec, componentName?: string, parentName?: string) {
   if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
     return;
   }
@@ -360,7 +356,7 @@ type GenerateDefaultValueOptions = {
   ancestorOptional?: boolean;
 };
 
-function convertDefaultValue(defaultValue: string, type: string, kind?: string): unknown {
+function convertDefaultValue(defaultValue: string, type: string, kind?: string) {
   if (defaultValue === '' && type !== 'string') {
     return;
   }
@@ -377,9 +373,9 @@ function convertDefaultValue(defaultValue: string, type: string, kind?: string):
   return defaultValue;
 }
 
-function parseStructuredDefault(defaultValue: string): unknown {
+function parseStructuredDefault(defaultValue: string) {
   try {
-    const parsed = JSON.parse(defaultValue);
+    const parsed: unknown = JSON.parse(defaultValue);
     if (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) {
       return parsed;
     }
@@ -399,7 +395,7 @@ export const SENTINEL_REQUIRED_FIELD = '__REQUIRED_FIELD__';
  * `defaultValue` is far more likely a lost default than a required field. Known cost of that mode —
  * string fields whose real default is "" show as required.
  */
-export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): boolean {
+export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean) {
   if (spec.deprecated === true) {
     return false;
   }
@@ -412,7 +408,8 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   if (!spec.children?.length) {
     return true;
   }
-  return spec.children.some((c) => checkRequired(c));
+  const childRequired: boolean = spec.children.some((c) => checkRequired(c));
+  return childRequired;
 }
 
 function mayHaveLostDefault(spec: RawFieldSpec, ancestorOptional?: boolean) {
@@ -508,7 +505,7 @@ function getRequiredFieldTypeHint(spec: RawFieldSpec) {
 /**
  * The component root always emits its schema shape, including [] for an empty list or {} for a fieldless object.
  */
-export function generateDefaultValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions = {}): unknown {
+export function generateDefaultValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions = {}) {
   const { showAdvancedFields, componentName, parentName } = options;
 
   const populated = isRedpandaComponent(componentName)
@@ -522,7 +519,8 @@ export function generateDefaultValue(spec: RawFieldSpec, options: GenerateDefaul
     return;
   }
 
-  return generateShownFieldValue(spec, options);
+  const value: unknown = generateShownFieldValue(spec, options);
+  return value;
 }
 
 function populateRedpandaValue(spec: RawFieldSpec, componentName?: string, parentName?: string) {
@@ -541,7 +539,7 @@ function markRequired(spec: RawFieldSpec) {
 function generateShownFieldValue(
   spec: RawFieldSpec,
   { showAdvancedFields, componentName, ancestorOptional }: GenerateDefaultValueOptions
-): unknown {
+) {
   const required = checkRequired(spec, ancestorOptional);
 
   if (required && spec.type !== 'object') {

@@ -204,13 +204,14 @@ function isWaitHelper(sourceCode: SourceCode, callee: Node | undefined, depth: n
  *
  * Follows locally resolved helpers and scheduler calls, including Bun sleep imported under an alias.
  */
-export function isWait(sourceCode: SourceCode, value: Node | null | undefined, depth = 0): boolean {
+export function isWait(sourceCode: SourceCode, value: Node | null | undefined, depth = 0) {
   const node = unwrap(value);
   if (!node) {
     return false;
   }
   if (node.type === 'NewExpression') {
-    return isScheduledPromise(sourceCode, node);
+    const scheduled: boolean = isScheduledPromise(sourceCode, node);
+    return scheduled;
   }
   if (
     node.type === 'CallExpression' &&
@@ -218,5 +219,6 @@ export function isWait(sourceCode: SourceCode, value: Node | null | undefined, d
   ) {
     return true;
   }
-  return isMicrotaskTick(sourceCode, node);
+  const queued: boolean = isMicrotaskTick(sourceCode, node);
+  return queued;
 }

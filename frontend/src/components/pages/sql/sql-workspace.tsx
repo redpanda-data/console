@@ -236,11 +236,17 @@ function successRun(res: ExecuteQueryResponse, token: number, start: number) {
   } satisfies QueryRun;
 }
 
-function failedRun(error: ConnectError, token: number): QueryRun {
+function failedRun(error: ConnectError, token: number) {
   if (error.code === Code.Canceled) {
-    return { state: 'canceled', token };
+    return { state: 'canceled', token } satisfies QueryRun;
   }
-  return { state: 'error', token, title: 'Query failed', message: error.message, hint: hintFromError(error) };
+  return {
+    state: 'error',
+    token,
+    title: 'Query failed',
+    message: error.message,
+    hint: hintFromError(error),
+  } satisfies QueryRun;
 }
 
 type ExecuteRunDeps = {

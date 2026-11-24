@@ -325,7 +325,7 @@ export function getPreviewTags(targetObject: Record<string, unknown>, tags: Prev
 }
 
 const splitChars = ["'", '"', '.'];
-function parseJsonPath(str: string): string[] | string {
+function parseJsonPath(str: string) {
   const segments = splitPathSegments(str);
   if (typeof segments === 'string') {
     return segments;
@@ -344,7 +344,7 @@ function parseJsonPath(str: string): string[] | string {
 
 type PathStep = { next: number; segment?: string } | { error: string };
 
-function splitPathSegments(str: string): string[] | string {
+function splitPathSegments(str: string) {
   const result: string[] = [];
 
   let pos = 0;
@@ -362,7 +362,7 @@ function splitPathSegments(str: string): string[] | string {
   return result;
 }
 
-function readPathStep(str: string, pos: number): PathStep {
+const readPathStep: (str: string, pos: number) => PathStep = (str, pos) => {
   switch (str[pos]) {
     case "'":
     case '"':
@@ -372,9 +372,9 @@ function readPathStep(str: string, pos: number): PathStep {
     default:
       return readPlainSegment(str, pos);
   }
-}
+};
 
-function readQuotedSegment(str: string, pos: number): PathStep {
+function readQuotedSegment(str: string, pos: number) {
   const start = pos + 1;
   const end = str.indexOf(str[pos], start);
 
@@ -385,7 +385,7 @@ function readQuotedSegment(str: string, pos: number): PathStep {
   return { next: end + 1, segment: str.slice(start, end) };
 }
 
-function skipDot(str: string, pos: number): PathStep {
+function skipDot(str: string, pos: number) {
   if (pos === 0) {
     return { error: 'pattern cannot start with a dot' };
   }

@@ -92,7 +92,7 @@ export class Feature {
   };
 }
 
-function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { supported: boolean; error?: string } {
+function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null) {
   if (!c) {
     switch (f.endpoint) {
       case Feature.SchemaRegistryACLApi.endpoint:

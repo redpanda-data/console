@@ -33,7 +33,7 @@ function isPrimitivePayload(val: unknown) {
   return typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
 }
 
-function formatHexBytes(payload: Payload): PayloadRenderData {
+function formatHexBytes(payload: Payload) {
   const rawBytes = payload.rawBytes;
   const normalizedPayload = payload.normalizedPayload;
   const bytesSource = rawBytes !== null && rawBytes !== undefined ? rawBytes : normalizedPayload;
@@ -45,9 +45,9 @@ function formatHexBytes(payload: Payload): PayloadRenderData {
     for (const rawByte of bytesSource as Uint8Array) {
       result += `${rawByte.toString(16).padStart(2, '0')} `;
     }
-    return { type: 'code', content: result };
+    return { type: 'code', content: result } satisfies PayloadRenderData;
   }
-  return { type: 'rawBytesUnavailable' };
+  return { type: 'rawBytesUnavailable' } satisfies PayloadRenderData;
 }
 
 function formatAsciiBytes(val: unknown) {
@@ -61,10 +61,10 @@ function formatAsciiBytes(val: unknown) {
   return { type: 'code', content: result } satisfies PayloadRenderData;
 }
 
-function prepareBinaryPayload(payload: Payload, val: unknown): PayloadRenderData {
+function prepareBinaryPayload(payload: Payload, val: unknown) {
   const mode = 'hex' as 'ascii' | 'raw' | 'hex';
   if (mode === 'raw') {
-    return { type: 'code', content: val as React.ReactNode };
+    return { type: 'code', content: val as React.ReactNode } satisfies PayloadRenderData;
   }
   if (mode === 'hex') {
     return formatHexBytes(payload);

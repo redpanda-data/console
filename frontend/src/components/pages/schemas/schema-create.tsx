@@ -343,12 +343,7 @@ async function createSchemaAndOpen(
   }
 }
 
-async function validateSchema(state: SchemaEditorStateHelper): Promise<{
-  isValid: boolean;
-  errorDetails?: string;
-  isCompatible?: boolean;
-  compatibilityError?: { errorType: string; description: string };
-}> {
+async function validateSchema(state: SchemaEditorStateHelper) {
   if (!state.computedSubjectName) {
     return { isValid: false, errorDetails: 'Missing subject name' };
   }

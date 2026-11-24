@@ -58,7 +58,7 @@ const sampleValues: (slotIds: string[]) => Record<string, string> = (slotIds) =>
 
 type FieldNode = { children?: { name: string }[] };
 
-function unknownFieldPathsOfPair(pair: Pair, componentConfig: FieldNode | undefined, prefix: string): string[] {
+function unknownFieldPathsOfPair(pair: Pair, componentConfig: FieldNode | undefined, prefix: string) {
   const key = (pair.key as { value?: unknown } | null)?.value;
   if (typeof key !== 'string') {
     return [];
@@ -76,12 +76,16 @@ function unknownFieldPathsOfPair(pair: Pair, componentConfig: FieldNode | undefi
     : [];
 }
 
-function collectUnknownFieldPaths(node: unknown, componentConfig: FieldNode | undefined, prefix: string): string[] {
+const collectUnknownFieldPaths: (node: unknown, componentConfig: FieldNode | undefined, prefix: string) => string[] = (
+  node,
+  componentConfig,
+  prefix
+) => {
   if (!isMap(node)) {
     return [];
   }
   return node.items.flatMap((pair) => unknownFieldPathsOfPair(pair, componentConfig, prefix));
-}
+};
 
 type StitchedComponent = { type: 'input' | 'output'; name: string; config: unknown };
 

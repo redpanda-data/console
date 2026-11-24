@@ -75,7 +75,7 @@ export function durationToSeconds(duration: Duration | undefined) {
 /**
  * Map the core common TLS settings oneof to unified type
  */
-export function mapTLSSettings(tlsSettings: TLSSettings | undefined): UnifiedTLSSettings | undefined {
+export function mapTLSSettings(tlsSettings: TLSSettings | undefined) {
   if (!tlsSettings) {
     return;
   }
@@ -108,14 +108,14 @@ export function mapTLSSettings(tlsSettings: TLSSettings | undefined): UnifiedTLS
   return {
     enabled: tlsSettings.enabled,
     tlsSettings: tlsSettingsValue,
-  };
+  } satisfies UnifiedTLSSettings;
 }
 
-function mapDestinationMapping(
-  destination: SchemaRegistryContextDestination | undefined
-): UnifiedSchemaRegistryApiOptions['destinationMapping'] {
+type DestinationMapping = UnifiedSchemaRegistryApiOptions['destinationMapping'];
+
+function mapDestinationMapping(destination: SchemaRegistryContextDestination | undefined) {
   if (destination?.mapping?.case === 'identity') {
-    return { case: 'identity' };
+    return { case: 'identity' } satisfies DestinationMapping;
   }
   if (destination?.mapping?.case === 'exact') {
     return {
@@ -124,7 +124,7 @@ function mapDestinationMapping(
         source: mapping.source,
         destination: mapping.destination,
       })),
-    };
+    } satisfies DestinationMapping;
   }
 }
 
@@ -265,20 +265,25 @@ function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage) {
  * existingKeyFingerprint (sending them empty on update keeps the stored
  * values).
  */
-export function mapSchemaRegistrySyncOptionsToFormValues(
-  options: SchemaRegistrySyncOptionsMessage | undefined
-): Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'> {
+export function mapSchemaRegistrySyncOptionsToFormValues(options: SchemaRegistrySyncOptionsMessage | undefined) {
+  type SchemaRegistryFormOptions = Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'>;
   const mode = options?.schemaRegistryShadowingMode;
 
   if (mode?.case === 'shadowSchemaRegistryTopic') {
     const schemaRegistry = structuredClone(initialValues.schemaRegistry);
     schemaRegistry.mode = SCHEMA_REGISTRY_MODE.TOPIC;
-    return { enableSchemaRegistrySync: true, schemaRegistry };
+    return { enableSchemaRegistrySync: true, schemaRegistry } satisfies SchemaRegistryFormOptions;
   }
   if (mode?.case === 'shadowSchemaRegistryApi') {
-    return { enableSchemaRegistrySync: false, schemaRegistry: applyApiOptionsToFormSlice(mode.value) };
+    return {
+      enableSchemaRegistrySync: false,
+      schemaRegistry: applyApiOptionsToFormSlice(mode.value),
+    } satisfies SchemaRegistryFormOptions;
   }
-  return { enableSchemaRegistrySync: false, schemaRegistry: structuredClone(initialValues.schemaRegistry) };
+  return {
+    enableSchemaRegistrySync: false,
+    schemaRegistry: structuredClone(initialValues.schemaRegistry),
+  } satisfies SchemaRegistryFormOptions;
 }
 
 /**
@@ -286,16 +291,16 @@ export function mapSchemaRegistrySyncOptionsToFormValues(
  *
  * Both planes carry the same admin-v2 wire message even though they source types differently. Hydrate password presence and timestamps only; never expect a returned password.
  */
-export function mapSchemaRegistrySyncOptions(
-  options: SchemaRegistrySyncOptionsMessage | undefined
-): UnifiedSchemaRegistrySyncOptions | undefined {
+export function mapSchemaRegistrySyncOptions(options: SchemaRegistrySyncOptionsMessage | undefined) {
   if (!options) {
     return;
   }
 
   const mode = options.schemaRegistryShadowingMode;
   if (mode?.case === 'shadowSchemaRegistryTopic') {
-    return { schemaRegistryShadowingMode: { case: 'shadowSchemaRegistryTopic', value: {} } };
+    return {
+      schemaRegistryShadowingMode: { case: 'shadowSchemaRegistryTopic', value: {} },
+    } satisfies UnifiedSchemaRegistrySyncOptions;
   }
   if (mode?.case === 'shadowSchemaRegistryApi') {
     return {
@@ -303,7 +308,7 @@ export function mapSchemaRegistrySyncOptions(
         case: 'shadowSchemaRegistryApi',
         value: mapSchemaRegistryApiOptions(mode.value),
       },
-    };
+    } satisfies UnifiedSchemaRegistrySyncOptions;
   }
-  return { schemaRegistryShadowingMode: { case: undefined } };
+  return { schemaRegistryShadowingMode: { case: undefined } } satisfies UnifiedSchemaRegistrySyncOptions;
 }

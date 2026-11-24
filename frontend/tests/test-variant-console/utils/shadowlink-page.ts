@@ -483,7 +483,7 @@ export class ShadowlinkPage {
     return clicked;
   }
 
-  private async clickFirstTrashButtonOf([btn, ...remainingButtons]: Locator[]): Promise<boolean> {
+  private async clickFirstTrashButtonOf([btn, ...remainingButtons]: Locator[]) {
     if (!btn) {
       return false;
     }
@@ -495,7 +495,8 @@ export class ShadowlinkPage {
     } catch {
       // WARNING: A previous click may have removed this button; skip the stale element.
     }
-    return this.clickFirstTrashButtonOf(remainingButtons);
+    const deleted: Promise<boolean> = this.clickFirstTrashButtonOf(remainingButtons);
+    return deleted;
   }
 
   private async addTopicFilter(filter: TopicFilter, filterIndex: number) {

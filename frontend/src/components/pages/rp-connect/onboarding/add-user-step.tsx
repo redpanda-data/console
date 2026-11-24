@@ -408,12 +408,12 @@ async function createPipelineServiceAccount(
   selector: ServiceAccountSelectorRef,
   serviceAccountLabel: string,
   serviceAccountName: string
-): Promise<UserStepSubmissionResult> {
+) {
   try {
     const result = await selector.createServiceAccount(serviceAccountLabel);
 
     if (!result) {
-      return { success: false };
+      return { success: false } satisfies UserStepSubmissionResult;
     }
 
     const submissionData: ServiceAccountSubmissionData = {
@@ -426,11 +426,11 @@ async function createPipelineServiceAccount(
     return {
       success: true,
       data: submissionData,
-    };
+    } satisfies UserStepSubmissionResult;
   } catch (createServiceAccountError) {
     const error = ConnectError.from(createServiceAccountError);
     toast.error(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'service account' }));
-    return { success: false };
+    return { success: false } satisfies UserStepSubmissionResult;
   }
 }
 
@@ -444,16 +444,16 @@ function submitServiceAccount({
   selector: ServiceAccountSelectorRef | null;
   serviceAccountLabel: string;
   serviceAccountName: string;
-}): Promise<UserStepSubmissionResult> {
+}) {
   if (hasServiceAccount) {
-    return Promise.resolve({
+    return Promise.resolve<UserStepSubmissionResult>({
       success: true,
       data: { authMethod: AuthenticationMethod.SERVICE_ACCOUNT, existing: true },
     });
   }
   if (!selector) {
     toast.error('Service account selector not initialized');
-    return Promise.resolve({ success: false });
+    return Promise.resolve<UserStepSubmissionResult>({ success: false });
   }
   return createPipelineServiceAccount(selector, serviceAccountLabel, serviceAccountName);
 }

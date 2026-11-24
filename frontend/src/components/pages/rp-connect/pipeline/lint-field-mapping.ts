@@ -169,20 +169,19 @@ function lineAnchoredHint(message: string, lineKey: string, fieldKeys: ReadonlyS
   return { anchors: [{ key: lineAnchor, message: remainder ? `${message} (${remainder})` : message }] };
 }
 
-function resolveHint(hint: LintHint, segments: readonly FieldSegment[], fieldKeys: ReadonlySet<string>): ResolvedHint {
+function resolveHint(hint: LintHint, segments: readonly FieldSegment[], fieldKeys: ReadonlySet<string>) {
   const named = anchoredToKeys(fieldKeysNamedExplicitly(hint.hint, fieldKeys), hint.hint);
   if (named) {
     return named;
   }
   const lineKey = hint.line > 0 ? fieldKeyForLine(segments, hint.line) : undefined;
   const lineAnchored = lineKey ? lineAnchoredHint(hint.hint, lineKey, fieldKeys) : undefined;
-  return (
-    lineAnchored ??
+  const resolved: ResolvedHint = lineAnchored ??
     anchoredToKeys(fieldKeysMentioned(hint.hint, fieldKeys), hint.hint) ?? {
       anchors: [],
       fieldLabel: lineKey?.replaceAll('/', '.'),
-    }
-  );
+    };
+  return resolved;
 }
 
 function appendFieldMessages(byField: Map<string, string[]>, anchors: ResolvedHint['anchors']) {

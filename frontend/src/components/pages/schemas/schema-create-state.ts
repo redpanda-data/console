@@ -53,7 +53,7 @@ function jsonRecordName(schemaText: string) {
 /**
  * Avro and JSON use the top-level name field.
  */
-export function computeRecordName(state: SchemaEditorStateData): string {
+export function computeRecordName(state: SchemaEditorStateData) {
   if (state.format === 'AVRO' || state.format === 'JSON') {
     return jsonRecordName(state.schemaText);
   }

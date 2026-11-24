@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/*eslint block-scoped-var: "error"*/
-
 import { create, type Registry } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
@@ -1897,7 +1895,7 @@ function listAllRoleNames(client: SecurityClient, onError: (error: ConnectError)
   return nextPage('') satisfies Promise<string[]>;
 }
 
-function parseRolePrincipal(roleName: string, principal: string): RolePrincipal | null {
+function parseRolePrincipal(roleName: string, principal: string) {
   const colonIdx = principal.indexOf(':');
   if (colonIdx < 0) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -1910,7 +1908,7 @@ function parseRolePrincipal(roleName: string, principal: string): RolePrincipal 
     console.warn('unsupported principal type in refreshRoleMembers, skipping', { roleName, principal });
     return null;
   }
-  return { principalType: principalTypeRaw, name: principal.slice(colonIdx + 1) };
+  return { principalType: principalTypeRaw, name: principal.slice(colonIdx + 1) } satisfies RolePrincipal;
 }
 
 type GetRoleResult = { response?: { role?: { name: string }; members: Array<{ principal: string }> } };

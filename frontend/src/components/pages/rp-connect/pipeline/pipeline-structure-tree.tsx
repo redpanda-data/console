@@ -174,17 +174,17 @@ function keyboardFocusTarget(key: string, node: PipelineFlowNode, { visibleIds, 
 
 type RowKeyIntent = { kind: 'select' } | { kind: 'toggle' } | { kind: 'focus'; id: string };
 
-function rowKeyIntent(key: string, node: PipelineFlowNode, treeNav: TreeKeyNav): RowKeyIntent | undefined {
+function rowKeyIntent(key: string, node: PipelineFlowNode, treeNav: TreeKeyNav) {
   if (key === 'Enter' || key === ' ') {
-    return { kind: 'select' };
+    return { kind: 'select' } satisfies RowKeyIntent | undefined;
   }
   const hasChildren = treeNav.maps.childrenOf(node.id).length > 0;
   const collapsed = treeNav.collapsedIds.has(node.id);
   if ((key === 'ArrowRight' && hasChildren && collapsed) || (key === 'ArrowLeft' && hasChildren && !collapsed)) {
-    return { kind: 'toggle' };
+    return { kind: 'toggle' } satisfies RowKeyIntent | undefined;
   }
   const target = keyboardFocusTarget(key, node, treeNav);
-  return target ? { kind: 'focus', id: target } : undefined;
+  return (target ? { kind: 'focus', id: target } : undefined) satisfies RowKeyIntent | undefined;
 }
 
 type TreeNav = {

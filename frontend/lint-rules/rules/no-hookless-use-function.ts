@@ -41,9 +41,10 @@ function runsImmediately(node: FunctionNode) {
   return parent?.type === 'CallExpression' && unwrap(parent.callee) === node;
 }
 
-function callsHook(sourceCode: SourceCode, value: unknown): boolean {
+function callsHook(sourceCode: SourceCode, value: unknown) {
   if (Array.isArray(value)) {
-    return value.some((child) => callsHook(sourceCode, child));
+    const found: boolean = value.some((child) => callsHook(sourceCode, child));
+    return found;
   }
   if (!isNode(value) || (isFunction(value) && !runsImmediately(value))) {
     return false;
@@ -51,7 +52,8 @@ function callsHook(sourceCode: SourceCode, value: unknown): boolean {
   if (value.type === 'CallExpression' && isHookCallee(sourceCode, value.callee)) {
     return true;
   }
-  return Object.entries(value).some(([key, child]) => key !== 'parent' && callsHook(sourceCode, child));
+  const found: boolean = Object.entries(value).some(([key, child]) => key !== 'parent' && callsHook(sourceCode, child));
+  return found;
 }
 
 /**

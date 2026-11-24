@@ -90,21 +90,19 @@ type UserPermissions =
   | 'canCreateTransforms'
   | 'canDeleteTransforms';
 
-function checkFeatureSupport(
-  features: Parameters<typeof isSupported>[0][] | undefined
-): [boolean, DisabledReason | null] {
+function checkFeatureSupport(features: Parameters<typeof isSupported>[0][] | undefined) {
   if (!features) {
-    return [false, null];
+    return [false, null] satisfies [boolean, DisabledReason | null];
   }
   for (const f of features) {
     if (!isSupported(f)) {
       if (shouldHideIfNotSupported(f)) {
-        return [true, null];
+        return [true, null] satisfies [boolean, DisabledReason | null];
       }
-      return [false, DisabledReasons.notSupported];
+      return [false, DisabledReasons.notSupported] satisfies [boolean, DisabledReason | null];
     }
   }
-  return [false, null];
+  return [false, null] satisfies [boolean, DisabledReason | null];
 }
 
 function checkPermissions(permissions: UserPermissions[] | undefined) {
@@ -136,7 +134,7 @@ function routeVisibility(
   requiredFeatures?: Parameters<typeof isSupported>[0][],
   requiredPermissions?: UserPermissions[],
   requiredAppFeatures?: AppFeature[]
-): () => MenuItemState {
+) {
   return () => {
     const isVisible = typeof visible === 'boolean' ? visible : visible();
     const [shouldHide, featureReason] = checkFeatureSupport(requiredFeatures);
@@ -144,9 +142,9 @@ function routeVisibility(
       featureReason,
       checkPermissions(requiredPermissions),
       checkAppFeatures(requiredAppFeatures),
-    ].filter((reason): reason is DisabledReason => reason !== null);
+    ].filter((reason) => reason !== null);
 
-    return { visible: !shouldHide && isVisible, disabledReasons };
+    return { visible: !shouldHide && isVisible, disabledReasons } satisfies MenuItemState;
   };
 }
 
@@ -276,7 +274,7 @@ const routesIgnoredInEmbedded = ['/overview', '/reassign-partitions', '/admin'];
 
 const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
 
-function processSidebarItem(item: SidebarItem): NavLinkProps | null {
+function processSidebarItem(item: SidebarItem) {
   if (!item.icon) {
     return null;
   }
@@ -295,7 +293,7 @@ function processSidebarItem(item: SidebarItem): NavLinkProps | null {
     icon: item.icon,
     isDisabled: !isEnabled,
     disabledText: disabledText || undefined,
-  };
+  } satisfies NavLinkProps;
 }
 
 function getDisabledText(reasons: DisabledReason[]) {

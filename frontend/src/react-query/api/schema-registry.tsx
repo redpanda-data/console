@@ -622,7 +622,7 @@ export const useDeleteSchemaVersionMutation = () => {
   });
 };
 
-async function fetchSchemaUsagesById(schemaId: number): Promise<SchemaVersion[]> {
+async function fetchSchemaUsagesById(schemaId: number) {
   const response = await config.fetch(`${config.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, {
     method: 'GET',
     headers: {
@@ -643,7 +643,8 @@ async function fetchSchemaUsagesById(schemaId: number): Promise<SchemaVersion[]>
     return [];
   }
 
-  return data;
+  const versions: SchemaVersion[] = data;
+  return versions;
 }
 
 export const useSchemaUsagesByIdQuery = (schemaId: number | null) =>

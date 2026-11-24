@@ -122,10 +122,7 @@ export function rpcUrl(fullyQualifiedService: string, method: string) {
  * Convenience wrapper around page.route that records request bodies so assertions can verify
  * that the expected RPC was invoked with the expected input.
  */
-export async function captureConnectRequests(
-  page: Page,
-  urlGlob: string
-): Promise<{ requests: Array<{ url: string; postData: string | null }>; stop: () => Promise<void> }> {
+export async function captureConnectRequests(page: Page, urlGlob: string) {
   const requests: Array<{ url: string; postData: string | null }> = [];
   const handler = async (route: Route) => {
     requests.push({ url: route.request().url(), postData: route.request().postData() });

@@ -470,12 +470,11 @@ function startLoadMore({
   setSearchState((prev) => ({ ...prev, loadMorePhase: 'loading' }));
   capturedMessageSearch
     .loadMore(maxResults)
-    .then(
-      (): {
-        type: 'success' | 'stale';
-        trimResult?: ReturnType<typeof trimSlidingWindow>;
-        allMessagesLength?: number;
-      } => {
+    .then<
+      { type: 'success' | 'stale'; trimResult?: ReturnType<typeof trimSlidingWindow>; allMessagesLength?: number },
+      { type: 'error'; shouldReport: boolean }
+    >(
+      () => {
         if (currentMessageSearchRef.current !== capturedMessageSearch) {
           return { type: 'stale' };
         }

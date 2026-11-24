@@ -109,17 +109,25 @@ function biomeExplanation(rest: string) {
  *
  * Read actual comments only. A rule's parenthesized category can contain a colon, so Biome reasons begin after that category.
  */
-export function parseSuppression(comment: string): Suppression | undefined {
+export function parseSuppression(comment: string) {
   const ts = TS_DIRECTIVE.exec(comment);
   if (ts) {
-    return { tool: 'ts', directive: ts[1] ?? '', reason: (ts[2] ?? '').replace(LEADING_PUNCTUATION, '') };
+    return {
+      tool: 'ts',
+      directive: ts[1] ?? '',
+      reason: (ts[2] ?? '').replace(LEADING_PUNCTUATION, ''),
+    } satisfies Suppression;
   }
   const lint = LINT_DIRECTIVE.exec(comment);
   if (lint) {
-    return { tool: 'lint', directive: lint[1] ?? '', reason: LINT_JUSTIFICATION.exec(lint[2] ?? '')?.[1] ?? '' };
+    return {
+      tool: 'lint',
+      directive: lint[1] ?? '',
+      reason: LINT_JUSTIFICATION.exec(lint[2] ?? '')?.[1] ?? '',
+    } satisfies Suppression;
   }
   const biome = BIOME_DIRECTIVE.exec(comment);
   if (biome) {
-    return { tool: 'biome', directive: biome[1] ?? '', reason: biomeExplanation(biome[2] ?? '') };
+    return { tool: 'biome', directive: biome[1] ?? '', reason: biomeExplanation(biome[2] ?? '') } satisfies Suppression;
   }
 }

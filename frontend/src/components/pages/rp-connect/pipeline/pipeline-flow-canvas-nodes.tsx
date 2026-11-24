@@ -624,20 +624,23 @@ const CONTROL_FLOW_SPECS: Record<string, ControlFlowSpec> = {
   fallback: { icon: Shuffle, noun: 'tier', zero: 'fallback' },
 };
 
-function controlFlowPresentation(data: FlowCardData): ControlFlowPresentation {
+function controlFlowPresentation(data: FlowCardData) {
   const count = data.childCount ?? 0;
   if (data.label === 'broker' || data.label === 'sequence') {
     const noun = data.section === 'output' ? 'output' : 'input';
-    return { Icon: Network, descriptor: count ? plural(count, noun) : 'broker' };
+    return { Icon: Network, descriptor: count ? plural(count, noun) : 'broker' } satisfies ControlFlowPresentation;
   }
   const spec = CONTROL_FLOW_SPECS[data.label];
   if (!spec) {
-    return { Icon: GitFork, descriptor: count ? plural(count, 'step') : 'routes' };
+    return { Icon: GitFork, descriptor: count ? plural(count, 'step') : 'routes' } satisfies ControlFlowPresentation;
   }
   if (!(spec.noun && count)) {
-    return { Icon: spec.icon, descriptor: spec.zero };
+    return { Icon: spec.icon, descriptor: spec.zero } satisfies ControlFlowPresentation;
   }
-  return { Icon: spec.icon, descriptor: `${spec.prefix ?? ''}${plural(count, spec.noun)}` };
+  return {
+    Icon: spec.icon,
+    descriptor: `${spec.prefix ?? ''}${plural(count, spec.noun)}`,
+  } satisfies ControlFlowPresentation;
 }
 
 const ControlFlowIconTile = ({ Icon, accent }: { Icon: LucideIcon; accent: string }) => (

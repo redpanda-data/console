@@ -88,14 +88,16 @@ export function sameFieldTokens(a: FieldFilterToken[], b: FieldFilterToken[]) {
   return a.length === b.length && a.every((t, i) => tokenQueryText(t) === tokenQueryText(b[i]));
 }
 
-function parseOperator(field: string, rest: string): { op: FilterOp; rawValue: string } | null {
+type ParsedOperator = { op: FilterOp; rawValue: string };
+
+function parseOperator(field: string, rest: string) {
   for (const [symbol, op] of OPERATOR_SYMBOLS) {
     if (rest.startsWith(symbol)) {
-      return { op, rawValue: rest.slice(symbol.length) };
+      return { op, rawValue: rest.slice(symbol.length) } satisfies ParsedOperator;
     }
   }
   if (rest.startsWith(':')) {
-    return { op: NUMERIC_FIELDS.has(field) ? 'eq' : 'contains', rawValue: rest.slice(1) };
+    return { op: NUMERIC_FIELDS.has(field) ? 'eq' : 'contains', rawValue: rest.slice(1) } satisfies ParsedOperator;
   }
   return null;
 }
@@ -119,10 +121,7 @@ function isOutOfRangePartition(field: string, value: string, partitionCount: num
  *
  * Decode complete quoted values with backslash escapes; partial quotes, trailing junk, or malformed numeric values stay unrecognized.
  */
-export function parseFilterInput(
-  text: string,
-  options?: { partitionCount?: number }
-): { field: string; op: FilterOp; value: string } | null {
+export function parseFilterInput(text: string, options?: { partitionCount?: number }) {
   const head = parseFieldAndOperator(text.trim());
   if (!head) {
     return null;

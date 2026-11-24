@@ -31,7 +31,10 @@ function unwrapStructural(node: JsonSchemaNode) {
   return current.patternProperties?.['.'] ?? current;
 }
 
-function stampFields(fields: RawFieldSpec[] | undefined, parent: JsonSchemaNode): RawFieldSpec[] | undefined {
+const stampFields: (fields: RawFieldSpec[] | undefined, parent: JsonSchemaNode) => RawFieldSpec[] | undefined = (
+  fields,
+  parent
+) => {
   if (!fields?.length) {
     return fields;
   }
@@ -49,7 +52,7 @@ function stampFields(fields: RawFieldSpec[] | undefined, parent: JsonSchemaNode)
       children: stampFields(field.children, unwrapStructural(node)),
     };
   });
-}
+};
 
 function collectComponentNodes(definitions: Record<string, JsonSchemaNode>) {
   const nodes = new Map<string, JsonSchemaNode>();

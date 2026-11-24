@@ -13,21 +13,23 @@ import { useLocation, useParams } from '@tanstack/react-router';
 
 export type PipelineMode = 'create' | 'edit' | 'view';
 
-export function usePipelineMode(): { mode: PipelineMode; pipelineId?: string } {
+type PipelineRouteMode = { mode: PipelineMode; pipelineId?: string };
+
+export function usePipelineMode() {
   const { pipelineId } = useParams({ strict: false });
   const location = useLocation();
 
   if (location.pathname.includes('/wizard')) {
-    return { mode: 'create' };
+    return { mode: 'create' } satisfies PipelineRouteMode;
   }
 
   if (pipelineId && location.pathname.includes('/edit')) {
-    return { mode: 'edit', pipelineId };
+    return { mode: 'edit', pipelineId } satisfies PipelineRouteMode;
   }
 
   if (pipelineId) {
-    return { mode: 'view', pipelineId };
+    return { mode: 'view', pipelineId } satisfies PipelineRouteMode;
   }
 
-  return { mode: 'create' };
+  return { mode: 'create' } satisfies PipelineRouteMode;
 }

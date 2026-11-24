@@ -143,7 +143,7 @@ export default defineConfig({
 /**
  * The async chunk cap bounds the largest request without splitting the editor's lazy language services into the core bundle.
  */
-export function consoleTools({ federationOnly = false } = {}): NonNullable<RsbuildConfig['tools']> {
+export function consoleTools({ federationOnly = false } = {}) {
   return {
     htmlPlugin: federationOnly ? false : undefined,
     rspack: (config, { appendPlugins, isProd }) => {
@@ -178,7 +178,7 @@ export function consoleTools({ federationOnly = false } = {}): NonNullable<Rsbui
       }
       chain.module.rule('raw-source').resourceQuery(RAW_QUERY).type('asset/source');
     },
-  };
+  } satisfies NonNullable<RsbuildConfig['tools']>;
 }
 
 function createConsolePlugins(federationOnly: boolean) {

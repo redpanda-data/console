@@ -38,7 +38,7 @@ function SearchBar<TItem>(props: SearchBarProps<TItem>) {
     onFilteredDataChanged(filteredData);
   }, [filteredData, onFilteredDataChanged]);
 
-  const filterSummary = useMemo((): { identity: string; node: ReactNode } | null => {
+  const filterSummary = useMemo<{ identity: string; node: ReactNode } | null>(() => {
     if (!source || source.length === 0) {
       return null;
     }

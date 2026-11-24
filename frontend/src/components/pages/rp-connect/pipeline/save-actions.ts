@@ -104,17 +104,17 @@ export function primaryRunIntent(context: SaveContext) {
   return 'keep';
 }
 
-export function alternateRunIntents(context: SaveContext): SaveRunIntent[] {
+export function alternateRunIntents(context: SaveContext) {
   if (isUndeployed(context)) {
-    return ['start'];
+    return ['start'] satisfies SaveRunIntent[];
   }
   if (isStoppableState(context.state)) {
-    return ['stopped'];
+    return ['stopped'] satisfies SaveRunIntent[];
   }
   if (isStartableState(context.state)) {
-    return ['start'];
+    return ['start'] satisfies SaveRunIntent[];
   }
-  return [];
+  return [] satisfies SaveRunIntent[];
 }
 
 export function runIntentLabel(intent: SaveRunIntent, context: SaveContext) {
@@ -156,30 +156,31 @@ export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent) {
     : 'Pipeline updated';
 }
 
-/** The leave dialog's exit that keeps the work: a server-side draft, or this browser's recovery buffer. */
 type UnsavedChangesEscape = 'save-draft' | 'leave-for-now';
+type UnsavedChangesCopy = { body: string; escape: UnsavedChangesEscape };
 
-export function unsavedChangesCopy(context: SaveContext): { body: string; escape: UnsavedChangesEscape } {
+/** The leave dialog's exit that keeps the work: a server-side draft, or this browser's recovery buffer. */
+export function unsavedChangesCopy(context: SaveContext) {
   if (isUndeployed(context) && context.draftsEnabled) {
     return {
       body: 'Save them as a draft to come back to. A draft does not run, uses no compute and can be started when it is ready.',
       escape: 'save-draft',
-    };
+    } satisfies UnsavedChangesCopy;
   }
   if (context.mode === 'create') {
     return {
       body: 'Saving them creates the pipeline and then stops it, so it may run briefly. Keep editing to save, or leave for now — this browser keeps your edits and offers them back next time.',
       escape: 'leave-for-now',
-    };
+    } satisfies UnsavedChangesCopy;
   }
   if (isStoppableState(context.state)) {
     return {
       body: 'Saving applies them, which restarts the pipeline and drops in-flight messages. Or leave for now — this browser keeps your edits and offers them back next time.',
       escape: 'leave-for-now',
-    };
+    } satisfies UnsavedChangesCopy;
   }
   return {
     body: 'This pipeline is stopped, so saving them is safe and leaves it stopped. Keep editing to save, or leave for now — this browser keeps your edits and offers them back next time.',
     escape: 'leave-for-now',
-  };
+  } satisfies UnsavedChangesCopy;
 }

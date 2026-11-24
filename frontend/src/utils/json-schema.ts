@@ -47,7 +47,7 @@ export function generateDefaultFromJsonSchema(
   schema: JsonSchemaType,
   propertyName?: string,
   parentSchema?: JsonSchemaType
-): JsonValue {
+) {
   if ('default' in schema && schema.default !== undefined) {
     return schema.default;
   }
@@ -62,8 +62,10 @@ export function generateDefaultFromJsonSchema(
       return isRequired ? 0 : undefined;
     case 'boolean':
       return isRequired ? false : undefined;
-    case 'array':
-      return schema.items ? [generateDefaultFromJsonSchema(schema.items)] : [];
+    case 'array': {
+      const items: JsonValue[] = schema.items ? [generateDefaultFromJsonSchema(schema.items)] : [];
+      return items;
+    }
     case 'object':
       return generateObjectDefault(schema);
     case 'null':

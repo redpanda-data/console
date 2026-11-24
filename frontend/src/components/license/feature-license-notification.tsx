@@ -25,6 +25,8 @@ import {
 import { api } from '../../state/backend-api';
 import { Alert, AlertDescription } from '../redpanda-ui/components/alert';
 
+type FeatureLicenseAlert = { message: ReactElement; variant: 'destructive' | 'informative' };
+
 const WARNING_THRESHOLD_DAYS = 5;
 
 // biome-ignore lint/nursery/useMaxParams: Refactoring to options object would require updating all call sites
@@ -34,7 +36,7 @@ const getLicenseAlertContentForFeature: (
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
   bakedInTrial: boolean,
   onRegisterModalOpen: () => void
-) => { message: ReactElement; variant: 'destructive' | 'informative' } | null = (
+) => FeatureLicenseAlert | null = (
   _featureName,
   license,
   enterpriseFeaturesUsed,
@@ -81,7 +83,7 @@ function getRedpandaFeatureAlert(
   license: License,
   msToExpiration: number,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[]
-): { message: ReactElement; variant: 'destructive' | 'informative' } | null {
+) {
   if (
     msToExpiration > 15 * MS_IN_DAY &&
     msToExpiration < 30 * MS_IN_DAY &&
@@ -98,7 +100,7 @@ function getRedpandaFeatureAlert(
         </div>
       ),
       variant: 'informative',
-    };
+    } satisfies FeatureLicenseAlert;
   }
   if (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
     return {
@@ -122,14 +124,11 @@ function getRedpandaFeatureAlert(
         </div>
       ),
       variant: 'destructive',
-    };
+    } satisfies FeatureLicenseAlert;
   }
   return null;
 }
-function getKafkaFeatureAlert(
-  license: License,
-  msToExpiration: number
-): { message: ReactElement; variant: 'destructive' | 'informative' } | null {
+function getKafkaFeatureAlert(license: License, msToExpiration: number) {
   if (msToExpiration > 15 * MS_IN_DAY && msToExpiration < 30 * MS_IN_DAY) {
     if (license.type === License_Type.TRIAL) {
       return {
@@ -143,7 +142,7 @@ function getKafkaFeatureAlert(
           </div>
         ),
         variant: 'informative',
-      };
+      } satisfies FeatureLicenseAlert;
     }
     return {
       message: (
@@ -158,7 +157,7 @@ function getKafkaFeatureAlert(
         </div>
       ),
       variant: 'informative',
-    };
+    } satisfies FeatureLicenseAlert;
   }
   if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && license.type === License_Type.TRIAL) {
     return {
@@ -182,7 +181,7 @@ function getKafkaFeatureAlert(
         </div>
       ),
       variant: 'destructive',
-    };
+    } satisfies FeatureLicenseAlert;
   }
   return null;
 }

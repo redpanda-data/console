@@ -97,9 +97,12 @@ export function parseFilterLine(text: string, options?: { partitionCount?: numbe
     partitionId: partitionWord ? Number(partitionWord.parsed.value) : null,
     fieldTokens: recognized
       .filter(({ parsed }) => parsed.field !== 'partition')
-      .map(
-        ({ parsed }): FieldFilterToken => ({ kind: 'field', field: parsed.field, op: parsed.op, value: parsed.value })
-      ),
+      .map<FieldFilterToken>(({ parsed }) => ({
+        kind: 'field',
+        field: parsed.field,
+        op: parsed.op,
+        value: parsed.value,
+      })),
     remainder: words
       .filter(({ parsed }) => parsed === null)
       .map(({ word }) => word.text)

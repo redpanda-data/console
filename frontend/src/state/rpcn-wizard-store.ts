@@ -125,11 +125,15 @@ function readStoredConnectionData() {
   return raw ? (JSON.parse(raw) as Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>>) : null;
 }
 
+const getWizardData: () => Partial<OnboardingWizardFormData> = () => rpcnWizardData(useRpcnWizardStore.getState());
+const getTopicData: () => Partial<MinimalTopicData> = () => rpcnWizardData(useRpcnWizardStore.getState());
+const getUserData: () => Partial<MinimalUserData> = () => rpcnWizardData(useRpcnWizardStore.getState());
+
 /** Imperative API for non-hook contexts (class components, utility functions). */
 export const rpcnWizardStore = {
-  getWizardData: (): Partial<OnboardingWizardFormData> => rpcnWizardData(useRpcnWizardStore.getState()),
-  getTopicData: (): Partial<MinimalTopicData> => rpcnWizardData(useRpcnWizardStore.getState()),
-  getUserData: (): Partial<MinimalUserData> => rpcnWizardData(useRpcnWizardStore.getState()),
+  getWizardData,
+  getTopicData,
+  getUserData,
   hasHydrated: () => useRpcnWizardStore.getState().hasHydrated,
   setWizardData: (data: Partial<OnboardingWizardFormData>) => useRpcnWizardStore.getState().setWizardData(data),
   setTopicData: (data: Partial<MinimalTopicData>) => useRpcnWizardStore.getState().setTopicData(data),

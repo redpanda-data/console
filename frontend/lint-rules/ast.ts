@@ -96,7 +96,9 @@ export function memberName(node: Node | null | undefined) {
 }
 
 /** `a.b.c` as `[a, ['b', 'c']]`, looking through wrappers; undefined for dynamic keys or call links. */
-export function memberPath(node: Node | null | undefined): { root: Identifier; path: string[] } | undefined {
+export const memberPath: (node: Node | null | undefined) => { root: Identifier; path: string[] } | undefined = (
+  node
+) => {
   const target = unwrap(node);
   if (isIdentifier(target)) {
     return { root: target, path: [] };
@@ -107,7 +109,7 @@ export function memberPath(node: Node | null | undefined): { root: Identifier; p
   }
   const object = memberPath(target.object);
   return object && { root: object.root, path: [...object.path, name] };
-}
+};
 
 export function findVariable(sourceCode: SourceCode, identifier: NamedIdentifier) {
   let scope: ReturnType<SourceCode['getScope']> | null = sourceCode.getScope(identifier);
@@ -169,7 +171,11 @@ function children(node: Node) {
 }
 
 /** Depth-first search that does not enter nested functions, which run on their own schedule. */
-export function someInRun(value: unknown, match: (node: Node) => boolean, root?: Node): boolean {
+export const someInRun: (value: unknown, match: (node: Node) => boolean, root?: Node) => boolean = (
+  value,
+  match,
+  root
+) => {
   if (Array.isArray(value)) {
     return value.some((child) => someInRun(child, match, root));
   }
@@ -180,7 +186,7 @@ export function someInRun(value: unknown, match: (node: Node) => boolean, root?:
     return false;
   }
   return match(value) || children(value).some((child) => someInRun(child, match, root));
-}
+};
 
 export function enclosingFunction(node: Node) {
   let current = node.parent;

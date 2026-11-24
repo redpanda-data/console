@@ -234,14 +234,14 @@ function useAddTopicSubmit(existingTopicSelected?: ListedTopic) {
   const createTopicMutation = useCreateTopicMutation();
 
   const handleSubmit = useCallback(
-    async (data: AddTopicFormData): Promise<StepSubmissionResult<AddTopicFormData>> => {
+    async (data: AddTopicFormData) => {
       try {
         if (existingTopicSelected) {
           return {
             success: true,
             message: `Using existing topic "${data.topicName}"`,
             data,
-          };
+          } satisfies StepSubmissionResult<AddTopicFormData>;
         }
 
         await createTopicMutation.mutateAsync(buildCreateTopicRequest(data));
@@ -257,13 +257,13 @@ function useAddTopicSubmit(existingTopicSelected?: ListedTopic) {
           success: true,
           message: `Topic "${data.topicName}" created`,
           data,
-        };
+        } satisfies StepSubmissionResult<AddTopicFormData>;
       } catch (error) {
         return {
           success: false,
           message: 'Failed to save topic configuration',
           error: error instanceof Error ? error.message : 'Unknown error',
-        };
+        } satisfies StepSubmissionResult<AddTopicFormData>;
       }
     },
     [existingTopicSelected, createTopicMutation, queryClient]

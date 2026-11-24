@@ -60,7 +60,7 @@ export type StopFormState = z.infer<typeof stopFormSchema>;
  * The editor's starting state for a slot's current condition. Without Keep running on offer (a
  * wrapper only the YAML can remove), an unset condition starts on an idle timeout instead.
  */
-export function stopFormState(condition?: StopCondition, canKeepRunning = true): StopFormState {
+export function stopFormState(condition?: StopCondition, canKeepRunning = true) {
   const state: StopFormState = {
     mode: 'none',
     limit: DEFAULT_LIMIT,
@@ -70,16 +70,26 @@ export function stopFormState(condition?: StopCondition, canKeepRunning = true):
     restart: Boolean(condition?.restartInput),
   };
   if (!isStopConditionSet(condition)) {
-    return canKeepRunning ? state : { ...state, mode: 'idle' };
+    return canKeepRunning ? state : ({ ...state, mode: 'idle' } satisfies StopFormState);
   }
   const limit = parseMessageLimit(condition.check);
   if (limit) {
-    return { ...state, mode: 'count', limit: String(limit.limit), alsoIdle: Boolean(condition.idleTimeout) };
+    return {
+      ...state,
+      mode: 'count',
+      limit: String(limit.limit),
+      alsoIdle: Boolean(condition.idleTimeout),
+    } satisfies StopFormState;
   }
   if (condition.check) {
-    return { ...state, mode: 'check', check: condition.check, alsoIdle: Boolean(condition.idleTimeout) };
+    return {
+      ...state,
+      mode: 'check',
+      check: condition.check,
+      alsoIdle: Boolean(condition.idleTimeout),
+    } satisfies StopFormState;
   }
-  return { ...state, mode: 'idle' };
+  return { ...state, mode: 'idle' } satisfies StopFormState;
 }
 
 /**
@@ -92,7 +102,10 @@ export function offersRestart(mode: StopMode, own: InputEndBehavior, condition?:
 }
 
 /** What the form asks for; null keeps the input running with no stop condition. */
-export function draftFromStopForm(s: StopFormState, restartOffered = true): StopConditionDraft | null {
+export const draftFromStopForm: (s: StopFormState, restartOffered?: boolean) => StopConditionDraft | null = (
+  s,
+  restartOffered = true
+) => {
   if (s.mode === 'none') {
     return null;
   }
@@ -105,7 +118,7 @@ export function draftFromStopForm(s: StopFormState, restartOffered = true): Stop
     return { messageLimit: Number(s.limit.trim()), idleTimeout, restartInput };
   }
   return { check: s.check.trim(), idleTimeout, restartInput };
-}
+};
 
 function noBackstopHint(s: Pick<StopFormState, 'mode' | 'limit'>, own: InputEndBehavior) {
   const limit = s.limit.trim();

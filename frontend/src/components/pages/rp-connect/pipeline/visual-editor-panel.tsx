@@ -182,7 +182,7 @@ function caseStepPath(target: SwitchCaseInsert, caseIndex: number) {
 function insertSwitchCase(
   { yaml, connectionName, connectionType, components }: InsertParams,
   target: SwitchCaseInsert
-): InsertResult | null {
+) {
   if (connectionType !== target.section) {
     return null;
   }
@@ -198,7 +198,7 @@ function insertSwitchCase(
   return {
     yaml: next,
     selectTarget: { kind: 'path', path: caseStepPath(target, caseIndex), componentType: target.section },
-  };
+  } satisfies InsertResult;
 }
 
 function linkResourceToNode(yaml: string, target: EditTarget, label: string) {
@@ -226,26 +226,25 @@ function insertLinkedResource(
   return { yaml: linkResourceToNode(created.yaml, target.target, created.label) };
 }
 
-function insertResource(
-  { yaml, connectionName, components }: InsertParams,
-  connectionType: 'cache' | 'rate_limit'
-): InsertResult | null {
+function insertResource({ yaml, connectionName, components }: InsertParams, connectionType: 'cache' | 'rate_limit') {
   const resource = buildInsertableComponent(connectionName, connectionType, components);
   const resourceKey: ResourceArrayKey = resourceArrayKey(connectionType);
   if (!resource) {
     return null;
   }
   const next = appendResource(yaml, resourceKey, resource);
-  return next === null
-    ? null
-    : { yaml: next, selectTarget: { kind: 'resource', resourceKey, index: seqLengthAt(next, [resourceKey]) - 1 } };
+  return (
+    next === null
+      ? null
+      : { yaml: next, selectTarget: { kind: 'resource', resourceKey, index: seqLengthAt(next, [resourceKey]) - 1 } }
+  ) satisfies InsertResult | null;
 }
 
 function insertStep(
   { yaml, connectionName, components }: InsertParams,
   target: IndexedInsert,
   connectionType: 'processor' | 'input' | 'output'
-): InsertResult | null {
+) {
   const component = buildInsertableComponent(connectionName, connectionType, components);
   if (!component) {
     return null;
@@ -260,7 +259,7 @@ function insertStep(
     target.context === 'slot'
       ? { kind: 'path', path: [...containerPath, insertedIndex], componentType: target.accepts }
       : { kind: 'processor', index: insertedIndex };
-  return { yaml: next, selectTarget };
+  return { yaml: next, selectTarget } satisfies InsertResult;
 }
 
 function buildInsertedYaml(params: InsertParams) {
@@ -748,15 +747,10 @@ type PendingDelete = ReturnType<typeof usePendingDelete>;
 
 type StopConditionEdit = { yaml: string } | { error: string };
 
-function stopConditionEdit(
-  yaml: string,
-  nodes: PipelineFlowNode[],
-  nodeId: string,
-  draft: StopConditionDraft | null
-): StopConditionEdit | null {
+function stopConditionEdit(yaml: string, nodes: PipelineFlowNode[], nodeId: string, draft: StopConditionDraft | null) {
   const slot = nodes.find((n) => n.id === nodeId)?.stopSlot;
   if (!slot) {
-    return { error: 'Couldn’t find that input any more — it may have been removed.' };
+    return { error: 'Couldn’t find that input any more — it may have been removed.' } satisfies StopConditionEdit;
   }
   const stop = draft ? resolveStopCondition(slot.condition, draft) : null;
   if (isStopConditionSet(stop) ? sameStopCondition(stop, slot.condition) : !slot.condition) {
@@ -764,9 +758,11 @@ function stopConditionEdit(
   }
   const next = setStopCondition(yaml, slot.path, stop);
   if (next === null || next === yaml) {
-    return { error: 'Couldn’t update the stop condition — edit it in the YAML view instead.' };
+    return {
+      error: 'Couldn’t update the stop condition — edit it in the YAML view instead.',
+    } satisfies StopConditionEdit;
   }
-  return { yaml: next };
+  return { yaml: next } satisfies StopConditionEdit;
 }
 
 function applyStopEdit(edit: ReturnType<typeof stopConditionEdit>, onYamlChange: (yaml: string) => void) {
@@ -802,7 +798,7 @@ function useSetStopCondition(
   );
 }
 
-function insertedNodeSelection(result: InsertResult): SelectedNode | null {
+function insertedNodeSelection(result: InsertResult) {
   const { selectTarget } = result;
   if (!selectTarget) {
     return null;
@@ -816,7 +812,7 @@ function insertedNodeSelection(result: InsertResult): SelectedNode | null {
     target: added.editTarget,
     caseTarget: added.caseEditTarget,
     name: componentNameAt(result.yaml, added.editTarget),
-  };
+  } satisfies SelectedNode;
 }
 
 function applyInsertResult(
@@ -1002,7 +998,7 @@ function useSelectionEntryPoints(
 
 type SelectionEntryPoints = ReturnType<typeof useSelectionEntryPoints>;
 
-function insertPickerTypes(pending: PendingInsert | null): ConnectComponentType[] {
+function insertPickerTypes(pending: PendingInsert | null) {
   if (pending?.context === 'slot') {
     return [pending.accepts];
   }

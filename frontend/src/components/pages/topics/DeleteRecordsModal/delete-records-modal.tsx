@@ -589,11 +589,11 @@ function isPrimaryDisabled(state: WizardState, hasErrors: boolean, isOffsetStep:
   );
 }
 
-function getPartitionInfo({ specifiedPartition, partitionOption }: WizardState): PartitionInfo {
+function getPartitionInfo({ specifiedPartition, partitionOption }: WizardState) {
   if (specifiedPartition !== null && partitionOption === 'specificPartition') {
-    return ['specificPartition', specifiedPartition];
+    return ['specificPartition', specifiedPartition] satisfies PartitionInfo;
   }
-  return 'allPartitions';
+  return 'allPartitions' as const;
 }
 
 function getPrimaryLabel(hasErrors: boolean, isLast: boolean) {

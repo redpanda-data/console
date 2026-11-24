@@ -82,7 +82,11 @@ function aliasedApi(sourceCode: SourceCode, identifier: Identifier, depth: numbe
  * The test API an identifier stands for: `test`, `describe`, `beforeEach` and so on, through
  * import aliases, runtime globals, `const it = test` and `base.extend(...)` fixtures.
  */
-export function testApi(sourceCode: SourceCode, identifier: Identifier, depth = 0): string | undefined {
+export const testApi: (sourceCode: SourceCode, identifier: Identifier, depth?: number) => string | undefined = (
+  sourceCode,
+  identifier,
+  depth = 0
+) => {
   const binding = importOf(sourceCode, identifier);
   if (binding) {
     return isTestApiName(binding.imported) ? binding.imported : undefined;
@@ -91,7 +95,7 @@ export function testApi(sourceCode: SourceCode, identifier: Identifier, depth = 
     return isTestApiName(identifier.name) ? identifier.name : undefined;
   }
   return aliasedApi(sourceCode, identifier, depth);
-}
+};
 
 export type TestChain = { api: string; members: string[]; calls: ESTree.CallExpression[] };
 
@@ -115,7 +119,7 @@ function flattenCallee(callee: Node) {
  *
  * Resolves test aliases and fixture extensions to their root registration API.
  */
-export function testChain(sourceCode: SourceCode, callee: Node): TestChain | undefined {
+export function testChain(sourceCode: SourceCode, callee: Node) {
   const { root, members, calls } = flattenCallee(callee);
   const namespace = root && importOf(sourceCode, root);
   if (namespace?.imported === '*' && TEST_MODULES.has(namespace.source)) {
@@ -187,10 +191,10 @@ function fakedBy(options: Node | undefined) {
  *
  * Follows aliases and namespace imports. Rstest's default fake timers do not fake ticks.
  */
-export function clockControl(sourceCode: SourceCode, call: ESTree.CallExpression): Set<ClockKind> | undefined {
+export function clockControl(sourceCode: SourceCode, call: ESTree.CallExpression) {
   const callee = unwrap(call.callee);
   if (call.arguments.length > 0 && isBunExport(sourceCode, callee, 'setSystemTime')) {
-    return new Set(['date']);
+    return new Set<ClockKind>(['date']);
   }
   if (callee?.type !== 'MemberExpression' || !isMockObject(sourceCode, callee.object)) {
     return;
@@ -199,7 +203,7 @@ export function clockControl(sourceCode: SourceCode, call: ESTree.CallExpression
   if (method === 'useFakeTimers') {
     return fakedBy(call.arguments[0]);
   }
-  return method === 'setSystemTime' && call.arguments.length > 0 ? new Set(['date']) : undefined;
+  return method === 'setSystemTime' && call.arguments.length > 0 ? new Set<ClockKind>(['date']) : undefined;
 }
 
 function setupHookRegistration(sourceCode: SourceCode, fn: FunctionNode | ESTree.Program) {

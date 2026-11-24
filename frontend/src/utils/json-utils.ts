@@ -178,7 +178,11 @@ function updateObject(obj: JsonObject, path: string[], value: JsonValue) {
  * @param defaultValue Value to return if path doesn't exist
  * @returns The value at the path, or defaultValue if not found
  */
-export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: JsonValue = null): JsonValue {
+export const getValueAtPath: (obj: JsonValue, path: string[], defaultValue?: JsonValue) => JsonValue = (
+  obj,
+  path,
+  defaultValue = null
+) => {
   if (path.length === 0) {
     return obj;
   }
@@ -198,9 +202,9 @@ export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: Jso
   }
 
   return defaultValue;
-}
+};
 
-function getArrayValueAtPath(array: JsonValue[], key: string, rest: string[], defaultValue: JsonValue): JsonValue {
+function getArrayValueAtPath(array: JsonValue[], key: string, rest: string[], defaultValue: JsonValue) {
   const index = Number(key);
   if (Number.isNaN(index) || index < 0 || index >= array.length) {
     return defaultValue;
@@ -212,7 +216,11 @@ function getArrayValueAtPath(array: JsonValue[], key: string, rest: string[], de
  * Walks objects and arrays replacing any string that parses as JSON with the parsed value; strings
  * that don't parse are left alone. `depth`/`maxDepth` bound the recursion.
  */
-export function deepParseJson(value: unknown, depth = 0, maxDepth = 10): unknown {
+export const deepParseJson: (value: unknown, depth?: number, maxDepth?: number) => unknown = (
+  value,
+  depth = 0,
+  maxDepth = 10
+) => {
   if (depth > maxDepth || value === null || value === undefined) {
     return value;
   }
@@ -231,7 +239,7 @@ export function deepParseJson(value: unknown, depth = 0, maxDepth = 10): unknown
   }
 
   return value;
-}
+};
 
 function deepParseObject(value: object, depth: number, maxDepth: number) {
   const result: Record<string, unknown> = {};

@@ -73,7 +73,7 @@ export const getBrokerProgress: (response: GetClusterFenceStatusResponse | undef
   response
 ) => {
   const fence = response?.fence;
-  return (response?.brokers ?? []).map((broker): BrokerProgress => {
+  return (response?.brokers ?? []).map<BrokerProgress>((broker) => {
     if (!broker.fence) {
       return { nodeId: broker.nodeId, status: 'not-answering', blocks: undefined, errorMessage: broker.errorMessage };
     }

@@ -43,13 +43,13 @@ type AclFlatResource = {
   acls: AclRule[];
 };
 
-function flatResourceList(store: Acls): AclFlatResource[] {
+function flatResourceList(store: Acls) {
   if (!store || store.aclResources === null) {
     return [];
   }
   return store.aclResources
     .flatMap((res) => res.acls.map((rule) => ({ ...res, ...rule })))
-    .map((x) => ({ ...x, eqKey: toJson(x) }));
+    .map<AclFlatResource>((x) => ({ ...x, eqKey: toJson(x) }));
 }
 
 const columns: DataTableColumnDef<AclFlatResource>[] = [

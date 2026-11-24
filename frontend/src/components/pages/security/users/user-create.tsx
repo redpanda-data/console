@@ -171,13 +171,11 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
   const userAlreadyExists = state.users.includes(state.username);
   const hasError = (!state.isValidUsername || userAlreadyExists) && state.username.length > 0;
 
-  function getErrorText(): string | undefined {
+  function getErrorText() {
     if (!state.isValidUsername) {
       return 'The username contains invalid characters. Use only letters, numbers, dots, underscores, at symbols, and hyphens.';
     }
-    if (userAlreadyExists) {
-      return 'User already exists';
-    }
+    return userAlreadyExists ? 'User already exists' : undefined;
   }
   const errorText = getErrorText();
 

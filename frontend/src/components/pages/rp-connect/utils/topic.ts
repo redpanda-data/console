@@ -99,10 +99,10 @@ function parseRetention<Unit extends string>(
   raw: string | null | undefined,
   defaults: { value: number; unit: Unit },
   findBestUnit: (amount: number) => { value: number; unit: Unit }
-): { value: number; unit: Unit | 'infinite' } {
+) {
   const amount = raw ? Number.parseInt(raw, 10) : 0;
   if (amount === -1) {
-    return { value: defaults.value, unit: 'infinite' };
+    return { value: defaults.value, unit: 'infinite' } satisfies { value: number; unit: Unit | 'infinite' };
   }
   return amount > 0 ? findBestUnit(amount) : defaults;
 }
