@@ -237,8 +237,6 @@ const getConnectionFieldMaskPaths = (values: FormValues, originalValues: FormVal
 
   return [
     ...(hasTlsChanged(values, originalValues) ? ['configurations.client_options.tls_settings'] : []),
-    // Compare authentication. Only the active branch's credentials count;
-    // briefly opened, and those must not trigger a payload update.
     ...(hasAuthChanged(values, originalValues) ? ['configurations.client_options.authentication_configuration'] : []),
     ...ADVANCED_CLIENT_OPTION_MASK_PATHS.filter(
       ([option]) => values.advanceClientOptions[option] !== originalValues.advanceClientOptions[option]

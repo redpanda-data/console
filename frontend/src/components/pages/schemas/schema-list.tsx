@@ -148,7 +148,6 @@ function useSchemaListSearch() {
   return { quickSearch, setQuickSearch, showSoftDeleted, setShowSoftDeleted };
 }
 
-// compatibility); also owns the page header and the refresh action.
 function useSchemaRegistryOverview() {
   const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
   const { data: schemaSubjects, isLoading, isError, refetch: refetchSchemas } = useListSchemasQuery();
@@ -183,7 +182,6 @@ function useSchemaRegistryOverview() {
   };
 }
 
-// mode and compatibility to show for the selection.
 function useSelectedSchemaContext({
   schemaRegistryContextsSupported,
   contexts,
@@ -201,7 +199,7 @@ function useSelectedSchemaContext({
     [contexts, schemaSubjects, schemaRegistryContextsSupported]
   );
 
-  // Wait until both contexts and subjects have loaded to avoid resetting during partial data.
+  // WARNING: Wait for both context and subject lists before resetting the URL selection; partial data can erase a valid context.
   const contextsLoaded = contexts !== undefined;
   const subjectsLoaded = schemaSubjects !== undefined;
   useEffect(() => {
@@ -299,7 +297,6 @@ function useSchemaListTableState() {
   };
 }
 
-// applied, each enriched with its details so type and compatibility can be
 function useVisibleSubjects({
   schemaSubjects,
   quickSearch,

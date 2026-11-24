@@ -21,7 +21,6 @@ export function parsePrincipalFromParam(aclName: string) {
   return { principalType: 'User', principalName: aclName };
 }
 
-// Defined here to avoid importing acl.model.tsx which has heavy DOM dependencies.
 const PRINCIPAL_TYPE_MAP: Record<string, 'User:' | 'RedpandaRole:' | 'Group:'> = {
   user: 'User:',
   redpandarole: 'RedpandaRole:',
@@ -31,6 +30,7 @@ const PRINCIPAL_TYPE_MAP: Record<string, 'User:' | 'RedpandaRole:' | 'Group:'> =
 /**
  * Resolves route search params into the sharedConfig and principalType
  * needed by the CreateACL component.
+ * Uses local principal prefixes so resolving route state does not load the ACL view modules.
  */
 export function resolveAclSearchParams(search: { principalType?: string; principalName?: string }) {
   const principalTypeParam = search.principalType?.toLowerCase();

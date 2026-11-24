@@ -357,8 +357,6 @@ export const embeddedAvailableRoutesObservable = {
   },
 };
 
-// Module-level state for cancelling `setup()`'s recursive user-data poll and
-// harness (and app lifecycle) cancel the pending work explicitly.
 let checkUserDataCancelled = false;
 let currentSetupTeardown: (() => void) | null = null;
 let subscriptionInstallTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -388,9 +386,11 @@ export function teardownSetup() {
   }
 }
 
+/**
+ * Reuses setup for identical arguments and replaces the current poll and teardown when the host arguments change.
+ */
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
-  // If setup() is re-invoked (memoize-one only caches the latest args), tear
-  // down any state installed by the previous invocation first to avoid
+  // WARNING: Tear down previous setup state before replacing it or the old poll and subscribers can continue running.
   teardownSetup();
 
   setConfig(setupArgs);
@@ -398,7 +398,6 @@ export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
   // Reset the cancel flag now that we're installing fresh state.
   checkUserDataCancelled = false;
 
-  // behavior that waited for stores to initialize). Tracked so teardown can
   subscriptionInstallTimeoutId = setTimeout(() => {
     subscriptionInstallTimeoutId = null;
     currentSetupTeardown = installUiStateSubscriptions();

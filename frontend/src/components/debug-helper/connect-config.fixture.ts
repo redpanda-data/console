@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// See: https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/
-
 export type ConnectConfigFixture = {
   id: string;
   name: string;
@@ -2013,6 +2011,10 @@ output:
   drop: {}
 `;
 
+/**
+ * Debug fixtures use the current Redpanda Connect components and the quickstart broker and SASL variable conventions.
+ * @see https://docs.redpanda.com/redpanda-cloud/develop/connect/connect-quickstart/
+ */
 export const CONNECT_CONFIG_FIXTURES: ConnectConfigFixture[] = [
   {
     id: 'simple-generate-to-drop',

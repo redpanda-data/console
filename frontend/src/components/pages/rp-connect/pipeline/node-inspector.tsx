@@ -290,7 +290,6 @@ export function NodeInspector(props: NodeInspectorProps) {
     return <InspectorEmptyState readOnly={readOnly} />;
   }
 
-  // A switch case is edited for its routing condition only; its body is separate nodes. Reported
   if (target.kind === 'switchCase') {
     return (
       // WARNING: Keep the case path as the key, or a draft can leak to a sibling case and change its routing on save.
@@ -317,8 +316,7 @@ export function NodeInspector(props: NodeInspectorProps) {
   );
 }
 
-// Anchor the node's lint hints to the form fields they're about; the banner keeps only the rest.
-// Anchors exist only when the schema form will actually render them: in read-only mode, for the
+// WARNING: Only anchor errors to rendered fields; otherwise errors for read-only, raw YAML, and list-valued nodes disappear.
 function useNodeLintMapping({
   yaml,
   target,
@@ -354,7 +352,7 @@ function useCaseCondition(yaml: string, caseTarget?: EditTarget | null, lintHint
   return { caseObject, conditionError };
 }
 
-// Create-topic is patched by section+componentName, which only resolves for top-level
+// WARNING: Limit this create action to top-level nodes; section and component name cannot identify a nested patch target.
 function createTopicHandler(
   componentName: string,
   section: 'input' | 'output' | undefined,
@@ -739,7 +737,6 @@ const CaseCheckInput = ({
   />
 );
 
-// case's body is separate canvas nodes — this rail only owns the condition.
 const SwitchCaseEditor = ({
   caseObject,
   onConfigChange,
@@ -993,7 +990,6 @@ function useComponentDraft(component: Record<string, unknown>) {
     }
   }
 
-  // Parse the draft live. Only a valid draft that changes the component is pending and reported, so
   const { config, error } = useMemo(() => {
     const parsed = draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft);
     return parsed.config && yamlStringify(parsed.config) === initial ? CLEAN_COMPONENT_DRAFT : parsed;

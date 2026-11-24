@@ -90,7 +90,7 @@ function fitMinZoom(graphW: number, graphH: number, paneW: number, paneH: number
   return Math.min(MIN_ZOOM, Math.max(ABSOLUTE_MIN_ZOOM, fit));
 }
 
-// Bounding box of top-level nodes at their layout size; measured (not assumed from origin) since
+// WARNING: Measure all bounds instead of assuming the origin; resource cards can sit at negative coordinates.
 function contentBounds(nodes: Node[]) {
   const layoutSizeOnly: MeasuredById = new Map();
   const box = nodes
@@ -639,7 +639,6 @@ function entrySide(entry: ScopeBounds, body: ScopeBounds) {
   return entry.maxX <= body.minX ? 'left' : entry.minX >= body.maxX ? 'right' : undefined;
 }
 
-// sits clear above/below it; otherwise clamped to the body so it stays thin and can't reach into a sibling.
 function armSpan(entry: ScopeBounds, pb: ScopeBounds, pad: number) {
   const top = entry.minY - pad;
   const bottom = entry.maxY + pad;
@@ -694,6 +693,9 @@ function regionPath(pb: ScopeBounds, arm?: ScopeArm) {
   return pts;
 }
 
+/**
+ * The arm joins a separate entry to its padded body and stays narrow enough not to cross sibling regions.
+ */
 export function regionGeometry(
   body: ScopeBounds,
   entry: ScopeBounds | null,
@@ -795,7 +797,6 @@ type RegionContext = {
   tryCatchPairs: ReadonlyMap<string, string>;
 };
 
-// One construct's region (before nesting padding). Only the entry marker is held outside (reached by
 function scopeRegionDraft(node: Node, ctx: RegionContext): ScopeRegionDraft | null {
   const { rfNodes, scopeOf, nodeLookup, tryCatchPairs } = ctx;
   const own = scopeOf(node.id);
@@ -1222,7 +1223,6 @@ function useCanvasGraph(configYaml: string, editable: boolean) {
     [childrenByParent]
   );
 
-  // extent, legend). Keyed only on parsed nodes + edit mode, so decoration changes never re-run layout.
   const layout = useMemo(() => layoutCanvasGraph(nodes, editable), [nodes, editable]);
   const tryCatchPairs = useMemo(() => tryCatchPairsOf(layout.layoutEdges), [layout.layoutEdges]);
   return { ...layout, error, showingStale, scopeOf, tryCatchPairs };
@@ -1401,7 +1401,7 @@ export function PipelineFlowCanvas({
   });
   const { measuredNodes, onNodesChange } = useMeasuredNodes(rfNodes);
 
-  // Hover only restyles edges so node objects stay referentially stable — rebuilding the DOM under
+  // WARNING: Hover must leave node identities stable; rebuilding the hovered node causes enter/leave loops and can eat clicks.
   const rfEdges = useMemo(
     () =>
       decorateEdges(layoutEdges, {

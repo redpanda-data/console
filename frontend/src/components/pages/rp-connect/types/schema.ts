@@ -22,7 +22,6 @@ export const CONNECT_COMPONENT_TYPE = [
   'buffer',
   'cache',
   'input',
-  // Configures how Benthos instance metrics (performance, counts, etc.) are exposed or sent.
   'metrics',
   'output',
   'processor',

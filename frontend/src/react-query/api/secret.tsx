@@ -112,7 +112,7 @@ export const useListSecretsQuery = (
       { nameContains: nameContains ?? '' },
     ],
     enabled: options?.enabled,
-    // Our queryFn throws intentionally on pagination safety violations (non-advancing token,
+    // WARNING: Do not retry rejected pagination tokens; the same deterministic failure would multiply server requests.
     retry: false,
     queryFn: ({ signal }) => listAllSecrets(transport, nameContains, signal),
   });

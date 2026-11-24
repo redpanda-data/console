@@ -44,13 +44,11 @@ function useDisplayWindow(
   continuousActive: boolean,
   { readScopeMode, liveTail }: Pick<MessagesUrlState, 'readScopeMode' | 'liveTail'>
 ) {
-  // newest-first here, same as the legacy page did. This must run *before* windowing below:
   const orderedMessages = useMemo(
     () => orderForContinuousNewest(filteredMessages, continuousActive, readScopeMode),
     [filteredMessages, continuousActive, readScopeMode]
   );
 
-  // In continuous or live mode only DISPLAY_WINDOW_CAP rows stay rendered. The window keeps
   const { rows: windowedMessages, trimmed } = useMemo(
     () =>
       continuousActive || liveTail
@@ -187,6 +185,7 @@ export type MessagesTableStateOptions = {
 /**
  * The messages table's client-side state: filtering, ordering and windowing of the loaded rows,
  * paging and sorting, row selection, and keyboard navigation over what's on screen.
+ * Continuous newest-first results are ordered across partitions before trimming; the kept tail is the load-more frontier.
  */
 export function useMessagesTableState({
   search,

@@ -497,6 +497,9 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
   );
 }
 
+/**
+ * Keyboard re-entry returns to the last focused catalog row, not always the first row.
+ */
 export function CatalogTree({
   catalogs,
   sqlRole,
@@ -529,7 +532,6 @@ export function CatalogTree({
     rowTabIndex: (id) => (id === rovingId ? 0 : -1),
   };
 
-  // Keep the roving tabIndex on whichever row the user last focused, so Shift+Tab
   const handleTreeFocus = (e: FocusEvent<HTMLDivElement>) => {
     const id = e.target.closest<HTMLElement>('[role="treeitem"]')?.getAttribute('data-tree-id');
     if (id && id !== activeRowId) {

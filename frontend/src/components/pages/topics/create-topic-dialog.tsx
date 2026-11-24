@@ -552,7 +552,7 @@ function getRequestedCounts(values: CreateTopicFormValues) {
 
 type CreatedCounts = ReturnType<typeof getRequestedCounts>;
 
-// Brokers only report the resolved counts on CreateTopics v5+ responses; older ones
+// WARNING: Older brokers return -1 for resolved counts even if explicit counts were requested; keep the requested counts.
 function toCreatedTopicResult(apiResult: CreatedCounts & { topicName: string }, requested: CreatedCounts) {
   return {
     topicName: apiResult.topicName,

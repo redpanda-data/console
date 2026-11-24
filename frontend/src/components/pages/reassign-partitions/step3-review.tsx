@@ -59,7 +59,6 @@ type StepReviewProps = {
 };
 
 export function StepReview(props: StepReviewProps) {
-  // the summary would only catch up on the next poll.
   const maxReplicationTraffic = useUISettingsStore((state) => state.reassignment.maxReplicationTraffic);
 
   return <StepReviewContent {...props} maxReplicationTraffic={maxReplicationTraffic} />;
@@ -191,7 +190,7 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
         <div style={{ marginTop: '2em', paddingBottom: '1em' }}>
           <BandwidthSlider
             onSettingsChange={(x) => {
-              // Whole-section assignment: only a top-level set goes through the `uiSettings`
+              // WARNING: Assign the whole reassignment section; a nested write bypasses the settings proxy and does not notify subscribers.
               uiSettings.reassignment = { ...uiSettings.reassignment, maxReplicationTraffic: x };
             }}
             settings={{ maxReplicationTraffic: this.props.maxReplicationTraffic }}
@@ -298,7 +297,7 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
 }
 
 const ReviewPartitionTable = (props: { topic: Topic; topicPartitions: Partition[]; assignments: TopicAssignment }) => {
-  // remounts the header's sort menu out from under the pointer. The plan itself only changes
+  // WARNING: Keep column identities stable while polling; recreating them closes the open sort menu.
   const columns = useMemo<DataTableColumnDef<Partition>[]>(
     () => [
       {

@@ -43,9 +43,7 @@ export const ShadowSchemaRegistrySection = ({ disabledModes = [], modeNotice }: 
   const { control, getValues, setValue } = useFormContext<FormValues>();
   const mode = useWatch({ control, name: 'schemaRegistry.mode' });
 
-  // Migrate a legacy-switch choice into this UI (the switch may have been
-  // toggled either way while the gate was closed): the boolean is the legacy
-  // otherwise the tabs would disagree with what gets submitted.
+  // WARNING: Use the legacy switch as the source of truth when reopening the new section; stale mode state can submit the wrong mode.
   useEffect(() => {
     const enabled = getValues('enableSchemaRegistrySync');
     const currentMode = getValues('schemaRegistry.mode');

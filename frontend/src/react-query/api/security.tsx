@@ -183,7 +183,7 @@ export const useUpdateRoleMembershipMutation = () => {
     },
 
     onSuccess: async () => {
-      // Only invalidate the roles list (to refresh member counts).
+      // WARNING: Do not refetch role membership here; a stale backend reply can undo the optimistic cache update.
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SecurityService.method.listRoles,

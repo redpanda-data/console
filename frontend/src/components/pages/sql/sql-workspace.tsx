@@ -93,7 +93,6 @@ function columnDefFromProto(column: SqlColumn) {
 
 function cellValueForColumn(value: SqlValue, column: ColumnDef) {
   let cell: CellValue = value.nullValue ? null : (value.value ?? null);
-  // Arrays keep their raw string form — only scalar bools coerce. Case-insensitive
   if (cell !== null && column.kind === 'bool' && !column.isArray) {
     const v = cell.toLowerCase();
     cell = v === 'true' || v === 't';
@@ -143,7 +142,6 @@ function useSqlStudioPage() {
   }, []);
 }
 
-// Caller's effective role: an explicit prop wins (tests/storybook), otherwise
 function useSqlRole(sqlRoleProp: SqlRole | undefined) {
   const { data: identity } = useGetSqlIdentityQuery();
   return sqlRoleProp ?? (identity?.isAdmin ? 'admin' : 'viewer');
@@ -187,12 +185,9 @@ function useSqlCatalogs() {
 }
 
 function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null) {
-  // Whether the queried topic is Iceberg-tiered — the authoritative bridge-query
-  // must key off the config, not metric presence (else a not-yet-synced bridge
   const { isIceberg: bridgeTopicTiered } = useTopicIcebergQuery(bridgeTopic ?? '', {
     enabled: Boolean(bridgeTopic),
   });
-  // (per-topic named queries) — decoupled from ExecuteQuery. Drives only the lag
   const bridgeTxLag = useExecuteInstantQuery(
     {
       queryName: 'iceberg_topic_translation_lag',
@@ -293,9 +288,6 @@ function useSqlRun(
   const [bridgeTopic, setBridgeTopic] = useState<string | null>(null);
   const [bridgeRunAt, setBridgeRunAt] = useState<number | null>(null);
   const latestRunToken = useRef(0);
-  // Aborter for the in-flight editor run. Aborting the request cancels the
-  // query on the engine (the backend sends a wire-protocol CancelRequest when
-  // the caller disconnects), so this powers the Cancel button, supersession by
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => () => abortRef.current?.abort(), []);
   const bridge = useBridgeInfo(bridgeTopic, bridgeRunAt);
@@ -305,7 +297,6 @@ function useSqlRun(
       const token = (latestRunToken.current += 1);
       const kw = firstKeyword(sql);
       const blocked = !kw || isWriteKeyword(sql);
-      // not the catalog click — so it only shows for the topic actually queried.
       const nextBridgeTopic = blocked ? null : bridgeTopicForQuery(sql, completionCatalogs);
       setBridgeTopic(nextBridgeTopic);
       setBridgeRunAt(nextBridgeTopic ? Date.now() : null);
@@ -394,6 +385,10 @@ function useAddTopicWizard(
   return { wizardOpen, wizardError, wizardTopics, openWizard, closeWizard, onCreateTable };
 }
 
+/**
+ * The bridge indicator follows the executed topic’s tiering configuration, independent of lag samples.
+ * Cancelling, superseding, or unmounting an editor run aborts its request so the engine can stop the query.
+ */
 export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   useSqlStudioPage();
   const {

@@ -1558,7 +1558,6 @@ output:
   });
 
   test('resolves topics pulled in via a YAML merge anchor', () => {
-    // The flow parser resolves `<<:` merge keys, so this extractor must too — otherwise a
     const yaml = `shared: &common
   topics:
     - anchored-topic

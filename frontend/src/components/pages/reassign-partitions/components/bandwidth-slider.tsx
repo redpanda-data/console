@@ -71,7 +71,6 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
   return (
     <div
       className="relative mx-4 mt-6 mb-4"
-      // mouse-only interactions on a non-interactive element, and the bubble is decorative —
       onPointerEnter={() => {
         setIsDragging(true);
       }}

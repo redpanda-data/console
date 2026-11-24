@@ -517,6 +517,9 @@ function getRequiredFieldTypeHint(spec: RawFieldSpec) {
   }
 }
 
+/**
+ * The component root always emits its schema shape, including [] for an empty list or {} for a fieldless object.
+ */
 export function generateDefaultValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions = {}): unknown {
   const { showAdvancedFields, componentName, parentName } = options;
 
@@ -570,8 +573,7 @@ function generateShownFieldValue(
     return generateObjectStructure(spec, required, showAdvancedFields, componentName);
   }
 
-  // Everything else is a non-required field whose default didn't survive serialization (the proto
-  // only carries string defaults). Emit nothing so the engine's real default applies — zero-filling
+  // WARNING: Omit non-required values whose defaults were lost in the proto; filling zero values can override engine defaults.
 }
 
 function generateObjectStructure(
@@ -580,7 +582,6 @@ function generateObjectStructure(
   showAdvancedFields: boolean | undefined,
   componentName: string | undefined
 ): unknown {
-  // The component root (name '') must always produce a type-correct value: inserting `switch`
   const isComponentRoot = !spec.name;
   if (spec.kind === 'scalar' || spec.kind === '') {
     const obj = generateObjectValue(spec, showAdvancedFields, componentName);

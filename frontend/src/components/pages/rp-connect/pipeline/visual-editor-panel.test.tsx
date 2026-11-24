@@ -295,7 +295,6 @@ describe('the VisualEditorPanel', () => {
     });
   });
 
-  // StatefulPanel so each commit flows back: the editor must survive it, not remount.
   describe('the raw-YAML inspector', () => {
     async function editRawYaml(user: User, yaml: string, panel = <StatefulPanel initialYaml={sampleYaml} />) {
       render(panel);

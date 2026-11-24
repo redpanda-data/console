@@ -332,11 +332,9 @@ function usePaletteCatalog({
 
 type PaletteCatalog = ReturnType<typeof usePaletteCatalog>;
 
-// An exact-name search for a deprecated component leads with its replacement.
 function usePaletteSearch(catalog: PaletteCatalog, query: string, allowedTypes?: ConnectComponentType[]) {
   const { allComponents, pickable, inScope, searchIndex, typeAllowed, byKey } = catalog;
   const q = query.trim().toLowerCase();
-  // An exact-name search for a hidden deprecated component explains the miss, unless a live
   const deprecatedMatch = useMemo(() => {
     const match = q
       ? allComponents.find((c) => c.name === q && typeAllowed(c.type) && isDeprecatedComponent(c))
@@ -563,6 +561,7 @@ function PaletteFooter({
 /**
  * Search-first add-node picker as a master/detail panel: tab-filtered list, metadata preview, and a
  * footer that defers insertion until commit. Matches name/aliases/summary/description/categories.
+ * An exact deprecated-name match explains the replacement unless a live component of the same name also matches.
  */
 export const ConnectCommandPalette = ({
   components,

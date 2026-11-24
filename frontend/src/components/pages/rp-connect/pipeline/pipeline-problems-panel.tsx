@@ -46,7 +46,6 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-// One problem (or, with `warning`, a deprecation): clickable row that selects its node, or inert
 const ProblemRow = ({
   problem,
   onSelect,

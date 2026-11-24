@@ -284,7 +284,6 @@ function buildRowKeys(rows: ResultRow[]) {
   return map;
 }
 
-// Key for the synthetic row-number column; double underscores avoid
 const ROWNUM_KEY = '__rownum__';
 
 function buildColumns(cols: ColumnDef[]) {

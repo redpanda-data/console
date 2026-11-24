@@ -35,12 +35,12 @@ const readStoredExpanded = (storageKey: string) => {
  *
  * Attach `ref` to the page root: the attribute is held only while that root is on
  * screen, because embedded Cloud UI keeps Console mounted but hidden on host routes.
+ * Applies the attribute in the same frame as the page resize; cleanup also handles the element detaching.
  */
 export function useExpandedPageMode({ storageKey }: { storageKey: string }) {
   const [expanded, setExpanded] = useState(() => readStoredExpanded(storageKey));
   const [pageRoot, setPageRoot] = useState<HTMLElement | null>(null);
 
-  // and its cleanup is the only unset: it covers unmount, `ref` detaching and `expanded` off.
   useLayoutEffect(() => {
     if (!pageRoot) {
       return clearPageExpanded;

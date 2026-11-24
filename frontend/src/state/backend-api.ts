@@ -216,7 +216,7 @@ async function handle401(res: Response) {
     isEmbedded() || appConfig.clusterId !== 'default' || window.location.pathname.includes('/clusters/');
 
   if (inEmbeddedContext) {
-    // In embedded mode, emit an event for the host to handle re-authentication
+    // WARNING: Delegate embedded reauthentication to the host; redirecting the child can navigate the user away from the host shell.
     window.dispatchEvent(
       new CustomEvent('console:auth-error', {
         detail: { clusterId: appConfig.clusterId, path: window.location.pathname },
@@ -363,7 +363,6 @@ export async function handleExpiredLicenseError(r: Response) {
   }
 }
 
-// Embedded in Cloud, a failed identity call means "no Console permissions", not "log in".
 function embeddedUserData() {
   return {
     displayName: '',
@@ -763,7 +762,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         return;
       }
 
-      // in the raw data, only the root entries have 'type', but the nested synonyms do not
       const topicDescription = v.topicDescription;
       prepareSynonyms(topicDescription.configEntries);
       set((s) => ({ topicConfig: new Map(s.topicConfig).set(topicName, topicDescription) }));
@@ -2872,7 +2870,7 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
 });
 
 function createRestHeaders(initialHeaders?: HeadersInit) {
-  // Only add if not already set - custom fetch (e.g., Cloud UI's authenticatedFetch) may have already added it
+  // WARNING: Preserve the existing Authorization header; the embedded host may already have attached its own credentials.
   const headers = new Headers(initialHeaders);
   if (appConfig.jwt && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${appConfig.jwt}`);

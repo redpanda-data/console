@@ -63,7 +63,6 @@ function isScalar(value: unknown): value is string | number | boolean {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
 
-// only those present). Topics omitted (render as chips).
 const PREFERRED_FIELDS: Record<string, string[]> = {
   kafka: ['consumer_group', 'partition', 'key'],
   kafka_franz: ['consumer_group', 'partition', 'key'],
@@ -240,7 +239,6 @@ function firstScalarFields(record: Record<string, unknown>) {
   return meta;
 }
 
-// Fallback when no preferred field matched: salient-named scalars first, then the first couple of
 function fallbackFields(record: Record<string, unknown>) {
   const salient = salientFields(record);
   return salient.length > 0 ? salient : firstScalarFields(record);

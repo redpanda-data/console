@@ -11,7 +11,7 @@
 
 import { lazy, Suspense } from 'react';
 
-// Eager on purpose: the flag-override accessor must replace config.featureFlags
+// WARNING: Load the debug flag accessor before the first render or it reads flags before applying saved overrides.
 import './feature-flag-overrides';
 import './visual-debuggers';
 

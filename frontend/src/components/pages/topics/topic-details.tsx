@@ -77,7 +77,6 @@ type TopicTabProps = {
   children: (topic: Topic) => React.ReactNode;
 };
 
-// once outside — so each instance only renders the relevant part.
 const TopicTabModeCtx = React.createContext<'trigger' | 'content'>('content');
 
 type TabDisableHook = (topic: Topic) => React.ReactNode | undefined;

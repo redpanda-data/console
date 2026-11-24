@@ -90,7 +90,7 @@ export function useAutoSearch({ search, searchParams, refreshCounter, liveTail }
         lastSignatureRef.current = signature;
         search.start(searchParams).catch(() => {});
       }, 100);
-      // already fired and a stream is in flight, changing params again must abort
+      // WARNING: Abort an in-flight search as soon as parameters change; clearing its already-fired debounce timer is not enough.
       return () => {
         clearTimeout(timer);
         search.stop();
@@ -120,6 +120,8 @@ type SearchRunnerOptions = {
 /**
  * Keeps the stream running for the current params: the debounced paged search, or the live-tail
  * loop while live tail is on. `handleRefresh` re-runs the paged search, or re-arms the tail.
+ * In live mode, changing a committed JS filter or partition restarts the stream; a deserializer edit applies on its next start.
+ * Refresh restarts live tail with a fresh failure budget. Clean backend completions reopen the bounded stream.
  */
 export function useSearchRunner({
   search,
@@ -131,8 +133,6 @@ export function useSearchRunner({
   const [refreshCounter, setRefreshCounter] = useState(0);
   useAutoSearch({ search, searchParams, refreshCounter, liveTail });
 
-  // Every (re)start reads the params current at that moment, but only a committed JS filter or
-  // partition restarts a running tail: both stay editable while live, and the running stream must
   const latestSearchParamsRef = useRef(searchParams);
   useEffect(
     function trackLatestSearchParams() {
@@ -155,11 +155,8 @@ export function useSearchRunner({
     [search.start, filterInterpreterCode, partitionId]
   );
 
-  // retry budget is exhausted.
   const liveTailLoop = useLiveTailLoop({ active: liveTail, start: startLiveTail, stop: search.stop });
 
-  // In live mode "refresh" (and the error state's Retry) restarts the tail loop with a fresh
-  // failure budget — the only way back once its retries are exhausted, since the paged
   const handleRefresh = useCallback(() => {
     if (liveTail) {
       liveTailLoop.restart();

@@ -52,7 +52,6 @@ export type FilterBarProps = {
   canUseJsFilters: boolean;
 };
 
-// drift the way the JS chip's text already had (13px next to the pills' enforced 14px). Must
 const FILTER_BADGE_TEXT_CLASS = 'font-mono text-sm';
 
 type EmittedState = { partitionId: number; fieldTokens: FieldFilterToken[]; quickSearch: string };
@@ -82,13 +81,10 @@ const mergeExternal: (
   quickSearch: external.quickSearch ? incoming.quickSearch : fallback.quickSearch,
 });
 
-// The overlay and the real input beneath it must render `rawText` at the exact same width,
-// width to work with — on a proportional font a single space is only ~4px, not enough room for
-// both a pill's own padding and a visible gap to its neighbor at the same time. Keep this in
+// WARNING: Use the same monospace metrics for the input and overlay; different character widths displace the highlights.
 const OVERLAY_FONT_CLASS = 'font-mono text-sm';
 
-// Border-only look, matching the JS filter chip (border, no fill) rather than a flat highlight —
-// `outline` instead of `border` because outline is a pure paint effect that (like box-shadow)
+// WARNING: Cancel horizontal padding with a matching negative margin and use an outline so the overlay does not change text widths.
 const PILL_HIGHLIGHT_CLASS = 'rounded-md px-0.5 py-1 -mx-0.5 outline-1 outline-border/60';
 
 /** Text a suggestion/ghost action should splice in at the current word, or `null` for actions handled specially (opening the JS dialog). */
@@ -203,7 +199,6 @@ const resyncFromProps: (
   if (!(external.partitionId || external.fieldTokens || external.quickSearch)) {
     return null;
   }
-  // Only the genuinely external piece(s) get applied; every other piece is re-derived from
   const current = parseFilterLine(rawText, { partitionCount });
   const resynced = mergeExternal(external, incoming, {
     partitionId: current.partitionId ?? -1,
@@ -246,9 +241,8 @@ function useFilterLine({
 }: FilterLineOptions) {
   const [rawText, setRawText] = useState(() => formatFilterLine(partitionId, fieldTokens, quickSearch));
   const [caretPos, setCaretPos] = useState(0);
-  // must never reformat `rawText` mid-edit, or it'll fight the user's typing.
+  // WARNING: Keep previous props separate from the last emitted state; late echoes are not external changes and can erase in-progress edits.
   const lastEmittedRef = useRef<EmittedState>({ partitionId, fieldTokens, quickSearch });
-  // Comparing only against `lastEmittedRef` breaks the moment the three onChange calls echo
   const prevPropsRef = useRef<EmittedState>({ partitionId, fieldTokens, quickSearch });
 
   useEffect(() => {
@@ -270,8 +264,6 @@ function useFilterLine({
         fieldTokens: parsed.fieldTokens,
         quickSearch: parsed.remainder,
       };
-      // Only call up when a piece actually changed — typing inside plain text
-      // on every keystroke just because nothing there changed.
       if (nextPartitionId !== partitionId) {
         onPartitionIdChange(nextPartitionId);
       }
@@ -316,8 +308,6 @@ function useFilterLine({
 function useSuggestionDropdown() {
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
-  // was last reset — Enter only auto-applies the top suggestion when they typed something
-  // (non-empty query) or explicitly chose it this way; otherwise a stray Enter (e.g. right
   const [navigated, setNavigated] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -550,6 +540,9 @@ const SuggestionList = ({ id, heading, items, activeIdx, onApply, onHover }: Sug
   );
 };
 
+/**
+ * Enter applies a suggestion only after the user types a query or explicitly moves to a suggestion.
+ */
 export const FilterBar = ({
   messages,
   quickSearch,

@@ -70,7 +70,6 @@ const asComparableString = (resolved: unknown) =>
 export function matchesFieldFilter(msg: TopicMessage, field: string, op: FilterOp, value: string) {
   const resolved = resolveField(msg, field);
   if (resolved === undefined) {
-    // A field that isn't present doesn't equal the filter value either — `neq` should keep
     return op === 'neq';
   }
   switch (op) {

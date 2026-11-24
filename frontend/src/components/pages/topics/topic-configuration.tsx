@@ -120,7 +120,7 @@ function getDefaultValueType(entry: ConfigEntryExtended) {
 function getEditorDefaultValues(entry: ConfigEntryExtended) {
   const defaultConfigSynonym = getDefaultConfigSynonym(entry);
   const explicitCustomValue = entry.isExplicitlySet && !entryHasInfiniteValue(entry) ? entry.value : '';
-  // doesn't silently overwrite a non-default BOOLEAN/SELECT value. Only fall back to the
+  // WARNING: Seed Custom from the resolved setting; otherwise saving without changing the field can overwrite the current value.
   const resolvedValue = explicitCustomValue || entry.value || defaultConfigSynonym?.value || '';
   return {
     valueType: getDefaultValueType(entry),
@@ -208,7 +208,7 @@ const ConfigEditorForm: FC<{
 
   const valueType = useWatch({ control, name: 'valueType' });
 
-  // single pending/disabled state with Save/Cancel, so reset can't race a concurrent
+  // WARNING: Reset through the normal submit path; an independent DELETE could race an in-flight save.
   const handleReset = () => {
     setValue('valueType', 'default');
     void handleSubmit(onSubmit)();

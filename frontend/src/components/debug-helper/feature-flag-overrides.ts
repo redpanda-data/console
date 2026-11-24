@@ -78,7 +78,6 @@ export function getAllFlagKeys() {
 let baseFlags: Record<FeatureFlagKey, boolean> = { ...FEATURE_FLAGS };
 let accessorInstalled = false;
 
-// (otherwise overrides get wiped on each App mount / federated host reconfig).
 function installFeatureFlagAccessor() {
   if (accessorInstalled) {
     return;
@@ -109,6 +108,9 @@ function installFeatureFlagAccessor() {
   accessorInstalled = true;
 }
 
+/**
+ * Installs the debug override accessor before reads and preserves overrides when the host reassigns the configured flags.
+ */
 export function applyOverrides() {
   installFeatureFlagAccessor();
 }

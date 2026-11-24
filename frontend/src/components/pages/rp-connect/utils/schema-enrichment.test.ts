@@ -121,8 +121,6 @@ describe('enrichComponentsWithConfigSchema', () => {
 });
 
 describe('lint-required overrides', () => {
-  // Mirrors the production redpanda input: its schema flags every field optional because runtime
-  // lints ("either topics or regexp_topics_include must be specified", "a consumer group is
   const redpandaInput = {
     name: 'redpanda',
     type: 'input',

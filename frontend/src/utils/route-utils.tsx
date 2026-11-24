@@ -234,7 +234,6 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'SQL',
     icon: Database,
     group: SidebarSection.STREAMING,
-    // compatibility only when SQL is enabled (cfg.API.SQL.Enabled). This is the
     visibilityCheck: routeVisibility(true, [Feature.SQLService]),
   },
   {

@@ -17,9 +17,6 @@ interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
   transport?: Transport;
 }
 
-// tear them down after each test. A plain render + RTL cleanup only unmounts
-// otherwise. That retention is the primary cause of the +100–240 MB
-
 export { cleanupTestHarness } from '../tests/harness-cleanup';
 
 const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRenderOptions = {}) =>

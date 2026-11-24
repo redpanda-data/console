@@ -636,7 +636,6 @@ function usePaginationReset(paging: MessagePagingParams, setSearchState: SetSear
   const { prevPageIndexRef, currentMessageSearchRef, windowStartPageRef, lastLoadMoreRef, currentSearchRunRef } = refs;
 
   useEffect(() => {
-    // Use ref to check messageSearch existence to avoid circular dependency
     if (
       continuousPaginationEnabled &&
       pageIndex === 0 &&
@@ -659,7 +658,6 @@ function usePaginationReset(paging: MessagePagingParams, setSearchState: SetSear
       currentSearchRunRef.current = null;
     }
     prevPageIndexRef.current = pageIndex;
-    // Note: messageSearch intentionally excluded to avoid circular dependency
   }, [
     pageIndex,
     continuousPaginationEnabled,

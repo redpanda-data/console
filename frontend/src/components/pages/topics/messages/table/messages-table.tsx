@@ -237,8 +237,6 @@ export const MessagesTable = ({
 
   const rows = table.getRowModel().rows;
   const visibleColumnCount = table.getVisibleLeafColumns().length;
-  // A failed request has nothing to show either, but it must never look like the empty/waiting
-  // what a network/auth/timeout failure means.
   const showEmpty = !(error || isLoading) && rows.length === 0;
   const fencedRead = useClusterFenceGuard().isFencedRead(error ?? '');
 

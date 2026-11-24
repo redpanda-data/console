@@ -64,9 +64,10 @@ export type SchemaRegistryEditSectionProps = {
   originalMode: SchemaRegistryMode;
 };
 
+/**
+ * Without the Schema Registry API sync capability, the legacy controls cannot change an existing API-mode link.
+ */
 export const SchemaRegistryEditSection = ({ originalMode }: SchemaRegistryEditSectionProps) => {
-  // Requires Redpanda >= 26.2.0. Fails closed: on older or unknown backends
-  // the edit page keeps the legacy switch / read-only card, which cannot
   const showRedesigned = useSupportedFeaturesStore((s) => s.shadowLinkSchemaRegistrySync);
 
   if (!showRedesigned) {

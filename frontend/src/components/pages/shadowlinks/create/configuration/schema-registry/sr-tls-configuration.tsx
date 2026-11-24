@@ -51,7 +51,6 @@ const CERTIFICATE_PAIR_SIBLING: Partial<Record<SrCertificateType, SrCertificateT
   clientKey: 'clientCert',
 };
 
-// trigger() runs detached from these handlers and rejects only if the resolver
 const reportRevalidationError = (error: unknown) => {
   toast.error('Failed to validate the form', { description: String(error) });
 };
@@ -395,7 +394,7 @@ export const SrTlsConfiguration = () => {
                 description="Authenticate the shadow cluster to the source Schema Registry with a client certificate."
                 label="Use mutual TLS (mTLS)"
                 onOpenChange={setMtlsOpen}
-                // otherwise block the wizard with no visible feedback.
+                // WARNING: Keep the TLS section open when it contains an error; the hidden error otherwise blocks the wizard without feedback.
                 open={mtlsOpen || hasMtlsError}
                 testId="sr-tls-mtls-disclosure"
                 triggerTestId="sr-tls-mtls-disclosure-trigger"

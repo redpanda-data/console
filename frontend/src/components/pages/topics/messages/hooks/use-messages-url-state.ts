@@ -23,10 +23,12 @@ import { parseFilterInput, sameFieldTokens, tokenQueryText } from '../utils/filt
 
 const DEFAULT_MAX_RESULTS = 50;
 
-// intentionally NOT persisted in the URL — code doesn't belong in share links.
 const escapeToken = (text: string) => text.replace(/%/gu, '%25').replace(/,/gu, '%2C');
 const unescapeToken = (text: string) => text.replace(/%2C/gu, ',').replace(/%25/gu, '%');
 
+/**
+ * Escapes delimiters in shared field-token links. JavaScript filters are not encoded in the URL.
+ */
 export const fieldTokensParser = createParser<FieldFilterToken[]>({
   parse: (value) => {
     const tokens: FieldFilterToken[] = [];
@@ -242,9 +244,6 @@ function useReadScopeMode(
 
   const readScopeMode = readScopeModeFromOffset(startOffset);
 
-  // A deep link (`?o=-4` with no `t`) or a topic left over from the legacy tab (which clears
-  // timestamp set. The picker itself only seeds Date.now() once mounted, which requires the
-  // read-scope popover to be open — so cover the gap here too, same default as legacy's
   useEffect(() => {
     if (readScopeMode === 'timestamp' && startTimestamp < 0) {
       setStartTimestamp(Date.now());
@@ -255,7 +254,6 @@ function useReadScopeMode(
     (mode: ReadScopeMode, customOffset = 0) => {
       setStartOffset(offsetForReadScopeMode(mode, customOffset));
       setPageIndex(0);
-      // Mirrors legacy's offset-origin select handler: seed "now" switching into timestamp
       if (mode === 'timestamp') {
         if (startTimestamp < 0) {
           setStartTimestamp(Date.now());
@@ -276,6 +274,7 @@ function useReadScopeMode(
  *
  * `live` is new: live tail is orthogonal to the read scope. Legacy URLs with
  * `o=-3` (PartitionOffsetOrigin.End) are migrated to `live=true` + newest scope.
+ * Timestamp scope defaults to now when a deep link omits the timestamp, and switching away clears the saved timestamp.
  */
 export function useMessagesUrlState(topicName: string) {
   // Grouped in the original query-key order, so the params' first-render URL syncs keep their order.

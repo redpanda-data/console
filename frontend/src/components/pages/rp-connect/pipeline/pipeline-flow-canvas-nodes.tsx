@@ -393,7 +393,6 @@ function cardRing(data: FlowCardData): string {
   return data.lintErrors?.length ? ERROR_RING : data.selected ? SELECTED_RING : '';
 }
 
-// The motion layer only animates opacity; the ring it fades is the native span inside.
 const FlashPulse = ({ token }: { token?: number }) => (
   <motion.span
     animate={{ opacity: [0, 1, 0.3, 1, 0] }}
@@ -515,7 +514,6 @@ type FlowInsertData = {
   onInsert?: (payload: FlowInsertPayload) => void;
 };
 
-// it's a plain "+". Edit mode only; the l/r handles let the ghost connector edge attach.
 const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
   if (!(data.onInsert && data.payload)) {
     return null;
@@ -866,7 +864,6 @@ function graphEdgeGeometry(endpoints: EdgeEndpoints, d: FlowGraphEdgeData | unde
   return { path, label: { x, y }, insert: { x, y } };
 }
 
-// Every edge in the Dagre DAG, routed through Dagre's waypoints so lines avoid nodes. No
 function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data }: EdgeProps) {
   const d = data as FlowGraphEdgeData | undefined;
   const { path, label, insert } = graphEdgeGeometry(

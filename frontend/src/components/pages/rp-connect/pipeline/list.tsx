@@ -73,16 +73,15 @@ import {
 import { PIPELINE_END_RUNS } from './pipeline-end-chip';
 import { TabKafkaConnect } from '../../connect/overview';
 
-// Module scope: the query hook memoizes on request identity. Asked for unconditionally because the
-// flag gates making drafts, not seeing the ones already made — turning it back off must not strand a
+// WARNING: Always list saved drafts; gating discovery would strand drafts that still count against the cluster quota.
 const LIST_WITH_DRAFTS = { filter: { includeDrafts: true } } as const;
 
-// One table for every tab, so the tabs need an explicit `aria-controls` target — otherwise a screen
+// WARNING: Every status tab must point to the shared panel so screen readers can find its table.
 const STATUS_PANEL_ID = 'pipeline-status-panel';
 
 const statusTabId = (tabId: PipelineStateTabId) => `pipeline-status-tab-${tabId}`;
 
-// The status lines below the table unmount as they animate, and a live region only announces changes
+// WARNING: Keep the live region mounted; remounting it with the status line prevents announcements from screen readers.
 const ListStatusAnnouncements = ({
   isLoadingMorePages,
   listErrorMessage,

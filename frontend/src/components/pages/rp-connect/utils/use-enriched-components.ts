@@ -17,7 +17,6 @@ import { parseSchema } from './schema';
 import { enrichComponentsWithConfigSchema } from './schema-enrichment';
 import type { ConnectComponentSpec } from '../types/schema';
 
-// times but must not each redo the work.
 let lastEnrichment: {
   componentList: ComponentList;
   configSchema: string | undefined;
@@ -39,6 +38,7 @@ function getEnrichedComponents(componentList: ComponentList, configSchema: strin
  * keep working while the much larger config schema is still loading or hung — then re-emit with the
  * enrichment stamps once it settles; until then `checkRequired` runs in its degraded proto-flag mode.
  * Consumers needing full fidelity (template forms computing defaults once) can gate on `isLoading`.
+ * Shares enrichment by the identities of the cached list and schema to avoid reparsing them for each consumer.
  */
 export function useEnrichedComponents() {
   const { data: componentListResponse, isLoading: isComponentListLoading } = useListComponentsQuery();

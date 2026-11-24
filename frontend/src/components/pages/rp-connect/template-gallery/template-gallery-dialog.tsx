@@ -208,7 +208,7 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
 
   return (
     <Dialog
-      // in-progress form values. ESC and X / Cancel still close.
+      // WARNING: Do not allow backdrop clicks to dismiss a draft form; keep the explicit close actions that save its values.
       disablePointerDismissal={view.kind !== 'gallery'}
       onOpenChange={(nextOpen) => (nextOpen ? undefined : closeWithStash())}
       open={open}

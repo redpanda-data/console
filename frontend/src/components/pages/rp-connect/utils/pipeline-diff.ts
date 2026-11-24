@@ -78,8 +78,6 @@ function consumeUnmovedSignatures(
   return moved;
 }
 
-// (`proc-0`, …), so a moved-but-identical config is not a change; same-id matches consume their
-// and yaml !== initialYaml remains the authoritative dirty signal.
 function unmatchedNextIds(prev: Map<string, string>, next: Map<string, string>) {
   const available = signatureMultiset(prev.values());
   const moved = consumeUnmovedSignatures(prev, next, available);
@@ -96,6 +94,8 @@ function unmatchedNextIds(prev: Map<string, string>, next: Map<string, string>) 
 /**
  * re-diffs on every keystroke against a constant baseline, so the baseline is signed only once.
  * A container's signature embeds its children, so attribute each change to the deepest node(s) only.
+ * Consumes same-id matches first, then matches by signature, so reordering unchanged nodes is not an edit.
+ * These markers summarize changes; compare the YAML itself to determine whether the document is dirty.
  */
 export function changedNodeIdsFromBaseline(baseline: NodeSignatures, nextYaml: string) {
   const next = nodeConfigSignatures(nextYaml);

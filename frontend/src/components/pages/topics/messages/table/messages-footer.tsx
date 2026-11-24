@@ -95,7 +95,6 @@ export const MessagesFooter = ({
 }: MessagesFooterProps) => {
   const pageCount = Math.max(1, Math.ceil(totalLoaded / pageSize));
 
-  // affordance rather than the only way to load more.
   const sentinelRef = useRef<HTMLDivElement>(null);
   const onLoadMoreRef = useRef(onLoadMore);
   onLoadMoreRef.current = onLoadMore;

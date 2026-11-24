@@ -272,7 +272,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
     form.clearErrors();
-    // on it must go to the global alert rather than being silently dropped.
+    // WARNING: Send violations on a hidden principal field to the global alert; the missing input cannot display them.
     const renderableFieldNames = principal
       ? new Set([...FORM_FIELD_NAMES].filter((f) => f !== 'principal'))
       : FORM_FIELD_NAMES;

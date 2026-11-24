@@ -45,7 +45,6 @@ import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { filterByName } from '../shared/filter-by-name';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },

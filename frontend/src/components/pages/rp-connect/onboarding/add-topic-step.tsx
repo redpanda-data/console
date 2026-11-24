@@ -150,7 +150,7 @@ function useExistingTopicSync(form: TopicForm, topicList: TopicList) {
       }
       if (topicConfig && !topicConfig.error) {
         const allTopicValues = parseTopicConfigFromExisting(existingTopicSelected, topicConfig);
-        // selects an existing topic, its config must fully replace any partial
+        // WARNING: Selecting an existing topic must replace dirty inputs, not carry partial configuration over to that topic.
         form.reset(allTopicValues, { keepDefaultValues: false, keepDirtyValues: false });
       } else {
         form.setValue('topicName', existingTopicSelected.topicName, {

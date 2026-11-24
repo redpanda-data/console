@@ -43,7 +43,6 @@ export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
 export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
 const transitionalStates: Pipeline_State[] = [Pipeline_State.STARTING, Pipeline_State.STOPPING];
 
-// list drains page-by-page — so ask for the legacy page's 500, under the proto max.
 const LIST_PIPELINES_PAGE_SIZE = 500;
 
 export const useGetPipelineQuery = (
@@ -72,6 +71,9 @@ export const useGetPipelineQuery = (
   });
 };
 
+/**
+ * Uses large pages because the server enumerates all pipelines for each page before slicing the result.
+ */
 export const useListPipelinesQuery = (
   input?: MessageInit<ListPipelinesRequestDataPlane>,
   options?: QueryOptions<GenMessage<ListPipelinesRequest>, ListPipelinesResponse> & {

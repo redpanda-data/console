@@ -296,8 +296,7 @@ const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
 // Classify a canvas keydown; presses inside text fields / Monaco keep their own editing semantics.
 type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
 
-// Focused controls own their keys: text fields / Monaco keep editing semantics, and buttons, selects,
-// match) must not have Delete open the confirm dialog or `/` open the palette.
+// WARNING: Keep editor hotkeys off focused controls; Delete and / must not remove a node or open the palette while typing.
 const FOCUS_GUARD_SELECTOR =
   'input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"], [role="switch"], [role="radio"], [role="checkbox"], [data-slot="popover-content"], .monaco-editor';
 
@@ -859,7 +858,7 @@ type NodeInsertOptions = {
   selection: InspectorSelection;
 };
 
-// would otherwise be lost.
+// WARNING: Commit the active inspector draft before inserting; the insert otherwise starts from stale YAML and drops that edit.
 function useNodeInsert({ yamlContent, components, onYamlChange, selection }: NodeInsertOptions) {
   const { selected, setSelected, commitPending } = selection;
   const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);

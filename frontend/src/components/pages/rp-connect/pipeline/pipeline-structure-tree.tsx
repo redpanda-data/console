@@ -443,7 +443,7 @@ export function PipelineStructureTree({
   const notice = invalidOutlineNotice(showingStale, error);
 
   return (
-    // Each non-empty section is its own labelled tree — role="tree" may own only treeitem/group
+    // WARNING: Keep section headings and add actions outside the tree; the tree role may own only tree items and groups.
     <div className="flex flex-col gap-3 py-3 pr-2">
       {/* Left margin only — the container's `pr-2` supplies the matching right gap. */}
       {notice ? (
