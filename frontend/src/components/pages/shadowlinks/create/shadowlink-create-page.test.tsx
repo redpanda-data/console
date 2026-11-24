@@ -9,22 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
+import { create, type MessageShape } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ListShadowLinksResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
-import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
+import { config } from 'config';
+import {
+  CreateShadowLinkResponseSchema,
+  ListShadowLinksResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import {
+  createShadowLink,
+  listShadowLinks,
+} from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import { useCreateShadowLinkMutation } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
 import { useSupportedFeaturesStore } from 'state/supported-features';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { useUIStateStore } from 'state/ui-state';
+import { cleanup, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { ShadowLinkCreatePage } from './shadowlink-create-page';
-import { isEmbedded } from '../../../../config';
-import { getBasePath } from '../../../../utils/env';
 import {
   addACLFilterCreate,
   addBootstrapServer,
@@ -37,51 +42,37 @@ import {
   setShadowLinkGatesSupported,
 } from '../shadowlink-test-helpers';
 
-rs.mock('react-query/api/shadowlink', () => ({
-  useCreateShadowLinkMutation: rs.fn(),
-}));
-
-rs.mock('../../../../config', () => {
-  const actual = rs.requireActual<typeof import('../../../../config')>('../../../../config');
-  return {
-    ...actual,
-    isEmbedded: rs.fn(() => false),
-  };
-});
-
-rs.mock('../../../../utils/env', () => {
-  const actual = rs.requireActual<typeof import('../../../../utils/env')>('../../../../utils/env');
-  return {
-    ...actual,
-    getBasePath: rs.fn(() => '/console'),
-  };
-});
-
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
-
-rs.mock('sonner', () => ({
-  toast: {
-    success: rs.fn(),
-    error: rs.fn(),
-  },
-}));
-
 const pristineFeatureStoreState = useSupportedFeaturesStore.getState();
-const resetSchemaRegistrySyncGate = () => {
-  useSupportedFeaturesStore.setState(pristineFeatureStoreState, true);
-};
+const pristineUIState = useUIStateStore.getState();
+const originalJWT = config.jwt;
 
-const renderCreatePage = () =>
-  renderWithFileRoutes(<ShadowLinkCreatePage />, {
+beforeEach(() => {
+  config.jwt = undefined;
+  setShadowLinkGatesSupported({ schemaRegistrySync: false, roleSync: true });
+});
+
+afterEach(() => {
+  cleanup();
+  toast.dismiss();
+  config.jwt = originalJWT;
+  useSupportedFeaturesStore.setState(pristineFeatureStoreState, true);
+  useUIStateStore.setState(pristineUIState, true);
+});
+
+function renderCreatePage() {
+  const requests: MessageShape<typeof createShadowLink.input>[] = [];
+  const { router } = renderWithFileRoutes(<ShadowLinkCreatePage />, {
+    initialLocation: '/shadowlinks/create',
     transport: createRouterTransport(({ rpc }) => {
       rpc(listShadowLinks, () => create(ListShadowLinksResponseSchema, { shadowLinks: [] }));
+      rpc(createShadowLink, (request) => {
+        requests.push(request);
+        return create(CreateShadowLinkResponseSchema, {});
+      });
     }),
   });
+  return { router, requests };
+}
 
 type CertificateType = 'ca' | 'clientCert' | 'clientKey';
 
@@ -249,44 +240,31 @@ const CONNECTION_STEP_ACTIONS: CreateAction[] = [
 ];
 
 const renderAndPerform = async (user: ReturnType<typeof userEvent.setup>, actions: CreateAction[]) => {
-  renderCreatePage();
+  const initialLocation = window.location.href;
+  const trace = renderCreatePage();
 
   await screen.findByPlaceholderText('my-shadow-link', {}, { timeout: 10_000 });
+  expect(window.location.href).toBe(initialLocation);
 
   await actions.reduce<Promise<void>>(
     (previous, action) => previous.then(() => performCreateAction(user, screen, action)),
     Promise.resolve()
   );
+  return trace;
 };
 
-const submitCreateForm = async (
-  user: ReturnType<typeof userEvent.setup>,
-  mockMutateAsync: ReturnType<typeof rs.fn>
-) => {
+async function submitCreateForm(user: ReturnType<typeof userEvent.setup>, trace: ReturnType<typeof renderCreatePage>) {
   await user.click(screen.getByRole('button', { name: 'Create shadow link' }));
+  await waitFor(() => expect(trace.router.state.location.pathname).toBe('/shadowlinks'));
+  expect(trace.requests).toHaveLength(1);
+  expect(toast.getToasts()).toContainEqual(expect.objectContaining({ type: 'success', title: 'Shadow link created' }));
 
-  await waitFor(
-    () => {
-      expect(mockMutateAsync).toHaveBeenCalledTimes(1);
-    },
-    { timeout: 5000 }
-  );
-
-  return mockMutateAsync.mock.calls[0][0];
-};
-
-/**
- * The submit succeeds asynchronously: after mutateAsync resolves, the
- * onSuccess callback fires toast.success and navigate(). Those land as a
- * late RHF/router re-render of the still-mounted form fields. Await the
- * settled side effect so any final update is flushed inside act() before
- * the test ends.
- */
-const waitForCreateSuccess = async () => {
-  await waitFor(() => {
-    expect(toast.success).toHaveBeenCalledWith('Shadow link created');
-  });
-};
+  const [request] = trace.requests;
+  if (!request?.shadowLink?.configurations) {
+    throw new Error('CreateShadowLink did not receive link configurations');
+  }
+  return { ...request, shadowLink: { ...request.shadowLink, configurations: request.shadowLink.configurations } };
+}
 
 const fillSchemaRegistryApiConnection = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(screen.getByTestId('sr-mode-api-tab'));
@@ -499,7 +477,7 @@ const testCases: CreateTestCase[] = [
     verify: (createRequest, exp) => {
       exp(createRequest.shadowLink.name).toBe('test-shadow-link');
       exp(createRequest.shadowLink.configurations.schemaRegistrySyncOptions).toBeDefined();
-      exp(createRequest.shadowLink.configurations.schemaRegistrySyncOptions.schemaRegistryShadowingMode.case).toBe(
+      exp(createRequest.shadowLink.configurations.schemaRegistrySyncOptions?.schemaRegistryShadowingMode.case).toBe(
         'shadowSchemaRegistryTopic'
       );
     },
@@ -507,56 +485,14 @@ const testCases: CreateTestCase[] = [
 ];
 
 describe('the ShadowLinkCreatePage', () => {
-  const mockMutateAsync = rs.fn();
-
-  beforeEach(() => {
-    rs.clearAllMocks();
-
-    setShadowLinkGatesSupported({ schemaRegistrySync: false, roleSync: true });
-
-    mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
-
-    rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
-      const wrappedMutateAsync = async (request: any) => {
-        const result = await mockMutateAsync(request);
-        options?.onSuccess?.(result, request, undefined, {} as any);
-        return result;
-      };
-
-      return {
-        mutateAsync: wrappedMutateAsync,
-        isPending: false,
-        isError: false,
-        isSuccess: false,
-        error: null,
-        data: undefined,
-        mutate: rs.fn(),
-        reset: rs.fn(),
-        status: 'idle',
-        variables: undefined,
-        context: undefined,
-        failureCount: 0,
-        failureReason: null,
-        isPaused: false,
-        submittedAt: 0,
-      } as any;
-    });
-  });
-
-  afterEach(() => {
-    resetSchemaRegistrySyncGate();
-  });
-
   test.each(testCases)('$description', async ({ actions, verify }) => {
     const user = userEvent.setup();
 
-    await renderAndPerform(user, actions);
+    const trace = await renderAndPerform(user, actions);
 
-    const createRequest = await submitCreateForm(user, mockMutateAsync);
+    const createRequest = await submitCreateForm(user, trace);
 
     verify(createRequest, expect);
-
-    await waitForCreateSuccess();
   });
 
   test('hides the roles card and omits role sync options when the cluster does not support role sync', async () => {
@@ -564,187 +500,58 @@ describe('the ShadowLinkCreatePage', () => {
 
     const user = userEvent.setup();
 
-    await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
+    const trace = await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
 
     expect(screen.queryByTestId('roles-all-tab')).not.toBeInTheDocument();
     expect(screen.queryByTestId('roles-toggle-button')).not.toBeInTheDocument();
 
-    const createRequest = await submitCreateForm(user, mockMutateAsync);
+    const createRequest = await submitCreateForm(user, trace);
     expect(createRequest.shadowLink.configurations.roleSyncOptions).toBeUndefined();
-
-    await waitForCreateSuccess();
   });
 });
 
 describe('the ShadowLinkCreatePage - Schema Registry sync over API', () => {
-  const mockMutateAsync = rs.fn();
-
   beforeEach(() => {
-    rs.clearAllMocks();
-
     seedSchemaRegistrySyncGate(true);
-
-    mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
-
-    rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
-      const wrappedMutateAsync = async (request: any) => {
-        const result = await mockMutateAsync(request);
-        options?.onSuccess?.(result, request, undefined, {} as any);
-        return result;
-      };
-
-      return {
-        mutateAsync: wrappedMutateAsync,
-        isPending: false,
-        isError: false,
-        isSuccess: false,
-        error: null,
-        data: undefined,
-        mutate: rs.fn(),
-        reset: rs.fn(),
-        status: 'idle',
-        variables: undefined,
-        context: undefined,
-        failureCount: 0,
-        failureReason: null,
-        isPaused: false,
-        submittedAt: 0,
-      } as any;
-    });
-  });
-
-  afterEach(() => {
-    resetSchemaRegistrySyncGate();
   });
 
   test('submits api mode with raw basic auth password and TLS enabled', async () => {
     const user = userEvent.setup();
 
-    await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
+    const trace = await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
 
     expect(screen.queryByTestId('sr-enable-switch')).not.toBeInTheDocument();
 
     await fillSchemaRegistryApiConnection(user);
 
-    const createRequest = await submitCreateForm(user, mockMutateAsync);
-    expect(createRequest.shadowLink.configurations.schemaRegistrySyncOptions.schemaRegistryShadowingMode).toMatchObject(
-      {
-        case: 'shadowSchemaRegistryApi',
-        value: {
-          sourceUrl: 'https://schema-registry.example.com:8081',
+    const createRequest = await submitCreateForm(user, trace);
+    expect(
+      createRequest.shadowLink.configurations.schemaRegistrySyncOptions?.schemaRegistryShadowingMode
+    ).toMatchObject({
+      case: 'shadowSchemaRegistryApi',
+      value: {
+        sourceUrl: 'https://schema-registry.example.com:8081',
+        authOptions: {
           authOptions: {
-            authOptions: {
-              case: 'basic',
-              value: { username: 'sr-replicator', password: 'p@ssw0rd!' },
-            },
+            case: 'basic',
+            value: { username: 'sr-replicator', password: 'p@ssw0rd!' },
           },
-          tlsSettings: { enabled: true },
         },
-      }
-    );
-
-    await waitForCreateSuccess();
+        tlsSettings: { enabled: true },
+      },
+    });
   });
 
   test('keeps the legacy topic payload when _schemas topic mode is selected', async () => {
     const user = userEvent.setup();
 
-    await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
+    const trace = await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
 
     await user.click(screen.getByTestId('sr-mode-topic-tab'));
 
-    const createRequest = await submitCreateForm(user, mockMutateAsync);
-    expect(createRequest.shadowLink.configurations.schemaRegistrySyncOptions.schemaRegistryShadowingMode.case).toBe(
+    const createRequest = await submitCreateForm(user, trace);
+    expect(createRequest.shadowLink.configurations.schemaRegistrySyncOptions?.schemaRegistryShadowingMode.case).toBe(
       'shadowSchemaRegistryTopic'
     );
-
-    await waitForCreateSuccess();
-  });
-});
-
-describe('the ShadowLinkCreatePage - Embedded Mode Redirect', () => {
-  const mockMutateAsync = rs.fn();
-  const originalLocation = window.location;
-
-  beforeEach(() => {
-    rs.clearAllMocks();
-    mockMutateAsync.mockImplementation(() => Promise.resolve({}));
-
-    rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
-      const wrappedMutateAsync = async (request: any) => {
-        const result = await mockMutateAsync(request);
-        options?.onSuccess?.(result, request, undefined, {} as any);
-        return result;
-      };
-
-      return {
-        mutateAsync: wrappedMutateAsync,
-        isPending: false,
-        isError: false,
-        isSuccess: false,
-        error: null,
-        data: undefined,
-        mutate: rs.fn(),
-        reset: rs.fn(),
-        status: 'idle',
-        variables: undefined,
-        context: undefined,
-        failureCount: 0,
-        failureReason: null,
-        isPaused: false,
-        submittedAt: 0,
-      } as any;
-    });
-
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...originalLocation, href: '', pathname: '/clusters/abc/shadowlinks/create' },
-    });
-  });
-
-  afterEach(() => {
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: originalLocation,
-    });
-  });
-
-  test('redirects to correct path when in embedded mode', async () => {
-    const originalLocation = window.location;
-    const locationStub = { href: '' };
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      writable: true,
-      value: locationStub,
-    });
-
-    rs.mocked(isEmbedded).mockReturnValue(true);
-    rs.mocked(getBasePath).mockReturnValue('/console');
-
-    try {
-      renderWithFileRoutes(<ShadowLinkCreatePage />);
-
-      await waitFor(() => {
-        expect(locationStub.href).toBe('/console/shadowlinks/create');
-      });
-    } finally {
-      Object.defineProperty(window, 'location', {
-        configurable: true,
-        writable: true,
-        value: originalLocation,
-      });
-    }
-  });
-
-  test('does not redirect when not in embedded mode', async () => {
-    rs.mocked(isEmbedded).mockReturnValue(false);
-
-    renderWithFileRoutes(<ShadowLinkCreatePage />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('shadowLink-create-page-description')).toBeInTheDocument();
-    });
-
-    expect(window.location.href).toBe('');
   });
 });
