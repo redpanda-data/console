@@ -28,6 +28,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  Link,
   Outlet,
   RouterProvider,
 } from '@tanstack/react-router';
@@ -85,7 +86,7 @@ import {
 import { MISSING_SERVICE_ACCOUNT_MESSAGE, NO_LONGER_DRAFT_MESSAGE } from './save-actions';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 import { takeStartLintHints } from './use-start-draft';
-import { trackedRouters } from '../../../../../tests/harness-cleanup';
+import { trackedRouters, trackedTeardowns } from '../../../../../tests/harness-cleanup';
 import type { PipelineMode } from '../utils/use-pipeline-mode';
 import PipelinePage from '.';
 
@@ -97,29 +98,31 @@ function enableFeatures(...enabled: FeatureFlagKey[]) {
   }
 }
 
-const mockNavigate = rs.fn();
-const mockBack = rs.fn();
-// WARNING: Pass the page’s own guard options through; a stubbed blocker result cannot prove when navigation should block.
-type BlockerOptions = { shouldBlockFn: () => boolean };
-const mockBlocker = rs.fn(
-  (_options?: BlockerOptions) =>
-    ({
-      status: 'idle',
-      proceed: undefined,
-      reset: undefined,
-    }) as unknown
-);
-const lastShouldBlockFn = () =>
-  (mockBlocker.mock.calls.at(-1)?.[0] as BlockerOptions | undefined)?.shouldBlockFn ?? (() => false);
-rs.mock('@tanstack/react-router', () => {
-  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-    useRouter: () => ({ history: { back: mockBack, canGoBack: () => true } }),
-    useBlocker: (options: BlockerOptions) => mockBlocker(options),
-  };
-});
+const EXIT_PATH = '/connect-clusters';
+const PREVIOUS_PATH = '/before-pipeline';
+const visitedPaths: string[] = [];
+
+const expectDestination = (path: string) => waitFor(() => expect(visitedPaths.at(-1)).toBe(path));
+
+function PipelineTestLayout() {
+  return (
+    <>
+      <Link to={EXIT_PATH}>Leave editor for Connect</Link>
+      <Outlet />
+    </>
+  );
+}
+
+async function attemptLeave(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('link', { name: 'Leave editor for Connect' }));
+  return screen.findByRole('dialog', { name: 'Leave without saving your changes?' });
+}
+
+async function keepEditingAfterBlockedNavigation(user: ReturnType<typeof userEvent.setup>) {
+  const dialog = await attemptLeave(user);
+  await user.click(screen.getByRole('button', { name: 'Keep editing' }));
+  await waitFor(() => expect(dialog).not.toBeInTheDocument());
+}
 
 type ContentChangeCallback = (e: { changes: Array<{ text: string }> }) => void;
 const contentChangeListeners: ContentChangeCallback[] = [];
@@ -528,12 +531,6 @@ const confirmStart = async (user: ReturnType<typeof userEvent.setup>) => {
 
 type UserSession = ReturnType<typeof userEvent.setup>;
 
-function resetRouterMocks() {
-  mockNavigate.mockClear();
-  mockBack.mockClear();
-  mockBlocker.mockReturnValue({ status: 'idle', proceed: undefined, reset: undefined });
-}
-
 function resetPageEnvironment() {
   config.featureFlags = { ...initialConfig.featureFlags };
   for (const key of Object.keys(config.featureFlags) as FeatureFlagKey[]) {
@@ -547,7 +544,7 @@ function resetPageEnvironment() {
 }
 
 function resetPipelinePageMocks() {
-  resetRouterMocks();
+  visitedPaths.length = 0;
   resetPageEnvironment();
   pipelineRequests = emptyPipelineRequests();
 }
@@ -565,17 +562,18 @@ const pipelinePath = {
 } satisfies Record<PipelineMode, string>;
 
 async function mountPipelinePage(mode: PipelineMode, { transport }: { transport: Transport }) {
-  const root = createRootRoute({ component: Outlet });
+  const root = createRootRoute({ component: PipelineTestLayout });
   const routes = [
     createRoute({ getParentRoute: () => root, path: '/rp-connect/create', component: PipelinePage }),
     createRoute({ getParentRoute: () => root, path: '/rp-connect/$pipelineId/edit', component: PipelinePage }),
     createRoute({ getParentRoute: () => root, path: '/rp-connect/$pipelineId', component: PipelinePage }),
+    createRoute({ getParentRoute: () => root, path: EXIT_PATH }),
+    createRoute({ getParentRoute: () => root, path: PREVIOUS_PATH }),
   ];
-  const router = createRouter({
-    routeTree: root.addChildren(routes),
-    history: createMemoryHistory({ initialEntries: [pipelinePath[mode]] }),
-  });
+  const history = createMemoryHistory({ initialEntries: [PREVIOUS_PATH, pipelinePath[mode]] });
+  const router = createRouter({ routeTree: root.addChildren(routes), history });
   trackedRouters.add(router);
+  trackedTeardowns.add(history.subscribe(({ location }) => visitedPaths.push(location.pathname)));
   await router.load();
   return { router, ...render(<RouterProvider router={router} />, { transport }) };
 }
@@ -666,7 +664,7 @@ async function renameWhileSaveInFlight(state: Pipeline_State) {
   const sent = await saveAndCapturePipeline(user, 'updatePipeline');
   fireEvent.change(title, { target: { value: 'newer-unsaved-name' } });
   releaseUpdate();
-  return { sent, title };
+  return { sent, title, user };
 }
 
 async function renderCreatePageAwaitingDraftSample() {
@@ -880,9 +878,7 @@ describe('the PipelinePage', () => {
       const backButton = allButtons[0];
       await user.click(backButton);
 
-      await waitFor(() => {
-        expect(mockBack).toHaveBeenCalled();
-      });
+      await expectDestination(PREVIOUS_PATH);
     });
 
     it('cmd/Ctrl+S saves the pipeline instead of opening the browser save dialog', async () => {
@@ -917,7 +913,7 @@ describe('the PipelinePage', () => {
         displayName: 'my-pipeline',
         configYaml: 'input:\n  generate:\n    mapping: root = "hello"',
       });
-      await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
+      await expectDestination('/rp-connect/new-pipeline');
     });
 
     it('lets the name be edited inline from the header title and submits it', async () => {
@@ -975,9 +971,7 @@ describe('the PipelinePage', () => {
       const backButton = allButtons[0];
       await user.click(backButton);
 
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(expect.objectContaining({ to: '/connect-clusters' }));
-      });
+      await expectDestination(EXIT_PATH);
     });
 
     it('displays the pipeline display name in the summary in view mode', async () => {
@@ -1281,7 +1275,7 @@ describe('the PipelinePage', () => {
         await addServiceAccountToOutput(user);
         releaseUpdate();
 
-        await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
+        await expectDestination('/rp-connect/test-pipeline');
         expect(autosaveEntry('test-pipeline')?.serviceAccount).toEqual({
           serviceAccountId: 'sa-123',
           secretName: 'ORDERS_SA',
@@ -1515,7 +1509,7 @@ describe('pipelinePage saving and recovering work', () => {
 
         expect(sent.draft).toBe(true);
         expect(pipelineRequests.stopPipeline).toHaveLength(0);
-        await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' }));
+        await expectDestination('/rp-connect/new-pipeline/edit');
       });
 
       it("saves a draft that logs in with a service account the pipeline doesn't have yet", async () => {
@@ -1596,8 +1590,8 @@ describe('pipelinePage saving and recovering work', () => {
         await waitFor(() => expect(pipelineRequests.stopPipeline.length).toBeGreaterThan(0));
         expect(pipelineRequests.stopPipeline[0]?.request?.id).toBe('new-pipeline');
         await expectToastInsteadOfSuccess('error', DRAFT_UNSUPPORTED_STOPPED_MESSAGE);
-        await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
-        expect(mockNavigate).not.toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' });
+        await expectDestination('/rp-connect/new-pipeline');
+        expect(visitedPaths).not.toContain('/rp-connect/new-pipeline/edit');
       });
 
       it('tells the user to stop it when the follow-up stop fails', async () => {
@@ -1640,16 +1634,16 @@ describe('pipelinePage saving and recovering work', () => {
         await user.click(await screen.findByTestId('save-pipeline'));
 
         await waitFor(() => expect(pipelineRequests.updatePipeline.length).toBeGreaterThan(0));
-        expect(mockNavigate).not.toHaveBeenCalled();
+        expect(visitedPaths).toEqual([]);
       });
 
       it('keeps a setting typed while the save was in flight unsaved', async () => {
-        const { sent, title } = await renameWhileSaveInFlight(Pipeline_State.DRAFT);
+        const { sent, title, user } = await renameWhileSaveInFlight(Pipeline_State.DRAFT);
         expect(sent.displayName).toBe('submitted-name');
 
         await waitFor(() => expect(toastMessages('success').length).toBeGreaterThan(0));
         expect(title).toHaveValue('newer-unsaved-name');
-        await waitFor(() => expect(lastShouldBlockFn()()).toBe(true));
+        await keepEditingAfterBlockedNavigation(user);
         expect(autosaveEntry('test-pipeline')?.name).toBe('newer-unsaved-name');
       });
 
@@ -1657,7 +1651,7 @@ describe('pipelinePage saving and recovering work', () => {
       it('keeps an in-flight settings edit recoverable when the save navigates away', async () => {
         await renameWhileSaveInFlight(Pipeline_State.STOPPED);
 
-        await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
+        await expectDestination('/rp-connect/test-pipeline');
         expect(autosaveEntry('test-pipeline')?.name).toBe('newer-unsaved-name');
       });
     });
@@ -1807,7 +1801,7 @@ describe('pipelinePage saving and recovering work', () => {
 
         await waitFor(() => expect(pipelineRequests.createPipeline.length).toBeGreaterThan(0));
         expect(pipelineRequests.createPipeline[0]?.request?.pipeline?.draft).toBe(false);
-        await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
+        await waitFor(() => expect(visitedPaths).not.toHaveLength(0));
         expect(pipelineRequests.stopPipeline).toHaveLength(0);
       });
 
@@ -1821,7 +1815,7 @@ describe('pipelinePage saving and recovering work', () => {
 
         await waitFor(() => expect(screen.queryByRole('menuitem', { name: 'Save and start' })).not.toBeInTheDocument());
         expect(pipelineRequests.createPipeline).toHaveLength(0);
-        expect(mockNavigate).not.toHaveBeenCalled();
+        expect(visitedPaths).toEqual([]);
       });
 
       it('says on the button that saving a running pipeline restarts it', async () => {
@@ -1889,7 +1883,7 @@ describe('pipelinePage saving and recovering work', () => {
 
         await waitFor(() => expect(pipelineRequests.stopPipeline.length).toBeGreaterThan(0));
         await expectToastInsteadOfSuccess('warning', expect.stringMatching(/may be running/iu));
-        await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline' }));
+        await expectDestination('/rp-connect/new-pipeline');
       });
     });
 
@@ -1931,7 +1925,7 @@ describe('pipelinePage saving and recovering work', () => {
         await user.click(saveButton);
 
         await expectToastInsteadOfSuccess('error', DRAFT_UPDATE_UNSUPPORTED_MESSAGE);
-        await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
+        await expectDestination('/rp-connect/test-pipeline');
       });
 
       it('round-trips a partial config through the editor unchanged', async () => {
@@ -1968,7 +1962,7 @@ describe('pipelinePage saving and recovering work', () => {
 
         expect(await screen.findByText(/not a draft/iu)).toBeInTheDocument();
         expect(toastMessages('error')).toContainEqual(NO_LONGER_DRAFT_MESSAGE);
-        expect(mockNavigate).not.toHaveBeenCalledWith(expect.objectContaining({ to: '/rp-connect/test-pipeline' }));
+        expect(visitedPaths).not.toContain('/rp-connect/test-pipeline');
       });
 
       it('does not blame drafts for a failed precondition on a pipeline that is not one', async () => {
@@ -2010,7 +2004,7 @@ describe('pipelinePage saving and recovering work', () => {
 
         await waitFor(() => expect(pipelineRequests.startPipeline.length).toBeGreaterThan(0));
         expect(await screen.findByText(/an explicit output type must be specified/u)).toBeInTheDocument();
-        expect(mockNavigate).not.toHaveBeenCalledWith(expect.objectContaining({ to: '/rp-connect/test-pipeline' }));
+        expect(visitedPaths).not.toContain('/rp-connect/test-pipeline');
       });
     });
   });
@@ -2058,15 +2052,16 @@ describe('pipelinePage saving and recovering work', () => {
         );
       });
 
-      it('returns to the YAML lane once the edits are saved', async () => {
+      it('returns to the YAML lane when the saved pipeline remains a draft', async () => {
+        enableFeatures('enableRpcnPipelineDrafts');
         const { user } = await renderPipelinePage('edit', {
-          getPipelineHandler: () =>
-            create(ConsoleGetPipelineResponseSchema, {
-              response: create(GetPipelineResponseSchema, {
+          getPipelineHandler: () => pipelineResponse({ state: Pipeline_State.DRAFT }),
+          updatePipelineHandler: (request) =>
+            create(ConsoleUpdatePipelineResponseSchema, {
+              response: create(UpdatePipelineResponseSchema, {
                 pipeline: create(PipelineSchema, {
                   id: 'test-pipeline',
-                  displayName: 'Test Pipeline',
-                  configYaml: DEPLOYED_YAML,
+                  configYaml: request.request?.pipeline?.configYaml,
                   state: Pipeline_State.DRAFT,
                 }),
               }),
@@ -2267,14 +2262,15 @@ describe('pipelinePage saving and recovering work', () => {
       });
 
       await replaceLoadedConfig('input:\n  half_typed', 'input:\n  kafka_');
-      expect(lastShouldBlockFn()()).toBe(true);
+      await keepEditingAfterBlockedNavigation(user);
 
       await user.click(await screen.findByTestId('delete-draft'));
       expect(await screen.findByText(/unsaved changes go with it/iu)).toBeInTheDocument();
       await user.click(screen.getByTestId('confirm-delete-draft'));
 
       await waitFor(() => expect(pipelineRequests.deletePipeline.length).toBeGreaterThan(0));
-      await waitFor(() => expect(lastShouldBlockFn()()).toBe(false));
+      await expectDestination(EXIT_PATH);
+      expect(screen.queryByText('Leave without saving your changes?')).not.toBeInTheDocument();
     });
   });
 
@@ -2285,112 +2281,67 @@ describe('pipelinePage saving and recovering work', () => {
       enableFeatures('enableRpcnPipelineDrafts');
     });
 
-    const blocked = () => {
-      const proceed = rs.fn();
-      const reset = rs.fn();
-      mockBlocker.mockReturnValue({ status: 'blocked', proceed, reset });
-      return { proceed, reset };
-    };
+    const pendingYaml = 'input:\n  half_typed';
 
-    it('offers a draft as the way out, and resumes the interrupted navigation', async () => {
-      const user = userEvent.setup();
-      const { proceed } = blocked();
-      const createPipelineHandler = () =>
-        create(ConsoleCreatePipelineResponseSchema, {
-          response: create(CreatePipelineResponseSchema, {
-            pipeline: create(PipelineSchema, { id: 'new-pipeline', state: Pipeline_State.DRAFT }),
-          }),
-        });
+    it('saves a draft and resumes only the interrupted navigation', async () => {
+      const { user } = await renderPipelineFromWizard({
+        createPipelineHandler: () => createdPipelineResponse('new-pipeline'),
+      });
+      await replaceLoadedConfig(pendingYaml);
+      await attemptLeave(user);
+      expect(visitedPaths).toEqual([]);
 
-      await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler }) });
+      await user.click(screen.getByTestId('save-draft-and-leave'));
 
-      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  half_typed' } });
-      await user.click(await screen.findByTestId('save-draft-and-leave'));
-
-      await waitFor(() => expect(pipelineRequests.createPipeline.length).toBeGreaterThan(0));
+      await expectDestination(EXIT_PATH);
       expect(pipelineRequests.createPipeline[0]?.request?.pipeline?.draft).toBe(true);
-      // WARNING: Let the blocker resume its own navigation; another navigation can briefly show an unrelated route.
-      await waitFor(() => expect(proceed).toHaveBeenCalled());
-      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(visitedPaths).toEqual([EXIT_PATH]);
     });
 
-    it('stays put when the draft it offered to save fails', async () => {
-      const user = userEvent.setup();
-      const { proceed } = blocked();
-      const createPipelineHandler = () => {
-        throw new ConnectError('pipeline quota exceeded', Code.ResourceExhausted);
-      };
-
-      await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler }) });
-
-      fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  half_typed' } });
-      await user.click(await screen.findByTestId('save-draft-and-leave'));
-
-      await waitFor(() => expect(pipelineRequests.createPipeline.length).toBeGreaterThan(0));
-      expect(proceed).not.toHaveBeenCalled();
-      expect(screen.getByTestId('save-draft-and-leave')).toBeInTheDocument();
-      expect(mockNavigate).not.toHaveBeenCalled();
-    });
-
-    it('falls back to keeping the edits in this browser when the draft cannot be saved', async () => {
-      const { proceed } = blocked();
-      const createPipelineHandler = () => {
-        throw new ConnectError('pipeline quota exceeded', Code.ResourceExhausted);
-      };
-      const { user } = await renderPipelineFromWizard({ createPipelineHandler });
-
-      await replaceLoadedConfig('input:\n  half_typed');
-      await user.click(await screen.findByTestId('save-draft-and-leave'));
+    it('stays in the editor after a failed draft save and can then leave with local recovery', async () => {
+      const { user } = await renderPipelineFromWizard({
+        createPipelineHandler: () => {
+          throw new ConnectError('pipeline quota exceeded', Code.ResourceExhausted);
+        },
+      });
+      await replaceLoadedConfig(pendingYaml);
+      await attemptLeave(user);
+      await user.click(screen.getByTestId('save-draft-and-leave'));
 
       const leaveForNow = await screen.findByTestId('leave-and-keep-edits');
-      expect(screen.getByTestId('save-draft-and-leave')).toBeInTheDocument();
+      expect(visitedPaths).toEqual([]);
+      expect(screen.getByTestId('save-draft-and-leave')).toBeEnabled();
 
       await user.click(leaveForNow);
-
-      expect(autosaveEntry('create')?.configYaml).toBe('input:\n  half_typed');
-      expect(proceed).toHaveBeenCalled();
+      await expectDestination(EXIT_PATH);
+      expect(autosaveEntry('create')?.configYaml).toBe(pendingYaml);
     });
 
-    it('offers no draft on a running pipeline, and says why', async () => {
-      blocked();
-
-      await mountPipelinePage('edit', { transport: createTransport() });
-
-      expect(await screen.findByText(/restarts the pipeline/iu)).toBeInTheDocument();
-      expect(screen.queryByTestId('save-draft-and-leave')).not.toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /keep editing/iu })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /discard changes/iu })).toBeInTheDocument();
-    });
-
-    it('lets a deployed pipeline be left with the edits kept in this browser', async () => {
-      const { proceed } = blocked();
+    it('offers local recovery instead of a draft on a running pipeline', async () => {
       const { user } = await renderPipelinePage('edit');
+      await replaceLoadedConfig(pendingYaml);
+      await attemptLeave(user);
 
-      await replaceLoadedConfig('input:\n  half_typed');
+      expect(screen.getByText(/restarts the pipeline/iu)).toBeInTheDocument();
+      expect(screen.queryByTestId('save-draft-and-leave')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Keep editing' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Discard changes' })).toBeInTheDocument();
 
-      await user.click(await screen.findByTestId('leave-and-keep-edits'));
-
-      // WARNING: Keeping edits must flush the pending draft write before unmount cancels the debounce.
-      const buffer = useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === 'test-pipeline');
-      expect(buffer?.configYaml).toBe('input:\n  half_typed');
-      expect(proceed).toHaveBeenCalled();
+      await user.click(screen.getByTestId('leave-and-keep-edits'));
+      await expectDestination(EXIT_PATH);
+      expect(autosaveEntry('test-pipeline')?.configYaml).toBe(pendingYaml);
     });
 
     it('drops the recovery buffer when the changes are discarded on purpose', async () => {
-      const { proceed } = blocked();
-
       const { user } = await renderPipelineFromWizard();
 
-      await replaceLoadedConfig('input:\n  half_typed');
-      await waitFor(
-        () => expect(useRpcnEditorAutosaveStore.getState().entries.some((e) => e.targetKey === 'create')).toBe(true),
-        { timeout: 4000 }
-      );
+      await replaceLoadedConfig(pendingYaml);
+      await waitFor(() => expect(autosaveEntry('create')?.configYaml).toBe(pendingYaml), { timeout: 4000 });
+      await attemptLeave(user);
 
-      await user.click(await screen.findByTestId('discard-and-leave'));
-
-      expect(useRpcnEditorAutosaveStore.getState().entries.some((e) => e.targetKey === 'create')).toBe(false);
-      expect(proceed).toHaveBeenCalled();
+      await user.click(screen.getByTestId('discard-and-leave'));
+      await expectDestination(EXIT_PATH);
+      expect(autosaveEntry('create')).toBeUndefined();
     });
 
     it('re-arms the guard when the page returns to editing after a save', async () => {
@@ -2399,14 +2350,13 @@ describe('pipelinePage saving and recovering work', () => {
       });
       await replaceLoadedConfig('input:\n  edited: {}');
       await user.click(await screen.findByTestId('save-pipeline'));
-      await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
+      await expectDestination('/rp-connect/test-pipeline');
 
-      await openPipelineMode(router, 'view');
       await openPipelineMode(router, 'edit');
-      await screen.findByTestId('yaml-editor');
+      await replaceLoadedConfig('input:\n  edited_again: {}', 'input:\n  edited: {}');
 
-      typeConfig('input:\n  edited_again: {}');
-      await waitFor(() => expect(lastShouldBlockFn()()).toBe(true));
+      await keepEditingAfterBlockedNavigation(user);
+      expect(router.state.location.pathname).toBe('/rp-connect/test-pipeline/edit');
     });
   });
 
@@ -2604,7 +2554,7 @@ describe('pipelinePage saving and recovering work', () => {
         await user.click(await screen.findByTestId('restore-autosave'));
 
         expect(await screen.findByText('Unsaved changes', { selector: '[role="status"]' })).toBeInTheDocument();
-        expect(lastShouldBlockFn()()).toBe(true);
+        await keepEditingAfterBlockedNavigation(user);
       });
 
       it('restores the version it offered, even after autosave has moved on', async () => {
@@ -2718,29 +2668,7 @@ describe('pipelinePage saving and recovering work', () => {
       expect(pipelineRequests.startPipeline[0]?.request?.id).toBe('test-pipeline');
     });
 
-    it('routes a refused start into the editor, where the issues are', async () => {
-      const user = userEvent.setup();
-      const startPipelineHandler = () => {
-        throw new ConnectError('invalid pipeline configuration', Code.InvalidArgument, undefined, [
-          {
-            desc: LintHintSchema,
-            value: create(LintHintSchema, { line: 2, column: 1, hint: 'an explicit output type must be specified' }),
-          },
-        ]);
-      };
-
-      await mountPipelinePage('view', { transport: draftTransport({ startPipelineHandler }) });
-
-      await confirmStart(user);
-
-      await waitFor(() =>
-        expect(mockNavigate).toHaveBeenCalledWith(
-          expect.objectContaining({ to: '/rp-connect/$pipelineId/edit', params: { pipelineId: 'test-pipeline' } })
-        )
-      );
-    });
-
-    it("hands the refused start's hints to the editor it opens", async () => {
+    it('opens the editor on a refused start and shows the backend hint after hydration', async () => {
       const user = userEvent.setup();
       const startPipelineHandler = () => {
         throw new ConnectError('invalid pipeline configuration', Code.InvalidArgument, undefined, [
@@ -2750,14 +2678,10 @@ describe('pipelinePage saving and recovering work', () => {
           },
         ]);
       };
-      const { unmount } = await mountPipelinePage('view', { transport: draftTransport({ startPipelineHandler }) });
+      await mountPipelinePage('view', { transport: draftTransport({ startPipelineHandler }) });
       await confirmStart(user);
-      await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
-      unmount();
 
-      // WARNING: Seed hints after editor hydration; hydration clears earlier hints.
-      await mountPipelinePage('edit', { transport: draftTransport() });
-
+      await expectDestination('/rp-connect/test-pipeline/edit');
       expect(await screen.findByText(/secret NOT_YET_CREATED does not exist/u)).toBeInTheDocument();
     });
 
