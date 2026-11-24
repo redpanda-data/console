@@ -9,355 +9,208 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
-import { ConnectError, createRouterTransport } from '@connectrpc/connect';
-import { beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { afterAll, afterEach, beforeAll, describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { CreateTopicResponseSchema } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { config, createAuthInjectingFetch } from 'config';
+import { HttpResponse, http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
+import { getKafkaInfo } from 'protogen/redpanda/api/console/v1alpha1/cluster_status-ClusterStatusService_connectquery';
+import type { CreateTopicRequest } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
 import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
-import type { ComponentProps } from 'react';
-import { useRef } from 'react';
-import { render, screen, waitFor } from 'test-utils';
+import { type ComponentProps, useRef } from 'react';
+import { useApiStore } from 'state/backend-api';
+import type { GetTopicsResponse } from 'state/rest-interfaces';
+import { cleanup, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { AddTopicStep } from './add-topic-step';
-import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
+import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../types/wizard';
 
-const mockFetch = rs.fn();
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
-  return {
-    ...actual,
-    config: {
-      ...actual.config,
-      jwt: 'test-jwt',
-      restBasePath: '/api',
-      fetch: (...args: unknown[]) => mockFetch(...args),
+const TOPIC = 'my-topic';
+const NEW_TOPIC = 'new-topic';
+const TOPIC_NAME_INPUT = 'Enter a topic name';
+const ALREADY_EXISTS = /already exists/u;
+const topicsUrl = new URL(`${config.restBasePath}/topics`, window.location.href).href;
+
+const guardedFetch = globalThis.fetch;
+const originalRestFetch = config.fetch;
+const initialApiState = useApiStore.getState();
+const server = setupServer(
+  ...[TOPIC, NEW_TOPIC].map((topic) =>
+    http.get(`${topicsUrl}/${topic}/configuration`, () =>
+      HttpResponse.json({ topicDescription: { configEntries: [] } })
+    )
+  )
+);
+
+beforeAll(() => {
+  server.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in the topic step');
     },
-  };
+  });
+  config.fetch = createAuthInjectingFetch(globalThis.fetch);
 });
 
-rs.mock('state/backend-api', () => ({
-  api: {
-    refreshTopics: rs.fn(() => Promise.resolve()),
-    refreshTopicConfig: rs.fn(() => Promise.resolve()),
-    topicConfig: new Map(),
-  },
-}));
+afterEach(() => {
+  cleanup();
+  server.resetHandlers();
+  useApiStore.setState(initialApiState, true);
+});
 
-function MockAdvancedTopicSettings() {
-  return <div data-testid="advanced-topic-settings" />;
-}
+afterAll(() => {
+  config.fetch = originalRestFetch;
+  server.close();
+});
 
-rs.mock('./advanced-topic-settings', () => ({
-  AdvancedTopicSettings: MockAdvancedTopicSettings,
-}));
-
-Element.prototype.scrollIntoView = rs.fn();
-
-/** REST response for useLegacyListTopicsQuery */
-function createTopicsResponse(topicNames: string[]) {
+function topicResponse(names: string[]) {
   return {
-    topics: topicNames.map((name) => ({
-      topicName: name,
+    topics: names.map((topicName) => ({
+      topicName,
       isInternal: false,
       partitionCount: 1,
       replicationFactor: 3,
       cleanupPolicy: 'delete',
-      documentation: 'UNKNOWN' as const,
-      logDirSummary: { totalSizeBytes: 0, partitionCount: 0, replicaErrors: [] },
+      documentation: 'UNKNOWN',
+      logDirSummary: { totalSizeBytes: 0, hint: null, replicaErrors: [] },
       allowedActions: undefined,
     })),
-  };
+  } satisfies GetTopicsResponse;
 }
 
-function createTransport(overrides?: { createTopicMock?: ReturnType<typeof rs.fn> }) {
-  return createRouterTransport(({ rpc }) => {
-    rpc(
-      createTopic,
-      overrides?.createTopicMock ??
-        rs.fn().mockReturnValue(
-          create(CreateTopicResponseSchema, {
-            topicName: 'new-topic',
-            partitionCount: 1,
-            replicationFactor: 3,
-          })
-        )
-    );
-  });
-}
+type TopicResult = StepSubmissionResult<AddTopicFormData>;
+type StepMode = ComponentProps<typeof AddTopicStep>['selectionMode'];
 
-type HarnessProps = {
-  onResult: (r: unknown) => void;
-} & Partial<ComponentProps<typeof AddTopicStep>>;
-
-function TestHarness({ onResult, ...props }: HarnessProps) {
-  const ref = useRef<BaseStepRef<AddTopicFormData>>(null);
+function TopicStepHarness({
+  selectionMode,
+  onResult,
+}: {
+  selectionMode: StepMode;
+  onResult: (result: TopicResult) => void;
+}) {
+  const step = useRef<BaseStepRef<AddTopicFormData>>(null);
   return (
     <>
-      <AddTopicStep hideTitle ref={ref} selectionMode="new" {...props} />
-      <button data-testid="submit" onClick={async () => onResult(await ref.current!.triggerSubmit())} type="button">
+      <AddTopicStep hideTitle ref={step} selectionMode={selectionMode} />
+      <button
+        onClick={async () => {
+          if (step.current) {
+            onResult(await step.current.triggerSubmit());
+          }
+        }}
+        type="button"
+      >
         Submit
       </button>
     </>
   );
 }
 
-async function selectComboboxOption(user: ReturnType<typeof userEvent.setup>, placeholder: string, optionName: string) {
-  const comboboxInput = await screen.findByPlaceholderText(placeholder);
-  await user.click(comboboxInput);
-  await user.type(comboboxInput, optionName);
-
-  const option = await screen.findByRole('option', { name: optionName });
-  await user.click(option);
+function renderTopicStep({
+  selectionMode = 'new',
+  topics = [],
+  error,
+}: {
+  selectionMode?: StepMode;
+  topics?: string[];
+  error?: ConnectError;
+} = {}) {
+  const requests: CreateTopicRequest[] = [];
+  const results: TopicResult[] = [];
+  let names = topics;
+  server.use(http.get(topicsUrl, () => HttpResponse.json(topicResponse(names))));
+  const transport = createRouterTransport(({ rpc }) => {
+    rpc(getKafkaInfo, () => ({ brokersOnline: 3 }));
+    rpc(createTopic, (request) => {
+      requests.push(request);
+      if (error) {
+        throw error;
+      }
+      if (!request.topic) {
+        throw new ConnectError('missing topic', Code.InvalidArgument);
+      }
+      const { name, partitionCount, replicationFactor } = request.topic;
+      names = [...names, name];
+      return { topicName: name, partitionCount, replicationFactor };
+    });
+  });
+  renderWithFileRoutes(<TopicStepHarness onResult={(result) => results.push(result)} selectionMode={selectionMode} />, {
+    transport,
+  });
+  return { requests, results, user: userEvent.setup() };
 }
 
-describe('the AddTopicStep', () => {
-  beforeEach(() => {
-    mockFetch.mockReset();
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createTopicsResponse([])),
-    });
+type User = ReturnType<typeof userEvent.setup>;
+
+async function selectTopic(user: User) {
+  const input = await screen.findByPlaceholderText('Select a topic');
+  await user.click(input);
+  await user.type(input, TOPIC);
+  await user.click(await screen.findByRole('option', { name: TOPIC }));
+}
+
+const submit = (user: User) => user.click(screen.getByRole('button', { name: 'Submit' }));
+
+describe('the pipeline topic step', () => {
+  test.each(['existing', 'both'] as const)(
+    'uses the selected topic without sending a create request in %s mode',
+    async (selectionMode) => {
+      const { user, requests, results } = renderTopicStep({ selectionMode, topics: [TOPIC, 'other-topic'] });
+      await selectTopic(user);
+      await submit(user);
+
+      await waitFor(() => expect(results).toMatchObject([{ success: true, data: { topicName: TOPIC } }]));
+      expect(requests).toHaveLength(0);
+    }
+  );
+
+  test('creates a topic in new-only mode and returns the topic name', async () => {
+    const { user, requests, results } = renderTopicStep();
+    expect(screen.queryByRole('button', { name: 'Existing' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'New' })).not.toBeInTheDocument();
+
+    await user.type(await screen.findByPlaceholderText(TOPIC_NAME_INPUT), NEW_TOPIC);
+    await submit(user);
+
+    await waitFor(() => expect(results).toMatchObject([{ success: true, message: `Topic "${NEW_TOPIC}" created` }]));
+    expect(requests).toMatchObject([{ topic: { name: NEW_TOPIC, partitionCount: 1, replicationFactor: 3 } }]);
   });
 
-  describe('submitting the step', () => {
-    it('existing topic returns name via triggerSubmit', async () => {
-      const user = userEvent.setup();
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(createTopicsResponse(['my-topic', 'other-topic'])),
-      });
+  test.each(['', 'bad topic name'])('rejects an invalid name %j before sending a create request', async (name) => {
+    const { user, requests, results } = renderTopicStep();
+    if (name) {
+      await user.type(await screen.findByPlaceholderText(TOPIC_NAME_INPUT), name);
+    }
+    await submit(user);
 
-      let result: unknown;
-      const transport = createTransport();
-
-      render(
-        <TestHarness
-          onResult={(r) => {
-            result = r;
-          }}
-          selectionMode="both"
-        />,
-        { transport }
-      );
-
-      await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalled();
-      });
-
-      await selectComboboxOption(user, 'Select a topic', 'my-topic');
-
-      const submitBtn = screen.getByTestId('submit');
-      await user.click(submitBtn);
-
-      await waitFor(() => {
-        expect(result).toEqual(
-          expect.objectContaining({
-            success: true,
-            data: expect.objectContaining({ topicName: 'my-topic' }),
-          })
-        );
-      });
-    });
-
-    it('new topic calls createTopic RPC', async () => {
-      const user = userEvent.setup();
-      const createTopicMock = rs.fn().mockReturnValue(
-        create(CreateTopicResponseSchema, {
-          topicName: 'new-topic',
-          partitionCount: 1,
-          replicationFactor: 3,
-        })
-      );
-      const transport = createTransport({ createTopicMock });
-
-      render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
-
-      const input = screen.getByPlaceholderText('Enter a topic name');
-      await user.type(input, 'new-topic');
-
-      const submitBtn = screen.getByTestId('submit');
-      await user.click(submitBtn);
-
-      await waitFor(() => {
-        expect(createTopicMock).toHaveBeenCalled();
-      });
-    });
-
-    it('new topic returns success result', async () => {
-      const user = userEvent.setup();
-      const transport = createTransport();
-
-      let result: unknown;
-      render(
-        <TestHarness
-          onResult={(r) => {
-            result = r;
-          }}
-          selectionMode="new"
-        />,
-        { transport }
-      );
-
-      const input = screen.getByPlaceholderText('Enter a topic name');
-      await user.type(input, 'new-topic');
-
-      const submitBtn = screen.getByTestId('submit');
-      await user.click(submitBtn);
-
-      await waitFor(() => {
-        expect(result).toEqual(
-          expect.objectContaining({
-            success: true,
-            message: expect.stringMatching(/Topic ".*" created/u),
-          })
-        );
-      });
-    });
-
-    it('empty topic name rejected', async () => {
-      const user = userEvent.setup();
-      const transport = createTransport();
-
-      let result: unknown;
-      render(
-        <TestHarness
-          onResult={(r) => {
-            result = r;
-          }}
-          selectionMode="new"
-        />,
-        { transport }
-      );
-
-      const submitBtn = screen.getByTestId('submit');
-      await user.click(submitBtn);
-
-      await waitFor(() => {
-        expect(result).toEqual(expect.objectContaining({ success: false }));
-      });
-    });
-
-    it('invalid characters rejected', async () => {
-      const user = userEvent.setup();
-      const transport = createTransport();
-
-      let result: unknown;
-      render(
-        <TestHarness
-          onResult={(r) => {
-            result = r;
-          }}
-          selectionMode="new"
-        />,
-        { transport }
-      );
-
-      const input = screen.getByPlaceholderText('Enter a topic name');
-      await user.type(input, 'bad topic name');
-
-      const submitBtn = screen.getByTestId('submit');
-      await user.click(submitBtn);
-
-      await waitFor(() => {
-        expect(result).toEqual(expect.objectContaining({ success: false }));
-      });
-    });
-
-    it('createTopic error returns failure result', async () => {
-      const user = userEvent.setup();
-      const createTopicMock = rs.fn().mockRejectedValue(new ConnectError('topic creation failed', 13));
-      const transport = createTransport({ createTopicMock });
-
-      let result: unknown;
-      render(
-        <TestHarness
-          onResult={(r) => {
-            result = r;
-          }}
-          selectionMode="new"
-        />,
-        { transport }
-      );
-
-      const input = screen.getByPlaceholderText('Enter a topic name');
-      await user.type(input, 'valid-topic');
-
-      const submitBtn = screen.getByTestId('submit');
-      await user.click(submitBtn);
-
-      await waitFor(() => {
-        expect(result).toEqual(
-          expect.objectContaining({
-            success: false,
-            message: 'Failed to save topic configuration',
-          })
-        );
-      });
-    });
+    await waitFor(() => expect(results).toMatchObject([{ success: false }]));
+    expect(requests).toHaveLength(0);
   });
 
-  describe('topic selection modes', () => {
-    it('selectionMode=new hides existing/new toggle', () => {
-      const transport = createTransport();
-
-      render(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
-
-      expect(screen.queryByRole('button', { name: 'Existing' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'New' })).not.toBeInTheDocument();
+  test('returns a failure only after a create request is rejected', async () => {
+    const { user, requests, results } = renderTopicStep({
+      error: new ConnectError('topic creation failed', Code.Internal),
     });
+    await user.type(await screen.findByPlaceholderText(TOPIC_NAME_INPUT), NEW_TOPIC);
+    await submit(user);
 
-    it('selectionMode=existing shows combobox', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(createTopicsResponse(['topic-a'])),
-      });
-      const transport = createTransport();
+    await waitFor(() =>
+      expect(results).toMatchObject([{ success: false, message: 'Failed to save topic configuration' }])
+    );
+    expect(requests).toMatchObject([{ topic: { name: NEW_TOPIC } }]);
+  });
 
-      render(<TestHarness onResult={() => {}} selectionMode="existing" />, { transport });
+  test('warns in create mode when the typed name belongs to an existing topic', async () => {
+    const { user, requests } = renderTopicStep({ selectionMode: 'both', topics: [TOPIC] });
+    expect(await screen.findByRole('button', { name: 'Existing' })).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'New' }));
+    await user.type(await screen.findByPlaceholderText(TOPIC_NAME_INPUT), TOPIC);
 
-      const combobox = await screen.findByPlaceholderText('Select a topic');
-      expect(combobox).toBeInTheDocument();
-    });
-
-    it('existing topic alert shown in create mode when name matches', async () => {
-      const user = userEvent.setup();
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(createTopicsResponse(['existing-topic'])),
-      });
-      const transport = createTransport();
-
-      render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
-
-      await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalled();
-      });
-
-      const newButton = await screen.findByRole('button', { name: 'New' });
-      await user.click(newButton);
-
-      const input = screen.getByPlaceholderText('Enter a topic name');
-      await user.type(input, 'existing-topic');
-
-      await waitFor(() => {
-        expect(screen.getByText(/already exists/u)).toBeInTheDocument();
-      });
-    });
-
-    it('selectionMode=both renders toggle group', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(createTopicsResponse(['t1'])),
-      });
-      const transport = createTransport();
-
-      render(<TestHarness onResult={() => {}} selectionMode="both" />, { transport });
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'Existing' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'New' })).toBeInTheDocument();
-      });
-    });
+    expect(await screen.findByText(ALREADY_EXISTS)).toBeVisible();
+    expect(requests).toHaveLength(0);
   });
 });
