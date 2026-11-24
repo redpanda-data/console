@@ -9,334 +9,280 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, onTestFinished, rs, test } from '@rstest/core';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
+import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { createQueryOptions } from '@connectrpc/connect-query';
+import { afterAll, afterEach, beforeAll, describe, expect, onTestFinished, test } from '@rstest/core';
+import { act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { config, createAuthInjectingFetch } from 'config';
+import { HttpResponse, http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
-import type { ReactNode } from 'react';
+import { getRedpandaInfo } from 'protogen/redpanda/api/console/v1alpha1/cluster_status-ClusterStatusService_connectquery';
+import {
+  ACL_Operation,
+  ACL_PermissionType,
+  ACL_ResourcePatternType,
+  ACL_ResourceType,
+  type DeleteACLsRequest,
+  ListACLsRequestSchema,
+} from 'protogen/redpanda/api/dataplane/v1/acl_pb';
+import { deleteACLs, listACLs } from 'protogen/redpanda/api/dataplane/v1/acl-ACLService_connectquery';
+import type { DeleteUserRequest } from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import { deleteUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
+import { useApiStore } from 'state/backend-api';
+import { cleanup, renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 import { PermissionsListTab } from './permissions-list-tab';
 
-/**
- * Tests for the Permissions List tab delete dropdown behavior.
- *
- * Verifies:
- * - Group principals only see "Delete (ACLs only)" — no user-delete options
- * - Non-service-account User principals should NOT have "Delete User" enabled
- *   (they're ACL-only principals, not SASL-SCRAM accounts)
- */
+const SCRAM_USER = 'scram-admin';
+const ACL_ONLY_USER = 'acl-only-user';
+const GROUP = 'engineering';
+const GROUP_NAME = /engineering/iu;
+const USER_DELETE_OPTION = 'Delete (User only)';
+const USER_AND_ACLS_DELETE_OPTION = 'Delete (User and ACLs)';
+const ACLS_DELETE_OPTION = 'Delete (ACLs only)';
+const ACLS_UNAVAILABLE = /ACLs unavailable/iu;
+const ACL_DELETE_DENIED = /acl delete denied/iu;
+const USER_DELETE_DENIED = /user is still referenced/iu;
+const ACLS_DELETE_TITLE = `Delete ACLs for ${GROUP}`;
 
-const { deleteAclMock, deleteUserMock } = rs.hoisted(() => ({ deleteAclMock: rs.fn(), deleteUserMock: rs.fn() }));
-const { aclsQuery } = rs.hoisted(() => ({ aclsQuery: { failed: false } }));
+type AclsReply = MessageInitShape<typeof listACLs.output>;
+type DeleteAclsReply = MessageInitShape<typeof deleteACLs.output>;
+type DeleteUserReply = MessageInitShape<typeof deleteUser.output>;
 
-const NuqsWrapper = ({ children }: { children: ReactNode }) => <NuqsTestingAdapter>{children}</NuqsTestingAdapter>;
-
-rs.mock('@tanstack/react-router', () => {
-  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
-  return {
-    ...actual,
-    Link: MockLink,
-    useNavigate: () => rs.fn(() => Promise.resolve()),
-  };
-});
-
-rs.mock('../shared/security-tabs-nav', () => ({
-  SecurityTabsNav: MockSecurityTabsNav,
-}));
-
-rs.mock('../shared/delete-user-confirm-modal', () => ({
-  DeleteUserConfirmModal: MockDeleteUserConfirmModal,
-}));
-
-rs.mock('../../../../components/misc/error-result', () => ({
-  default: () => null,
-}));
-
-rs.mock('../../../../state/app-global', () => ({
-  appGlobal: { historyPush: rs.fn(), onRefresh: null },
-}));
-
-rs.mock('../../../../state/backend-api', () => {
-  const store = {
-    ACLs: { isAuthorizerEnabled: true },
-    userData: { canCreateRoles: true, canListAcls: true, canManageUsers: true, canViewPermissionsList: true },
-    enterpriseFeaturesUsed: [] as { name: string; enabled: boolean }[],
-    isAdminApiConfigured: true,
-  };
-  return {
-    api: {
-      ...store,
-      refreshAcls: rs.fn().mockResolvedValue(undefined),
-      refreshClusterOverview: rs.fn().mockResolvedValue(undefined),
-      refreshUserData: rs.fn().mockResolvedValue(undefined),
+const aclList = {
+  resources: [
+    {
+      resourceType: ACL_ResourceType.TOPIC,
+      resourceName: 'orders',
+      resourcePatternType: ACL_ResourcePatternType.LITERAL,
+      acls: [`Group:${GROUP}`, `User:${ACL_ONLY_USER}`].map((principal) => ({
+        principal,
+        host: '*',
+        operation: ACL_Operation.READ,
+        permissionType: ACL_PermissionType.ALLOW,
+      })),
     },
-    AclRequestDefault: {},
-    useApiStoreHook: <T,>(selector: (s: typeof store) => T) => selector(store),
-    rolesApi: {
-      refreshRoleMembers: rs.fn().mockResolvedValue(undefined),
-      refreshRoles: rs.fn().mockResolvedValue(undefined),
-      roleMembers: new Map(),
-      roles: [],
-      rolesError: null,
+  ],
+} satisfies AclsReply;
+
+const oldAcls = useApiStore.getState().ACLs;
+const guardedFetch = globalThis.fetch;
+const originalRestFetch = config.fetch;
+const legacyAclsUrl = new URL(`${config.restBasePath}/acls`, window.location.href).href;
+const server = setupServer(
+  http.get(legacyAclsUrl, () => HttpResponse.json({ isAuthorizerEnabled: true, aclResources: [] }))
+);
+
+beforeAll(() => {
+  server.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in Permissions');
     },
-  };
+  });
+  config.fetch = createAuthInjectingFetch(globalThis.fetch);
 });
 
-rs.mock('../../../../state/supported-features', () => {
-  const actual = rs.requireActual<typeof import('../../../../state/supported-features')>(
-    '../../../../state/supported-features'
-  );
-  return {
-    ...actual,
-    Features: { ...actual.Features, createUser: true, deleteUser: true, rolesApi: true },
-    useSupportedFeaturesStore: <T,>(selector: (s: Record<string, boolean>) => T) =>
-      selector({ createUser: true, deleteUser: true, rolesApi: true, schemaRegistryACLApi: false }),
-  };
+afterEach(() => {
+  cleanup();
+  server.resetHandlers();
+  useApiStore.setState({ ACLs: oldAcls });
 });
 
-rs.mock('../../../../state/rest-interfaces', () => ({
-  AclRequestDefault: {},
-}));
-
-rs.mock('../../../../config', () => {
-  const actual = rs.requireActual<typeof import('../../../../config')>('../../../../config');
-  return {
-    ...actual,
-    isFeatureFlagEnabled: (flag: string) =>
-      flag === 'enableNewSecurityPage' ? true : actual.isFeatureFlagEnabled(flag),
-  };
+afterAll(() => {
+  config.fetch = originalRestFetch;
+  server.close();
 });
 
-rs.mock('../../../../react-query/api/acl', () => ({
-  useCreateACLMutation: () => ({ mutateAsync: rs.fn() }),
-  useDeleteAclMutation: () => ({ mutateAsync: deleteAclMock }),
-}));
+type PermissionsReplies = {
+  list?: () => AclsReply;
+  removeAcls?: () => DeleteAclsReply | Promise<DeleteAclsReply>;
+  removeUser?: () => DeleteUserReply | Promise<DeleteUserReply>;
+};
 
-rs.mock('../../../../react-query/api/user', () => ({
-  useInvalidateUsersCache: () => rs.fn(),
-  useDeleteUserMutation: () => ({ mutateAsync: deleteUserMock }),
-  useListUsersQuery: () => ({ data: { users: [] }, isLoading: false }),
-}));
-
-rs.mock('../hooks/use-principal-permissions', () => ({
-  usePrincipalPermissions: () => ({
-    principalGroups: [
-      {
-        principal: 'User:scram-admin',
-        principalType: 'User',
-        principalName: 'scram-admin',
-        isScramUser: true,
-        directAcls: [],
-        roleAclGroups: [],
-        directAclCount: 0,
-        inheritedAclCount: 0,
-        denyCount: 0,
-      },
-      {
-        principal: 'User:acl-only-user',
-        principalType: 'User',
-        principalName: 'acl-only-user',
-        isScramUser: false,
-        directAcls: [],
-        roleAclGroups: [],
-        directAclCount: 0,
-        inheritedAclCount: 0,
-        denyCount: 0,
-      },
-      {
-        principal: 'Group:engineering',
-        principalType: 'Group',
-        principalName: 'engineering',
-        isScramUser: false,
-        directAcls: [],
-        roleAclGroups: [],
-        directAclCount: 0,
-        inheritedAclCount: 0,
-        denyCount: 0,
-      },
-    ],
-    isAclsLoading: false,
-    isAclsError: aclsQuery.failed,
-    aclsError: aclsQuery.failed ? new Error('ACLs unavailable') : null,
-    isUsersError: false,
-    usersError: null,
-  }),
-}));
-
-rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
-  useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
-}));
-
-describe('the Permissions List - delete dropdown for different principal types', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    deleteAclMock.mockResolvedValue(undefined);
-    deleteUserMock.mockResolvedValue(undefined);
-  });
-
-  test('group principal does not show "Delete User" options in dropdown', async () => {
-    const user = userEvent.setup();
-
-    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
-
-    const groupRow = await screen.findByTestId('row-engineering');
-    const actionsDiv = within(groupRow).getByTestId('actions-engineering');
-    await user.click(within(actionsDiv).getByRole('button'));
-
-    expect(screen.queryByText('Delete (User and ACLs)')).not.toBeInTheDocument();
-    expect(screen.queryByText('Delete (User only)')).not.toBeInTheDocument();
-    expect(screen.getByText('Delete (ACLs only)')).toBeInTheDocument();
-  });
-
-  test('the SCRAM user principal has "Delete User" options enabled', async () => {
-    const user = userEvent.setup();
-
-    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
-
-    const scramRow = await screen.findByTestId('row-scram-admin');
-    const actionsDiv = within(scramRow).getByTestId('actions-scram-admin');
-    await user.click(within(actionsDiv).getByRole('button'));
-
-    const deleteUserAndAcls = screen.getByText('Delete (User and ACLs)');
-    expect(deleteUserAndAcls).not.toHaveAttribute('data-disabled');
-
-    const deleteUserOnly = screen.getByText('Delete (User only)');
-    expect(deleteUserOnly).not.toHaveAttribute('data-disabled');
-
-    expect(screen.getByText('Delete (ACLs only)')).toBeInTheDocument();
-  });
-
-  test('group principal has "Delete (ACLs only)" available', async () => {
-    const user = userEvent.setup();
-
-    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
-
-    const groupRow = await screen.findByTestId('row-engineering');
-    const actionsDiv = within(groupRow).getByTestId('actions-engineering');
-    await user.click(within(actionsDiv).getByRole('button'));
-
-    expect(screen.getByText('Delete (ACLs only)')).toBeInTheDocument();
-  });
-
-  test('keeps expanded principals when a failed refetch recovers', async () => {
-    const user = userEvent.setup();
-    onTestFinished(() => {
-      aclsQuery.failed = false;
+function renderPermissions({
+  list = () => aclList,
+  removeAcls = () => ({}),
+  removeUser = () => ({}),
+}: PermissionsReplies = {}) {
+  const aclDeletions: DeleteACLsRequest[] = [];
+  const userDeletions: DeleteUserRequest[] = [];
+  let users = [{ name: SCRAM_USER }];
+  const transport = createRouterTransport(({ rpc }) => {
+    rpc(getRedpandaInfo, () => ({}));
+    rpc(listUsers, () => ({ users }));
+    rpc(listACLs, list);
+    rpc(deleteACLs, (request) => {
+      aclDeletions.push(request);
+      return removeAcls();
     });
-    const { rerender } = render(<PermissionsListTab />, { wrapper: NuqsWrapper });
-    await user.click(within(await screen.findByTestId('row-engineering')).getAllByRole('button')[0]);
+    rpc(deleteUser, async (request) => {
+      userDeletions.push(request);
+      const reply = await removeUser();
+      users = users.filter((user) => user.name !== request.name);
+      return reply;
+    });
+  });
+  const { router } = renderWithFileRoutes(
+    <NuqsTestingAdapter>
+      <PermissionsListTab />
+    </NuqsTestingAdapter>,
+    { initialLocation: '/security/permissions', transport }
+  );
+  return { router, transport, aclDeletions, userDeletions, user: userEvent.setup() };
+}
 
-    aclsQuery.failed = true;
-    rerender(<PermissionsListTab />);
-    aclsQuery.failed = false;
-    rerender(<PermissionsListTab />);
+type User = ReturnType<typeof userEvent.setup>;
 
-    expect(within(screen.getByTestId('row-engineering')).getAllByRole('button')[0]).toHaveAttribute(
-      'aria-expanded',
-      'true'
-    );
+function renderAclRecovery() {
+  let failed = false;
+  const { user, router, transport } = renderPermissions({
+    list: () => {
+      if (failed) {
+        throw new ConnectError('ACLs unavailable', Code.Internal);
+      }
+      return aclList;
+    },
+  });
+  const query = createQueryOptions(listACLs, create(ListACLsRequestSchema), { transport });
+  const setFailureAndRefetch = async (shouldFail: boolean) => {
+    failed = shouldFail;
+    await act(() => router.options.context.queryClient.refetchQueries({ queryKey: query.queryKey }));
+  };
+  return { user, setFailureAndRefetch };
+}
+
+const groupTrigger = async () =>
+  within(await screen.findByTestId(`row-${GROUP}`)).getByRole('button', { name: GROUP_NAME });
+
+async function openActions(user: User, name: string) {
+  const row = within(await screen.findByTestId(`row-${name}`));
+  await user.click(within(row.getByTestId(`actions-${name}`)).getByRole('button'));
+}
+
+async function confirmUserOnlyDelete(user: User) {
+  await openActions(user, SCRAM_USER);
+  await user.click(screen.getByRole('menuitem', { name: USER_DELETE_OPTION }));
+  const dialog = within(await screen.findByRole('dialog', { name: `Delete user ${SCRAM_USER}` }));
+  const confirm = dialog.getByRole('button', { name: 'Delete' });
+  expect(confirm).toBeDisabled();
+  await user.type(dialog.getByPlaceholderText(`Type "${SCRAM_USER}" to confirm`), SCRAM_USER);
+  await user.click(confirm);
+}
+
+async function openAclsOnlyDelete(user: User) {
+  await openActions(user, GROUP);
+  await user.click(screen.getByRole('menuitem', { name: ACLS_DELETE_OPTION }));
+  return within(await screen.findByRole('dialog', { name: ACLS_DELETE_TITLE })).getByRole('button', {
+    name: 'Delete ACLs',
+  });
+}
+
+const currentDeleteUserDialog = () => screen.queryByRole('dialog', { name: `Delete user ${SCRAM_USER}` });
+const currentDeleteAclsDialog = () => screen.queryByRole('dialog', { name: ACLS_DELETE_TITLE });
+
+describe('permission actions for different principals', () => {
+  test('offers ACL deletion, but no user deletion, for a group', async () => {
+    const { user } = renderPermissions();
+    await openActions(user, GROUP);
+
+    expect(screen.getByRole('menuitem', { name: ACLS_DELETE_OPTION })).toBeEnabled();
+    expect(screen.queryByRole('menuitem', { name: USER_DELETE_OPTION })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: USER_AND_ACLS_DELETE_OPTION })).not.toBeInTheDocument();
   });
 
-  test('keeps the delete-user dialog open until the user is deleted', async () => {
-    const user = userEvent.setup();
-    const deletion = Promise.withResolvers<void>();
-    deleteUserMock.mockReturnValue(deletion.promise);
-    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
+  test.each([
+    { name: SCRAM_USER, disabled: false },
+    { name: ACL_ONLY_USER, disabled: true },
+  ])('only allows user deletion when $name has a SCRAM account', async ({ name, disabled }) => {
+    const { user } = renderPermissions();
+    await openActions(user, name);
 
-    await confirmUserOnlyDelete(user, 'scram-admin');
-    expect(screen.getByTestId('delete-user-modal-scram-admin')).toBeVisible();
-
-    deletion.resolve();
-    await waitFor(() => expect(screen.queryByTestId('delete-user-modal-scram-admin')).not.toBeInTheDocument());
+    for (const option of [USER_DELETE_OPTION, USER_AND_ACLS_DELETE_OPTION]) {
+      const menuItem = screen.getByRole('menuitem', { name: option });
+      if (disabled) {
+        expect(menuItem).toHaveAttribute('aria-disabled', 'true');
+      } else {
+        expect(menuItem).not.toHaveAttribute('aria-disabled', 'true');
+      }
+    }
+    expect(screen.getByRole('menuitem', { name: ACLS_DELETE_OPTION })).toBeEnabled();
   });
 
-  test('deletes ACLs once when confirm is double-clicked, then closes the dialog', async () => {
-    const user = userEvent.setup();
-    const deletion = Promise.withResolvers<void>();
-    deleteAclMock.mockReturnValue(deletion.promise);
-    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
+  test('keeps the expanded group when a failed ACL refetch recovers', async () => {
+    const { user, setFailureAndRefetch } = renderAclRecovery();
 
-    await openAclsOnlyDelete(user, 'engineering');
-    await user.dblClick(screen.getByRole('button', { name: 'Delete ACLs' }));
-    expect(deleteAclMock).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'Delete ACLs' })).toBeDisabled();
+    await user.click(await groupTrigger());
+    await setFailureAndRefetch(true);
+    expect(await screen.findByText(ACLS_UNAVAILABLE)).toBeVisible();
 
-    deletion.resolve();
-    await waitFor(() => expect(screen.queryByText('Delete ACLs for engineering')).not.toBeInTheDocument());
-  });
-
-  test('reports a delayed ACL deletion failure once, then closes the dialog', async () => {
-    const user = userEvent.setup();
-    const deletion = Promise.withResolvers<void>();
-    deleteAclMock.mockReturnValue(deletion.promise);
-    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
-
-    await openAclsOnlyDelete(user, 'engineering');
-    await user.dblClick(screen.getByRole('button', { name: 'Delete ACLs' }));
-    deletion.reject(new Error('acl delete denied'));
-
-    expect(await screen.findByText('acl delete denied')).toBeVisible();
-    expect(deleteAclMock).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.queryByText('Delete ACLs for engineering')).not.toBeInTheDocument());
-  });
-
-  test('reports a failed user deletion and then closes the dialog', async () => {
-    const user = userEvent.setup();
-    deleteUserMock.mockRejectedValue(new Error('user is still referenced'));
-    render(<PermissionsListTab />, { wrapper: NuqsWrapper });
-
-    await confirmUserOnlyDelete(user, 'scram-admin');
-
-    expect(await screen.findByText('user is still referenced')).toBeVisible();
-    await waitFor(() => expect(screen.queryByTestId('delete-user-modal-scram-admin')).not.toBeInTheDocument());
+    await setFailureAndRefetch(false);
+    expect(await groupTrigger()).toHaveAttribute('aria-expanded', 'true');
   });
 });
 
-async function openAclsOnlyDelete(user: ReturnType<typeof userEvent.setup>, principalName: string) {
-  const row = await screen.findByTestId(`row-${principalName}`);
-  await user.click(within(within(row).getByTestId(`actions-${principalName}`)).getByRole('button'));
-  await user.click(screen.getByText('Delete (ACLs only)'));
-}
+describe('deleting permissions and users', () => {
+  test('keeps the user confirmation open until its user-only RPC settles', async () => {
+    const deletion = Promise.withResolvers<DeleteUserReply>();
+    onTestFinished(() => deletion.resolve({}));
+    const { user, userDeletions, aclDeletions } = renderPermissions({ removeUser: () => deletion.promise });
 
-async function confirmUserOnlyDelete(user: ReturnType<typeof userEvent.setup>, principalName: string) {
-  const row = await screen.findByTestId(`row-${principalName}`);
-  await user.click(within(within(row).getByTestId(`actions-${principalName}`)).getByRole('button'));
-  await user.click(screen.getByText('Delete (User only)'));
-  await user.click(screen.getByTestId('confirm-delete'));
-}
+    await confirmUserOnlyDelete(user);
+    expect(currentDeleteUserDialog()).toBeVisible();
+    expect(userDeletions).toMatchObject([{ name: SCRAM_USER }]);
+    expect(aclDeletions).toHaveLength(0);
 
-function MockLink({ children, to, ...props }: { children: ReactNode; to?: string; [key: string]: unknown }) {
-  return (
-    <a href={to ?? ''} {...props}>
-      {children}
-    </a>
-  );
-}
+    deletion.resolve({});
+    await waitFor(() => expect(currentDeleteUserDialog()).not.toBeInTheDocument());
+    expect(screen.queryByTestId(`row-${SCRAM_USER}`)).not.toBeInTheDocument();
+  });
 
-function MockSecurityTabsNav() {
-  return null;
-}
+  test('sends only one ACL delete when confirmation is double-clicked', async () => {
+    const deletion = Promise.withResolvers<DeleteAclsReply>();
+    onTestFinished(() => deletion.resolve({}));
+    const { user, aclDeletions, userDeletions } = renderPermissions({ removeAcls: () => deletion.promise });
+    const confirm = await openAclsOnlyDelete(user);
 
-function MockDeleteUserConfirmModal({
-  open,
-  userName,
-  onConfirm,
-  onOpenChange,
-}: {
-  open: boolean;
-  userName: string;
-  onConfirm: () => Promise<void> | void;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const handleConfirm = async () => {
-    await onConfirm();
-    onOpenChange(false);
-  };
-  return open ? (
-    <div data-testid={`delete-user-modal-${userName}`}>
-      <button data-testid="confirm-delete" onClick={handleConfirm} type="button">
-        Confirm
-      </button>
-    </div>
-  ) : null;
-}
+    await user.dblClick(confirm);
+    expect(confirm).toBeDisabled();
+    expect(aclDeletions).toMatchObject([{ filter: { principal: `Group:${GROUP}` } }]);
+    expect(userDeletions).toHaveLength(0);
+
+    deletion.resolve({});
+    await waitFor(() => expect(currentDeleteAclsDialog()).not.toBeInTheDocument());
+  });
+
+  test('reports a delayed ACL delete failure once and closes the dialog', async () => {
+    const deletion = Promise.withResolvers<DeleteAclsReply>();
+    onTestFinished(() => deletion.resolve({}));
+    const { user, aclDeletions } = renderPermissions({ removeAcls: () => deletion.promise });
+
+    await user.dblClick(await openAclsOnlyDelete(user));
+    await waitFor(() => expect(aclDeletions).toHaveLength(1));
+    deletion.reject(new ConnectError('acl delete denied', Code.PermissionDenied));
+
+    expect(await screen.findByText(ACL_DELETE_DENIED)).toBeVisible();
+    expect(aclDeletions).toHaveLength(1);
+    await waitFor(() => expect(currentDeleteAclsDialog()).not.toBeInTheDocument());
+  });
+
+  test('reports a failed SCRAM user delete and closes the dialog', async () => {
+    const { user, userDeletions } = renderPermissions({
+      removeUser: () => {
+        throw new ConnectError('user is still referenced', Code.FailedPrecondition);
+      },
+    });
+
+    await confirmUserOnlyDelete(user);
+
+    expect(await screen.findByText(USER_DELETE_DENIED)).toBeVisible();
+    expect(userDeletions).toMatchObject([{ name: SCRAM_USER }]);
+    await waitFor(() => expect(currentDeleteUserDialog()).not.toBeInTheDocument());
+  });
+});
