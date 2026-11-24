@@ -9,99 +9,71 @@
  * by the Apache License, Version 2.0
  */
 
-import { render } from '@testing-library/react';
+import { expect, onTestFinished, test } from '@rstest/core';
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  RouterProvider,
+} from '@tanstack/react-router';
+import { act, render } from '@testing-library/react';
+import { config } from 'config';
+import { useApiStore } from 'state/backend-api';
 
 import { RouterSync } from './router-sync';
-import { config, isEmbedded } from '../../config';
 
-const mockNavigate = rs.fn();
-const mockLocation = { pathname: '/topics', searchStr: '' };
-const mockRouter = {};
+const NAVIGATED = '[console] navigated';
 
-rs.mock('@tanstack/react-router', () => ({
-  useNavigate: () => mockNavigate,
-  useLocation: () => mockLocation,
-  useRouter: () => mockRouter,
-}));
+function recordNavigation() {
+  const navigations: unknown[] = [];
+  const receive = (event: Event) => {
+    navigations.push(event instanceof CustomEvent ? event.detail : event.type);
+  };
+  window.addEventListener(NAVIGATED, receive);
+  onTestFinished(() => window.removeEventListener(NAVIGATED, receive));
+  return navigations;
+}
 
-rs.mock('../../config', () => ({
-  config: {
-    jwt: undefined as string | undefined,
-    clusterId: undefined as string | undefined,
-  },
-  isEmbedded: rs.fn(() => false),
-}));
+function configureNavigationHost(jwt: string | undefined, clusterId: string | undefined) {
+  const previous = { jwt: config.jwt, clusterId: config.clusterId };
+  const { errors } = useApiStore.getState();
+  Object.assign(config, { jwt, clusterId });
+  onTestFinished(() => {
+    Object.assign(config, previous);
+    useApiStore.setState({ errors });
+  });
+}
 
-rs.mock('../../hubspot/hubspot-tracking', () => ({
-  trackHubspotPage: rs.fn(),
-}));
+async function renderNavigation(jwt: string | undefined, clusterId: string | undefined) {
+  configureNavigationHost(jwt, clusterId);
+  const root = createRootRoute({ component: RouterSync });
+  const routeTree = root.addChildren([
+    createRoute({ getParentRoute: () => root, path: '/topics' }),
+    createRoute({ getParentRoute: () => root, path: '/schema-registry' }),
+  ]);
+  const history = createMemoryHistory({ initialEntries: ['/topics'] });
+  const router = createRouter({ routeTree, history });
+  onTestFinished(() => history.destroy());
+  render(<RouterProvider router={router} />);
+  await act(async () => {
+    await router.load();
+  });
+  return router;
+}
 
-rs.mock('../../state/app-global', () => ({
-  appGlobal: {
-    setNavigate: rs.fn(),
-    setRouter: rs.fn(),
-    setLocation: rs.fn(),
-  },
-}));
+test.each([
+  { mode: 'standalone', jwt: undefined, clusterId: undefined, notifications: [] },
+  { mode: 'federated', jwt: 'host-token', clusterId: 'cluster-123', notifications: [] },
+  { mode: 'legacy embedded', jwt: 'host-token', clusterId: undefined, notifications: ['/topics', '/schema-registry'] },
+])('only the legacy host receives window navigation events: $mode', async ({ jwt, clusterId, notifications }) => {
+  const received = recordNavigation();
+  const router = await renderNavigation(jwt, clusterId);
 
-rs.mock('../../state/backend-api', () => ({
-  api: {
-    errors: [],
-  },
-}));
-
-describe('the RouterSync', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    config.jwt = undefined;
-    config.clusterId = undefined;
-    mockLocation.pathname = '/topics';
+  await act(async () => {
+    await router.navigate({ to: '/schema-registry' });
   });
 
-  test('does not dispatch [console] navigated events when not embedded', () => {
-    const dispatchSpy = rs.spyOn(window, 'dispatchEvent');
-    rs.mocked(isEmbedded).mockReturnValue(false);
-
-    render(<RouterSync />);
-
-    const consoleEvents = dispatchSpy.mock.calls.filter(
-      ([event]) => event instanceof CustomEvent && event.type === '[console] navigated'
-    );
-    expect(consoleEvents).toHaveLength(0);
-
-    dispatchSpy.mockRestore();
-  });
-
-  test('does not dispatch [console] navigated events in federated mode (clusterId set)', () => {
-    const dispatchSpy = rs.spyOn(window, 'dispatchEvent');
-    rs.mocked(isEmbedded).mockReturnValue(true);
-    config.clusterId = 'test-cluster-123';
-    mockLocation.pathname = '/schema-registry';
-
-    render(<RouterSync />);
-
-    const consoleEvents = dispatchSpy.mock.calls.filter(
-      ([event]) => event instanceof CustomEvent && event.type === '[console] navigated'
-    );
-    expect(consoleEvents).toHaveLength(0);
-
-    dispatchSpy.mockRestore();
-  });
-
-  test('dispatches [console] navigated events in embedded non-federated mode', () => {
-    const dispatchSpy = rs.spyOn(window, 'dispatchEvent');
-    rs.mocked(isEmbedded).mockReturnValue(true);
-    config.clusterId = undefined;
-    mockLocation.pathname = '/schema-registry';
-
-    render(<RouterSync />);
-
-    const consoleEvents = dispatchSpy.mock.calls.filter(
-      ([event]) => event instanceof CustomEvent && event.type === '[console] navigated'
-    );
-    expect(consoleEvents).toHaveLength(1);
-    expect((consoleEvents[0][0] as CustomEvent).detail).toBe('/schema-registry');
-
-    dispatchSpy.mockRestore();
-  });
+  expect(router.state.location.pathname).toBe('/schema-registry');
+  expect(received).toEqual(notifications);
 });

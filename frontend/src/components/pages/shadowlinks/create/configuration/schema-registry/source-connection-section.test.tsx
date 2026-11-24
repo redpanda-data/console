@@ -10,26 +10,17 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
-import { isEmbedded } from 'config';
+import { config } from 'config';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
 
+import { serveSecretNames, setSchemaRegistryHost } from './schema-registry-host.test-utils';
 import { SourceConnectionSection } from './source-connection-section';
 import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE, SR_AUTH_METHOD } from '../../model';
 
-rs.mock('config', () => ({
-  isEmbedded: rs.fn(() => false),
-  isFeatureFlagEnabled: rs.fn(() => false),
-}));
-
-let mockSecretsData: { secrets: { id: string }[] } | undefined;
-rs.mock('react-query/api/secret', () => ({
-  useCreateSecretMutation: () => ({ mutateAsync: rs.fn(), isPending: false }),
-  useListSecretsQuery: () => ({ data: mockSecretsData }),
-}));
+beforeEach(() => setSchemaRegistryHost(undefined));
 
 const apiModeValues: FormValues = {
   ...initialValues,
@@ -130,16 +121,11 @@ describe('the SourceConnectionSection', () => {
 
   describe('the HTTP Basic password in embedded mode (Cloud)', () => {
     beforeEach(() => {
-      rs.mocked(isEmbedded).mockReturnValue(true);
-    });
-
-    afterEach(() => {
-      rs.mocked(isEmbedded).mockReturnValue(false);
-      mockSecretsData = undefined;
+      config.jwt = 'embedded-test-token';
     });
 
     test('should render a secret selector instead of a raw password input and store a secret reference', async () => {
-      mockSecretsData = { secrets: [{ id: 'SR_PASSWORD' }, { id: 'OTHER_SECRET' }] };
+      const transport = serveSecretNames('SR_PASSWORD', 'OTHER_SECRET');
       const user = userEvent.setup();
       let formValues: FormValues | undefined;
 
@@ -148,7 +134,8 @@ describe('the SourceConnectionSection', () => {
           onFormChange={(values) => {
             formValues = values;
           }}
-        />
+        />,
+        { transport }
       );
 
       await user.click(screen.getByTestId('sr-auth-basic-tab'));
@@ -167,10 +154,9 @@ describe('the SourceConnectionSection', () => {
     });
 
     test('should show the create-secret empty state when no secrets exist', async () => {
-      mockSecretsData = { secrets: [] };
       const user = userEvent.setup();
 
-      render(<TestWrapper />);
+      render(<TestWrapper />, { transport: serveSecretNames() });
 
       await user.click(screen.getByTestId('sr-auth-basic-tab'));
 

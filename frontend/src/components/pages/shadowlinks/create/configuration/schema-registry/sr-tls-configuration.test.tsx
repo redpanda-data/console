@@ -10,26 +10,17 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { rs } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
-import { isEmbedded } from 'config';
+import { config } from 'config';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
 
+import { serveSecretNames, setSchemaRegistryHost } from './schema-registry-host.test-utils';
 import { SrTlsConfiguration } from './sr-tls-configuration';
 import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE } from '../../model';
 
-rs.mock('config', () => ({
-  isEmbedded: rs.fn(() => false),
-  isFeatureFlagEnabled: rs.fn(() => false),
-}));
-
-let mockSecretsData: { secrets: { id: string }[] } | undefined;
-rs.mock('react-query/api/secret', () => ({
-  useCreateSecretMutation: () => ({ mutateAsync: rs.fn(), isPending: false }),
-  useListSecretsQuery: () => ({ data: mockSecretsData }),
-}));
+beforeEach(() => setSchemaRegistryHost(undefined));
 
 const apiModeValues = (schemaRegistry: Partial<FormValues['schemaRegistry']> = {}) => ({
   ...structuredClone(initialValues),
@@ -157,14 +148,10 @@ describe('the SrTlsConfiguration', () => {
 
   describe('client key in embedded mode (Cloud)', () => {
     beforeEach(() => {
-      rs.mocked(isEmbedded).mockReturnValue(true);
-      mockSecretsData = { secrets: [{ id: 'SR_MTLS_CLIENT_KEY' }] };
+      config.jwt = 'embedded-test-token';
     });
 
-    afterEach(() => {
-      rs.mocked(isEmbedded).mockReturnValue(false);
-      mockSecretsData = undefined;
-    });
+    const transport = serveSecretNames('SR_MTLS_CLIENT_KEY');
 
     test('replaces the key dropzone with a secret selector and stores a secret reference', async () => {
       const user = userEvent.setup();
@@ -176,7 +163,8 @@ describe('the SrTlsConfiguration', () => {
           onFormChange={(values) => {
             formValues = values;
           }}
-        />
+        />,
+        { transport }
       );
 
       await user.click(screen.getByTestId('sr-tls-mtls-disclosure-trigger'));
@@ -211,7 +199,8 @@ describe('the SrTlsConfiguration', () => {
               existingKeyFingerprint: 'abc123=',
             },
           })}
-        />
+        />,
+        { transport }
       );
 
       expect(screen.getByTestId('sr-clientKey-existing-status')).toBeInTheDocument();
