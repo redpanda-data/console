@@ -98,7 +98,6 @@ class StepReviewContent extends Component<StepReviewProps & { maxReplicationTraf
       },
     },
     {
-      // would otherwise mark it sortable with no header affordance to trigger it.
       enableSorting: false,
       header: 'Brokers After',
       id: 'brokersAfter',

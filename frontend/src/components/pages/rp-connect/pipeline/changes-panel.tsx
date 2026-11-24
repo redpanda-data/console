@@ -50,7 +50,6 @@ const KIND_TONE: Record<ChangeKind, BadgeTone> = {
 const DIFF_OPTIONS = {
   readOnly: true,
   domReadOnly: true,
-  // Read-only, so no cursor line.
   renderLineHighlight: 'none',
   renderSideBySide: true,
   hideUnchangedRegions: { enabled: true },

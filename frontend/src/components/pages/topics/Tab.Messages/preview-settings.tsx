@@ -298,7 +298,6 @@ function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2
   return foundProperties.map((p) => ({ tag, prop: p, fullPath: p.path.join('.') }));
 }
 
-// order results by the tag they were created from, and then their path
 function compareTagMatches(tags: PreviewTagV2[]) {
   return (a: TagMatch, b: TagMatch) => {
     if (a.tag !== b.tag) {
@@ -408,11 +407,9 @@ function readQuotedSegment(str: string, pos: number): PathStep {
     return { error: `missing closing quote, quote was opened at index ${start - 1}` };
   }
 
-  // continue after the end of our string and the closing quote
   return { next: end + 1, segment: str.slice(start, end) };
 }
 
-// A dot, skip over it
 function skipDot(str: string, pos: number): PathStep {
   if (pos === 0) {
     return { error: 'pattern cannot start with a dot' };

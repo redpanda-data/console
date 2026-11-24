@@ -558,7 +558,6 @@ function describeConfirmError(error: string | Error) {
 
   const apiErr = parseApiError(txt);
 
-  // return text only
   if (!apiErr) {
     return {
       title: 'Error',

@@ -138,7 +138,7 @@ const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }:
           ),
   });
 
-  // would otherwise send an include-all filter the cluster can't handle.
+  // WARNING: Do not send role-sync options to older clusters; an include-all role filter would be unsupported.
   const roleSyncOptions = roleSyncSupported
     ? create(RoleSyncOptionsSchema, {
         roleNameFilters:
@@ -156,7 +156,6 @@ const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }:
 
   const securitySyncOptions = buildSecuritySyncOptions(values);
 
-  // topic mode via the legacy switch, otherwise unset)
   const schemaRegistrySyncOptions = buildSchemaRegistrySyncOptions(values);
 
   const configurations = create(ShadowLinkConfigurationsSchema, {

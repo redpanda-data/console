@@ -160,7 +160,6 @@ export function shouldHideIfNotSupported(f: FeatureEntry) {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }
 
-/** Compute all feature flags from endpoint compatibility data */
 function computeAllFeatures(c: EndpointCompatibility | null) {
   const errors: string[] = [];
   const compute = (f: FeatureEntry) => {

@@ -131,7 +131,6 @@ class ReassignPartitions extends PageComponent {
   }
 
   componentDidUpdate(_prevProps: Readonly<{ matchedPath: string }>, prevState: Readonly<ReassignPartitionsState>) {
-    // Auto-scroll when navigating to a non-first step
     if (prevState.currentStep !== this.state.currentStep && this.state.currentStep !== 0) {
       setTimeout(() => scrollTo('wizard', 'start', -20), 20);
     }
@@ -151,12 +150,10 @@ class ReassignPartitions extends PageComponent {
       return;
     }
 
-    // has user selected a broker that is not available anymore?
     const brokerUnavailable = selectedBrokerIds.any(
       (x) => api.clusterInfo?.brokers.find((b) => b.brokerId === x) === undefined
     );
 
-    // has user selected a topic partition that is not available anymore?
     if (brokerUnavailable || this.selectedTopicPartitions === null) {
       this.resetSelectionAndPage(true, true);
     }
@@ -546,7 +543,6 @@ class ReassignPartitions extends PageComponent {
     const errors = reassignmentErrors(response);
     const startedCount = response.reassignPartitionsResponses.sum((x) => x.partitions.count((p) => !p.errorCode));
 
-    // No errors, or only some errors: still successful
     const success = errors.length === 0 || startedCount > 0;
     updateToast(toastRef, success ? REASSIGNMENT_STARTED_TOAST : REASSIGNMENT_FAILED_TOAST);
 
@@ -717,7 +713,6 @@ function ClusterStatistics({ brokerCount, topics }: { brokerCount: number; topic
   );
 }
 
-/** True when no topic has a selected partition. */
 function isPartitionSelectionEmpty(partitionSelection: PartitionSelection) {
   const selectedTopicPartitions = Object.values(partitionSelection);
   return selectedTopicPartitions.length === 0 || selectedTopicPartitions.all((x) => x.length === 0);
@@ -730,7 +725,6 @@ function throttleRemovalOutcome(baseText: string, errorCount: number) {
   return { status: 'error', description: `${baseText}: ${errorCount} errors`, duration: 2500 } as const;
 }
 
-/** The loaded partitions of every topic, without the partitions that report errors. */
 function partitionsWithoutErrors(topicPartitions: Map<string, Partition[] | null>) {
   const apiTopicPartitions = new Map<string, Partition[]>();
   for (const [topicName, partitions] of topicPartitions) {
@@ -750,7 +744,6 @@ const REASSIGNMENT_STARTED_TOAST = {
 } as const;
 const REASSIGNMENT_FAILED_TOAST = { status: 'error', description: 'Reassignment failed', duration: 2500 } as const;
 
-/** The partitions that report an error message, by topic; topics without any are left out. */
 function reassignmentErrors(response: AlterPartitionReassignmentsResponse) {
   return response.reassignPartitionsResponses
     .map((e) => {

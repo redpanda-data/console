@@ -119,7 +119,6 @@ export function createTestRouterFromFiles(initialLocation = '/') {
   return router;
 }
 
-// Legacy router support - now uses file-based routing
 interface RenderWithRouterOptions extends ExtendedRenderOptions {
   initialLocation?: string;
   route?: string;

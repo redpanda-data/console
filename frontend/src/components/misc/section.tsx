@@ -19,7 +19,6 @@ type SectionProps = Pick<CardProps, 'children' | 'id' | 'className'> & {
   style?: Pick<CSSProperties, 'gridArea'>;
 };
 
-// Legacy block-flow section using the registry's card spacing presets.
 function Section({ children, id, className, style, padding = 'normal' }: SectionProps) {
   return (
     <Card

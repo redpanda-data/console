@@ -359,7 +359,6 @@ const NewDebugBundleForm: FC<{
     partitions: [] as string[],
     labelSelectors: [] as Array<{ id: number; key: string; value: string }>,
   });
-  // Stable row identity for keys.
   const nextLabelSelectorId = useRef(0);
 
   const generateNewDebugBundle = () => {

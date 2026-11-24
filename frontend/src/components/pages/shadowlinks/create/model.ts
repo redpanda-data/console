@@ -13,7 +13,6 @@ import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 import { z } from 'zod';
 
-// TLS mode: either file paths or PEM content
 export const TLS_MODE = {
   FILE_PATH: 'file_path',
   PEM: 'pem',
@@ -21,7 +20,6 @@ export const TLS_MODE = {
 
 export type TLSMode = (typeof TLS_MODE)[keyof typeof TLS_MODE];
 
-// SASL authentication method
 export const AUTH_METHOD = {
   NONE: 'none',
   SCRAM: 'scram',
@@ -50,7 +48,6 @@ export const SR_AUTH_METHOD = {
 
 export type SrAuthMethod = (typeof SR_AUTH_METHOD)[keyof typeof SR_AUTH_METHOD];
 
-// PEM content stored with its file name so the dropzone can display it
 const srCertificateSchema = z.object({
   pemContent: z.string(),
   fileName: z.string(),
@@ -173,7 +170,6 @@ const formSchemaShape = z.object({
   }),
   useTls: z.boolean(),
 
-  // mTLS configuration (optional - determined by presence of certificates)
   mtlsMode: z.enum([TLS_MODE.FILE_PATH, TLS_MODE.PEM]),
   mtls: z.object({
     ca: z
@@ -250,8 +246,6 @@ const formSchemaShape = z.object({
   // the redesigned section so the topic-mode request path stays unchanged)
   enableSchemaRegistrySync: z.boolean(),
 
-  // Redesigned Schema Registry section (version-gated on the connected
-  // cluster's shadowLinkSchemaRegistrySync feature)
   schemaRegistry: schemaRegistrySchema,
 });
 

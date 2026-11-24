@@ -59,7 +59,7 @@ function propertyErrorDisplay(property: Property) {
 
 function topicChoices(property: Property) {
   const selectedTopics = property.value ? property.value.toString().split(',').filter(Boolean) : [];
-  // before the topic list resolves) is only removable if its value is among the options.
+  // WARNING: Keep selected topics in the options even if missing from the broker list, or those chips cannot be removed.
   const topicOptions = [...new Set([...(api.topics?.map((x) => x.topicName) ?? []), ...selectedTopics])];
 
   return { selectedTopics, topicOptions };

@@ -185,7 +185,6 @@ export class StepSelectPartitions extends Component<{
         <DataTable<TopicWithPartitions>
           columns={this.columns}
           data={this.topicPartitions}
-          // Selection is done by the `check` column; no table-level row selection.
           pagination={this.topicPartitions.length > DEFAULT_TABLE_PAGE_SIZE}
           sorting
           subComponent={({ row: { original: topic } }) => (

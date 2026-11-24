@@ -157,7 +157,6 @@ type ShadowLinkListFallbackOptions = {
   onRetry: () => void;
 };
 
-/** The state shown in place of the list, or `null` when there are shadow links to list. */
 const getShadowLinkListFallback = ({ error, isEmpty, onRetry }: ShadowLinkListFallbackOptions) => {
   if (error?.code === Code.Unavailable) {
     return <ShadowLinkUnavailableState />;

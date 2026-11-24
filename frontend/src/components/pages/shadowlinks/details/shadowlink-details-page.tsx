@@ -156,7 +156,6 @@ const guidedReadiness = (
   requested: DetailsTab | undefined
 ) => (readiness && (available || requested === 'failover') ? readiness : undefined);
 
-/** A link to the Failover tab falls back to Overview while there's no Failover tab. */
 const resolveDetailsTab = (requested: DetailsTab | undefined, guided: boolean) => {
   if (requested === 'failover' && !guided) {
     return 'overview';
@@ -205,7 +204,6 @@ const useShadowLinkDelete = (name: string) => {
   return { showDeleteDialog, setShowDeleteDialog, isDeleting, handleDelete };
 };
 
-/** Failover for the whole link, or for one topic when the dialog is opened with its name. */
 const useShadowLinkFailover = (
   name: string,
   refetch: UnifiedShadowLinkQuery['refetch'],
@@ -405,7 +403,6 @@ export const ShadowLinkDetailsPage = () => {
 
   return (
     <ShadowLinkDetailsView
-      // When dataplane fails but we have controlplane data (fallback scenario)
       hasPartialData={Boolean(dataplaneError)}
       name={name}
       refetch={refetch}

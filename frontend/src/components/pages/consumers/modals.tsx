@@ -71,7 +71,6 @@ const STRATEGY_LABELS: Record<EditOptions, string> = {
   otherGroup: 'Other Consumer Group',
 };
 
-/** Inline text with an explanatory tooltip on hover (replaces the legacy InfoText). */
 const InfoTooltip = ({ text, children }: { text: string; children: ReactNode }) => (
   <TooltipProvider>
     <Tooltip>
@@ -456,7 +455,6 @@ export class EditOffsetsModal extends Component<{
     }
 
     assignTimestampOffsets(selectedOffsets, offsetsForTimestamp);
-    // Trigger re-render so ColAfter sees updated newOffset values
     this.forceUpdate();
   }
 
@@ -474,14 +472,10 @@ export class EditOffsetsModal extends Component<{
       return;
     }
 
-    //
-    // Copy offsets that exist in the current group from the other group
     for (const x of selectedOffsets) {
       x.newOffset = groupOffsetOf(other, x.topicName, x.partitionId);
     }
 
-    //
-    // Extend our offsets with any offsets that our group currently doesn't have
     if (this.state.otherGroupCopyMode === 'all') {
       appendMissingOffsets(currentOffsets, other);
     }
@@ -592,7 +586,6 @@ export class EditOffsetsModal extends Component<{
   }
 }
 
-/** A faded skip icon whose tooltip explains why there is no offset value. */
 const SkipIconTooltip = ({ text }: { text: string }) => (
   <TooltipProvider>
     <Tooltip>
@@ -722,7 +715,6 @@ function ColAfter({ record, selectedTime }: { selectedTime?: number; record: Gro
   return unknownNewOffsetText(val);
 }
 
-/** Page-2 preview of a single topic's partition offsets (Before/After). */
 const OffsetPreviewTable = ({ items, selectedTime }: { items: GroupOffset[]; selectedTime: number }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -837,7 +829,6 @@ async function deleteGroupOrOffsets(group: GroupDescription, mode: GroupDeleting
   }
 }
 
-/** Whether deleting `offsets` leaves the group without any committed offsets. */
 const deletesAllOffsets = (group: GroupDescription, offsets: GroupOffset[]) =>
   group.topicOffsets.sum((t) => t.partitionOffsets.length) - offsets.length === 0;
 
@@ -985,7 +976,6 @@ type TopicPartitionResults = {
   partitions: { partitionID: number; error: string | undefined }[];
 };
 
-/** Keeps only the partitions that report an error, and only the topics that have any. */
 function topicsWithPartitionErrors(topics: TopicPartitionResults[]) {
   return topics
     .map((t) => ({
@@ -1087,8 +1077,6 @@ function createEditRequest(offsets: GroupOffset[]) {
     t.partitions = t.partitions.filter((p) => p.offset != null);
   }
 
-  // assert type:
-  // we know that there can't be any undefined offsets anymore
   const cleanOffsets = topicOffsets as {
     topicName: string;
     partitions: {

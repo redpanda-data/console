@@ -218,7 +218,6 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
       <DataTable<ClusterConnectorInfo>
         columns={connectorColumns}
         data={filteredResults}
-        // Legacy parity: ten a page, pager only past that.
         pagination={filteredResults.length > 10}
         sorting
         tableOptions={CONNECTORS_TABLE_OPTIONS}

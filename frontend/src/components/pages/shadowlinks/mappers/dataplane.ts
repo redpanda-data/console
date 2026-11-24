@@ -239,7 +239,6 @@ const extractTLSSettings = (tlsCertsSettings: TLSSettings['tlsSettings'] | undef
     } satisfies Pick<FormValues, 'mtlsMode' | 'mtls'>;
   }
 
-  // Fallback for unknown cases
   return {
     mtlsMode: TLS_MODE.PEM,
     mtls: {

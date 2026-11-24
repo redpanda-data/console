@@ -132,7 +132,6 @@ function useExistingTopicSync(form: TopicForm, topicList: TopicList) {
   });
 
   const existingTopicSelected = useMemo(() => {
-    // Only check if the CURRENT form topic name matches an existing topic
     if (!watchedTopicName) {
       return;
     }

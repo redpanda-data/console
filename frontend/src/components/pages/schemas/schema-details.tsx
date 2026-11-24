@@ -76,7 +76,6 @@ function useSchemaDetailsRoute(subjectNameProp: string) {
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   const search = routeApi.useSearch();
 
-  // Use prop if provided (for routing), otherwise use URL param
   const subjectNameRaw = decodeURIComponentPercents(subjectNameProp || subjectNameParam || '');
   const version = requestedVersionNumber(search.version) ?? 'latest';
 
@@ -346,7 +345,6 @@ function schemaVersionDefaults(subjectData: SchemaRegistrySubjectDetails, queryV
   return { versionNumber, fallbackVersion, requestedVersionExists, defaultVersion };
 }
 
-// The version the selection has to move to during render, or null to keep it.
 function correctedSelectedVersion(p: {
   queryVersion: string | undefined;
   selectedVersion: number;

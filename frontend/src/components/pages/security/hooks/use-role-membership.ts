@@ -18,7 +18,6 @@ export function useRoleMembership(roleName: string) {
   const { mutateAsync: updateMembership, isPending: isSubmitting } = useUpdateRoleMembershipMutation();
   const members = membersData?.members ?? [];
 
-  /** Resolves to whether the principal was added. */
   const addMember = async (principalType: 'User' | 'Group', name: string) => {
     try {
       await updateMembership(

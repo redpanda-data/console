@@ -21,7 +21,6 @@ export const SHORT_POLLING_INTERVAL = 2 * ONE_SECOND;
  * failures, none for ConnectErrors, which are deterministic and would fail the same way again.
  */
 export const fastFailRetry = (failureCount: number, error: Error) => {
-  // Max 1 retry attempt (initial + 1 retry = 2 total attempts)
   if (failureCount >= 1) {
     return false;
   }
@@ -30,7 +29,6 @@ export const fastFailRetry = (failureCount: number, error: Error) => {
     return false;
   }
 
-  // Retry once for unknown errors (network issues, timeouts, etc.)
   return true;
 };
 

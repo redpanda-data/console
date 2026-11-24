@@ -408,7 +408,6 @@ const ComponentInspectorHeader = ({
   onDelete?: () => void;
 }) => {
   const kind = targetComponentType(target);
-  // another kind must not inflate the count.
   const resourceRefKind = resourceRefKindForTarget(target);
   const resourceLabel = resourceRefKind && typeof component.label === 'string' ? component.label : undefined;
   return (
@@ -445,7 +444,6 @@ function ComponentInspector(props: ComponentInspectorProps) {
   };
   const danglingRef = findDanglingResourceRef(component, componentName, resourceLabels);
 
-  // fields (headerSlot); raw/read-only render it above.
   const conditionSection =
     caseTarget && caseObject ? (
       <CaseConditionSection
@@ -516,7 +514,6 @@ function ComponentInspector(props: ComponentInspectorProps) {
 
 type InspectorBodyProps = {
   conditionSection: ReactNode;
-  /** Re-keys the editors on selection change. */
   identity: string;
   component: Record<string, unknown>;
   componentName: string;
@@ -801,7 +798,6 @@ const CaseConditionSection = ({
   caseObject: Record<string, unknown>;
   onConfigChange?: (next: Record<string, unknown> | null) => void;
   readOnly?: boolean;
-  /** A lint message on this condition — renders the input in its error state. */
   error?: string;
 }) => {
   const { check, setCheck, dirty } = useCaseCheckDraft(caseObject, onConfigChange);
@@ -949,7 +945,6 @@ const InspectorHeader = ({
   </div>
 );
 
-// Read-only inspection (view lane): the component as scoped YAML.
 const ReadOnlyComponent = ({ component }: { component: Record<string, unknown> }) => (
   <div className="min-h-0 flex-1 p-4">
     <div className="h-full overflow-hidden rounded-md border border-border">

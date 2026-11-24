@@ -29,7 +29,6 @@ export type SchemaEditorStateHelper = SchemaEditorStateData & {
   qualifiedSubjectName: string;
 };
 
-// The record name `regex` captures from the schema text, or '' when it doesn't match.
 function matchRecordName(schemaText: string, regex: RegExp) {
   const ar = regex.exec(schemaText);
   if (!ar) {
@@ -98,7 +97,6 @@ export function deriveSchemaEditorState(state: SchemaEditorStateData) {
   return schemaEditorStateHelper;
 }
 
-// Splits a subject name into its context id and the name typed in the editor.
 function subjectNameParts(subjectName: string, srContextsEnabled: boolean) {
   if (!srContextsEnabled) {
     return { contextId: '', userInput: subjectName };

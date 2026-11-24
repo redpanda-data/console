@@ -215,7 +215,6 @@ function useSelectedSchemaContext({
     }
   }, [derivedContexts, selectedContext, setSelectedContext, contextsLoaded, subjectsLoaded]);
 
-  // Use context-specific mode/compat when a named context is selected
   const { displayMode, displayCompat } = useMemo(() => {
     const ctx = derivedContexts.find((c) => c.id === selectedContext);
     const useContextLevel = ctx && isNamedContext(selectedContext) && schemaRegistryContextsSupported;

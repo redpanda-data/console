@@ -31,7 +31,6 @@ export const Route = createFileRoute('/rp-connect/create')({
 });
 
 function CreatePipelineRoute() {
-  // Tier 2: legacy form
   if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
     return <PipelinePage />;
   }

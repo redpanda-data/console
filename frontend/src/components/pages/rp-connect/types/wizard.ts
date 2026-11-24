@@ -123,7 +123,6 @@ export const CreatableSelectionOptions = {
 
 export type CreatableSelectionType = (typeof CreatableSelectionOptions)[keyof typeof CreatableSelectionOptions];
 
-// Authentication method options for pipeline
 export const AuthenticationMethod = {
   SASL: 'sasl',
   SERVICE_ACCOUNT: 'service-account',

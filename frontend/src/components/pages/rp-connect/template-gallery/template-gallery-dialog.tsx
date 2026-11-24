@@ -40,7 +40,6 @@ import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../typ
 
 export type TemplateGalleryDialogProps = {
   open: boolean;
-  // `stashedYaml` carries the partial config so the host editor can keep it.
   onClose: (stashedYaml: string | null) => void;
   onSubmit: (payload: TemplateFormSubmitPayload) => void;
 };

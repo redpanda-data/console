@@ -74,7 +74,6 @@ const toFlatAclEntry: (resource: ListACLsResponse_Resource, acl: ListACLsRespons
   host: acl.host || '*',
 });
 
-/** Every ACL of the response, flattened and keyed by principal (such as `User:alice`). */
 const groupAclsByPrincipal = (response: ListACLsResponse) => {
   const aclsByPrincipal = new Map<string, FlatAclEntry[]>();
   for (const resource of response.resources) {
@@ -87,7 +86,6 @@ const groupAclsByPrincipal = (response: ListACLsResponse) => {
   return aclsByPrincipal;
 };
 
-/** The ACLs granted to roles, keyed by role name. */
 const getRoleAcls = (aclsByPrincipal: Map<string, FlatAclEntry[]>) =>
   new Map(
     [...aclsByPrincipal]

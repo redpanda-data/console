@@ -513,7 +513,6 @@ function PipelineCommandDialog({
 type CreateSubDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Inserts the created resource's name. */
   onCreated: (name: string) => void;
 };
 

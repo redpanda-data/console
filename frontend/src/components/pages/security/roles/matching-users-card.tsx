@@ -80,7 +80,6 @@ const RoleMemberSection = ({ members, emptyTitle, deletingPrincipal, ...rowProps
 type AddRoleMemberProps = {
   gbacEnabled: boolean;
   isSubmitting: boolean;
-  /** Users not in the role yet. */
   userSuggestions: string[];
   onAdd: (principalType: 'User' | 'Group', name: string) => Promise<boolean>;
 };

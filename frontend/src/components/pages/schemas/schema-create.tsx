@@ -249,8 +249,6 @@ const SchemaPageButtons = (p: {
             const validationResponse = await validateSchema(editorState).finally(() => setValidating(false));
 
             if (!validationResponse.isValid || validationResponse.isCompatible === false) {
-              // Something is wrong with the schema, abort
-              // Persist error only after user closes the modal
               setValidationDialogResult(validationResponse);
               return;
             }
@@ -276,7 +274,6 @@ const SchemaPageButtons = (p: {
               setPersistentValidationError(null);
               toast.success('Schema validated');
             } else {
-              // Persist error only after user closes the modal
               setValidationDialogResult(r);
             }
           }}
@@ -771,7 +768,6 @@ const ReferencesEditor = (p: {
   contextSelectOptions: { value: string; label: string }[];
 }) => {
   const refs = p.state.references;
-  // Subscribed, so the subject options follow the list as it loads.
   const schemaSubjects = useApiStoreHook((s) => s.schemaSubjects);
 
   const subjectsByContext = useMemo(() => {
@@ -848,7 +844,6 @@ const ReferencesEditor = (p: {
                   references: prev.references.map((r, i) => (i === index ? { ...r, subject: e } : r)),
                 }));
 
-                // For fetching details, we need the qualified name
                 const qualifiedRefSubject = buildQualifiedSubjectName(ref.context, e);
                 let details = api.schemaDetails.get(qualifiedRefSubject);
                 if (!details) {

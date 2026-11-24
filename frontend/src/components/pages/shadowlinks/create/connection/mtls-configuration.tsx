@@ -257,7 +257,7 @@ function CertificateInputMethodField() {
             <Tabs
               onValueChange={(value) => {
                 field.onChange(value);
-                // because file_path and pem use different storage shapes.
+                // WARNING: Clear the certificates when changing TLS modes; file paths and PEM uploads use different storage shapes.
                 setValue('mtls.ca', undefined);
                 setValue('mtls.clientCert', undefined);
                 setValue('mtls.clientKey', undefined);

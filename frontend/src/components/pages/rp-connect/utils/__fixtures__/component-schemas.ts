@@ -37,7 +37,6 @@ function createField(field: Partial<FieldSpec>) {
     examples: field.examples || [],
   };
 
-  // Only add defaultValue if explicitly provided
   if (field.defaultValue !== undefined) {
     baseSpec.defaultValue = field.defaultValue;
   }

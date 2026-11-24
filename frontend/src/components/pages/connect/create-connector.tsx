@@ -349,7 +349,6 @@ function prepareConnectorConfig(
   return connectorRef?.getConfigObject() as ConfigObject | undefined;
 }
 
-// The validation result when the config has errors to show, otherwise null.
 async function findValidationErrors(
   activeCluster: string,
   pluginClass: string,

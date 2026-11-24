@@ -392,12 +392,10 @@ function embeddedUserData() {
 type IdentityError = Parameters<typeof getOidcSubject>[0] & { code?: Code };
 
 function authFailureRedirect(err: IdentityError) {
-  // Authentication failure (401) - redirect to login
   if (err.code === Code.Unauthenticated) {
     return '/login';
   }
 
-  // Permission denied (403) - redirect with error info
   if (err.code === Code.PermissionDenied) {
     // TODO - solve typings, provide corresponding Reason type
     const subject = getOidcSubject(err);
@@ -666,7 +664,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           } as UserData,
         });
 
-        // Track user in analytics after successful authentication
         if (r.displayName) {
           const userData = {
             firstName: r.displayName.split(' ')[0] || r.displayName,
@@ -681,7 +678,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         set({ userDataError: null });
 
         if (isEmbedded()) {
-          // Create a mocked empty userData with all permissions set to false
           set({ userData: embeddedUserData() });
           return;
         }
@@ -999,7 +995,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         console.error(e);
         return null;
       }),
-      // Schema registry info is only requested for users who can view schemas
       api.userData?.canViewSchemas
         ? client.getSchemaRegistryInfo({}).catch((e) => {
             // biome-ignore lint/suspicious/noConsole: intentional console usage

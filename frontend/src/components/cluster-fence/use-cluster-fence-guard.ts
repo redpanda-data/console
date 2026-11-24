@@ -72,7 +72,6 @@ export const useClusterFenceGuard = () => {
     [blocking]
   );
 
-  /** Whether a failed message search is most likely the fence turning Console's fetch away. */
   const isFencedRead = useCallback((message: string) => readsBlocked && isFencedReadError(message), [readsBlocked]);
 
   return { reasonFor, isFencedRead };

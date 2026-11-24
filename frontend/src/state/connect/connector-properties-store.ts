@@ -88,7 +88,6 @@ export class ConnectorPropertiesStore {
   connectorType: 'sink' | 'source';
   private readonly appliedConfig: Record<string, unknown> | undefined;
 
-  // Track changes for manual invalidation
   private changeListeners: Set<() => void> = new Set();
 
   // biome-ignore lint/nursery/useMaxParams: Legacy class with multiple constructor parameters
@@ -145,10 +144,8 @@ export class ConnectorPropertiesStore {
 
       get filteredProperties() {
         if (self.showAdvancedOptions) {
-          // advanced mode shows all settings
           return this.properties;
         }
-        // in simple mode, we only show props that are high importance
         return this.properties.filter((p) => p.entry.definition.importance === PropertyImportance.High);
       },
     };
@@ -191,12 +188,10 @@ export class ConnectorPropertiesStore {
       this.indexProperties(allProps);
       this.createGroups(validationResult.steps);
 
-      // Update JSON when config changes (manual tracking)
       this.onConfigChange(100, (config) => {
         this.jsonText = JSON.stringify(config, undefined, 4);
       });
 
-      // Validate on changes (manual tracking)
       this.onConfigChange(300, (config) => {
         // biome-ignore lint/suspicious/noConsole: intentional console usage
         this.validate(config).catch(console.error);
@@ -300,7 +295,6 @@ export class ConnectorPropertiesStore {
 
     this.removeStaleProperties(srcProps);
 
-    // Handle new properties, transfer reported errors and suggested values
     for (const source of srcProps) {
       this.mergeValidatedProperty(source);
     }
@@ -441,7 +435,6 @@ function isSubmittedProperty(p: Property, config: Record<string, unknown>) {
       return false;
     }
   }
-  // skip boolean values that default to false
   return !(p.value === false && !p.entry.definition.default_value);
 }
 
@@ -468,7 +461,6 @@ function linkPropertiesToGroups(groups: PropertyGroup[]) {
     }
   }
 
-  // Notify groups about errors in their children
   for (const g of groups) {
     g.propertiesWithErrors.push(...g.properties.filter((p) => p.showErrors));
   }
@@ -529,7 +521,6 @@ function initialPropertyValue(p: ConnectorProperty) {
   return (initialValue ?? defaultValue) as Property['value'];
 }
 
-// Writes to the property's value also land in its secret.
 function bindSecretValue(property: Property, secret: Secret) {
   secret.extractSecretId(String(property.value));
 

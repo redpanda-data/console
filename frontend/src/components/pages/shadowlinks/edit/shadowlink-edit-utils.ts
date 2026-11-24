@@ -287,7 +287,6 @@ export const getUpdateValuesForTopics: (
   if (topicConfigChanged) {
     fieldMaskPaths.push('configurations.topic_metadata_sync_options');
   } else if (excludeDefaultChanged) {
-    // Only excludeDefault changed independently
     fieldMaskPaths.push('configurations.topic_metadata_sync_options.exclude_default');
   }
 

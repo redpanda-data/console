@@ -212,7 +212,6 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
   );
 };
 
-// Back-off between polls while a started or stopped pipeline settles.
 const PIPELINE_TRANSITION_POLL_DELAYS = [200, 400, 1000, 1000, 1000, 5000];
 
 /**
@@ -223,13 +222,11 @@ async function watchPipelineUpdates(pipelineId: string, attempt = 0) {
   await delay(PIPELINE_TRANSITION_POLL_DELAYS[Math.min(PIPELINE_TRANSITION_POLL_DELAYS.length - 1, attempt)]);
 
   await pipelinesApi.refreshPipelines(true);
-  // if we can't find the pipeline we're checking anymore it got deleted
   const p = pipelinesApi.pipelines?.first((x) => x.id === pipelineId);
   if (!p) {
     return;
   }
 
-  // if its no longer in a transition state, we're done
   if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) {
     return;
   }

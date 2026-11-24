@@ -344,7 +344,6 @@ type MessageColumnsInput = Pick<MessagesResultsProps, 'topic' | 'query' | 'setti
   continuousPaginationEnabled: boolean;
 };
 
-// The table's columns for the topic's preview settings and the chosen deserializers.
 function messageColumnsFor({ topic, query, settings, dialogs, continuousPaginationEnabled }: MessageColumnsInput) {
   const topicSettings = settings.topicSettings;
   return buildMessageColumns({

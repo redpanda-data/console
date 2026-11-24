@@ -484,7 +484,6 @@ const ConfigOverviewTab = (p: {
         <DataTable<ClusterConnectorTaskInfo>
           columns={taskColumns}
           data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
-          // Legacy parity: ten a page, pager only past that.
           pagination={(connectClusterStore.getConnectorTasks(connectorName)?.length ?? 0) > 10}
           sorting
           tableOptions={TASKS_TABLE_OPTIONS}
@@ -676,7 +675,6 @@ const ConnectorDetails = (p: {
       value: String(e.value),
     };
 
-    // Try to undo mapping
     if (e.entry.metadata.recommended_values?.length) {
       const match = e.entry.metadata.recommended_values.find((x) => x.value === e.value);
       if (match) {
@@ -743,7 +741,6 @@ type ConnectorLogState = { messages: TopicMessage[]; isComplete: boolean };
 
 const EMPTY_CONNECTOR_LOGS: ConnectorLogState = { messages: [], isComplete: false };
 
-// Stops the running log search and starts a fresh one for `connectorName`.
 function restartConnectorLogSearch(
   searchRef: React.RefObject<MessageSearch | null>,
   connectorName: string,

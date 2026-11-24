@@ -375,7 +375,6 @@ const handleOperationResult = (result: OperationResult) => {
   }
 };
 
-// Toasts a required step's outcome; false when it failed, so the flow stops there.
 const reportRequiredStep = (result: OperationResult, failureMessage: string, successMessage: string) => {
   if (!result.success) {
     toast.error(result.error || failureMessage);

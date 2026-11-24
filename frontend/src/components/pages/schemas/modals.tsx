@@ -146,7 +146,6 @@ export function SwitchSchemaFormatDialog(p: {
 
 type CompatibilityError = { errorType: string; description: string };
 
-// Compatibility verdict; only shown once the schema itself parsed.
 function CompatibilityVerdict({ isValid, isCompatible }: { isValid: boolean; isCompatible?: boolean }) {
   if (isCompatible === undefined || isValid === false) {
     return null;

@@ -258,13 +258,9 @@ export const useDeleteShadowLinkUnified = (params: { name: string }) => {
   );
 
   return {
-    /** Function to delete the shadow link */
     deleteShadowLink: deleteShadowLinkUnified,
-    /** Whether a delete operation is currently in progress */
     isPending: embedded ? controlplaneDelete.isPending : dataplaneDelete.isPending,
-    /** Whether the shadowlink ID is being loaded (only relevant in embedded mode) */
     isLoadingId: embedded && controlplaneQuery.isLoading,
-    /** Whether the delete can be performed (ID is available in embedded mode, or always true in non-embedded mode) */
     canDelete: embedded ? !!shadowLinkId : true,
   };
 };
@@ -356,7 +352,6 @@ export const useGetShadowLinkUnified: (params: { name: string }) => UnifiedShado
 
   const unifiedData = unifyShadowLink(embedded, dataplaneQuery.data?.shadowLink, controlplaneQuery.data);
 
-  // Combined error: only error if we have no data at all
   const combinedError = unifiedData ? null : dataplaneQuery.error || controlplaneQuery.error;
 
   return {
@@ -403,7 +398,7 @@ function useShadowLinkUpdate({
   const dataplaneUpdate = useUpdateShadowLinkMutation();
   const controlplaneUpdate = useControlplaneUpdateShadowLinkMutation();
 
-  // update request must not carry role sync options at all.
+  // WARNING: Omit role-sync options on older clusters; only Redpanda 26.2.0 and later support them.
   const roleSyncSupported = useSupportedFeaturesStore((s) => s.shadowLinkRoleSync);
 
   const submitUpdate = useCallback(

@@ -89,7 +89,7 @@ const slotSchema: (slot: TemplateSlot) => z.ZodTypeAny = (slot) => {
   return slot.required ? field : field.optional().default('');
 };
 
-// Exported for tests: slot validation rules (required, list entries, entryPattern) live here.
+/** Validates the pipeline name and each slot's presence, list entries, and entry pattern. */
 export const buildSchema = (slots: TemplateSlot[]) => {
   const shape: Record<string, z.ZodTypeAny> = {
     [PIPELINE_NAME_FIELD]: z.string().min(1, 'Pipeline name is required'),

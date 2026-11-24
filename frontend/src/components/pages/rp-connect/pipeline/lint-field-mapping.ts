@@ -21,7 +21,6 @@ type FieldSegment = { key: string; depth: number; startLine: number; endLine: nu
 
 type RangedNode = { range?: [number, number, number] | null } | null | undefined;
 
-// A mapping key a field can anchor to: a string scalar with a source range.
 type RangedStringKey = Scalar<string> & { range: [number, number, number] };
 
 function isRangedStringKey(key: unknown): key is RangedStringKey {
@@ -59,7 +58,6 @@ function walkMapping(node: unknown, prefix: string[], out: FieldSegment[], lineC
   }
 }
 
-// The key itself when rendered, else its closest rendered ancestor (a group section), else nothing.
 function nearestRenderedAncestor(key: string, fieldKeys: ReadonlySet<string>) {
   const path = key.split('/');
   while (path.length > 0) {
@@ -91,7 +89,6 @@ const MIN_MENTION_NAME_LENGTH = 3;
 // Dots only BETWEEN segments ("batching.count"), so a sentence-ending period isn't swallowed.
 const FIELD_TOKEN_RE = /\bfield\s+[`'"]?(?<field>[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)/giu;
 
-// Lower-cased names the hint references as "field X".
 function fieldTokens(hintText: string) {
   const tokens = new Set<string>();
   for (const match of hintText.matchAll(FIELD_TOKEN_RE)) {
@@ -171,7 +168,6 @@ export type UnmappedLintHint = { hint: LintHint; fieldLabel?: string };
 
 type ResolvedHint = { anchors: { key: string; message: string }[]; fieldLabel?: string };
 
-// The hint anchored to each of `keys` with its message unchanged, or undefined when none matched.
 function anchoredToKeys(keys: string[], message: string): ResolvedHint | undefined {
   return keys.length > 0 ? { anchors: keys.map((key) => ({ key, message })) } : undefined;
 }

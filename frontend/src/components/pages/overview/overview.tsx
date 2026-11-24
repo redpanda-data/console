@@ -232,7 +232,6 @@ class Overview extends PageComponent {
                       : []),
                   ]}
                   data={brokers}
-                  // Legacy parity: ten a page, pager only past that.
                   pagination={brokers.length > 10}
                   sorting={false}
                 />

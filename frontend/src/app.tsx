@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-// Array prototype extensions (must be imported early)
+// WARNING: Load array extensions before modules that call them at import time.
 import './utils/array-extensions';
 
 /* TLS is optional, so Console is often served over plain HTTP — not a secure context, where
@@ -20,7 +20,6 @@ import 'clipboard-polyfill/overwrite-globals';
 import '@xyflow/react/dist/base.css';
 import '@xyflow/react/dist/style.css';
 
-/* start global stylesheets */
 import './globals.scss';
 import './index.scss';
 import './index-cloud-integration.scss';
@@ -29,12 +28,8 @@ import './assets/fonts/poppins.css';
 import './assets/fonts/quicksand.css';
 import './assets/fonts/kumbh-sans.css';
 import './assets/fonts/inter.css';
-/* end global styles */
 
-/* start tailwind styles */
 import './globals.css';
-
-/* end tailwind styles */
 
 import { Content } from '@builder.io/sdk-react';
 import { TransportProvider } from '@connectrpc/connect-query';

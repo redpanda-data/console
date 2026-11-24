@@ -40,7 +40,6 @@ type PipelineProblemsPanelProps = {
   deprecations?: PipelineProblem[];
 };
 
-// Section heading in the expanded panel, shown only when more than one kind of issue is present.
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   <div className="px-2 pt-1.5 pb-0.5 text-body-sm font-medium tracking-wide text-muted-foreground uppercase">
     {children}
@@ -118,7 +117,6 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
   </div>
 );
 
-// The chip's wording: specific when there's only one kind of issue, "issues" for a mix.
 function issuesLabel(problemCount: number, secretCount: number, deprecationCount: number) {
   const counts = [problemCount, secretCount, deprecationCount];
   if (counts.filter((count) => count > 0).length > 1) {

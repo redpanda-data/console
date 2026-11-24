@@ -52,7 +52,6 @@ type DetailRowProps = {
   value?: string;
   children?: React.ReactNode;
   copyable?: boolean;
-  /** Let the value cell wrap across multiple lines instead of truncating. */
   wrap?: boolean;
 };
 

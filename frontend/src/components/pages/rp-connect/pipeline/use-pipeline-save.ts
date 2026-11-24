@@ -91,7 +91,6 @@ type MarkSaved = (
   savedUpdateTime: number | null
 ) => void;
 
-/** The settings and config one save writes, shared by the create and update requests. */
 type PipelineWrite = {
   name: string;
   description: string | undefined;
@@ -316,7 +315,6 @@ async function stopCreatedPipeline(
 
 function toastCreateOutcome(flow: SaveFlow, attempt: SaveAttempt, draftWasIgnored: boolean, outcome: StopOutcome) {
   if (draftWasIgnored) {
-    // Both messages name the deployment; only one of them still needs a human.
     toast.error(outcome.stopped ? DRAFT_UNSUPPORTED_STOPPED_MESSAGE : DRAFT_UNSUPPORTED_MESSAGE);
   } else if (!outcome.stopFailed) {
     toast.success(saveSuccessMessage(flow.saveContext, attempt.run), { duration: SAVE_SUCCESS_TOAST_MS });
@@ -574,7 +572,6 @@ function useSaveMutations() {
   };
 }
 
-/** Names an unnamed draft before it is saved. */
 function useUntitledNaming(form: PipelineForm) {
   const fetchPipelineNames = useFetchPipelineNames();
   const [isNaming, setIsNaming] = useState(false);

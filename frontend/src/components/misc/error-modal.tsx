@@ -101,7 +101,6 @@ export function showErrorModal(title: string, subTitle: React.ReactNode, content
   const key = nextErrorKey;
   nextErrorKey += 1;
 
-  // keep formatting for strings
   let formattedContent = content;
   if (typeof content === 'string') {
     formattedContent = (

@@ -235,7 +235,6 @@ function SecretsStoreDataTableToolbar({ table }: { table: DataTableInstance<Secr
   );
 }
 
-/** Sorting, filter, visibility, pagination and selection state for the secrets table. */
 const useSecretsTableState = () => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -259,7 +258,6 @@ const useSecretsTableState = () => {
   };
 };
 
-/** Deletes a secret and reports the outcome in a toast. */
 const useDeleteSecretHandler = () => {
   const { mutateAsync: deleteSecret, isPending: isDeletingSecret } = useDeleteSecretMutation();
 

@@ -312,7 +312,6 @@ const usePipelineNameSearch = (table: PipelinesTable, { search, update }: Pipeli
   return {
     search: searchText,
     setSearch: setSearchText,
-    // Clear filters must be clickable as soon as the user has typed.
     hasActiveFilters:
       searchText.trim() !== '' || table.state.columnFilters.some((f) => f.id !== 'state' && f.id !== 'name'),
     clearFilters,

@@ -72,7 +72,6 @@ function selectionStatistics(selectedPartitions: SelectedTopicPartitions[], invo
   ];
 }
 
-/** The selected partitions of every loaded topic that has a selection. */
 function selectedTopicPartitions(
   topicPartitions: Map<string, Partition[] | null>,
   partitionSelection: PartitionSelection

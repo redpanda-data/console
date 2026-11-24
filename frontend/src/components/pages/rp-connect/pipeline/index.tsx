@@ -141,7 +141,6 @@ function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' |
   return type ? `Search ${type}s...` : undefined;
 }
 
-// Read-only lanes (view YAML, Monitor, the diff) get no tips.
 function tipsContextForLane(isView: boolean, viewLane: string, editLane: string): TipContext | null {
   if (isView) {
     return viewLane === 'visual' ? 'visual' : null;
@@ -318,7 +317,6 @@ function EditorSkeleton() {
   );
 }
 
-/** Read-only YAML viewer for the view page — reuses the editor with editing cues suppressed. */
 function YamlViewPanel({
   configYaml,
   schema,
@@ -619,7 +617,7 @@ function useEditorNodeSync(yaml: string) {
   const editorInstance = usePipelineEditorStore((s) => s.editorInstance);
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
   const nodeRanges = useNodeLineRanges(yaml);
-  // (which fires setSelection synchronously) must not overwrite the user's explicit tree selection.
+  // WARNING: Monaco calls cursor listeners synchronously from setSelection; suppress sync so a reveal cannot overwrite the tree selection.
   const suppressCursorSyncRef = useRef(false);
 
   const handleSelectNode = useCallback(
@@ -658,7 +656,6 @@ function SidebarPanel({
   onBrowseTemplates?: () => void;
   onOpenCommandMenu: (filter?: 'all' | 'variables' | 'secrets' | 'topics' | 'users') => void;
 }) {
-  // View mode is read-only; only wire add handlers otherwise.
   const canEdit = mode !== 'view';
   const deferredYaml = useDeferredValue(yamlContent);
   const offerTemplate = useShouldOfferTemplate(deferredYaml);
@@ -749,13 +746,11 @@ function SidebarPanel({
   );
 }
 
-/** One tab of the editor surface's lane strip. */
 type LaneTab = {
   value: string;
   label: string;
   onSelect: () => void;
   count?: number;
-  /** Plain marker when there is something to say but nothing to count. */
   showDot?: boolean;
   disabled?: boolean;
 };
@@ -775,7 +770,6 @@ export default function PipelinePage() {
 
 type PipelineForm = UseFormReturn<PipelineFormValues>;
 
-/** Route and feature-flag inputs the page branches on. */
 function usePipelinePageConfig() {
   const { mode, pipelineId } = usePipelineMode();
   const search = useSearch({ strict: false }) as { serverless?: string };
@@ -829,7 +823,6 @@ function editorActions(state: PipelineEditorStore) {
   };
 }
 
-/** The editor store's values the page renders from, and its actions. */
 function usePipelineEditorState() {
   const editorStore = usePipelineEditorStoreApi();
   const values = usePipelineEditorStore(
@@ -880,7 +873,6 @@ function useDraftSupport(mode: PipelineMode, pipeline: Pipeline | undefined) {
   return { draftsEnabled, isCheckingDraftSupport };
 }
 
-/** The loaded pipeline, the component catalog and config schema, and what saving it may do. */
 function usePipelineServerData(mode: PipelineMode, pipelineId: string | undefined) {
   const { data: pipelineResponse } = useGetPipelineQuery(
     { id: pipelineId || '' },
@@ -911,7 +903,6 @@ function usePipelineServerData(mode: PipelineMode, pipelineId: string | undefine
 
 type PipelineServerData = ReturnType<typeof usePipelineServerData>;
 
-/** Guards against losing unsaved edits when navigating away from the editor (edit or create). */
 function useUnsavedChangesGuard({
   mode,
   form,
@@ -962,7 +953,6 @@ type SessionInputs = {
   server: PipelineServerData;
 };
 
-/** Saving, the unsaved-changes guard, and the lint shown for the document. */
 function usePipelineSaveSession({ config, editorState, form, server }: SessionInputs) {
   const [attachedServiceAccount, setAttachedServiceAccount] = useState<AttachedServiceAccount>();
   const guard = useUnsavedChangesGuard({ mode: config.mode, form, editorState, saveContext: server.saveContext });
@@ -1048,7 +1038,6 @@ function useSettingsFormSync(pipeline: Pipeline | undefined, mode: PipelineMode,
   }, [pipeline, mode, form]);
 }
 
-/** Loads the document into the editor: from the server, or the create-mode starting YAML. */
 function usePipelineDocumentLoad({
   config,
   editorState,
@@ -1169,7 +1158,6 @@ function isAutosaveEntryStale(entry: EditorAutosaveEntry | null, savedUpdateTime
   );
 }
 
-/** Offers back edits a previous visit left in this browser. */
 function useAutosaveRecovery({
   config,
   editorState,
@@ -1242,7 +1230,6 @@ function useAutosaveRecovery({
   };
 }
 
-/** The document's load, its change summaries, and the edits kept in (and offered back from) the browser. */
 function usePipelineDocumentSession({ saveSession, ...inputs }: SessionInputs & { saveSession: PipelineSaveSession }) {
   const { config, editorState, form } = inputs;
   const changes = usePipelineChangeSummaries({
@@ -1344,7 +1331,6 @@ function usePipelineCancel(mode: PipelineMode, pipelineId: string | undefined, c
   }, [mode, clearWizardStore, navigate, pipelineId, router]);
 }
 
-/** Edits the page makes to the document on the user's behalf, and leaving the editor. */
 function usePipelineEditorActions({
   config,
   editorState,
@@ -1425,7 +1411,6 @@ function editLaneTabs({
   if (isVisualEditorEnabled) {
     editLanes.push({ value: 'visual', label: 'Visual', onSelect: () => setActiveEditLane('visual') });
   }
-  // Only where something is saved to compare against.
   if (mode === 'edit') {
     editLanes.push({
       value: 'changes',
@@ -1439,7 +1424,6 @@ function editLaneTabs({
   return editLanes;
 }
 
-/** Which surfaces the active lane shows. */
 function laneLayout(mode: PipelineMode, viewLane: ViewLane, editLane: EditLane, editingDraft: boolean) {
   const isViewVisualLane = mode === 'view' && viewLane === 'visual';
   const isEditVisualLane = mode !== 'view' && editLane === 'visual';
@@ -1451,7 +1435,6 @@ function laneLayout(mode: PipelineMode, viewLane: ViewLane, editLane: EditLane, 
   };
 }
 
-/** Steps off a lane that no longer applies. */
 function useLaneCorrections({
   mode,
   editorState,
@@ -1480,7 +1463,6 @@ function useLaneCorrections({
   }, [isEditChangesLane, hasUnsavedChanges, setActiveEditLane]);
 }
 
-/** The editor surface's lanes: the tab strip, which one is showing, and moving between them. */
 function usePipelineLanes({
   config,
   editorState,
@@ -1556,7 +1538,6 @@ function usePipelineLanes({
   };
 }
 
-/** Everything the editor page renders from, composed from its concerns. */
 function usePipelinePageModel() {
   const config = usePipelinePageConfig();
   const editorState = usePipelineEditorState();
@@ -1743,7 +1724,6 @@ function PipelineLaneContent({ page }: { page: PipelinePageModel }) {
           <VisualEditorPanel
             componentList={server.componentList ?? ({} as ComponentList)}
             components={server.components}
-            // Only edit mode waits on server hydration; create shows its empty state, not a skeleton.
             isLoading={mode === 'edit' && editorState.initialYaml === null}
             lintHints={Object.values(lintHints)}
             mode={mode}

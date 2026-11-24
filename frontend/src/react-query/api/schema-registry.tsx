@@ -408,7 +408,6 @@ export const useDeleteSchemaSubjectMutation = () => {
       await api.deleteSchemaSubject(subjectName, permanent);
     },
     onSuccess: async () => {
-      // Only invalidate subjects list, not mode/compatibility
       await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'], exact: false });
     },
     onError: (error) => {

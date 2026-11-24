@@ -142,7 +142,6 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
   const { displayName, description, tasks, editorContent } = formState;
   const setField = <K extends keyof PipelineUpdateInput>(key: K, value: PipelineUpdateInput[K]) =>
     setFormState((prev) => ({ ...prev, [key]: value }));
-  // The field holds what was typed; `tasks` stays clamped.
   const [tasksDraft, setTasksDraft] = useState(String(tasks));
   const { isUpdating, updatePipeline } = useUpdatePipeline(pipeline, pipelineId);
 

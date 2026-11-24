@@ -109,7 +109,6 @@ const replacementTextFor = (action: SuggestionAction) => {
 
 type TextRange = Pick<LineWord, 'start' | 'end'>;
 
-/** `text` with `range` replaced by `replacement`. */
 const spliceRange = (text: string, range: TextRange, replacement: string) =>
   text.slice(0, range.start) + replacement + text.slice(range.end);
 

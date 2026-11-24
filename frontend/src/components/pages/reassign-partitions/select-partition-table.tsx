@@ -40,7 +40,6 @@ export class SelectPartitionTable extends Component<{
   isSelected: (topic: string, partition: number) => boolean;
   getSelectedPartitions: () => number[];
 }> {
-  // Built once, as in StepSelectPartitions above.
   private readonly columns: DataTableColumnDef<Partition>[] = [
     {
       id: 'check',

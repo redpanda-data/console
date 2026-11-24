@@ -70,7 +70,6 @@ export const SchemaRegistryEditSection = ({ originalMode }: SchemaRegistryEditSe
   const showRedesigned = useSupportedFeaturesStore((s) => s.shadowLinkSchemaRegistrySync);
 
   if (!showRedesigned) {
-    // Gate-OFF fallback: an api-mode link on an older backend stays read-only.
     return <LegacySchemaRegistrySection readOnlyApiMode={originalMode === SCHEMA_REGISTRY_MODE.API} />;
   }
 

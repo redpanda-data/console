@@ -178,7 +178,6 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string; contextName?: stri
 
 export default EditSchemaCompatibilityPage;
 
-// Saves the compatibility for the context, the subject, or (neither) the global config.
 function useSaveCompatibility({ subjectName, contextName }: SchemaEditTarget, onClose: () => void) {
   const updateGlobalMutation = useUpdateGlobalCompatibilityMutation();
   const updateSubjectMutation = useUpdateSubjectCompatibilityMutation();

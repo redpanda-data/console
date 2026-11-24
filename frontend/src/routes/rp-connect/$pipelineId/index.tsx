@@ -34,7 +34,6 @@ export const Route = createFileRoute('/rp-connect/$pipelineId/')({
 
 function PipelineDetailsRoute() {
   const { pipelineId } = useParams({ from: '/rp-connect/$pipelineId/' });
-  // Tier 2: legacy form
   if (isFeatureFlagEnabled('enablePipelineDiagrams') && isEmbedded()) {
     return <PipelinePage />;
   }

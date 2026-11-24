@@ -453,7 +453,6 @@ export const DefaultSkeleton = (
   </motion.div>
 );
 
-// Single line, no wrapping; overflow shows an ellipsis.
 const ellipsisSpanStyle: CSSProperties = {
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',

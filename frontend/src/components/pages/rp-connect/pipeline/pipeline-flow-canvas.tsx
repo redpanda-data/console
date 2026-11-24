@@ -126,7 +126,6 @@ type MiniMapLayout = {
   canPanX: boolean;
   canPanY: boolean;
   projection: MiniMapProjection;
-  /** The viewport rect, in minimap pixels. */
   view: { x: number; y: number; w: number; h: number };
 };
 
@@ -141,7 +140,7 @@ function flowViewport([tx, ty, zoom]: [number, number, number], paneWidth: numbe
   return visibleViewport;
 }
 
-// The extent is unioned with the viewport because RF doesn't re-clamp the transform when
+// WARNING: Keep the live viewport in the minimap bounds; React Flow does not re-clamp the transform when its extent changes.
 function miniMapWorld(ext: ScopeBounds, vp: FlowViewport) {
   const canPanX = vp.width < ext.maxX - ext.minX;
   const canPanY = vp.height < ext.maxY - ext.minY;
@@ -1017,7 +1016,6 @@ function LegendChipSwatch({ color }: { color: string }) {
   );
 }
 
-// Explains the diagram vocabulary; only the kinds present in the current diagram are listed.
 function FlowLegend({ flags }: { flags: LegendFlags }) {
   if (!(flags.condition || flags.error || flags.reference)) {
     return null;
@@ -1368,10 +1366,9 @@ export function PipelineFlowCanvas({
   onAddSasl,
   onSetStopCondition,
 }: PipelineFlowCanvasProps) {
-  // Hovering a node lights up its (otherwise faint) resource-reference edges.
   const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
   const { wrapperRef, zoomMode, setZoomMode, minZoom, setMinZoom } = useCanvasZoom();
-  // Must be told: react-flow stamps a bare `light`/`dark` class, and its `light` default re-declares
+  // WARNING: Pass the active theme to React Flow; its default light class otherwise overrides the canvas palette.
   const appearance = useThemeAppearance();
   const {
     error,

@@ -102,7 +102,6 @@ function describeHistoryError(error: Error) {
 }
 
 function shouldIncludeMessage(msg: TopicMessage, pipelineId: string, serverless: boolean) {
-  // Serverful clusters filter by pipelineId via server-side pushdown; serverless filters here.
   if (!serverless) {
     return true;
   }
@@ -214,7 +213,6 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
   const [progress, setProgress] = useState<SearchProgress>(ZERO_PROGRESS);
   const [phase, setPhase] = useState<string | null>(null);
 
-  // Flush ref to state on an interval while streaming.
   useEffect(() => {
     if (!phase) {
       return;
@@ -373,7 +371,6 @@ async function runLiveStream(opts: LiveStreamOpts) {
   try {
     await streamLive(opts);
   } catch (e) {
-    // An aborted tail was closed on purpose; there is nothing to report.
     if (!opts.abortController.signal.aborted && opts.isMountedRef.current) {
       reportLiveError(e instanceof Error ? e.message : 'Unknown error', opts.dispatch);
     }
@@ -427,7 +424,6 @@ function startLiveStream(
   return abortController;
 }
 
-// Tracks whether the hook is mounted, and aborts whichever tail is still open on unmount.
 function useLiveMountedRef(abortControllerRef: LiveRefs['abortControllerRef']) {
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -448,7 +444,6 @@ function flushPendingMessages(pendingRef: LiveRefs['pendingRef'], dispatch: Reac
   }
 }
 
-// Flush pending messages to state on an interval.
 function useLivePendingFlush(
   enabled: boolean,
   pendingRef: LiveRefs['pendingRef'],

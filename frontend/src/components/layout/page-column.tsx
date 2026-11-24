@@ -13,7 +13,6 @@ import { type ReactNode, useLayoutEffect, useState } from 'react';
 
 import { chainToBody, documentTop } from '../../utils/dom-position';
 
-/** Read by `.page-fill-viewport` and `.page-fill-viewport-min` (globals.css). */
 const PAGE_TOP_VAR = '--console-page-top';
 
 /**

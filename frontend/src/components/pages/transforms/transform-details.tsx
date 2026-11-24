@@ -226,7 +226,6 @@ type TransformLogState = { messages: TopicMessage[]; isComplete: boolean };
 
 const EMPTY_TRANSFORM_LOGS: TransformLogState = { messages: [], isComplete: false };
 
-// Stops the running log search and starts a fresh one for `transformName`.
 function restartTransformLogSearch(
   searchRef: RefObject<MessageSearch | null>,
   transformName: string,

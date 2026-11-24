@@ -32,7 +32,6 @@ const TITLE: Record<Exclude<FencePhase, 'unfenced'>, string> = {
   unfencing: 'This cluster is being unfenced',
 };
 
-/** What the phase means for writes, and a warning when the fence lets no one read. */
 const describeBanner = (summary: FenceSummary, brokers: BrokerProgress[]) => {
   const exemptsNobody =
     isBlockingPhase(summary.phase) && !summary.allowAllReads && summary.exemptPrincipals.length === 0;

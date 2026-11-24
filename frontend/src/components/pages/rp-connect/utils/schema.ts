@@ -178,7 +178,6 @@ function redpandaCommonConfig(componentSpec: ConnectComponentSpec, connectionCon
   return config;
 }
 
-/** The snippet that places a component's config under its section of the Connect YAML schema. */
 function componentSectionConfig(componentSpec: ConnectComponentSpec, connectionConfig: unknown) {
   const config: Partial<ConnectConfigObject> = {};
 
@@ -310,7 +309,6 @@ function shouldShowField(params: {
 }) {
   const { spec, showAdvancedFields, componentName } = params;
 
-  // Deprecated fields never belong in a generated config.
   if (spec.deprecated) {
     return false;
   }
@@ -413,7 +411,6 @@ export const SENTINEL_REQUIRED_FIELD = '__REQUIRED_FIELD__';
  * string fields whose real default is "" show as required.
  */
 export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): boolean {
-  // Deprecated fields are being phased out; never force one regardless of signals.
   if (spec.deprecated === true) {
     return false;
   }
@@ -426,7 +423,6 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   if (!spec.children?.length) {
     return true;
   }
-  // Object: required if any child is required.
   return spec.children.some((c) => checkRequired(c));
 }
 
@@ -557,7 +553,6 @@ function generateShownFieldValue(
 ): unknown {
   const required = checkRequired(spec, ancestorOptional);
 
-  // Objects build structure from children, so they never use the required sentinel.
   if (required && spec.type !== 'object') {
     return markRequired(spec);
   }
@@ -594,7 +589,6 @@ function generateObjectStructure(
     }
     return isComponentRoot ? {} : undefined;
   }
-  // Collections of objects are only seeded when the field is required or at the component root.
   if (!(required || isComponentRoot)) {
     return;
   }

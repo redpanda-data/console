@@ -246,7 +246,6 @@ export type UnifiedShadowLink = {
   configurations?: UnifiedShadowLinkConfigurations;
   tasksStatus: ShadowLinkTaskStatus[];
   syncedShadowTopicProperties: string[];
-  // Controlplane-only fields
   shadowRedpandaId?: string;
   createdAt?: Date;
   updatedAt?: Date;

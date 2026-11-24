@@ -198,7 +198,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
       return false;
     }
 
-    // partitionId:brokerId, ...
     const leaderThrottleEntries = parseThrottledReplicas(
       config.configEntries.first((e) => e.name === 'leader.replication.throttled.replicas')?.value
     );
@@ -250,7 +249,6 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
 type ThrottledReplica = { partitionId: number; brokerId: number };
 
-/** Parses a `partitionId:brokerId, ...` throttle config value, skipping malformed entries. */
 function parseThrottledReplicas(value: string | null | undefined): ThrottledReplica[] | undefined {
   return value
     ?.split(',')

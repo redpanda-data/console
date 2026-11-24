@@ -57,7 +57,6 @@ import { UnfenceClusterDialog } from './unfence-cluster-dialog';
 const timeFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const clockFormatter = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
 
-/** Just the time for today, as in "Since 14:02"; the date too for anything older. */
 const formatSince = (date: Date, now: number) =>
   new Date(now).toDateString() === date.toDateString() ? clockFormatter.format(date) : timeFormatter.format(date);
 
@@ -387,7 +386,6 @@ const ReadProblem = ({
 
 type StatusQuery = ReturnType<typeof useClusterFenceStatusQuery>;
 
-/** Shown above the fence when a refresh failed, so the status below reads as possibly out of date. */
 const StaleStatusAlert = ({
   error,
   now,

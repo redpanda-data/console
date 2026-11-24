@@ -130,22 +130,18 @@ function useSearchRefSync(searchState: SearchState, pageIndex: number, refs: Sea
   const { currentMessageSearchRef, virtualStartIndexRef, windowStartPageRef, pageIndexRef } = refs;
   const { isMountedRef, abortControllerRef, loadMoreAbortRef } = refs;
 
-  // Keep currentMessageSearchRef in sync with messageSearch state
   useEffect(() => {
     currentMessageSearchRef.current = messageSearch;
   }, [messageSearch, currentMessageSearchRef]);
 
-  // Keep virtualStartIndexRef in sync
   useEffect(() => {
     virtualStartIndexRef.current = virtualStartIndex;
   }, [virtualStartIndex, virtualStartIndexRef]);
 
-  // Keep windowStartPageRef in sync
   useEffect(() => {
     windowStartPageRef.current = windowStartPage;
   }, [windowStartPage, windowStartPageRef]);
 
-  // Keep pageIndexRef in sync
   useEffect(() => {
     pageIndexRef.current = pageIndex;
   }, [pageIndex, pageIndexRef]);

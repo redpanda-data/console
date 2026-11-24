@@ -43,7 +43,7 @@ export function useSaveHotkey({ enabled, isSaving, onSave }: UseSaveHotkeyOption
         return;
       }
       e.preventDefault();
-      // mutation's isPending re-render) — only the first press may trigger a save.
+      // WARNING: Ignore held-key repeats; they can arrive before the first save marks the mutation pending.
       if (e.repeat) {
         return;
       }

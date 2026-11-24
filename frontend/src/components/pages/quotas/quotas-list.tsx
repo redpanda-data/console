@@ -73,7 +73,6 @@ const renderSortIcon = (sorted: false | 'asc' | 'desc') => {
   return <ChevronsUpDown />;
 };
 
-/** Info icon that reveals a tooltip on hover, used next to column titles. */
 const InfoTooltip = ({ children }: { children: React.ReactNode }) => (
   <Tooltip>
     <TooltipTrigger
@@ -187,7 +186,6 @@ const reportSearchUpdateFailure = (error: unknown) => {
   toast.error('Failed to update the quotas view', { description: String(error) });
 };
 
-/** Pagination and sorting live in the URL, so a reload or a shared link reopens the same view. */
 const useQuotasTableSearchState = (rowCount: number) => {
   const navigate = useNavigate({ from: '/quotas' });
   const search = useSearch({ from: '/quotas' });

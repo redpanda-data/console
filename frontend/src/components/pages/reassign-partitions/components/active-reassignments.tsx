@@ -134,7 +134,6 @@ export class ActiveReassignments extends Component<{
           onRow={(row) => {
             this.setState({ reassignmentDetails: row.original });
           }}
-          // Legacy parity: ten a page, pager only past that.
           pagination={currentReassignments.length > 10}
           sorting={false}
         />
@@ -280,7 +279,6 @@ async function changeThrottleRate(toastId: string, brokerIds: number[], value: n
     }
 
     setTimeout(() => {
-      // need to update actual value after changing
       api.refreshCluster(true);
     });
 

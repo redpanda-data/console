@@ -70,7 +70,6 @@ const loadedOf = <T>(value: T | undefined, isError: boolean): Loaded<T> => {
 
 type AllPages<Item> = {
   items: Item[] | undefined;
-  /** Every page is in. */
   complete: boolean;
   /** A page failed before the list was complete; a failed refresh of a complete list keeps it. */
   failed: boolean;
@@ -104,9 +103,7 @@ const useOrganizationLinks = (transport: Transport, enabled: boolean) => {
     () => ({
       items: all.items ?? NO_LINKS,
       loading: !(all.complete || all.failed),
-      /** False when a page failed part way through, so some links may be missing. */
       complete: !all.failed,
-      /** Not even the first page loaded. */
       unavailable: all.failed && all.items === undefined,
     }),
     [all]

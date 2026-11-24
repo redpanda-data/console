@@ -173,7 +173,6 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
   setCurrentTopicName: (topicName: string | undefined) => {
     set({ _currentTopicName: topicName });
 
-    // Side effect: create topic settings if needed
     if (topicName) {
       const uiSettings = useUISettingsStore.getState();
       if (!uiSettings.perTopicSettings.some((s) => s.topicName === topicName)) {

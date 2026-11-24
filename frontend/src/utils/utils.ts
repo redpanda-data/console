@@ -228,11 +228,9 @@ export function getAllMessageKeys(messages: TopicMessage[]) {
 }
 
 type Property = {
-  /** property name */
   propertyName: string;
   /** path to the property (excluding 'prop' itself) */
   path: string[];
-  /** path + prop */
   fullPath: string;
 };
 type GetAllKeysContext = {
@@ -297,7 +295,6 @@ export function groupConsecutive(ar: number[]) {
     if (group) {
       const last = group.at(-1);
       if (last === cur - 1) {
-        // We can extend the group
         group.push(cur);
         continue;
       }

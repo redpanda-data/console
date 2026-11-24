@@ -28,7 +28,6 @@ type KeyContext = Pick<KeyboardNavOptions, 'visibleKeys' | 'selectedKey' | 'onSe
   copy: (text: string) => void;
 };
 
-/** `/` focuses the filter input. */
 const focusFilterInput = (e: KeyboardEvent) => {
   e.preventDefault();
   document.querySelector<HTMLInputElement>('[data-testid="messages-filter-input"]')?.focus();

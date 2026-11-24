@@ -173,7 +173,6 @@ const linkUserLabel = (link: LinkIdentity) => {
   return link.principal;
 };
 
-/** Says why the exempt badge reads as it does, when it isn't a plain Exempt. */
 const exemptNote = ({ fence, source, linkExempt }: CloudStep, link: LinkIdentity) => {
   if (linkExempt === undefined) {
     return link.authentication === 'mtls'

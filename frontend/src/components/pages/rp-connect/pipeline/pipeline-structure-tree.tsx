@@ -206,9 +206,7 @@ type RowProps = {
   unsavedNodeIds?: ReadonlySet<string>;
   onSelect: (highlightId: string, editableId?: string) => void;
   nav: TreeNav;
-  /** aria-posinset: 1-based position among rendered siblings. */
   posinset: number;
-  /** aria-setsize: number of rendered siblings at this level. */
   setsize: number;
 };
 

@@ -51,7 +51,7 @@ import type { EditTarget } from '../utils/yaml';
 const invisibleHandle = '!w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
 const APPEAR_ANIM = 'fade-in zoom-in-95 animate-in duration-200';
 
-// cancel. Stop propagation natively, only for presses on a real control, so the card body still pans.
+// WARNING: Stop control presses natively; React handlers run too late to stop React Flow from starting a pan.
 const CONTROL_SELECTOR = 'button, a, input, select, textarea, [role="button"]';
 const PRESS_EVENTS = ['mousedown', 'pointerdown', 'touchstart'] as const;
 
@@ -196,7 +196,6 @@ export type FlowCardData = {
   meta?: NodeMetaEntry[];
   missingTopic?: boolean;
   missingSasl?: boolean;
-  // Routing into this branch (switch/fallback). Shown as a chip on the card.
   condition?: string;
   isDefault?: boolean;
   isErrorPath?: boolean;
@@ -225,7 +224,6 @@ export type FlowCardData = {
   deprecations?: string[];
   /** Config differs from the last-saved pipeline — flagged with an info-toned "unsaved" dot. */
   unsaved?: boolean;
-  // Injected by the canvas (edit mode only).
   onToggle?: () => void;
   onAddConnector?: (section: string) => void;
   onAddTopic?: (section: string, componentName: string) => void;
@@ -419,7 +417,6 @@ const LintBadge = ({ errors }: { errors?: string[] }) =>
     </ElementTooltip>
   ) : null;
 
-// A warning-toned badge on a node that uses a deprecated component; the warnings are its tooltip.
 const DeprecatedBadge = ({ messages }: { messages?: string[] }) =>
   messages?.length ? (
     <ElementTooltip content={<span className="whitespace-pre-line">{messages.join('\n')}</span>}>
@@ -515,7 +512,6 @@ type FlowInsertData = {
   payload?: FlowInsertPayload;
   /** A "ghost branch" add (e.g. Add case) reached by a dashed connector — styled as a pill. */
   ghost?: boolean;
-  // Injected by the canvas (edit mode only). Absent in read-only mode → not rendered.
   onInsert?: (payload: FlowInsertPayload) => void;
 };
 
@@ -549,11 +545,9 @@ const FlowInsertNode = ({ data }: { data: FlowInsertData }) => {
 };
 
 type LinkTone = 'primary' | 'muted' | 'error';
-// Edge LABELS also support the warning-toned routing-condition tone (the line itself stays primary).
 type LinkLabelTone = LinkTone | 'condition';
 type FlowLinkData = {
   label?: string;
-  /** Selection context: unrelated edges fade, connected ones render full strength. */
   dimmed?: boolean;
 };
 
@@ -621,7 +615,6 @@ function plural(n: number, noun: string) {
   return pluralizeWithNumber(n, noun, noun.endsWith('h') ? 'es' : 's');
 }
 
-// the count, `zero` is the fallback with no count (or no `noun`).
 type ControlFlowSpec = { icon: LucideIcon; noun?: string; prefix?: string; zero: string };
 const CONTROL_FLOW_SPECS: Record<string, ControlFlowSpec> = {
   switch: { icon: Split, noun: 'case', zero: 'router' },
@@ -789,11 +782,9 @@ type FlowGraphEdgeData = {
   emphasized?: boolean;
   faint?: boolean;
   onInsert?: () => void;
-  /** Click the (condition) label to select+edit its case. */
   onLabelClick?: () => void;
   /** Where along the edge (0–1) the label sits; defaults to the midpoint. */
   labelT?: number;
-  /** A faint, decorative "ghost" edge — drawn lighter. */
   ghost?: boolean;
 };
 
@@ -899,7 +890,6 @@ function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, tar
         <LinkLabel
           d={{ label: d.label, dimmed: d.dimmed }}
           onClick={d.onLabelClick}
-          // render it in the warning tone like the condition chips, not primary-blue. Line stays primary.
           tone={tone === 'primary' ? 'condition' : tone}
           x={label.x}
           y={d?.onInsert ? label.y - 18 : label.y}

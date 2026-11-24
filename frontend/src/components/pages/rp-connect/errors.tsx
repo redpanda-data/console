@@ -53,7 +53,6 @@ function toHintRecord(hints: LintHint[]) {
   return Object.fromEntries(hints.map((hint, index) => [`hint_${index}`, hint])) satisfies Record<string, LintHint>;
 }
 
-/** Lint hints carried by the error details, with each field violation converted to a hint. */
 function lintHintsFromDetails(details: ConnectError['details']) {
   const hints: LintHint[] = [];
   for (const detail of details) {

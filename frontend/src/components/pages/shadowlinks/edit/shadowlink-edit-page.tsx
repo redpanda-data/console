@@ -82,7 +82,6 @@ const useEditShadowLinkPageTitle = (name: string) => {
   }, [name]);
 };
 
-/** Toasts the update outcome, and returns to the details page once it succeeds. */
 const useShadowLinkUpdateFeedback = (
   name: string,
   dataplaneUpdate: EditShadowLink['dataplaneUpdate'],

@@ -931,7 +931,6 @@ type CanvasKeyboardOptions = {
   selection: InspectorSelection;
   history: CanvasHistory;
   stageDelete: (target: EditTarget) => void;
-  /** One of the editor's own dialogs is open. */
   dialogOpen: boolean;
 };
 

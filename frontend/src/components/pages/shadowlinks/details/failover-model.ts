@@ -23,7 +23,6 @@ type PeerUnavailableReason = Extract<ShadowLinkPeerFence, { status: 'unavailable
 
 type NoFenceReason = 'unsupported' | 'inactive' | 'forbidden';
 
-/** The source can't be fenced, or this viewer can't read its fence: no guided failover then. */
 const isNoFenceReason = (reason: PeerUnavailableReason): reason is NoFenceReason =>
   reason === 'unsupported' || reason === 'inactive' || reason === 'forbidden';
 
@@ -310,7 +309,6 @@ type FailoverStepId = 'settings' | 'fence' | 'fenced' | 'lag' | 'failover' | 'cl
 
 type SourceStepStates = Pick<Record<FailoverStepId, StepState>, 'settings' | 'fence' | 'fenced'>;
 
-/** The three steps on the source, as its fence reports them. */
 const getSourceStepStates: (fence: SourceFenceStep) => SourceStepStates = (fence) => {
   if (fence.kind !== 'cloud') {
     return { settings: 'current', fence: 'pending', fenced: 'pending' };

@@ -203,7 +203,6 @@ const FIXTURE_GROUPS: { tag: FixtureTag; label: string; chip: string; descriptio
   { tag: 'invalid', label: 'Invalid', chip: 'Invalid', description: 'Configs the editor or Connect should reject.' },
 ];
 
-// A stop-condition fixture lists under Stop conditions; any other under its first tag.
 const groupOf = (f: ConnectConfigFixture) => (f.tags.includes('stops') ? 'stops' : f.tags[0]);
 
 const SECRET_REF_RE = /\$\{secrets\.(?<secretName>[A-Za-z0-9_]+)\}/gu;

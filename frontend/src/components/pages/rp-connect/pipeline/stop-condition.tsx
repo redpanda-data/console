@@ -533,15 +533,12 @@ export function StopConditionEditor({
 }
 
 type StopConditionPopoverProps = Omit<StopConditionEditorProps, 'onClose'> & {
-  /** The trigger element (rendered via Base UI `render`). */
   trigger: ReactElement;
-  /** A tooltip on the trigger. */
   tooltip?: string;
   side?: 'top' | 'bottom' | 'left' | 'right';
   align?: 'start' | 'center' | 'end';
 };
 
-/** A trigger that opens the stop-condition editor (or, read-only, its explanation) in a popover. */
 function StopConditionPopover({
   trigger,
   tooltip,

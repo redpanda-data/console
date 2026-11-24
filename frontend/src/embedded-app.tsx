@@ -29,10 +29,7 @@ import './assets/fonts/kumbh-sans.css';
 
 /* end global stylesheet */
 
-/* start tailwind styles */
 import './globals.css';
-
-/* end tailwind styles */
 
 import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
