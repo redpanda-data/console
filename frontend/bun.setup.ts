@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, mock, test } from 'bun:test';
 
 import './src/utils/array-extensions';
 
-// Pure tests import UI modules without rendering them; their import-time browser reads still need a host.
 const nativeNetworking = {
   fetch,
   Request,
@@ -22,7 +21,7 @@ const nativeNetworking = {
   TransformStream,
 };
 GlobalRegistrator.register({ url: 'http://localhost:3000' });
-// DOM registration must not change the transport/constructor identity of Bun's networking stack.
+// WARNING: Restore Bun networking after DOM registration; replaced constructors break native request identity.
 Object.assign(globalThis, nativeNetworking);
 Object.assign(globalThis, { describe, expect, it, test });
 

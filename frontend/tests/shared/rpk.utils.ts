@@ -4,7 +4,6 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
-/** ESM-safe __dirname (frontend/package.json sets "type": "module"). */
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const execAsync = promisify(exec);

@@ -3,7 +3,6 @@ const delay = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
-/** Runs one attempt of the assertion, failing it once `remaining` ms have passed. */
 async function attemptBeforeDeadline<T>(assertion: () => T | Promise<T>, remaining: number, timeout: number) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -26,7 +25,6 @@ export function retryAssertion<T>(
   { timeout, intervals = [100, 250, 500, 1000] }: { timeout: number; intervals?: number[] }
 ) {
   const deadline = Date.now() + timeout;
-  // Retries recursively: each attempt settles, and its backoff elapses, before the next attempt starts.
   const attemptFrom = async (attempt: number) => {
     try {
       return await attemptBeforeDeadline(assertion, deadline - Date.now(), timeout);

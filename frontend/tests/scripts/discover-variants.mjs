@@ -6,11 +6,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const testsDir = resolve(__dirname, '..');
 
-/**
- * Reads one test-variant-* directory's config/variant.json
- * @param {string} dirName - Directory name under tests/ (e.g., "test-variant-console")
- * @returns {{name: string, dirName: string, path: string, config: object}|null} - null when the config is missing or unreadable
- */
 function readVariant(dirName) {
   const variantPath = join(testsDir, dirName);
   const configPath = join(variantPath, 'config', 'variant.json');
@@ -35,7 +30,8 @@ function readVariant(dirName) {
 }
 
 /**
- * Discovers all test variants by scanning for test-variant-* directories
+ * Discovers variants by scanning `test-variant-*` directories, omitting missing
+ * or unreadable configs.
  * @returns {Array<{name: string, dirName: string, path: string, config: object}>}
  */
 export function discoverVariants() {

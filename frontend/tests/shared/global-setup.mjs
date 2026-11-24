@@ -22,7 +22,6 @@ const __dirname = dirname(__filename);
 const CONTAINER_ID_REGEX = /container (?<containerId>[a-f0-9]+)/u;
 const MISSING_CONTAINER_PATTERN = /No such container/iu;
 const MISSING_NETWORK_PATTERN = /No such network/iu;
-// Workspace `use` entries in go.work, one module path per line
 const GO_WORK_USE_LINE_REGEX = /^\s+(?<modulePath>\S+)\s*$/gmu;
 const MODULE_PATH_SEPARATOR_REGEX = /[./]/gu;
 const EDGE_DASHES_REGEX = /^-+|-+$/gu;
@@ -57,11 +56,6 @@ function delay(ms) {
   });
 }
 
-/**
- * Load variant configuration from test-variant-{name}/config/variant.json
- * @param {string} variantName - The variant name (e.g., "console", "console-enterprise")
- * @returns {object} - The variant configuration including ports
- */
 function loadVariantConfig(variantName) {
   const variantDir = resolve(__dirname, '..', `test-variant-${variantName}`);
   const configPath = join(variantDir, 'config', 'variant.json');
@@ -87,7 +81,6 @@ async function probeHostPort(port) {
 }
 
 function waitForPort(port, maxAttempts = 30, delayMs = 500) {
-  // Polls recursively: each probe finishes, and the delay elapses, before the next probe starts.
   const pollFrom = async (attempt) => {
     if (attempt >= maxAttempts) {
       throw new Error(`Port ${port} failed to become available after ${maxAttempts} attempts`);
@@ -105,12 +98,8 @@ function waitForPort(port, maxAttempts = 30, delayMs = 500) {
   return pollFrom(0);
 }
 
-/**
- * Retries a command run inside the Docker network until it succeeds or the attempts run out.
- * Exhausting the attempts is not an error: callers continue and rely on later readiness checks.
- */
+// WARNING: Internal probes can exhaust their attempts and resolve; keep the separate host-port check where readiness is required.
 function waitForInternalProbe(command, { attempts, delayMs, label, logEvery }) {
-  // Polls recursively: each probe finishes, and the delay elapses, before the next probe starts.
   const pollFrom = async (attempt) => {
     if (attempt >= attempts) {
       return;
@@ -195,8 +184,7 @@ async function startRedpandaContainer(network, state, ports) {
 }
 
 async function verifyRedpandaServices(state, ports) {
-  // Docker health check already verified rpk cluster health passed.
-  // Just verify Schema Registry is responding (it can lag behind the broker).
+  // WARNING: Broker health does not establish Schema Registry readiness; keep the registry probe.
   console.log('Checking if Schema Registry is ready...');
   await waitForInternalProbe(
     `docker exec ${state.redpandaId} curl -s -m 3 -o /dev/null -w "%{http_code}" http://localhost:18081/subjects`,
@@ -301,23 +289,17 @@ async function createInternalTopic(state, topic, { compact }) {
 async function createKafkaConnectTopics(state) {
   console.log('Pre-creating Kafka Connect internal topics...');
 
-  // Kafka Connect internal storage topics must have cleanup.policy=compact
+  // WARNING: Keep Kafka Connect internal storage compacted; delete cleanup can discard task state.
   const compactTopics = ['_internal_connectors_offsets', '_internal_connectors_configs', '_internal_connectors_status'];
   const deleteTopics = ['__redpanda.connectors_logs'];
 
-  // The topics are independent and createInternalTopic handles its own failures, so they are created
-  // concurrently; every creation still finishes before Kafka Connect starts.
   await Promise.all([
     ...compactTopics.map((topic) => createInternalTopic(state, topic, { compact: true })),
     ...deleteTopics.map((topic) => createInternalTopic(state, topic, { compact: false })),
   ]);
 }
 
-// Write SASL password to a temp file so it can be mounted into the container.
-// The Redpanda Connectors image reads the password from a file at
-// /opt/kafka/connect-password/${CONNECT_SASL_PASSWORD_FILE} — passing SASL
-// settings via CONNECT_CONFIGURATION doesn't work because the config generator
-// appends security.protocol=PLAINTEXT after the user-provided config, overriding it.
+// WARNING: Mount the Kafka Connect SASL password file; pushing SASL settings into CONNECT_CONFIGURATION is overridden by PLAINTEXT.
 function writeKafkaConnectPasswordFile() {
   const passwordFile = resolve(__dirname, '.connect-sasl-password.tmp');
   writeFileSync(passwordFile, 'very-secret');
@@ -349,8 +331,7 @@ function startKafkaConnectContainer(network, ports, passwordFile) {
         CONNECT_LOG_LEVEL: 'info',
         CONNECT_TOPIC_LOG_ENABLED: 'true',
       })
-      // Use log-based wait: avoids IPv4/IPv6 port-forwarding issues on macOS Docker Desktop.
-      // Kafka Connect prints "REST resources initialized" when the HTTP API is ready.
+      // WARNING: Wait for the Kafka Connect ready log before probing the API; Docker Desktop host forwarding can lag.
       .withWaitStrategy(Wait.forLogMessage(/.*REST resources initialized.*/iu))
       .withStartupTimeout(300_000)
       .start()
@@ -358,7 +339,6 @@ function startKafkaConnectContainer(network, ports, passwordFile) {
 }
 
 async function waitForKafkaConnectApi(state, ports) {
-  // Verify it's responding via docker exec (avoids macOS Docker Desktop port-forwarding latency)
   console.log('Verifying Kafka Connect API...');
   await waitForInternalProbe(
     `docker exec ${state.redpandaId} curl -s -m 5 -o /dev/null -w "%{http_code}" http://connect:8083/`,
@@ -366,7 +346,6 @@ async function waitForKafkaConnectApi(state, ports) {
   );
   console.log('✓ Kafka Connect API ready (internal)');
 
-  // Also wait for the host port to be forwarded (needed for tests that POST directly to the API)
   console.log(`Waiting for Kafka Connect host port ${ports.kafkaConnect}...`);
   await waitForPort(ports.kafkaConnect, 60, 2000);
   console.log(`✓ Kafka Connect host port ${ports.kafkaConnect} ready`);
@@ -476,7 +455,7 @@ function resolveBackendDir(isEnterprise) {
     backendDir = resolve(__dirname, '../../../backend');
   }
 
-  // Resolve symlinks to real path (needed for Docker build context)
+  // WARNING: Pass Docker the real backend directory; a symlink can resolve outside the build context.
   if (existsSync(backendDir)) {
     backendDir = realpathSync(backendDir);
   }
@@ -484,8 +463,6 @@ function resolveBackendDir(isEnterprise) {
 }
 
 function resolveFrontendBuildDir(backendDir, isEnterprise) {
-  // Copy frontend assets before build (required for both OSS and Enterprise)
-  // The pkg/embed/frontend/ directory has .gitignore with *, so assets don't exist in CI
   if (isEnterprise && !existsSync(backendDir)) {
     throw new Error(
       `Enterprise backend directory not found: ${backendDir}\nEnterprise E2E tests require console-enterprise repo to be checked out alongside console repo.`
@@ -513,9 +490,7 @@ async function copyFrontendAssets(build, frontendBuildDir, isEnterprise) {
   console.log('✓ Frontend assets copied');
 }
 
-// Detect and recover from a corrupted go.work left by a previous interrupted run.
-// A corrupted go.work references .e2e-workspace/ paths that no longer exist on disk.
-// In that case, use go.ci.work (the canonical workspace template) as the base instead.
+// WARNING: An interrupted build can leave deleted .e2e-workspace paths in go.work; restore the canonical go.ci.work before copying.
 function resetStaleGoWork(build) {
   const ciWorkPath = join(build.backendDir, 'go.ci.work');
   if (existsSync(ciWorkPath)) {
@@ -533,9 +508,7 @@ function resetStaleGoWork(build) {
   }
 }
 
-// Resolve the actual path relative to backendDir, or fall back to the
-// repo root (parent of backendDir). go.work paths like ../console/backend
-// are authored relative to the repo root, not the backend/ subdir.
+// WARNING: Keep the repo-root fallback; some go.work paths are relative to the repo root, not the backend directory.
 function resolveWorkspaceModulePath(backendDir, modulePath) {
   const absModulePath = resolve(backendDir, modulePath);
   if (existsSync(absModulePath)) {
@@ -561,13 +534,11 @@ async function copyWorkspaceModule(workspaceDir, modulePath, absModulePath) {
 }
 
 async function copyWorkspaceModules(backendDir, workspaceDir, goWork) {
-  // Parse workspace module paths (skip "." which is the backend itself)
   const modulePaths = Array.from(goWork.matchAll(GO_WORK_USE_LINE_REGEX), ([, modulePath]) => modulePath).filter(
     (modulePath) => !(modulePath === '.' || modulePath === 'use' || modulePath === '(' || modulePath === ')')
   );
   const rewrittenPaths = [];
-  // Copy one module at a time: after a failed copy no other copy may still be writing into
-  // .e2e-workspace when cleanupWorkspaceBuild removes it.
+  // WARNING: Copy workspaces serially; after a failure, cleanup removes the destination and must not race another copy.
   await modulePaths.reduce(
     (previousCopy, modulePath) =>
       previousCopy.then(async () => {
@@ -609,8 +580,6 @@ async function prepareWorkspaceBuild(build) {
 async function runDockerBuild(backendDir, dockerfilePath, tempDockerfile, imageTag) {
   console.log('Building Docker image with BuildKit...');
   await execAsync(`cp "${dockerfilePath}" "${tempDockerfile}"`);
-  // Use docker buildx with BuildKit cache mounts for Go module and build caches.
-  // This is significantly faster than testcontainers build on repeat runs.
   await execAsync(`DOCKER_BUILDKIT=1 docker build -f .dockerfile.e2e.tmp -t ${imageTag} .`, {
     cwd: backendDir,
     maxBuffer: 50 * 1024 * 1024,
@@ -618,23 +587,14 @@ async function runDockerBuild(backendDir, dockerfilePath, tempDockerfile, imageT
   console.log('✓ Backend image built');
 }
 
-/**
- * Runs every build step, recording each temporary artifact on `build` as soon as it
- * exists so cleanup can undo exactly what a failed step left behind.
- */
+// WARNING: Record each temporary path before modifying it; otherwise a partially failed build can leave it behind.
 async function buildImageInContext(build, isEnterprise, imageTag) {
   const frontendBuildDir = resolveFrontendBuildDir(build.backendDir, isEnterprise);
   await copyFrontendAssets(build, frontendBuildDir, isEnterprise);
 
-  // Build Docker image using testcontainers
-  // Docker doesn't allow Dockerfiles to reference files outside build context,
-  // so we temporarily copy the Dockerfile into the build context
   const dockerfilePath = resolve(__dirname, 'Dockerfile.backend');
   build.tempDockerfile = join(build.backendDir, '.dockerfile.e2e.tmp');
 
-  // For enterprise workspace builds (go.work exists), the workspace references
-  // modules outside the backend/ directory (e.g., ../console-oss/backend).
-  // We copy those into the build context and rewrite go.work to use local paths.
   const isWorkspaceBuild = isEnterprise && existsSync(join(build.backendDir, 'go.work'));
   build.workspaceDir = isWorkspaceBuild ? join(build.backendDir, '.e2e-workspace') : null;
 
@@ -668,6 +628,11 @@ async function buildImageWithCleanup(build, isEnterprise, imageTag) {
   throwBackendBuildFailures(buildError, cleanupBackendBuild(build));
 }
 
+/**
+ * Builds the backend with the CI embed assets and BuildKit cache. Docker needs the
+ * Dockerfile and all modules inside its context, so an Enterprise build stages the
+ * workspace modules and rewrites `go.work` only for the duration of the build.
+ */
 export async function buildBackendImage(isEnterprise) {
   console.log(`Building backend Docker image ${isEnterprise ? '(Enterprise)' : '(OSS)'}...`);
 
@@ -684,21 +649,6 @@ export async function buildBackendImage(isEnterprise) {
   return imageTag;
 }
 
-/**
- * Resolves the environment for the Console Enterprise backend container.
- *
- * By default the enterprise backend runs without a Console license. Its config
- * has no `licenseFilepath`, so Console asks the Redpanda cluster for its license
- * and picks up the built-in 30-day trial that every fresh cluster starts with
- * (Redpanda >= 24.3). The e2e clusters are created from scratch on every run,
- * so that trial is always valid and CI needs no license secret.
- *
- * Set REDPANDA_LICENSE_PATH to a license file to run against a real license
- * instead, e.g. for license-specific tests. Its contents are passed to Console
- * through the REDPANDA_LICENSE environment variable the backend reads at startup.
- *
- * @returns {Record<string, string>} Environment variables for the backend container
- */
 function resolveEnterpriseLicenseEnv() {
   const licensePath = process.env.REDPANDA_LICENSE_PATH;
   if (!licensePath) {
@@ -755,8 +705,7 @@ function createBackendContainer({ bindMounts, environment, imageTag, network, po
       .withBindMounts(bindMounts)
       .withEnvironment(environment)
       .withCommand(['--config.filepath=/etc/console/config.yaml'])
-      // Testcontainers 12 prefers an image healthcheck when present. Preserve
-      // the backend's established port-readiness contract across the upgrade.
+      // WARNING: An image health check does not prove the backend port is listening; keep the explicit port wait.
       .withWaitStrategy(Wait.forListeningPorts())
   );
 }
@@ -865,7 +814,6 @@ async function printInitialBackendLogs(containerId) {
 }
 
 async function waitForBackendReady(state, ports) {
-  // Wait for backend via docker exec (avoids macOS Docker Desktop port-forwarding latency)
   console.log('Waiting for backend to be ready (internal port 3000)...');
   await waitForInternalProbe(
     `docker exec ${state.redpandaId} curl -s -m 5 -o /dev/null -w "%{http_code}" http://console-backend:3000/`,
@@ -873,7 +821,6 @@ async function waitForBackendReady(state, ports) {
   );
   console.log('✓ Backend ready (internal)');
 
-  // Also wait for host port to be forwarded (browser navigates to localhost:port)
   console.log(`Waiting for backend host port ${ports.backend}...`);
   await waitForPort(ports.backend, 90, 2000);
   console.log(`✓ Backend host port ${ports.backend} ready`);
@@ -883,7 +830,6 @@ async function launchBackendContainer(options) {
   const { attempt, network, ports, state } = options;
   logBackendContainerSummary(network, ports);
 
-  // Create container without wait strategy first to get the ID immediately
   const container = createBackendContainer(options);
 
   console.log('Calling container.start()...');
@@ -931,7 +877,6 @@ async function startBackendServer(network, isEnterprise, imageTag, state, varian
 
   logBindMounts(bindMounts);
 
-  // Tracks the container ID as soon as it is known, so a failure at any later step can fetch its logs.
   const attempt = { containerId: undefined };
   try {
     await launchBackendContainer({ attempt, bindMounts, environment, imageTag, network, ports, state });
@@ -1098,8 +1043,6 @@ async function printContainerStateDiagnostics(containerId) {
 async function reportConfiguredBackendFailure(error, { attempt, externalPort, imageTag }) {
   console.error(`Failed to start backend on port ${externalPort}:`, error.message);
 
-  // The buffered log stream is the reliable record: when `.start()` throws, Ryuk reaps the
-  // container almost immediately, so `docker logs` against it races removal and loses.
   if (attempt.startupLogs.length > 0) {
     console.error(`Backend container output (${imageTag}):`);
     console.error(attempt.startupLogs.join(''));
@@ -1126,9 +1069,7 @@ async function startBackendServerWithConfig({
 
   const environment = isEnterprise ? resolveEnterpriseLicenseEnv() : {};
 
-  // Buffer the container's own output from the moment it starts: when the backend crashes
-  // during startup, `.start()` throws and Ryuk reaps the container before `docker logs` can
-  // reach it — this live stream is the only record of WHY the backend died.
+  // WARNING: Keep startup logs in memory; Ryuk may reap a failed container before docker logs can read it.
   const attempt = { containerId: undefined, startupLogs: [] };
   try {
     await launchConfiguredBackend({
@@ -1233,7 +1174,6 @@ function logSetupBanner({ variantName, configFile, isEnterprise, needsShadowlink
 }
 
 async function resolveBackendImageTag(isEnterprise) {
-  // Use pre-built image tag if available (set by run-all-variants.mjs), otherwise build
   const prebuiltTag = isEnterprise ? process.env.E2E_PREBUILT_IMAGE_TAG_ENTERPRISE : process.env.E2E_PREBUILT_IMAGE_TAG;
   return prebuiltTag || (await buildBackendImage(isEnterprise));
 }
@@ -1333,9 +1273,7 @@ async function startServices(context) {
     createKafkaConnectTopics(state).then(() => (needsConnect ? startKafkaConnect(network, state, ports) : null)),
   ];
 
-  // For variants that need Kafka Connect, the backend must start AFTER Connect is ready
-  // (the backend proxies connector APIs and tests immediately hit those endpoints).
-  // For other variants, start the backend in parallel with services.
+  // WARNING: Wait for Kafka Connect before starting its Console proxy; connector tests hit the proxy immediately.
   if (!needsConnect) {
     servicePromises.push(...startParallelBackends(context));
   }
@@ -1344,7 +1282,6 @@ async function startServices(context) {
 }
 
 async function stabilizeForCi({ isEnterprise, needsShadowlink }) {
-  // Give services extra time to stabilize in CI (especially shadowlink replication)
   if (isEnterprise && needsShadowlink && process.env.CI) {
     console.log('CI detected: Giving services 3 seconds to stabilize...');
     await delay(3000);
@@ -1360,7 +1297,6 @@ async function startRedpandaVariant(context) {
 
   await startServices(context);
 
-  // Start backend after Kafka Connect for connect variants
   if (needsConnect) {
     await startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports);
   }
@@ -1397,12 +1333,16 @@ async function cleanupAfterSetupFailure(error, state) {
   }
 }
 
+/**
+ * Starts and tracks the selected variant. Dynamic host-port overrides take
+ * precedence over its JSON config; the test runner uses them for the browser origin.
+ *
+ * Enterprise variants use the fresh cluster's built-in trial unless
+ * `REDPANDA_LICENSE_PATH` names a file whose contents are passed as `REDPANDA_LICENSE`.
+ */
 export default async function globalSetup(config = {}) {
   const metadata = readSetupMetadata(config);
 
-  // Load ports from variant's config/variant.json, then apply any dynamic
-  // host-port overrides chosen by run-variant.mjs (E2E_PORTS_OVERRIDE) so local
-  // runs avoid collisions with whatever is on the default ports.
   const variantConfig = loadVariantConfig(metadata.variantName);
   const ports = { ...variantConfig.ports, ...parsePortsOverride() };
 

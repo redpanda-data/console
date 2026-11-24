@@ -17,7 +17,7 @@ function variantEnv(variant) {
   return {
     ...process.env,
     E2E_VARIANT: variant.name,
-    // Force IPv4 for testcontainers wait strategies
+    // WARNING: Keep IPv4 as the default Testcontainers host; resolving localhost to ::1 can hang on Docker Desktop.
     TESTCONTAINERS_HOST_OVERRIDE: process.env.TESTCONTAINERS_HOST_OVERRIDE ?? '127.0.0.1',
   };
 }
@@ -76,17 +76,13 @@ function runVariant(variant, rstestArgs = []) {
 
   const args = ['run', 'rstest', ...rstestArgs, '--config', configPath];
 
-  // In CI with parallel variants, pipe output to log files to avoid interleaving.
-  // Locally or with a single variant, inherit stdio for immediate feedback.
   const isParallel = process.env.CI;
   const spawned = isParallel ? spawnVariantWithLogFile(variant, args) : spawnVariantWithInheritedOutput(variant, args);
 
   return waitForVariant(variant, spawned, startTime, rstestArgs);
 }
 
-// Pre-build backend Docker images once before launching variants in parallel.
-// This avoids race conditions where multiple variants try to copy frontend assets
-// and build the same Docker image concurrently.
+// WARNING: Prebuild once before spawning variants; parallel builds can overwrite each other’s embedded assets and image tags.
 async function prebuildBackendImages(variants) {
   console.log('\nPre-building backend Docker image(s)...');
   const needsEnterprise = variants.some((v) => v.config.isEnterprise);
@@ -148,7 +144,6 @@ function printFailedVariantLogs(results) {
 function runVariantsInParallel(variants, rstestArgs) {
   console.log(`\nRunning ${variants.length} variant(s) in parallel...`);
 
-  // Run all variants in parallel — each uses different ports and Docker networks
   return Promise.all(variants.map((variant) => runVariant(variant, rstestArgs)));
 }
 
@@ -191,6 +186,5 @@ async function runAllVariants(rstestArgs = []) {
   reportResults(results, rstestArgs);
 }
 
-// CLI: top-level await lets Node report a failed run and exit non-zero.
 const args = process.argv.slice(2);
 await runAllVariants(args);
