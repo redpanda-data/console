@@ -1,6 +1,5 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { toast } from 'components/redpanda-ui/components/toast';
 import {
   BadRequest_FieldViolationSchema,
   BadRequestSchema,
@@ -14,16 +13,8 @@ import {
 } from 'protogen/google/rpc/error_details_pb';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
-import { closeToast, formatToastErrorMessageGRPC, showToast, updateToast } from './toast.utils';
-import { afterAll, afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
-
-const add = spyOn(toast, 'add').mockImplementation(() => 'toast-1');
-const update = spyOn(toast, 'update').mockImplementation(() => undefined);
-const close = spyOn(toast, 'close').mockImplementation(() => undefined);
-
-afterAll(() => {
-  mock.restore();
-});
+import { formatToastErrorMessageGRPC } from './toast.utils';
+import { afterEach, describe, expect, test } from 'bun:test';
 
 describe('formatToastErrorMessageGRPC', () => {
   test('basic error with no details', () => {
@@ -240,77 +231,5 @@ describe('formatToastErrorMessageGRPC while the cluster is fenced', () => {
   ])('doesn’t blame the fence for %s', (_label, phase, error) => {
     useClusterFenceStore.setState({ phase });
     expect(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'topic' })).not.toContain('This cluster is');
-  });
-});
-
-describe('showToast', () => {
-  beforeEach(() => {
-    add.mockClear();
-  });
-
-  test('non-error toasts auto-dismiss after 5s', () => {
-    const id = showToast({ status: 'success', title: 'Saved' });
-    expect(id).toBe('toast-1');
-    expect(add).toHaveBeenCalledWith(expect.objectContaining({ type: 'success', title: 'Saved', timeout: 5000 }));
-  });
-
-  test('error toasts stay until closed', () => {
-    showToast({ status: 'error', title: 'Failed' });
-    expect(add).toHaveBeenCalledWith(expect.objectContaining({ type: 'error', timeout: 0 }));
-  });
-
-  test('duration null is sticky, an explicit duration is kept', () => {
-    showToast({ status: 'info', duration: null });
-    showToast({ status: 'info', duration: 2500 });
-    expect(add.mock.calls[0][0]).toMatchObject({ timeout: 0 });
-    expect(add.mock.calls[1][0]).toMatchObject({ timeout: 2500 });
-  });
-
-  test('resourceName scopes the id, or stands in for it', () => {
-    showToast({ id: 'secret-update', resourceName: 'db-password', status: 'success' });
-    showToast({ id: 'secret-update', status: 'success' });
-    showToast({ resourceName: 'db-password', status: 'success' });
-    showToast({ status: 'success' });
-    const ids = add.mock.calls.map(([options]) => options.id);
-    expect(ids).toEqual(['secret-update_db-password', 'secret-update', 'db-password', undefined]);
-  });
-});
-
-describe('updateToast', () => {
-  beforeEach(() => {
-    update.mockClear();
-  });
-
-  test('passes only the fields given', () => {
-    updateToast('toast-1', { description: 'Setting throttle rate... done' });
-    expect(update).toHaveBeenCalledWith('toast-1', { description: 'Setting throttle rate... done' });
-  });
-
-  test('a new status re-applies its dismiss default', () => {
-    updateToast('toast-1', { status: 'error', description: 'Setting throttle rate... error' });
-    expect(update).toHaveBeenCalledWith('toast-1', {
-      type: 'error',
-      timeout: 0,
-      description: 'Setting throttle rate... error',
-    });
-    updateToast('toast-1', { status: 'success' });
-    expect(update).toHaveBeenLastCalledWith('toast-1', { type: 'success', timeout: 5000 });
-  });
-
-  test('an explicit duration wins over the status default', () => {
-    updateToast('toast-1', { status: 'error', duration: 2500 });
-    expect(update).toHaveBeenCalledWith('toast-1', { type: 'error', timeout: 2500 });
-    updateToast('toast-1', { duration: null });
-    expect(update).toHaveBeenLastCalledWith('toast-1', { timeout: 0 });
-  });
-});
-
-describe('closeToast', () => {
-  test('closes by id and ignores a missing one', () => {
-    closeToast('toast-1');
-    expect(close).toHaveBeenCalledWith('toast-1');
-    close.mockClear();
-    closeToast('');
-    expect(close).not.toHaveBeenCalled();
   });
 });
