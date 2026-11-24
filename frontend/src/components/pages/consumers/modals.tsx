@@ -841,9 +841,11 @@ const useDeleteOffsets = ({
       // WARNING: The legacy refresh reports request failures through the API error store and does not return a promise.
       api.refreshConsumerGroups(true);
       // WARNING: Report refresh failure separately; it must not replace the outcome of deleting offsets.
-      await queryClient.invalidateQueries({ queryKey: ['consumer-groups'] }).catch((error: unknown) => {
-        toast.error('Failed to refresh consumer groups', { description: String(error) });
-      });
+      await queryClient
+        .invalidateQueries({ queryKey: ['consumer-groups'] }, { throwOnError: true })
+        .catch((error: unknown) => {
+          toast.error('Failed to refresh consumer groups', { description: String(error) });
+        });
     }
   };
 

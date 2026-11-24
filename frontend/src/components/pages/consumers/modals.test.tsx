@@ -1,7 +1,12 @@
-import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { QueryClient } from '@tanstack/react-query';
+import { afterEach, beforeEach, describe, expect, onTestFinished, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { toast } from 'sonner';
+import { config, createAuthInjectingFetch } from 'config';
+import { HttpResponse, http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
+import { useState } from 'react';
+import { useLegacyListConsumerGroupsFullQuery } from 'react-query/api/consumer-group';
+import { Toaster, toast } from 'sonner';
 import { useApiStore } from 'state/backend-api';
 import type { GroupDescription } from 'state/rest-interfaces';
 import { render, screen, waitFor, within } from 'test-utils';
@@ -113,55 +118,91 @@ describe('editOffsetsModal', () => {
   });
 });
 
+function DeleteGroupHarness() {
+  const [open, setOpen] = useState(true);
+  const { data } = useLegacyListConsumerGroupsFullQuery();
+  return (
+    <>
+      <Toaster expand />
+      <p>Loaded consumer group: {data.consumerGroups[0]?.groupId}</p>
+      <DeleteOffsetsModal group={group} mode="group" offsets={open ? offsets : null} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
+const groupsUrl = new URL(`${config.restBasePath}/consumer-groups`, window.location.href).href;
+const guardedFetch = globalThis.fetch;
+
+function serveGroupDeletion(rejectDelete: boolean) {
+  const requests: string[] = [];
+  let deletionSent = false;
+  const server = setupServer(
+    http.get(groupsUrl, () => {
+      requests.push('GET');
+      return deletionSent
+        ? HttpResponse.text('refresh failed', { status: 503, statusText: 'Refresh unavailable' })
+        : HttpResponse.json({ consumerGroups: [group] });
+    }),
+    http.delete(`${groupsUrl}/test-group`, () => {
+      requests.push('DELETE');
+      deletionSent = true;
+      return rejectDelete
+        ? HttpResponse.text('delete denied', { status: 403 })
+        : new HttpResponse(null, { status: 204 });
+    })
+  );
+  server.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in the consumer group modal');
+    },
+  });
+  const { fetch } = config;
+  const apiState = useApiStore.getState();
+  config.fetch = createAuthInjectingFetch(globalThis.fetch);
+  onTestFinished(() => {
+    config.fetch = fetch;
+    server.close();
+    useApiStore.setState(apiState, true);
+    toast.dismiss();
+  });
+  return requests;
+}
+
+async function confirmDelete(rejectDelete: boolean) {
+  const requests = serveGroupDeletion(rejectDelete);
+  const user = userEvent.setup();
+  render(<DeleteGroupHarness />);
+  await screen.findByText('Loaded consumer group: test-group');
+  await user.click(screen.getByRole('button', { name: 'Delete' }));
+  return requests;
+}
+
+async function expectRefreshReported(requests: string[]) {
+  expect(await screen.findByText('Failed to refresh consumer groups')).toBeVisible();
+  expect(screen.getByText('Error: Failed to fetch consumer groups: Refresh unavailable')).toBeVisible();
+  expect(requests).toEqual(['GET', 'DELETE', 'GET', 'GET']);
+}
+
+const deleteFailureMessage = /Could not delete selected offsets in consumer group test-group/u;
+
 describe('deleteOffsetsModal', () => {
-  const initialApiState = useApiStore.getState();
-
-  beforeEach(() => {
-    useApiStore.setState({ refreshConsumerGroups: rs.fn() });
-  });
-
-  afterEach(() => {
-    rs.restoreAllMocks();
-    useApiStore.setState(initialApiState, true);
-  });
-
-  const refreshFailure = { description: 'Error: refresh failed' };
-
-  async function confirmDeleteWithFailingRefresh(deleteConsumerGroup: () => Promise<void>) {
-    const user = userEvent.setup();
-    const onClose = rs.fn();
-    useApiStore.setState({ deleteConsumerGroup: rs.fn(deleteConsumerGroup) });
-    rs.spyOn(QueryClient.prototype, 'invalidateQueries').mockRejectedValue(new Error('refresh failed'));
-    render(<DeleteOffsetsModal group={group} mode="group" offsets={offsets} onClose={onClose} />);
-    await user.click(await screen.findByTestId('delete-offsets-confirm-button'));
-    return onClose;
-  }
-
   test('keeps a successful delete when refreshing the groups fails', async () => {
-    const toastSuccess = rs.spyOn(toast, 'success');
-    const toastError = rs.spyOn(toast, 'error');
+    const requests = await confirmDelete(false);
 
-    const onClose = await confirmDeleteWithFailingRefresh(() => Promise.resolve());
-
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith('Failed to refresh consumer groups', refreshFailure));
-    expect(toastSuccess).toHaveBeenCalledWith('Deleting offsets - done', expect.anything());
-    expect(onClose).toHaveBeenCalledTimes(1);
-    expect(useApiStore.getState().refreshConsumerGroups).toHaveBeenCalledWith(true);
+    expect(await screen.findByText('Deleting offsets - done')).toBeVisible();
+    await expectRefreshReported(requests);
+    expect(screen.queryByRole('alertdialog', { name: 'Delete consumer group' })).not.toBeInTheDocument();
   });
 
   test('still reports the delete failure when refreshing the groups also fails', async () => {
-    const toastError = rs.spyOn(toast, 'error');
-    const consoleError = rs.spyOn(console, 'error').mockImplementation(() => undefined);
-    const deleteFailure = new Error('delete denied');
+    const requests = await confirmDelete(true);
 
-    const onClose = await confirmDeleteWithFailingRefresh(() => Promise.reject(deleteFailure));
-
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith('Failed to refresh consumer groups', refreshFailure));
-    expect(toastError).toHaveBeenCalledWith(
-      expect.stringContaining('Could not delete selected offsets in consumer group test-group'),
-      expect.anything()
-    );
-    expect(consoleError).toHaveBeenCalledWith(deleteFailure);
-    expect(onClose).not.toHaveBeenCalled();
+    expect(await screen.findByText(deleteFailureMessage)).toBeVisible();
+    await expectRefreshReported(requests);
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete consumer group' });
+    expect(within(dialog).getByRole('button', { name: 'Delete' })).toBeEnabled();
   });
 });
