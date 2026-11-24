@@ -1,9 +1,4 @@
-import { step } from '../../shared/e2e';
-
-// spec: specs/topics.md
-// seed: tests/shared/seed.e2e.test.ts
-
-import { expect, type Page, test } from '../../shared/e2e';
+import { expect, type Page, step, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 const createTopicFromList = async (page: Page, topicName: string) => {

@@ -141,7 +141,6 @@ export class TopicPage {
     if (format === 'csv') {
       await this.page.getByTestId('csv_field').click();
     }
-    // JSON is default, no action needed
   }
 
   async confirmExport() {
@@ -208,7 +207,6 @@ export class TopicPage {
   }
 
   async fillKeyEditor(content: string) {
-    // The key is a single-line input until "Expand" swaps in the code editor.
     const keyInput = this.page.getByTestId('produce-key-editor').getByRole('textbox');
     await keyInput.fill(content);
     await expect(keyInput).toHaveValue(content);

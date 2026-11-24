@@ -1,15 +1,6 @@
 import { definePlaywrightOptions } from '../shared/playwright-options';
 
-/**
- * spec: UX-1208 — Phase 1 e2e test coverage (CRITICAL + HIGH)
- * parent epic: UX-1198 — REST-to-Connect RPC migration
- *
- * Guards the Casbin→PERMISSION_VIEW swap for users/ACLs/quotas: view-only roles MUST be able
- * to list (all three are PERMISSION_VIEW in the dataplane proto) but MUST NOT be able to
- * create/update/delete (those are PERMISSION_ADMIN).
- *
- * Blocked on: new view-only auth fixture (playwright/.auth/view-only.json) — see UX-1209.
- */
+// WARNING: UX-1208: view-only users must be able to list users, ACLs and quotas without gaining mutation access.
 
 import { test as base, expect, type Locator } from '../shared/e2e';
 
@@ -79,7 +70,7 @@ test.describe.skipIf(!VIEW_ONLY_FIXTURE_READY)('authorization - ACLs page (view-
   test('deleteACLs dropdown items are hidden in permissions list for view-only', async ({ page, skip }) => {
     await page.goto('/security/permissions-list', { waitUntil: 'domcontentloaded' });
 
-    const firstRow = page.getByRole('row').nth(1); // nth(0) is the header
+    const firstRow = page.getByRole('row').nth(1);
     const rowExists = await firstRow.isVisible().catch(() => false);
     if (!rowExists) {
       skip();

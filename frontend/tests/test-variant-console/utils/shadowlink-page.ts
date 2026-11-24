@@ -15,25 +15,21 @@ type TopicFilter = {
   pattern: string;
 };
 
-/** Value of the create wizard's topic filter tab for each filter and pattern type. */
 const TOPIC_FILTER_TAB_VALUES: Record<TopicFilter['filter'], Record<TopicFilter['type'], string>> = {
   INCLUDE: { LITERAL: 'include-specific', PREFIX: 'include-prefix' },
   EXCLUDE: { LITERAL: 'exclude-specific', PREFIX: 'exclude-prefix' },
 };
 
-/** Label of the edit page's topic filter tab for each filter and pattern type. */
 const TOPIC_FILTER_TAB_LABELS: Record<TopicFilter['filter'], Record<TopicFilter['type'], string>> = {
   INCLUDE: { LITERAL: 'Include specific topics', PREFIX: 'Include starting with' },
   EXCLUDE: { LITERAL: 'Exclude specific', PREFIX: 'Exclude starting with' },
 };
 
-// Runs in the browser: whether the button holds the collapsible's chevron icon.
 const isChevronButton = (button: Element) => {
   const svg = button.querySelector('svg');
   if (!svg) {
     return false;
   }
-  // ChevronDown has specific classes h-4 w-4 transition-transform
   const classes = Array.from(svg.classList);
   return (
     classes.includes('lucide-chevron-down') ||
@@ -51,13 +47,10 @@ const findFirstChevronButton = async ([btn, ...remainingButtons]: Locator[]) => 
   return findFirstChevronButton(remainingButtons);
 };
 
-// Runs in the browser: whether the button holds a trash icon.
 const isTrashButton = (button: Element) => button.querySelector('svg')?.classList.contains('lucide-trash');
 
-/** The name input of every editable topic filter card, one per filter. */
 const TOPIC_FILTER_NAME_INPUTS = '[data-testid^="topic-filter-"][data-testid$="-name"]';
 
-// Dataplane ShadowLinkService RPCs the details page calls.
 const FAILOVER_RPC_URL = /\/redpanda\.api\.dataplane\.v1\.ShadowLinkService\/FailOver/u;
 const LIST_SHADOW_TOPICS_RPC_URL = /\/redpanda\.api\.dataplane\.v1\.ShadowLinkService\/ListShadowLinkTopics/u;
 
@@ -74,7 +67,6 @@ const createExecAsync: () => Promise<ExecAsync> = async () => {
 const getStateFileCandidates = async () => {
   const { dirname, resolve } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
-  // ESM-safe __dirname equivalent (frontend/package.json sets "type": "module").
   const testsDir = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
   return [
     resolve(testsDir, '.testcontainers-state-console-enterprise.json'),
@@ -105,8 +97,7 @@ const findContainerIdInStateFiles = async () => {
   }
 };
 
-// Fallback: try to find container by exposed port (19193 for console-enterprise, 19093 for console).
-// Ports are tried recursively in that order and the search stops at the first match, so console-enterprise wins.
+// WARNING: Prefer the enterprise broker to the OSS broker when falling back to port lookup.
 const findContainerIdByPort = async (
   execAsync: ExecAsync,
   [port, ...remainingPorts]: string[] = ['19193', '19093']
@@ -132,7 +123,6 @@ const findDestinationContainerId = async (execAsync: ExecAsync) => {
   return findContainerIdByPort(execAsync);
 };
 
-// Owlshop topics are the ones replicated by the shadowlink.
 const parseReplicatedTopics = (topicListOutput: string) =>
   topicListOutput
     .split('\n')
@@ -149,7 +139,7 @@ const deleteReplicatedTopics = async (execAsync: ExecAsync, containerId: string)
     return;
   }
   console.log(`  Found ${topics.length} topics to delete: ${topics.join(', ')}`);
-  // Chained one `docker exec` at a time so container load stays bounded however many topics were replicated.
+  // WARNING: Delete replicated topics sequentially so a large topic list cannot exhaust container exec capacity.
   await topics.reduce<Promise<unknown>>(
     (previousDelete, topic) =>
       previousDelete.then(async () => {
@@ -170,6 +160,8 @@ const deleteReplicatedTopics = async (execAsync: ExecAsync, containerId: string)
  * Shadowlinks are created on the DESTINATION cluster console
  * to pull data FROM the source cluster.
  * Uses shadowBackendURL from Playwright config if available.
+ *
+ * Supply the destination URL from the test fixture; port 3001 is only the local fallback. Link cleanup removes the OwlShop topics replicated to that destination.
  */
 export class ShadowlinkPage {
   readonly page: Page;
@@ -177,8 +169,6 @@ export class ShadowlinkPage {
 
   constructor(page: Page, shadowBackendURL?: string) {
     this.page = page;
-    // shadowBackendURL should be passed from the test using the fixture
-    // Falls back to 3001 if not provided
     this.shadowBackendURL = shadowBackendURL ?? 'http://localhost:3001';
   }
 
@@ -230,7 +220,6 @@ export class ShadowlinkPage {
     await this.page.getByRole('button', { name: /next/iu }).click();
   }
 
-  /** Clicks the toggle when its state differs from `checked`. */
   private async setToggle(testId: string, checked: boolean) {
     const toggle = this.page.getByTestId(testId);
     if ((await toggle.isChecked()) !== checked) {
@@ -238,15 +227,12 @@ export class ShadowlinkPage {
     }
   }
 
-  /** Like `setToggle`, leaving the toggle alone when `checked` is not given. */
   private async setOptionalToggle(testId: string, checked: boolean | undefined) {
     if (checked !== undefined) {
       await this.setToggle(testId, checked);
     }
   }
 
-  // The authentication picker is a 3-way Tabs (None / SCRAM / PLAIN); SCRAM is the default.
-  // Click the tab explicitly to guarantee state even if the default ever changes.
   private async fillScramCredentials(
     username: string,
     password: string,
@@ -257,7 +243,7 @@ export class ShadowlinkPage {
 
     await this.page.getByLabel(/username/iu).fill(username);
 
-    // Use testid: the "Show password" toggle's aria-label also matches /password/i.
+    // WARNING: Use the password input's test ID; the reveal toggle also has a name containing password.
     await this.page.getByTestId('scram-password-input').fill(password);
 
     if (mechanism) {
@@ -297,7 +283,7 @@ export class ShadowlinkPage {
 
     await this.page.getByTestId('topics-filters-container').waitFor({ state: 'visible' });
 
-    // Chained in order: filter card `i` exists only after the previous cards were added
+    // WARNING: Add filters sequentially; each click creates the next card before the helper fills it.
     await topicFilters.reduce<Promise<unknown>>(
       (previousFilter, filter, i) => previousFilter.then(() => this.fillTopicFilter(filter, i)),
       Promise.resolve()
@@ -353,8 +339,6 @@ export class ShadowlinkPage {
       timeout: 10_000,
     });
 
-    // Verify shadowlink section appears with retry logic
-    // The Shadow Cluster section may take time to appear after shadowlink creation
     await retryAssertion(
       async () => {
         await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 5000 });
@@ -441,9 +425,7 @@ export class ShadowlinkPage {
 
     await this.clearTopicFilters();
 
-    // Add new filters
-    // After deleting all filters, we need to add new ones by clicking "Add filter" for each,
-    // chained in order because each filter fills the card its own click just added
+    // WARNING: Wait for each filter card to exist before adding the next one; list indexes change as cards mount.
     await filters.reduce<Promise<unknown>>(
       (previousFilter, filter, filterIndex) => previousFilter.then(() => this.addTopicFilter(filter, filterIndex)),
       Promise.resolve()
@@ -453,8 +435,6 @@ export class ShadowlinkPage {
 
     await this.page.getByRole('button', { name: /save/iu }).click();
 
-    // Wait for redirect back to details page (the save is successful if we're redirected)
-    // The URL should change from /shadowlinks/{name}/edit to /shadowlinks/{name}
     await expect(this.page).toHaveURL(/\/shadowlinks\/[^/]+$/u, {
       timeout: 10_000,
     });
@@ -465,9 +445,7 @@ export class ShadowlinkPage {
 
     await this.page.getByRole('heading', { name: /shadow topics/iu }).waitFor({ state: 'visible' });
 
-    // ALWAYS try to expand the collapsible by clicking the chevron button
-    // The issue is that tabs might be visible in resume view but we need the full editable view
-    // The chevron button is right after the "Shadow topics" heading in the card header
+    // WARNING: Open the editor before using filter tabs; a collapsed summary can also expose a tab label.
     const chevronButton = await this.findChevronButton();
     if (!chevronButton) {
       throw new Error('Could not find chevron button to expand Shadow topics section');
@@ -476,7 +454,6 @@ export class ShadowlinkPage {
     await expect(this.page.getByTestId('topics-toggle-button')).toHaveAttribute('aria-expanded', 'true');
   }
 
-  // Simple approach: find all buttons with SVG, filter for the one that's actually a chevron icon
   private async findChevronButton() {
     return findFirstChevronButton(await this.page.getByRole('button').all());
   }
@@ -486,12 +463,10 @@ export class ShadowlinkPage {
     await specifyTab.waitFor({ state: 'visible', timeout: 5000 });
     await specifyTab.click();
 
-    // Wait for filter items to be visible: the editable list renders only while the section is expanded
     await expect(this.page.getByTestId('topics-filters-container')).toBeVisible();
   }
 
-  // Keep finding and clicking trash buttons until none remain; each click re-renders the list,
-  // so the next search starts only after the previous removal
+  // WARNING: Re-query the delete buttons after each click; card removal changes the rendered list.
   private async clearTopicFilters() {
     if (await this.clickFirstTrashButton()) {
       await this.clearTopicFilters();
@@ -503,7 +478,6 @@ export class ShadowlinkPage {
     const filterCount = await topicFilters.count();
     const clicked = await this.clickFirstTrashButtonOf(await this.page.getByRole('button').all());
     if (clicked) {
-      // On the Shadowing tab every trash button deletes one topic filter card
       await expect(topicFilters).toHaveCount(filterCount - 1);
     }
     return clicked;
@@ -519,7 +493,7 @@ export class ShadowlinkPage {
         return true;
       }
     } catch {
-      // Button may have been removed from DOM, continue to next
+      // WARNING: A previous click may have removed this button; skip the stale element.
     }
     return this.clickFirstTrashButtonOf(remainingButtons);
   }
@@ -530,8 +504,6 @@ export class ShadowlinkPage {
 
     await this.selectTopicFilterTab(filter, filterIndex);
 
-    // Use testId to find the specific input field directly
-    // The input has testId="topic-filter-{index}-name"
     const inputInCard = this.page.locator(`[data-testid="topic-filter-${filterIndex}-name"]`);
     await inputInCard.click();
     await inputInCard.fill(filter.pattern);
@@ -547,9 +519,7 @@ export class ShadowlinkPage {
     await expect(targetTab).toHaveAttribute('aria-selected', 'true');
   }
 
-  // TODO: this is a bug that needs resolving.
-  // Before saving, we need to go to the Source tab and fill the password
-  // The form requires SCRAM password even if we're only changing topic filters
+  // WARNING: The legacy edit form requires the SCRAM password again even for a filter-only save.
   private async fillSourcePasswordForSave() {
     const sourceTab = this.page.getByRole('tab', { name: /source/iu });
     await sourceTab.click();
@@ -568,8 +538,7 @@ export class ShadowlinkPage {
     const failoverButton = this.page.getByRole('button', { name: /^fail ?over all topics$/iu });
     await failoverButton.click();
 
-    // Confirm in dialog and wait for the failover request to complete. The confirm button closes
-    // the dialog at once, so the response is the milestone; its listener is armed before the click.
+    // WARNING: Arm the response listener before confirming; the dialog closes before the failover request settles.
     const confirmButton = this.page.getByTestId('confirm-failover');
     await Promise.all([this.page.waitForResponse(FAILOVER_RPC_URL), confirmButton.click()]);
   }
@@ -579,7 +548,7 @@ export class ShadowlinkPage {
     const failoverButton = topicRow.getByRole('button', { name: /failover/iu });
     await failoverButton.click();
 
-    // Confirm in dialog and wait for the failover request, so the refresh below sees its result
+    // WARNING: Wait for the failover response before refreshing; closing the dialog is not completion.
     const confirmButton = this.page.getByTestId('confirm-failover');
     await Promise.all([this.page.waitForResponse(FAILOVER_RPC_URL), confirmButton.click()]);
 
@@ -606,7 +575,6 @@ export class ShadowlinkPage {
 
     await expect(this.page).toHaveURL(`${this.shadowBackendURL}/shadowlinks`, { timeout: 15_000 });
 
-    // Clean up replicated topics in destination cluster
     await this.cleanupDestinationTopics();
   }
 

@@ -9,7 +9,8 @@ test.describe('connector', () => {
 
     await createConnector(page, { clusterName, connectorName });
     await page.getByRole('tab', { name: 'Logs' }).click({
-      timeout: 11_000, // 11s because there is a max timer of 10s in connector create wait operation
+      // WARNING: Allow the connector creation window to finish before timing out the Logs action.
+      timeout: 11_000,
     });
 
     const firstLog = page.getByRole('button', { name: 'Expand row' }).first();

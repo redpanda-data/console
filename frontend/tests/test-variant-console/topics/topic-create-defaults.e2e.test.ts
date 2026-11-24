@@ -13,7 +13,7 @@ const mockClusterResponse = {
           configs: [
             {
               name: 'log.retention.ms',
-              value: '604800000', // 7 days in milliseconds
+              value: '604800000',
               source: 'DEFAULT_CONFIG',
               type: 'LONG',
               isExplicitlySet: false,
@@ -30,7 +30,7 @@ const mockClusterResponse = {
             },
             {
               name: 'log.retention.bytes',
-              value: '18446744073709551615', // Max uint64 = infinite
+              value: '18446744073709551615',
               source: 'DEFAULT_CONFIG',
               type: 'LONG',
               isExplicitlySet: false,
@@ -145,7 +145,7 @@ test.describe('create Topic Modal - Default Values', () => {
               configs: [
                 {
                   name: 'log.retention.ms',
-                  value: '86400000', // 1 day in milliseconds
+                  value: '86400000',
                   source: 'DEFAULT_CONFIG',
                   type: 'LONG',
                   isExplicitlySet: false,
@@ -156,7 +156,7 @@ test.describe('create Topic Modal - Default Values', () => {
                 },
                 {
                   name: 'log.retention.bytes',
-                  value: '1073741824', // 1 GiB
+                  value: '1073741824',
                   source: 'DEFAULT_CONFIG',
                   type: 'LONG',
                   isExplicitlySet: false,

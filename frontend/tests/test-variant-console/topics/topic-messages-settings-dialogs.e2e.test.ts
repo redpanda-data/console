@@ -1,5 +1,3 @@
-// spec: specs/topics.md
-
 import { expect, type Locator, type Page, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 

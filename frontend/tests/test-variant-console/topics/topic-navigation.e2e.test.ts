@@ -1,9 +1,4 @@
-import { step } from '../../shared/e2e';
-
-// spec: specs/topics.md
-// seed: tests/shared/seed.e2e.test.ts
-
-import { expect, test } from '../../shared/e2e';
+import { expect, step, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
 const MESSAGES_TAB_CONTENT = /No messages found|Partition|Offset/iu;

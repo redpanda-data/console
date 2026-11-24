@@ -8,11 +8,6 @@ const SUBJECT_DETAILS_URL = /\/schema-registry\/subjects\/.+/u;
 const REFERENCE_NAME_INPUT = /schema-create-reference-name-input-\d+/u;
 const RECOVER_CONFIRM_BUTTON = /confirm|recover|yes/iu;
 
-/**
- * Helper function to select an option from a custom Select component (react-select based)
- * @param selectContainer - The locator for the select container (with data-testid)
- * @param optionText - The text of the option to select
- */
 async function selectCustomOption(selectContainer: Locator, optionText: string) {
   await selectContainer.click();
 
@@ -92,7 +87,7 @@ export class SchemaPage {
 
     await this.page.getByTestId('schema-create-schema-editor').fill(params.schemaDefinition);
 
-    // Add references if provided, chained in order: reference row `i` exists only after the previous rows were added
+    // WARNING: Add references sequentially; each form row must exist before filling it.
     await (params.references ?? []).reduce<Promise<unknown>>(
       (previousReference, ref, i) => previousReference.then(() => this.fillNewReference(i, ref)),
       Promise.resolve()
@@ -116,7 +111,6 @@ export class SchemaPage {
     await this.page.getByTestId('schema-create-format-radio').getByRole('radio', { name: format }).click();
   }
 
-  /** Fills the topic (TOPIC_NAME strategy) or the subject name (CUSTOM strategy) the subject is named after. */
   private async fillSubjectSource({ strategy, topicName, keyOrValue, subjectName }: CreateSchemaParams) {
     if (strategy === 'TOPIC_NAME' && topicName) {
       await selectCustomOption(this.page.getByTestId('schema-create-topic-select'), topicName);

@@ -1,6 +1,5 @@
 import { expect, type Page, step } from './e2e';
 
-// Placeholder S3 settings: the form only needs non-empty values to create the connector.
 const ACCESS_KEY = 'accesskey';
 const SECRET_ACCESS_KEY = 'secretaccesskey';
 const S3_BUCKET_NAME = 's3bucketname';
@@ -23,7 +22,6 @@ const openS3ConnectorForm = async (page: Page, clusterName: string) => {
   await page.getByText('S3', { exact: true }).click();
 };
 
-/** The input of a connector form property, by the `property-<name>` wrapper the form renders. */
 const propertyInput = (page: Page, property: string) => page.getByTestId(`property-${property}`).locator('input');
 
 const fillS3Credentials = async (page: Page) => {
@@ -43,6 +41,9 @@ const fillConnectorName = async (page: Page, connectorName: string) => {
   await connectorInput.blur();
 };
 
+/**
+ * Uses placeholder S3 form values, not real cloud credentials.
+ */
 export const createConnector = async (
   page: Page,
   { clusterName, connectorName }: { clusterName: string; connectorName: string }

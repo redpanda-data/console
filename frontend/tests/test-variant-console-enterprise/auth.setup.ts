@@ -1,18 +1,16 @@
 import type { Page } from 'playwright';
 
-/**
- * Dismisses the login error modal if present and waits for it to close.
- * The modal can appear from failed API calls during page load.
- */
 async function dismissErrorModalIfPresent(page: Page) {
   const errorModal = page.getByTestId('login-error__ok-button');
   if (await errorModal.isVisible({ timeout: 2000 }).catch(() => false)) {
     await errorModal.click();
-    // The dialog unmounts on close, so its own button going away is the signal.
     await errorModal.waitFor({ state: 'hidden', timeout: 5000 });
   }
 }
 
+/**
+ * If startup calls surface an error during auth, dismiss it and wait for the modal control to unmount before continuing.
+ */
 export async function authenticate(page: Page) {
   await page.goto('/', { waitUntil: 'networkidle' });
 

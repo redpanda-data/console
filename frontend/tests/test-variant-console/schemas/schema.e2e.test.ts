@@ -5,11 +5,6 @@ import { SchemaPage } from '../utils/schema-page';
 
 const SCHEMA_REGISTRY_TABLE_NAME_TESTID = 'schema-registry-table-name';
 
-/**
- * Helper function to select an option from a custom Select component (react-select based)
- * @param selectContainer - The locator for the select container (with data-testid)
- * @param optionText - The text of the option to select
- */
 async function selectOption(selectContainer: Locator, optionText: string) {
   await selectContainer.click();
 
@@ -75,9 +70,6 @@ async function expectSubjectCompatibilityEditor(page: Page, editButton: Locator)
 }
 
 function describeSubjectListSuites() {
-  /**
-   * This test is depentent on a certain owlshop-data configuration.
-   */
   test.describe('schema - Filtering (OwlShop dependent)', () => {
     test('should filter on schema ID', async ({ page }) => {
       await page.goto('/schema-registry');

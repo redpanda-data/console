@@ -37,9 +37,6 @@ export type MockConnectNetworkFailureArgs = {
   reason?: 'failed' | 'timedout' | 'connectionrefused';
 };
 
-/**
- * Maps a Connect error code to the HTTP status Connect transports use for JSON responses.
- */
 function connectCodeToHttpStatus(code: ConnectErrorCode) {
   switch (code) {
     case 'invalid_argument':
@@ -71,21 +68,11 @@ function connectCodeToHttpStatus(code: ConnectErrorCode) {
   }
 }
 
-/**
- * Fulfills all matching requests with a Connect-JSON error envelope. Since createConnectTransport
- * in src/config.ts and src/federation/console-app.tsx does not opt into useBinaryFormat, requests
- * use `application/json` and responses just need `{ code, message }` plus the correct HTTP status.
- *
- * Note on react-query retries: page.route persists for all matching calls, so retries see the same
- * error. If a test needs to simulate recover-on-retry, use `times: 1` or swap the route mid-test.
- */
-/**
- * DEBUG flag for diagnosing mock interception issues. Flip to true while iterating,
- * false before commit. Gated at module level so route handlers log only when we
- * ask them to (no performance hit in normal runs, no process.env dependency).
- */
 const DEBUG_CONNECT_MOCK = false;
 
+/**
+ * Returns a Connect-JSON envelope and the corresponding HTTP status for every matched call, including retries. The E2E transports use JSON rather than binary framing.
+ */
 export async function mockConnectError(args: MockConnectErrorArgs) {
   const { page, urlGlob, code, message = `mocked ${code}`, times } = args;
   if (DEBUG_CONNECT_MOCK) {

@@ -106,11 +106,10 @@ test.describe('quotas - RPK Integration', () => {
     await step('Verify client-id quotas are visible', async () => {
       await quotaPage.verifyQuotaExists(quotaClient1);
       await quotaPage.verifyQuotaExists(quotaClient2);
-      // Note: User quotas (quotaUser1) are not displayed in Console OSS, only client-id quotas
+      // WARNING: Console OSS lists client-ID quotas, not per-user quotas; their absence is not evidence of failed creation.
 
       await quotaPage.verifyProducerRate('2 MiB', quotaClient1);
       await quotaPage.verifyConsumerRate('4 MiB', quotaClient2);
-      // Skipping user quota verification as they're not displayed
     });
 
     await step('Cleanup: Delete all test quotas', async () => {
@@ -123,7 +122,6 @@ test.describe('quotas - RPK Integration', () => {
       await quotaPage.reloadPage();
       await quotaPage.verifyQuotaNotExists(quotaClient1);
       await quotaPage.verifyQuotaNotExists(quotaClient2);
-      // User quota was never visible, so no need to verify it's not there
     });
   });
 });

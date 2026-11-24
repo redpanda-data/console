@@ -4,6 +4,8 @@ import { expect, step } from '../../shared/e2e';
 /**
  * Page Object Model for Debug Bundle pages
  * Handles creation, progress monitoring, and bundle management
+ *
+ * Navigation normally cleans up an unfinished bundle before opening the form. Use skipCleanup for a status-only visit. Generate confirms overwrite only when an existing bundle requires it.
  */
 export class DebugBundlePage {
   readonly page: Page;
@@ -19,13 +21,10 @@ export class DebugBundlePage {
     await this.page.goto('/debug-bundle');
     await expect(this.page.getByRole('heading', { name: /debug bundle/iu })).toBeVisible();
 
-    // Skip cleanup if we're just checking status
     if (options?.skipCleanup) {
       return;
     }
 
-    // Ensure we're on the form page, not a progress page
-    // If there's an "in progress" link, navigate through to get back to the form
     const progressLink = this.page.getByRole('link', { name: /bundle generation in progress|in progress/iu });
     const hasProgressLink = await progressLink.isVisible().catch(() => false);
 
@@ -192,9 +191,7 @@ export class DebugBundlePage {
     await this.waitForProgressPage();
   }
 
-  /** Answers the overwrite confirmation, if one appears; resolves to whether generation goes ahead. */
   private async answerOverwriteConfirmation(confirmOverwrite: boolean | undefined) {
-    // Generate asks first when a bundle exists; otherwise it goes straight to the progress page.
     const confirmDialog = this.page.getByRole('alertdialog', { name: 'Generate new debug bundle' });
     await expect(confirmDialog.or(this.page.getByTestId('debug-bundle-description'))).toBeVisible({
       timeout: 10_000,
@@ -243,12 +240,11 @@ export class DebugBundlePage {
       await expect(stopButton).toBeVisible();
       await stopButton.click();
 
-      // Wait for cancellation to complete - either button disappears or "Try Again" button appears
       await Promise.race([
         this.page.getByTestId('debug-bundle-try-again-button').waitFor({ state: 'visible', timeout: 5000 }),
         this.page.getByTestId('debug-bundle-stop-button').waitFor({ state: 'hidden', timeout: 5000 }),
       ]).catch(() => {
-        // If neither happens within timeout, that's okay - the cancellation may have completed differently
+        // WARNING: Cancellation may navigate away without showing Retry; this helper accepts either observed transition.
       });
     });
   }

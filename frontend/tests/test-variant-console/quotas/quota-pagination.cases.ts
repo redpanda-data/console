@@ -3,7 +3,6 @@ import { createClientIdQuota, deleteClientIdQuota } from '../../shared/quota.uti
 import { QuotaPage } from '../utils/quota-page';
 
 const DEFAULT_PAGE_SIZE = 10;
-// Pagination tests create more quotas than fit on one page of this size.
 const PAGINATION_PAGE_SIZE = 20;
 const MULTI_PAGE_QUOTA_COUNT = 55;
 const URL_STATE_QUOTA_COUNT = 60;
@@ -12,15 +11,11 @@ const ENTITY_TYPE_REGEX = /client-id|user|ip/u;
 const PAGE_0_REGEX = /page=0/u;
 const PAGE_1_REGEX = /page=1/u;
 
-/** Quotas of one test run: client IDs `<label>-<uuid>-001`, `-002`, and so on. */
 type QuotaBatch = { label: string; prefix: string };
 
 const quotaBatch: (label: string) => QuotaBatch = (label) => ({ label, prefix: `${label}-${crypto.randomUUID()}` });
 
-/**
- * Creates `count` client ID quotas in order and resolves with their client IDs.
- * Chained one `rpk` call at a time: 55-60 concurrent `docker exec` processes would overload the Redpanda container.
- */
+// WARNING: Keep quota creation sequential; spawning one docker exec per quota in parallel overloads the broker.
 const createNumberedQuotas = async (batch: QuotaBatch, count: number, producerByteRate: number) => {
   const quotaIds = Array.from({ length: count }, (_, i) => `${batch.prefix}-${(i + 1).toString().padStart(3, '0')}`);
   await quotaIds.reduce<Promise<unknown>>(
@@ -30,7 +25,7 @@ const createNumberedQuotas = async (batch: QuotaBatch, count: number, producerBy
   return quotaIds;
 };
 
-/** Chained one `rpk` call at a time, like createNumberedQuotas, to keep container load bounded. */
+// WARNING: Keep cleanup sequential for the same container load limit as quota creation.
 const deleteQuotas = (quotaIds: string[]) =>
   quotaIds.reduce<Promise<unknown>>(
     (previousDelete, quotaId) => previousDelete.then(() => deleteClientIdQuota(quotaId)),

@@ -2,24 +2,6 @@ import type { Page } from '../../shared/e2e';
 import { expect, step, test } from '../../shared/e2e';
 import { execRpk, getRedpandaContainerId } from '../../shared/rpk.utils';
 
-/**
- * E2E tests for consumer group details page: unconsumed partition behaviour.
- *
- * Setup:
- *   1. Create a topic with 3 partitions.
- *   2. Produce one message to each partition (0, 1, 2).
- *   3. Consume 2 messages with a test group — committing offsets for
- *      partitions 0 and 1 (rpk consume reads in order).
- *   4. Delete the committed offset for partition 1 via `rpk group offset-delete`.
- *
- * Result:
- *   - Partition 0: has a committed offset  → shows numeric Group Offset / Lag
- *   - Partition 1: offset deleted          → shows "—" for Group Offset and Lag
- *   - Partition 2: never consumed          → shows "—" for Group Offset and Lag
- *   - Edit / Delete buttons on rows 1 and 2 are disabled with tooltip
- *     "No committed offsets".
- */
-
 const TOPIC_NAME = `e2e-unconsumed-${crypto.randomUUID()}`;
 const GROUP_NAME = `e2e-unconsumed-group-${crypto.randomUUID()}`;
 
@@ -32,11 +14,7 @@ const COL = {
   LAG: 5,
 } as const;
 
-/**
- * Find a table row whose PARTITION cell exactly matches `partitionId`.
- * Uses positional td matching so we don't accidentally match a row
- * because a different column (e.g. Log End Offset) also contains the number.
- */
+// WARNING: Match the partition cell specifically; an offset in another column can equal the partition ID.
 function rowByPartition(page: Page, partitionId: number) {
   return page
     .locator('tr')
@@ -46,13 +24,8 @@ function rowByPartition(page: Page, partitionId: number) {
     .first();
 }
 
-/** Must match the disabled reason rendered by `group-details.tsx`. */
 const NO_COMMITTED_OFFSETS = 'No committed offsets';
 
-/**
- * Hover a partition's Edit button and assert it is disabled with the "no committed offsets" tooltip.
- * Closes the tooltip afterwards so the next `getByRole('tooltip')` lookup stays unambiguous.
- */
 async function expectNoCommittedOffsetTooltip(page: Page, partitionId: number) {
   await page.getByTestId(`partition-edit-${partitionId}`).hover();
   await expect(page.getByRole('tooltip')).toHaveText(NO_COMMITTED_OFFSETS);
@@ -72,8 +45,7 @@ test.describe('consumer Group Details - Unconsumed Partitions', () => {
 
     await execRpk(`topic create ${TOPIC_NAME} --partitions 3`);
 
-    // 2. Produce one message to each partition (stdin pipe requires docker exec -i).
-    // Chained in partition order: step 3 relies on the messages arriving in that order.
+    // WARNING: Keep produce calls in partition order; the group setup commits offsets only for the first two messages.
     await [0, 1, 2].reduce<Promise<unknown>>(
       (previousProduce, partition) =>
         previousProduce.then(() =>
