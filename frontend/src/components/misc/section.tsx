@@ -13,16 +13,17 @@ import { Card, type CardProps } from 'components/redpanda-ui/components/card';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { CSSProperties } from 'react';
 
-type SectionProps = Pick<CardProps, 'children' | 'id' | 'className'> & {
+type SectionProps = Pick<CardProps, 'children' | 'id' | 'className' | 'ref'> & {
   padding?: 'compact' | 'normal';
   style?: Pick<CSSProperties, 'gridArea'>;
 };
 
-function Section({ children, id, className, style, padding = 'normal' }: SectionProps) {
+function Section({ children, id, className, style, padding = 'normal', ref }: SectionProps) {
   return (
     <Card
       className={cn('block max-w-none', className)}
       id={id}
+      ref={ref}
       size={padding === 'compact' ? 'sm' : 'full'}
       style={style}
     >

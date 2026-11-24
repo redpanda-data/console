@@ -20,8 +20,6 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'co
 import { Component, useMemo } from 'react';
 
 import { BandwidthSlider } from './components/bandwidth-slider';
-import type ReassignPartitions from './reassign-partitions';
-import type { PartitionSelection } from './reassign-partitions';
 import { api } from '../../../state/backend-api';
 import type { Partition, PartitionReassignmentRequest, Topic, TopicAssignment } from '../../../state/rest-interfaces';
 import { uiSettings, useUISettingsStore } from '../../../state/ui';
@@ -51,10 +49,8 @@ export type TopicWithMoves = {
 };
 
 type StepReviewProps = {
-  partitionSelection: PartitionSelection;
   topicsWithMoves: TopicWithMoves[];
   assignments: PartitionReassignmentRequest;
-  reassignPartitions: ReassignPartitions;
 };
 
 export function StepReview(props: StepReviewProps) {

@@ -8,7 +8,6 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-/** biome-ignore-all lint/correctness/useUniqueElementIds: legacy, needs refactor */
 
 import { ConnectError } from '@connectrpc/connect';
 import { AlertIcon, ChevronLeftIcon, ChevronRightIcon } from 'components/icons';
@@ -24,6 +23,7 @@ import {
 import { Stat } from 'components/redpanda-ui/components/stat';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
+import { createRef } from 'react';
 import { closeToast, showToast, updateToast } from 'utils/toast.utils';
 
 import { ActiveReassignments } from './components/active-reassignments';
@@ -54,7 +54,7 @@ import { animProps } from '../../../utils/animation-props';
 import { IsDev } from '../../../utils/env';
 import { clone, toJson } from '../../../utils/json-utils';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import { scrollTo, scrollToTop } from '../../../utils/utils';
+import { scrollToElement, scrollToTop } from '../../../utils/utils';
 import { FeatureLicenseNotification } from '../../license/feature-license-notification';
 import { showErrorModal } from '../../misc/error-modal';
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
@@ -82,6 +82,7 @@ type ReassignPartitionsState = {
 };
 
 class ReassignPartitions extends PageComponent {
+  private readonly wizardSection = createRef<HTMLDivElement>();
   refreshTopicConfigsTimer: number | null = null;
   refreshTopicConfigsRequestsInProgress = 0;
 
@@ -131,7 +132,7 @@ class ReassignPartitions extends PageComponent {
 
   componentDidUpdate(_prevProps: Readonly<{ matchedPath: string }>, prevState: Readonly<ReassignPartitionsState>) {
     if (prevState.currentStep !== this.state.currentStep && this.state.currentStep !== 0) {
-      setTimeout(() => scrollTo('wizard', 'start', -20), 20);
+      setTimeout(() => scrollToElement(this.wizardSection.current, -20), 20);
     }
 
     if (
@@ -192,14 +193,14 @@ class ReassignPartitions extends PageComponent {
 
           <ClusterStatistics brokerCount={api.clusterInfo.brokers.length} topics={api.topics} />
 
-          <Section id="activeReassignments">
+          <Section>
             <ActiveReassignments
               onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
               throttledTopics={this.state.topicsWithThrottle}
             />
           </Section>
 
-          <Section id="wizard">
+          <Section ref={this.wizardSection}>
             <div style={{ margin: '.75em 1em 1em 1em' }}>
               <WizardSteps currentStep={this.state.currentStep} steps={steps} />
             </div>
@@ -242,8 +243,6 @@ class ReassignPartitions extends PageComponent {
           <StepReview
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
             assignments={reassignmentRequest!}
-            partitionSelection={partitionSelection}
-            reassignPartitions={this}
             topicsWithMoves={this.topicsWithMoves}
           />
         );

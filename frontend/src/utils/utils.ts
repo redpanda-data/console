@@ -458,40 +458,16 @@ export function scrollToTop() {
   mainLayout.scrollTo({ behavior: 'smooth', left: 0, top: 0 });
 }
 
-/**
- * Scroll the main content region to the target element (which is found by the given id)
- */
-export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 'center', offset?: number) {
+/** Scrolls the main content region to a mounted element. */
+export function scrollToElement(target: HTMLElement | null, offset = 0) {
   const mainLayout = document.querySelector<HTMLElement>('#mainLayout');
-  if (!mainLayout) {
+  if (!(mainLayout && target)) {
     return;
-  }
-  const target = targetId ? document.querySelector<HTMLElement>(`#${CSS.escape(targetId)}`) : null;
-  if (!target) {
-    return;
-  }
-
-  const rect = target.getBoundingClientRect();
-  // @ts-expect-error perhaps it affects the target for some reason?
-  let _top = 0;
-  switch (anchor) {
-    case 'start':
-      _top = rect.top;
-      break;
-    case 'center':
-      _top = (rect.top + rect.bottom) / 2;
-      break;
-    case 'end':
-      _top = rect.bottom;
-      break;
-    default:
-      _top = rect.top;
-      break;
   }
 
   mainLayout.scrollTo({
     behavior: 'smooth',
-    top: target.getBoundingClientRect().top + mainLayout.scrollTop + (offset ?? 0),
+    top: target.getBoundingClientRect().top + mainLayout.scrollTop + offset,
   });
 }
 
