@@ -77,7 +77,7 @@ import {
   provesDraftSupport,
   timestampToMillis,
 } from './draft-copy';
-import { EditorTipsBar, type TipContext } from './editor-tips-bar';
+import { EditorTipsBar } from './editor-tips-bar';
 import { useEgressGatewayNames } from './egress-gateway-field';
 import { storedEgressGatewayIds } from './egress-gateways';
 import { PipelineCommandMenu } from './pipeline-command-menu';
@@ -141,14 +141,14 @@ function getConnectorDialogPlaceholder(type: ConnectComponentType | 'resource' |
   return type ? `Search ${type}s...` : undefined;
 }
 
-function tipsContextForLane(isView: boolean, viewLane: string, editLane: string): TipContext | null {
+function tipsContextForLane(isView: boolean, viewLane: string, editLane: string) {
   if (isView) {
-    return viewLane === 'visual' ? 'visual' : null;
+    return viewLane === 'visual' ? ('visual' as const) : null;
   }
   if (editLane === 'changes') {
     return null;
   }
-  return editLane === 'visual' ? 'visual' : 'yaml';
+  return editLane === 'visual' ? ('visual' as const) : ('yaml' as const);
 }
 
 const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();

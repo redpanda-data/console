@@ -45,16 +45,16 @@ export const fieldTokensParser = createParser<FieldFilterToken[]>({
 });
 
 /** Maps the persisted/URL start offset sentinel to the read-scope mode shown in the toolbar. */
-export function readScopeModeFromOffset(startOffset: number): ReadScopeMode {
+export function readScopeModeFromOffset(startOffset: number) {
   switch (startOffset) {
     case PartitionOffsetOrigin.Start:
-      return 'oldest';
+      return 'oldest' as const;
     case PartitionOffsetOrigin.Timestamp:
-      return 'timestamp';
+      return 'timestamp' as const;
     case PartitionOffsetOrigin.EndMinusResults:
-      return 'newest';
+      return 'newest' as const;
     default:
-      return startOffset >= 0 ? 'offset' : 'newest';
+      return startOffset >= 0 ? ('offset' as const) : ('newest' as const);
   }
 }
 

@@ -10,7 +10,6 @@
  */
 
 import clsx from 'clsx';
-import type { ReactNode } from 'react';
 
 import type { PreviewTagV2 } from '../../../../../state/ui';
 import { uiState } from '../../../../../state/ui-state';
@@ -26,7 +25,7 @@ export function renderPreviewTags(
   payload: unknown,
   previewFields: () => PreviewTagV2[],
   previewDisplayMode?: PreviewDisplayMode
-): ReactNode {
+) {
   const previewTags = previewFields().filter((t) => t.searchInMessageValue);
   if (previewTags.length === 0) {
     return null;

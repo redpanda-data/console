@@ -152,7 +152,7 @@ export function searchableText(component: ConnectComponentSpec) {
     .toLowerCase();
 }
 
-export function matchRank(component: ConnectComponentSpec, query: string, text: string): number {
+export function matchRank(component: ConnectComponentSpec, query: string, text: string) {
   const name = component.name.toLowerCase();
   if (name === query) {
     return 0;

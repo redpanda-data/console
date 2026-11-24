@@ -645,7 +645,7 @@ function createProject() {
   return directory;
 }
 
-function runPolicy(files: string[]): PolicyRun {
+function runPolicy(files: string[]) {
   const result = spawnSync([process.execPath, 'run', 'lint:policy', '--', '--format', 'json', ...files], {
     cwd: project,
     stdout: 'pipe',
@@ -654,7 +654,13 @@ function runPolicy(files: string[]): PolicyRun {
   const stderr = result.stderr.toString();
   const output = result.stdout.toString();
   const report = JSON.parse(output.slice(output.indexOf('{')));
-  return { exitCode: result.exitCode, stderr, files: report.number_of_files, diagnostics: report.diagnostics };
+  const run: PolicyRun = {
+    exitCode: result.exitCode,
+    stderr,
+    files: report.number_of_files,
+    diagnostics: report.diagnostics,
+  };
+  return run;
 }
 
 function reportsFor(run: PolicyRun, file: string) {

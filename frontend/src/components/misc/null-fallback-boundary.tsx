@@ -19,8 +19,8 @@ class NullFallbackBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(_: Error): ErrorBoundaryState {
-    return { hasError: true };
+  static getDerivedStateFromError(_: Error) {
+    return { hasError: true } satisfies ErrorBoundaryState;
   }
 
   componentDidCatch = reportBoundaryError;

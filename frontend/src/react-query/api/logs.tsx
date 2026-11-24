@@ -176,10 +176,11 @@ async function streamHistory(client: ConsoleClient, opts: HistoryStreamOpts) {
   }
 }
 
-function settleHistoryFailure(e: unknown, setPhase: HistoryStreamOpts['setPhase']): TopicMessage[] {
+function settleHistoryFailure(e: unknown, setPhase: HistoryStreamOpts['setPhase']) {
   setPhase(null);
   if (e instanceof Error && isMissingLogsTopic(e.message)) {
-    return [];
+    const messages: TopicMessage[] = [];
+    return messages;
   }
   throw e;
 }

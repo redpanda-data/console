@@ -839,7 +839,7 @@ type EdgeEndpoints = Pick<
 >;
 type EdgeGeometry = { path: string; label: FlowPoint; insert: FlowPoint };
 
-function graphEdgeGeometry(endpoints: EdgeEndpoints, d: FlowGraphEdgeData | undefined): EdgeGeometry {
+function graphEdgeGeometry(endpoints: EdgeEndpoints, d: FlowGraphEdgeData | undefined) {
   const dagrePts = d?.points;
   if (dagrePts && dagrePts.length >= 2) {
     const pts = [
@@ -854,7 +854,7 @@ function graphEdgeGeometry(endpoints: EdgeEndpoints, d: FlowGraphEdgeData | unde
     };
   }
   const [path, x, y] = getSmoothStepPath({ ...endpoints, borderRadius: 10 });
-  return { path, label: { x, y }, insert: { x, y } };
+  return { path, label: { x, y }, insert: { x, y } } satisfies EdgeGeometry;
 }
 
 function FlowGraphEdge({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition, data }: EdgeProps) {

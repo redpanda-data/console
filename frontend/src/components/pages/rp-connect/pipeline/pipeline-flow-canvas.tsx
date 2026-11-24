@@ -593,7 +593,7 @@ export function scopeBounds(
   scope: ReadonlySet<string>,
   measuredById: MeasuredById,
   isEntry?: (n: Node) => boolean
-): ScopeGeometry | null {
+) {
   let body: ScopeBounds | null = null;
   let entry: ScopeBounds | null = null;
   for (const n of nodes) {
@@ -607,7 +607,7 @@ export function scopeBounds(
       body = growBounds(body, r);
     }
   }
-  return body ? { body, entry } : null;
+  return body ? ({ body, entry } satisfies ScopeGeometry) : null;
 }
 
 type ScopeRegion = {
@@ -1105,10 +1105,7 @@ export function decorateEdges(edges: Edge[], options: DecorateEdgeOptions) {
   });
 }
 
-export function selectionTargetForNode(
-  node: Node,
-  nodes: Node[]
-): { id: string; target: EditTarget; caseTarget?: EditTarget } | null {
+export function selectionTargetForNode(node: Node, nodes: Node[]) {
   let current: Node | undefined = node;
   while (current && !(current.data as FlowCardData).editTarget) {
     const ownerId: string | undefined = current.parentId ?? (current.data as FlowCardData).ownerId;

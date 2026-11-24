@@ -270,11 +270,11 @@ export class StepSelectPartitions extends Component<{
     return { checked: false, indeterminate: true };
   }
 
-  get topicPartitions(): TopicWithPartitions[] {
+  get topicPartitions() {
     if (api.topics === null) {
       return [];
     }
-    return api.topics.flatMap((topic) => {
+    return api.topics.flatMap<TopicWithPartitions>((topic) => {
       const partitions = api.topicPartitions.get(topic.topicName);
       if (!partitions) {
         return [];

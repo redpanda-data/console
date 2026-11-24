@@ -122,10 +122,7 @@ function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: Pipeli
   return parent?.caseEditTarget && firstChild?.id === node.id ? parent.caseEditTarget : undefined;
 }
 
-function resolveJumpTarget(
-  node: PipelineFlowNode,
-  flowNodes: PipelineFlowNode[]
-): { id: string; target: EditTarget; caseTarget?: EditTarget } | null {
+function resolveJumpTarget(node: PipelineFlowNode, flowNodes: PipelineFlowNode[]) {
   if (node.editTarget?.kind === 'switchCase') {
     const entry = flowNodes.find((n) => n.parentId === node.id);
     if (entry?.editTarget) {
@@ -218,7 +215,7 @@ function linkResourceToNode(yaml: string, target: EditTarget, label: string) {
 function insertLinkedResource(
   { yaml, connectionName, connectionType, components }: InsertParams,
   target: ResourceForNodeInsert
-): InsertResult | null {
+) {
   if (connectionType !== target.kind) {
     return null;
   }
@@ -266,7 +263,7 @@ function insertStep(
   return { yaml: next, selectTarget };
 }
 
-function buildInsertedYaml(params: InsertParams): InsertResult | null {
+function buildInsertedYaml(params: InsertParams) {
   const { target, connectionType } = params;
   if (target.context === 'switchCase') {
     return insertSwitchCase(params, target);
@@ -301,7 +298,7 @@ type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
 const FOCUS_GUARD_SELECTOR =
   'input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"], [role="switch"], [role="radio"], [role="checkbox"], [data-slot="popover-content"], .monaco-editor';
 
-function plainCanvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
+function plainCanvasKeyAction(e: KeyboardEvent) {
   if (e.key === '/' && !(e.metaKey || e.ctrlKey || e.altKey)) {
     return 'palette';
   }
@@ -314,7 +311,7 @@ function plainCanvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   return null;
 }
 
-function historyKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
+function historyKeyAction(e: KeyboardEvent) {
   if (!(e.metaKey || e.ctrlKey)) {
     return null;
   }
@@ -328,7 +325,7 @@ function historyKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   return null;
 }
 
-function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
+function canvasKeyAction(e: KeyboardEvent) {
   if (e.defaultPrevented) {
     return null;
   }
@@ -475,11 +472,7 @@ function useInspectorSelection(yamlContent: string, onYamlChange: (yaml: string)
 
 type InspectorSelection = ReturnType<typeof useInspectorSelection>;
 
-function liveSelectionOf(
-  selected: SelectedNode | null,
-  yamlContent: string,
-  flowNodes: PipelineFlowNode[]
-): SelectedNode | null {
+function liveSelectionOf(selected: SelectedNode | null, yamlContent: string, flowNodes: PipelineFlowNode[]) {
   if (!selected) {
     return null;
   }
@@ -586,11 +579,7 @@ function nodeProblems(lintByNode: Map<string, LintHint[]>, flowNodes: PipelineFl
   return { list, mapped };
 }
 
-function buildProblems(
-  all: LintHint[],
-  lintByNode: Map<string, LintHint[]>,
-  flowNodes: PipelineFlowNode[]
-): PipelineProblem[] {
+function buildProblems(all: LintHint[], lintByNode: Map<string, LintHint[]>, flowNodes: PipelineFlowNode[]) {
   if (all.length === 0) {
     return [];
   }

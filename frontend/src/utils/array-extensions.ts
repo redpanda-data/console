@@ -199,8 +199,8 @@ Array.prototype.all = function all<T>(this: T[], selector: (x: T) => boolean) {
   return this.every(selector);
 };
 
-Array.prototype.groupBy = function groupBy<T, K>(this: T[], keySelector: (x: T) => K): Map<K, T[]> {
-  const map = new Map();
+Array.prototype.groupBy = function groupBy<T, K>(this: T[], keySelector: (x: T) => K) {
+  const map = new Map<K, T[]>();
   for (const item of this) {
     const key = keySelector(item);
     const collection = map.get(key);

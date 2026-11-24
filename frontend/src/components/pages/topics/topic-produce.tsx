@@ -244,7 +244,7 @@ function buildKafkaHeaders(headers: Inputs['headers']) {
   return kafkaHeaders;
 }
 
-function encodeData(payloadData: string, encoding: PayloadEncoding): Uint8Array {
+function encodeData(payloadData: string, encoding: PayloadEncoding) {
   if (encoding === PayloadEncoding.BINARY) {
     window.atob(payloadData);
     return base64ToUInt8Array(payloadData);
@@ -253,7 +253,7 @@ function encodeData(payloadData: string, encoding: PayloadEncoding): Uint8Array 
   return new TextEncoder().encode(payloadData);
 }
 
-function tryEncodeData(payload: PayloadInputs): Uint8Array | undefined {
+function tryEncodeData(payload: PayloadInputs) {
   try {
     return encodeData(payload.data, payload.encoding);
   } catch (err) {

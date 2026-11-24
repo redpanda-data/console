@@ -309,7 +309,7 @@ function requireConnectorName(configObj: Record<string, unknown> | undefined) {
   return connectorNameValue;
 }
 
-function describeValueType(value: unknown): string {
+function describeValueType(value: unknown) {
   if (value === null) {
     return 'null';
   }

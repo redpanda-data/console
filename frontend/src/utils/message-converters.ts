@@ -22,7 +22,7 @@ import { CompressionType, type Payload, type TopicMessage } from '../state/rest-
 const JSONBigInt = jsonBigIntFactory({ storeAsString: true });
 const textDecoder = new TextDecoder();
 
-function mapPayloadEncoding(encoding: PayloadEncoding | undefined): Payload['encoding'] | undefined {
+function mapPayloadEncoding(encoding: PayloadEncoding | undefined) {
   switch (encoding) {
     case PayloadEncoding.NULL:
       return 'null';
@@ -93,7 +93,7 @@ export function convertListMessageData(data: ListMessagesResponse_DataMessage) {
   } as TopicMessage;
 }
 
-function mapCompression(compression: ProtoCompressionType): TopicMessage['compression'] {
+function mapCompression(compression: ProtoCompressionType) {
   switch (compression) {
     case ProtoCompressionType.UNCOMPRESSED:
       return CompressionType.Uncompressed;
@@ -110,9 +110,10 @@ function mapCompression(compression: ProtoCompressionType): TopicMessage['compre
   }
 }
 
-function parseNormalizedPayload(payload: string): unknown {
+function parseNormalizedPayload(payload: string) {
   try {
-    return JSONBigInt.parse(payload);
+    const decoded: unknown = JSONBigInt.parse(payload);
+    return decoded;
   } catch {
     return payload;
   }

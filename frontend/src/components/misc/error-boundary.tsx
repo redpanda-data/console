@@ -225,7 +225,7 @@ function getComponentStackInfo(errorInfo: object) {
   } satisfies InfoItem;
 }
 
-function getEnvironmentInfo(): InfoItem {
+function getEnvironmentInfo() {
   try {
     const padLength = envVarDebugAr.max((entry) => entry.name.length);
     return {
@@ -237,7 +237,7 @@ function getEnvironmentInfo(): InfoItem {
   }
 }
 
-function getLocationInfo(): InfoItem {
+function getLocationInfo() {
   try {
     const items = objToKv({
       Protocol: window?.location?.protocol ?? '<null>',

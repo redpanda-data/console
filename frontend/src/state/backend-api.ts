@@ -1915,14 +1915,15 @@ function parseRolePrincipal(roleName: string, principal: string): RolePrincipal 
 
 type GetRoleResult = { response?: { role?: { name: string }; members: Array<{ principal: string }> } };
 
-function roleMembersEntry(res: GetRoleResult): [string, RolePrincipal[]] | null {
+function roleMembersEntry(res: GetRoleResult) {
   const { response } = res;
   const role = response?.role;
   if (!(response && role)) {
     return null;
   }
   const members = response.members.map((x) => parseRolePrincipal(role.name, x.principal)).filterNull();
-  return [role.name, members];
+  const entry: [string, RolePrincipal[]] = [role.name, members];
+  return entry;
 }
 
 async function collectRoleMembers(rolePromises: Promise<GetRoleResult>[]) {
@@ -2863,12 +2864,14 @@ function readResponseBody(response: Response, text: string | null) {
   return response.text();
 }
 
-function parseResponseJson(text: string): unknown {
+function parseResponseJson(text: string) {
+  let payload: unknown;
   try {
-    return JSON.parse(text);
+    payload = JSON.parse(text);
   } catch {
-    return undefined;
+    payload = undefined;
   }
+  return payload;
 }
 
 type PaginatedItems<T> = { items: T[]; nextPageToken?: string };

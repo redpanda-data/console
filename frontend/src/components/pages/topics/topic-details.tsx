@@ -81,7 +81,7 @@ const TopicTabModeCtx = React.createContext<'trigger' | 'content'>('content');
 
 type TabDisableHook = (topic: Topic) => React.ReactNode | undefined;
 
-function findCustomTitle(topic: Topic, disableHooks: TabDisableHook[] | undefined): React.ReactNode | undefined {
+function findCustomTitle(topic: Topic, disableHooks: TabDisableHook[] | undefined) {
   for (const h of disableHooks ?? []) {
     const result = h(topic);
     if (result) {

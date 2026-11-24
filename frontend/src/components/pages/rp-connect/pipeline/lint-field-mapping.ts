@@ -160,7 +160,7 @@ function anchoredToKeys(keys: string[], message: string) {
   return hint;
 }
 
-function lineAnchoredHint(message: string, lineKey: string, fieldKeys: ReadonlySet<string>): ResolvedHint | undefined {
+function lineAnchoredHint(message: string, lineKey: string, fieldKeys: ReadonlySet<string>) {
   const lineAnchor = nearestRenderedAncestor(lineKey, fieldKeys);
   if (!lineAnchor) {
     return;

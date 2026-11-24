@@ -639,11 +639,7 @@ const ConfigRow: FC<{
  */
 export default ConfigurationEditor;
 
-function isTopicConfigEdittable(
-  entry: ConfigEntryExtended,
-  hasEditPermissions: boolean,
-  fenceReason?: string
-): { canEdit: boolean; reason?: string } {
+function isTopicConfigEdittable(entry: ConfigEntryExtended, hasEditPermissions: boolean, fenceReason?: string) {
   if (!hasEditPermissions) {
     return { canEdit: false, reason: "You don't have permissions to change topic configuration entries" };
   }

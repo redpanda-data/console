@@ -127,7 +127,7 @@ type TreeNav = {
   idx: number;
 };
 
-function findTreeNav(e: KeyboardEvent<HTMLDivElement>): TreeNav | null {
+function findTreeNav(e: KeyboardEvent<HTMLDivElement>) {
   const current = (e.target as HTMLElement).closest<HTMLButtonElement>('[role="treeitem"]');
   if (!current) {
     return null;

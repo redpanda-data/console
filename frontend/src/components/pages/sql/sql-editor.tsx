@@ -241,12 +241,7 @@ function catalogRefAtCursor(before: string, catalogs: Catalog[]) {
   return catalog ? { catalog, ref } : null;
 }
 
-function catalogNameCompletion(
-  context: CompletionContext,
-  catalogs: Catalog[],
-  lineFrom: number,
-  before: string
-): CompletionResult | null {
+function catalogNameCompletion(context: CompletionContext, catalogs: Catalog[], lineFrom: number, before: string) {
   const word = context.matchBefore(COMPLETION_IDENTIFIER_RE);
   const afterFromClause = AFTER_FROM_OR_JOIN_RE.test(before);
   if (!(word || context.explicit || afterFromClause)) {
@@ -259,8 +254,8 @@ function catalogNameCompletion(
   return catalogNameCompletionResult(catalogs, wordFrom, before);
 }
 
-function catalogArrowSource(catalogs: Catalog[]): (context: CompletionContext) => CompletionResult | null {
-  return (context) => {
+function catalogArrowSource(catalogs: Catalog[]) {
+  return (context: CompletionContext) => {
     const nodeName = syntaxTree(context.state).resolveInner(context.pos, -1).name;
     if (COMMENT_OR_STRING_NODE_RE.test(nodeName)) {
       return null;

@@ -94,7 +94,7 @@ const isStoppableState = (state: Pipeline_State | undefined) =>
 
 const isUndeployed = (context: SaveContext) => context.mode === 'create' || context.state === Pipeline_State.DRAFT;
 
-export function primaryRunIntent(context: SaveContext): SaveRunIntent {
+export function primaryRunIntent(context: SaveContext) {
   if (isUndeployed(context) && context.draftsEnabled) {
     return 'draft';
   }
@@ -117,7 +117,7 @@ export function alternateRunIntents(context: SaveContext): SaveRunIntent[] {
   return [];
 }
 
-export function runIntentLabel(intent: SaveRunIntent, context: SaveContext): string {
+export function runIntentLabel(intent: SaveRunIntent, context: SaveContext) {
   switch (intent) {
     case 'draft':
       return 'Save draft';
@@ -137,7 +137,7 @@ export const BLANK_CONFIG_MESSAGE = 'Add an input and an output before starting 
 export const MISSING_SERVICE_ACCOUNT_MESSAGE =
   "This config logs in with the pipeline's service account, but the pipeline doesn't have one. Create one with Add user on the component, or use a SASL user.";
 
-export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): string {
+export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent) {
   const isCreate = context.mode === 'create';
   if (run === 'draft') {
     return isCreate ? "Draft saved — it isn't running yet." : 'Draft saved';

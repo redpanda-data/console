@@ -46,9 +46,7 @@ export function PipelineStateBadge({ state, tooltip }: { state?: Pipeline_State;
   );
 }
 
-type RunAction = 'start' | 'stop' | 'cancel-start' | 'settling';
-
-function runActionForState(state?: Pipeline_State): RunAction | null {
+function runActionForState(state?: Pipeline_State) {
   switch (state) {
     case PipelineState.RUNNING:
       return 'stop';

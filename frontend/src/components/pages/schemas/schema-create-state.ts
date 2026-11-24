@@ -40,9 +40,9 @@ function matchRecordName(schemaText: string, regex: RegExp) {
   return ar[1];
 }
 
-function jsonRecordName(schemaText: string): string {
+function jsonRecordName(schemaText: string) {
   try {
-    const { name } = JSON.parse(schemaText);
+    const { name }: { name: string } = JSON.parse(schemaText);
     return name;
   } catch {
     // WARNING: An incomplete schema is expected during editing; do not turn a partial parse into a form crash.
@@ -106,7 +106,7 @@ function subjectNameParts(subjectName: string, srContextsEnabled: boolean) {
   return { contextId: contextNameToId(parsed.context), userInput: parsed.displayName };
 }
 
-function metadataRows(schema: SchemaRegistryVersionedSchema): SchemaEditorStateData['metadataProperties'] {
+function metadataRows(schema: SchemaRegistryVersionedSchema) {
   const emptyRow = { id: crypto.randomUUID(), key: '', value: '' };
   if (!schema.metadata?.properties) {
     return [emptyRow];

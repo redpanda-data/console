@@ -66,7 +66,7 @@ export function buildSearchSignature(params: {
   return `${startOffset} ${maxResults} ${partitionID} ${startTimestamp} ${keyDeserializer} ${valueDeserializer} ${filtersSignature}`;
 }
 
-function matchesQuickSearch(message: TopicMessage, quickSearch: string): boolean | undefined {
+function matchesQuickSearch(message: TopicMessage, quickSearch: string) {
   const searchStr = quickSearch.toLowerCase();
   return (
     message.offset.toString().toLowerCase().includes(searchStr) ||

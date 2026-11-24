@@ -387,7 +387,7 @@ function matchConnectorMetadata(className: string) {
   );
 }
 
-export function findConnectorMetadata(className: string): ConnectorMetadata | null {
+export function findConnectorMetadata(className: string) {
   trimConnectorMetadataCache();
 
   const cached = connectorMetadataMatchCache[className];
@@ -660,7 +660,7 @@ const RunningOfTotal = ({ running, total }: RunningCount) => (
   </>
 );
 
-function countTasks(obs: ClusterConnectors | ClusterConnectorInfo): RunningCount | null {
+function countTasks(obs: ClusterConnectors | ClusterConnectorInfo) {
   if ('error' in obs && obs.error !== null) {
     return null;
   }
@@ -690,7 +690,7 @@ export const TasksColumn = (props: { observable: ClusterConnectors | ClusterConn
 
 type ConnectorInfo = { runningConnectors: number; totalConnectors: number; error?: string };
 
-function countConnectors(observable: ConnectorInfo | ConnectorInfo[]): (RunningCount & { error?: string }) | null {
+function countConnectors(observable: ConnectorInfo | ConnectorInfo[]) {
   if ('runningConnectors' in observable) {
     return { running: observable.runningConnectors, total: observable.totalConnectors, error: observable.error };
   }

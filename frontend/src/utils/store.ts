@@ -3,7 +3,7 @@ import type { PersistStorage } from 'zustand/middleware';
 /**
  * Persists only the state under the session key so consumers can read it without the Zustand wrapper.
  */
-export const createFlatStorage = <T>(): PersistStorage<T> => ({
+export const createFlatStorage: <T>() => PersistStorage<T> = <T>() => ({
   getItem: (name) => {
     const str = sessionStorage.getItem(name);
     if (!str) {

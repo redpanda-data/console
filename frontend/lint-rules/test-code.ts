@@ -224,7 +224,7 @@ export type ClockRegion = {
  * or, from a `beforeEach`/`beforeAll`, inside the tests and hooks registered beside that hook.
  * Calls through helper functions are not followed.
  */
-export function clockRegion(sourceCode: SourceCode, call: ESTree.CallExpression, kinds: Set<ClockKind>): ClockRegion {
+export function clockRegion(sourceCode: SourceCode, call: ESTree.CallExpression, kinds: Set<ClockKind>) {
   const fn = enclosingFunction(call) ?? sourceCode.ast;
   const hook = setupHookRegistration(sourceCode, fn);
   const owner = hook ? (enclosingFunction(hook) ?? sourceCode.ast) : fn;

@@ -127,10 +127,7 @@ function useAddUserForm({
   });
 }
 
-function initialUserSelectionType(
-  selectionMode: NonNullable<AddUserStepProps['selectionMode']>,
-  hasUsers: boolean
-): CreatableSelectionType {
+function initialUserSelectionType(selectionMode: NonNullable<AddUserStepProps['selectionMode']>, hasUsers: boolean) {
   if (selectionMode === 'new') {
     return CreatableSelectionOptions.CREATE;
   }

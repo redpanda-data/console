@@ -225,7 +225,7 @@ function invalidSettingsMessage(fieldErrors: FieldErrors<PipelineFormValues>) {
   return typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.';
 }
 
-function deployBlockerMessage(isDraftSave: boolean, yamlContent: string, hasServiceAccount: boolean): string | null {
+function deployBlockerMessage(isDraftSave: boolean, yamlContent: string, hasServiceAccount: boolean) {
   if (isDraftSave) {
     return null;
   }
@@ -422,12 +422,12 @@ async function updateAndFinish(flow: SaveFlow, attempt: SaveAttempt, pipelineId:
   return true;
 }
 
-function reportSaveFailure(flow: SaveFlow, err: unknown, isDraftSave: boolean): false {
+function reportSaveFailure(flow: SaveFlow, err: unknown, isDraftSave: boolean) {
   const connectError = ConnectError.from(err);
   flow.setErrorLintHints(extractLintHintsFromError(connectError));
   if (isDraftSave && isNoLongerDraftError(connectError)) {
     toast.error(NO_LONGER_DRAFT_MESSAGE);
-    return false;
+    return false as const;
   }
   toast.error(
     formatToastErrorMessageGRPC({
@@ -436,7 +436,7 @@ function reportSaveFailure(flow: SaveFlow, err: unknown, isDraftSave: boolean): 
       entity: 'pipeline',
     })
   );
-  return false;
+  return false as const;
 }
 
 async function submitSave(flow: SaveFlow, attempt: SaveAttempt) {

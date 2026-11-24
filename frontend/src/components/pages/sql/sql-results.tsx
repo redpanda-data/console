@@ -297,7 +297,7 @@ function buildColumns(cols: ColumnDef[]) {
     renderCell: ({ rowIdx }) => rowIdx + 1,
     cellClass: 'sql-results-rownum text-right font-mono text-disabled text-body-sm [user-select:none]',
   };
-  const dataCols = cols.map((c): Column<ResultRow> => {
+  const dataCols = cols.map<Column<ResultRow>>((c) => {
     const alignRight = c.kind === 'num';
     return {
       key: c.name,

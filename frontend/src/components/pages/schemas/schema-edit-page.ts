@@ -21,8 +21,8 @@ export function decodeSchemaEditTarget(subjectNameEncoded?: string, contextNameE
 export function schemaEditBreadcrumbs(
   { subjectName, contextName }: SchemaEditTarget,
   { crumbTitle, segment }: SchemaEditPageKind
-): BreadcrumbEntry[] {
-  const root = { title: 'Schema Registry', linkTo: '/schema-registry' };
+) {
+  const root: BreadcrumbEntry = { title: 'Schema Registry', linkTo: '/schema-registry' };
   if (contextName) {
     return [
       root,
@@ -77,7 +77,7 @@ export function schemaEditPageStatus({
   contextsUnsupported: boolean;
   isLoading: boolean;
   schemaMode: string | null | undefined;
-}): SchemaEditPageStatus {
+}) {
   if (contextsUnsupported) {
     return 'contexts-unsupported';
   }

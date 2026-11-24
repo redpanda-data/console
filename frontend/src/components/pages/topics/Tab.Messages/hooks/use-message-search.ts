@@ -236,7 +236,7 @@ async function runMessageSearch(
   request: MessageSearchRequest,
   abortSignal: AbortSignal | undefined,
   ctx: SearchRunContext
-): Promise<TopicMessage[]> {
+) {
   ctx.setFetchError(null);
   ctx.setSearchPhase('Searching...');
 

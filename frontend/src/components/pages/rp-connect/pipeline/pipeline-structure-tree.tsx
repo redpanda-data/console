@@ -332,13 +332,11 @@ const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section:
   </div>
 );
 
-function invalidOutlineNotice(showingStale: boolean, error?: string): string | undefined {
+function invalidOutlineNotice(showingStale: boolean, error?: string) {
   if (showingStale) {
     return 'Showing the last valid outline — the current YAML is invalid.';
   }
-  if (error) {
-    return 'The current YAML is invalid — fix it in the editor to see the outline.';
-  }
+  return error ? 'The current YAML is invalid — fix it in the editor to see the outline.' : undefined;
 }
 
 type TreeRovingFocusOptions = {

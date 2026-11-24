@@ -225,9 +225,10 @@ function buildDataColumns(options: MessageColumnOptions) {
   return topicColumns;
 }
 
-function selectColumnKeys(previewColumnFields: ColumnList[]): DataColumnKey[] {
+function selectColumnKeys(previewColumnFields: ColumnList[]) {
   if (previewColumnFields.length === 0) {
-    return ['timestamp', 'key', 'value'];
+    const defaultKeys: DataColumnKey[] = ['timestamp', 'key', 'value'];
+    return defaultKeys;
   }
   const selectedColumns = new Set(previewColumnFields.map((field) => field.dataIndex));
   return COLUMN_ORDER.filter((column) => selectedColumns.has(column));

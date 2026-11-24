@@ -158,6 +158,8 @@ export function validateReplicationFactor(replicationFactor: number, isRedpanda:
   return '';
 }
 
-function unsupportedRetentionUnit(_unit: never): undefined {
+function unsupportedRetentionUnit(_unit: never) {
   // WARNING: Keep the legacy unset result for an unknown runtime unit; the never parameter still checks exhaustiveness.
+  const unset = undefined;
+  return unset;
 }

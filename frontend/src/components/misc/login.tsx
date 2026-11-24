@@ -40,7 +40,7 @@ import { appGlobal } from '../../state/app-global';
 import { useUIStateStore } from '../../state/ui-state';
 
 const authenticationApiClient = {
-  async refreshAuthenticationMethods(): Promise<{ methods: AuthenticationMethod[]; error: ConnectError | null }> {
+  async refreshAuthenticationMethods() {
     const client = appConfig.authenticationClient;
     if (!client) {
       throw new Error('security client is not initialized');

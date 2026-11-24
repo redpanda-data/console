@@ -250,9 +250,10 @@ function useConnectorWizardState() {
 
 type WizardControls = ReturnType<typeof useConnectorWizardState>;
 
-function parseConfigText(text: string): ConfigObject | null {
+function parseConfigText(text: string) {
   try {
-    return JSON.parse(text);
+    const config: ConfigObject | null = JSON.parse(text);
+    return config;
   } catch {
     return null;
   }

@@ -137,7 +137,7 @@ export function parseFilterInput(
   return { field: head.field, op: head.op, value };
 }
 
-function parseFieldAndOperator(trimmed: string): { field: string; op: FilterOp; rawValue: string } | null {
+function parseFieldAndOperator(trimmed: string) {
   const fieldMatch = FIELD_PATTERN.exec(trimmed);
   if (!fieldMatch) {
     return null;

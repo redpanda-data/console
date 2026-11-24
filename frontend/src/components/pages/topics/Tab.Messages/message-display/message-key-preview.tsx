@@ -10,7 +10,6 @@
  */
 
 import { WarningIcon } from 'components/icons';
-import type { ReactNode } from 'react';
 
 import { highlightControlChars } from './highlight-control-chars';
 import { type PreviewDisplayMode, renderPreviewTags } from './preview-tags-text';
@@ -27,7 +26,7 @@ function isObjectKey(key: Payload) {
   return !(key.encoding === 'binary' || key.encoding === 'utf8WithControlChars' || isPrimitivePayload(key.payload));
 }
 
-function getKeyPreviewText(msg: TopicMessage): ReactNode {
+function getKeyPreviewText(msg: TopicMessage) {
   const key = msg.key;
   if (key.encoding === 'binary') {
     return cullText(msg.keyBinHexPreview as string, 44);
@@ -45,7 +44,7 @@ function renderKeyPreview(
   msg: TopicMessage,
   previewFields: () => PreviewTagV2[],
   previewDisplayMode: PreviewDisplayMode | undefined
-): ReactNode {
+) {
   const key = msg.key;
   if (key.isPayloadNull) {
     return <EmptyBadge mode="null" />;

@@ -14,7 +14,7 @@ import { IsDev } from '../env';
 // WARNING: The backend supplies the interpreter's root value; the root call reaches it through a null receiver.
 declare let value: unknown;
 
-function find(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown {
+function find(this: unknown | undefined, arg1: unknown, arg2: unknown) {
   const self = this === null ? value : this;
 
   const results = findGeneric(self, arg1, arg2, true);
@@ -24,7 +24,7 @@ function find(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown 
   }
 }
 
-function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown[] {
+function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown) {
   const self = this === null ? value : this;
 
   const results = findGeneric(self, arg1, arg2, false);
@@ -35,7 +35,7 @@ function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown): unkno
 (Object.prototype as Record<string, unknown>).find = find;
 (Object.prototype as Record<string, unknown>).findAll = findAll;
 
-function findGeneric(self: unknown, arg1: unknown, arg2: unknown, returnFirstResult: boolean): unknown[] {
+function findGeneric(self: unknown, arg1: unknown, arg2: unknown, returnFirstResult: boolean) {
   const caseSensitive = !arg2;
 
   if (typeof arg1 === 'string') {
@@ -50,7 +50,7 @@ function findGeneric(self: unknown, arg1: unknown, arg2: unknown, returnFirstRes
   throw new Error('first parameter of find() must be: string, or function, or pattern object');
 }
 
-function findByName(obj: unknown, propertyName: string, caseSensitive: boolean, returnFirstResult: boolean): unknown[] {
+function findByName(obj: unknown, propertyName: string, caseSensitive: boolean, returnFirstResult: boolean) {
   const isMatch = caseSensitive
     ? (_: unknown, prop: string | number) => prop === propertyName
     : (_: unknown, prop: string | number) => String(prop).toUpperCase() === propertyName.toUpperCase();
@@ -62,7 +62,7 @@ function findByCallback(
   obj: unknown,
   isMatch: (object: unknown, key: string | number) => boolean,
   returnFirstResult: boolean
-): unknown[] {
+) {
   const ctx: PropertySearchContext = {
     isMatch,
     currentPath: [],
@@ -109,7 +109,7 @@ function patternValueMatches(
   patternValue: unknown,
   key: string,
   options: PatternMatchOptions
-): boolean {
+) {
   if (typeof currentObjValue === 'string') {
     return stringsMatch(currentObjValue, patternValue, options);
   }
@@ -132,12 +132,7 @@ function patternValueMatches(
   return true;
 }
 
-function patternPropertyMatches(
-  currentObj: object,
-  currentPattern: object,
-  key: string,
-  options: PatternMatchOptions
-): boolean {
+function patternPropertyMatches(currentObj: object, currentPattern: object, key: string, options: PatternMatchOptions) {
   const patternValue = (currentPattern as Record<string, unknown>)[key];
 
   if (typeof patternValue === 'function') {
@@ -169,12 +164,7 @@ function isPatternMatch(currentObj: object, currentPattern: object, options: Pat
   return true;
 }
 
-function findByPattern(
-  obj: unknown,
-  patternObj: object,
-  caseSensitive: boolean,
-  returnFirstResult: boolean
-): unknown[] {
+function findByPattern(obj: unknown, patternObj: object, caseSensitive: boolean, returnFirstResult: boolean) {
   const options: PatternMatchOptions = { caseSensitive };
   const ctx: ObjectSearchContext = {
     isMatch: (currentObj, currentPattern) => isPatternMatch(currentObj, currentPattern, options),
@@ -202,7 +192,7 @@ type ObjectSearchContext = {
   returnFirstResult: boolean;
 };
 
-function matchesSafely(ctx: PropertySearchContext, obj: object, key: string): boolean {
+function matchesSafely(ctx: PropertySearchContext, obj: object, key: string) {
   try {
     return ctx.isMatch(obj, key);
   } catch {
@@ -219,14 +209,14 @@ function recordIfMatch(ctx: PropertySearchContext, obj: object, key: string, pro
   return true;
 }
 
-function descendInto(ctx: PropertySearchContext, key: string, propValue: unknown): boolean {
+function descendInto(ctx: PropertySearchContext, key: string, propValue: unknown) {
   ctx.currentPath.push(key);
   const stop = findElement(ctx, propValue);
   ctx.currentPath.pop();
   return stop && ctx.returnFirstResult;
 }
 
-function visitProperty(ctx: PropertySearchContext, obj: object, key: string): boolean {
+function visitProperty(ctx: PropertySearchContext, obj: object, key: string) {
   const propValue = (obj as Record<string, unknown>)[key];
   if (typeof propValue === 'function') {
     return false;
@@ -255,7 +245,7 @@ function findElement(ctx: PropertySearchContext, obj: unknown) {
   return false;
 }
 
-function findObject(ctx: ObjectSearchContext, obj: unknown): boolean {
+function findObject(ctx: ObjectSearchContext, obj: unknown) {
   if (typeof obj === 'object' && obj !== null && ctx.isMatch(obj as object, ctx.pattern)) {
     ctx.results.push(obj as object);
     if (ctx.returnFirstResult) {

@@ -266,7 +266,7 @@ export type UnifiedShadowLink = {
  *
  * Console state numbers 1–5 represent active, paused, failing over, failed over and failover faulted.
  */
-export function mapConsoleStateToUnified(state: CoreShadowLinkState): UnifiedShadowLinkState {
+export function mapConsoleStateToUnified(state: CoreShadowLinkState) {
   switch (state) {
     case 1:
       return UnifiedShadowLinkState.ACTIVE;
@@ -288,7 +288,7 @@ export function mapConsoleStateToUnified(state: CoreShadowLinkState): UnifiedSha
  *
  * Control-plane numbers 1–6 represent creating, creation failed, deleting, deletion failed, active and paused; they differ from Console states.
  */
-export function mapControlplaneStateToUnified(state: ControlplaneShadowLinkState): UnifiedShadowLinkState {
+export function mapControlplaneStateToUnified(state: ControlplaneShadowLinkState) {
   switch (state) {
     case 1:
       return UnifiedShadowLinkState.CREATING;

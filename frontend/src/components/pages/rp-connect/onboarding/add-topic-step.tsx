@@ -162,7 +162,7 @@ function useExistingTopicSync(form: TopicForm, topicList: TopicList) {
   return { watchedTopicName, existingTopicSelected };
 }
 
-function initialTopicSelectionType(selectionMode: SelectionMode, topicList: TopicList): CreatableSelectionType {
+function initialTopicSelectionType(selectionMode: SelectionMode, topicList: TopicList) {
   if (selectionMode === 'new') {
     return CreatableSelectionOptions.CREATE;
   }

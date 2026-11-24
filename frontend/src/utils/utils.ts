@@ -120,7 +120,6 @@ export function equalsIgnoreCase(a: string, b: string) {
 }
 
 type FoundProperty = { propertyName: string; path: string[]; value: unknown };
-type PropertySearchResult = 'continue' | 'abort';
 
 type PropertySearchExContext = {
   isMatch: (propertyName: string, path: string[], value: unknown) => boolean;
@@ -144,7 +143,7 @@ export function collectElements(
   return ctx.results;
 }
 
-function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>): PropertySearchResult {
+function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>) {
   for (const key in obj) {
     if (Object.hasOwn(obj, key) && collectMatchingProperty(ctx, key, obj[key]) === 'abort') {
       return 'abort';
@@ -153,7 +152,7 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<stri
   return 'continue';
 }
 
-function collectMatchingProperty(ctx: PropertySearchExContext, key: string, value: unknown): PropertySearchResult {
+function collectMatchingProperty(ctx: PropertySearchExContext, key: string, value: unknown) {
   if (ctx.isMatch(key, ctx.currentPath, value)) {
     ctx.results.push({ propertyName: key, path: Object.assign([], ctx.currentPath), value });
     if (ctx.returnFirstResult) {

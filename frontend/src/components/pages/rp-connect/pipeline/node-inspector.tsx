@@ -687,7 +687,7 @@ function caseWithCheck(caseObject: Record<string, unknown>, check: string) {
   }
   return Object.fromEntries(
     entries
-      .map(([key, value]): [string, unknown] => (key === 'check' ? [key, trimmed] : [key, value]))
+      .map<[string, unknown]>(([key, value]) => (key === 'check' ? [key, trimmed] : [key, value]))
       .filter(([key]) => key !== 'check' || trimmed !== '')
   ) satisfies Record<string, unknown>;
 }

@@ -22,7 +22,7 @@ function isSlashTriggerColumn(lineContent: string, slashColumn: number) {
 }
 
 /** Check if the `/` just typed is at a valid trigger position (start of line or after whitespace). */
-export function detectSlashTrigger(editorInstance: editor.IStandaloneCodeEditor): SlashPosition | null {
+export function detectSlashTrigger(editorInstance: editor.IStandaloneCodeEditor) {
   const position = editorInstance.getPosition();
   if (!position) {
     return null;
@@ -49,7 +49,7 @@ function slashReplaceRange(
   editorInstance: editor.IStandaloneCodeEditor,
   slashPos: SlashPosition | null,
   savedRange: SavedSlashRange | null
-): IRange | null {
+) {
   if (slashPos) {
     return lineRange(slashPos.lineNumber, slashPos.column, slashPos.column + 1);
   }

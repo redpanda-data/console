@@ -176,7 +176,7 @@ export const getResourceNameValue = (rule: Rule) => {
   return resourceName;
 };
 
-export function getGRPCPermissionType(operation: OperationType): ACL_PermissionType {
+export function getGRPCPermissionType(operation: OperationType) {
   switch (operation) {
     case OperationTypeAllow:
       return ACL_PermissionType.ALLOW;
@@ -187,7 +187,7 @@ export function getGRPCPermissionType(operation: OperationType): ACL_PermissionT
   }
 }
 
-export function getGRPCResourceType(operation: ResourceType): ACL_ResourceType {
+export function getGRPCResourceType(operation: ResourceType) {
   switch (operation) {
     case ResourceTypeCluster:
       return ACL_ResourceType.CLUSTER;
@@ -206,7 +206,7 @@ export function getGRPCResourceType(operation: ResourceType): ACL_ResourceType {
   }
 }
 
-export function getGRPCResourcePatternType(pattern: ResourcePatternType): ACL_ResourcePatternType {
+export function getGRPCResourcePatternType(pattern: ResourcePatternType) {
   switch (pattern) {
     case ResourcePatternTypeAny:
       return ACL_ResourcePatternType.ANY;
@@ -219,7 +219,7 @@ export function getGRPCResourcePatternType(pattern: ResourcePatternType): ACL_Re
   }
 }
 
-export function getGRPCOperationType(op: string): ACL_Operation {
+export function getGRPCOperationType(op: string) {
   switch (op) {
     case 'ALL':
       return ACL_Operation.ALL;
@@ -291,7 +291,7 @@ function getOperationTypeFromGRPC(grpcPermission: ACL_PermissionType) {
   }
 }
 
-function getOperationNameFromGRPC(grpcOp: ACL_Operation): string {
+function getOperationNameFromGRPC(grpcOp: ACL_Operation) {
   switch (grpcOp) {
     case ACL_Operation.ALL:
       return 'ALL';

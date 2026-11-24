@@ -97,9 +97,9 @@ export function resolveFieldByPath(root: RawFieldSpec | undefined, path: string)
   return current;
 }
 
-export function parseSchema(componentList: ComponentList): ConnectComponentSpec[] {
+export function parseSchema(componentList: ComponentList) {
   try {
-    return Object.entries(COMPONENT_TYPE_MAPPINGS).flatMap(([componentType, { listKey }]) =>
+    return Object.entries(COMPONENT_TYPE_MAPPINGS).flatMap<ConnectComponentSpec>(([componentType, { listKey }]) =>
       ((componentList[listKey] as ComponentSpec[]) || []).map((comp) => ({
         ...comp,
         type: componentType as Exclude<ConnectComponentType, 'custom'>,
@@ -263,11 +263,7 @@ function saslSecretRef(fieldName: string, username: string) {
   }
 }
 
-function populateContextualVariables(
-  spec: RawFieldSpec,
-  componentName?: string,
-  parentName?: string
-): string | string[] | undefined {
+function populateContextualVariables(spec: RawFieldSpec, componentName?: string, parentName?: string) {
   if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
     return;
   }
@@ -322,7 +318,7 @@ function generateObjectValue(
   spec: RawFieldSpec,
   showAdvancedFields: boolean | undefined,
   componentName: string | undefined
-): Record<string, unknown> | undefined {
+) {
   if (!spec.children) {
     return {};
   }
@@ -353,7 +349,7 @@ function generateObjectArrayValue(
   componentName: string | undefined
 ) {
   const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-  const values: unknown[] | undefined = obj && Object.keys(obj).length > 0 ? [obj] : undefined;
+  const values: unknown[] | undefined = Object.keys(obj).length > 0 ? [obj] : undefined;
   return values;
 }
 
@@ -573,11 +569,11 @@ function generateObjectStructure(
   required: boolean,
   showAdvancedFields: boolean | undefined,
   componentName: string | undefined
-): unknown {
+) {
   const isComponentRoot = !spec.name;
   if (spec.kind === 'scalar' || spec.kind === '') {
     const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-    if (obj && Object.keys(obj).length > 0) {
+    if (Object.keys(obj).length > 0) {
       return obj;
     }
     return isComponentRoot ? {} : undefined;

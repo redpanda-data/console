@@ -15,7 +15,6 @@ import '../../../utils/array-extensions';
 import { Stat } from 'components/redpanda-ui/components/stat';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { InfoIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
 
 import type { CleanupPolicyType } from './types';
 import { formatConfigValue } from '../../../utils/formatters/config-value-formatter';
@@ -32,7 +31,7 @@ const CLEANUP_POLICY_LABELS: Record<CleanupPolicyType, string> = {
 const ESTIMATE_HINT =
   'The number of messages shown is an estimate. This is calculated by summing the differences between the highest and lowest offsets in each partition. The actual number of messages may vary due to factors such as message deletions, log compaction, and uncommitted or transactional messages.';
 
-function formatMessageSum(partitions: Partition[] | null | undefined): ReactNode {
+function formatMessageSum(partitions: Partition[] | null | undefined) {
   if (partitions === undefined) {
     return '...';
   }

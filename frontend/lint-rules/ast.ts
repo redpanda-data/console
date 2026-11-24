@@ -38,7 +38,7 @@ function isWrapper(node: Node): node is Wrapper {
 }
 
 /** Strips parentheses, optional chains and type-only wrappers. */
-export function unwrap(node: Node | null | undefined): Node | undefined {
+export function unwrap(node: Node | null | undefined) {
   let current = node ?? undefined;
   while (current && isWrapper(current)) {
     current = current.expression;
@@ -143,7 +143,7 @@ export function importOf(sourceCode: SourceCode, identifier: NamedIdentifier) {
 }
 
 /** The initializer of a `const name = init` binding, when that is how the name was declared. */
-export function initializerOf(sourceCode: SourceCode, identifier: NamedIdentifier): Node | undefined {
+export function initializerOf(sourceCode: SourceCode, identifier: NamedIdentifier) {
   const definition = findVariable(sourceCode, identifier)?.defs[0];
   if (definition?.type !== 'Variable' || definition.node.type !== 'VariableDeclarator') {
     return;

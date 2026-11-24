@@ -78,7 +78,7 @@ function supportsContinuousPagination(origin: PartitionOffsetOriginType) {
   return origin === PartitionOffsetOrigin.EndMinusResults || origin === PartitionOffsetOrigin.Start;
 }
 
-function nextStartOffset(origin: PartitionOffsetOriginType, startOffset: number): number | undefined {
+function nextStartOffset(origin: PartitionOffsetOriginType, startOffset: number) {
   if (origin === PartitionOffsetOrigin.Custom) {
     return startOffset < 0 ? 0 : undefined;
   }

@@ -29,19 +29,14 @@ export function isDeleteEnabled(isCompacted: boolean, allowedActions: TopicActio
 /**
  * Gets error message for why deletion is disabled
  */
-export function getDeleteErrorText(
-  isCompacted: boolean,
-  allowedActions: TopicAction[] | undefined
-): string | undefined {
+export function getDeleteErrorText(isCompacted: boolean, allowedActions: TopicAction[] | undefined) {
   if (isCompacted) {
     return "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
   }
   if (!hasDeleteRecordsPrivilege(allowedActions)) {
     return "You're not permitted to delete records on this topic.";
   }
-  if (!isSupported(Feature.DeleteRecords)) {
-    return "The cluster doesn't support deleting records.";
-  }
+  return isSupported(Feature.DeleteRecords) ? undefined : "The cluster doesn't support deleting records.";
 }
 
 /**

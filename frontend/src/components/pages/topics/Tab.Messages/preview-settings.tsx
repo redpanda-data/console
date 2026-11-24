@@ -266,7 +266,7 @@ const PreviewTagSettings = ({
 
 type TagMatch = { prop: CollectedProperty; tag: PreviewTagV2; fullPath: string };
 
-function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2, caseSensitive: boolean): TagMatch[] {
+function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2, caseSensitive: boolean) {
   if (tag.pattern.length === 0) {
     return [];
   }

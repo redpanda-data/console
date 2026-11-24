@@ -11,7 +11,6 @@
 
 import { InfoIcon, WarningIcon } from 'components/icons';
 import type React from 'react';
-import type { ReactNode } from 'react';
 
 import { type PreviewDisplayMode, renderPreviewTags } from './preview-tags-text';
 import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
@@ -45,7 +44,7 @@ function renderValuePreview(
   msg: TopicMessage,
   previewFields: () => PreviewTagV2[],
   previewDisplayMode: PreviewDisplayMode | undefined
-): ReactNode {
+) {
   const value = msg.value;
   if (value.isPayloadNull) {
     return <EmptyBadge mode="null" />;

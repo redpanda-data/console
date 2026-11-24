@@ -25,7 +25,7 @@ export function extractLintHintsFromError(err: unknown) {
   return toHintRecord(hints.length > 0 ? hints : [errorHint(connectErrorHintText(err))]);
 }
 
-export function formatPipelineError(err: unknown): React.ReactNode {
+export function formatPipelineError(err: unknown) {
   const message = err instanceof ConnectError ? err.message : String(err);
   const details = err instanceof ConnectError ? lintHintsFromDetails(err.details).map(lintHintText) : [];
   if (details.length === 0) {

@@ -136,10 +136,10 @@ export class ConnectorPropertiesStore {
 
   getVersion = () => this.version;
 
-  createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]): PropertyGroup {
+  createPropertyGroup(step: ConnectorStep, group: ConnectorGroup, properties: Property[]) {
     const self = this;
 
-    return {
+    const propertyGroup: PropertyGroup = {
       step,
       group,
       properties,
@@ -152,6 +152,7 @@ export class ConnectorPropertiesStore {
         return this.properties.filter((p) => p.entry.definition.importance === PropertyImportance.High);
       },
     };
+    return propertyGroup;
   }
 
   getConfigObject(): object {
@@ -400,9 +401,10 @@ export class ConnectorPropertiesStore {
 
 const hiddenProperties = ['connector.class'];
 
-function parseConfigJson(jsonText: string): Record<string, unknown> {
+function parseConfigJson(jsonText: string) {
   try {
-    return JSON.parse(jsonText);
+    const config: Record<string, unknown> = JSON.parse(jsonText);
+    return config;
   } catch {
     // WARNING: Keep the last valid props during an incomplete JSON edit; a parse failure is expected while typing.
     return {};

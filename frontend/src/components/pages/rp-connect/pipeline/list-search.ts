@@ -86,7 +86,7 @@ export function sortingFromSearch(search: PipelineListSearch) {
 }
 
 /** The sort keys for a table's sorting; the default sort leaves them out. */
-export function sortSearchFromSorting(sorting: SortingState): Pick<PipelineListSearch, 'sort' | 'desc'> {
+export function sortSearchFromSorting(sorting: SortingState) {
   const [first] = sorting;
   const sort = SORTABLE_COLUMNS.find((id) => id === first?.id);
   if (!sort || (sort === 'state' && !first.desc)) {

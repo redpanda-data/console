@@ -72,9 +72,9 @@ function prepareBinaryPayload(payload: Payload, val: unknown): PayloadRenderData
   return formatAsciiBytes(val);
 }
 
-function classifyPayload(payload: Payload): PayloadRenderData {
+function classifyPayload(payload: Payload) {
   if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined) {
-    return { type: 'null' };
+    return { type: 'null' } satisfies PayloadRenderData;
   }
 
   const val = payload.payload;
@@ -84,22 +84,22 @@ function classifyPayload(payload: Payload): PayloadRenderData {
   }
 
   if (payload.encoding === 'utf8WithControlChars') {
-    return { type: 'controlChars', content: val as string };
+    return { type: 'controlChars', content: val as string } satisfies PayloadRenderData;
   }
 
   if (isPrimitivePayload(val)) {
-    return { type: 'primitive', content: String(val) };
+    return { type: 'primitive', content: String(val) } satisfies PayloadRenderData;
   }
 
-  return { type: 'json', content: val };
+  return { type: 'json', content: val } satisfies PayloadRenderData;
 }
 
-function preparePayloadData(payload: Payload): PayloadRenderData {
+function preparePayloadData(payload: Payload) {
   try {
     return classifyPayload(payload);
   } catch (e) {
     const err = e as Error;
-    return { type: 'error', content: err.message === undefined ? String(e) : err.message };
+    return { type: 'error', content: err.message === undefined ? String(e) : err.message } satisfies PayloadRenderData;
   }
 }
 

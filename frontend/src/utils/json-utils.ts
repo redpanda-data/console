@@ -52,11 +52,12 @@ export function toJson(obj: unknown, space?: string | number | undefined) {
   }
 }
 
-export function clone<T>(obj: T): T {
+export function clone<T>(obj: T) {
   if (!obj) {
     return obj;
   }
-  return JSON.parse(toJson(obj));
+  const copy: T = JSON.parse(toJson(obj));
+  return copy;
 }
 
 export function touch(obj: unknown) {
@@ -73,7 +74,7 @@ export function touch(obj: unknown) {
  * @param value The JSON value to analyze
  * @returns The specific data type including "array" and "null" as distinct types
  */
-export function getDataType(value: JsonValue): DataType {
+export function getDataType(value: JsonValue) {
   if (Array.isArray(value)) {
     return 'array';
   }
@@ -88,16 +89,14 @@ export function getDataType(value: JsonValue): DataType {
  * @param str The string to parse
  * @returns Object with success boolean and either parsed data or original string
  */
-export function tryParseJson(str: string): {
-  success: boolean;
-  data: JsonValue;
-} {
+export function tryParseJson(str: string) {
   const trimmed = str.trim();
   if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
     return { success: false, data: str };
   }
   try {
-    return { success: true, data: JSON.parse(str) };
+    const data: JsonValue = JSON.parse(str);
+    return { success: true, data };
   } catch {
     return { success: false, data: str };
   }
@@ -110,7 +109,7 @@ export function tryParseJson(str: string): {
  * @param value The new value to set
  * @returns A new JSON value with the updated path
  */
-export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonValue): JsonValue {
+export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonValue) {
   if (path.length === 0) {
     return value;
   }

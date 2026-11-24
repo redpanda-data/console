@@ -107,7 +107,7 @@ function checkFeatureSupport(
   return [false, null];
 }
 
-function checkPermissions(permissions: UserPermissions[] | undefined): DisabledReason | null {
+function checkPermissions(permissions: UserPermissions[] | undefined) {
   if (!(permissions && api.userData)) {
     return null;
   }
@@ -119,7 +119,7 @@ function checkPermissions(permissions: UserPermissions[] | undefined): DisabledR
   return null;
 }
 
-function checkAppFeatures(appFeatures: AppFeature[] | undefined): DisabledReason | null {
+function checkAppFeatures(appFeatures: AppFeature[] | undefined) {
   if (!appFeatures) {
     return null;
   }
