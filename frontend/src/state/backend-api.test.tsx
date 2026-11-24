@@ -11,11 +11,14 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
-import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { HttpResponse, http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
 
 import { api, rolesApi, useApiStore, useRolesStore } from './backend-api';
 import type { TopicConsumer, TopicDescription, UserData } from './rest-interfaces';
-import { config } from '../config';
+import { config, createAuthInjectingFetch } from '../config';
 import { AuthenticationMethod } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import {
   ClusterStatusService,
@@ -32,19 +35,39 @@ import {
   DebugBundleStatusSchema,
   GetDebugBundleStatusResponse_DebugBundleBrokerStatusSchema,
 } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
-import fetchWithTimeout from '../utils/fetch-with-timeout';
 
-rs.mock('../utils/fetch-with-timeout', () => ({ default: rs.fn() }));
+const topicsUrl = new URL(`${config.restBasePath}/topics`, window.location.href).href;
 
-const topicsResponse = (topicNames: string[]) =>
-  new Response(JSON.stringify({ topics: topicNames.map((topicName) => ({ topicName })) }), {
-    status: 200,
-    headers: { 'content-type': 'application/json' },
+describe('refreshTopics topic-cache pruning', () => {
+  const server = setupServer();
+  const guardedFetch = globalThis.fetch;
+  const originalFetch = config.fetch;
+
+  beforeAll(() => {
+    server.listen({
+      async onUnhandledFrame({ frame }) {
+        if (frame instanceof HttpNetworkFrame) {
+          await guardedFetch(frame.data.request);
+        }
+        throw new Error('Unexpected network frame in the topic-cache tests');
+      },
+    });
+    config.fetch = createAuthInjectingFetch(globalThis.fetch);
   });
 
-describe('refreshTopics topic-cache pruning (F2)', () => {
+  afterEach(() => server.resetHandlers());
+
+  afterAll(() => {
+    config.fetch = originalFetch;
+    server.close();
+  });
+
+  const serveTopics = (...topicNames: string[]) =>
+    server.use(
+      http.get(topicsUrl, () => HttpResponse.json({ topics: topicNames.map((topicName) => ({ topicName })) }))
+    );
+
   beforeEach(() => {
-    rs.mocked(fetchWithTimeout).mockReset();
     useApiStore.setState({
       topics: null,
       topicConfig: new Map(),
@@ -53,7 +76,7 @@ describe('refreshTopics topic-cache pruning (F2)', () => {
   });
 
   test('drops topic-keyed cache entries for topics that no longer exist', async () => {
-    rs.mocked(fetchWithTimeout).mockResolvedValue(topicsResponse(['live-topic']));
+    serveTopics('live-topic');
     useApiStore.setState({
       topicConfig: new Map<string, TopicDescription | null>([
         ['live-topic', null],
@@ -74,7 +97,7 @@ describe('refreshTopics topic-cache pruning (F2)', () => {
   });
 
   test('keeps cache entries for topics that still exist', async () => {
-    rs.mocked(fetchWithTimeout).mockResolvedValue(topicsResponse(['a', 'b']));
+    serveTopics('a', 'b');
     useApiStore.setState({
       topicConfig: new Map<string, TopicDescription | null>([
         ['a', null],
@@ -124,9 +147,7 @@ const emptyClusterOverview = {
 const authorizerFailure = new ConnectError('authorizer unavailable', Code.Unavailable);
 
 function clusterStatusClient(options: { failAuthorizer: boolean }) {
-  const getSchemaRegistryInfo = rs.fn(() =>
-    create(GetSchemaRegistryInfoResponseSchema, { registeredSubjectsCount: 3 })
-  );
+  const reads: string[] = [];
   const transport = createRouterTransport(({ service }) => {
     service(ClusterStatusService, {
       getKafkaAuthorizerInfo: () => {
@@ -139,10 +160,13 @@ function clusterStatusClient(options: { failAuthorizer: boolean }) {
       getKafkaInfo: () => create(GetKafkaInfoResponseSchema, { version: 'kafka-v1' }),
       getRedpandaInfo: () => create(GetRedpandaInfoResponseSchema, { version: 'redpanda-v1' }),
       getKafkaConnectInfo: () => create(GetKafkaConnectInfoResponseSchema, {}),
-      getSchemaRegistryInfo,
+      getSchemaRegistryInfo: () => {
+        reads.push('GetSchemaRegistryInfo');
+        return create(GetSchemaRegistryInfoResponseSchema, { registeredSubjectsCount: 3 });
+      },
     });
   });
-  return { client: createClient(ClusterStatusService, transport), getSchemaRegistryInfo };
+  return { client: createClient(ClusterStatusService, transport), reads };
 }
 
 describe('refreshClusterOverview', () => {
@@ -158,7 +182,7 @@ describe('refreshClusterOverview', () => {
   });
 
   test('stores each cluster status response and skips schema registry without schema access', async () => {
-    const { client, getSchemaRegistryInfo } = clusterStatusClient({ failAuthorizer: false });
+    const { client, reads } = clusterStatusClient({ failAuthorizer: false });
     config.clusterStatusClient = client;
 
     await useApiStore.getState().refreshClusterOverview();
@@ -171,22 +195,22 @@ describe('refreshClusterOverview', () => {
       kafkaConnect: { $typeName: 'redpanda.api.console.v1alpha1.GetKafkaConnectInfoResponse' },
       schemaRegistry: null,
     });
-    expect(getSchemaRegistryInfo).not.toHaveBeenCalled();
+    expect(reads).toEqual([]);
   });
 
   test('requests schema registry info when the user can view schemas', async () => {
-    const { client, getSchemaRegistryInfo } = clusterStatusClient({ failAuthorizer: false });
+    const { client, reads } = clusterStatusClient({ failAuthorizer: false });
     config.clusterStatusClient = client;
     useApiStore.setState({ userData: schemaViewer });
 
     await useApiStore.getState().refreshClusterOverview();
 
-    expect(getSchemaRegistryInfo).toHaveBeenCalledTimes(1);
+    expect(reads).toEqual(['GetSchemaRegistryInfo']);
     expect(useApiStore.getState().clusterOverview.schemaRegistry?.registeredSubjectsCount).toBe(3);
   });
 
   test('records a failed authorizer request and still stores the other responses', async () => {
-    const consoleError = rs.spyOn(console, 'error').mockImplementation(() => undefined);
+    const consoleError = rs.spyOn(console, 'error');
     const { client } = clusterStatusClient({ failAuthorizer: true });
     config.clusterStatusClient = client;
 
