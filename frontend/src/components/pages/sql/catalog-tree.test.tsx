@@ -9,19 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 'react-query/api/sql';
+import { describeTable, listTables } from 'protogen/redpanda/api/dataplane/v1alpha3/sql-SQLService_connectquery';
+import { useState } from 'react';
 import { render, screen } from 'test-utils';
 
-import { CatalogTree } from './catalog-tree';
+import { CatalogTree, type CatalogTreeProps } from './catalog-tree';
 import type { Catalog, TableRef } from './sql-types';
-
-rs.mock('react-query/api/sql', () => ({
-  useListTablesQuery: rs.fn(),
-  useDescribeTableQuery: rs.fn(),
-  useTopicIcebergQuery: rs.fn(),
-}));
 
 const tableRef = (name: string, overrides: Partial<TableRef> = {}) => ({
   id: `rp.public.${name}`,
@@ -31,15 +27,16 @@ const tableRef = (name: string, overrides: Partial<TableRef> = {}) => ({
   ...overrides,
 });
 
-const catalog = (overrides: Partial<Catalog> = {}) => ({
-  name: 'rp',
-  displayLabel: 'Redpanda Catalog',
-  engine: 'redpanda',
-  namespaces: [{ id: 'rp.public', name: 'public', tables: [tableRef('orders'), tableRef('users')] }],
-  ...overrides,
-});
+function catalogWith(tables: TableRef[]) {
+  return {
+    name: 'rp',
+    displayLabel: 'Redpanda Catalog',
+    engine: 'redpanda',
+    namespaces: [{ id: 'rp.public', name: 'public', tables }],
+  } satisfies Catalog;
+}
 
-const noTables = { data: undefined, isLoading: false };
+const CATALOGS = [catalogWith([tableRef('orders'), tableRef('users')])];
 const REDPANDA_CATALOG_RE = /Redpanda Catalog/u;
 const ORDERS_RE = /orders/u;
 const PUBLIC_RE = /public/u;
@@ -48,167 +45,152 @@ const CUSTOMER_RE = /customer/u;
 const SECRET_RE = /secret/u;
 const PAGED_TABLE_RE = /t\d\d/u;
 const LOAD_MORE_RE = /Load more · 5 remaining/u;
+const ADD = 'Add a topic to this catalog';
+const REFRESH = 'Refresh catalogs';
 
-beforeEach(() => {
-  rs.mocked(useListTablesQuery).mockReturnValue(noTables as never);
-  rs.mocked(useDescribeTableQuery).mockReturnValue({ data: undefined, isLoading: false } as never);
-  rs.mocked(useTopicIcebergQuery).mockReturnValue({ isIceberg: false } as never);
-});
-
-const renderTreeRows = () => {
-  render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
-  return {
-    catalogRow: screen.getByRole('treeitem', { name: REDPANDA_CATALOG_RE }),
-    namespaceRow: screen.getByRole('treeitem', { name: PUBLIC_RE }),
-  };
-};
-
-const renderExpandedOrdersColumns = async () => {
-  rs.mocked(useDescribeTableQuery).mockReturnValue({
-    data: {
+const transport = createRouterTransport(({ rpc }) => {
+  rpc(listTables, () => ({ tables: [] }));
+  rpc(describeTable, ({ catalog, name }) => {
+    if (catalog !== 'rp' || name !== 'orders') {
+      throw new ConnectError('table not found', Code.NotFound);
+    }
+    return {
       columns: [
         { name: 'id', type: 'bigint' },
         { name: 'payload', type: 'jsonb' },
         { name: 'tags', type: 'text[]' },
         { name: 'customer', type: 'record', fields: [{ name: 'street', type: 'text' }] },
       ],
-    },
-    isLoading: false,
-  } as never);
-  render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
+    };
+  });
+});
 
-  await userEvent.click(screen.getByRole('treeitem', { name: ORDERS_RE }));
+type HostProps = {
+  catalogs?: Catalog[];
+  sqlRole?: CatalogTreeProps['sqlRole'];
+  canAdd?: boolean;
+  canRefresh?: boolean;
 };
 
-describe('the CatalogTree', () => {
-  describe('structure', () => {
-    test('renders an ARIA tree with catalogs, namespaces and tables expanded by default', () => {
-      render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
+function CatalogHost({ catalogs = CATALOGS, sqlRole = 'viewer', canAdd = false, canRefresh = false }: HostProps) {
+  const [target, setTarget] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [refreshRequests, setRefreshRequests] = useState(0);
+  return (
+    <>
+      <CatalogTree
+        catalogs={catalogs}
+        isRefreshing={refreshRequests > 0}
+        onAddTable={canAdd ? () => setAdding(true) : undefined}
+        onQueryTable={(catalog, table) => setTarget(`${catalog.name}.${table.name}`)}
+        onRefresh={canRefresh ? () => setRefreshRequests((count) => count + 1) : undefined}
+        sqlRole={sqlRole}
+      />
+      <output aria-label="Query target">{target}</output>
+      <output aria-label="Refresh requests">{refreshRequests}</output>
+      {adding ? <p>Topic creation requested</p> : null}
+    </>
+  );
+}
 
-      expect(screen.getByRole('tree', { name: 'Catalogs' })).toBeInTheDocument();
-      const items = screen.getAllByRole('treeitem');
-      expect(items.map((i) => i.getAttribute('aria-level'))).toEqual(['1', '2', '3', '3']);
-      expect(screen.getByRole('treeitem', { name: REDPANDA_CATALOG_RE })).toHaveAttribute('aria-expanded', 'true');
-      expect(screen.getByRole('treeitem', { name: ORDERS_RE })).toBeInTheDocument();
-    });
+const renderTree = (props: HostProps = {}) => render(<CatalogHost {...props} />, { transport });
 
-    test('collapsing a catalog hides its namespaces and tables', async () => {
-      render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
+function renderFocusedTree() {
+  renderTree();
+  const catalogRow = screen.getByRole('treeitem', { name: REDPANDA_CATALOG_RE });
+  catalogRow.focus();
+  return { catalogRow, namespaceRow: screen.getByRole('treeitem', { name: PUBLIC_RE }) };
+}
 
-      await userEvent.click(screen.getByRole('treeitem', { name: REDPANDA_CATALOG_RE }));
+test('starts with an expanded accessible tree and hides the descendants when collapsed', async () => {
+  renderTree();
+  const catalogRow = screen.getByRole('treeitem', { name: REDPANDA_CATALOG_RE });
+  expect(screen.getByRole('tree', { name: 'Catalogs' })).toBeInTheDocument();
+  expect(screen.getAllByRole('treeitem').map((row) => row.getAttribute('aria-level'))).toEqual(['1', '2', '3', '3']);
+  expect(catalogRow).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByRole('treeitem', { name: ORDERS_RE })).toBeVisible();
 
-      expect(screen.getByRole('treeitem', { name: REDPANDA_CATALOG_RE })).toHaveAttribute('aria-expanded', 'false');
-      expect(screen.queryByRole('treeitem', { name: PUBLIC_RE })).toBeNull();
-      expect(screen.queryByRole('treeitem', { name: ORDERS_RE })).toBeNull();
-    });
+  await userEvent.click(catalogRow);
+  expect(catalogRow).toHaveAttribute('aria-expanded', 'false');
+  expect(screen.queryByRole('treeitem', { name: PUBLIC_RE })).not.toBeInTheDocument();
+  expect(screen.queryByRole('treeitem', { name: ORDERS_RE })).not.toBeInTheDocument();
+});
 
-    test('search filters tables', async () => {
-      render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
+test('search filters tables', async () => {
+  renderTree();
+  await userEvent.type(screen.getByPlaceholderText('Search tables'), 'ord');
 
-      await userEvent.type(screen.getByPlaceholderText('Search tables'), 'ord');
+  expect(screen.getByRole('treeitem', { name: ORDERS_RE })).toBeInTheDocument();
+  expect(screen.queryByRole('treeitem', { name: USERS_RE })).not.toBeInTheDocument();
+});
 
-      expect(screen.getByRole('treeitem', { name: ORDERS_RE })).toBeInTheDocument();
-      expect(screen.queryByRole('treeitem', { name: USERS_RE })).toBeNull();
-    });
+test('the query action sends the selected catalog and table to the host', async () => {
+  renderTree();
+  await userEvent.click(screen.getAllByRole('button', { name: 'Query this table' })[0]);
 
-    test('clicking the query action calls onQueryTable with the catalog and table', async () => {
-      const onQueryTable = rs.fn();
-      render(<CatalogTree catalogs={[catalog()]} onQueryTable={onQueryTable} sqlRole="viewer" />);
+  expect(screen.getByRole('status', { name: 'Query target' })).toHaveTextContent('rp.orders');
+});
 
-      await userEvent.click(screen.getAllByRole('button', { name: 'Query this table' })[0]);
+test('renders described column types and expands a nested field on demand', async () => {
+  renderTree();
+  await userEvent.click(screen.getByRole('treeitem', { name: ORDERS_RE }));
 
-      expect(onQueryTable).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'rp' }),
-        expect.objectContaining({ name: 'orders' })
-      );
-    });
-  });
+  expect(await screen.findByText('payload')).toBeInTheDocument();
+  expect(screen.getByText('jsonb')).toBeInTheDocument();
+  expect(screen.getByText('text[]')).toBeInTheDocument();
+  expect(screen.queryByText('street')).not.toBeInTheDocument();
 
-  describe('columns', () => {
-    test('expanding a table lists its columns with type labels', async () => {
-      await renderExpandedOrdersColumns();
+  await userEvent.click(screen.getByRole('button', { name: CUSTOMER_RE }));
+  expect(screen.getByText('street')).toBeVisible();
+});
 
-      expect(screen.getByText('payload')).toBeInTheDocument();
-      expect(screen.getByText('jsonb')).toBeInTheDocument();
-      expect(screen.getByText('text[]')).toBeInTheDocument();
-    });
+test('locked tables are disabled and show no query action', () => {
+  renderTree({ catalogs: [catalogWith([tableRef('secret', { allowed: false })])] });
 
-    test('a composite column expands into its nested fields', async () => {
-      await renderExpandedOrdersColumns();
+  expect(screen.getByRole('treeitem', { name: SECRET_RE })).toBeDisabled();
+  expect(screen.queryByRole('button', { name: 'Query this table' })).not.toBeInTheDocument();
+});
 
-      const customerRow = screen.getByRole('button', { name: CUSTOMER_RE });
-      expect(customerRow).toBeInTheDocument();
-      expect(screen.queryByText('street')).not.toBeInTheDocument();
-      await userEvent.click(customerRow);
-      expect(screen.getByText('street')).toBeInTheDocument();
-    });
-  });
+test('only admins can start adding a topic from the catalog', async () => {
+  const { rerender } = renderTree({ canAdd: true, sqlRole: 'admin' });
+  expect(screen.getByRole('button', { name: 'Add a topic' })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: ADD }));
+  expect(screen.getByText('Topic creation requested')).toBeVisible();
 
-  describe('interactions', () => {
-    test('locked tables are disabled and show no query action', () => {
-      const locked = catalog({
-        namespaces: [{ id: 'rp.public', name: 'public', tables: [tableRef('secret', { allowed: false })] }],
-      });
-      render(<CatalogTree catalogs={[locked]} onQueryTable={rs.fn()} sqlRole="viewer" />);
+  rerender(<CatalogHost canAdd sqlRole="viewer" />);
+  expect(screen.queryByRole('button', { name: ADD })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Add a topic' })).not.toBeInTheDocument();
+});
 
-      expect(screen.getByRole('treeitem', { name: SECRET_RE })).toBeDisabled();
-      expect(screen.queryByRole('button', { name: 'Query this table' })).toBeNull();
-    });
+test('namespaces past the page limit paginate with a load-more row', async () => {
+  const tables = Array.from({ length: 25 }, (_, i) => tableRef(`t${String(i).padStart(2, '0')}`));
+  renderTree({ catalogs: [catalogWith(tables)] });
 
-    test('admin sees the catalog-level add action; viewer does not', () => {
-      const onAddTable = rs.fn();
-      const { rerender } = render(
-        <CatalogTree catalogs={[catalog()]} onAddTable={onAddTable} onQueryTable={rs.fn()} sqlRole="admin" />
-      );
-      expect(screen.getByRole('button', { name: 'Add a topic to this catalog' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Add a topic' })).toBeInTheDocument();
+  expect(screen.getAllByRole('treeitem', { name: PAGED_TABLE_RE })).toHaveLength(20);
+  await userEvent.click(screen.getByRole('button', { name: LOAD_MORE_RE }));
+  expect(screen.getAllByRole('treeitem', { name: PAGED_TABLE_RE })).toHaveLength(25);
+});
 
-      rerender(<CatalogTree catalogs={[catalog()]} onAddTable={onAddTable} onQueryTable={rs.fn()} sqlRole="viewer" />);
-      expect(screen.queryByRole('button', { name: 'Add a topic to this catalog' })).toBeNull();
-      expect(screen.queryByRole('button', { name: 'Add a topic' })).toBeNull();
-    });
+test('arrow keys move focus through visible rows; left collapses', async () => {
+  const { catalogRow, namespaceRow } = renderFocusedTree();
 
-    test('namespaces past the page limit paginate with a load-more row', async () => {
-      const tables = Array.from({ length: 25 }, (_, i) => tableRef(`t${String(i).padStart(2, '0')}`));
-      const big = catalog({ namespaces: [{ id: 'rp.public', name: 'public', tables }] });
-      render(<CatalogTree catalogs={[big]} onQueryTable={rs.fn()} sqlRole="viewer" />);
+  await userEvent.keyboard('{ArrowDown}');
+  expect(namespaceRow).toHaveFocus();
+  await userEvent.keyboard('{ArrowUp}');
+  expect(catalogRow).toHaveFocus();
+  await userEvent.keyboard('{ArrowLeft}');
+  expect(catalogRow).toHaveAttribute('aria-expanded', 'false');
+  expect(screen.queryByRole('treeitem', { name: PUBLIC_RE })).not.toBeInTheDocument();
+});
 
-      expect(screen.getAllByRole('treeitem', { name: PAGED_TABLE_RE })).toHaveLength(20);
-      await userEvent.click(screen.getByRole('button', { name: LOAD_MORE_RE }));
-      expect(screen.getAllByRole('treeitem', { name: PAGED_TABLE_RE })).toHaveLength(25);
-    });
+test('asks the host to refresh once and hides the action if the host cannot refresh', async () => {
+  const { rerender } = renderTree({ canRefresh: true });
+  const refresh = screen.getByRole('button', { name: REFRESH });
+  expect(refresh).toBeEnabled();
 
-    test('arrow keys move focus through visible rows; left collapses', async () => {
-      const { catalogRow, namespaceRow } = renderTreeRows();
-
-      catalogRow.focus();
-      await userEvent.keyboard('{ArrowDown}');
-      expect(namespaceRow).toHaveFocus();
-
-      await userEvent.keyboard('{ArrowUp}');
-      expect(catalogRow).toHaveFocus();
-
-      await userEvent.keyboard('{ArrowLeft}');
-      expect(catalogRow).toHaveAttribute('aria-expanded', 'false');
-      expect(screen.queryByRole('treeitem', { name: PUBLIC_RE })).toBeNull();
-    });
-
-    test('refresh button calls onRefresh', async () => {
-      const onRefresh = rs.fn();
-      render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} onRefresh={onRefresh} sqlRole="viewer" />);
-      await userEvent.click(screen.getByRole('button', { name: 'Refresh catalogs' }));
-      expect(onRefresh).toHaveBeenCalledTimes(1);
-    });
-
-    test('refresh button is disabled while refreshing and hidden without onRefresh', () => {
-      const { unmount } = render(
-        <CatalogTree catalogs={[catalog()]} isRefreshing onQueryTable={rs.fn()} onRefresh={rs.fn()} sqlRole="viewer" />
-      );
-      expect(screen.getByRole('button', { name: 'Refresh catalogs' })).toBeDisabled();
-      unmount();
-
-      render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
-      expect(screen.queryByRole('button', { name: 'Refresh catalogs' })).toBeNull();
-    });
-  });
+  await userEvent.click(refresh);
+  expect(refresh).toBeDisabled();
+  expect(screen.getByRole('status', { name: 'Refresh requests' })).toHaveTextContent('1');
+  rerender(<CatalogHost />);
+  expect(screen.queryByRole('button', { name: REFRESH })).not.toBeInTheDocument();
 });
