@@ -1,36 +1,84 @@
+import { create } from '@bufbuild/protobuf';
+import { createClient, createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { act, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { config } from 'config';
 import { PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
+import { ConsoleService } from 'protogen/redpanda/api/console/v1alpha1/console_service_pb';
+import {
+  type ListMessagesRequest,
+  ListMessagesResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import { appGlobal } from 'state/app-global';
 import { PartitionOffsetOrigin } from 'state/ui';
 
-import type { MessageSearchParams, MessageSearchResult } from './use-message-search';
+import { type MessageSearchParams, useMessageSearch } from './use-message-search';
 import { isContinuousPagingActive, useAutoSearch, useSearchRunner } from './use-messages-query';
 
-const baseParams: MessageSearchParams = {
+const TOPIC = 'orders';
+const BASE_PARAMS = {
   startOffset: PartitionOffsetOrigin.EndMinusResults,
   startTimestamp: -1,
   partitionId: -1,
   maxResults: 50,
+  pageSize: 25,
   filterInterpreterCode: '',
-};
-
-/** Hoisted so `start`/`stop` keep one identity across renders, like the real search hook's. */
-const start = rs.fn<MessageSearchResult['start']>();
-const stop = rs.fn<MessageSearchResult['stop']>();
+} satisfies MessageSearchParams;
 
 const advance = (ms: number) =>
   act(async () => {
     await rs.advanceTimersByTimeAsync(ms);
   });
 
-type AutoSearchProps = { searchParams: MessageSearchParams; refreshCounter?: number; liveTail?: boolean };
+function untilAborted(signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    if (signal.aborted) {
+      resolve();
+    } else {
+      signal.addEventListener('abort', () => resolve(), { once: true });
+    }
+  });
+}
 
-const renderAutoSearch = (initialProps: AutoSearchProps) =>
+function openStreams(attempts: { request: ListMessagesRequest; signal: AbortSignal }[]) {
+  const transport = createRouterTransport(({ service }) => {
+    service(ConsoleService, {
+      async *listMessages(request, { signal }) {
+        attempts.push({ request, signal });
+        yield create(ListMessagesResponseSchema, {
+          controlMessage: { case: 'phase', value: { phase: 'Consuming messages' } },
+        });
+        await untilAborted(signal);
+      },
+    });
+  });
+  return createClient(ConsoleService, transport);
+}
+
+const renderAutoSearch = (searchParams: MessageSearchParams) =>
   renderHook(
-    ({ searchParams, refreshCounter = 0, liveTail = false }: AutoSearchProps) =>
-      useAutoSearch({ search: { start, stop }, searchParams, refreshCounter, liveTail }),
-    { initialProps }
+    (params: MessageSearchParams) => {
+      const search = useMessageSearch(TOPIC);
+      useAutoSearch({ search, searchParams: params, refreshCounter: 0, liveTail: false });
+    },
+    { initialProps: searchParams }
+  );
+
+type RunnerProps = { searchParams: MessageSearchParams; liveTail: boolean };
+
+const renderRunner = (liveTail = false) =>
+  renderHook<ReturnType<typeof useSearchRunner>, RunnerProps>(
+    ({ searchParams, liveTail: active }) => {
+      const search = useMessageSearch(TOPIC);
+      return useSearchRunner({
+        search,
+        searchParams,
+        filterInterpreterCode: searchParams.filterInterpreterCode,
+        liveTail: active,
+        partitionId: searchParams.partitionId,
+      });
+    },
+    { initialProps: { searchParams: BASE_PARAMS, liveTail } }
   );
 
 describe('isContinuousPagingActive', () => {
@@ -50,164 +98,115 @@ describe('isContinuousPagingActive', () => {
 });
 
 describe('search runner hooks', () => {
+  const originalClient = config.consoleClient;
+  const attempts: { request: ListMessagesRequest; signal: AbortSignal }[] = [];
+
   beforeEach(() => {
     rs.useFakeTimers();
-    start.mockReset();
-    start.mockResolvedValue(undefined);
-    stop.mockReset();
+    config.consoleClient = openStreams(attempts);
   });
 
-  afterEach(() => {
-    rs.useRealTimers();
-  });
-
-  describe('useAutoSearch', () => {
-    test('starts one debounced search per distinct set of params', async () => {
-      const { rerender } = renderAutoSearch({ searchParams: baseParams });
-      expect(start).not.toHaveBeenCalled();
-
-      await advance(100);
-      expect(start).toHaveBeenCalledWith(baseParams);
-
-      // A new but equal params object must not restart an identical stream
-      rerender({ searchParams: { ...baseParams } });
-      await advance(100);
-      expect(start).toHaveBeenCalledTimes(1);
-    });
-
-    test('changing params stops the running search and starts the new one', async () => {
-      const { rerender } = renderAutoSearch({ searchParams: baseParams });
-      await advance(100);
-
-      rerender({ searchParams: { ...baseParams, partitionId: 2 } });
-      expect(stop).toHaveBeenCalled();
-      await advance(100);
-      expect(start).toHaveBeenLastCalledWith({ ...baseParams, partitionId: 2 });
-    });
-
-    test('a refresh re-runs the same params', async () => {
-      const { rerender } = renderAutoSearch({ searchParams: baseParams });
-      await advance(100);
-
-      rerender({ searchParams: baseParams, refreshCounter: 1 });
-      await advance(100);
-      expect(start).toHaveBeenCalledTimes(2);
-    });
-
-    test('stays inert while live tail owns the stream', async () => {
-      renderAutoSearch({ searchParams: baseParams, liveTail: true });
-      await advance(100);
-      expect(start).not.toHaveBeenCalled();
-    });
-
-    test('waits out the unset timestamp sentinel instead of searching with it', async () => {
-      renderAutoSearch({ searchParams: { ...baseParams, startOffset: PartitionOffsetOrigin.Timestamp } });
-      await advance(100);
-      expect(start).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('useSearchRunner', () => {
-    const renderRunner = (liveTail = false) =>
-      renderHook(() =>
-        useSearchRunner({
-          search: { start, stop },
-          searchParams: baseParams,
-          filterInterpreterCode: '',
-          liveTail,
-          partitionId: -1,
-        })
-      );
-
-    test('refresh re-runs the paged search', async () => {
-      const { result } = renderRunner();
-      await advance(100);
-
-      act(() => result.current.handleRefresh());
-      await advance(100);
-      expect(start).toHaveBeenCalledTimes(2);
-    });
-
-    test('page-level actions re-trigger the search through the global, which is cleared on unmount', async () => {
-      const { unmount } = renderRunner();
-      await advance(100);
-
-      act(() => appGlobal.searchMessagesFunc?.('manual'));
-      await advance(100);
-      expect(start).toHaveBeenCalledTimes(2);
-
-      unmount();
-      expect(appGlobal.searchMessagesFunc).toBeUndefined();
-    });
-
-    test('live tail starts streaming from the end of the log', async () => {
-      start.mockReturnValue(new Promise<void>(() => {}));
-      renderRunner(true);
+  afterEach(async () => {
+    try {
+      cleanup();
       await advance(0);
-      expect(start).toHaveBeenCalledWith(
-        { ...baseParams, startOffset: PartitionOffsetOrigin.End, pageSize: undefined },
-        { live: true, append: false }
-      );
+    } finally {
+      config.consoleClient = originalClient;
+      attempts.length = 0;
+      rs.useRealTimers();
+    }
+  });
+
+  test('debounces the first request and does not repeat it for equal params', async () => {
+    const { rerender } = renderAutoSearch(BASE_PARAMS);
+    await advance(99);
+    expect(attempts).toHaveLength(0);
+
+    await advance(1);
+    expect(attempts[0]?.request).toMatchObject({ topic: TOPIC, maxResults: 50, pageSize: 25, partitionId: -1 });
+
+    rerender({ ...BASE_PARAMS });
+    await advance(100);
+    expect(attempts).toHaveLength(1);
+  });
+
+  test('a partition change cancels the first stream and requests the new partition', async () => {
+    const { rerender } = renderAutoSearch(BASE_PARAMS);
+    await advance(100);
+
+    rerender({ ...BASE_PARAMS, partitionId: 2 });
+    expect(attempts[0]?.signal.aborted).toBe(true);
+    await advance(100);
+
+    expect(attempts).toHaveLength(2);
+    expect(attempts[1]?.request).toMatchObject({ topic: TOPIC, partitionId: 2 });
+  });
+
+  test('waits for a timestamp before starting a timestamp search', async () => {
+    const unset = { ...BASE_PARAMS, startOffset: PartitionOffsetOrigin.Timestamp };
+    const { rerender } = renderAutoSearch(unset);
+    await advance(100);
+    expect(attempts).toHaveLength(0);
+
+    rerender({ ...unset, startTimestamp: 1234 });
+    await advance(100);
+
+    expect(attempts[0]?.request).toMatchObject({
+      startOffset: BigInt(PartitionOffsetOrigin.Timestamp),
+      startTimestamp: 1234n,
     });
   });
 
-  describe('live tail params', () => {
-    beforeEach(() => {
-      start.mockReturnValue(new Promise<void>(() => {}));
+  test('both refresh entry points repeat the paged search and unmount clears the global trigger', async () => {
+    const { result, unmount } = renderRunner();
+    await advance(100);
+
+    act(() => result.current.handleRefresh());
+    await advance(100);
+    expect(attempts).toHaveLength(2);
+
+    act(() => appGlobal.searchMessagesFunc?.('manual'));
+    await advance(100);
+    expect(attempts.map(({ request }) => request.startOffset)).toEqual([
+      BigInt(PartitionOffsetOrigin.EndMinusResults),
+      BigInt(PartitionOffsetOrigin.EndMinusResults),
+      BigInt(PartitionOffsetOrigin.EndMinusResults),
+    ]);
+
+    unmount();
+    expect(appGlobal.searchMessagesFunc).toBeUndefined();
+  });
+
+  test('live tail owns the stream and restarts from the end when a filter is committed', async () => {
+    const { rerender } = renderRunner(true);
+    await advance(100);
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.request).toMatchObject({ startOffset: BigInt(PartitionOffsetOrigin.End), pageSize: 0 });
+
+    const filterInterpreterCode = 'cmV0dXJuIHRydWU7';
+    rerender({ searchParams: { ...BASE_PARAMS, filterInterpreterCode }, liveTail: true });
+    await advance(100);
+
+    expect(attempts).toHaveLength(2);
+    expect(attempts[0]?.signal.aborted).toBe(true);
+    expect(attempts[1]?.request).toMatchObject({
+      filterInterpreterCode,
+      startOffset: BigInt(PartitionOffsetOrigin.End),
     });
+  });
 
-    const renderLiveRunner = (searchParams: MessageSearchParams) =>
-      renderHook(
-        (props: { searchParams: MessageSearchParams }) =>
-          useSearchRunner({
-            search: { start, stop },
-            searchParams: props.searchParams,
-            filterInterpreterCode: props.searchParams.filterInterpreterCode,
-            liveTail: true,
-            partitionId: props.searchParams.partitionId,
-          }),
-        { initialProps: { searchParams } }
-      );
+  test('a deserializer change waits for a manual restart of the live stream', async () => {
+    const { result, rerender } = renderRunner(true);
+    await advance(0);
+    rerender({ searchParams: { ...BASE_PARAMS, keyDeserializer: PayloadEncoding.JSON }, liveTail: true });
+    await advance(0);
+    expect(attempts).toHaveLength(1);
+    expect(attempts[0]?.signal.aborted).toBe(false);
 
-    const freshTailOf = (params: MessageSearchParams) =>
-      [
-        { ...params, startOffset: PartitionOffsetOrigin.End, pageSize: undefined },
-        { live: true, append: false },
-      ] as const;
+    act(() => result.current.handleRefresh());
+    await advance(0);
 
-    test('restarts the tail with a newly committed JS filter', async () => {
-      const { rerender } = renderLiveRunner(baseParams);
-      await advance(0);
-
-      const filtered = { ...baseParams, filterInterpreterCode: 'cmV0dXJuIHRydWU7' };
-      rerender({ searchParams: filtered });
-      await advance(0);
-
-      expect(stop).toHaveBeenCalledTimes(1);
-      expect(start).toHaveBeenLastCalledWith(...freshTailOf(filtered));
-    });
-
-    test('keeps the running tail when only a deserializer changes', async () => {
-      const { rerender } = renderLiveRunner(baseParams);
-      await advance(0);
-
-      rerender({ searchParams: { ...baseParams, keyDeserializer: PayloadEncoding.JSON } });
-      await advance(0);
-
-      expect(start).toHaveBeenCalledTimes(1);
-      expect(stop).not.toHaveBeenCalled();
-    });
-
-    test('a restart applies the deserializer changed while live', async () => {
-      const { result, rerender } = renderLiveRunner(baseParams);
-      await advance(0);
-
-      const jsonKeys = { ...baseParams, keyDeserializer: PayloadEncoding.JSON };
-      rerender({ searchParams: jsonKeys });
-      act(() => result.current.handleRefresh());
-      await advance(0);
-
-      expect(start).toHaveBeenLastCalledWith(...freshTailOf(jsonKeys));
-    });
+    expect(attempts[0]?.signal.aborted).toBe(true);
+    expect(attempts[1]?.request).toMatchObject({ keyDeserializer: PayloadEncoding.JSON });
   });
 });
