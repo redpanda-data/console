@@ -19,7 +19,6 @@ const execFileAsync = promisify(execFile);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Regex for extracting container ID from error messages
 const CONTAINER_ID_REGEX = /container (?<containerId>[a-f0-9]+)/u;
 const MISSING_CONTAINER_PATTERN = /No such container/iu;
 const MISSING_NETWORK_PATTERN = /No such network/iu;
@@ -83,7 +82,6 @@ async function probeHostPort(port) {
     const statusCode = Number.parseInt(stdout.trim(), 10);
     return { ready: statusCode > 0 && statusCode < 500, detail: `last status: ${statusCode}` };
   } catch (error) {
-    // Port not ready yet
     return { ready: false, detail: `error: ${error.message}` };
   }
 }
@@ -206,7 +204,6 @@ async function verifyRedpandaServices(state, ports) {
   );
   console.log('✓ Schema Registry is ready');
 
-  // Verify SASL authentication is working
   console.log('Verifying Redpanda SASL authentication...');
   try {
     await execAsync(
@@ -237,11 +234,9 @@ async function startKafkaContainer(network, state, ports, variantName) {
       KAFKA_INTER_BROKER_LISTENER_NAME: 'SASL_PLAINTEXT',
       KAFKA_SASL_ENABLED_MECHANISMS: 'PLAIN',
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: 'PLAIN',
-      // Enable Kafka Auth BEGIN
       KAFKA_AUTHORIZER_CLASS_NAME: 'org.apache.kafka.metadata.authorizer.StandardAuthorizer',
       KAFKA_SUPER_USERS: 'User:e2euser',
       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'true',
-      // Enable Kafka Auth END
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1',
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true',
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk',
@@ -308,7 +303,6 @@ async function createKafkaConnectTopics(state) {
 
   // Kafka Connect internal storage topics must have cleanup.policy=compact
   const compactTopics = ['_internal_connectors_offsets', '_internal_connectors_configs', '_internal_connectors_status'];
-  // Log topic uses default delete policy
   const deleteTopics = ['__redpanda.connectors_logs'];
 
   // The topics are independent and createInternalTopic handles its own failures, so they are created
@@ -395,7 +389,6 @@ async function reportKafkaConnectFailure(error, connect, state) {
   console.log('⚠ Kafka Connect failed to start (connector tests may fail)');
   console.log(`  Error: ${error.message}`);
 
-  // Try to get container ID and logs for debugging
   if (connect) {
     await printKafkaConnectLogs(connect, state);
   } else {
@@ -444,7 +437,6 @@ function cleanupWorkspaceBuild(errors, { backendDir, originalGoWork, workspaceDi
 }
 
 function removeCopiedFrontendAssets(embedDir) {
-  // Keep .gitignore, remove everything else.
   if (existsSync(embedDir)) {
     for (const entry of readdirSync(embedDir)) {
       if (entry !== '.gitignore') {
@@ -474,12 +466,10 @@ function cleanupBackendBuild({ backendDir, embedDir, originalGoWork, tempDockerf
 function resolveBackendDir(isEnterprise) {
   let backendDir;
   if (isEnterprise) {
-    // Check for ENTERPRISE_BACKEND_DIR environment variable
     if (process.env.ENTERPRISE_BACKEND_DIR) {
       backendDir = resolve(process.env.ENTERPRISE_BACKEND_DIR);
       console.log(`Using ENTERPRISE_BACKEND_DIR from environment: ${backendDir}`);
     } else {
-      // Default to relative path
       backendDir = resolve(__dirname, '../../../../console-enterprise/backend');
     }
   } else {
@@ -504,7 +494,6 @@ function resolveFrontendBuildDir(backendDir, isEnterprise) {
 
   const frontendBuildDir = resolve(__dirname, '../../build');
 
-  // Check if frontend build exists
   if (!existsSync(frontendBuildDir)) {
     throw new Error(
       `Frontend build directory not found: ${frontendBuildDir}\nRun "bun run build" before running E2E tests.`
@@ -520,7 +509,6 @@ async function copyFrontendAssets(build, frontendBuildDir, isEnterprise) {
   console.log(`  From: ${frontendBuildDir}`);
   console.log(`  To: ${build.embedDir}`);
 
-  // Copy all files from build/ to pkg/embed/frontend/
   await execAsync(`cp -r "${frontendBuildDir}"/* "${build.embedDir}"/`);
   console.log('✓ Frontend assets copied');
 }
@@ -564,7 +552,6 @@ function resolveWorkspaceModulePath(backendDir, modulePath) {
 }
 
 async function copyWorkspaceModule(workspaceDir, modulePath, absModulePath) {
-  // Create a sanitized directory name
   const localName = modulePath.replace(MODULE_PATH_SEPARATOR_REGEX, '-').replace(EDGE_DASHES_REGEX, '');
   const destPath = join(workspaceDir, localName);
 
@@ -614,7 +601,6 @@ async function prepareWorkspaceBuild(build) {
 
   const rewrittenPaths = await copyWorkspaceModules(build.backendDir, build.workspaceDir, build.originalGoWork);
 
-  // Rewrite go.work to use local paths
   if (rewrittenPaths.length > 0) {
     rewriteGoWork(build.backendDir, build.originalGoWork, rewrittenPaths);
   }
@@ -776,7 +762,6 @@ function createBackendContainer({ bindMounts, environment, imageTag, network, po
 }
 
 async function printFailedContainerLogs(containerId) {
-  // Get logs from this container
   console.log('Fetching logs from failed container...');
   const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
   console.log('=== CONTAINER LOGS START ===');
@@ -785,7 +770,6 @@ async function printFailedContainerLogs(containerId) {
 }
 
 async function printFailedContainerState(containerId) {
-  // Get container state
   console.log('Fetching container state...');
   const { stdout: stateJson } = await execAsync(`docker inspect ${containerId} --format='{{json .State}}'`);
   console.log('Container state:');
@@ -794,7 +778,6 @@ async function printFailedContainerState(containerId) {
 }
 
 async function printFailedContainerConfig(containerId) {
-  // Get container config to see the actual command and mounts
   console.log('Fetching container config...');
   const { stdout: configJson } = await execAsync(`docker inspect ${containerId} --format='{{json .Config}}'`);
   const config = JSON.parse(configJson);
@@ -803,7 +786,6 @@ async function printFailedContainerConfig(containerId) {
 }
 
 async function printFailedContainerMounts(containerId) {
-  // Get mount info
   console.log('Fetching mount info...');
   const { stdout: mountsJson } = await execAsync(`docker inspect ${containerId} --format='{{json .Mounts}}'`);
   const mounts = JSON.parse(mountsJson);
@@ -825,7 +807,6 @@ async function printFailedBackendDiagnostics(containerId) {
 async function reportBackendStartError(startError, state, attempt) {
   console.error('Error during container.start():', startError.message);
 
-  // Extract container ID from error message if available
   const containerIdMatch = startError.message.match(CONTAINER_ID_REGEX);
   const failedContainerId = containerIdMatch ? containerIdMatch[1] : null;
 
@@ -859,13 +840,11 @@ async function printStoppedBackendContainer(containerId, containerStatus) {
   console.log('Container logs:');
   console.log(logs);
 
-  // Get exit code
   const { stdout: exitCode } = await execAsync(`docker inspect ${containerId} --format='{{.State.ExitCode}}'`);
   console.log(`Container exit code: ${exitCode.trim()}`);
 }
 
 async function ensureBackendContainerRunning(containerId) {
-  // Check if container is still running
   const { stdout: inspectOutput } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
   const containerStatus = inspectOutput.trim();
   console.log(`Container status: ${containerStatus}`);
@@ -877,7 +856,6 @@ async function ensureBackendContainerRunning(containerId) {
 }
 
 async function printInitialBackendLogs(containerId) {
-  // Get initial logs to see startup
   console.log('Fetching initial container logs...');
   const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1 | tail -30`);
   if (logs) {
@@ -926,7 +904,6 @@ async function printBackendFailureLogs(containerId) {
     console.log('Full container logs:');
     console.log(logs);
 
-    // Get container inspect info
     const { stdout: inspect } = await execAsync(`docker inspect ${containerId}`);
     console.log('Container inspect (state):');
     const inspectJson = JSON.parse(inspect);
@@ -939,7 +916,6 @@ async function printBackendFailureLogs(containerId) {
 async function reportBackendStartFailure(error, containerId) {
   console.error('Failed to start backend container:', error.message);
 
-  // Try to get container logs if container was created but failed
   if (containerId) {
     await printBackendFailureLogs(containerId);
   }
@@ -1021,7 +997,6 @@ async function startDestinationRedpandaContainer(network, state, ports) {
   rememberContainer(state, 'destRedpanda', destRedpanda);
   console.log(`✓ Destination Redpanda container started: ${state.destRedpandaId}`);
 
-  // Debug: Check port mappings
   try {
     const { stdout: portOutput } = await execAsync(`docker port ${state.destRedpandaId}`);
     console.log('Destination container port mappings:');
@@ -1032,7 +1007,6 @@ async function startDestinationRedpandaContainer(network, state, ports) {
 }
 
 async function printDestinationContainerStatus(state) {
-  // Debug: Check if container is still running
   try {
     const { stdout: status } = await execAsync(`docker inspect ${state.destRedpandaId} --format='{{.State.Status}}'`);
     console.log(`Destination container status: ${status.trim()}`);
@@ -1068,7 +1042,6 @@ function bufferContainerOutput(lines) {
 }
 
 async function assertConfiguredBackendRunning(containerId) {
-  // Check if container is still running
   const { stdout: status } = await execAsync(`docker inspect ${containerId} --format='{{.State.Status}}'`);
   if (status.trim() !== 'running') {
     const { stdout: logs } = await execAsync(`docker logs ${containerId} 2>&1`);
@@ -1265,7 +1238,6 @@ async function resolveBackendImageTag(isEnterprise) {
   return prebuiltTag || (await buildBackendImage(isEnterprise));
 }
 
-// --- Kafka variant: simple KRaft broker, no Redpanda/owlshop/connect ---
 async function startKafkaVariant({ configFile, imageTag, isEnterprise, network, ports, state, variantName }) {
   await startKafkaContainer(network, state, ports, variantName);
   await startBackendServerWithConfig({
@@ -1279,7 +1251,6 @@ async function startKafkaVariant({ configFile, imageTag, isEnterprise, network, 
   });
 }
 
-// --- Group 1: Start clusters in parallel ---
 async function startClusters({ isEnterprise, needsShadowlink, network, ports, state }) {
   const clusterPromises = [
     startRedpandaContainer(network, state, ports).then(() => verifyRedpandaServices(state, ports)),
@@ -1355,7 +1326,6 @@ function startParallelBackends({
   return [startBackendServer(network, isEnterprise, imageTag, state, variantName, configFile, ports)];
 }
 
-// --- Group 2: Start services in parallel (all depend on Redpanda being ready) ---
 async function startServices(context) {
   const { needsConnect, network, ports, state } = context;
   const servicePromises = [
@@ -1404,7 +1374,6 @@ async function startTestEnvironment(setup) {
   const { isEnterprise, state, variantConfig, variantName } = setup;
   const imageTag = await resolveBackendImageTag(isEnterprise);
 
-  // Setup Docker infrastructure
   const network = await setupDockerNetwork(state);
 
   if (variantConfig.isKafka) {
@@ -1429,7 +1398,6 @@ async function cleanupAfterSetupFailure(error, state) {
 }
 
 export default async function globalSetup(config = {}) {
-  // Get variant configuration from metadata
   const metadata = readSetupMetadata(config);
 
   // Load ports from variant's config/variant.json, then apply any dynamic

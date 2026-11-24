@@ -558,7 +558,6 @@ test.fixme(({ browserName }) => browserName === 'webkit', 'webkit drops focus af
   },
 ];
 
-// Test helpers share the test-code scope, so moving a wait out of a spec does not hide it.
 const helpers: Fixture[] = [
   {
     file: 'tests/shared/connector.utils.ts',
@@ -615,7 +614,6 @@ export const quotaDisplayCases = () => {
   },
 ];
 
-// The same patterns outside tests and test helpers are product code.
 const scopeControl: Fixture = {
   file: 'scope-control.ts',
   reports: [],

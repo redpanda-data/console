@@ -41,7 +41,6 @@ const isChevronButton = (button: Element) => {
   );
 };
 
-// Checks the buttons recursively in DOM order and stops at the first chevron button.
 const findFirstChevronButton = async ([btn, ...remainingButtons]: Locator[]) => {
   if (!btn) {
     return;
@@ -72,7 +71,6 @@ const createExecAsync = async (): Promise<ExecAsync> => {
   return promisify(exec);
 };
 
-// Try both console-enterprise and enterprise naming conventions
 const getStateFileCandidates = async () => {
   const { dirname, resolve } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -92,11 +90,10 @@ const readDestinationContainerId = (
     const state = JSON.parse(readFileSync(stateFilePath, 'utf-8'));
     return state.destRedpandaId as string | undefined;
   } catch {
-    // Try next file
+    return null;
   }
 };
 
-/** Reads the destination container ID from the testcontainers state file. */
 const findContainerIdInStateFiles = async () => {
   const { readFileSync, existsSync } = await import('node:fs');
   for (const stateFilePath of await getStateFileCandidates()) {
@@ -142,7 +139,6 @@ const parseReplicatedTopics = (topicListOutput: string) =>
     .map((line) => line.trim())
     .filter((line) => line.startsWith('owlshop-') && !line.includes('PARTITIONS'));
 
-/** Deletes the replicated topics from the destination cluster, authenticating with SASL. */
 const deleteReplicatedTopics = async (execAsync: ExecAsync, containerId: string) => {
   const { stdout } = await execAsync(
     `docker exec ${containerId} rpk topic list --brokers localhost:9092 ${DESTINATION_SASL_FLAGS}`
@@ -221,21 +217,17 @@ export class ShadowlinkPage {
     password?: string;
     mechanism?: 'SCRAM-SHA-256' | 'SCRAM-SHA-512';
   }) {
-    // Fill name using label
     await this.page.getByLabel(/shadow link name/iu).fill(params.name);
 
     // Fill bootstrap servers using testId (first input field)
     await this.page.getByTestId('bootstrap-server-input-0').fill(params.bootstrapServers);
 
-    // Ensure TLS is turned OFF
     await this.setToggle('tls-toggle', false);
 
-    // Configure SASL if provided.
     if (params.username && params.password) {
       await this.fillScramCredentials(params.username, params.password, params.mechanism);
     }
 
-    // Click Next button in stepper
     await this.page.getByRole('button', { name: /next/iu }).click();
   }
 
@@ -262,7 +254,6 @@ export class ShadowlinkPage {
     mechanism?: 'SCRAM-SHA-256' | 'SCRAM-SHA-512'
   ) {
     await this.page.getByTestId('auth-method-scram').click();
-    // Wait for SCRAM credential fields to render
     await this.page.getByTestId('scram-username-input').waitFor({ state: 'visible', timeout: 5000 });
 
     await this.page.getByLabel(/username/iu).fill(username);
@@ -271,10 +262,8 @@ export class ShadowlinkPage {
     await this.page.getByTestId('scram-password-input').fill(password);
 
     if (mechanism) {
-      // Find mechanism combobox and click it
       await this.page.getByLabel(/mechanism/iu).click();
 
-      // Wait for dropdown to open and select the option
       await this.page.getByRole('option', { name: mechanism }).click();
     }
   }
@@ -289,12 +278,10 @@ export class ShadowlinkPage {
     aclSync?: boolean;
     schemaRegistry?: boolean;
   }) {
-    // Configure topic filters
     if (params.topicFilters && params.topicFilters.length > 0) {
       await this.fillTopicFilters(params.topicFilters);
     }
 
-    // Configure sync interval
     if (params.syncInterval) {
       await this.page.getByTestId('shadowlink-sync-interval-input').fill(params.syncInterval.toString());
     }
@@ -303,15 +290,12 @@ export class ShadowlinkPage {
     await this.setOptionalToggle('shadowlink-acl-sync-toggle', params.aclSync);
     await this.setOptionalToggle('shadowlink-schema-registry-toggle', params.schemaRegistry);
 
-    // Click Create button
     await this.page.getByRole('button', { name: /create/iu }).click();
   }
 
   private async fillTopicFilters(topicFilters: TopicFilter[]) {
-    // Click "Specify topics" tab
     await this.page.getByTestId('topics-specify-tab').click();
 
-    // Wait for filters container to be visible
     await this.page.getByTestId('topics-filters-container').waitFor({ state: 'visible' });
 
     // Chained in order: filter card `i` exists only after the previous cards were added
@@ -323,14 +307,11 @@ export class ShadowlinkPage {
 
   private async fillTopicFilter(filter: TopicFilter, i: number) {
     if (i > 0) {
-      // Add new filter
       await this.page.getByTestId('add-topic-filter-button').click();
     }
 
-    // Click the tab trigger for the filter and pattern type
     await this.page.getByTestId(`topic-filter-${i}-${TOPIC_FILTER_TAB_VALUES[filter.filter][filter.type]}`).click();
 
-    // Fill in the pattern
     await this.page.getByTestId(`topic-filter-${i}-name`).fill(filter.pattern);
   }
 
@@ -368,10 +349,8 @@ export class ShadowlinkPage {
   }
 
   async verifyOnHomePage(_shadowlinkName: string, timeout = 30_000) {
-    // Navigate to home page (root after login)
     await this.page.goto(this.shadowBackendURL);
 
-    // Wait for home page to load - look for common elements
     await expect(this.page.getByRole('heading', { name: /overview|dashboard|home/iu })).toBeVisible({
       timeout: 10_000,
     });
@@ -382,11 +361,9 @@ export class ShadowlinkPage {
       async () => {
         await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 5000 });
 
-        // Verify "Shadow Cluster" heading exists
         const shadowClusterHeading = this.page.getByRole('heading', { name: /shadow cluster/iu });
         await expect(shadowClusterHeading).toBeVisible();
 
-        // Verify the "Go to Shadow link" button exists
         const goToShadowLinkButton = this.page.getByRole('button', { name: /go to shadow link/iu });
         await expect(goToShadowLinkButton).toBeVisible();
       },
@@ -406,7 +383,6 @@ export class ShadowlinkPage {
   }
 
   async verifyTopicCount(expectedCount: number, timeout = 30_000) {
-    // Wait for topics to sync
     await retryAssertion(
       async () => {
         const topicCountElement = this.page.getByTestId('shadowlink-topic-count');
@@ -419,7 +395,6 @@ export class ShadowlinkPage {
   }
 
   async verifyTopicExists(topicName: string) {
-    // Look for the topic name in the topics table
     const topicElement = this.page.getByText(topicName, { exact: true });
     await expect(topicElement).toBeVisible({ timeout: 30_000 });
   }
@@ -432,12 +407,10 @@ export class ShadowlinkPage {
     },
     timeout = 90_000
   ) {
-    // Poll metrics values with periodic refresh button clicks
     await retryAssertion(
       async () => {
         await this.refreshReplicatedMetrics();
 
-        // Check the values
         await this.expectMetricValue('metric-value-replicated', expectedMetrics.totalTopics);
         await this.expectMetricValue('metric-value-failedover', expectedMetrics.failedOverTopics);
         await this.expectMetricValue('metric-value-error', expectedMetrics.errorTopics);
@@ -446,7 +419,6 @@ export class ShadowlinkPage {
     );
   }
 
-  // Try to click refresh button on replicated topics card to trigger refetch
   private async refreshReplicatedMetrics() {
     const replicatedCard = this.page.getByTestId('shadow-link-metric-replicated');
     await replicatedCard.hover({ timeout: 500 });
@@ -454,7 +426,6 @@ export class ShadowlinkPage {
     await refreshBtn.click({ force: true, timeout: 500 });
   }
 
-  /** Expects the metric to show `expected`; no check when it isn't given. */
   private async expectMetricValue(testId: string, expected: number | undefined) {
     if (expected === undefined) {
       return;
@@ -483,7 +454,6 @@ export class ShadowlinkPage {
 
     await this.fillSourcePasswordForSave();
 
-    // Save changes
     await this.page.getByRole('button', { name: /save/iu }).click();
 
     // Wait for redirect back to details page (the save is successful if we're redirected)
@@ -494,10 +464,8 @@ export class ShadowlinkPage {
   }
 
   private async expandShadowTopicsSection() {
-    // Navigate to Shadowing tab
     await this.page.getByRole('tab', { name: /shadowing/iu }).click();
 
-    // Wait for the tab content to load: the "Shadow topics" section
     await this.page.getByRole('heading', { name: /shadow topics/iu }).waitFor({ state: 'visible' });
 
     // ALWAYS try to expand the collapsible by clicking the chevron button
@@ -517,7 +485,6 @@ export class ShadowlinkPage {
   }
 
   private async openSpecifyTopicsTab() {
-    // Now click the "Specify topics" tab
     const specifyTab = this.page.getByRole('tab', { name: /specify topics/iu });
     await specifyTab.waitFor({ state: 'visible', timeout: 5000 });
     await specifyTab.click();
@@ -534,7 +501,6 @@ export class ShadowlinkPage {
     }
   }
 
-  /** Clicks the first trash button on the page; resolves to whether there was one. */
   private async clickFirstTrashButton() {
     const topicFilters = this.page.locator(TOPIC_FILTER_NAME_INPUTS);
     const filterCount = await topicFilters.count();
@@ -546,7 +512,6 @@ export class ShadowlinkPage {
     return clicked;
   }
 
-  // Checks the buttons recursively in DOM order and stops at the first trash button it clicks.
   private async clickFirstTrashButtonOf([btn, ...remainingButtons]: Locator[]): Promise<boolean> {
     if (!btn) {
       return false;
@@ -563,7 +528,6 @@ export class ShadowlinkPage {
   }
 
   private async addTopicFilter(filter: TopicFilter, filterIndex: number) {
-    // Click "Add filter" button to create a new filter card
     await this.page.getByRole('button', { name: /add filter/iu }).click();
     await expect(this.page.getByTestId(`topic-filter-${filterIndex}`)).toBeVisible();
 
@@ -577,7 +541,6 @@ export class ShadowlinkPage {
     await expect(inputInCard).toHaveValue(filter.pattern);
   }
 
-  // Find all tabs with the filter's label and click the one for this filter (filterIndex)
   private async selectTopicFilterTab(filter: TopicFilter, filterIndex: number) {
     const targetTab = this.page
       .getByRole('tab', { name: TOPIC_FILTER_TAB_LABELS[filter.filter][filter.type] })
@@ -595,7 +558,6 @@ export class ShadowlinkPage {
     await sourceTab.click();
     await expect(sourceTab).toHaveAttribute('aria-selected', 'true');
 
-    // Fill in the password field (required by form validation)
     const passwordInput = this.page.getByRole('textbox', { name: /password/iu });
     await passwordInput.click();
     await passwordInput.fill('very-secret');
@@ -606,7 +568,6 @@ export class ShadowlinkPage {
    * Actions
    */
   async performFailover() {
-    // Find "Fail over all topics" button specifically (not individual topic failover buttons)
     const failoverButton = this.page.getByRole('button', { name: /^fail ?over all topics$/iu });
     await failoverButton.click();
 
@@ -617,7 +578,6 @@ export class ShadowlinkPage {
   }
 
   async failoverTopic(topicName: string) {
-    // Find the topic row and click failover action (should be on Overview tab)
     const topicRow = this.page.getByRole('row').filter({ hasText: topicName });
     const failoverButton = topicRow.getByRole('button', { name: /failover/iu });
     await failoverButton.click();
@@ -626,36 +586,27 @@ export class ShadowlinkPage {
     const confirmButton = this.page.getByTestId('confirm-failover');
     await Promise.all([this.page.waitForResponse(FAILOVER_RPC_URL), confirmButton.click()]);
 
-    // Click the refresh button for the replicated topics table and wait for the refreshed list
-    // (the response listener is armed before the click)
     const refreshButton = this.page.getByTestId('refresh-topics-button');
     await Promise.all([this.page.waitForResponse(LIST_SHADOW_TOPICS_RPC_URL), refreshButton.click()]);
 
-    // Verify the replication state changed to "Failed over"
     const topicRowAfterRefresh = this.page.getByRole('row').filter({ hasText: topicName });
     await expect(topicRowAfterRefresh.getByText(/failed over/iu)).toBeVisible({ timeout: 5000 });
   }
 
   async deleteShadowlink() {
-    // Find delete button by role and name
     const deleteButton = this.page.getByRole('button', { name: /delete/iu });
     await deleteButton.click();
 
-    // Wait for dialog to appear
     await expect(this.page.getByRole('alertdialog', { name: 'Delete Shadowlink' })).toBeVisible();
 
-    // Type "delete" in the confirmation textbox
     const confirmInput = this.page.getByRole('textbox', { name: /type.*delete|confirm/iu });
     await confirmInput.fill('delete');
 
-    // Wait for the delete button to become enabled
     const confirmButton = this.page.getByRole('button', { name: /delete/iu }).last();
     await expect(confirmButton).toBeEnabled();
 
-    // Click final confirm button in the dialog
     await confirmButton.click();
 
-    // Wait for redirect to list
     await expect(this.page).toHaveURL(`${this.shadowBackendURL}/shadowlinks`, { timeout: 15_000 });
 
     // Clean up replicated topics in destination cluster

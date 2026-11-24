@@ -53,7 +53,6 @@ const doneFrame = (nextPageToken = ''): Frame => ({
   value: { bytesConsumed: 1024n, elapsedMs: 42n, nextPageToken, isCancelled: false },
 });
 
-/** Builds a listMessages implementation yielding the given frames, capturing call args. */
 function scriptStream(...frames: Frame[]) {
   listMessagesMock.mockImplementation((_req: unknown, _opts: { signal?: AbortSignal; timeoutMs: number }) =>
     (function* streamMessages() {
@@ -97,7 +96,6 @@ const baseParams: MessageSearchParams = {
 
 type SearchHookResult = RenderHookResult<MessageSearchResult, unknown>['result'];
 
-/** Renders the hook and runs one search to completion. */
 async function startSearch(params = baseParams) {
   const { result } = renderHook(() => useMessageSearch('test-topic'));
   await act(() => result.current.start(params));
@@ -113,13 +111,11 @@ function startInBackground(result: SearchHookResult) {
   return started;
 }
 
-/** Renders the hook with a search already started (not awaited). */
 function renderWithRunningSearch() {
   const { result } = renderHook(() => useMessageSearch('test-topic'));
   return { result, started: startInBackground(result) };
 }
 
-/** The request the nth `listMessages` call was made with. */
 const requestAt = (index: number) => listMessagesMock.mock.calls[index][0];
 
 describe('useMessageSearch', () => {
@@ -248,7 +244,6 @@ describe('useMessageSearch', () => {
       });
 
       expect(result.current.error?.message).toBe('connection lost');
-      // Data received before the failure is kept
       expect(result.current.messages).toHaveLength(1);
     });
 

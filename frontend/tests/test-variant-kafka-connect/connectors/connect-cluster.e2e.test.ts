@@ -39,7 +39,6 @@ const setHeartbeatFrequency = async (page: Page, seconds: string) => {
   await frequencyField.fill(seconds);
 };
 
-/** Saves the configuration through the confirmation dialog and resolves with the connector's PUT response. */
 const confirmConfigUpdate = async (page: Page) => {
   await page.getByRole('button', { name: /update config/iu }).click();
   await expect(page.getByRole('button', { name: 'Yes' })).toBeVisible();

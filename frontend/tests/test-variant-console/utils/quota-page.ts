@@ -28,7 +28,6 @@ export class QuotaPage {
 
   async verifyProducerRate(rateValue: string, entityName?: string) {
     if (entityName) {
-      // Find the row containing the entity name and verify the rate value is in that row
       const row = this.page.locator('tr').filter({ hasText: entityName });
       await expect(row.locator('td').filter({ hasText: rateValue })).toBeVisible();
     } else {

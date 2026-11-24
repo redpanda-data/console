@@ -33,7 +33,6 @@ import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, SCHEMA_REGISTRY_MODE, TLS_MODE } from '../create/model';
 
-// Base form values for testing
 const baseFormValues: FormValues = {
   name: 'test-shadow-link',
   bootstrapServers: [{ value: 'localhost:9092' }],
@@ -81,8 +80,6 @@ const baseFormValues: FormValues = {
   schemaRegistry: initialValues.schemaRegistry,
 };
 
-// Helper to create a minimal ShadowLink proto for testing
-// This matches the baseFormValues structure to ensure no false positives
 const createBaseShadowLink = () =>
   create(ShadowLinkSchema, {
     name: 'test-shadow-link',
@@ -145,7 +142,6 @@ const createBaseShadowLink = () =>
           }),
         ],
       }),
-      // Schema registry sync disabled (no schemaRegistryShadowingMode set)
     }),
     tasksStatus: [],
     syncedShadowTopicProperties: [],
@@ -198,7 +194,6 @@ const createBaseControlplaneShadowLink = () =>
         },
       ],
     },
-    // Schema registry sync disabled (no schemaRegistryShadowingMode set)
   });
 
 /**
@@ -354,7 +349,6 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      // Controlplane uses flat structure - properties directly on shadowLink
       expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['changed:9092']);
       expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
         expect.objectContaining({
@@ -566,7 +560,6 @@ describe('buildDataplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      // Dataplane uses nested structure - configurations object contains all options
       expect(result.shadowLink?.configurations).toBeDefined();
       expect(result.shadowLink?.configurations?.clientOptions).toBeDefined();
       expect(result.shadowLink?.configurations?.topicMetadataSyncOptions).toBeDefined();

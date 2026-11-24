@@ -128,24 +128,21 @@ describe('the ConnectorPropertiesStore', () => {
           type: DataType.Boolean,
           default_value: null,
           custom_default_value: 'true',
-          value: 'false', // User's saved value from validation
+          value: 'false',
         }),
       ];
 
       mockValidateConnectorConfig.mockResolvedValue(createMockValidationResult(properties));
 
-      const store = new ConnectorPropertiesStore(
-        'test-cluster',
-        'io.example.ConnectorPlugin',
-        'source',
-        { 'flush.lsn.source': 'false' } // User's saved configuration
-      );
+      const store = new ConnectorPropertiesStore('test-cluster', 'io.example.ConnectorPlugin', 'source', {
+        'flush.lsn.source': 'false',
+      });
 
       await waitFor(() => expect(store.initPending).toBe(false));
 
       const prop = store.propsByName.get('flush.lsn.source');
       expect(prop).toBeDefined();
-      expect(prop?.value).toBe(false); // Sanitized to boolean
+      expect(prop?.value).toBe(false);
     });
 
     it('applies custom_default_value only to properties that have it', async () => {

@@ -28,7 +28,7 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues,
-    mode: 'onBlur', // Enable validation on blur
+    mode: 'onBlur',
   });
 
   return (

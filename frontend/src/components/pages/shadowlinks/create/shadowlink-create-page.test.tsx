@@ -76,9 +76,6 @@ const resetSchemaRegistrySyncGate = () => {
   useSupportedFeaturesStore.setState(pristineFeatureStoreState, true);
 };
 
-/**
- * Render the create page with all necessary providers
- */
 const renderCreatePage = () =>
   renderWithFileRoutes(<ShadowLinkCreatePage />, {
     transport: createRouterTransport(({ rpc }) => {
@@ -86,9 +83,6 @@ const renderCreatePage = () =>
     }),
   });
 
-/**
- * Create form specific action types
- */
 type CertificateType = 'ca' | 'clientCert' | 'clientKey';
 
 type CreateAction =
@@ -107,9 +101,6 @@ type CreateAction =
   | { type: 'addRoleFilterCreate'; name: string }
   | { type: 'enableSchemaRegistrySync' };
 
-/**
- * Set an input's value directly and let the async form validation settle
- */
 const fillInputValue = async (input: HTMLElement, value: string) => {
   fireEvent.input(input, { target: { value } });
   await waitFor(() => {
@@ -196,9 +187,6 @@ const uploadCertificatePem = async (
   });
 };
 
-/**
- * Perform action for create form
- */
 const performCreateAction = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen,
@@ -252,9 +240,6 @@ const performCreateAction = async (
   }
 };
 
-/**
- * Connection step values shared by most cases, ending on the configuration step
- */
 const CONNECTION_STEP_ACTIONS: CreateAction[] = [
   { type: 'fillName', value: 'test-shadow-link' },
   { type: 'fillBootstrapServer', index: 0, value: 'server1.example.com:9092' },
@@ -263,9 +248,6 @@ const CONNECTION_STEP_ACTIONS: CreateAction[] = [
   { type: 'navigateToConfiguration' },
 ];
 
-/**
- * Render the page, wait for the connection step, then run the actions in sequence
- */
 const renderAndPerform = async (user: ReturnType<typeof userEvent.setup>, actions: CreateAction[]) => {
   renderCreatePage();
 
@@ -277,9 +259,6 @@ const renderAndPerform = async (user: ReturnType<typeof userEvent.setup>, action
   );
 };
 
-/**
- * Submit the form and return the request passed to the create mutation
- */
 const submitCreateForm = async (
   user: ReturnType<typeof userEvent.setup>,
   mockMutateAsync: ReturnType<typeof rs.fn>
@@ -309,9 +288,6 @@ const waitForCreateSuccess = async () => {
   });
 };
 
-/**
- * Switch Schema Registry sync to the API mode and fill its URL and HTTP Basic credentials
- */
 const fillSchemaRegistryApiConnection = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(screen.getByTestId('sr-mode-api-tab'));
   await waitFor(() => {
@@ -330,18 +306,12 @@ const fillSchemaRegistryApiConnection = async (user: ReturnType<typeof userEvent
   fireEvent.input(screen.getByTestId('sr-basic-password-input'), { target: { value: 'p@ssw0rd!' } });
 };
 
-/**
- * Test case type definition for create form
- */
 type CreateTestCase = {
   description: string;
   actions: CreateAction[];
   verify: (createRequest: any, exp: typeof import('@rstest/core').expect) => void;
 };
 
-/**
- * Test cases for table-driven testing
- */
 const testCases: CreateTestCase[] = [
   {
     description: 'creates minimal shadow link with required fields only',

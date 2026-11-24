@@ -57,7 +57,6 @@ const PAGINATION_SECRETS_FIXTURE = Array.from({ length: 25 }, (_, index) =>
   })
 );
 
-/** Renders the page against a single-page listSecrets response holding `secrets`. */
 const renderListPage = (secrets: Secret[]) => {
   const response = create(ListSecretsResponseSchema, {
     response: { secrets, nextPageToken: '' },
@@ -253,7 +252,6 @@ describe('the SecretsStoreListPage', () => {
       expect(screen.queryByText('alpha-secret')).not.toBeInTheDocument();
     });
 
-    // Clear and verify all rows reappear
     await user.clear(filterInput);
 
     await waitFor(() => {

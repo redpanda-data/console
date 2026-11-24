@@ -57,24 +57,19 @@ function renderCreatePage() {
   return { createSecretMock };
 }
 
-/** Opens the scopes multi-select, picks both options by label, then closes the dropdown. */
 async function selectScopes(user: UserEvent, firstLabel: string, secondLabel: string) {
-  // Open the scopes multi-select using the testId
   const scopesButton = screen.getByTestId('secret-scopes-select');
   await user.click(scopesButton);
 
-  // Wait for dropdown to open
   await waitFor(() => {
     const firstOptionElements = screen.getAllByText(firstLabel);
     expect(firstOptionElements.length).toBeGreaterThan(0);
     expect(firstOptionElements[0]).toBeVisible();
   });
 
-  // Click on the first matching option in the dropdown for each label
   await user.click(screen.getAllByText(firstLabel)[0]);
   await user.click(screen.getAllByText(secondLabel)[0]);
 
-  // Close the dropdown
   await user.keyboard('{Escape}');
 }
 
@@ -97,21 +92,17 @@ describe('the SecretCreatePage', () => {
     // from uiState.pageTitle, which this harness does not mount, so assert on the page's own copy.
     expect(screen.getByText('Create a new secret that can be securely accessed by your services.')).toBeInTheDocument();
 
-    // Fill in the ID field
     const idInput = screen.getByPlaceholderText('SECRET_ID');
     await user.type(idInput, 'MY_TEST_SECRET');
 
-    // Fill in the value field
     const valueInput = screen.getByPlaceholderText('Enter secret value');
     await user.type(valueInput, 'super-secret-value');
 
     // Select AI Gateway and MCP Server
     await selectScopes(user, 'AI Gateway', 'MCP Server');
 
-    // Submit the form
     await submitWhenEnabled(user);
 
-    // Verify the create mutation was called
     await waitFor(() => {
       expect(createSecretMock).toHaveBeenCalledTimes(1);
     });

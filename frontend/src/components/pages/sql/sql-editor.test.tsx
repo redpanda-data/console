@@ -22,7 +22,6 @@ rs.mock('@uiw/react-codemirror', () => ({
 
 const QUERY_1_TAB = /Query 1/u;
 const QUERY_2_TAB = /Query 2/u;
-// Matches the Run button's accessible name including its platform Kbd hint.
 const RUN_BUTTON = /Run (?:Ctrl|⌘)/u;
 
 const renderEditor = (onRun = rs.fn()) => {

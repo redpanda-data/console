@@ -27,7 +27,6 @@ import { connectQueryWrapper } from 'test-utils';
 
 import { useUpdateRoleMembershipMutation } from './security';
 
-/** Builds an InfiniteData cache entry with a single page of members. */
 const makeInfiniteData = (principals: string[]) => ({
   pages: [
     create(ListRoleMembersResponseSchema, {
@@ -37,7 +36,6 @@ const makeInfiniteData = (principals: string[]) => ({
   pageParams: [undefined],
 });
 
-/** Returns the flat list of principals currently in the listRoleMembers cache. */
 const getCachedPrincipals = (queryClient: ReturnType<typeof connectQueryWrapper>['queryClient']) => {
   const baseKey = createConnectQueryKey({
     schema: SecurityService.method.listRoleMembers,
@@ -66,7 +64,6 @@ const blockedUpdateTransport = () => {
   return { transport, unblock };
 };
 
-/** Renders the mutation hook over a listRoleMembers cache seeded with `principals`. */
 const renderWithSeededMembers = (transport: ReturnType<typeof createRouterTransport>, principals: string[]) => {
   const { wrapper, queryClient } = connectQueryWrapper({}, transport);
 

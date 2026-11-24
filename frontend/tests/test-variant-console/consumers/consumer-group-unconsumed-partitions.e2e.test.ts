@@ -87,12 +87,10 @@ test.describe('consumer Group Details - Unconsumed Partitions', () => {
       Promise.resolve()
     );
 
-    // 3. Consume 2 messages — commits offsets on partitions 0 and 1 (in order)
     await execAsync(
       `docker exec ${containerId} rpk topic consume ${TOPIC_NAME} -n 2 --group ${GROUP_NAME} ${authFlags}`
     );
 
-    // 4. Delete offset for partition 1 → it becomes an "unconsumed" partition
     await execRpk(`group offset-delete ${GROUP_NAME} -t ${TOPIC_NAME}:1`);
   });
 
@@ -105,7 +103,6 @@ test.describe('consumer Group Details - Unconsumed Partitions', () => {
   test('shows all 3 partitions with correct Group Offset and Lag values', async ({ page }) => {
     await step('Navigate to consumer group details page', async () => {
       await page.goto(`/groups/${GROUP_NAME}`);
-      // Wait for the group name heading to appear
       await expect(page.getByText(GROUP_NAME).first()).toBeVisible();
     });
 
@@ -119,7 +116,6 @@ test.describe('consumer Group Details - Unconsumed Partitions', () => {
         await accordionButton.click();
       }
 
-      // Wait for the data table to appear
       await expect(page.getByRole('table').first()).toBeVisible();
     });
 

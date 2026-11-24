@@ -36,7 +36,6 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   );
 };
 
-/** Renders the step in "specify" mode with the given filters, expanded so the editable filters show. */
 const renderExpandedConsumerOffsetStep = async (consumers: FormValues['consumers']) => {
   const user = userEvent.setup();
   render(<TestWrapper defaultValues={{ ...initialValues, consumersMode: 'specify', consumers }} />);

@@ -1,4 +1,4 @@
-import { assignDeep, substringWithEllipsis } from './utils'; // Adjust the import path as needed
+import { assignDeep, substringWithEllipsis } from './utils';
 import { describe, expect, test } from 'bun:test';
 
 describe('assignDeep', () => {

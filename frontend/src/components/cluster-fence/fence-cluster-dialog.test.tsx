@@ -86,7 +86,6 @@ const setReaders = (readers: ShadowLinkReader[], resolving = false) =>
     topology: { clusterName: 'prod-us-east-1', readers, sources: {}, resolving, readersIncomplete: false },
   });
 
-/** Renders the dialog and types the cluster name, as a user about to fence would. */
 const renderConfirmed = async () => {
   const user = userEvent.setup();
   renderDialog();

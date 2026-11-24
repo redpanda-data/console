@@ -53,12 +53,10 @@ import {
   uploadClientCertificates,
 } from '../shadowlink-test-helpers';
 
-// Mock the hooks
 rs.mock('react-query/api/shadowlink', () => ({
   useEditShadowLink: rs.fn(),
 }));
 
-// Mock ui-state
 rs.mock('state/ui-state', () => ({
   uiState: {
     pageTitle: '',
@@ -66,7 +64,6 @@ rs.mock('state/ui-state', () => ({
   },
 }));
 
-// Mock config
 rs.mock('config', () => {
   const actual = rs.requireActual<typeof import('config')>('config');
   return {
@@ -78,7 +75,6 @@ rs.mock('config', () => {
   };
 });
 
-// Mock toast notifications
 rs.mock('sonner', () => ({
   toast: {
     success: rs.fn(),
@@ -96,9 +92,6 @@ rs.mock('@tanstack/react-router', () => {
   };
 });
 
-/**
- * Create a mock shadow link with minimal configuration
- */
 const createMockShadowLink = (): ShadowLink =>
   create(ShadowLinkSchema, {
     name: 'test-shadow-link',
@@ -144,14 +137,8 @@ const createMockShadowLink = (): ShadowLink =>
     }),
   }) as ShadowLink;
 
-/**
- * Render the edit page with all necessary providers
- */
 const renderEditPage = (_shadowLink: ShadowLink) => renderWithFileRoutes(<ShadowLinkEditPage />);
 
-/**
- * Action dispatcher - routes actions to appropriate helpers
- */
 const performAction = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen,
@@ -189,9 +176,6 @@ const performAction = async (
   }
 };
 
-/**
- * Test case type definition
- */
 type TestCase = {
   description: string;
   actions: Action[];
@@ -306,17 +290,11 @@ const mockEditHook = (mockUpdateShadowLink: ReturnType<typeof rs.fn>, mockShadow
   });
 };
 
-/**
- * Mock the edit hook with this shadow link and render the page
- */
 const renderEditPageFor = (mockUpdateShadowLink: ReturnType<typeof rs.fn>, mockShadowLink: ShadowLink) => {
   mockEditHook(mockUpdateShadowLink, mockShadowLink);
   renderEditPage(mockShadowLink);
 };
 
-/**
- * Save the form and build the dataplane update request from the submitted form values
- */
 const saveAndBuildUpdateRequest = async (
   user: ReturnType<typeof userEvent.setup>,
   mockUpdateShadowLink: ReturnType<typeof rs.fn>,
@@ -324,7 +302,6 @@ const saveAndBuildUpdateRequest = async (
 ) => {
   await user.click(screen.getByText('Save'));
 
-  // Verify updateShadowLink was called
   await waitFor(() => {
     expect(mockUpdateShadowLink).toHaveBeenCalledTimes(1);
   });
@@ -362,12 +339,10 @@ describe('the ShadowLinkEditPage', () => {
     const mockShadowLink = createMockShadowLink();
     renderEditPageFor(mockUpdateShadowLink, mockShadowLink);
 
-    // Wait for the form to load
     await waitFor(() => {
       expect(screen.getByTestId('shadowLink-edit-page-description')).toBeInTheDocument();
     });
 
-    // Wait for the source tab content to be visible
     await screen.findByTestId('bootstrap-server-input-0', {}, { timeout: 5000 });
 
     // Each action edits the same form and later actions read its state, so chain them in order.
@@ -378,10 +353,8 @@ describe('the ShadowLinkEditPage', () => {
 
     const updateRequest = await saveAndBuildUpdateRequest(user, mockUpdateShadowLink, mockShadowLink);
 
-    // Verify field mask includes all expected paths
     expect(updateRequest?.updateMask?.paths).toEqual(expect.arrayContaining(expectedFieldMaskPaths));
 
-    // Run custom verification function
     verify(updateRequest, expect);
   });
 
@@ -418,7 +391,6 @@ describe('the ShadowLinkEditPage', () => {
       await screen.findByTestId('sr-tail-interval-input');
     };
 
-    // With the SR gate open, render an api-mode link and open its sync behavior fields
     const renderApiModeSyncBehavior = async () => {
       setSchemaRegistrySyncGateSupported(true);
       const user = userEvent.setup();

@@ -5,7 +5,6 @@ const ACCESS_KEY = 'accesskey';
 const SECRET_ACCESS_KEY = 'secretaccesskey';
 const S3_BUCKET_NAME = 's3bucketname';
 
-/** Expects the button to be visible and enabled, then clicks it. */
 const clickWhenEnabled = async (page: Page, name: string) => {
   const button = page.getByRole('button', { name });
   await expect(button).toBeVisible();

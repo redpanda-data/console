@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import { type Download, expect, type Page, step, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
-/** Opens the topic, expands its first message and opens the message export dialog. */
 const openFirstMessageExportDialog = async (page: Page, topicName: string) => {
   await page.goto(`/topics/${topicName}`);
 
@@ -11,7 +10,6 @@ const openFirstMessageExportDialog = async (page: Page, topicName: string) => {
   await page.getByText('Download Record').click();
 };
 
-/** Clicks the export dialog's save button and resolves with the download it starts. */
 const downloadExport = async (page: Page, saveButtonName: RegExp) => {
   const downloadPromise = page.waitForEvent('download');
   await page
@@ -21,7 +19,6 @@ const downloadExport = async (page: Page, saveButtonName: RegExp) => {
   return downloadPromise;
 };
 
-/** Saves the download to `tempFilePath`, reads it back, and removes the file. */
 const readDownload = async (download: Download, tempFilePath: string) => {
   await download.saveAs(tempFilePath);
   const fileContent = fs.readFileSync(tempFilePath, 'utf-8');
@@ -29,7 +26,6 @@ const readDownload = async (download: Download, tempFilePath: string) => {
   return fileContent;
 };
 
-/** Saves the download to `tempFilePath`, measures it in bytes, and removes the file. */
 const readDownloadSize = async (download: Download, tempFilePath: string) => {
   await download.saveAs(tempFilePath);
   const { size } = fs.statSync(tempFilePath);
@@ -195,7 +191,7 @@ test.describe('message Actions and Export', () => {
       const download = await downloadExport(page, /save/iu);
 
       const fileSize = await readDownloadSize(download, `/tmp/test-large-${crypto.randomUUID()}.json`);
-      expect(fileSize).toBeGreaterThan(1000); // Should be larger than 1KB
+      expect(fileSize).toBeGreaterThan(1000);
     });
 
     await topicPage.deleteTopic(topicName);

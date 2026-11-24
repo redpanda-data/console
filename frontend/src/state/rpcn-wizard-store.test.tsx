@@ -175,7 +175,7 @@ describe('the RPCN Wizard Store', () => {
         if (stored) {
           const parsed = JSON.parse(stored);
           expect(parsed.input).toBeDefined();
-          expect(parsed.hasHydrated).toBeUndefined(); // Should NOT be persisted
+          expect(parsed.hasHydrated).toBeUndefined();
         }
       });
     });

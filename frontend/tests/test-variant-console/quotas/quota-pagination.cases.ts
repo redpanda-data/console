@@ -8,7 +8,6 @@ const PAGINATION_PAGE_SIZE = 20;
 const MULTI_PAGE_QUOTA_COUNT = 55;
 const URL_STATE_QUOTA_COUNT = 60;
 
-// Regex patterns for pagination tests
 const ENTITY_TYPE_REGEX = /client-id|user|ip/u;
 const PAGE_0_REGEX = /page=0/u;
 const PAGE_1_REGEX = /page=1/u;
@@ -49,14 +48,12 @@ const waitForQuotaRows = (page: Page, batch: QuotaBatch) =>
     { timeout: 15_000, intervals: [500, 1000, 5000] }
   );
 
-/** The client IDs of the batch's quotas on the current page. */
 const captureVisibleQuotas = async (page: Page, batch: QuotaBatch) => {
   const quotaIdPattern = new RegExp(`${batch.prefix}-\\d{3}`, 'u');
   const rowTexts = await quotaRows(page, batch).allTextContents();
   return rowTexts.flatMap((text) => text.match(quotaIdPattern)?.[0] ?? []);
 };
 
-// Capture which quotas are visible on page 1
 const waitAndCaptureVisibleQuotas = async (page: Page, batch: QuotaBatch) => {
   await waitForQuotaRows(page, batch);
   const visibleQuotas = await captureVisibleQuotas(page, batch);
@@ -71,10 +68,8 @@ test.describe('quotas - Pagination', () => {
     });
 
     await step('Verify pagination is not visible for small datasets', async () => {
-      // Check if table has rows but pagination is not present
       const rowCount = await page.locator('tr').filter({ hasText: ENTITY_TYPE_REGEX }).count();
 
-      // If there are fewer than a page of items, pagination should not be visible
       if (rowCount < DEFAULT_PAGE_SIZE) {
         const pagination = page.locator('[aria-label="pagination"]');
         await expect(pagination).not.toBeVisible();
@@ -87,7 +82,7 @@ test.describe('quotas - Pagination', () => {
     const batch = quotaBatch('page-nav-test');
 
     const quotaIds = await step(`Create ${MULTI_PAGE_QUOTA_COUNT} quotas`, () =>
-      createNumberedQuotas(batch, MULTI_PAGE_QUOTA_COUNT, 2_097_152 /* 2MB */)
+      createNumberedQuotas(batch, MULTI_PAGE_QUOTA_COUNT, 2_097_152)
     );
 
     await step('Navigate to quotas page with explicit page size', async () => {
@@ -101,15 +96,12 @@ test.describe('quotas - Pagination', () => {
     await step('Click next page button', async () => {
       await quotaPage.clickNextPage();
 
-      // Wait for page navigation to complete
       await page.waitForURL(PAGE_1_REGEX, { timeout: 5000 });
     });
 
     await step('Verify page 1 quotas are no longer visible on page 2', async () => {
-      // At least one quota from page 1 should not be visible on page 2
       await quotaPage.verifyQuotaNotExists(page1Quotas[0]);
 
-      // Verify we have different quotas on page 2
       const page2Rows = await quotaRows(page, batch).count();
       expect(page2Rows).toBeGreaterThan(0);
     });
@@ -122,7 +114,7 @@ test.describe('quotas - Pagination', () => {
     const batch = quotaBatch('prev-page-test');
 
     const quotaIds = await step(`Create ${MULTI_PAGE_QUOTA_COUNT} quotas`, () =>
-      createNumberedQuotas(batch, MULTI_PAGE_QUOTA_COUNT, 3_145_728 /* 3MB */)
+      createNumberedQuotas(batch, MULTI_PAGE_QUOTA_COUNT, 3_145_728)
     );
 
     await step('Navigate to quotas page with explicit page size', async () => {
@@ -139,11 +131,9 @@ test.describe('quotas - Pagination', () => {
     });
 
     const page2Quotas = await step('Capture page 2 quotas', async () => {
-      // Capture which quotas are visible on page 2
       const visibleQuotas = await captureVisibleQuotas(page, batch);
       expect(visibleQuotas.length).toBeGreaterThan(0);
 
-      // Verify page 1 quota is not on page 2
       await quotaPage.verifyQuotaNotExists(page1Quotas[0]);
       return visibleQuotas;
     });
@@ -161,7 +151,6 @@ test.describe('quotas - Pagination', () => {
         { timeout: 10_000 }
       );
 
-      // Page 2 quota should not be visible on page 1
       await quotaPage.verifyQuotaNotExists(page2Quotas[0]);
     });
 
@@ -173,7 +162,7 @@ test.describe('quotas - Pagination', () => {
     const batch = quotaBatch('url-state-test');
 
     const quotaIds = await step(`Create ${URL_STATE_QUOTA_COUNT} quotas`, () =>
-      createNumberedQuotas(batch, URL_STATE_QUOTA_COUNT, 5_242_880 /* 5MB */)
+      createNumberedQuotas(batch, URL_STATE_QUOTA_COUNT, 5_242_880)
     );
 
     await step('Navigate to quotas page with explicit page size', async () => {
@@ -198,10 +187,8 @@ test.describe('quotas - Pagination', () => {
     await step('Reload page and verify pagination state persists', async () => {
       await page.reload();
 
-      // Should still be on page 2
       expect(page.url()).toContain('page=1');
 
-      // Page 1 quota should not be visible (we're on page 2)
       await quotaPage.verifyQuotaNotExists(page1Quotas[0]);
     });
 
@@ -212,7 +199,7 @@ test.describe('quotas - Pagination', () => {
     const batch = quotaBatch('page-info-test');
 
     const quotaIds = await step(`Create ${MULTI_PAGE_QUOTA_COUNT} quotas`, () =>
-      createNumberedQuotas(batch, MULTI_PAGE_QUOTA_COUNT, 6_291_456 /* 6MB */)
+      createNumberedQuotas(batch, MULTI_PAGE_QUOTA_COUNT, 6_291_456)
     );
 
     await step('Navigate to quotas page with explicit page size', async () => {
@@ -222,7 +209,6 @@ test.describe('quotas - Pagination', () => {
     await step('Wait for quotas to load', () => waitForQuotaRows(page, batch));
 
     await step('Verify page info text is displayed', async () => {
-      // Look for text like "Page 1 of 3" or similar pagination info
       const pageInfo = page.locator('text=/Page \\d+ of \\d+/');
 
       const isVisible = await pageInfo.isVisible({ timeout: 2000 }).catch(() => false);

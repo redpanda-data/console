@@ -19,7 +19,6 @@ import { LIVE_INITIAL_STATE, liveReducer, MAX_LIVE_LOG_MESSAGES, useLogSearch } 
 import type { TopicMessage } from '../../state/rest-interfaces';
 import { PartitionOffsetOrigin } from '../../state/ui';
 
-// Track messages returned by convertListMessageData
 let convertCallIndex = 0;
 const fakeMessages: TopicMessage[] = [];
 
@@ -39,7 +38,6 @@ rs.mock('sonner', () => ({
   toast: { error: rs.fn(), success: rs.fn() },
 }));
 
-// Mock config with a fake consoleClient
 const mockListMessages = rs.fn();
 rs.mock('../../config', () => ({
   config: {

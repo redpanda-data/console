@@ -46,7 +46,6 @@ const ALLOW_ALL_ACL_FILTER = {
   host: '',
 };
 
-/** Renders the step in "specify" mode with the given filters, expanded so the editable filters show. */
 const renderExpandedAclsStep = async (aclFilters: NonNullable<FormValues['aclFilters']>) => {
   const user = userEvent.setup();
   render(<TestWrapper defaultValues={{ ...initialValues, aclsMode: 'specify', aclFilters }} />);

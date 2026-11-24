@@ -28,7 +28,6 @@ const bootThemeScript =
   `(function(){try{if(localStorage.getItem(${JSON.stringify(DARK_MODE_AVAILABLE_KEY)})==="true"){` +
   `${themeScript(AVAILABLE_THEME_INIT)}}else{${themeScript(UNAVAILABLE_THEME_INIT)}}}catch{}})()`;
 
-/** Runs the boot script against a dark OS and `stored`, and returns the theme it stamps. */
 const bootTheme = (stored: Record<string, string>) => {
   const root = { dataset: {} as Record<string, string>, classList: { toggle: () => undefined }, style: {} };
   runInNewContext(bootThemeScript, {

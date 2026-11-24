@@ -53,7 +53,7 @@ function MockPipelineFlowCanvas(props: {
       >
         select-input
       </button>
-      {/* Deselecting (clicking the empty canvas) also commits the selected node's edits. */}
+      {}
       <button onClick={() => props.onClearSelection?.()} type="button">
         deselect
       </button>

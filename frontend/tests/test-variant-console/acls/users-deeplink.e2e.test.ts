@@ -19,7 +19,6 @@ const openAddAclDialog = async (page: Page) => {
   await expect(page.getByRole('dialog', { name: 'Add ACL' })).toBeVisible();
 };
 
-/** Grants `principal` Read on `topicName` through the Permissions List's Add ACL dialog. */
 const seedTopicReadAcl = async (page: Page, principal: string, topicName: string) => {
   await openAddAclDialog(page);
 

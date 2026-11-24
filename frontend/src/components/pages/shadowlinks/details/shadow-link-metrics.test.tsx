@@ -16,7 +16,6 @@ import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
 import { ShadowLinkMetrics } from './shadow-link-metrics';
 import { type UnifiedShadowLink, UnifiedShadowLinkState } from '../model';
 
-// Mock the useGetShadowMetricsQuery hook
 rs.mock('react-query/api/shadowlink', () => ({
   useGetShadowMetricsQuery: rs.fn(),
 }));

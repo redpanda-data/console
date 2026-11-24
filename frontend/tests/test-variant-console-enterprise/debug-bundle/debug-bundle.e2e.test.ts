@@ -3,17 +3,6 @@ import { DebugBundlePage } from '../../test-variant-console/utils/debug-bundle-p
 
 const GENERATE_BUTTON = /generate/iu;
 
-/**
- * Debug Bundle E2E Tests
- *
- * Tests the complete debug bundle workflow including:
- * - Navigation and page display
- * - Basic bundle creation
- * - Advanced bundle configuration
- * - Progress monitoring
- * - Bundle download and deletion
- * - Cancellation workflow
- */
 test.describe('debug Bundle - Navigation and Display', () => {
   test('should display debug bundle page with header, generate button, and no in-progress bundle', async ({ page }) => {
     const debugBundlePage = new DebugBundlePage(page);

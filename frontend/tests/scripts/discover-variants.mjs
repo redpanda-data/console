@@ -74,7 +74,6 @@ export function getVariantPath(name) {
   return variant ? variant.path : null;
 }
 
-// CLI usage
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const variants = discoverVariants();
   console.log('Discovered variants:');

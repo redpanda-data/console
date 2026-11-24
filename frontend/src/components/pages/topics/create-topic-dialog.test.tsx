@@ -78,7 +78,6 @@ async function typeTopicName(user: User, name: string) {
   await user.type(screen.getByTestId('topic-name'), name);
 }
 
-/** Replaces the content of a numeric field and returns the input. */
 async function replaceNumber(user: User, testId: string, value: string) {
   const input = screen.getByTestId(testId);
   await user.clear(input);
@@ -107,7 +106,6 @@ async function submitWhenEnabled(user: User) {
   await user.click(screen.getByTestId('onOk-button'));
 }
 
-/** Pastes an invalid name and leaves the field, so its error renders. */
 async function enterTopicName(user: User, name: string) {
   const input = screen.getByRole('textbox', { name: TOPIC_NAME_LABEL });
   await user.click(input);

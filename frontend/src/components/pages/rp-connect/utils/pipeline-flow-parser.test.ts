@@ -943,8 +943,8 @@ output:
   drop: {}`;
       const laidOut = computeGraphLayout(parsePipelineFlowTree(labelled).nodes).rfNodes;
       const nodeData = (id: string) => laidOut.find((n) => n.id === id)?.data as { labelText?: string } | undefined;
-      expect(nodeData('proc-0')?.labelText).toBe('top_branch'); // container
-      expect(nodeData('proc-0-processors-p0')?.labelText).toBe('enrich_http'); // nested leaf
+      expect(nodeData('proc-0')?.labelText).toBe('top_branch');
+      expect(nodeData('proc-0-processors-p0')?.labelText).toBe('enrich_http');
     });
 
     it('places array resources in a lane below the flow', () => {

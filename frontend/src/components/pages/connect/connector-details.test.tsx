@@ -57,7 +57,6 @@ const connectorNamed = (name: string) => ({
   jsonConfig: '{}',
 });
 
-/** A cluster store that has already loaded `example` and `other`. */
 function loadedConnectClusterStore() {
   const store = new ConnectClusterStore('cluster');
   const remoteConnectors = [connectorNamed('example'), connectorNamed('other')];
@@ -101,7 +100,6 @@ afterEach(() => {
   logSearches.length = 0;
 });
 
-/** Opens the Logs tab of connector `example`. */
 async function openExampleLogs(user: ReturnType<typeof userEvent.setup>) {
   const view = render(<KafkaConnectorDetails clusterName="cluster" connector="example" matchedPath="/" />);
   await user.click(await screen.findByRole('tab', { name: 'Logs' }));

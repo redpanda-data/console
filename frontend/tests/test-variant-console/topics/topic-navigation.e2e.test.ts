@@ -19,13 +19,11 @@ test.describe('topic Details - Navigation and Tabs', () => {
       await page.goto('/topics');
       await page.getByTestId(`topic-link-${topicName}`).click();
 
-      // URL changes to topic details
       await expect(page).toHaveURL(new RegExp(`/topics/${topicName}`, 'u'));
 
       // Topic name appears (first match — name shows in heading and breadcrumb)
       await expect(page.getByText(topicName).first()).toBeVisible();
 
-      // Topic tabs should be visible
       await expect(page.getByRole('tablist')).toBeVisible({ timeout: 10_000 });
     });
 
@@ -41,13 +39,10 @@ test.describe('topic Details - Navigation and Tabs', () => {
     await step('Navigate to topic and verify Messages tab', async () => {
       await page.getByTestId(`topic-link-${topicName}`).click();
 
-      // Topic tabs should be visible
       await expect(page.getByRole('tablist')).toBeVisible();
 
-      // Messages tab should be active by default
       await expect(page.locator('text=Messages').first()).toBeVisible();
 
-      // Message-related elements should be visible
       await expect(page.getByText(/No messages found|Partition|Offset/iu).first()).toBeVisible({ timeout: 10_000 });
     });
 
@@ -63,14 +58,12 @@ test.describe('topic Details - Navigation and Tabs', () => {
     await step('Navigate directly to Configuration tab via URL', async () => {
       await page.goto(`/topics/${topicName}#configuration`);
 
-      // Configuration tab should be active
       await expect(page.getByTestId('config-group-table')).toBeVisible({ timeout: 5000 });
     });
 
     await step('Navigate directly to Partitions tab via URL', async () => {
       await page.goto(`/topics/${topicName}#partitions`);
 
-      // Partitions tab content should be visible
       await expect(page.getByText(/Partition|Leader/iu).first()).toBeVisible({ timeout: 5000 });
     });
 
@@ -95,7 +88,6 @@ test.describe('topic Details - Navigation and Tabs', () => {
       await expect(sidebar).toBeVisible();
       const categoryCount = await sidebar.getByRole('button').count();
 
-      // At least some configuration categories should be visible
       expect(categoryCount).toBeGreaterThan(0);
 
       // Verify Retention group is present (a core group that should always exist)
@@ -136,10 +128,8 @@ test.describe('topic Details - Navigation and Tabs', () => {
     await page.getByTestId(`topic-link-${topicName}`).click();
 
     await step('Navigate back using breadcrumb', async () => {
-      // Click on "Topics" breadcrumb
       await page.getByRole('link', { name: 'Topics' }).first().click();
 
-      // Should return to topics list
       await expect(page).toHaveURL(/\/topics/u);
       await expect(page.getByTestId(`topic-link-${topicName}`)).toBeVisible();
     });

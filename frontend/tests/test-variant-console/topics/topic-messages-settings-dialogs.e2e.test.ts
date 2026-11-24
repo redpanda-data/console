@@ -7,7 +7,6 @@ const GLOB_PATTERNS_LINK = /glob patterns/u;
 const SHEET_CONTENT = '[data-slot="sheet-content"]';
 const DIALOG_CONTENT = '[data-slot="dialog-content"]';
 
-/** Opens a dialog from the topic's message settings menu and resolves with it once visible. */
 const openMessageSettingsDialog = async (page: Page, topicName: string, menuItemTestId: string) => {
   await page.goto(`/topics/${topicName}`);
   await page.getByTestId('message-settings-button').click();

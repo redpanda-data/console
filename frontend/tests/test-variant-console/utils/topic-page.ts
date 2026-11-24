@@ -241,11 +241,6 @@ export class TopicPage {
   }
 
   /**
-   * High-level convenience methods
-   * These combine multiple operations for common workflows
-   */
-
-  /**
    * Creates a topic with the given name through the UI
    * Includes verification that the topic appears in the list
    */
@@ -267,10 +262,9 @@ export class TopicPage {
   async deleteTopic(topicName: string) {
     return await step('Delete topic', async () => {
       await this.goToTopicsList();
-      await this.verifyTopicInList(topicName); // Verify topic exists
+      await this.verifyTopicInList(topicName);
       await this.page.getByTestId(`topic-actions-trigger-${topicName}`).click();
       await this.page.getByTestId(`delete-topic-button-${topicName}`).dispatchEvent('click');
-      // New topic page requires typing "delete" to confirm
       const confirmationInput = this.page.getByPlaceholder('Type "delete" to confirm');
       if (await confirmationInput.isVisible({ timeout: 2000 }).catch(() => false)) {
         await confirmationInput.fill('delete');

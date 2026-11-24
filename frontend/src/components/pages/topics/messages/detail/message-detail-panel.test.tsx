@@ -22,7 +22,6 @@ const message: TopicMessage = {
   valueBinHexPreview: '',
 };
 
-/** Renders the expanded sheet, returning its props alongside the render result. */
 function renderExpandedPanel() {
   const props = {
     msg: message,
@@ -90,7 +89,6 @@ const openerButton = () => screen.getByRole('button', { name: 'Open message' });
 const expandButton = () => screen.getByRole('button', { name: 'Expand', exact: true });
 const collapseButton = () => screen.getByRole('button', { name: 'Collapse back to panel' });
 
-/** Opens the docked panel from the opener, then expands it into the sheet. */
 async function openExpandedSheet(user: UserEvent) {
   await user.click(openerButton());
   await user.click(expandButton());

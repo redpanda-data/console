@@ -10,9 +10,9 @@ import { describe, expect, it } from 'bun:test';
  */
 describe('classifyGround', () => {
   it('classifies the shipped grounds', () => {
-    expect(classifyGround([22, 22, 22])).toBe('dark'); // dark  --color-background
-    expect(classifyGround([6, 6, 6])).toBe('dark'); // dark  --color-page
-    expect(classifyGround([255, 255, 255])).toBe('light'); // light --color-background
+    expect(classifyGround([22, 22, 22])).toBe('dark');
+    expect(classifyGround([6, 6, 6])).toBe('dark');
+    expect(classifyGround([255, 255, 255])).toBe('light');
   });
 
   it('goes by the ground, not by any name', () => {

@@ -38,7 +38,6 @@ rs.mock('state/backend-api', () => {
   };
 });
 
-// Mounting the messages tab is what starts a message search.
 function MockTopicMessagesTab() {
   return <div data-testid="topic-messages-tab" />;
 }

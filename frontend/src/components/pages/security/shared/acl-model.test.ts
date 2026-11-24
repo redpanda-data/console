@@ -38,7 +38,6 @@ import { describe, expect, test } from 'bun:test';
 
 const findHost = (result: AclDetail[], host: string) => result.find((r) => r.sharedConfig.host === host);
 
-/** Asserts the host's principal and the permission of each operation of its first rule (`undefined`: not set). */
 const expectHostOperations = (
   result: AclDetail[],
   host: string,

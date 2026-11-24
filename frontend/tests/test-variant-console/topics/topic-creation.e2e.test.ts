@@ -6,7 +6,6 @@ import { step } from '../../shared/e2e';
 import { expect, type Page, test } from '../../shared/e2e';
 import { TopicPage } from '../utils/topic-page';
 
-/** Creates the topic through the topics list's create modal and dismisses the success dialog. */
 const createTopicFromList = async (page: Page, topicName: string) => {
   await page.goto('/topics');
   await page.getByTestId('create-topic-button').click();
@@ -32,11 +31,9 @@ test.describe('topic Creation', () => {
       await page.getByTestId('topic-name').fill(topicName);
       await page.getByTestId('onOk-button').click();
 
-      // Wait for success confirmation
       await expect(page.getByTestId('create-topic-success__close-button')).toBeVisible();
       await page.getByTestId('create-topic-success__close-button').click();
 
-      // Topic appears in list
       await expect(page.getByTestId(`topic-link-${topicName}`)).toBeVisible();
     });
 
@@ -53,13 +50,11 @@ test.describe('topic Creation', () => {
     await step('Configure topic settings', async () => {
       await page.getByTestId('topic-name').fill(topicName);
 
-      // Set custom partitions
       const partitionsInput = page.getByPlaceholder(/partitions/iu);
       if (await partitionsInput.isVisible()) {
         await partitionsInput.fill('6');
       }
 
-      // Create topic
       await page.getByTestId('onOk-button').click();
       await page.getByTestId('create-topic-success__close-button').click();
     });
@@ -69,10 +64,8 @@ test.describe('topic Creation', () => {
     });
 
     await step('Verify configuration', async () => {
-      // Navigate directly to topic configuration tab
       await page.goto(`/topics/${topicName}#configuration`);
 
-      // Verify configuration page loads with explicit timeout
       await expect(page.getByTestId('config-group-table')).toBeVisible({ timeout: 5000 });
     });
 
@@ -85,14 +78,11 @@ test.describe('topic Creation', () => {
     await page.getByTestId('create-topic-button').click();
 
     await step('Verify create button is disabled for empty name', async () => {
-      // Leave topic name field empty
       await expect(page.getByTestId('topic-name')).toHaveValue('');
 
-      // Create button should be disabled
       const createButton = page.getByTestId('onOk-button');
       await expect(createButton).toBeDisabled();
 
-      // Modal should still be open
       await expect(page.getByTestId('topic-name')).toBeVisible();
     });
 
@@ -112,13 +102,10 @@ test.describe('topic Creation', () => {
       const createButton = page.getByTestId('onOk-button');
 
       if (await createButton.isEnabled()) {
-        // If button is enabled, clicking should show validation error
         await createButton.click();
 
-        // Modal should remain open (creation prevented)
         await expect(page.getByTestId('topic-name')).toBeVisible();
       } else {
-        // Button is disabled due to validation
         await expect(createButton).toBeDisabled();
       }
     });
@@ -133,15 +120,12 @@ test.describe('topic Creation', () => {
     await step('Set high replication factor', async () => {
       await page.getByTestId('topic-name').fill(`replication-test-${crypto.randomUUID()}`);
 
-      // Try to set replication factor higher than broker count
       const replicationInput = page.getByPlaceholder(/replication/iu);
       if ((await replicationInput.isVisible()) && !(await replicationInput.isDisabled())) {
         await replicationInput.fill('999');
 
-        // Check if validation error appears
         const errorText = page.getByText(/replication factor/iu);
         if (await errorText.isVisible()) {
-          // Validation error is shown
           await expect(errorText).toBeVisible();
         }
       }
@@ -157,15 +141,12 @@ test.describe('topic Creation', () => {
     await step('Fill form and cancel', async () => {
       await page.getByTestId('topic-name').fill('cancelled-topic');
 
-      // Click cancel button
       await page.getByRole('button', { name: 'Cancel' }).click();
 
-      // Modal closes without creating topic
       await expect(page.getByTestId('create-topic-button')).toBeVisible();
     });
 
     await step('Verify topic was not created', async () => {
-      // Topic should not appear in list
       await expect(page.getByTestId('topic-link-cancelled-topic')).not.toBeVisible();
     });
   });

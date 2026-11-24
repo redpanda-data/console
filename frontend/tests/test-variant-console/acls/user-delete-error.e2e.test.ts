@@ -18,7 +18,6 @@ const seedUserAndOpenList = async (securityPage: SecurityPage, page: Page, usern
   await expect(page).toHaveURL(appURL('/security/users'));
 };
 
-/** Opens the user's details from the list and confirms its deletion. */
 const deleteUserFromDetails = async (page: Page, username: string) => {
   await page.getByRole('link', { name: username, exact: true }).click();
   await expect(page).toHaveURL(appURL(`/security/users/${username}/details`));

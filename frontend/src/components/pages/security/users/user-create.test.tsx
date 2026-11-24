@@ -34,8 +34,6 @@ import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import UserCreatePage from './user-create';
 
-// ── Mocks ──────────────────────────────────────────────────────────────────────
-
 rs.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
@@ -55,7 +53,6 @@ rs.mock('state/ui-state', () => ({
   },
 }));
 
-// Mock generatePassword for deterministic tests
 rs.mock('utils/password', () => ({
   generatePassword: rs.fn(() => 'mock-password-1234567890'),
 }));
@@ -74,7 +71,6 @@ rs.mock('../../../../state/supported-features', () => {
   };
 });
 
-// Polyfills
 global.ResizeObserver = rs.fn(function ResizeObserver() {
   return {
     observe: rs.fn(),
@@ -85,8 +81,6 @@ global.ResizeObserver = rs.fn(function ResizeObserver() {
 Element.prototype.scrollIntoView = rs.fn();
 
 // ── Component import (after mocks) ──────────────────────────────────────────
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildTransport(overrides?: {
   listUsersMock?: ReturnType<typeof rs.fn>;
@@ -163,7 +157,6 @@ async function selectRole(user: ReturnType<typeof userEvent.setup>, roleName: st
   await user.click(screen.getByText(roleName));
 }
 
-/** Renders the page, types the username, optionally picks a role, and submits. */
 async function fillFormAndSubmit(transport: Transport, { username, role }: { username: string; role?: string }) {
   const user = userEvent.setup();
   renderWithFileRoutes(<UserCreatePage />, { transport });
@@ -173,8 +166,6 @@ async function fillFormAndSubmit(transport: Transport, { username, role }: { use
   }
   await user.click(screen.getByTestId('create-user-submit'));
 }
-
-// ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('the UserCreatePage', () => {
   beforeEach(() => {
@@ -208,7 +199,6 @@ describe('the UserCreatePage', () => {
     expect(call.user?.password).toBeDefined();
     expect(call.user?.mechanism).toBe(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256);
 
-    // No roles selected, so updateRoleMembership should not be called
     expect(updateRoleMembershipMock).not.toHaveBeenCalled();
   });
 
@@ -230,7 +220,6 @@ describe('the UserCreatePage', () => {
 
     await fillFormAndSubmit(transport, { username: 'fail-user' });
 
-    // Should stay on the form (not navigate to confirmation)
     await waitFor(() => {
       expect(screen.getByTestId('create-user-name')).toBeInTheDocument();
     });
@@ -243,7 +232,6 @@ describe('the UserCreatePage', () => {
       listRolesMock: listRolesReturning('admin', 'viewer'),
     });
 
-    // Waits for the roles to load, then opens the roles selector and picks one
     await fillFormAndSubmit(transport, { username: 'role-user', role: 'admin' });
 
     await waitFor(() => {
@@ -272,12 +260,10 @@ describe('the UserCreatePage', () => {
 
     await fillFormAndSubmit(transport, { username: 'partial-user', role: 'admin' });
 
-    // User creation succeeds
     await waitFor(() => {
       expect(createUserMock).toHaveBeenCalledTimes(1);
     });
 
-    // Role assignment was attempted
     await waitFor(() => {
       expect(updateRoleMembershipMock).toHaveBeenCalledTimes(1);
     });
@@ -297,7 +283,6 @@ describe('the UserCreatePage', () => {
     // Value-only assertion — bypass char-by-char user.type to save ~500ms.
     fireEvent.input(usernameInput, { target: { value: 'valid-user' } });
 
-    // Replace the password field value with a too-short password (< 4 chars)
     const passwordInput = screen.getByTestId('create-user-password');
     fireEvent.input(passwordInput, { target: { value: 'ab' } });
 

@@ -77,7 +77,6 @@ pipeline:
 output:
   drop: {}`;
 
-// Valid pipeline with no output — the canvas renders an output placeholder card.
 const NO_OUTPUT_YAML = `input:
   generate:
     mapping: 'root = {}'`;
@@ -86,20 +85,16 @@ const YAML_TAB_HINT_RE = /fix the YAML in the YAML tab/iu;
 const NO_OUTPUT_NOTE_RE = /no output configured/iu;
 const STALE_LAYOUT_RE = /showing the last valid layout/iu;
 
-// An input card's stop row: its visible text, then what it does.
 const STOP_BUTTON_RE = /stop condition for generate$/u;
 
-// The minimap svg's accessible name.
 const OVERVIEW_LABEL_RE = /pipeline overview/iu;
 
-// A complete valid pipeline used as the last-good baseline for the resilient-parse test.
 const VALID_PIPELINE_YAML = `input:
   generate:
     mapping: 'root = {}'
 output:
   drop: {}`;
 
-// A pipeline whose single switch fans out to `caseCount` cases.
 function tallSwitchYaml(caseCount: number) {
   const cases = Array.from(
     { length: caseCount },
@@ -208,7 +203,6 @@ describe('the PipelineFlowCanvas — invalid YAML from the start', () => {
 describe('the PipelineFlowCanvas — resilient parse', () => {
   it('holds the last valid layout (flagged stale) when an edit leaves valid YAML that no longer describes a pipeline', async () => {
     const { rerender } = render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
-    // Baseline: a real pipeline renders (input generate → drop output), not the empty placeholders.
     expect(await screen.findByText('generate')).toBeInTheDocument();
     expect(screen.queryByText(NO_OUTPUT_NOTE_RE)).not.toBeInTheDocument();
 
@@ -234,21 +228,16 @@ describe('the PipelineFlowCanvas — control-flow render', () => {
   it('renders the Dagre split → merge DAG without crashing', async () => {
     render(<PipelineFlowCanvas configYaml={CONTROL_FLOW_YAML} />);
 
-    // A processor inside the branch body renders as a node.
     expect(await screen.findByText('http')).toBeInTheDocument();
 
-    // Control-flow processors render as compact split markers (not growing containers).
     expect(screen.getAllByText('switch').length).toBeGreaterThan(0);
     expect(screen.getAllByText('branch').length).toBeGreaterThan(0);
     // The construct name can also appear as a faint scope-region label, so allow more than one match.
     expect(screen.getAllByText('catch').length).toBeGreaterThan(0);
 
-    // Each marker carries a descriptor of what it encloses: the switch counts its 3 cases; catch
-    // labels its error role.
     expect(screen.getByText('3 cases')).toBeInTheDocument();
     expect(screen.getByText('on error')).toBeInTheDocument();
 
-    // Branches reconverge at explicit join nodes (branch + switch + try/catch).
     expect(screen.getAllByRole('img', { name: JOIN_NAME_RE }).length).toBeGreaterThan(0);
     // Edge labels (the case conditions) render via EdgeLabelRenderer, which Happy DOM doesn't lay out;
     // asserted in the parser unit test instead.
@@ -266,11 +255,9 @@ describe('the PipelineFlowCanvas — control-flow render', () => {
     const heights = pieces.map((el) => Number.parseFloat(el.style.height));
 
     expect(pieces.length).toBeGreaterThan(0);
-    // No piece exceeds the cap — this is what keeps the fill paintable.
     for (const h of heights) {
       expect(h).toBeLessThanOrEqual(MAX_REGION_PIECE_PX);
     }
-    // Split into several stacked pieces — proof the capping engaged (a single giant div would be one).
     expect(pieces.length).toBeGreaterThan(3);
   });
 });
@@ -294,7 +281,6 @@ function SetFlowState({
 
 type AttrBox = { x: number; y: number; w: number; h: number };
 
-// An svg element's numeric geometry attributes (absent ones read as 0).
 function attrBox(el: Element) {
   return {
     x: Number(el.getAttribute('x')),
@@ -404,7 +390,6 @@ output:
     expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
   });
 
-  // The zoom tool paints its cursor on React Flow's pane while Z is held.
   const paneCursor = () => document.querySelector<HTMLElement>('.react-flow__pane')?.style.cursor;
 
   it('leaves Z to the stop editor', async () => {

@@ -43,8 +43,6 @@ import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 import { AddUserStep } from './add-user-step';
 import type { UserStepRef } from '../types/wizard';
 
-// ── Mocks ──────────────────────────────────────────────────────────────────────
-
 rs.mock('config', () => ({
   config: {
     jwt: 'test-jwt-token',
@@ -63,7 +61,6 @@ rs.mock('state/ui-state', () => ({
   },
 }));
 
-// Mock generatePassword to return deterministic value
 rs.mock('utils/password', () => ({
   generatePassword: rs.fn(() => 'mock-generated-password-12345'),
 }));
@@ -84,7 +81,6 @@ rs.mock('components/ui/service-account/service-account-selector', () => ({
   ServiceAccountSelector: MockServiceAccountSelector,
 }));
 
-// Mock TanStack Router Link
 function MockLink(props: { children: unknown }) {
   const React = require('react');
   return React.createElement(
@@ -104,7 +100,6 @@ rs.mock('@tanstack/react-router', () => {
   };
 });
 
-// Polyfills
 global.ResizeObserver = rs.fn(function ResizeObserver() {
   return {
     observe: rs.fn(),
@@ -115,8 +110,6 @@ global.ResizeObserver = rs.fn(function ResizeObserver() {
 Element.prototype.scrollIntoView = rs.fn();
 
 // ── Component import (after mocks) ────────────────────────────────────────────
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function TestHarness({ onResult, ...props }: { onResult: (result: unknown) => void; [key: string]: unknown }) {
   const ref = useRef<UserStepRef>(null);
@@ -137,7 +130,6 @@ function TestHarness({ onResult, ...props }: { onResult: (result: unknown) => vo
   );
 }
 
-/** Build transport with common RPC mocks */
 function buildTransport(overrides?: {
   listUsersMock?: ReturnType<typeof rs.fn>;
   createUserMock?: ReturnType<typeof rs.fn>;
@@ -186,7 +178,6 @@ function buildTransport(overrides?: {
   };
 }
 
-/** Renders the harness and records what `triggerSubmit` resolves to. */
 function renderCapturingResult(props: Record<string, unknown>, transport: Transport) {
   const captured: { result?: unknown } = {};
   renderWithFileRoutes(
@@ -201,7 +192,6 @@ function renderCapturingResult(props: Record<string, unknown>, transport: Transp
   return captured;
 }
 
-/** listUsers returning exactly these users. */
 function listUsersReturning(...names: string[]) {
   return rs.fn().mockReturnValue(
     create(ListUsersResponseSchema, {
@@ -211,7 +201,6 @@ function listUsersReturning(...names: string[]) {
   );
 }
 
-/** listACLs returning one topic resource whose ACLs allow `principal` each of `operations`. */
 function topicAclsAllowing({
   principal,
   operations,
@@ -244,7 +233,6 @@ function topicAclsAllowing({
   );
 }
 
-/** Types `username` into the new-user field and submits the step. */
 async function submitWithUsername(user: ReturnType<typeof userEvent.setup>, username: string) {
   const usernameInput = await screen.findByPlaceholderText('Enter a username');
   await user.type(usernameInput, username);
@@ -264,8 +252,6 @@ function RefCaptureHarness({ onCapture }: { onCapture: (ref: UserStepRef | null)
   );
 }
 
-// ── Tests ──────────────────────────────────────────────────────────────────────
-
 const ALREADY_EXISTS = /already exists/u;
 const HAS_TOPIC_ACCESS = /has required permissions/iu;
 
@@ -284,8 +270,6 @@ describe('the AddUserStep', () => {
   beforeEach(() => {
     rs.clearAllMocks();
   });
-
-  // ── SASL path ──────────────────────────────────────────────────────────────
 
   describe('the SASL path', () => {
     test('1. new SASL user calls createUser RPC', async () => {
@@ -363,7 +347,6 @@ describe('the AddUserStep', () => {
         { transport }
       );
 
-      // Wait for component to render
       await screen.findByPlaceholderText('Enter a username');
 
       // Do not type anything — submit with empty username
@@ -386,12 +369,10 @@ describe('the AddUserStep', () => {
       // The component detects the existing user and skips createUser.
       const captured = renderCapturingResult({ selectionMode: 'new' }, transport);
 
-      // Wait for the user list to load
       await waitFor(() => {
         expect(listUsersMock).toHaveBeenCalled();
       });
 
-      // Type an existing username into the input
       await submitWithUsername(user, 'existing-user');
 
       await waitFor(() => {
@@ -437,7 +418,6 @@ describe('the AddUserStep', () => {
         expect(captured.result).toBeDefined();
         const result = captured.result as { success: boolean; data?: { consumerGroup: string } };
         expect(result.success).toBe(true);
-        // The consumer group is passed through the mutation, verify createUser was called
         expect(result.data?.consumerGroup).toBe('my-consumer-group');
       });
     });
@@ -471,8 +451,6 @@ describe('the AddUserStep', () => {
     });
   });
 
-  // ── Service Account path ───────────────────────────────────────────────────
-
   describe('service Account path', () => {
     test('7. SA tab switches auth mode', async () => {
       const user = userEvent.setup();
@@ -480,14 +458,11 @@ describe('the AddUserStep', () => {
 
       renderWithFileRoutes(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
 
-      // Wait for component to render
       await screen.findByText('SASL user');
 
-      // Click the Service Account tab
       const saTab = screen.getByText('Service account');
       await user.click(saTab);
 
-      // Service Account form should be visible
       await waitFor(() => {
         expect(screen.getByTestId('service-account-selector')).toBeInTheDocument();
       });
@@ -501,13 +476,11 @@ describe('the AddUserStep', () => {
         transport,
       });
 
-      // Switch to Service Account tab
       const saTab = await screen.findByText('Service account');
       await user.click(saTab);
 
       await waitFor(() => {
         const nameInput = screen.getByLabelText('Service account name') as HTMLInputElement;
-        // The generateServiceAccountName with pipelineName='my-pipe' should contain 'my-pipe'
         expect(nameInput.value).toContain('my-pipe');
       });
     });
@@ -528,7 +501,6 @@ describe('the AddUserStep', () => {
         { transport }
       );
 
-      // Switch to Service Account tab
       const saTab = await screen.findByText('Service account');
       await user.click(saTab);
 
@@ -643,8 +615,6 @@ describe('the AddUserStep', () => {
     });
   });
 
-  // ── Permissions ────────────────────────────────────────────────────────────
-
   describe('permissions', () => {
     const userWithoutAccess = () =>
       rs
@@ -713,7 +683,6 @@ describe('the AddUserStep', () => {
 
     test('11. has permissions alert when user has ACLs', async () => {
       const user = userEvent.setup();
-      // Return ACLs with READ and WRITE permissions
       const { transport, createACLMock, listUsersMock } = buildTransport({
         listUsersMock: listUsersReturning('perms-user'),
         listACLsMock: topicAclsAllowing({
@@ -722,18 +691,15 @@ describe('the AddUserStep', () => {
         }),
       });
 
-      // Use defaultUsername to pre-fill the existing user selection
       const captured = renderCapturingResult(
         { defaultUsername: 'perms-user', selectionMode: 'existing', topicName: 'my-topic' },
         transport
       );
 
-      // Wait for user list to load
       await waitFor(() => {
         expect(listUsersMock).toHaveBeenCalled();
       });
 
-      // Should show success alert about having permissions
       await waitFor(
         () => {
           expect(screen.getByText(HAS_TOPIC_ACCESS)).toBeInTheDocument();
@@ -802,8 +768,6 @@ describe('the AddUserStep', () => {
     );
   });
 
-  // ── Edge cases ─────────────────────────────────────────────────────────────
-
   describe('edge cases', () => {
     test('12. isPending accessible via ref', async () => {
       const user = userEvent.setup();
@@ -819,7 +783,6 @@ describe('the AddUserStep', () => {
         { transport }
       );
 
-      // Wait for render
       await screen.findByPlaceholderText('Enter a username');
 
       await user.click(screen.getByTestId('capture-ref'));

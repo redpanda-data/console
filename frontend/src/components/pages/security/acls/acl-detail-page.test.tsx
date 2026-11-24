@@ -53,7 +53,6 @@ const singleHostAclDetail = (principal: string) => ({
   rules: [],
 });
 
-/** Return value that shows the detail view (single host, no HostSelector). */
 const aclDetailResult = (principal: string) => ({
   data: [singleHostAclDetail(principal)],
   isLoading: false,

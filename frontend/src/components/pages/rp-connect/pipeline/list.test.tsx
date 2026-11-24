@@ -99,7 +99,6 @@ const FIXTURES: Fixture[] = [
     state: Pipeline_State.RUNNING,
     inputs: ['generate'],
     outputs: ['s3'],
-    // Agents are filtered out of the pipeline list entirely.
     tags: { __redpanda_cloud_pipeline_type: 'agent' },
   },
 ];
@@ -107,7 +106,6 @@ const FIXTURES: Fixture[] = [
 // Draft edit times are relative to this instant, which the drafts tests pin as the system time.
 const NOW = Date.UTC(2026, 0, 15, 12);
 
-// A draft carries an edit time; neither the id nor the author is shown on its row.
 const DRAFT_FIXTURE: Fixture = {
   id: 'draft777',
   displayName: 'half-built-pipeline',
@@ -194,12 +192,10 @@ describe('the PipelineListPage', () => {
         expect(screen.getByText('nightly-export')).toBeInTheDocument();
       });
 
-      // Default sort puts problems first: error, then running, then stopped.
       expect(visibleLinkNames()).toEqual(['clickstream-sink', 'orders-enrichment', 'nightly-export']);
       expect(screen.queryByText('agent-helper')).not.toBeInTheDocument();
     });
 
-    // The page header's refresh button routes through `appGlobal.onRefresh`.
     it('refetches the list from the header refresh button', async () => {
       const requests: ListRequest[] = [];
       renderWithFileRoutes(<PipelineListPage />, {
@@ -234,7 +230,6 @@ describe('the PipelineListPage', () => {
       });
       const row = rowFor('orders-enrichment');
 
-      // Two `redpanda` inputs render as one badge carrying ×2.
       expect(within(row).getByText('×2')).toBeInTheDocument();
       expect(within(row).getAllByText('redpanda')).toHaveLength(1);
     });
@@ -299,7 +294,6 @@ describe('the PipelineListPage', () => {
         expect(screen.getByText('nightly-export')).toBeInTheDocument();
       });
 
-      // One panel, filtered per tab, so every tab points at the same region.
       const panel = screen.getByRole('tabpanel');
       expect(panel).toContainElement(rowFor('nightly-export'));
       for (const name of ['All', 'Running', 'Stopped', 'Error']) {
@@ -307,7 +301,6 @@ describe('the PipelineListPage', () => {
       }
       expect(panel).toHaveAttribute('aria-labelledby', tab('All').id);
 
-      // The label follows the selection.
       await user.click(tab('Error'));
       await waitFor(() => {
         expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', tab('Error').id);
@@ -324,7 +317,6 @@ describe('the PipelineListPage', () => {
         expect(screen.getByText('nightly-export')).toBeInTheDocument();
       });
 
-      // Matches an id, not a display name — the search covers both.
       await user.type(screen.getByRole('textbox', { name: SEARCH_INPUT_RE }), 'bbb2');
 
       await waitFor(() => {
@@ -523,9 +515,7 @@ describe('the PipelineListPage', () => {
 
         const row = rowFor('half-built-pipeline');
         expect(within(row).getByText('Draft')).toBeInTheDocument();
-        // Its connectors are parsed from its YAML like any other row.
         expect(within(row).getByText('generate')).toBeInTheDocument();
-        // Drafts sort behind running pipelines but ahead of stopped ones; the error row still leads.
         expect(visibleLinkNames()).toEqual([
           'clickstream-sink',
           'orders-enrichment',
@@ -546,7 +536,6 @@ describe('the PipelineListPage', () => {
         expect(within(row).queryByText('draft777')).not.toBeInTheDocument();
       });
 
-      // The one edited last is the one being worked on.
       it('puts the most recently edited draft first', async () => {
         renderWithFileRoutes(<PipelineListPage />, {
           transport: buildTransport({
@@ -574,7 +563,6 @@ describe('the PipelineListPage', () => {
         const user = userEvent.setup();
         renderList({ withDraft: true });
 
-        // Both pages drained (3 pipelines, the agent filtered out) plus the draft.
         await waitFor(() => expect(tab('All')).toHaveTextContent('All4'));
         expect(tab('Drafts')).toHaveTextContent('Drafts1');
         // A draft is never counted as a run state.
@@ -606,7 +594,6 @@ describe('the PipelineListPage', () => {
 
         await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/iu }));
         await user.click(await screen.findByRole('menuitem', { name: 'Start' }));
-        // The row menu goes through the same confirmation.
         expect(await screen.findByText(/can't go back to being a draft/u)).toBeInTheDocument();
         await user.click(screen.getByTestId('confirm-start-draft'));
 
@@ -625,7 +612,6 @@ describe('the PipelineListPage', () => {
 
         await openDraftRowMenuItem(user, /delete draft/iu);
 
-        // Confirmed, but without the type-to-confirm the deployed-pipeline dialog demands.
         expect(await screen.findByText(/delete draft\?/iu)).toBeInTheDocument();
         expect(deletePipelineMock).not.toHaveBeenCalled();
 
@@ -656,7 +642,6 @@ describe('the PipelineListPage', () => {
         useRpcnEditorAutosaveStore.getState().clearAll();
       });
 
-      // Nothing is running, so there is nothing to stop.
       it('offers no Stop on a draft', async () => {
         const user = userEvent.setup();
         renderList({ withDraft: true });

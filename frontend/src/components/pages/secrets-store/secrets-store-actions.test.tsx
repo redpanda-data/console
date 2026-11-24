@@ -34,7 +34,6 @@ type RenderActionsCellOptions = {
   deleteSecretMock?: ReturnType<typeof rs.fn>;
 };
 
-/** Renders the actions cell against a transport that lists `resources` for the secret. */
 function renderActionsCell({ secret, onDelete, resources, deleteSecretMock }: RenderActionsCellOptions) {
   const listResourcesMock = rs.fn().mockReturnValue(
     create(ListResourcesResponseSchema, {
@@ -59,23 +58,18 @@ function renderActionsCell({ secret, onDelete, resources, deleteSecretMock }: Re
 }
 
 async function openDeleteDialog(user: UserEvent) {
-  // Open the dropdown menu
   const menuButton = screen.getByTestId('secret-actions-menu-trigger');
   await user.click(menuButton);
 
-  // Click the delete option to open the dialog
   const deleteMenuItem = await screen.findByText(DELETE_TEXT_REGEX);
   await user.click(deleteMenuItem);
 }
 
 async function confirmDelete(user: UserEvent) {
-  // Wait for the confirmation dialog
   const confirmationInput = await screen.findByPlaceholderText(CONFIRMATION_PLACEHOLDER_REGEX);
 
-  // Type the confirmation text
   await user.type(confirmationInput, 'delete');
 
-  // Click the confirm delete button
   const confirmButton = screen.getByRole('button', { name: DELETE_TEXT_REGEX });
   await user.click(confirmButton);
 }
@@ -93,7 +87,6 @@ describe('the SecretsStoreActionsCell', () => {
 
     const deleteSecretMock = rs.fn().mockResolvedValue({});
 
-    // Simulate the actual delete handler from the list page
     const handleDelete = async (secretId: string) => {
       await deleteSecretMock(
         create(DeleteSecretRequestSchema, {
@@ -107,7 +100,6 @@ describe('the SecretsStoreActionsCell', () => {
     await openDeleteDialog(user);
     await confirmDelete(user);
 
-    // Verify the delete mutation was called
     await waitFor(() => {
       expect(deleteSecretMock).toHaveBeenCalledTimes(1);
       expect(deleteSecretMock).toHaveBeenCalledWith(
@@ -163,24 +155,19 @@ describe('the SecretsStoreActionsCell', () => {
 
     await openDeleteDialog(user);
 
-    // Wait for resources query to be called with correct secret ID
     await waitFor(() => {
       expect(listResourcesMock).toHaveBeenCalledTimes(1);
     });
 
-    // Verify the resource-in-use alert is displayed
     const alert = await screen.findByTestId('resource-in-use-alert');
     expect(alert).toBeInTheDocument();
 
-    // Verify alert title and description
     await waitFor(() => {
       expect(screen.getByText('Resource is in use')).toBeInTheDocument();
     });
 
-    // Verify the resource type label is shown
     expect(screen.getByText('Redpanda Connect Pipelines')).toBeInTheDocument();
 
-    // Verify the specific resource is listed
     expect(screen.getByText('My Pipeline')).toBeInTheDocument();
   });
 });

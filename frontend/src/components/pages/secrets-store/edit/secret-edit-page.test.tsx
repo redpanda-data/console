@@ -80,24 +80,19 @@ function renderEditPage() {
   return { getSecretMock, updateSecretMock };
 }
 
-/** Opens the scopes multi-select, picks both options by label, then closes the dropdown. */
 async function selectScopes(user: UserEvent, firstLabel: string, secondLabel: string) {
-  // Open the scopes multi-select using the testId
   const scopesButton = screen.getByTestId('secret-scopes-select');
   await user.click(scopesButton);
 
-  // Wait for dropdown to open
   await waitFor(() => {
     const firstOptionElements = screen.getAllByText(firstLabel);
     expect(firstOptionElements.length).toBeGreaterThan(0);
     expect(firstOptionElements[0]).toBeVisible();
   });
 
-  // Click on the first matching option in the dropdown for each label
   await user.click(screen.getAllByText(firstLabel)[0]);
   await user.click(screen.getAllByText(secondLabel)[0]);
 
-  // Close the dropdown
   await user.keyboard('{Escape}');
 }
 
@@ -116,7 +111,6 @@ describe('the SecretEditPage', () => {
 
     const { getSecretMock, updateSecretMock } = renderEditPage();
 
-    // Wait for secret to load
     await waitFor(() => {
       expect(getSecretMock).toHaveBeenCalledWith(
         create(GetSecretRequestSchema, {
@@ -128,7 +122,6 @@ describe('the SecretEditPage', () => {
       );
     });
 
-    // Verify the form is populated with existing data
     await waitFor(() => {
       const idInput = screen.getByDisplayValue('TEST_SECRET');
       expect(idInput).toBeDisabled();
@@ -137,10 +130,8 @@ describe('the SecretEditPage', () => {
     // Add MCP Server and Redpanda Connect scopes
     await selectScopes(user, 'MCP Server', 'Redpanda Connect');
 
-    // Submit the form
     await submitWhenEnabled(user);
 
-    // Verify the update mutation was called
     await waitFor(() => {
       expect(updateSecretMock).toHaveBeenCalledTimes(1);
     });

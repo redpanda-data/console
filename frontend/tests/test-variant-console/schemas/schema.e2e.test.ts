@@ -17,7 +17,6 @@ async function selectOption(selectContainer: Locator, optionText: string) {
   await option.click();
 }
 
-/** Opens the topic select and picks its first topic, when the cluster has any. */
 async function selectFirstTopicIfAny(page: Page) {
   const topicSelect = page.getByTestId('schema-create-topic-select');
   const hasTopics = await topicSelect.isVisible({ timeout: 1000 }).catch(() => false);
@@ -30,7 +29,6 @@ async function selectFirstTopicIfAny(page: Page) {
   }
 }
 
-/** Clicks the first option of the open select popup; resolves to whether it had one. */
 async function clickFirstOpenOption(page: Page) {
   const openPopup = page.locator('[data-slot="select-content"][data-state="open"]');
   const hasOptions = await openPopup.isVisible({ timeout: 1000 }).catch(() => false);
@@ -226,10 +224,6 @@ function describeSubjectListSuites() {
 }
 
 function describeSchemaWorkflowSuites() {
-  /**
-   * Comprehensive Schema Creation Tests
-   * Tests the complete schema creation workflow with various strategies and formats
-   */
   test.describe('schema Creation - Strategy and Format', () => {
     test('should create schema with TOPIC_NAME strategy (AVRO)', async ({ page }) => {
       const schemaPage = new SchemaPage(page);
@@ -297,10 +291,6 @@ function describeSchemaWorkflowSuites() {
     });
   });
 
-  /**
-   * Schema Version Management Tests
-   * Tests version switching, deletion, recovery, and permanent deletion
-   */
   test.describe('schema Version Management - Switching and Display', () => {
     test('should display version selector', async ({ page }) => {
       await page.goto('/schema-registry');
@@ -399,10 +389,6 @@ function describeSchemaWorkflowSuites() {
     });
   });
 
-  /**
-   * Schema Compatibility Editing Tests
-   * Tests editing global and subject-specific compatibility modes
-   */
   test.describe('schema Compatibility Editing', () => {
     test('should navigate to global compatibility edit page', async ({ page }) => {
       const schemaPage = new SchemaPage(page);
@@ -454,10 +440,6 @@ function describeSchemaWorkflowSuites() {
     });
   });
 
-  /**
-   * Schema Details and Navigation Tests
-   * Tests navigation, references, and metadata display
-   */
   test.describe('schema Details and References', () => {
     test('should display edit compatibility button on details page', async ({ page }) => {
       await page.goto('/schema-registry');
@@ -524,10 +506,6 @@ function describeSchemaWorkflowSuites() {
     });
   });
 
-  /**
-   * Schema Permissions and Error Handling Tests
-   * Tests permission checks and error states
-   */
   test.describe('schema Permissions', () => {
     test('should show create button on list page', async ({ page }) => {
       const schemaPage = new SchemaPage(page);
@@ -597,16 +575,6 @@ function describeSchemaWorkflowSuites() {
   });
 }
 
-/**
- * Schema Registry E2E Tests
- * Complete test suite for Schema Registry features including:
- * - Filtering and search
- * - Schema creation with multiple strategies
- * - Version management (add, delete, recover)
- * - Compatibility mode editing
- * - Navigation and references
- * - Permissions and error handling
- */
 test.describe('schema Registry E2E Tests', () => {
   describeSubjectListSuites();
   describeSchemaWorkflowSuites();

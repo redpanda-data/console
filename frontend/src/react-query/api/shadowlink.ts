@@ -300,8 +300,6 @@ export const useFailoverShadowLinkMutation = (options?: {
   });
 };
 
-/* ==================== UNIFIED HOOK ==================== */
-
 export type UnifiedShadowLinkResult = {
   data: UnifiedShadowLink | undefined;
   isLoading: boolean;
@@ -375,8 +373,6 @@ export const useGetShadowLinkUnified = (params: { name: string }): UnifiedShadow
     },
   };
 };
-
-/* ==================== EDIT SHADOW LINK HOOK ==================== */
 
 function editFormValues(
   embedded: boolean,

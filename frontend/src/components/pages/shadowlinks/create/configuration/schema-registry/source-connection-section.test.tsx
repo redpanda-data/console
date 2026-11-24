@@ -66,7 +66,6 @@ const TestWrapper = ({
   );
 };
 
-/** Renders the section and records the latest form values on every change. */
 const renderTrackingFormValues = () => {
   const user = userEvent.setup();
   const latest: { values?: FormValues } = {};

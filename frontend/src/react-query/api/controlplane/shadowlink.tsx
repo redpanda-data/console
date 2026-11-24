@@ -40,7 +40,6 @@ const listShadowLinksKeys = () => [
   createConnectQueryKey({ schema: cpListShadowLinks, cardinality: 'infinite' }),
 ];
 
-/* ==================== CONTROLPLANE HOOKS ==================== */
 /* These hooks are used when running in embedded mode (cloud UI) */
 /* They create their own controlplane transport internally */
 

@@ -1220,7 +1220,7 @@ describe('field-type predicates', () => {
         })
       )
     ).toBe(true);
-    expect(isScalarField(field({ type: 'cache', kind: 'scalar' }))).toBe(true); // resource ref
+    expect(isScalarField(field({ type: 'cache', kind: 'scalar' }))).toBe(true);
     expect(isScalarField(field({ type: 'object', kind: 'scalar', children: [field({})] }))).toBe(false);
   });
 

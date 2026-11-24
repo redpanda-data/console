@@ -39,7 +39,6 @@ function wireError(message: string, code: Code, details: Array<{ type: string; d
   return error;
 }
 
-/** Contexts the save control has to cover, named the way the UI talks about them. */
 const creating: SaveContext = { mode: 'create', draftsEnabled: true };
 const creatingWithoutDrafts: SaveContext = { mode: 'create', draftsEnabled: false };
 const draft: SaveContext = { mode: 'edit', state: Pipeline_State.DRAFT, draftsEnabled: true };

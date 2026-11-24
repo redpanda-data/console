@@ -118,7 +118,6 @@ function printSummary(results, rstestArgs) {
 }
 
 function printLogTail(logContent) {
-  // Print last 200 lines to avoid overwhelming output
   const lines = logContent.split('\n');
   const tail = lines.slice(-200).join('\n');
   if (lines.length > 200) {
@@ -157,7 +156,6 @@ function reportResults(results, rstestArgs) {
   printSummary(results, rstestArgs);
   const hasFailures = results.some((result) => result.code !== 0);
 
-  // On failure in CI, dump the log files for failed variants
   if (hasFailures && process.env.CI) {
     printFailedVariantLogs(results);
   }

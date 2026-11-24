@@ -28,7 +28,6 @@ async function createScramUser(page: Page, username: string) {
   await expect(page).toHaveURL(appURL('/security/users'));
 }
 
-/** Grants a single cluster-level ALLOW ALL ACL to `username` via the Permissions List "Create ACL" dialog. */
 async function createAclForUser(page: Page, username: string) {
   await page.goto('/security/permissions', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: 'Create ACL' }).first().click();

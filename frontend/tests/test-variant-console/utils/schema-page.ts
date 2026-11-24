@@ -14,10 +14,8 @@ const RECOVER_CONFIRM_BUTTON = /confirm|recover|yes/iu;
  * @param optionText - The text of the option to select
  */
 async function selectCustomOption(selectContainer: Locator, optionText: string) {
-  // Click on the select to open the dropdown
   await selectContainer.click();
 
-  // Wait for and click the option with matching text
   const option = selectContainer.page().getByText(optionText, { exact: true });
   await option.click();
 }
@@ -39,7 +37,6 @@ type CreateSchemaParams = {
   validate?: boolean;
 };
 
-// Map strategy values to their display labels
 const STRATEGY_LABELS: Record<CreateSchemaParams['strategy'], string> = {
   TOPIC_NAME: 'Topic Name',
   RECORD_NAME: 'Record Name',
@@ -93,7 +90,6 @@ export class SchemaPage {
     await this.selectNamingStrategyAndFormat(params.strategy, params.format);
     await this.fillSubjectSource(params);
 
-    // Fill in schema definition
     await this.page.getByTestId('schema-create-schema-editor').fill(params.schemaDefinition);
 
     // Add references if provided, chained in order: reference row `i` exists only after the previous rows were added
@@ -102,15 +98,12 @@ export class SchemaPage {
       Promise.resolve()
     );
 
-    // Validate if requested
     if (params.validate) {
       await this.validateSchema();
     }
 
-    // Save schema
     await this.page.getByTestId('schema-create-save-btn').click();
 
-    // Wait for navigation to details page
     await expect(this.page).toHaveURL(SUBJECT_DETAILS_URL, { timeout: 10_000 });
   }
 
@@ -118,10 +111,8 @@ export class SchemaPage {
     strategy: CreateSchemaParams['strategy'],
     format: CreateSchemaParams['format']
   ) {
-    // Select strategy using custom select component
     await selectCustomOption(this.page.getByTestId('schema-create-strategy-select'), STRATEGY_LABELS[strategy]);
 
-    // Select format
     await this.page.getByTestId('schema-create-format-radio').getByRole('radio', { name: format }).click();
   }
 
@@ -142,10 +133,8 @@ export class SchemaPage {
   }
 
   private async fillNewReference(i: number, ref: SchemaReferenceParams) {
-    // Click add reference button
     await this.page.getByTestId('schema-create-add-reference-btn').click();
 
-    // Fill in reference details
     await this.page.getByTestId(`schema-create-reference-name-input-${i}`).fill(ref.name);
 
     // Use custom select for subject and version dropdowns
@@ -165,7 +154,6 @@ export class SchemaPage {
     const addRefButton = this.page.getByTestId('schema-create-add-reference-btn');
     await addRefButton.click();
 
-    // Get the index of the newly added reference
     const referenceInputs = await this.page.getByTestId(REFERENCE_NAME_INPUT).all();
     const index = referenceInputs.length - 1;
 
@@ -184,7 +172,6 @@ export class SchemaPage {
     const cancelButton = this.page.getByTestId('schema-create-cancel-btn');
     await cancelButton.click();
 
-    // Should navigate back to list
     await expect(this.page).toHaveURL(appURL('/schema-registry?showSoftDeleted=false'));
   }
 
@@ -193,7 +180,6 @@ export class SchemaPage {
     await expect(recoverButton).toBeVisible();
     await recoverButton.click();
 
-    // Confirm in modal
     const confirmButton = this.page.getByRole('button', { name: RECOVER_CONFIRM_BUTTON });
     if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await confirmButton.click();
@@ -210,11 +196,9 @@ export class SchemaPage {
     await expect(addVersionButton).toBeVisible();
     await addVersionButton.click();
 
-    // Fill in schema definition
     const schemaEditor = this.page.getByTestId('schema-create-schema-editor');
     await schemaEditor.fill(schemaDefinition);
 
-    // Save
     const saveButton = this.page.getByTestId('schema-create-save-btn');
     await saveButton.click();
   }

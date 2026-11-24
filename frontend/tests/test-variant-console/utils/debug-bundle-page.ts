@@ -33,7 +33,6 @@ export class DebugBundlePage {
       await this.returnToFormFromProgress(progressLink);
     }
 
-    // Wait for the form to be visible
     await expect(this.page.getByRole('button', { name: /generate/iu }).first()).toBeVisible();
   }
 
@@ -41,7 +40,6 @@ export class DebugBundlePage {
     await progressLink.click();
     await this.page.waitForURL(/\/debug-bundle\/progress\//u);
 
-    // Wait for either "Done" or "Try Again" button to appear (bundle completed or failed)
     const doneButton = this.page.getByTestId('debug-bundle-done-button');
     const tryAgainButton = this.page.getByTestId('debug-bundle-try-again-button');
     await Promise.race([
@@ -49,7 +47,6 @@ export class DebugBundlePage {
       tryAgainButton.waitFor({ state: 'visible', timeout: 90_000 }),
     ]);
 
-    // Click whichever button is available to get back to form
     if (await doneButton.isVisible().catch(() => false)) {
       await doneButton.click();
     } else if (await tryAgainButton.isVisible().catch(() => false)) {
@@ -85,7 +82,6 @@ export class DebugBundlePage {
     await expect(advancedButton).toBeVisible();
     await advancedButton.click();
 
-    // Verify advanced options are visible
     await expect(
       this.page.getByText(
         /This is an advanced feature, best used if you have received direction to do so from Redpanda support./iu
@@ -190,10 +186,9 @@ export class DebugBundlePage {
     await generateButton.click();
 
     if (!(await this.answerOverwriteConfirmation(options?.confirmOverwrite))) {
-      return; // Exit early since we cancelled
+      return;
     }
 
-    // Wait for navigation to progress page
     await this.waitForProgressPage();
   }
 
@@ -297,7 +292,6 @@ export class DebugBundlePage {
       await expect(deleteButton).toBeVisible();
       await deleteButton.click();
 
-      // Confirm deletion if modal appears
       const confirmButton = this.page.getByRole('button', { name: /confirm|yes|delete/iu });
       if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
         await confirmButton.click();
@@ -331,11 +325,9 @@ export class DebugBundlePage {
   async verifyBrokerStatus() {
     await this.page.waitForURL(/\/debug-bundle\/progress\//u);
 
-    // Verify the overview component is visible
     const overview = this.page.getByTestId('debug-bundle-overview');
     await expect(overview).toBeVisible({ timeout: 5000 });
 
-    // Verify at least one broker status is visible
     const brokerStatus = this.page.locator('[data-testid^="debug-bundle-broker-status-"]').first();
     await expect(brokerStatus).toBeVisible({ timeout: 5000 });
   }

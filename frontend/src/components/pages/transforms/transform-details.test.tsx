@@ -98,7 +98,6 @@ test('sorts transform partitions by lag in both directions', async () => {
 const transformNamed = (name: string) =>
   create(TransformMetadataSchema, { name, inputTopicName: 'input', outputTopicNames: ['output'] });
 
-/** Opens the Logs tab of `example`, with `other` also deployed. */
 async function openExampleLogs(user: ReturnType<typeof userEvent.setup>) {
   const transforms = [transformNamed('example'), transformNamed('other')];
   useTransformsStore.setState({

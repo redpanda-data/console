@@ -78,7 +78,7 @@ describe('trimSlidingWindow', () => {
       virtualStartIndex: 0,
     });
     expect(result.trimCount).toBe(0);
-    expect(result.messages).toBe(messages); // same reference
+    expect(result.messages).toBe(messages);
   });
 
   test('returns unchanged when maxResults < pageSize', () => {

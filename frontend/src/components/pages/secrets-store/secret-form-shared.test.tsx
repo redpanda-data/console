@@ -64,7 +64,6 @@ type ScopeOption = (typeof SCOPE_OPTIONS)[number];
 
 const [FIRST_SCOPE, SECOND_SCOPE] = SCOPE_OPTIONS;
 
-/** The trigger shows the human-readable label, and not the raw enum value as standalone text. */
 function expectLabelWithoutRawValue(trigger: HTMLElement, option: ScopeOption) {
   expect(trigger).toHaveTextContent(option.label);
   const triggerText = trigger.textContent ?? '';
@@ -100,7 +99,6 @@ describe('the SCOPE_OPTIONS labels', () => {
   it('all labels are plain strings, not JSX or raw enum numbers', () => {
     for (const option of SCOPE_OPTIONS) {
       expect(typeof option.label).toBe('string');
-      // The label should not be a stringified number (raw enum value)
       expect(Number.isNaN(Number(option.label))).toBe(true);
     }
   });
@@ -138,13 +136,10 @@ describe('scope MultiSelect trigger', () => {
 
     const trigger = screen.getByTestId('scope-trigger');
 
-    // Open the dropdown by clicking the trigger
     await user.click(trigger);
 
-    // Click the first option ("AI Gateway")
     await user.click(await screen.findByText(FIRST_SCOPE.label));
 
-    // The trigger should now show the human-readable label text, not the raw enum value
     expectLabelWithoutRawValue(trigger, FIRST_SCOPE);
   });
 
@@ -155,16 +150,13 @@ describe('scope MultiSelect trigger', () => {
 
     const trigger = screen.getByTestId('scope-trigger');
 
-    // Open dropdown and select two options
     await user.click(trigger);
 
     await user.click(await screen.findByText(FIRST_SCOPE.label));
     await user.click(await screen.findByText(SECOND_SCOPE.label));
 
-    // Close the dropdown
     await user.keyboard('{Escape}');
 
-    // Both labels should appear in the trigger, and raw numeric enum values should not appear as standalone text
     expectLabelWithoutRawValue(trigger, FIRST_SCOPE);
     expectLabelWithoutRawValue(trigger, SECOND_SCOPE);
   });

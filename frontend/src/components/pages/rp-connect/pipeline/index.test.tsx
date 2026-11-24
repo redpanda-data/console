@@ -649,7 +649,6 @@ async function renameWhileSaveInFlight(state: Pipeline_State) {
   return { sent, title };
 }
 
-/** The create page, with the draft-support sample held unanswered until `answerSample` is called. */
 function renderCreatePageAwaitingDraftSample() {
   let answer: (() => void) | undefined;
   const listPipelinesHandler = () =>
@@ -661,7 +660,6 @@ function renderCreatePageAwaitingDraftSample() {
   return { user, answerSample: () => answer?.() };
 }
 
-/** Untitled-name lookups, each one recorded; the draft-support sample still answers. */
 function recordedNameLookups() {
   const requests: RequestFor<typeof listPipelines>[] = [];
   const listPipelinesHandler = routeNameLookups((req) => {
@@ -987,8 +985,6 @@ describe('the PipelinePage', () => {
     });
 
     it('shows the structure-tree side-lane even when the visual editor flag is off', async () => {
-      // Diagrams on, visual-editor lane off → the sidebar still uses the structure outline, and the
-      // full Visual canvas stays hidden.
       mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
       enableFeatures('enablePipelineDiagrams');
       config.jwt = 'embedded-test-session';
@@ -1042,7 +1038,6 @@ describe('the PipelinePage', () => {
 
       render(<PipelinePage />, { transport: createTransport() });
 
-      // The running pipeline's run control is named for what it does, not for where the pipeline is.
       await user.click(await screen.findByTestId('pipeline-stop'));
 
       expect(pipelineRequests.stopPipeline).toHaveLength(0);
@@ -1964,7 +1959,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(pipelineRequests.updatePipeline[0]?.request?.pipeline?.draft).toBe(true);
       });
 
-      // The update counterpart of the create check: a pre-drafts hop drops `draft` and stores the edits deployed.
       it('reports a draft update that came back deployed, and hands over to the pipeline page', async () => {
         const updatePipelineHandler = () =>
           create(ConsoleUpdatePipelineResponseSchema, {
@@ -1987,8 +1981,6 @@ describe('pipelinePage saving and recovering work', () => {
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
       });
 
-      // The acceptance criterion, in the client: come back to a parked draft and find exactly what was
-      // typed — not a normalised, re-serialised or repaired version of it.
       it('round-trips a partial config through the editor unchanged', async () => {
         const partialConfig = 'input:\n  kafka_\n# where was I\noutput:';
         const { user } = renderPipelinePage('edit', {

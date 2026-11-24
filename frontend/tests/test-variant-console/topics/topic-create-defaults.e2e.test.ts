@@ -1,8 +1,5 @@
 import { expect, step, test } from '../../shared/e2e';
 
-/**
- * Mock cluster API response for testing default values
- */
 const mockClusterResponse = {
   clusterInfo: {
     controllerId: 0,

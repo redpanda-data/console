@@ -38,7 +38,6 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
   );
 };
 
-/** Renders the step in "specify" mode with the given filters, expanded so the editable filters show. */
 const renderExpandedRolesStep = async (roles: FormValues['roles']) => {
   const user = userEvent.setup();
   render(<TestWrapper defaultValues={{ ...initialValues, rolesMode: 'specify', roles }} />);

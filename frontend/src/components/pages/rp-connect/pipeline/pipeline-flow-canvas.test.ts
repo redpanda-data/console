@@ -171,7 +171,7 @@ describe('selectionTargetForNode', () => {
     id: 'proc-0-case-1',
     parentId: 'proc-0',
     position: { x: 0, y: 0 },
-    data: { label: 'case 1', isCase: true }, // no editTarget
+    data: { label: 'case 1', isCase: true },
   };
 
   it('selects an editable node directly', () => {

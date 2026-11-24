@@ -102,7 +102,6 @@ function TestHarness({ onResult, ...props }: HarnessProps) {
   );
 }
 
-/** Opens the combobox, filters it to `optionName`, and clicks the matching option. */
 async function selectComboboxOption(user: ReturnType<typeof userEvent.setup>, placeholder: string, optionName: string) {
   const comboboxInput = await screen.findByPlaceholderText(placeholder);
   await user.click(comboboxInput);
