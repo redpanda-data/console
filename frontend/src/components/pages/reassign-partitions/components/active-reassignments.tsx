@@ -314,10 +314,8 @@ export function ProgressCol({ state }: { state: ReassignmentState }) {
   let progressBar: JSX.Element;
 
   if (state.progressPercent === null) {
-    // Starting
     progressBar = <ProgressBar left="Starting..." percent={0} right={prettyBytesOrNA(state.totalTransferSize)} />;
   } else if (state.progressPercent < 100) {
-    // Progressing
     progressBar = (
       <ProgressBar
         left={<span>{`${state.progressPercent.toFixed(1)}%`}</span>}
@@ -335,7 +333,6 @@ export function ProgressCol({ state }: { state: ReassignmentState }) {
       />
     );
   } else {
-    // Completed
     progressBar = <ProgressBar left="Complete" percent={100} right={prettyBytesOrNA(state.totalTransferSize)} />;
   }
 

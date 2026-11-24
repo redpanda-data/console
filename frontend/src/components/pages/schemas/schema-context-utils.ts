@@ -20,8 +20,10 @@ export type ParsedSubject = {
   qualifiedName: string;
 };
 
-// Extract context and display name from a subject.
-// E.g. ":.staging:my-topic" → { context: "staging", … }
+/**
+ * Extract context and display name from a subject.
+ * E.g. ":.staging:my-topic" → { context: "staging", … }
+ */
 export function parseSubjectContext(name: string): ParsedSubject {
   const match = CONTEXT_PREFIX_RE.exec(name);
   if (match) {
@@ -38,15 +40,19 @@ export function parseSubjectContext(name: string): ParsedSubject {
   };
 }
 
-// Schema Registry context of a subject as the backend expects it:
-// ":.staging:my-topic" → ".staging", "my-topic" → "." (the default context).
+/**
+ * Schema Registry context of a subject as the backend expects it:
+ * ":.staging:my-topic" → ".staging", "my-topic" → "." (the default context).
+ */
 export function subjectSchemaContext(name: string): string {
   const match = CONTEXT_PREFIX_RE.exec(name);
   return match ? `.${match[1]}` : '.';
 }
 
-// Schema Registry context a topic is bound to via redpanda.schema.registry.context,
-// "." (default) if none.
+/**
+ * Schema Registry context a topic is bound to via redpanda.schema.registry.context,
+ * "." (default) if none.
+ */
 export function topicSchemaContext(configEntries?: ReadonlyArray<{ name: string; value?: string | null }>): string {
   const raw = configEntries?.find((e) => e.name === 'redpanda.schema.registry.context')?.value?.trim() ?? '';
   const name = raw.replace(/^:|:$/gu, '');
@@ -56,7 +62,7 @@ export function topicSchemaContext(configEntries?: ReadonlyArray<{ name: string;
   return name.startsWith('.') ? name : `.${name}`;
 }
 
-// Schema IDs are context-local: prefer the subject that lives in the given context.
+/** Schema IDs are context-local: prefer the subject that lives in the given context. */
 export function pickSubjectForContext(subjects: SchemaVersion[], schemaContext: string): SchemaVersion | undefined {
   return subjects.find((s) => subjectSchemaContext(s.subject) === schemaContext) ?? subjects[0];
 }
@@ -85,8 +91,10 @@ function countSubjectsByContext(activeSubjects: SchemaRegistrySubject[]): Map<st
   return countByContext;
 }
 
-// Merge backend context list with subject counts for
-// the dropdown. Order: Default, named (sorted), All.
+/**
+ * Merge backend context list with subject counts for
+ * the dropdown. Order: Default, named (sorted), All.
+ */
 export function deriveContexts(
   apiContexts: SchemaRegistryContextResponse[],
   subjects: SchemaRegistrySubject[]
@@ -124,15 +132,19 @@ export function deriveContexts(
   ];
 }
 
-// True for actual SR contexts (not the synthetic
-// "All" or "Default" entries).
+/**
+ * True for actual SR contexts (not the synthetic
+ * "All" or "Default" entries).
+ */
 export function isNamedContext(contextId: string): boolean {
   return contextId != '' && contextId !== ALL_CONTEXT_ID && contextId !== DEFAULT_CONTEXT_ID;
 }
 
-// Convert a raw context name (e.g. from a URL param or parseSubjectContext)
-// into the internal context ID used by the editor state.
-// ".staging" → ".staging", "default" → DEFAULT_CONTEXT_ID, "prod" → ".prod"
+/**
+ * Convert a raw context name (e.g. from a URL param or parseSubjectContext)
+ * into the internal context ID used by the editor state.
+ * ".staging" → ".staging", "default" → DEFAULT_CONTEXT_ID, "prod" → ".prod"
+ */
 export function contextNameToId(name: string): string {
   if (name === 'default') {
     return DEFAULT_CONTEXT_ID;
@@ -143,9 +155,11 @@ export function contextNameToId(name: string): string {
   return `.${name}`;
 }
 
-// Build a qualified subject name from context + subject.
-// Named contexts (e.g. ".staging") → ":.staging:subject"
-// Default context → plain "subject"
+/**
+ * Build a qualified subject name from context + subject.
+ * Named contexts (e.g. ".staging") → ":.staging:subject"
+ * Default context → plain "subject"
+ */
 export function buildQualifiedSubjectName(contextId: string, subjectName: string): string {
   if (!subjectName) {
     return '';
@@ -156,8 +170,10 @@ export function buildQualifiedSubjectName(contextId: string, subjectName: string
   return subjectName;
 }
 
-// Map between internal context IDs and display labels.
-// DEFAULT_CONTEXT_ID ('__default__') ↔ 'Default'; all others pass through.
+/**
+ * Map between internal context IDs and display labels.
+ * DEFAULT_CONTEXT_ID ('__default__') ↔ 'Default'; all others pass through.
+ */
 export function contextIdToLabel(contextId: string): string {
   return contextId === DEFAULT_CONTEXT_ID ? DEFAULT_CONTEXT_LABEL : contextId;
 }
@@ -166,10 +182,12 @@ export function contextLabelToId(label: string): string {
   return label === DEFAULT_CONTEXT_LABEL ? DEFAULT_CONTEXT_ID : label;
 }
 
-// Build qualified references for API calls (create/validate).
-// When the parent subject is in a named context and a reference targets the
-// default context, explicitly qualify it as `:.:subject` so the SR doesn't
-// auto-prefix with the parent's context.
+/**
+ * Build qualified references for API calls (create/validate).
+ * When the parent subject is in a named context and a reference targets the
+ * default context, explicitly qualify it as `:.:subject` so the SR doesn't
+ * auto-prefix with the parent's context.
+ */
 export function buildQualifiedReferences(
   refs: { name: string; subject: string; version: number; context: string }[],
   parentContext: string
@@ -186,7 +204,6 @@ export function buildQualifiedReferences(
     }));
 }
 
-// Simple English pluralization: 1 subject / 3 subjects.
 export function pluralize(count: number, singular: string) {
   return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }

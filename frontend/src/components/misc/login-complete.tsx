@@ -39,11 +39,9 @@ async function fetchLoginCallback(provider: string, query: string) {
   });
   const text = await response.text();
   const obj = JSON.parse(text);
-  // console.log('complete login response: ' + text);
   if (response.ok) {
     api.userData = obj as UserData;
   } else {
-    // try to read as error object
     const err = obj as ApiError;
     throw err.message;
   }

@@ -1,8 +1,10 @@
 import { createElement } from 'react';
 
-// Browser-mode tests exercise the real Monaco integration. Node unit and
-// happy-dom integration tests use this lightweight surface so importing the
-// route tree does not initialize Monaco's unresolved process-wide loader.
+/**
+ * Browser-mode tests exercise the real Monaco integration. Node unit and
+ * happy-dom integration tests use this lightweight surface so importing the
+ * route tree does not initialize Monaco's unresolved process-wide loader.
+ */
 export const loader = {
   config: () => undefined,
 };

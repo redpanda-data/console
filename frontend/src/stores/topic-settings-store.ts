@@ -453,7 +453,7 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
               updated[existingIndex] = {
                 ...updated[existingIndex],
                 ...settings,
-                topicName, // Ensure topicName is not overwritten
+                topicName,
               };
               return { perTopicSettings: updated };
             }
@@ -485,7 +485,6 @@ export const useTopicSettingsStore = create<TopicSettingsStore>()(
 
             try {
               const fullSettings = JSON.parse(str);
-              // Return only the perTopicSettings part
               if (fullSettings && Array.isArray(fullSettings.perTopicSettings)) {
                 return {
                   state: {

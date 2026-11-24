@@ -198,7 +198,6 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
                 </>
               ),
             },
-            // { key: '', value: p.transform.environmentVariables }
           ],
           {
             keyStyle: { fontWeight: 600, verticalAlign: 'baseline' },
@@ -393,7 +392,6 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
-          // No pager under the loading or empty row.
           data={filteredMessages}
           emptyText="No messages"
           isLoading={!isComplete && messages.length === 0}

@@ -233,7 +233,6 @@ export class ConnectorPropertiesStore {
     }
   }
 
-  // Create groups
   private createGroups(steps: ConnectorStep[]) {
     this.allGroups = [];
     for (const step of steps) {
@@ -276,7 +275,7 @@ export class ConnectorPropertiesStore {
         handle(config);
       }
     };
-    handleIfChanged(); // Initial update
+    handleIfChanged();
     const unsubscribe = this.subscribe(() => {
       setTimeout(handleIfChanged, delayMs);
     });
@@ -286,7 +285,6 @@ export class ConnectorPropertiesStore {
   async validate(config: object) {
     const { clusterName, pluginClassName } = this;
     try {
-      // Validate the current config
       const validationResult = await api.validateConnectorConfig(clusterName, pluginClassName, config);
       this.applyValidationResult(validationResult);
     } catch (err: unknown) {
@@ -319,7 +317,6 @@ export class ConnectorPropertiesStore {
     this.notifyChange();
   }
 
-  // Remove properties that don't exist anymore
   private removeStaleProperties(srcProps: Property[]) {
     const srcNames = new Set(srcProps.map((x) => x.name));
     const removedProps = [...this.propsByName.keys()].filter((key) => !srcNames.has(key));
@@ -329,30 +326,24 @@ export class ConnectorPropertiesStore {
         g.properties.removeAll((x) => x.name === key);
       }
 
-      // remove from lookup
       this.propsByName.delete(key);
     }
 
-    // Remove empty groups
     this.allGroups.removeAll((x) => x.properties.length === 0);
   }
 
   private mergeValidatedProperty(source: Property) {
     const target = this.propsByName.get(source.name);
 
-    // Property does not exist yet, create it!
     if (!target) {
       this.propsByName.set(source.name, source);
       return;
     }
 
-    // Update: recommended values
     syncRecommendedValues(target, source);
 
-    // Update: field visibility
     target.entry.value.visible = source.entry.value.visible;
 
-    // Update: errors
     if (!target.errors.isEqual(source.errors)) {
       updatePropertyErrors(target, source.errors);
     }
@@ -361,7 +352,6 @@ export class ConnectorPropertiesStore {
   // Creates our Property objects, while fixing some issues with the source data
   // like: missing value, propertyWidth, group, ...
   createCustomProperties(properties: ConnectorProperty[]) {
-    // Fix missing properties
     for (const p of properties) {
       const def = p.definition;
 
@@ -374,7 +364,6 @@ export class ConnectorPropertiesStore {
       }
     }
 
-    // Create our own properties
     const allProps = properties
       .map((p) => this.createProperty(p))
       .sort((a, b) => a.entry.definition.order - b.entry.definition.order);
@@ -457,7 +446,6 @@ function isSubmittedProperty(p: Property, config: Record<string, unknown>) {
 }
 
 function applyCustomDefaults(allProps: Property[]) {
-  // Set default values
   for (const p of allProps) {
     if (p.entry.definition.custom_default_value !== undefined) {
       p.value = p.entry.definition.custom_default_value;
@@ -520,16 +508,14 @@ function firstHelpfulErrorIndex(errors: string[]) {
 
 function updatePropertyErrors(target: Property, errors: string[]) {
   if (errors.length > 0) {
-    target.lastErrors = [...errors]; // create copy
+    target.lastErrors = [...errors];
   }
 
-  // Update
   target.errors.updateWith(errors);
 
   target.showErrors = target.errors.length > 0;
   target.currentErrorIndex = firstHelpfulErrorIndex(target.errors);
 
-  // Add or remove from parent group
   if (target.errors.length > 0) {
     target.propertyGroup.propertiesWithErrors.pushDistinct(target);
   } else {
@@ -537,7 +523,6 @@ function updatePropertyErrors(target: Property, errors: string[]) {
   }
 }
 
-// Fix type of default values
 function initialPropertyValue(p: ConnectorProperty) {
   const defaultValue: unknown = sanitizeDefaultValue(p.definition.default_value, p.definition.type);
   const initialValue: unknown = sanitizeValue(p.value.value, p.definition.type);
@@ -583,8 +568,8 @@ export type Property = {
   entry: ConnectorProperty;
   value: null | string | number | boolean | string[];
   isHidden: boolean; // currently only used for "connector.class"
-  errors: string[]; // current errors
-  showErrors: boolean; // true = property has errors currently
+  errors: string[];
+  showErrors: boolean;
   lastErrors: string[]; // previous errors, used so we can fade/animate them out when they get fixed
   currentErrorIndex: number; // since we can only display one error at a time, we use this to cycle through
   lastErrorValue: unknown; // the 'value' the property had at the last validation check (used so we can immediately hide the reported error once the user changes the value)

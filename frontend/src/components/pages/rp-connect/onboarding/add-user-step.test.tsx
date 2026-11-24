@@ -109,8 +109,6 @@ global.ResizeObserver = rs.fn(function ResizeObserver() {
 });
 Element.prototype.scrollIntoView = rs.fn();
 
-// ── Component import (after mocks) ────────────────────────────────────────────
-
 function TestHarness({ onResult, ...props }: { onResult: (result: unknown) => void; [key: string]: unknown }) {
   const ref = useRef<UserStepRef>(null);
   return (
@@ -707,7 +705,6 @@ describe('the AddUserStep', () => {
         { timeout: 5000 }
       );
 
-      // Nothing to grant, so nothing is offered or created.
       expect(screen.queryByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeNull();
       await user.click(screen.getByTestId('submit'));
       await waitFor(() => expect(captured.result).toMatchObject({ success: true }));

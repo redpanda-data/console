@@ -72,7 +72,6 @@ test.describe('consumer Group Details - Unconsumed Partitions', () => {
     const containerId = getRedpandaContainerId();
     const authFlags = '-X user=e2euser -X pass=very-secret -X sasl.mechanism=SCRAM-SHA-256';
 
-    // 1. Create topic with 3 partitions
     await execRpk(`topic create ${TOPIC_NAME} --partitions 3`);
 
     // 2. Produce one message to each partition (stdin pipe requires docker exec -i).

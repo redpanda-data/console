@@ -4,7 +4,7 @@ import { ConnectError } from '@connectrpc/connect';
 import type { ConnectQueryKey, UseQueryOptions } from '@connectrpc/connect-query';
 import type { Query } from '@tanstack/react-query';
 
-export const ONE_SECOND = 1000; // ms
+export const ONE_SECOND = 1000;
 export const ONE_MINUTE = 60 * ONE_SECOND;
 
 export const LONG_LIVED_CACHE_STALE_TIME = 5 * ONE_MINUTE;

@@ -285,11 +285,9 @@ describe('the SecretsStoreListPage', () => {
     const scopeFilterButton = screen.getAllByRole('button', { name: /scope/iu }).find((btn) => !btn.closest('thead'))!;
     await user.click(scopeFilterButton);
 
-    // Select the "MCP Server" option from the filter popover
     const mcpOption = await screen.findByRole('option', { name: /mcp server/iu });
     await user.click(mcpOption);
 
-    // Only the MCP-scoped secret should remain visible
     await waitFor(() => {
       expect(screen.getByText('mcp-secret')).toBeVisible();
       expect(screen.queryByText('gateway-secret')).not.toBeInTheDocument();

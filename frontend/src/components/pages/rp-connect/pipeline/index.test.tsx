@@ -1880,7 +1880,6 @@ describe('pipelinePage saving and recovering work', () => {
           }),
         });
 
-        // The dropdown only appears once the pipeline's state has loaded.
         await screen.findByTestId('save-pipeline-options');
 
         await chooseSaveAndStart(user);

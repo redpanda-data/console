@@ -438,7 +438,6 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
-          // No pager under the loading or empty row.
           data={filteredMessages}
           emptyText="No messages"
           getRowCanExpand={() => true}

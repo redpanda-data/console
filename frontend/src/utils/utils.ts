@@ -224,8 +224,6 @@ export function getAllMessageKeys(messages: TopicMessage[]) {
     ctx.currentFullPath = '';
   }
 
-  // console.log('getAllMessageKeys', ctx.results);
-
   return ctx.results;
 }
 
@@ -280,7 +278,6 @@ function recordMessageKey(ctx: GetAllKeysContext, key: string, fullPath: string)
 const secToMs = 1000;
 const minToMs = 60 * secToMs;
 const hoursToMs = 60 * minToMs;
-// const daysToMs = 24 * hoursToMs;
 
 export function hoursToMilliseconds(hours: number) {
   return hours * hoursToMs;
@@ -440,7 +437,7 @@ export function titleCase(str: string) {
 
 export function capitalizeFirst(str: string) {
   if (!str) {
-    return str; // Handle empty or falsy strings
+    return str;
   }
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
@@ -567,7 +564,6 @@ export function setHeader(init: RequestInit, name: string, value: string) {
   } else if (typeof init.headers.set === 'function') {
     init.headers.set(name, value);
   } else {
-    // Record<string, string>
     (init.headers as Record<string, string>)[name] = value;
   }
 }
@@ -643,5 +639,5 @@ export function getOidcSubject(error: {
       return detail.debug.metadata.subject;
     }
   }
-  return null; // Return null if no OIDC subject is found
+  return null;
 }

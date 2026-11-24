@@ -30,8 +30,10 @@ export const AUTH_METHOD = {
 
 export type AuthMethod = (typeof AUTH_METHOD)[keyof typeof AUTH_METHOD];
 
-// Schema Registry shadowing modes; 'api' is only selectable through the
-// redesigned (version-gated) Schema Registry section.
+/**
+ * Schema Registry shadowing modes; 'api' is only selectable through the
+ * redesigned (version-gated) Schema Registry section.
+ */
 export const SCHEMA_REGISTRY_MODE = {
   TOPIC: 'topic',
   API: 'api',
@@ -40,7 +42,7 @@ export const SCHEMA_REGISTRY_MODE = {
 
 export type SchemaRegistryMode = (typeof SCHEMA_REGISTRY_MODE)[keyof typeof SCHEMA_REGISTRY_MODE];
 
-// Authentication against the source Schema Registry (HTTP API)
+/** Authentication against the source Schema Registry (HTTP API) */
 export const SR_AUTH_METHOD = {
   NONE: 'none',
   BASIC: 'basic',
@@ -56,9 +58,11 @@ const srCertificateSchema = z.object({
 
 export type SrCertificate = z.infer<typeof srCertificateSchema>;
 
-// Single source of truth for "is a certificate present": the UI badges,
-// validation, and request building must all agree that a whitespace-only
-// upload counts as absent.
+/**
+ * Single source of truth for "is a certificate present": the UI badges,
+ * validation, and request building must all agree that a whitespace-only
+ * upload counts as absent.
+ */
 export const srCertificatePem = (cert: SrCertificate | undefined) => cert?.pemContent.trim() ?? '';
 
 export const hasSrCertificate = (cert: SrCertificate | undefined) => srCertificatePem(cert).length > 0;
@@ -122,17 +126,16 @@ const schemaRegistrySchema = z.object({
 
 export type SchemaRegistryFormValues = z.infer<typeof schemaRegistrySchema>;
 
-// The key side of the mTLS pair is satisfied by a fresh upload or by a key
-// already stored server-side (edit flow).
+/**
+ * The key side of the mTLS pair is satisfied by a fresh upload or by a key
+ * already stored server-side (edit flow).
+ */
 export const hasSrClientKeyMaterial = (mtls: SchemaRegistryFormValues['mtls']) =>
   hasSrCertificate(mtls.clientKey) || mtls.existingKeyConfigured;
 
-// Form schema with validation
 const formSchemaShape = z.object({
-  // Basic info
   name: z.string().min(1, 'Shadow link name is required'),
 
-  // Source cluster connection
   bootstrapServers: z
     .array(
       z.object({
@@ -145,7 +148,6 @@ const formSchemaShape = z.object({
     )
     .min(1, 'At least one bootstrap server is required'),
 
-  // SASL authentication
   authMethod: z.enum([AUTH_METHOD.NONE, AUTH_METHOD.SCRAM, AUTH_METHOD.PLAIN]),
   scramCredentials: z
     .object({
@@ -169,7 +171,6 @@ const formSchemaShape = z.object({
     fetchMaxBytes: z.number(),
     fetchPartitionMaxBytes: z.number(),
   }),
-  // TLS configuration
   useTls: z.boolean(),
 
   // mTLS configuration (optional - determined by presence of certificates)
@@ -198,7 +199,6 @@ const formSchemaShape = z.object({
       .optional(),
   }),
 
-  // Topic selection
   topicsMode: z.enum(['all', 'specify']),
   topics: z.array(
     z.object({
@@ -207,7 +207,6 @@ const formSchemaShape = z.object({
       name: z.string().trim().min(1, 'name is required'),
     })
   ),
-  // Topic properties
   topicProperties: z.array(z.string()).optional(),
   excludeDefault: z.boolean(),
 
@@ -221,7 +220,6 @@ const formSchemaShape = z.object({
     })
   ),
 
-  // Consumer offset sync
   enableConsumerOffsetSync: z.boolean(),
   consumersMode: z.enum(['all', 'specify']),
   consumers: z.array(
@@ -232,17 +230,14 @@ const formSchemaShape = z.object({
     })
   ),
 
-  // ACL filters
   aclsMode: z.enum(['all', 'specify']),
   aclFilters: z
     .array(
       z.object({
-        // Resource filter
         resourceType: z.enum(ACLResource).optional(),
         resourcePattern: z.enum(ACLPattern).optional(),
         resourceName: z.string().optional(),
 
-        // Access filter
         principal: z.string().optional(),
         operation: z.enum(ACLOperation).optional(),
         permissionType: z.enum(ACLPermissionType).optional(),

@@ -42,7 +42,7 @@ test.describe('shadow Link E2E Tests', () => {
       await step('Fill connection details with SCRAM', async () => {
         await shadowlinkPage.fillConnectionStep({
           name: shadowlinkName,
-          bootstrapServers: 'redpanda:9092', // Source cluster (existing)
+          bootstrapServers: 'redpanda:9092',
           username: 'e2euser',
           password: 'very-secret',
           mechanism: 'SCRAM-SHA-256',
@@ -61,7 +61,7 @@ test.describe('shadow Link E2E Tests', () => {
       await step('Create shadowlink with literal filter', async () => {
         await shadowlinkPage.createShadowlink({
           name: shadowlinkName,
-          bootstrapServers: 'redpanda:9092', // Source cluster
+          bootstrapServers: 'redpanda:9092',
           username: 'e2euser',
           password: 'very-secret',
           topicFilters: [
@@ -114,7 +114,7 @@ test.describe('shadow Link E2E Tests', () => {
       await step('Create with include-all and exclude addresses filter', async () => {
         await shadowlinkPage.createShadowlink({
           name: shadowlinkName,
-          bootstrapServers: 'redpanda:9092', // Source cluster
+          bootstrapServers: 'redpanda:9092',
           username: 'e2euser',
           password: 'very-secret',
           topicFilters: [

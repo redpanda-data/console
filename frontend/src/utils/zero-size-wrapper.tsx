@@ -26,7 +26,6 @@ export class ZeroSizeWrapper extends Component<{
     width: '0px',
     height: '0px',
     transform: 'translateY(-0.5px)',
-    // zIndex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   };

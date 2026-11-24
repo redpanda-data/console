@@ -77,7 +77,6 @@ export class ConnectClusterStore {
     this.additionalClusterInfo = api.connectAdditionalClusterInfo.get(this.clusterName)!;
   }
 
-  // CRUD operations
   async createConnector(pluginClass: string, updatedConfig: Record<string, unknown> = {}) {
     const connector = this.getConnector(pluginClass, null, undefined);
     const secrets = connector?.secrets;
@@ -102,7 +101,6 @@ export class ConnectClusterStore {
     updatedConfig: Record<string, unknown>
   ) {
     try {
-      // Validate cluster name
       if (!this.clusterName || this.clusterName.trim() === '') {
         throw new Error('Cluster name is missing or empty. Cannot create secrets without a valid cluster.');
       }
@@ -136,7 +134,6 @@ export class ConnectClusterStore {
     secret: Secret;
     updatedConfig: Record<string, unknown>;
   }) {
-    // Validate serialized secret data
     const serializedSecret = secret.serialized;
     if (!serializedSecret || serializedSecret.trim() === '') {
       throw new Error(`Failed to serialize secret for key "${key}". The encoded secret data is empty.`);

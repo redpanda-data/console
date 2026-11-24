@@ -47,7 +47,6 @@ function getFreeId(tags: PreviewTagV2[]) {
   return String(i);
 }
 
-// add ids to elements that don't have any
 function assignFreeIds(tags: PreviewTagV2[]) {
   const filteredTags = tags.filter((t) => t.id);
   for (const tag of filteredTags) {
@@ -312,13 +311,11 @@ function compareTagMatches(tags: PreviewTagV2[]) {
       return indexA - indexB;
     }
 
-    // first sort by path length
     const pathLengthDiff = a.prop.path.length - b.prop.path.length;
     if (pathLengthDiff !== 0) {
       return pathLengthDiff;
     }
 
-    // then alphabetically
     return a.fullPath.localeCompare(
       b.fullPath,
       undefined, // no locales
@@ -339,7 +336,6 @@ export function getPreviewTags(
   const results = tags.flatMap((t) => findTagMatches(targetObject, t, caseSensitive));
   results.sort(compareTagMatches(tags));
 
-  // found some properties, create JSX for them
   return results.map((r, index) => {
     const tag = r.tag;
     const displayName = tag.customName && tag.customName.length > 0 ? tag.customName : r.fullPath;
@@ -469,15 +465,12 @@ function indexOfMany(str: string, matches: string[], position: number) {
 
 if (IsDev) {
   const tests = [
-    // simple case
     { input: 'abc', output: ['abc'] },
 
-    // single quotes, double quotes
     { input: '"xx"."yy"', output: ['xx', 'yy'] },
     { input: "'xx'.'yy'", output: ['xx', 'yy'] },
     { input: '".".\'.\'', output: ['.', '.'] },
 
-    // keys with split-characters inside them
     { input: '"\'a.\'b".asdf', output: ["'a.'b", 'asdf'] },
     { input: '"x.y.z".firstName', output: ['x.y.z', 'firstName'] },
     { input: 'a.".b"', output: ['a', '.b'] },
@@ -485,13 +478,10 @@ if (IsDev) {
     { input: 'a.\'""".b"\'', output: ['a', '""".b"'] },
     { input: 'a.\'""".b\'', output: ['a', '""".b'] },
 
-    // empty
     { input: '', output: [] },
     { input: "''", output: [] },
     { input: '""', output: [] },
 
-    // invalid inputs
-    // missing closing quotes
     { input: '"', output: null },
     { input: '."', output: null },
     { input: '".', output: null },
@@ -499,7 +489,6 @@ if (IsDev) {
     { input: ".'", output: null },
     { input: "'.", output: null },
 
-    // dots at the wrong location
     { input: '.', output: null },
     { input: "'a'.", output: null },
     { input: '.a', output: null },
@@ -521,20 +510,20 @@ if (IsDev) {
 
     let hasError = false;
     if (result === null && expected !== null) {
-      hasError = true; // didn't match when it should have
+      hasError = true;
     }
     if (result !== null && expected === null) {
-      hasError = true; // matched something we don't want
+      hasError = true;
     }
 
     if (!hasError && result && expected) {
       if (result.length !== expected.length) {
-        hasError = true; // wrong length
+        hasError = true;
       }
 
       for (let i = 0; i < result.length && !hasError; i++) {
         if (result[i] !== expected[i]) {
-          hasError = true; // wrong array entry
+          hasError = true;
         }
       }
     }

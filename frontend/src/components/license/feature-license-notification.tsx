@@ -66,7 +66,6 @@ const getLicenseAlertContentForFeature = (
     };
   }
 
-  // Redpanda
   return api.isRedpanda
     ? getRedpandaFeatureAlert(license, msToExpiration, enterpriseFeaturesUsed)
     : getKafkaFeatureAlert(license, msToExpiration);
@@ -125,7 +124,6 @@ function getKafkaFeatureAlert(
   license: License,
   msToExpiration: number
 ): { message: ReactElement; variant: 'destructive' | 'informative' } | null {
-  // Kafka
   if (msToExpiration > 15 * MS_IN_DAY && msToExpiration < 30 * MS_IN_DAY) {
     if (license.type === License_Type.TRIAL) {
       return {
@@ -198,9 +196,8 @@ export const FeatureLicenseNotification: FC<{
 
   const licenses = api.licenses
     .filter((lic) => lic.type === License_Type.TRIAL || lic.type === License_Type.COMMUNITY)
-    .sort((a, b) => LICENSE_WEIGHT[a.type] - LICENSE_WEIGHT[b.type]); // Sort by priority
+    .sort((a, b) => LICENSE_WEIGHT[a.type] - LICENSE_WEIGHT[b.type]);
 
-  // Choose the license with the latest expiration time
   const license = getLatestExpiringLicense(licenses);
 
   // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.

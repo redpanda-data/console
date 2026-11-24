@@ -48,7 +48,7 @@ export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: Re
       value: ms / factor,
       textLength: String(ms / factor).length,
     }))
-    .filter(({ value: v }) => v >= 1) // Only units that give us >= 1
+    .filter(({ value: v }) => v >= 1)
     .sort((a, b) => a.textLength - b.textLength);
 
   const best = validUnits[0];
@@ -77,7 +77,7 @@ export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit:
       value: bytes / factor,
       textLength: String(bytes / factor).length,
     }))
-    .filter(({ value: v }) => v >= 1) // Only units that give us >= 1
+    .filter(({ value: v }) => v >= 1)
     .sort((a, b) => a.textLength - b.textLength);
 
   const best = validUnits[0];
@@ -148,22 +148,20 @@ export const createFloatChangeHandler =
     onChange(e.target.value ? Number.parseFloat(e.target.value) : 0);
   };
 
-export const getRetentionTimeUnitOptions = () => {
-  return Object.keys(timeFactors)
-    .filter((unit) => unit !== 'default') // Exclude default from UI options
+export const getRetentionTimeUnitOptions = () =>
+  Object.keys(timeFactors)
+    .filter((unit) => unit !== 'default')
     .map((unit) => ({
       value: unit,
       label: unit === 'infinite' ? 'Infinite' : unit,
     }));
-};
 
-export const getRetentionSizeUnitOptions = () => {
-  return Object.keys(sizeFactors)
-    .filter((unit) => unit !== 'default') // Exclude default from UI options
+export const getRetentionSizeUnitOptions = () =>
+  Object.keys(sizeFactors)
+    .filter((unit) => unit !== 'default')
     .map((unit) => ({
       value: unit,
       label: unit === 'infinite' ? 'Infinite' : unit,
     }));
-};
 
 export const isRetentionUnitDisabled = (unit: string) => unit === 'default' || unit === 'infinite';

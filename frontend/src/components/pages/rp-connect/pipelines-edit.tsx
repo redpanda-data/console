@@ -43,7 +43,6 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
     p.addBreadcrumb('Edit Pipeline', `/rp-connect/${pipelineId}/edit`);
 
     this.refreshData(true);
-    // get secrets
     rpcnSecretManagerApi.refreshSecrets(true);
     appGlobal.onRefresh = () => this.refreshData(true);
   }

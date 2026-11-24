@@ -257,7 +257,7 @@ const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u), REST_CAC
 class CacheEntry {
   url: string;
 
-  private readonly timeSinceLastResult = new TimeSince(); // set automatically
+  private readonly timeSinceLastResult = new TimeSince();
   /** How long ago (in seconds) the data was last updated */
   get resultAge() {
     return this.timeSinceLastResult.value / 1000;
@@ -296,11 +296,11 @@ class CacheEntry {
   }
 
   error: unknown | null = null;
-  lastResult: unknown | undefined; // set automatically
-  isPending: boolean; // set automatically
+  lastResult: unknown | undefined;
+  isPending: boolean;
 
-  private readonly timeSinceRequestStarted = new TimeSince(); // set automatically
-  private lastRequestDurationMs: number; // set automatically
+  private readonly timeSinceRequestStarted = new TimeSince();
+  private lastRequestDurationMs: number;
   /** How long (in seconds) the last request took (or is currently taking so far) */
   get requestTime() {
     if (this.isPending) {

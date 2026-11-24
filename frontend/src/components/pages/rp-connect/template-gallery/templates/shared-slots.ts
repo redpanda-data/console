@@ -13,7 +13,7 @@
 
 import type { SecretSlot, StringSlot, TopicSlot } from '../pipeline-template-types';
 
-// Postgres slot names allow only [a-z0-9_], max 63 chars; derive a deterministic one so a blank field stays valid and stable.
+/** Postgres slot names allow only [a-z0-9_], max 63 chars; derive a deterministic one so a blank field stays valid and stable. */
 export const toReplicationSlotName = (pipelineName: string) => {
   const sanitized = pipelineName
     .toLowerCase()

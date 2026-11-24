@@ -119,7 +119,6 @@ export class SchemaPage {
   /** Fills the topic (TOPIC_NAME strategy) or the subject name (CUSTOM strategy) the subject is named after. */
   private async fillSubjectSource({ strategy, topicName, keyOrValue, subjectName }: CreateSchemaParams) {
     if (strategy === 'TOPIC_NAME' && topicName) {
-      // For topic select, we also need to use custom select
       await selectCustomOption(this.page.getByTestId('schema-create-topic-select'), topicName);
 
       if (keyOrValue) {
@@ -137,7 +136,6 @@ export class SchemaPage {
 
     await this.page.getByTestId(`schema-create-reference-name-input-${i}`).fill(ref.name);
 
-    // Use custom select for subject and version dropdowns
     await selectCustomOption(this.page.getByTestId(`schema-create-reference-subject-select-${i}`), ref.subject);
     await selectCustomOption(
       this.page.getByTestId(`schema-create-reference-version-select-${i}`),
@@ -160,7 +158,6 @@ export class SchemaPage {
     const nameInput = this.page.getByTestId(`schema-create-reference-name-input-${index}`);
     await nameInput.fill(params.name);
 
-    // Use custom select for subject and version dropdowns
     const subjectSelect = this.page.getByTestId(`schema-create-reference-subject-select-${index}`);
     await selectCustomOption(subjectSelect, params.subject);
 

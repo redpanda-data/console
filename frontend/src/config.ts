@@ -146,16 +146,16 @@ export type SetConfigArguments = {
 };
 
 export type SidebarItem = {
-  title: string; // "Topics"
-  to: string; // '/topics'
+  title: string;
+  to: string;
   icon?: JSX.Element;
   order: number;
   group?: string;
 };
 
 export type Breadcrumb = {
-  title: string; // "Topics"
-  to: string; // '/topics'
+  title: string;
+  to: string;
 };
 
 type Config = {
@@ -267,7 +267,6 @@ function installUiStateSubscriptions() {
         return;
       }
 
-      // Only update if breadcrumbs changed
       if (state.pageBreadcrumbs === previousBreadcrumbs) {
         return;
       }

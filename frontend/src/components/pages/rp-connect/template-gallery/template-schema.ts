@@ -18,8 +18,10 @@ import { checkRequired, findConnectComponent, resolveFieldByPath } from '../util
 const slotDescription = (field: RawFieldSpec) =>
   field.shortDescription?.trim() || markdownToPlainText(asciidocToMarkdown(field.description ?? '')) || undefined;
 
-// Slot-level values win; schema only fills unset `description` / `required` /
-// Pass enriched specs (enrichComponentsWithConfigSchema) so `required` uses the
+/**
+ * Slot-level values win; schema only fills unset `description` / `required` /
+ * Pass enriched specs (enrichComponentsWithConfigSchema) so `required` uses the
+ */
 export function applySchemaToSlots(template: PipelineTemplate, components?: ConnectComponentSpec[]) {
   if (!components?.length) {
     return template.slots;

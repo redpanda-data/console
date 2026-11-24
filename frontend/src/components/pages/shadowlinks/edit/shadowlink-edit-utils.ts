@@ -429,7 +429,6 @@ export const getUpdateValuesForACLs = (
     fieldMaskPaths.push('configurations.security_sync_options');
   }
 
-  // Build security sync options
   const allACLs = [
     create(ACLFilterSchema, {
       resourceFilter: {

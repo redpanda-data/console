@@ -54,7 +54,7 @@ import { subjectSchemaContext } from '../schemas/schema-context-utils';
 type EncodingOption = {
   value: PayloadEncoding | 'base64';
   label: string;
-  tooltip: string; // React.ReactNode | (() => React.ReactNode),
+  tooltip: string;
 };
 const encodingOptions: EncodingOption[] = [
   {
@@ -198,7 +198,6 @@ function buildPartitionOptions(count: number | undefined) {
   }
 
   if (count === 1) {
-    // only one partition to select
     return partitions;
   }
 

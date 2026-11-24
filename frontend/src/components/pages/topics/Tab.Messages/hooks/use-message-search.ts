@@ -33,7 +33,7 @@ import {
 
 export type MessageSearch = ReturnType<typeof createMessageSearch>;
 
-// Combined search & pagination state to avoid cascading setState calls
+/** Combined search & pagination state to avoid cascading setState calls */
 export type SearchState = {
   messages: TopicMessage[];
   messageSearch: MessageSearch | null;

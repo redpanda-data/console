@@ -83,8 +83,8 @@ import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 
 export type ConnectorMetadata = {
-  readonly className?: string; // match by exact match
-  readonly classNamePrefix?: string; // match by prefix
+  readonly className?: string;
+  readonly classNamePrefix?: string;
 
   readonly logo?: JSX.Element;
   readonly friendlyName?: string; // override display name (instead of just 'className without namespace')

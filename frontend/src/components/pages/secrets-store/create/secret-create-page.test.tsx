@@ -98,7 +98,6 @@ describe('the SecretCreatePage', () => {
     const valueInput = screen.getByPlaceholderText('Enter secret value');
     await user.type(valueInput, 'super-secret-value');
 
-    // Select AI Gateway and MCP Server
     await selectScopes(user, 'AI Gateway', 'MCP Server');
 
     await submitWhenEnabled(user);

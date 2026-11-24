@@ -24,7 +24,6 @@ import type { TimestampDisplayFormat } from '../state/ui';
 
 const defaultLocale = 'en';
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
-// const decimalSeperator = (0.123).toLocaleString(defaultLocale)[1];
 
 const nbsp = '\xA0'; // non breaking space
 
@@ -42,7 +41,6 @@ export function numberToThousandsString(n: number) {
     // Add the number block itself; React.Fragment is used explicitly to avoid missing key warning
     result.push(<React.Fragment key={i}>{parts[i]}</React.Fragment>);
 
-    // Add a dot
     if (!last) {
       result.push(
         <span className="noSelect nbspSeparator" key={`${i}.`}>
@@ -83,7 +81,6 @@ export function TimestampDisplay({
     case 'relative':
       return `${prettyMilliseconds(Date.now() - ts, { compact: true })} ago`;
     default:
-      // format 'default' -> locale datetime
       return new Date(ts).toLocaleString();
   }
 }
@@ -100,9 +97,11 @@ const DefaultQuickTableOptions = {
 };
 type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>;
 
-// [ { key: 'a', value: 'b' } ]
-// { 'key1': 'value1', 'key2': 'value2' }
-// [ ['a', 'b'] ]
+/**
+ * [ { key: 'a', value: 'b' } ]
+ * { 'key1': 'value1', 'key2': 'value2' }
+ * [ ['a', 'b'] ]
+ */
 export function quickTable(
   data:
     | [React.ReactNode, React.ReactNode][]
@@ -120,19 +119,11 @@ export function quickTable(
 ) {
   let entries: { key: React.ReactNode; value: React.ReactNode }[];
 
-  // plain object?
   if (typeof data === 'object' && !Array.isArray(data)) {
-    // Convert to array of key value objects
     entries = Object.entries(data).map(([key, value]) => ({ key, value }));
-  }
-  // array of [any, any] ?
-  else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
-    // Convert to array of key-value objects
+  } else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
     entries = (data as [React.ReactNode, React.ReactNode][]).map((ar) => ({ key: ar[0], value: ar[1] }));
-  }
-  // already correct? array of { key:any, value:any }
-  else {
-    // Cast to correct type directly
+  } else {
     entries = data as { key: React.ReactNode; value: React.ReactNode }[];
   }
 

@@ -78,7 +78,6 @@ test.describe('topic Details - Navigation and Tabs', () => {
 
     await step('Navigate to Configuration tab', async () => {
       await page.goto(`/topics/${topicName}#configuration`);
-      // Wait for the topic page to load before checking tab content
       await expect(page.getByRole('tablist')).toBeVisible({ timeout: 10_000 });
       await expect(page.getByTestId('config-group-table')).toBeVisible({ timeout: 15_000 });
 

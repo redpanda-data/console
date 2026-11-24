@@ -93,8 +93,10 @@ function unmatchedNextIds(prev: Map<string, string>, next: Map<string, string>) 
   return changed;
 }
 
-// re-diffs on every keystroke against a constant baseline, so the baseline is signed only once.
-// A container's signature embeds its children, so attribute each change to the deepest node(s) only.
+/**
+ * re-diffs on every keystroke against a constant baseline, so the baseline is signed only once.
+ * A container's signature embeds its children, so attribute each change to the deepest node(s) only.
+ */
 export function changedNodeIdsFromBaseline(baseline: NodeSignatures, nextYaml: string) {
   const next = nodeConfigSignatures(nextYaml);
   const changed = unmatchedNextIds(baseline.signatures, next.signatures);

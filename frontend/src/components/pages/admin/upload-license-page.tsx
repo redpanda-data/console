@@ -34,7 +34,7 @@ const UploadLicenseForm: FC<{
     await onUploadLicense(content)
       .then(() => {
         onSuccess();
-        api.listLicenses(); // refetch licenses
+        api.listLicenses();
       })
       .catch((err) => {
         setErrorMessage(err.message);

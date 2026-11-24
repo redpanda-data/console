@@ -24,11 +24,11 @@ export type OperationResult = {
 };
 
 export type StepSubmissionResult<T> = {
-  success: boolean; // Overall success (all operations succeeded)
-  message?: string; // Overall summary message
-  error?: string; // Overall error message
-  data?: T; // Form data
-  operations?: OperationResult[]; // Detailed results for each operation
+  success: boolean;
+  message?: string;
+  error?: string;
+  data?: T;
+  operations?: OperationResult[];
 };
 
 export type BaseStepRef<T> = {

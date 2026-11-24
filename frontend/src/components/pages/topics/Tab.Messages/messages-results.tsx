@@ -69,7 +69,6 @@ async function loadLargeMessage({
   valueDeserializer,
   schemaContext,
 }: LoadLargeMessageParams) {
-  // Create a new search that looks for only this message specifically
   const search = createMessageSearch();
   const searchReq: MessageSearchRequest = {
     filterInterpreterCode: '',
@@ -321,7 +320,6 @@ function ContinuousPagination({
   );
 }
 
-// Sortable column titles, with an arrow for the active sort direction.
 function MessagesTableHeader({ table }: { table: MessagesTable }) {
   return (
     <TableHeader>

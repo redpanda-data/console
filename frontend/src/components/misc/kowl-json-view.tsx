@@ -21,7 +21,7 @@ const READ_ONLY_EDITOR_OPTIONS = {
   wordWrapColumn: 120, // Lines >120 chars wrap. Prevents blank screen with large payloads
   wrappingStrategy: 'simple', // 'advanced' causes 2s+ delays on large content
   stopRenderingLineAfter: 10_000, // DO NOT set to -1: causes severe performance issues
-  maxTokenizationLineLength: 20_000, // Syntax highlighting limit
+  maxTokenizationLineLength: 20_000,
   automaticLayout: false,
   folding: false,
   showFoldingControls: 'never',

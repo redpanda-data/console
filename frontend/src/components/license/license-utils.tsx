@@ -84,12 +84,11 @@ export const licenseSoonToExpire = (
     return false;
   }
 
-  const millisecondsInADay = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
+  const millisecondsInADay = 24 * 60 * 60 * 1000;
   const offsetInMilliseconds = daysToExpire * millisecondsInADay;
 
   const timeToExpiration = getMillisecondsToExpiration(license);
 
-  // Check if the license expires within the offset period
   return timeToExpiration > 0 && timeToExpiration <= offsetInMilliseconds;
 };
 

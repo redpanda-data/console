@@ -56,7 +56,7 @@ function slashReplaceRange(
   savedRange: SavedSlashRange | null
 ): IRange | null {
   if (slashPos) {
-    return lineRange(slashPos.lineNumber, slashPos.column, slashPos.column + 1); // just `/`
+    return lineRange(slashPos.lineNumber, slashPos.column, slashPos.column + 1);
   }
   if (savedRange) {
     return lineRange(savedRange.start.lineNumber, savedRange.start.column, savedRange.endColumn);
@@ -89,7 +89,7 @@ export function useSlashCommand(
     if (slashPositionRef.current) {
       lastSlashRangeRef.current = {
         start: { ...slashPositionRef.current },
-        endColumn: slashPositionRef.current.column + 1, // just the `/`
+        endColumn: slashPositionRef.current.column + 1,
       };
     }
     setIsOpen(false);

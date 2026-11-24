@@ -57,7 +57,6 @@ export const SourceConnectionSection = () => {
   const { control, setValue } = useFormContext<FormValues>();
   const authMethod = useWatch({ control, name: 'schemaRegistry.authMethod' });
 
-  // Fetch secrets for SecretSelector (embedded mode only)
   const { data: secretsData } = useListSecretsQuery({}, { enabled: isEmbedded() });
   const availableSecrets = useMemo(() => {
     if (!secretsData?.secrets) {

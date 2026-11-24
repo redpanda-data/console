@@ -336,7 +336,6 @@ export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
 function schemaVersionDefaults(subjectData: SchemaRegistrySubjectDetails, queryVersion: string | undefined) {
   const versionNumber = requestedVersionNumber(queryVersion);
 
-  // Determine fallback version when no specific version is requested
   const fallbackVersion =
     subjectData.latestActiveVersion === -1 ? subjectData.schemas.last()?.version : subjectData.latestActiveVersion;
 

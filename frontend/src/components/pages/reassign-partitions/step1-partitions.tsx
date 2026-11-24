@@ -287,7 +287,7 @@ export class StepSelectPartitions extends Component<{
       }
       const activeReassignments = this.inProgress.get(topic.topicName) ?? [];
       if (activeReassignments.length > 0) {
-        return []; // skip topics with active reassignments
+        return [];
       }
       return [{ ...topic, partitions, activeReassignments }];
     });

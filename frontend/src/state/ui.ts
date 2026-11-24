@@ -146,7 +146,7 @@ export type TopicDetailsSettings = {
   previewTagsCaseSensitive: 'caseSensitive' | 'ignoreCase';
 
   previewMultiResultMode: 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
-  previewDisplayMode: 'single' | 'wrap' | 'rows'; // only one line / wrap / seperate line for each result
+  previewDisplayMode: 'single' | 'wrap' | 'rows';
 
   // previewResultLimit: 3; // todo
   previewShowEmptyMessages: boolean; // todo: filter out messages that don't match
@@ -615,7 +615,6 @@ function loadStoredSettings(str: string) {
   }
 }
 
-// Debounced save function
 let saveTimeoutId: NodeJS.Timeout | null = null;
 const SAVE_DELAY = 2000;
 
@@ -674,7 +673,6 @@ export const useUISettingsStore = create<UISettingsStore>()(
             return loadStoredSettings(str);
           },
           setItem: (name, value) => {
-            // Extract only the state, not the action functions
             const { updateSettings: _, clearSettings: __, ...state } = value.state as UISettingsStore;
             const json = JSON.stringify(state);
             localStorage.setItem(name, json);

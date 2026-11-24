@@ -27,6 +27,5 @@ export async function authenticate(page: Page) {
 
   await page.getByTestId('auth-submit').click();
 
-  // Wait for successful login - version title appears in footer
   await page.getByTestId('versionTitle').waitFor({ state: 'visible', timeout: 30_000 });
 }

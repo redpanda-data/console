@@ -481,7 +481,7 @@ export function isComponentField(spec: RawFieldSpec) {
   return Boolean(spec.name) && COMPONENT_FIELD_TYPES.has(spec.type) && !isResourceRefField(spec);
 }
 
-// Fields rendered as form controls; deprecated fields, nested components, and complex fields
+/** Fields rendered as form controls; deprecated fields, nested components, and complex fields */
 export function isFormField(spec: RawFieldSpec) {
   return (
     !(spec.deprecated || isComponentField(spec)) &&

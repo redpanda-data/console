@@ -21,7 +21,6 @@ class NullFallbackBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(_: Error): ErrorBoundaryState {
-    // Update state to indicate an error has occurred
     return { hasError: true };
   }
 
@@ -29,7 +28,6 @@ class NullFallbackBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   render() {
     if (this.state.hasError) {
-      // Render nothing in case of an error
       return null;
     }
 

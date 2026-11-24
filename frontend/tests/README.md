@@ -91,6 +91,9 @@ Enterprise authentication remains a real login in global setup, plus an explicit
 `authenticate` test. Login-error tests use an unauthenticated context. Pre-existing
 pending/skipped tests retain their conditions; the migration adds none.
 
+The transforms smoke tests cover the setup page. List and detail coverage needs a
+real backend fixture that deploys a transform before the browser opens the page.
+
 ## Helpers and native behavior
 
 Happy DOM integration tests reject unmocked `fetch` requests and fail at teardown,

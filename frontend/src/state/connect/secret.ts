@@ -11,7 +11,6 @@
 
 import { encodeBase64 } from '../../utils/utils';
 
-// Regex for validating secret strings
 const SECRET_STRING_REGEX = /^\$\{secretsManager:[A-Za-z\-0-9]+:.+\}$/u;
 
 export class Secret {

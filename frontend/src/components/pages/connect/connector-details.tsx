@@ -178,7 +178,6 @@ type ConnectorSectionProps = {
 const ConnectorActions = ({ connectClusterStore, connector, connectorName, setS }: ConnectorSectionProps) => {
   const canEdit = connectClusterStore.canEdit;
 
-  // [Pause] [Restart] [Delete]
   return (
     <div className="flex flex-row items-center gap-3">
       {/* [Pause/Resume] */}

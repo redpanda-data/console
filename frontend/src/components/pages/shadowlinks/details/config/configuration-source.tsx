@@ -62,7 +62,6 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
 
   const hasTLSCerts = Boolean(tlsSettings?.tlsSettings?.case);
 
-  // Determine authentication status
   const isAuthEnabled = Boolean(scramConfig);
 
   const scramMechanismLabel = getScramMechanismLabel(scramConfig?.scramMechanism);

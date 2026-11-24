@@ -39,7 +39,6 @@ export class Cooldown {
     return t;
   }
 
-  // Check if ready
   get isReady() {
     return this.timeLeft <= 0;
   }
@@ -53,12 +52,10 @@ export class Cooldown {
     return false;
   }
 
-  // Force the cooldown to be ready
   setReady() {
     this.timestamp = 0;
   }
 
-  // Same as 'consume(true)'
   restart() {
     this.timestamp = Date.now();
   }

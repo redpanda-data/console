@@ -16,7 +16,7 @@ import type { TimeRange } from '../../../utils/time-range';
 import { calculateTimeRange, getTimeRanges } from '../../../utils/time-range';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../redpanda-ui/components/select';
 
-const TIME_RANGES = getTimeRanges(12 * 60 * 60 * 1000); // Up to 12 hours
+const TIME_RANGES = getTimeRanges(12 * 60 * 60 * 1000);
 
 function formatTimeRangeDate(date: Date) {
   return date.toLocaleString('en-US', {

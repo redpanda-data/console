@@ -381,5 +381,4 @@ export function getEmbeddedAvailableRoutes() {
     .filter((x) => !(isServerless() && routesIgnoredInServerless.includes(x.path)));
 }
 
-// Re-export types for backwards compatibility
 export type { MenuItemState as RouteMenuItemState };

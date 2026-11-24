@@ -401,7 +401,6 @@ export class EditOffsetsModal extends Component<{
 
   setPage(page: 0 | 1) {
     if (page === 1) {
-      // compute and set newOffset
       if (this.props.offsets === null) {
         return;
       }
@@ -412,20 +411,16 @@ export class EditOffsetsModal extends Component<{
   }
 
   computeNewOffsets(offsets: GroupOffset[]) {
-    // reset all newOffset
     for (const x of offsets) {
       x.newOffset = undefined;
     }
 
-    // filter selected offsets to be edited
     const selectedOffsets = offsets.filter(
       (x) => this.state.selectedPartition === null || x.partitionId === this.state.selectedPartition
     );
 
     const strategies: Record<EditOptions, () => void> = {
-      // Earliest
       startOffset: () => assignNewOffset(selectedOffsets, -2),
-      // Latest
       endOffset: () => assignNewOffset(selectedOffsets, -1),
       shiftBy: () => shiftOffsets(selectedOffsets, this.state.offsetShiftByValue),
       time: () => this.computeOffsetsForTimestamp(selectedOffsets),
@@ -440,7 +435,6 @@ export class EditOffsetsModal extends Component<{
     }
     const requiredTopics = selectedOffsets.map((x) => x.topicName).distinct();
 
-    // Fetch offset for each partition
     setTimeout(() => this.loadOffsetsForTimestamp(requiredTopics, selectedOffsets));
   }
 
@@ -468,7 +462,6 @@ export class EditOffsetsModal extends Component<{
   }
 
   copyOffsetsFromOtherGroup(selectedOffsets: GroupOffset[], currentOffsets: GroupOffset[]) {
-    // Lookup offsets from the other group
     const other = api.consumerGroups.get(this.state.selectedGroup ?? '');
     if (!other) {
       showErrorModal(
@@ -548,8 +541,6 @@ export class EditOffsetsModal extends Component<{
 
     if (visible) {
       setTimeout(() => {
-        // modal became visible
-
         // need all groups for "other groups" dropdown
         api.refreshConsumerGroups();
 
@@ -560,7 +551,6 @@ export class EditOffsetsModal extends Component<{
           toast.error('Failed to load partition offsets', { description: String(error) });
         });
 
-        // reset settings
         this.setState({ page: 0, selectedOption: 'startOffset' });
       });
     }
@@ -648,22 +638,18 @@ const TimestampNewOffset = ({
   val: Date | PartitionOffset;
   selectedTime?: number;
 }) => {
-  // placeholder while loading
   if (val instanceof Date) {
     return val.toLocaleString();
   }
 
-  // anything but a fetched partition offset
   if (!('offset' in val)) {
     return unknownNewOffsetText(val);
   }
 
-  // error
   if (val.error) {
     return <span style={{ color: 'orangered' }}>{val.error}</span>;
   }
 
-  // successful fetch
   if (val.timestamp > 0) {
     return (
       <OffsetWithNote note={new Date(val.timestamp).toLocaleString()} offset={numberToThousandsString(val.offset)} />
@@ -696,12 +682,10 @@ const TimestampNewOffset = ({
 
 /** New offset copied from another group (a concrete offset), or Earliest (-2) / Latest (-1). */
 const NumericNewOffset = ({ record, val }: { record: GroupOffset; val: number }) => {
-  // copied from other group
   if (val >= 0) {
     return numberToThousandsString(val);
   }
 
-  // Get offset from current partition values
   const partition = api.topicPartitions.get(record.topicName)?.first((p) => p.id === record.partitionId);
 
   const content =
@@ -720,22 +704,18 @@ const NumericNewOffset = ({ record, val }: { record: GroupOffset; val: number })
 function ColAfter({ record, selectedTime }: { selectedTime?: number; record: GroupOffset }) {
   const val = record.newOffset;
 
-  // No change
   if (val === null) {
     return <SkipIconTooltip text="Offset will not be changed" />;
   }
 
-  // Set by timestamp
   if (typeof val === 'object') {
     return <TimestampNewOffset record={record} selectedTime={selectedTime} val={val} />;
   }
 
-  // Earliest / Latest / OtherGroup
   if (typeof val === 'number') {
     return <NumericNewOffset record={record} val={val} />;
   }
 
-  // Loading placeholder
   if (typeof val === 'string') {
     return <span style={{ opacity: 0.66, fontStyle: 'italic' }}>{val}</span>;
   }
@@ -887,7 +867,6 @@ const useDeleteOffsets = ({
 
       onClose();
       if (deletesAllOffsets(group, activeOffsets)) {
-        // Group is fully deleted, go back to list
         appGlobal.historyReplace('/groups');
       }
     } catch (err) {
@@ -1002,8 +981,6 @@ export const DeleteOffsetsModal = (props: {
   );
 };
 
-// Utility functions
-
 type TopicPartitionResults = {
   topicName: string;
   partitions: { partitionID: number; error: string | undefined }[];
@@ -1084,17 +1061,14 @@ function appendMissingOffsets(currentOffsets: GroupOffset[], other: GroupDescrip
 }
 function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
   const getOffset = (x: GroupOffset['newOffset']) => {
-    // no offset set
     if (x === null) {
       return;
     }
 
-    // from other group
     if (typeof x === 'number') {
       return x;
     }
 
-    // from timestamp
     if (x && typeof x === 'object' && 'offset' in x) {
       return x.offset;
     }
@@ -1110,7 +1084,6 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
       })),
     }));
 
-  // filter undefined partitions
   for (const t of topicOffsets) {
     t.partitions = t.partitions.filter((p) => p.offset != null);
   }
@@ -1125,7 +1098,6 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
     }[];
   }[];
 
-  // filter topics with zero partitions
   return cleanOffsets.filter((t) => t.partitions.length > 0);
 }
 
@@ -1139,6 +1111,5 @@ function createDeleteRequest(offsets: GroupOffset[]): DeleteConsumerGroupOffsets
       })),
     }));
 
-  // filter topics with zero partitions
   return topicOffsets.filter((t) => t.partitions.length > 0);
 }

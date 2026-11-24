@@ -319,7 +319,7 @@ async function cancelReassignmentWithToast(state: ReassignmentState) {
           topicName: state.topicName,
           partitions: state.partitions.map((p) => ({
             partitionId: p.partitionId,
-            replicas: null, // cancel
+            replicas: null,
           })),
         },
       ],

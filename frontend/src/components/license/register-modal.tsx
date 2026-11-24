@@ -78,7 +78,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
     setIsSubmitting(true);
-    setFieldErrors({}); // Clear previous field errors
+    setFieldErrors({});
 
     try {
       await signupMutation.mutateAsync({
@@ -111,7 +111,6 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
     onClose();
 
     if (isSuccess) {
-      // Refetch license data and enterprise features after successful registration
       api.listLicenses();
     }
   };

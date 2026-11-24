@@ -61,7 +61,6 @@ export function generateDefaultFromJsonSchema(
     return schema.default;
   }
 
-  // Check if this property is required in the parent schema
   const isRequired = propertyName && parentSchema ? isPropertyRequired(propertyName, parentSchema) : false;
 
   switch (schema.type) {

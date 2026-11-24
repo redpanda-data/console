@@ -47,10 +47,10 @@ type ConnectorPluginEntry = { class: string; type: 'sink' | 'source'; version?: 
 
 function matchesTabFilter(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilter) {
   if (tabFilter === 'export') {
-    return plugin.type !== 'source'; // not an "export" type
+    return plugin.type !== 'source';
   }
   if (tabFilter === 'import') {
-    return plugin.type !== 'sink'; // not an "import" type
+    return plugin.type !== 'sink';
   }
   return true;
 }
@@ -73,7 +73,7 @@ function matchesPluginFilters(plugin: ConnectorPluginEntry, tabFilter: PluginTab
 
   const meta = findConnectorMetadata(plugin.class);
   if (!meta) {
-    return true; // no metadata, show it always
+    return true;
   }
 
   return matchesTextFilter(plugin, meta, textFilter);
@@ -326,7 +326,6 @@ function syncSecretsFromJson(
   for (const p of connectorRef.propsByName.values()) {
     if (p.entry.definition.type === DataType.Password) {
       const secret = secrets.getSecret(p.name);
-      // secret.extractSecretId(property.value);
       secret.extractSecretId(p.value as string);
 
       // In case the secret has not been populated (because the user only used the JSON view to modify the connector),
@@ -376,7 +375,7 @@ async function waitForConnector(
   timer = new TimeSince()
 ) {
   if (timer.value > CONNECTOR_SCAN_MAX_TIME) {
-    return false; // Abort, tried to wait for too long
+    return false;
   }
 
   await connectClusterStore.refreshData(true);

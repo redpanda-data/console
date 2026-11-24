@@ -34,7 +34,7 @@ export * from 'zustand';
 const { create: actualCreate, createStore: actualCreateStore } =
   rs.requireActual<typeof ZustandExportedTypes>('zustand');
 
-// A variable to hold reset functions for all stores declared in the app
+/** A variable to hold reset functions for all stores declared in the app */
 export const storeResetFns = new Set<() => void>();
 
 const createUncurried = <T>(stateCreator: ZustandExportedTypes.StateCreator<T>) => {
@@ -46,7 +46,7 @@ const createUncurried = <T>(stateCreator: ZustandExportedTypes.StateCreator<T>) 
   return store;
 };
 
-// When creating a store, we get its initial state, create a reset function and add it in the set
+/** When creating a store, we get its initial state, create a reset function and add it in the set */
 export const create = (<T>(stateCreator: ZustandExportedTypes.StateCreator<T>) => {
   // To support curried version of create
   return typeof stateCreator === 'function' ? createUncurried(stateCreator) : createUncurried;
@@ -61,7 +61,7 @@ const createStoreUncurried = <T>(stateCreator: ZustandExportedTypes.StateCreator
   return store;
 };
 
-// When creating a store, we get its initial state, create a reset function and add it in the set
+/** When creating a store, we get its initial state, create a reset function and add it in the set */
 export const createStore = (<T>(stateCreator: ZustandExportedTypes.StateCreator<T>) => {
   // To support curried version of createStore
   return typeof stateCreator === 'function' ? createStoreUncurried(stateCreator) : createStoreUncurried;

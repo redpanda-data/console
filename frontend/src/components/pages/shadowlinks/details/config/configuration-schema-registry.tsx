@@ -359,7 +359,6 @@ const SchemaRegistryBody = ({ mode }: { mode: SchemaRegistryShadowingMode | unde
   }
 };
 
-// Read-only display of the Schema Registry shadowing configuration
 export const ConfigurationSchemaRegistry = ({ syncOptions }: ConfigurationSchemaRegistryProps) => {
   const mode = syncOptions?.schemaRegistryShadowingMode;
 

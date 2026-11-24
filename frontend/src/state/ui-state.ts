@@ -52,7 +52,6 @@ export type BackLink = {
 };
 
 type UIStateStore = {
-  // Core state
   _pageTitle: string | React.ReactElement;
   pageBreadcrumbs: BreadcrumbEntry[];
   backLink: BackLink | null;
@@ -63,13 +62,11 @@ type UIStateStore = {
   isUsingDebugUserLogin: boolean;
   serverBuildTimestamp: number | undefined;
 
-  // Computed getters (accessed as properties on the store)
   get pageTitle(): string | React.ReactElement;
   get selectedClusterName(): string | null;
   get currentTopicName(): string | undefined;
   get topicSettings(): TopicSettings;
 
-  // Actions (setters)
   setPageTitle: (title: string | React.ReactElement) => void;
   setPageBreadcrumbs: (breadcrumbs: BreadcrumbEntry[]) => void;
   setPageState: (
@@ -87,7 +84,6 @@ type UIStateStore = {
 };
 
 export const useUIStateStore = create<UIStateStore>((set, get) => ({
-  // Initial state
   _pageTitle: ' ',
   pageBreadcrumbs: [],
   backLink: null,
@@ -98,7 +94,6 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
   isUsingDebugUserLogin: false,
   serverBuildTimestamp: undefined,
 
-  // Computed getters
   get pageTitle() {
     return get()._pageTitle;
   },
@@ -141,7 +136,6 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
     }
   },
 
-  // Actions
   setPageTitle: (title: string | React.ReactElement) => {
     set({ _pageTitle: title });
     if (typeof title === 'string') {
@@ -260,7 +254,6 @@ export const uiState = new Proxy(
     get(_target, prop: string) {
       const store = useUIStateStore.getState();
 
-      // Handle computed properties
       if (prop === 'pageTitle') {
         return store.pageTitle;
       }
@@ -274,7 +267,6 @@ export const uiState = new Proxy(
         return store.topicSettings;
       }
 
-      // Handle direct properties
       return store[prop as keyof UIStateStore];
     },
     set(_target, prop: string, value: unknown) {

@@ -169,7 +169,7 @@ test.describe('message Actions and Export', () => {
     await step('Produce large message', async () => {
       await page.goto(`/topics/${topicName}/produce-record`);
 
-      const largeContent = 'Large content '.repeat(1000); // ~14KB
+      const largeContent = 'Large content '.repeat(1000);
       const monacoEditor = page.getByTestId('produce-value-editor').locator('.monaco-editor').first();
       await monacoEditor.click();
 

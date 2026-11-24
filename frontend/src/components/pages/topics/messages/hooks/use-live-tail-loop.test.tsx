@@ -160,7 +160,7 @@ describe('useLiveTailLoop', () => {
         await rs.advanceTimersByTimeAsync(60_000);
       });
       expect(result.current.status).toBe('exhausted');
-      expect(start).toHaveBeenCalledTimes(2); // 1 initial + 1 retry
+      expect(start).toHaveBeenCalledTimes(2);
 
       start.mockImplementation(() => new Promise<void>(() => {})); // recovers: stream stays open
       act(() => {

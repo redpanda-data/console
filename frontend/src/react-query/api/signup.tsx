@@ -8,7 +8,6 @@ export const useLicenseSignupMutation = () => {
 
   return useMutation(licenseSignup, {
     onSuccess: async () => {
-      // Invalidate license-related queries to refresh the license data
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SignupService.method.licenseSignup,

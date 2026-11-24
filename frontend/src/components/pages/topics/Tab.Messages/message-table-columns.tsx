@@ -149,7 +149,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
             <button
               onClick={(e) => {
                 onShowDeserializers();
-                e.stopPropagation(); // don't sort
+                e.stopPropagation();
               }}
               type="button"
             >
@@ -178,7 +178,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
             <button
               onClick={(e) => {
                 onShowDeserializers();
-                e.stopPropagation(); // don't sort
+                e.stopPropagation();
               }}
               type="button"
             >

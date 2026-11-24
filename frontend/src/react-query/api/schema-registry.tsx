@@ -19,7 +19,7 @@ import type {
 } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-const STALE_TIME_MEDIUM = 30_000; // 30 seconds
+const STALE_TIME_MEDIUM = 30_000;
 
 export type SchemaRegistryContextResponse = {
   name: string;

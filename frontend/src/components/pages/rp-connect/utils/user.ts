@@ -107,7 +107,6 @@ const allowedOperations = (resources: ListACLsResponse_Resource[], username: str
   return allowed;
 };
 
-// Determine which permissions the user has and which are missing
 const splitByGranted = (requiredOps: ACL_Operation[], allowed: Set<ACL_Operation>): TopicPermissionCheck => ({
   hasPermissions: requiredOps.filter((op) => allowed.has(op)),
   missingPermissions: requiredOps.filter((op) => !allowed.has(op)),

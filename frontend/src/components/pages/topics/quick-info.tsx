@@ -57,11 +57,9 @@ function findQuickInfoEntries(entries: ConfigEntry[] | null | undefined) {
 export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   const topic = p.topic;
 
-  // Messages
   const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
   const messageSum = formatMessageSum(partitions);
 
-  // Config Entries / Separator
   const configEntries = useApiStoreHook((s) => s.topicConfig.get(topic.topicName))?.configEntries;
   const filteredConfigEntries = filterTopicConfig(configEntries);
   const cleanupPolicy = configEntries?.find((x) => x.name === 'cleanup.policy')?.value;

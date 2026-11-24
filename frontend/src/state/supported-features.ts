@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// That only tells us the actual routes we can use though.
-
 import { create } from 'zustand';
 
 import type { EndpointCompatibility } from './rest-interfaces';

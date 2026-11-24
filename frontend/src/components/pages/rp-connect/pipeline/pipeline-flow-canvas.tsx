@@ -196,7 +196,7 @@ function miniMapPanCentre(layout: MiniMapLayout, px: number, py: number) {
   };
 }
 
-// Overview minimap; draws only the pan-reachable world (see `miniMapWorld`). Click/drag re-centres.
+/** Overview minimap; draws only the pan-reachable world (see `miniMapWorld`). Click/drag re-centres. */
 export function PipelineMiniMap({ nodes, translateExtent }: { nodes: Node[]; translateExtent: FlowExtent }) {
   const transform = useStore((s) => s.transform);
   const paneWidth = useStore((s) => s.width);

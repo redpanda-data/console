@@ -13,7 +13,7 @@ import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../state/ui';
 import { wrapFilterFragment } from '../../../../utils/filter-helper';
 
-// proper Error, so never assume `.message` exists on it.
+/** proper Error, so never assume `.message` exists on it. */
 export function getSearchErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {
     return error.message;

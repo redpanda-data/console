@@ -49,7 +49,7 @@ const sharedReact19 = {
   requiredVersion: REACT19_REQUIRED_VERSION,
 };
 
-// A separate container keeps the existing entries' private React untouched.
+/** A separate container keeps the existing entries' private React untouched. */
 export const react19ModuleFederationConfig: ModuleFederationPluginOptions = {
   name: 'rp_console_react19',
   filename: 'embedded.js',

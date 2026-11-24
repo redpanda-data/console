@@ -48,7 +48,7 @@ const describeChange = (id: string, node: PipelineFlowNode | undefined, kind: Ch
   label: node?.labelText ?? node?.label ?? '',
 });
 
-// edited one. Unmatched on both sides is a change in place; on one side only, an addition or a removal.
+/** edited one. Unmatched on both sides is a change in place; on one side only, an addition or a removal. */
 export function summarizeComponentChanges(
   savedYaml: string,
   editedYaml: string,

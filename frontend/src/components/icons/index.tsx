@@ -1,15 +1,10 @@
-/**
- * Central icon exports, from lucide-react and @icons-pack/react-simple-icons. The single source for
- * icons in Console — `import { CheckIcon, GitHubIcon } from 'components/icons'`.
- */
-
 // biome-ignore lint/performance/noBarrelFile: Intentional central icon system as per project architecture
-export { default as GitHubIcon } from '@icons-pack/react-simple-icons/icons/SiGithub.mjs'; // FaGithub
-export { default as TwitterIcon } from '@icons-pack/react-simple-icons/icons/SiX.mjs'; // FaTwitter (Twitter rebranded to X)
+export { default as GitHubIcon } from '@icons-pack/react-simple-icons/icons/SiGithub.mjs';
+export { default as TwitterIcon } from '@icons-pack/react-simple-icons/icons/SiX.mjs';
 
 export { OpenAIIcon, SalesforceIcon, SlackIcon } from './brand-icons';
 
-// LinkedIn removed from both lucide-react (v1.x) and @icons-pack/react-simple-icons
+/** LinkedIn mark, inlined because the shared icon libraries do not provide it. */
 export const LinkedInIcon = ({ size = 16, className }: { size?: number; className?: string }) => (
   <svg
     aria-hidden="true"
@@ -28,71 +23,71 @@ export const LinkedInIcon = ({ size = 16, className }: { size?: number; classNam
 );
 export {
   Activity as ActivityIcon,
-  AlertCircle as AlertIcon, // MdOutlineError, MdOutlineErrorOutline, AiOutlineExclamationCircle, AlertIcon (Octicons)
-  AlertTriangle as WarningIcon, // MdOutlineWarning, MdOutlineWarningAmber
-  Archive as ArchiveIcon, // ArchiveIcon (Heroicons)
+  AlertCircle as AlertIcon,
+  AlertTriangle as WarningIcon,
+  Archive as ArchiveIcon,
   ArrowBigUp as ArrowBigUpIcon,
   ArrowLeft as ArrowLeftIcon,
-  ArrowRight as TabIcon, // MdKeyboardTab (no direct Tab icon in lucide)
-  Ban as BanIcon, // MdDoNotDisturb, CircleSlashIcon (Octicons)
-  Beaker as BeakerIcon, // BeakerIcon (Heroicons)
-  BookOpen as BookOpenIcon, // BookOpenIcon (Heroicons)
-  Bot as AIIcon, // MdOutlineSmartToy
-  Box as CubeIcon, // CubeTransparentIcon (Heroicons)
-  Calendar as CalendarIcon, // MdCalendarToday
-  Check as CheckIcon, // MdCheck, CheckIcon (Octicons)
-  CheckCircle as CheckCircleIcon, // MdCheckCircle
+  ArrowRight as TabIcon,
+  Ban as BanIcon,
+  Beaker as BeakerIcon,
+  BookOpen as BookOpenIcon,
+  Bot as AIIcon,
+  Box as CubeIcon,
+  Calendar as CalendarIcon,
+  Check as CheckIcon,
+  CheckCircle as CheckCircleIcon,
   ChevronDown as ChevronDownIcon,
-  ChevronLeft as ChevronLeftIcon, // ChevronLeftIcon (Octicons)
-  ChevronRight as ChevronRightIcon, // ChevronRightIcon (Heroicons/Octicons)
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
   ChevronUp as ChevronUpIcon,
-  Code as CodeIcon, // MdJavascript
+  Code as CodeIcon,
   Command as CommandIcon,
-  Copy as CopyIcon, // MdContentCopy
-  CopyPlus as CopyAllIcon, // MdOutlineCopyAll
-  Crown as CrownIcon, // FaCrown
-  Download as DownloadIcon, // MdOutlineDownload, DownloadIcon (Octicons)
-  Eye as EyeIcon, // IoMdEye, EyeIcon (Heroicons)
-  EyeOff as EyeOffIcon, // IoMdEyeOff, MdOutlineVisibilityOff, EyeOffIcon (Heroicons), EyeClosedIcon (Octicons)
-  Filter as FilterIcon, // FilterIcon (Heroicons)
-  Fingerprint as FingerprintIcon, // Fingerprint icon for context IDs
-  Flame as FlameIcon, // MdLocalFireDepartment
-  HelpCircle as HelpIcon, // MdHelpOutline, MdOutlineQuestionMark
-  Home as HomeIcon, // HomeIcon (Heroicons)
-  Hourglass as HourglassIcon, // MdHourglassFull
+  Copy as CopyIcon,
+  CopyPlus as CopyAllIcon,
+  Crown as CrownIcon,
+  Download as DownloadIcon,
+  Eye as EyeIcon,
+  EyeOff as EyeOffIcon,
+  Filter as FilterIcon,
+  Fingerprint as FingerprintIcon,
+  Flame as FlameIcon,
+  HelpCircle as HelpIcon,
+  Home as HomeIcon,
+  Hourglass as HourglassIcon,
   Inbox as InboxIcon,
-  Info as InfoIcon, // MdInfoOutline, InfoIcon (Octicons)
-  Key as KeyIcon, // MdKey
-  Layers as LayersIcon, // MdOutlineLayers
-  LayoutGrid as CollectionIcon, // CollectionIcon (Heroicons) - Note: 3x3 grid → 2x2 grid
-  Link as LinkIcon, // LinkIcon (Heroicons)
-  Loader2 as LoaderIcon, // Loading spinner
-  Lock as LockIcon, // LockIcon (Octicons)
-  Menu as MenuIcon, // ThreeBarsIcon (Octicons)
+  Info as InfoIcon,
+  Key as KeyIcon,
+  Layers as LayersIcon,
+  LayoutGrid as CollectionIcon,
+  Link as LinkIcon,
+  Loader2 as LoaderIcon,
+  Lock as LockIcon,
+  Menu as MenuIcon,
   Minus as MinusIcon,
-  MoreHorizontal as MoreHorizontalIcon, // BsThreeDots, KebabHorizontalIcon (Octicons)
-  Pause as PauseIcon, // MdPause
-  PauseCircle as PauseCircleIcon, // MdOutlinePauseCircle
-  Pencil as EditIcon, // PencilIcon (Heroicons)
+  MoreHorizontal as MoreHorizontalIcon,
+  Pause as PauseIcon,
+  PauseCircle as PauseCircleIcon,
+  Pencil as EditIcon,
   Play as PlayTriangleIcon,
-  PlayCircle as PlayIcon, // MdPlayCircleOutline
-  Plus as PlusIcon, // AiOutlinePlus, PlusIcon (Octicons)
-  RefreshCw as RefreshIcon, // MdOutlineCached, SyncIcon (Octicons)
-  Reply as ReplyIcon, // MdOutlineQuickreply
+  PlayCircle as PlayIcon,
+  Plus as PlusIcon,
+  RefreshCw as RefreshIcon,
+  Reply as ReplyIcon,
   RotateCcw as RotateCcwIcon,
-  RotateCw as RotateCwIcon, // MdRefresh
-  Scale as ScaleIcon, // ScaleIcon (Heroicons)
-  Settings as SettingsIcon, // MdOutlineSettings, GearIcon (Octicons)
-  Shield as ShieldIcon, // Shield (for Shadow Links)
-  ShieldCheck as ShieldCheckIcon, // ShieldCheckIcon (Heroicons)
-  SkipBack as SkipBackIcon, // MdOutlineSkipPrevious
-  SkipForward as SkipIcon, // SkipIcon (Octicons)
-  StopCircle as StopCircleIcon, // FaRegStopCircle
-  Timer as TimerIcon, // MdOutlineTimer
-  Trash2 as TrashIcon, // MdDeleteOutline, TrashIcon (Heroicons/Octicons), AiOutlineDelete, HiOutlineTrash
-  Wrench as WrenchIcon, // FaWrench
-  X as CloseIcon, // MdClose, XIcon (Heroicons/Octicons)
-  XCircle as ErrorIcon, // MdError, XCircleIcon (Heroicons/Octicons)
+  RotateCw as RotateCwIcon,
+  Scale as ScaleIcon,
+  Settings as SettingsIcon,
+  Shield as ShieldIcon,
+  ShieldCheck as ShieldCheckIcon,
+  SkipBack as SkipBackIcon,
+  SkipForward as SkipIcon,
+  StopCircle as StopCircleIcon,
+  Timer as TimerIcon,
+  Trash2 as TrashIcon,
+  Wrench as WrenchIcon,
+  X as CloseIcon,
+  XCircle as ErrorIcon,
 } from 'lucide-react';
 
 /**

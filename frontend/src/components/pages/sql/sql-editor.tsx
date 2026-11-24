@@ -45,7 +45,7 @@ import { z } from 'zod';
 
 import type { Catalog, TableRef } from './sql-types';
 
-// Lets the workspace open a query in a new editor tab.
+/** Lets the workspace open a query in a new editor tab. */
 export type SqlEditorHandle = {
   /** Open `sql` in a new tab named `name` (or "Query N") and focus it. */
   setQuery: (sql: string, name?: string) => void;

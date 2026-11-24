@@ -179,7 +179,6 @@ function DebugSection({
 
 type FixtureTag = ConnectConfigFixture['tags'][number];
 
-// The Configs panel's sections, in the order they read.
 const FIXTURE_GROUPS: { tag: FixtureTag; label: string; chip: string; description: string }[] = [
   { tag: 'simple', label: 'Simple', chip: 'Simple', description: 'Small pipelines to start from.' },
   { tag: 'medium', label: 'Medium', chip: 'Medium', description: 'One source, a few processors, one sink.' },
@@ -317,7 +316,6 @@ function ConnectConfigsPanel() {
       CONNECT_CONFIG_FIXTURES.map((fixture) => ({
         fixture,
         group: groupOf(fixture),
-        // How it ends, as the pipelines list's Runs column reads it.
         end: summarizePipelineEndYaml(fixture.yaml).status,
         lineCount: fixture.yaml.split('\n').length,
         secrets: [...new Set(Array.from(fixture.yaml.matchAll(SECRET_REF_RE), (m) => m[1]))],
@@ -757,7 +755,6 @@ function EnvironmentPanel() {
   );
 }
 
-// Control + status in one pill, mirroring the RPCN pipeline run toggle.
 function FlagToggle({
   id,
   checked,

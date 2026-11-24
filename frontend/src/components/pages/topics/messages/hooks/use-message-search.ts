@@ -518,7 +518,6 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
     [topicName, setters, session]
   );
 
-  // Abort the stream and cancel timers on unmount
   useEffect(
     () => () => {
       abortSession(session, 'component unmounted');

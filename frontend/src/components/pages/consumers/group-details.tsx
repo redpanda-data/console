@@ -72,7 +72,7 @@ function getQuickSearchRegex(pattern: string) {
     // biome-ignore lint/style/noNonNullAssertion: cache hit guarantees value exists
     return QUICK_SEARCH_REGEX_CACHE.get(pattern)!;
   }
-  let regExp = DEFAULT_MATCH_ALL_REGEX; // match everything by default
+  let regExp = DEFAULT_MATCH_ALL_REGEX;
   try {
     regExp = new RegExp(pattern, 'iu');
   } catch (_e) {

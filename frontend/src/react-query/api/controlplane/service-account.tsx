@@ -108,7 +108,7 @@ export const useGetServiceAccountCredentialsQuery = (
   useQuery(getServiceAccountCredentials, input, {
     enabled: options?.enabled,
     staleTime: NO_LIVED_CACHE_STALE_TIME,
-    retry: 1, // Provide quick feedback to the user in case of an error
+    retry: 1,
   });
 
 const useInvalidateServiceAccountsList = () => {

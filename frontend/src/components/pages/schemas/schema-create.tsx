@@ -103,8 +103,8 @@ export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
   }
 
   refreshData(force?: boolean) {
-    this.api.refreshSchemaSubjects(force); // for references editor -> subject selector
-    this.api.refreshTopics(force); // for the topics selector
+    this.api.refreshSchemaSubjects(force);
+    this.api.refreshTopics(force);
   }
 
   render() {
@@ -255,10 +255,8 @@ const SchemaPageButtons = (p: {
               return;
             }
 
-            // Clear any previous validation errors
             setPersistentValidationError(null);
 
-            // try to create the schema
             setCreating(true);
             await createSchemaAndOpen(editorState, queryClient, () => setCreating(false));
           }}
@@ -275,7 +273,6 @@ const SchemaPageButtons = (p: {
             const r = await validateSchema(editorState).finally(() => setValidating(false));
 
             if (r.isValid && r.isCompatible !== false) {
-              // Clear any previous validation errors on successful validation
               setPersistentValidationError(null);
               toast.success('Schema validated');
             } else {
@@ -344,13 +341,11 @@ async function createSchemaAndOpen(
 
     await Promise.all([
       api.refreshSchemaDetails(subjectName, true),
-      // Invalidate React Query cache so details page shows latest data
       queryClient.invalidateQueries({
         queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
       }),
     ]);
 
-    // success: navigate to details with "latest" so it picks up the new version
     appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
   } catch (err) {
     toast.error('Error creating schema', { description: String(err) });
@@ -446,7 +441,6 @@ function useFormatSwitch(currentFormat: string, onStateChange: SetSchemaState) {
       if (!format || currentFormat === format) {
         return;
       }
-      // Let user confirm
       setPendingFormat(format);
       setSwitchFormatOpen(true);
     },
@@ -463,7 +457,6 @@ function useFormatSwitch(currentFormat: string, onStateChange: SetSchemaState) {
   };
 }
 
-// Context picker for a new subject: pick an existing context or create one.
 function ContextField({
   state,
   onStateChange,

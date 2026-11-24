@@ -127,7 +127,6 @@ describe('the SecretEditPage', () => {
       expect(idInput).toBeDisabled();
     });
 
-    // Add MCP Server and Redpanda Connect scopes
     await selectScopes(user, 'MCP Server', 'Redpanda Connect');
 
     await submitWhenEnabled(user);

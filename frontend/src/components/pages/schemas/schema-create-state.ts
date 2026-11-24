@@ -5,15 +5,10 @@ import {
   SchemaType,
 } from '../../../state/rest-interfaces';
 
-// Regex for extracting record names from schema text
 const JSON_NAME_REGEX = /"name"\s*:\s*"(?<name>.*)"/u;
 const PROTOBUF_MESSAGE_NAME_REGEX = /message\s+(?<messageName>\S+)\s*\{/u;
 
-export type NamingStrategy =
-  | 'TOPIC' // only topic name
-  | 'RECORD_NAME' // take name from the record
-  | 'TOPIC_RECORD_NAME' // both topic and record name
-  | 'CUSTOM'; // essentially no strategy / arbitrary name
+export type NamingStrategy = 'TOPIC' | 'RECORD_NAME' | 'TOPIC_RECORD_NAME' | 'CUSTOM';
 
 export type SchemaEditorStateData = {
   strategy: NamingStrategy;
@@ -80,7 +75,7 @@ export function computeSubjectName(state: SchemaEditorStateData): string {
   return subjectName;
 }
 
-// Metadata to register: the properties with both a key and a value, or undefined when there are none.
+/** Metadata to register: the properties with both a key and a value, or undefined when there are none. */
 export function computeMetadata(
   metadataProperties: SchemaEditorStateData['metadataProperties']
 ): SchemaEditorStateHelper['computedMetadata'] {
@@ -125,7 +120,7 @@ function metadataRows(schema: SchemaRegistryVersionedSchema): SchemaEditorStateD
   ];
 }
 
-// Editor state for adding a version to `subjectName`, seeded from its latest active schema.
+/** Editor state for adding a version to `subjectName`, seeded from its latest active schema. */
 export function addVersionEditorState(
   subjectName: string,
   schema: SchemaRegistryVersionedSchema,
@@ -149,7 +144,7 @@ export function addVersionEditorState(
   };
 }
 
-// Display names of subjects per context id, for the reference subject picker.
+/** Display names of subjects per context id, for the reference subject picker. */
 export function subjectOptionsByContext(subjects: SchemaRegistrySubject[]): Map<string, { value: string }[]> {
   const map = new Map<string, { value: string }[]>();
   for (const s of subjects) {

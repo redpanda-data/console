@@ -21,7 +21,7 @@ import type { Catalog } from './sql-types';
 const LEADING_COMMENTS = /^(?:\s+|--[^\n]*\n?|\/\*[\s\S]*?\*\/|\()*/u;
 const FIRST_KEYWORD_RE = /^[A-Za-z_][A-Za-z0-9_]*/u;
 
-// First meaningful keyword of a statement (used to gate which statements run).
+/** First meaningful keyword of a statement (used to gate which statements run). */
 export function firstKeyword(stmt: string) {
   const word = stmt.replace(LEADING_COMMENTS, '').match(FIRST_KEYWORD_RE);
   return word ? word[0].toUpperCase() : '';
@@ -49,7 +49,7 @@ export function isWriteKeyword(stmt: string) {
   return WRITE_KEYWORDS.has(firstKeyword(stmt));
 }
 
-// Error copy for a statement the editor refuses to run.
+/** Error copy for a statement the editor refuses to run. */
 export function blockedStatementError(keyword: string) {
   if (keyword === 'REVOKE') {
     return { title: 'Manage access in Security', message: 'Grants are managed in Security in this release.' };

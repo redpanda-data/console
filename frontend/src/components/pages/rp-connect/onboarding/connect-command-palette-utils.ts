@@ -76,7 +76,7 @@ export function pushRecent(entry: RecentEntry) {
   } catch {}
 }
 
-// listed fragment (e.g. "queue" finds kafka/nats/redis). Keep entries lowercase.
+/** listed fragment (e.g. "queue" finds kafka/nats/redis). Keep entries lowercase. */
 export const COMPONENT_ALIASES: Record<string, string[]> = {
   queue: ['kafka', 'nats', 'redis', 'amqp', 'sqs', 'pubsub', 'nsq', 'mqtt'],
   stream: ['kafka', 'redpanda', 'kinesis'],

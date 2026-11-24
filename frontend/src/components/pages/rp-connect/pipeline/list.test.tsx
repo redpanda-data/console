@@ -176,7 +176,6 @@ const openDraftRowMenuItem = async (user: ReturnType<typeof userEvent.setup>, it
   await user.click(await screen.findByRole('menuitem', { name: item }));
 };
 
-// Every row links to its pipeline, so the link text is the visible rows.
 const visibleLinkNames = () =>
   screen
     .getAllByRole('link')

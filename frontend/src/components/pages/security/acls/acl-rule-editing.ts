@@ -41,7 +41,7 @@ export const getInitialSharedConfig = (sharedConfig?: Partial<SharedConfig>, pri
 const hasRuleOfType = (rules: Rule[], resourceType: ResourceType) =>
   rules.some((rule) => rule.resourceType === resourceType);
 
-// Only one cluster rule may exist, so later rules default to topics.
+/** Only one cluster rule may exist, so later rules default to topics. */
 export const getNextRuleResourceType = (rules: Rule[]) =>
   hasRuleOfType(rules, ResourceTypeCluster) ? ResourceTypeTopic : ResourceTypeCluster;
 

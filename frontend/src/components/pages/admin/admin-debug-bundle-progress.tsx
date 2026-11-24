@@ -60,7 +60,6 @@ const AdminPageDebugBundleProgressContent: FC = () => {
     !isInProgress &&
     statuses.some((s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.SUCCESS);
 
-  // Fetch immediately on mount, then poll every 2 seconds
   useEffect(() => {
     api.refreshDebugBundleStatuses().catch(() => {
       // Error handling managed by API layer

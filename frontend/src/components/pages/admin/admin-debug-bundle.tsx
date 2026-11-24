@@ -71,7 +71,6 @@ import DebugBundleLink from '../../debugBundle/debug-bundle-link';
 import { SingleSelect } from '../../misc/select';
 import type { PageInitHelper } from '../page';
 
-// Unit mappings for consistent dropdown handling
 const SIZE_UNITS = [
   { value: 1, label: 'Bytes' },
   { value: 1024, label: 'KB' },
@@ -345,18 +344,18 @@ const NewDebugBundleForm: FC<{
     skipTlsVerification: false,
     brokerIds: [] as number[],
     tlsEnabled: false,
-    controllerLogsSizeLimitBytes: 132 as number, // Default 132MB
-    controllerLogsSizeLimitUnit: 1024 * 1024, // Default to MB
-    cpuProfilerWaitSeconds: 30 as number | undefined, // Default 30s
-    cpuProfilerWaitUnit: 1, // Default to seconds
-    logsSince: new Date().setDate(new Date().getDate() - 1) as number | undefined, // Default yesterday
-    logsSizeLimitBytes: 100 as number, // Default 100MB
-    logsSizeLimitUnit: 1024 * 1024, // Default to MB
+    controllerLogsSizeLimitBytes: 132 as number,
+    controllerLogsSizeLimitUnit: 1024 * 1024,
+    cpuProfilerWaitSeconds: 30 as number | undefined,
+    cpuProfilerWaitUnit: 1,
+    logsSince: new Date().setDate(new Date().getDate() - 1) as number | undefined,
+    logsSizeLimitBytes: 100 as number,
+    logsSizeLimitUnit: 1024 * 1024,
     logsUntil: undefined as number | undefined,
-    metricsIntervalSeconds: 10 as number, // Default 10s
-    metricsIntervalUnit: 1, // Default to seconds
-    metricsSamples: '2' as string, // Default 2 samples
-    namespace: 'redpanda' as string, // Default "redpanda"
+    metricsIntervalSeconds: 10 as number,
+    metricsIntervalUnit: 1,
+    metricsSamples: '2' as string,
+    namespace: 'redpanda' as string,
     partitions: [] as string[],
     labelSelectors: [] as Array<{ id: number; key: string; value: string }>,
   });

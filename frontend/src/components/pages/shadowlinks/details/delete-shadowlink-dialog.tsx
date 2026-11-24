@@ -45,7 +45,7 @@ export const DeleteShadowLinkDialog = ({
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      setConfirmationText(''); // Cleanup on close
+      setConfirmationText('');
     }
     onOpenChange(newOpen);
   };

@@ -32,11 +32,8 @@ const getLicenseAlertContent = (
     return null;
   }
 
-  // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where,
-  // user has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
   const bakedInTrial = licenses.every((lic) => isBakedInTrial(lic));
 
-  // Choose the license with the latest expiration time
   const license = getLatestExpiringLicense(licenses);
 
   if (!license) {

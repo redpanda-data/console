@@ -16,9 +16,9 @@ const WHITESPACE_REGEX = /\s+/u;
 /** `userName` / `api_key` -> `User Name` / `Api Key`. */
 export function formatFieldLabel(key: string) {
   return key
-    .replace(CAMEL_CASE_REGEX, ' $1') // Insert space before capital letters
-    .replace(/_/gu, ' ') // Replace underscores with spaces
-    .replace(FIRST_CHAR_REGEX, (c) => c.toUpperCase()); // Capitalize first letter
+    .replace(CAMEL_CASE_REGEX, ' $1')
+    .replace(/_/gu, ' ')
+    .replace(FIRST_CHAR_REGEX, (c) => c.toUpperCase());
 }
 
 /** `pluralize(2, 'child', 'ren')` -> `'children'`. Count not included. */

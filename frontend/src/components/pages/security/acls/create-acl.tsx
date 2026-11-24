@@ -289,7 +289,6 @@ const Summary = ({ sharedConfig, rules }: SummaryProps) => {
                 originalOperationName: op,
               }));
 
-            // Check if all operations have the same permission
             const allAllow =
               enabledOperations.length > 0 &&
               enabledOperations.length === ops.length &&

@@ -154,8 +154,8 @@ test.describe('filter Messages by Timestamp', () => {
     });
 
     await step('Input unix timestamp in seconds format', async () => {
-      const timestampInSeconds = 1_704_067_200; // 2024-01-01 00:00:00 UTC
-      const timestampInMilliseconds = timestampInSeconds * 1000; // 1704067200000
+      const timestampInSeconds = 1_704_067_200;
+      const timestampInMilliseconds = timestampInSeconds * 1000;
 
       const numberInput = page.getByTestId('start-timestamp-input').locator('input[type="number"]');
       await expect(numberInput).toBeVisible();

@@ -70,7 +70,6 @@ export type AclDetail = {
   rules: Rule[];
 };
 
-// ACL constants for operations
 export const operationSets: Record<ResourceType, Record<string, OperationType>> = {
   cluster: {
     ALTER: OperationTypeNotSet,
@@ -177,7 +176,6 @@ export const getResourceNameValue = (rule: Rule) => {
   return resourceName;
 };
 
-// from ACL model to gRPC types
 export function getGRPCPermissionType(operation: OperationType): ACL_PermissionType {
   switch (operation) {
     case OperationTypeAllow:
@@ -250,8 +248,6 @@ export function getGRPCOperationType(op: string): ACL_Operation {
   }
 }
 
-// from gRPC types to ACL model
-
 function getResourceTypeFromGRPC(grpcType: ACL_ResourceType) {
   switch (grpcType) {
     case ACL_ResourceType.CLUSTER:
@@ -267,7 +263,7 @@ function getResourceTypeFromGRPC(grpcType: ACL_ResourceType) {
     case ACL_ResourceType.REGISTRY:
       return ResourceTypeSchemaRegistry;
     default:
-      return ResourceTypeTopic; // Default fallback
+      return ResourceTypeTopic;
   }
 }
 
@@ -280,7 +276,7 @@ function getResourcePatternTypeFromGRPC(grpcPattern: ACL_ResourcePatternType) {
     case ACL_ResourcePatternType.PREFIXED:
       return ResourcePatternTypePrefix;
     default:
-      return ResourcePatternTypeLiteral; // Default fallback
+      return ResourcePatternTypeLiteral;
   }
 }
 
@@ -326,7 +322,6 @@ function getOperationNameFromGRPC(grpcOp: ACL_Operation): string {
 
 type HostData = { principal: string; rulesMap: Map<string, Rule>; ruleIdCounter: number };
 
-// Helper function to initialize hosts map from resources
 const initializeHostsMap = (resources: ListACLsResponse['resources']) => {
   const hostsMap = new Map<string, HostData>();
   for (const resource of resources) {
@@ -364,7 +359,6 @@ const getOrCreateRule = (hostData: HostData, ruleKey: string, target: RuleTarget
   return rule;
 };
 
-// Helper function to process a single resource and update hostsMap
 const processResourceAcls = (resource: ListACLsResponse['resources'][number], hostsMap: Map<string, HostData>) => {
   const target: RuleTarget = {
     resourceType: getResourceTypeFromGRPC(resource.resourceType),
@@ -382,7 +376,6 @@ const processResourceAcls = (resource: ListACLsResponse['resources'][number], ho
   }
 };
 
-// Helper function to determine the mode for a rule based on its operations
 const determineRuleMode = (rule: Rule) => {
   const operationValues = Object.values(rule.operations);
   const allOperationKeys = Object.keys(getOperationsForResourceType(rule.resourceType));
@@ -408,7 +401,7 @@ const determineRuleMode = (rule: Rule) => {
   }
 };
 
-// function to convert ACL List response to AclDetail array (one per host)
+/** function to convert ACL List response to AclDetail array (one per host) */
 export const getAclFromAclListResponse = (aclList: ListACLsResponse) => {
   const hostsMap = initializeHostsMap(aclList.resources);
 
@@ -441,7 +434,6 @@ export const getOperationsForResourceType = (resourceType: ResourceType) => oper
 export const getInitialRuleIdCounter = (rules?: Rule[]) =>
   rules && rules.length > 0 ? Math.max(...rules.map((r) => r.id)) + 1 : 2;
 
-// Helper function to get resource name
 export const getResourceName = (resourceType: string) => {
   const resourceNames: Record<string, string> = {
     cluster: 'cluster',
@@ -454,7 +446,6 @@ export const getResourceName = (resourceType: string) => {
   return resourceNames[resourceType] || resourceType;
 };
 
-// Helper function to get plural resource name
 export const getPluralResourceName = (resourceType: string) => {
   const pluralNames: Record<string, string> = {
     cluster: 'clusters',
@@ -467,7 +458,6 @@ export const getPluralResourceName = (resourceType: string) => {
   return pluralNames[resourceType] || resourceType;
 };
 
-// Generate a unique key for an ACL based on Rule and SharedConfig
 export function getIdFromRule(rule: Rule, operation: string, permission: OperationType) {
   const sep = '-';
   const resourceName = getResourceNameValue(rule);
@@ -491,7 +481,6 @@ export function getIdFromRule(rule: Rule, operation: string, permission: Operati
   );
 }
 
-// Generate a unique key for an ACL from CreateACLRequest
 export function getIdFromCreateACLRequest(request: CreateACLRequest) {
   const sep = '-';
   return (
@@ -511,7 +500,6 @@ export function getIdFromCreateACLRequest(request: CreateACLRequest) {
   );
 }
 
-// Convert rules to CreateACLRequest array for API calls
 export function convertRulesToCreateACLRequests(rules: Rule[], principal: string, host: string) {
   return rules.reduce<CreateACLRequest[]>((acc, r) => {
     const baseRule = {
@@ -565,14 +553,12 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
   }, []);
 }
 
-// Helper function to convert UPPER_CASE strings to sentence case
 export const formatLabel = (text: string) =>
   text
     .replace(UNDERSCORE_REGEX, ' ')
     .toLowerCase()
     .replace(FIRST_CHAR_REGEX, (c) => c.toUpperCase());
 
-// Helper function to generate rule data-testid
 export const getRuleDataTestId = (rule: Rule) => {
   const rt =
     rule.selectorType === 'any' ? ACL_ResourcePatternType.LITERAL : getGRPCResourcePatternType(rule.selectorType);
@@ -599,10 +585,8 @@ export function calculateACLDifference(currentRules: ACLWithId[], newRules: ACLW
   const currentIds = new Set(currentRules.map((r) => r.id));
   const newIds = new Set(newRules.map((r) => r.id));
 
-  // Rules to create: in newRules but not in currentRules
   const toCreate = newRules.filter((rule) => !currentIds.has(rule.id));
 
-  // Rules to delete: in currentRules but not in newRules
   const toDelete = currentRules.filter((rule) => !newIds.has(rule.id));
 
   return {

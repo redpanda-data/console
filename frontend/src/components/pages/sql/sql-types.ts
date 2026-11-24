@@ -12,9 +12,11 @@
 import { ConnectError } from '@connectrpc/connect';
 import { ErrorInfoSchema } from 'protogen/google/rpc/error_details_pb';
 
-// Shared types for the SQL workspace, so the leaf components (catalog tree,
-// editor, results) and the data layer in sql-workspace agree on shape without
-// importing from each other.
+/**
+ * Shared types for the SQL workspace, so the leaf components (catalog tree,
+ * editor, results) and the data layer in sql-workspace agree on shape without
+ * importing from each other.
+ */
 
 export type Catalog = {
   /** SQL identifier, e.g. `default_redpanda_catalog`. */
@@ -72,8 +74,10 @@ function groupFetchedTables(catalog: Catalog, tables: FetchedTable[]) {
   return byNamespace;
 }
 
-// The catalog with fetched tables filled into its namespaces (which the bare
-// catalog list seeds empty), adding any namespace only the tables name.
+/**
+ * The catalog with fetched tables filled into its namespaces (which the bare
+ * catalog list seeds empty), adding any namespace only the tables name.
+ */
 export function withFetchedTables(catalog: Catalog, tables: FetchedTable[]): Catalog {
   const byNamespace = groupFetchedTables(catalog, tables);
   const namespaces = catalog.namespaces.map((ns) => ({
@@ -88,8 +92,10 @@ export function withFetchedTables(catalog: Catalog, tables: FetchedTable[]): Cat
   return { ...catalog, namespaces };
 }
 
-// Logical kind derived from the Postgres type name, used for alignment and
-// cell rendering.
+/**
+ * Logical kind derived from the Postgres type name, used for alignment and
+ * cell rendering.
+ */
 export type ColumnKind = 'num' | 'str' | 'bool' | 'time' | 'json';
 
 export type ColumnDef = {
@@ -104,14 +110,16 @@ export type ColumnDef = {
   isArray?: boolean;
 };
 
-// A single result cell. `null` is SQL NULL; everything else is the raw string
-// (or coerced boolean) for display.
+/**
+ * A single result cell. `null` is SQL NULL; everything else is the raw string
+ * (or coerced boolean) for display.
+ */
 export type CellValue = string | boolean | null;
 
 // A result row keyed by column name.
 export type ResultRow = Record<string, CellValue>;
 
-// Iceberg-lag snapshot for a bridge query. Offset-based, captured at query time.
+/** Iceberg-lag snapshot for a bridge query. Offset-based, captured at query time. */
 export type BridgeInfo = {
   topic: string;
   translationLag: number;
@@ -148,7 +156,7 @@ export type QueryRunSuccess = {
 
 export type QueryRun = QueryRunIdle | QueryRunRunning | QueryRunCanceled | QueryRunError | QueryRunSuccess;
 
-// Drives admin-only affordances (e.g. the "Add a topic" CTA).
+/** Drives admin-only affordances (e.g. the "Add a topic" CTA). */
 export type SqlRole = 'admin' | 'viewer';
 
 // Unwraps one level of array syntax — "TEXT[]", "_TEXT" (pg wire naming), or
@@ -182,10 +190,12 @@ const SCALAR_KIND_MATCHERS: [ColumnKind, (upperType: string) => boolean][] = [
   ['json', (t) => t.includes('RECORD') || t.includes('JSON')],
 ];
 
-// Maps a Postgres type name to a display kind. Composite columns arrive as the
-// literal "record"/"record[]" (the backend parses structure into Column.fields)
-// and render with the JSON tree viewer. Arrays map to their element kind;
-// anything unrecognized defaults to a string.
+/**
+ * Maps a Postgres type name to a display kind. Composite columns arrive as the
+ * literal "record"/"record[]" (the backend parses structure into Column.fields)
+ * and render with the JSON tree viewer. Arrays map to their element kind;
+ * anything unrecognized defaults to a string.
+ */
 export function columnKindForPgType(pgType: string) {
   const element = arrayElementPgType(pgType);
   if (element !== null) {
@@ -195,7 +205,7 @@ export function columnKindForPgType(pgType: string) {
   return SCALAR_KIND_MATCHERS.find(([, matches]) => matches(t))?.[0] ?? 'str';
 }
 
-// Structured hint from the Connect error's ErrorInfo metadata. undefined when absent.
+/** Structured hint from the Connect error's ErrorInfo metadata. undefined when absent. */
 export function hintFromError(error: unknown) {
   if (error instanceof ConnectError) {
     for (const info of error.findDetails(ErrorInfoSchema)) {

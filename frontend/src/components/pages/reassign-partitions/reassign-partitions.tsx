@@ -64,7 +64,6 @@ import { PageComponent, type PageInitHelper } from '../page';
 import { CompactSection } from '../shared/compact-section';
 
 export type PartitionSelection = {
-  // Which partitions are selected?
   [topicName: string]: number[]; // topicName -> array of partitionIds
 };
 
@@ -137,7 +136,6 @@ class ReassignPartitions extends PageComponent {
       setTimeout(() => scrollTo('wizard', 'start', -20), 20);
     }
 
-    // Reset selection if brokers or partitions become unavailable
     if (
       prevState.selectedBrokerIds !== this.state.selectedBrokerIds ||
       prevState.partitionSelection !== this.state.partitionSelection
@@ -150,7 +148,7 @@ class ReassignPartitions extends PageComponent {
     const { selectedBrokerIds, partitionSelection } = this.state;
 
     if (selectedBrokerIds.length === 0 && isPartitionSelectionEmpty(partitionSelection)) {
-      return; // nothing selected so far
+      return;
     }
 
     // has user selected a broker that is not available anymore?
@@ -437,16 +435,13 @@ class ReassignPartitions extends PageComponent {
 
   onNextPage() {
     if (this.state.currentStep === 0) {
-      // Select -> Assign
     }
 
-    // Assign -> Review
     if (this.state.currentStep === 1 && !this.planReassignment()) {
       return;
     }
 
     if (this.state.currentStep === 2) {
-      // Review -> Start
       this.startReviewedReassignment();
       return;
     }
@@ -464,7 +459,6 @@ class ReassignPartitions extends PageComponent {
 
     const targetBrokers = this.selectedTargetBrokers();
 
-    // error checking will happen inside computeReassignments
     const apiData: ApiData = {
       brokers: api.clusterInfo?.brokers ?? [],
       topics: api.topics as Topic[],
@@ -507,7 +501,6 @@ class ReassignPartitions extends PageComponent {
       // todo: Don't use returns and execeptions for control flow
       const success = await this.startReassignment(request);
       if (success) {
-        // Reset settings, go back to first page
         this.resetSelectionAndPage(true, false);
       }
     } catch (err) {
@@ -666,7 +659,6 @@ const steps: WizardStep[] = [
     title: 'Select Partitions',
     nextButton: {
       text: 'Select Target Brokers',
-      // Can only continue if at least one partition was selected
       isEnabled: (rp) => Object.keys(rp.partitionSelection).length > 0,
     },
   },
@@ -848,13 +840,11 @@ function throttledTopicNames(
   topicDescriptions: PartialTopicConfigsResponse['topicDescriptions'],
   topicsInProgress: string[]
 ) {
-  // Only get the names of the topics that have throttles applied
   const newThrottledTopics = topicDescriptions
     .filter((t) => t.configEntries.any((x) => Boolean(x.value)))
     .map((t) => t.topicName)
     .sort();
 
-  // Filter topics that are still being reassigned
   return newThrottledTopics.filter((t) => !topicsInProgress.includes(t));
 }
 

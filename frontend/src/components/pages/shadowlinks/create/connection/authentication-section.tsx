@@ -71,7 +71,6 @@ export const AuthenticationSection = () => {
   const scramCredentials = useWatch({ control, name: 'scramCredentials' });
   const plainCredentials = useWatch({ control, name: 'plainCredentials' });
 
-  // Fetch secrets for SecretSelector (embedded mode only)
   const { data: secretsData } = useListSecretsQuery({}, { enabled: isEmbedded() });
   const availableSecrets = useMemo(() => {
     if (!secretsData?.secrets) {

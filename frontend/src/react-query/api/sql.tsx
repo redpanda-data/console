@@ -81,7 +81,7 @@ export const useDescribeTableQuery = (input?: MessageInit<DescribeTableRequest>,
   });
 };
 
-// RP SQL's SHOW TABLES has no per-table Iceberg flag; the authoritative signal
+/** RP SQL's SHOW TABLES has no per-table Iceberg flag; the authoritative signal */
 export const useTopicIcebergQuery = (topicName: string, options?: SqlQueryOptions) => {
   const request = create(GetTopicConfigurationsRequestSchema, { topicName });
   const result = useQuery(getTopicConfigurations, request, {
@@ -91,7 +91,7 @@ export const useTopicIcebergQuery = (topicName: string, options?: SqlQueryOption
   return { ...result, isIceberg: Boolean(mode && mode !== 'disabled') };
 };
 
-// what lets the Cancel button stop the query on the engine.
+/** what lets the Cancel button stop the query on the engine. */
 export const useExecuteQueryMutation = () => {
   const transport = useTransport();
   return useMutation<ExecuteQueryResponse, ConnectError, { request: ExecuteQueryRequest; signal?: AbortSignal }>({

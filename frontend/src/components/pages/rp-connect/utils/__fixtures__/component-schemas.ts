@@ -186,7 +186,7 @@ export const mockKafkaOutput = create(ComponentSpecSchema, {
         type: 'object',
         kind: 'scalar',
         optional: true,
-        advanced: false, // Non-advanced config object
+        advanced: false,
         children: [
           createField({
             name: 'count',
@@ -202,7 +202,7 @@ export const mockKafkaOutput = create(ComponentSpecSchema, {
         type: 'object',
         kind: 'scalar',
         optional: true,
-        advanced: false, // Non-advanced config object
+        advanced: false,
         children: [
           createField({
             name: 'include_prefixes',
@@ -217,7 +217,7 @@ export const mockKafkaOutput = create(ComponentSpecSchema, {
         type: 'object',
         kind: 'scalar',
         optional: true,
-        advanced: false, // Non-advanced config object
+        advanced: false,
         children: [
           createField({
             name: 'initial_interval',

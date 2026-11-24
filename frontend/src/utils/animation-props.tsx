@@ -37,13 +37,13 @@ export type PositionProp =
   | 'sticky'
   | undefined;
 
-const time = 0.25; // 0.15
+const time = 0.25;
 const dist = 2;
 const dx100em = [`${-dist}em`, 0, `${dist}em`];
 const dx50em = [`${-(dist * 0.5)}em`, 0, `${dist * 0.5}em`];
 
 const transition: Transition = {
-  ease: 'easeInOut', //staggerChildren: 0,
+  ease: 'easeInOut',
   duration: time,
 };
 
@@ -70,7 +70,7 @@ export const animProps_radioOptionGroup = {
 
 export const animProps_modalPage = {
   transition: { ease: 'easeOut', duration: 0.3 },
-  initial: { opacity: 0, x: '1em', height: 'auto' }, // , position: 'relative' as PositionProp
+  initial: { opacity: 0, x: '1em', height: 'auto' },
   animate: { opacity: 1, x: '0em', height: 'auto' },
   exit: { opacity: 0, x: '-1em', height: 'auto' },
 };

@@ -55,7 +55,7 @@ export function expect(testOrName: string | (() => boolean), test?: () => boolea
 
   if (testFunc()) {
     successfulTests += 1;
-    return; // Success
+    return;
   }
 
   const failureName = name ? `: ${name}` : '';

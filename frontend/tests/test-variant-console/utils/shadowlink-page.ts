@@ -219,7 +219,6 @@ export class ShadowlinkPage {
   }) {
     await this.page.getByLabel(/shadow link name/iu).fill(params.name);
 
-    // Fill bootstrap servers using testId (first input field)
     await this.page.getByTestId('bootstrap-server-input-0').fill(params.bootstrapServers);
 
     await this.setToggle('tls-toggle', false);
@@ -329,7 +328,6 @@ export class ShadowlinkPage {
     await this.fillConnectionStep(params);
     await this.fillConfigurationStep({ topicFilters: params.topicFilters });
 
-    // Wait for navigation to list page (frontend redirects to /shadowlinks after create)
     await this.page.waitForURL(/\/shadowlinks$/u, { timeout: 60_000 });
   }
 
@@ -441,7 +439,6 @@ export class ShadowlinkPage {
     await this.expandShadowTopicsSection();
     await this.openSpecifyTopicsTab();
 
-    // Clear existing filters - look for delete/trash buttons in elevated cards
     await this.clearTopicFilters();
 
     // Add new filters
@@ -519,7 +516,7 @@ export class ShadowlinkPage {
     try {
       if (await btn.evaluate(isTrashButton)) {
         await btn.click();
-        return true; // Re-query buttons on the next call
+        return true;
       }
     } catch {
       // Button may have been removed from DOM, continue to next

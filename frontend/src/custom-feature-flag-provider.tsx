@@ -60,7 +60,7 @@ export const useBooleanFlagValue = (key: keyof typeof FEATURE_FLAGS, defaultValu
     // throw new Error('useBooleanFlagValue must be used within a CustomFeatureFlagProvider');
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('useBooleanFlagValue must be used within a CustomFeatureFlagProvider');
-    return defaultValue; // Fall back to false if the flag is not set.
+    return defaultValue;
   }
 
   return context.getBooleanFlagValue(key, defaultValue);
