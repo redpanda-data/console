@@ -42,9 +42,14 @@ function scoreText(text: string, query: string): number {
   return SUBSEQUENCE_SCORE * (query.length / (cursor - start));
 }
 
-/** Case-insensitive, in-order character matching against the value and its keywords; closer matches score higher. */
+// [upstream] Pending ui-registry fix/command-filter-typed-separator: trim before normalising. Drop this
+// marker once a release has it.
+/**
+ * Case-insensitive, in-order character matching against the value and its keywords; closer matches score higher.
+ * Whitespace around the search is ignored, but a typed hyphen still separates: `prod-` finds `.prod-us`, not `.prod`.
+ */
 export function defaultCommandFilter(value: string, search: string, keywords: string[] = []): number {
-  const query = normalize(search).trim();
+  const query = normalize(search.trim());
   if (query === '') {
     return EXACT_SCORE;
   }

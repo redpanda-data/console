@@ -51,6 +51,12 @@ const makeContexts = (): DerivedContext[] => [
   { id: ALL_CONTEXT_ID, label: 'All', subjectCount: 5, mode: 'READWRITE', compatibility: 'BACKWARD' },
 ];
 
+// `.prod` sorts first, so a filter that drops the typed hyphen highlights it.
+const PROD_CONTEXTS: DerivedContext[] = [
+  { id: '.prod', label: '.prod', subjectCount: 1, mode: 'READWRITE', compatibility: 'BACKWARD' },
+  { id: '.prod-us', label: '.prod-us', subjectCount: 1, mode: 'READWRITE', compatibility: 'BACKWARD' },
+];
+
 describe('the SchemaContextSelector', () => {
   test('renders selected context label in trigger button', () => {
     renderSelector({ contexts: makeContexts(), onContextChange: rs.fn(), selectedContext: DEFAULT_CONTEXT_ID });
@@ -87,6 +93,21 @@ describe('the SchemaContextSelector', () => {
     await user.click(screen.getByText('.staging'));
 
     expect(onContextChange).toHaveBeenCalledWith('.staging');
+  });
+
+  test('a typed hyphen narrows the search, so Enter picks the hyphenated context', async () => {
+    const user = userEvent.setup();
+    const onContextChange = rs.fn();
+    renderSelector({ contexts: PROD_CONTEXTS, onContextChange, selectedContext: ALL_CONTEXT_ID });
+
+    await user.click(screen.getByTestId('schema-context-selector'));
+    await user.type(screen.getByPlaceholderText('Search contexts...'), '.prod-');
+
+    const options = screen.getAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveTextContent('.prod-us');
+    await user.keyboard('{Enter}');
+    expect(onContextChange).toHaveBeenCalledWith('.prod-us');
   });
 
   test('displays subject count per context', async () => {
