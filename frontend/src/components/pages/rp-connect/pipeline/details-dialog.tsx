@@ -25,6 +25,8 @@ import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import type React from 'react';
 import { useMemo } from 'react';
 
+import { useEgressGatewayNames } from './egress-gateway-field';
+import { isEgressGatewayPickerEnabled } from './egress-gateways';
 import { cpuToTasks } from '../tasks';
 import { extractAllTopics } from '../utils/yaml';
 
@@ -156,6 +158,8 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }:
     [pipeline?.tags]
   );
 
+  const gatewayNames = useEgressGatewayNames();
+
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent size="lg">
@@ -181,6 +185,7 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }:
                   <DetailRow copyable label="Service account" value={pipeline.serviceAccount.clientId} />
                 ) : null}
                 <DetailRow label={<ComputeUnitsLabel />} value={`${cpuToTasks(pipeline.resources?.cpuShares) ?? 0}`} />
+                {pipeline.status?.error ? <DetailRow label="Status" value={pipeline.status.error} wrap /> : null}
               </section>
 
               <Separator />
@@ -196,6 +201,13 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }:
                 <DetailRow label="Tags">
                   <ReferenceList items={visibleTags.map(([k, v]) => `${k}: ${v}`)} />
                 </DetailRow>
+                {isEgressGatewayPickerEnabled() && pipeline.egress?.gatewayRefs.length ? (
+                  <DetailRow label="Egress gateways">
+                    <ReferenceList
+                      items={pipeline.egress.gatewayRefs.map((ref) => gatewayNames.get(ref.id) ?? ref.id)}
+                    />
+                  </DetailRow>
+                ) : null}
               </section>
 
               {onRequestDelete ? (

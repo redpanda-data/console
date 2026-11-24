@@ -44,6 +44,10 @@ rs.mock('../../../../react-query/api/user', () => ({
   useListUsersQuery: () => ({ data: { users: [{ name: 'scram-user' }] } }),
 }));
 
+rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
+  useClusterFenceGuard: () => ({ reasonFor: () => undefined }),
+}));
+
 import { RoleDetailPageNew } from './role-detail-page-new';
 
 const renderPage = () =>

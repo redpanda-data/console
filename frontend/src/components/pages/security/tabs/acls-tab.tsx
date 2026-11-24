@@ -10,6 +10,7 @@
  */
 
 import { Link, useNavigate } from '@tanstack/react-router';
+import { FenceGuardedButton, FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { TrashIcon } from 'components/icons';
 import {
   DataTable,
@@ -119,13 +120,15 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
         }
       />
       <DropdownMenuContent>
-        <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, true)}>
+        <FenceGuardedMenuItem action="editAcls" disabled={!canDeleteUser} onClick={handle(true, true)}>
           Delete (User and ACLs)
-        </DropdownMenuItem>
+        </FenceGuardedMenuItem>
         <DropdownMenuItem disabled={!canDeleteUser} onClick={handle(true, false)}>
           Delete (User only)
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handle(false, true)}>Delete (ACLs only)</DropdownMenuItem>
+        <FenceGuardedMenuItem action="editAcls" onClick={handle(false, true)}>
+          Delete (ACLs only)
+        </FenceGuardedMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -238,7 +241,8 @@ const AclsTabBody = ({
       <Section>
         <AlertDeleteFailed aclFailed={aclFailed} onClose={onDismissFailure} />
 
-        <Button
+        <FenceGuardedButton
+          action="editAcls"
           data-testid="create-acls"
           onClick={() => {
             navigate({
@@ -250,7 +254,7 @@ const AclsTabBody = ({
           }}
         >
           Create ACLs
-        </Button>
+        </FenceGuardedButton>
 
         <div className="py-4">
           <AclRowActionsContext.Provider value={rowActions}>

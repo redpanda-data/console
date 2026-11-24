@@ -56,6 +56,7 @@ import {
   UNTITLED_PIPELINE_NAME,
   untitledPipelineName,
 } from './draft-copy';
+import { egressWrite, isEgressGatewayPickerEnabled, storedEgressGatewayIds } from './egress-gateways';
 import {
   BLANK_CONFIG_MESSAGE,
   isBlankConfig,
@@ -100,6 +101,7 @@ type PipelineWrite = {
   yamlContent: string;
   draft: boolean;
   serviceAccount: AttachedServiceAccount | undefined;
+  egressGatewayIds: string[];
 };
 
 /** What a save reads and reports through, fixed for the save's duration. */
@@ -181,6 +183,7 @@ function buildCreateRequest(write: PipelineWrite) {
         tags: { __redpanda_cloud_pipeline_type: 'pipeline', ...account.tags, ...write.userTags },
         serviceAccount: account.serviceAccount,
         draft: write.draft,
+        egress: isEgressGatewayPickerEnabled() ? egressWrite(write.egressGatewayIds, []) : undefined,
       }),
     }),
   });
@@ -205,6 +208,10 @@ function buildUpdateRequest(id: string, current: Pipeline | undefined, write: Pi
         serviceAccount: account.serviceAccount ?? current?.serviceAccount,
         // Asserted so the server refuses the write if the draft was started meanwhile.
         draft: write.draft ? true : undefined,
+        // Only the picker sets egress; elsewhere (BYOC) the backend owns the refs, and unset leaves them alone.
+        egress: isEgressGatewayPickerEnabled()
+          ? egressWrite(write.egressGatewayIds, storedEgressGatewayIds(current))
+          : undefined,
       }),
     }),
   });
@@ -266,7 +273,7 @@ function saveAttempt(
   intent: SaveIntent | undefined
 ): SaveAttempt {
   const submittedSettings = flow.form.getValues();
-  const { name, description, computeUnits, tags } = submittedSettings;
+  const { name, description, computeUnits, tags, egressGatewayIds } = submittedSettings;
   return {
     run,
     isDraftSave: run === 'draft',
@@ -280,6 +287,7 @@ function saveAttempt(
       yamlContent,
       draft: run === 'draft',
       serviceAccount: flow.attachedServiceAccount,
+      egressGatewayIds: egressGatewayIds ?? [],
     },
   };
 }

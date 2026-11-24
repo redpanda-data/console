@@ -27,6 +27,8 @@ import { docsLinks } from 'utils/docs-links';
 import { UpdateRoleMembershipRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/security_pb';
 import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
 import { rolesApi } from '../../../../state/backend-api';
+import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
+import { useClusterFenceGuard } from '../../../cluster-fence/use-cluster-fence-guard';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
 import {
@@ -41,6 +43,7 @@ import {
 import { ListLayout, ListLayoutContent, ListLayoutFilters } from '../../../redpanda-ui/components/list-layout';
 import { Skeleton } from '../../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
+import { DisabledReasonTooltip } from '../../../ui/disabled-reason-tooltip';
 
 type Role = {
   principalType: string;
@@ -57,11 +60,10 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
   const { mutateAsync: updateRoleMembership, isPending } = useUpdateRoleMembershipMutation();
   const { data: rolesData } = useListRolesQuery();
   const [pendingRemoveRole, setPendingRemoveRole] = useState<string | null>(null);
-
-  const assignedRoleNames = new Set(roles.map((r) => r.principalName));
+  const editRolesReason = useClusterFenceGuard().reasonFor('editRoles');
 
   const availableRoleOptions = (rolesData?.roles ?? [])
-    .filter((r) => !assignedRoleNames.has(r.name))
+    .filter((r) => !roles.some((assigned) => assigned.principalName === r.name))
     .map((r) => ({ value: r.name, label: r.name }));
 
   const removeFromRole = async (roleName: string) => {
@@ -129,14 +131,15 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
         <TableCell align="right">
           <div className="flex items-center justify-end gap-1">
             {Boolean(userName) && (
-              <Button
+              <FenceGuardedButton
+                action="editRoles"
                 onClick={() => setPendingRemoveRole(r.principalName)}
                 size="icon-sm"
                 testId={`remove-role-${r.principalName}`}
                 variant="ghost"
               >
                 <Trash2Icon className="h-4 w-4" />
-              </Button>
+              </FenceGuardedButton>
             )}
             <Button
               render={
@@ -164,15 +167,18 @@ export const UserRolesCardNew = ({ roles, userName, isLoading }: UserRolesCardNe
         <ListLayoutFilters
           actions={
             userName ? (
-              <Combobox
-                className="w-56"
-                clearable={false}
-                onChange={assignRole}
-                options={availableRoleOptions}
-                placeholder="Assign a role..."
-                testId="assign-role-combobox"
-                value=""
-              />
+              <DisabledReasonTooltip reason={editRolesReason}>
+                <Combobox
+                  className="w-56"
+                  clearable={false}
+                  disabled={Boolean(editRolesReason)}
+                  onChange={assignRole}
+                  options={availableRoleOptions}
+                  placeholder="Assign a role..."
+                  testId="assign-role-combobox"
+                  value=""
+                />
+              </DisabledReasonTooltip>
             ) : undefined
           }
         >

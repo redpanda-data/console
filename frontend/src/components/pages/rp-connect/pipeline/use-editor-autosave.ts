@@ -63,6 +63,7 @@ export function useEditorAutosave({
       description: values.description ?? '',
       computeUnits: values.computeUnits,
       tags: values.tags,
+      egressGatewayIds: values.egressGatewayIds,
       configYaml: yamlContent,
       basedOnUpdateTime: baselineUpdateTime,
       serviceAccount: serviceAccountRef.current,

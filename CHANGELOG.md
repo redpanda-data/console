@@ -2,6 +2,15 @@
 
 ## Master / Unreleased
 
+## v3.15.0 / 2026-11-17
+- [IMPROVEMENT] Support KIP-848 consumer groups: list groups by type, describe them with the ConsumerGroupDescribe API, show the Assigning and Reconciling states, add a Type column and filter, a Members tab with member epochs and target assignments, and the assignor and group epochs on the detail page.
+- [IMPROVEMENT] Add cluster fencing and a Failover tab to the Shadow Links page: fence any fenceable cluster, see per-broker fence and read-policy status, and label links whose failover stopped as "Failover stopped".
+- [IMPROVEMENT] Show consumer group states with a colored status dot, and keep the partition table's sort and page when switching between consumer group tabs.
+- [IMPROVEMENT] Publish a stable request and the missing 201 response example for `PUT /v1/transforms` in the OpenAPI spec.
+- [CHANGE] Return `404 NOT_FOUND` instead of `400 INVALID_ARGUMENT` when adding partitions to a topic that does not exist, including per-topic errors from the batch endpoint.
+- [BUGFIX] Accept Avro schemas that set a `name` on array or map types, so records written with them are decoded instead of shown as raw bytes and producing with them works again.
+- [SECURITY] Update `kin-openapi`, `chi`, `golang.org/x/net`, and OpenTelemetry to resolve Snyk findings.
+
 ## v3.14.0 / 2026-11-04
 - [IMPROVEMENT] Edit Redpanda Connect input stop conditions in the visual editor: every input card can stop after N messages, when idle, or on a Bloblang check (`read_until` wrappers are now unwrapped and editable), and the canvas, page header, and YAML outline show whether a pipeline stops on its own.
 - [IMPROVEMENT] Add a "Runs" column and filter to the Redpanda Connect pipelines list, and keep the list's tab, search, filters, sort, and page in the URL so views survive reloads and can be shared.

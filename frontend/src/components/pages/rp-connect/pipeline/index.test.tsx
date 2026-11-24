@@ -1633,6 +1633,66 @@ describe('pipelinePage saving and recovering work', () => {
       mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnPipelineDrafts');
     });
 
+    // Unset egress leaves the stored gateways alone, so a save that never touched them must not send one.
+    it("keeps the pipeline's egress gateways on a save that doesn't change them", async () => {
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+      const getPipelineMock = rs.fn().mockReturnValue(
+        create(ConsoleGetPipelineResponseSchema, {
+          response: create(GetPipelineResponseSchema, {
+            pipeline: create(PipelineSchema, {
+              id: 'test-pipeline',
+              displayName: 'Test Pipeline',
+              configYaml: DEPLOYED_YAML,
+              state: Pipeline_State.STOPPED,
+              resources: { cpuShares: '100m', memoryShares: '0' },
+              egress: { gatewayRefs: [{ id: 'dbpir6fk67oc73abpae0' }] },
+            }),
+          }),
+        })
+      );
+      const { user } = renderPipelinePage('edit', { getPipelineMock, updatePipelineMock });
+
+      await replaceLoadedConfig('input:\n  stdin: {}\noutput:\n  drop: {}\n');
+      const sent = await saveAndCapturePipeline(user, updatePipelineMock);
+
+      expect(sent.egress).toBeUndefined();
+    });
+
+    // BYOC infers its gateway refs from the config, so a save without the picker must never send egress,
+    // even when restored work names different gateways from the stored ones.
+    it('never sends egress from a save without the egress gateway picker', async () => {
+      const updatePipelineMock = rs.fn().mockReturnValue(create(ConsoleUpdatePipelineResponseSchema, {}));
+      const getPipelineMock = rs.fn().mockReturnValue(
+        create(ConsoleGetPipelineResponseSchema, {
+          response: create(GetPipelineResponseSchema, {
+            pipeline: create(PipelineSchema, {
+              id: 'test-pipeline',
+              displayName: 'Test Pipeline',
+              configYaml: DEPLOYED_YAML,
+              state: Pipeline_State.STOPPED,
+              resources: { cpuShares: '100m', memoryShares: '0' },
+              egress: { gatewayRefs: [{ id: 'dbpir6fk67oc73abpae0' }] },
+            }),
+          }),
+        })
+      );
+      useRpcnEditorAutosaveStore.getState().save({
+        targetKey: 'test-pipeline',
+        name: 'Test Pipeline',
+        description: '',
+        computeUnits: 1,
+        tags: [],
+        configYaml: 'input:\n  stdin: {}\noutput:\n  drop: {}\n',
+        egressGatewayIds: [],
+      });
+      const { user } = renderPipelinePage('edit', { getPipelineMock, updatePipelineMock });
+
+      await user.click(await screen.findByTestId('restore-autosave'));
+      const sent = await saveAndCapturePipeline(user, updatePipelineMock);
+
+      expect(sent.egress).toBeUndefined();
+    });
+
     describe('whether a draft is offered', () => {
       it('leads with Save draft on a new pipeline, and stores it without deploying', async () => {
         const createPipelineMock = rs.fn().mockReturnValue(createdPipelineResponse('new-pipeline'));

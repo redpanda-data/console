@@ -10,6 +10,7 @@ import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './modals
 
 const group: GroupDescription = {
   groupId: 'test-group',
+  groupType: 'classic',
   state: 'Empty',
   protocol: '',
   protocolType: 'consumer',

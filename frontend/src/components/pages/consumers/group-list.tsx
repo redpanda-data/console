@@ -45,6 +45,7 @@ import {
   ConsumerGroupStateCell,
   consumerGroupStateFilterOptions,
 } from '../../ui/consumer-group/consumer-group-state-cell';
+import { consumerGroupTypeFilterOptions, formatGroupType } from '../../ui/consumer-group/consumer-group-type';
 import { TonedIcon } from '../shared/toned-icon';
 
 const groupIdFilterFn = (row: DataTableRow<GroupDescription>, _columnId: string, filterValue: string) => {
@@ -63,7 +64,8 @@ const groupIdFilterFn = (row: DataTableRow<GroupDescription>, _columnId: string,
 
 const DEFAULT_PAGE_SIZE = 10;
 
-const stateFilterFn = (row: DataTableRow<GroupDescription>, columnId: string, filterValues: string[]) => {
+/** Faceted filter for the state and type columns: the row passes when its value is one of the picked values. */
+const facetFilterFn = (row: DataTableRow<GroupDescription>, columnId: string, filterValues: string[]) => {
   if (!filterValues?.length) {
     return true;
   }
@@ -74,9 +76,9 @@ const columns: DataTableColumnDef<GroupDescription>[] = [
   {
     accessorKey: 'state',
     header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
-    filterFn: stateFilterFn,
+    filterFn: facetFilterFn,
     meta: columnMeta({ headWidth: 'md' as const }),
-    cell: ({ row: { original: group } }) => <ConsumerGroupStateCell state={group.state} />,
+    cell: ({ row: { original: group } }) => <ConsumerGroupStateCell groupType={group.groupType} state={group.state} />,
   },
   {
     accessorKey: 'groupId',
@@ -101,6 +103,13 @@ const columns: DataTableColumnDef<GroupDescription>[] = [
     ),
   },
   {
+    accessorKey: 'groupType',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+    filterFn: facetFilterFn,
+    meta: columnMeta({ headWidth: 'sm' as const }),
+    cell: ({ row: { original: group } }) => formatGroupType(group.groupType),
+  },
+  {
     accessorKey: 'coordinatorId',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Coordinator" />,
     enableColumnFilter: false,
@@ -112,6 +121,7 @@ const columns: DataTableColumnDef<GroupDescription>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Protocol" />,
     enableColumnFilter: false,
     meta: columnMeta({ headWidth: 'sm' as const }),
+    cell: ({ row: { original: group } }) => group.protocol || <span className="text-muted-foreground">—</span>,
   },
   {
     id: 'members',
@@ -129,14 +139,19 @@ const columns: DataTableColumnDef<GroupDescription>[] = [
   },
 ];
 
-/** Counts the groups in total and per state, in first-seen state order. */
-const computeGroupStatistics = (consumerGroups: GroupDescription[]) => {
+/** Counts the groups in total, per type (classic first) and per state, in first-seen state order. */
+export const computeGroupStatistics = (consumerGroups: GroupDescription[]) => {
+  const byType = new Map<string, number>();
   const byState = new Map<string, number>();
   for (const group of consumerGroups) {
+    byType.set(group.groupType, (byType.get(group.groupType) ?? 0) + 1);
     byState.set(group.state, (byState.get(group.state) ?? 0) + 1);
   }
   return {
     total: consumerGroups.length,
+    byType: (['classic', 'consumer'] as const)
+      .filter((type) => byType.has(type))
+      .map((type) => ({ type, label: formatGroupType(type), count: byType.get(type) ?? 0 })),
     byState: Array.from(byState.entries()).map(([state, count]) => ({ state, count })),
   };
 };
@@ -195,18 +210,22 @@ const useSortingSearchParams = (setPageIndex: SetPageIndex) => {
 const useColumnFiltersSearchParams = (setPageIndex: SetPageIndex) => {
   const [searchValue, setSearchValue] = useQueryState('q', parseAsString.withDefault(''));
   const [stateFilter, setStateFilter] = useQueryState('state', parseAsArrayOf(parseAsString).withDefault([]));
+  const [typeFilter, setTypeFilter] = useQueryState('type', parseAsArrayOf(parseAsString).withDefault([]));
 
   const columnFilters: ColumnFiltersState = [
     ...(searchValue ? [{ id: 'groupId', value: searchValue }] : []),
     ...(stateFilter.length ? [{ id: 'state', value: stateFilter }] : []),
+    ...(typeFilter.length ? [{ id: 'groupType', value: typeFilter }] : []),
   ];
 
   const onColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
     const next = typeof updater === 'function' ? updater(columnFilters) : updater;
     const nameFilter = next.find((f) => f.id === 'groupId');
     const stateColumnFilter = next.find((f) => f.id === 'state');
+    const typeColumnFilter = next.find((f) => f.id === 'groupType');
     setSearchValue((nameFilter?.value as string) || null);
     setStateFilter((stateColumnFilter?.value as string[])?.length ? (stateColumnFilter?.value as string[]) : null);
+    setTypeFilter((typeColumnFilter?.value as string[])?.length ? (typeColumnFilter?.value as string[]) : null);
     void setPageIndex(0);
   };
 
@@ -317,6 +336,9 @@ const GroupList: FC = () => {
     <ListLayout className="my-4 min-h-0" data-testid="consumer-groups-table">
       <div className="flex flex-wrap gap-8">
         <Stat label="Total groups" mono size="lg" value={statistics.total} />
+        {statistics.byType.map(({ type, label, count }) => (
+          <Stat key={type} label={label} mono size="lg" value={count} />
+        ))}
         {statistics.byState.map(({ state, count }) => (
           <Stat key={state} label={state} mono size="lg" value={count} />
         ))}
@@ -352,6 +374,11 @@ const GroupList: FC = () => {
           column={table.getColumn('state')}
           options={consumerGroupStateFilterOptions}
           title="State"
+        />
+        <DataTableFacetedFilter
+          column={table.getColumn('groupType')}
+          options={consumerGroupTypeFilterOptions}
+          title="Type"
         />
       </ListLayoutFilters>
 

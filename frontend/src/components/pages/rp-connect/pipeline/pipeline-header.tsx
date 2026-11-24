@@ -338,7 +338,10 @@ export function PipelineViewHeader({
           <ElementTooltip content={name}>
             <h1 className="min-w-0 truncate text-heading-xl">{name}</h1>
           </ElementTooltip>
-          <PipelineStateBadge state={pipeline.state} tooltip={viewingDraft ? DRAFT_BADGE_TOOLTIP : undefined} />
+          <PipelineStateBadge
+            state={pipeline.state}
+            tooltip={viewingDraft ? DRAFT_BADGE_TOOLTIP : pipeline.status?.error || undefined}
+          />
           <Button
             aria-label="View pipeline details"
             icon={<Info className="size-4!" />}

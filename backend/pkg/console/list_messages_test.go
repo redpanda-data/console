@@ -10,12 +10,21 @@
 package console
 
 import (
+	"context"
+	"log/slog"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kfake"
+	"github.com/twmb/franz-go/pkg/kmsg"
+	"go.uber.org/mock/gomock"
+
+	"github.com/redpanda-data/console/backend/pkg/testutil"
 )
 
 func TestCalculateConsumeRequests_AllPartitions_FewNewestMessages(t *testing.T) {
@@ -230,4 +239,56 @@ func TestCalculateConsumeRequests_AllPartitions_WithFilter(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, table.expected, actual, "expected other result for all partitions with filter enable. Case: ", i)
 	}
+}
+
+func TestFetchMessages_TopicAuthorizationFailed(t *testing.T) {
+	const topicName = "not-readable"
+
+	fakeCluster, err := kfake.NewCluster(kfake.NumBrokers(1), kfake.SeedTopics(1, topicName))
+	require.NoError(t, err)
+	t.Cleanup(fakeCluster.Close)
+
+	fakeCluster.Control(func(req kmsg.Request) (kmsg.Response, error, bool) {
+		fakeCluster.KeepControl()
+
+		fetchReq, ok := req.(*kmsg.FetchRequest)
+		if !ok || len(fetchReq.Topics) == 0 {
+			return nil, nil, false
+		}
+		res, ok := fetchReq.ResponseKind().(*kmsg.FetchResponse)
+		require.True(t, ok)
+		for _, reqTopic := range fetchReq.Topics {
+			resTopic := kmsg.NewFetchResponseTopic()
+			resTopic.Topic = reqTopic.Topic
+			resTopic.TopicID = reqTopic.TopicID
+			for _, reqPartition := range reqTopic.Partitions {
+				resPartition := kmsg.NewFetchResponseTopicPartition()
+				resPartition.Partition = reqPartition.Partition
+				resPartition.ErrorCode = kerr.TopicAuthorizationFailed.Code
+				resTopic.Partitions = append(resTopic.Partitions, resPartition)
+			}
+			res.Topics = append(res.Topics, resTopic)
+		}
+		return res, nil, true
+	})
+
+	kafkaCl, _ := testutil.CreateClients(t, fakeCluster.ListenAddrs())
+	t.Cleanup(kafkaCl.Close)
+
+	svc := Service{logger: slog.New(slog.DiscardHandler)}
+	progress := NewMockIListMessagesProgress(gomock.NewController(t))
+
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	err = svc.fetchMessages(ctx, kafkaCl, progress, TopicConsumeRequest{
+		TopicName:       topicName,
+		MaxMessageCount: 10,
+		Partitions: map[int32]*PartitionConsumeRequest{
+			0: {PartitionID: 0, StartOffset: 0, EndOffset: 10, MaxMessageCount: 10},
+		},
+	})
+	require.ErrorIs(t, err, errTopicReadNotAuthorized)
+	require.ErrorIs(t, err, kerr.TopicAuthorizationFailed)
+	assert.NoError(t, ctx.Err(), "fetch ran until the deadline instead of failing fast")
 }

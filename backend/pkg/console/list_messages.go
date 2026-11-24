@@ -887,7 +887,7 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 
 	// 3. Start go routine that consumes messages from Kafka and produces these records on the jobs channel so that these
 	// can be decoded by our workers.
-	go s.consumeKafkaMessages(workerCtx, client, consumeReq, jobs)
+	go s.consumeKafkaMessages(workerCtx, client, consumeReq, jobs, cancel)
 
 	// 4. Receive decoded messages until our request is satisfied. Once that's the case we will cancel the context
 	// that propagate to all the launched go routines.
@@ -920,6 +920,10 @@ func (s *Service) fetchMessages(ctx context.Context, cl *kgo.Client, progress IL
 		if isRequestSatisfied {
 			break
 		}
+	}
+
+	if cause := context.Cause(workerCtx); errors.Is(cause, errTopicReadNotAuthorized) {
+		return cause
 	}
 
 	// If descending order, reverse and send messages
@@ -1075,10 +1079,19 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 	}
 }
 
+// errTopicReadNotAuthorized marks a consume that the broker rejected because the client may not read the topic.
+var errTopicReadNotAuthorized = errors.New("not authorized to read messages from topic")
+
 // consumeKafkaMessages consumes messages for the consume request and sends responses to the jobs channel.
-// This function will close the channel.
+// This function will close the channel. A fetch error that retrying cannot fix is passed to abort.
 // The caller is responsible for closing the client if desired.
-func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, consumeReq TopicConsumeRequest, jobs chan<- *kgo.Record) {
+func (s *Service) consumeKafkaMessages(
+	ctx context.Context,
+	client *kgo.Client,
+	consumeReq TopicConsumeRequest,
+	jobs chan<- *kgo.Record,
+	abort context.CancelCauseFunc,
+) {
 	defer close(jobs)
 
 	// Track which partitions have finished reading
@@ -1091,16 +1104,9 @@ func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, 
 			return
 		default:
 			fetches := client.PollFetches(ctx)
-			fetchErrors := fetches.Errors()
-			for _, err := range fetchErrors {
-				// We cancel the context when we know the search is complete, hence this is expected and
-				// should not be logged as error in this case.
-				if !errors.Is(err.Err, context.Canceled) {
-					s.logger.ErrorContext(ctx, "errors while fetching records",
-						slog.String("topic_name", err.Topic),
-						slog.Int("partition", int(err.Partition)),
-						slog.Any("error", err.Err))
-				}
+			if fatalErr := s.handleFetchErrors(ctx, fetches.Errors()); fatalErr != nil {
+				abort(fatalErr)
+				return
 			}
 			iter := fetches.RecordIter()
 
@@ -1135,6 +1141,25 @@ func (s *Service) consumeKafkaMessages(ctx context.Context, client *kgo.Client, 
 			}
 		}
 	}
+}
+
+// handleFetchErrors logs fetch errors and returns the first one that retrying cannot fix.
+func (s *Service) handleFetchErrors(ctx context.Context, fetchErrors []kgo.FetchError) error {
+	for _, err := range fetchErrors {
+		// franz-go returns this error on every poll instead of giving up.
+		if errors.Is(err.Err, kerr.TopicAuthorizationFailed) {
+			return fmt.Errorf("%w %q: %w", errTopicReadNotAuthorized, err.Topic, err.Err)
+		}
+		// We cancel the context when we know the search is complete, hence this is expected and
+		// should not be logged as error in this case.
+		if !errors.Is(err.Err, context.Canceled) {
+			s.logger.ErrorContext(ctx, "errors while fetching records",
+				slog.String("topic_name", err.Topic),
+				slog.Int("partition", int(err.Partition)),
+				slog.Any("error", err.Err))
+		}
+	}
+	return nil
 }
 
 func compressionTypeDisplayname(compressionType uint8) string {

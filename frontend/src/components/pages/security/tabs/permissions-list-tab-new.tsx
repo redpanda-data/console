@@ -10,6 +10,7 @@
  */
 
 import { Link as TanStackLink } from '@tanstack/react-router';
+import { FenceGuardedButton, FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { MoreHorizontalIcon } from 'components/icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Empty, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
@@ -232,7 +233,8 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                     <DropdownMenuContent>
                       {group.principalType === 'User' && (
                         <>
-                          <DropdownMenuItem
+                          <FenceGuardedMenuItem
+                            action="editAcls"
                             disabled={!canDeleteUser}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -242,7 +244,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                           >
                             <Trash2Icon />
                             Delete (User and ACLs)
-                          </DropdownMenuItem>
+                          </FenceGuardedMenuItem>
                           <DropdownMenuItem
                             disabled={!canDeleteUser}
                             onClick={(e) => {
@@ -256,7 +258,8 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                           </DropdownMenuItem>
                         </>
                       )}
-                      <DropdownMenuItem
+                      <FenceGuardedMenuItem
+                        action="editAcls"
                         onClick={(e) => {
                           e.stopPropagation();
                           setPendingDelete('acls-only');
@@ -265,7 +268,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                       >
                         <Trash2Icon />
                         Delete (ACLs only)
-                      </DropdownMenuItem>
+                      </FenceGuardedMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -355,7 +358,11 @@ const NoPrincipals = ({ searchQuery, onCreateAcl }: { searchQuery: string; onCre
   return (
     <div className="rounded-md border">
       <SecurityEmptyState
-        action={<Button onClick={onCreateAcl}>Create ACL</Button>}
+        action={
+          <FenceGuardedButton action="editAcls" onClick={onCreateAcl}>
+            Create ACL
+          </FenceGuardedButton>
+        }
         description="A unified view of all principal permissions across your cluster. Create an ACL to get started."
         docsHref={docsLinks.selfManaged.acl}
         icon={<KeyRoundIcon />}
@@ -447,7 +454,13 @@ export const PermissionsListTabNew: FC = () => {
           </DescriptionWithHelp>
         </div>
 
-        <ListLayoutFilters actions={<Button onClick={() => setCreateAclOpen(true)}>Create ACL</Button>}>
+        <ListLayoutFilters
+          actions={
+            <FenceGuardedButton action="editAcls" onClick={() => setCreateAclOpen(true)}>
+              Create ACL
+            </FenceGuardedButton>
+          }
+        >
           <ListLayoutSearchInput
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search principals, resources, roles..."
