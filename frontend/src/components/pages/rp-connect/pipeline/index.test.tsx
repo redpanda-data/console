@@ -12,10 +12,25 @@
 import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create, type DescMethodUnary, type MessageInitShape, type MessageShape } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
-import { Code, ConnectError, type ConnectRouter, createRouterTransport, type MethodImpl } from '@connectrpc/connect';
+import {
+  Code,
+  ConnectError,
+  type ConnectRouter,
+  createRouterTransport,
+  type MethodImpl,
+  type Transport,
+} from '@connectrpc/connect';
 import type { Monaco } from '@monaco-editor/react';
 import { afterEach, beforeEach, describe, expect, it } from '@rstest/core';
 import { focusManager } from '@tanstack/react-query';
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  RouterProvider,
+} from '@tanstack/react-router';
 import userEvent from '@testing-library/user-event';
 import { config, type FeatureFlagKey } from 'config';
 import type { editor } from 'monaco-editor';
@@ -70,13 +85,9 @@ import {
 import { MISSING_SERVICE_ACCOUNT_MESSAGE, NO_LONGER_DRAFT_MESSAGE } from './save-actions';
 import { AUTOSAVE_DEBOUNCE_MS } from './use-editor-autosave';
 import { takeStartLintHints } from './use-start-draft';
-import type { usePipelineMode } from '../utils/use-pipeline-mode';
+import { trackedRouters } from '../../../../../tests/harness-cleanup';
+import type { PipelineMode } from '../utils/use-pipeline-mode';
 import PipelinePage from '.';
-
-const mockUsePipelineMode = rs.fn<typeof usePipelineMode>(() => ({ mode: 'create' }));
-rs.mock('../utils/use-pipeline-mode', () => ({
-  usePipelineMode: () => mockUsePipelineMode(),
-}));
 
 const initialConfig = { featureFlags: config.featureFlags, jwt: config.jwt, isServerless: config.isServerless };
 
@@ -88,7 +99,6 @@ function enableFeatures(...enabled: FeatureFlagKey[]) {
 
 const mockNavigate = rs.fn();
 const mockBack = rs.fn();
-const mockSearch = rs.fn(() => ({}));
 // Overridable so the leave-without-saving dialog can be driven directly; the guard itself belongs to
 // the router, not to this page. The options are passed through so a test can ask the page's own
 // `shouldBlockFn` whether it would block, which is the only honest way to test the guard here.
@@ -109,7 +119,6 @@ rs.mock('@tanstack/react-router', () => {
     ...actual,
     useNavigate: () => mockNavigate,
     useRouter: () => ({ history: { back: mockBack, canGoBack: () => true } }),
-    useSearch: () => mockSearch(),
     useBlocker: (options: BlockerOptions) => mockBlocker(options),
   };
 });
@@ -534,7 +543,6 @@ type UserSession = ReturnType<typeof userEvent.setup>;
 function resetRouterMocks() {
   mockNavigate.mockClear();
   mockBack.mockClear();
-  mockSearch.mockReturnValue({});
   mockBlocker.mockReturnValue({ status: 'idle', proceed: undefined, reset: undefined });
 }
 
@@ -546,7 +554,6 @@ function resetPageEnvironment() {
   config.jwt = undefined;
   config.isServerless = false;
   useRpcnWizardStore.getState().reset();
-  mockUsePipelineMode.mockReturnValue({ mode: 'create' });
   contentChangeListeners.length = 0;
   cursorPositionListeners.length = 0;
 }
@@ -563,10 +570,31 @@ afterEach(() => {
   useRpcnWizardStore.getState().reset();
 });
 
-function renderPipelinePage(mode: 'create' | 'edit' | 'view', overrides?: TransportOverrides) {
-  mockUsePipelineMode.mockReturnValue(mode === 'create' ? { mode } : { mode, pipelineId: 'test-pipeline' });
+const pipelinePath = {
+  create: '/rp-connect/create',
+  edit: '/rp-connect/test-pipeline/edit',
+  view: '/rp-connect/test-pipeline',
+} satisfies Record<PipelineMode, string>;
+
+async function mountPipelinePage(mode: PipelineMode, { transport }: { transport: Transport }) {
+  const root = createRootRoute({ component: Outlet });
+  const routes = [
+    createRoute({ getParentRoute: () => root, path: '/rp-connect/create', component: PipelinePage }),
+    createRoute({ getParentRoute: () => root, path: '/rp-connect/$pipelineId/edit', component: PipelinePage }),
+    createRoute({ getParentRoute: () => root, path: '/rp-connect/$pipelineId', component: PipelinePage }),
+  ];
+  const router = createRouter({
+    routeTree: root.addChildren(routes),
+    history: createMemoryHistory({ initialEntries: [pipelinePath[mode]] }),
+  });
+  trackedRouters.add(router);
+  await router.load();
+  return { router, ...render(<RouterProvider router={router} />, { transport }) };
+}
+
+async function renderPipelinePage(mode: PipelineMode, overrides?: TransportOverrides) {
   const user = userEvent.setup();
-  return { user, ...render(<PipelinePage />, { transport: createTransport(overrides) }) };
+  return { user, ...(await mountPipelinePage(mode, { transport: createTransport(overrides) })) };
 }
 
 function renderPipelineFromWizard(overrides?: TransportOverrides) {
@@ -574,9 +602,13 @@ function renderPipelineFromWizard(overrides?: TransportOverrides) {
   return renderPipelinePage('create', overrides);
 }
 
-const rerenderInMode = (rerender: (ui: React.ReactElement) => void, mode: 'edit' | 'view') => {
-  mockUsePipelineMode.mockReturnValue({ mode, pipelineId: 'test-pipeline' });
-  rerender(<PipelinePage />);
+const openPipelineMode = async (
+  router: Awaited<ReturnType<typeof mountPipelinePage>>['router'],
+  mode: 'edit' | 'view'
+) => {
+  await act(async () => {
+    await router.navigate({ to: pipelinePath[mode] });
+  });
 };
 
 const typeConfig = (configYaml: string) =>
@@ -637,7 +669,7 @@ function deferredUpdatePipeline() {
 
 async function renameWhileSaveInFlight(state: Pipeline_State) {
   const { updatePipelineHandler, releaseUpdate } = deferredUpdatePipeline();
-  const { user } = renderPipelinePage('edit', {
+  const { user } = await renderPipelinePage('edit', {
     getPipelineHandler: () => pipelineResponse({ state }),
     updatePipelineHandler,
   });
@@ -649,14 +681,14 @@ async function renameWhileSaveInFlight(state: Pipeline_State) {
   return { sent, title };
 }
 
-function renderCreatePageAwaitingDraftSample() {
+async function renderCreatePageAwaitingDraftSample() {
   let answer: (() => void) | undefined;
   const listPipelinesHandler = () =>
     new Promise<MessageShape<typeof ConsoleListPipelinesResponseSchema>>((resolve) => {
       answer = () => resolve(listPipelinesResponse([DRAFT_ERA_PIPELINE]));
     });
   const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
-  const { user } = renderPipelinePage('create', { listPipelinesHandler, createPipelineHandler });
+  const { user } = await renderPipelinePage('create', { listPipelinesHandler, createPipelineHandler });
   return { user, answerSample: () => answer?.() };
 }
 
@@ -722,7 +754,7 @@ describe('the PipelinePage', () => {
             ],
           },
         });
-      render(<PipelinePage />, { transport: createTransport({ listComponentsHandler }) });
+      await mountPipelinePage('create', { transport: createTransport({ listComponentsHandler }) });
 
       act(() => {
         fireEvent.change(screen.getByTestId('yaml-editor'), {
@@ -744,7 +776,7 @@ describe('the PipelinePage', () => {
           lintHints: [create(LintHintSchema, { line: 1, column: 1, hint: 'response lint warning' })],
         });
 
-      render(<PipelinePage />, { transport: createTransport({ lintHandler }) });
+      await mountPipelinePage('create', { transport: createTransport({ lintHandler }) });
 
       const yamlEditor = screen.getByTestId('yaml-editor');
       act(() => {
@@ -760,7 +792,7 @@ describe('the PipelinePage', () => {
           lintHints: [create(LintHintSchema, { line: 0, column: 0, hint: 'general config warning' })],
         });
 
-      render(<PipelinePage />, { transport: createTransport({ lintHandler }) });
+      await mountPipelinePage('create', { transport: createTransport({ lintHandler }) });
 
       const yamlEditor = screen.getByTestId('yaml-editor');
       act(() => {
@@ -779,7 +811,7 @@ describe('the PipelinePage', () => {
           ],
         });
 
-      render(<PipelinePage />, { transport: createTransport({ lintHandler }) });
+      await mountPipelinePage('create', { transport: createTransport({ lintHandler }) });
 
       const yamlEditor = screen.getByTestId('yaml-editor');
       act(() => {
@@ -806,7 +838,7 @@ describe('the PipelinePage', () => {
         throw new ConnectError('invalid config');
       };
 
-      render(<PipelinePage />, { transport: createTransport({ createPipelineHandler, lintHandler }) });
+      await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler, lintHandler }) });
 
       await setPipelineNameViaDialog(user, 'my-pipeline');
 
@@ -834,7 +866,7 @@ describe('the PipelinePage', () => {
         throw new ConnectError('invalid config');
       };
 
-      render(<PipelinePage />, { transport: createTransport({ createPipelineHandler, lintHandler }) });
+      await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler, lintHandler }) });
 
       await nameAndConfigure(user, 'my-pipeline', 'input:\n  bad: {}');
 
@@ -855,7 +887,7 @@ describe('the PipelinePage', () => {
   describe('creating a pipeline', () => {
     it('cancelling during pipeline creation goes back to the previous page', async () => {
       const user = userEvent.setup();
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       const allButtons = screen.getAllByRole('button');
       const backButton = allButtons[0];
@@ -869,7 +901,7 @@ describe('the PipelinePage', () => {
     it('cmd/Ctrl+S saves the pipeline instead of opening the browser save dialog', async () => {
       const user = userEvent.setup();
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       await setPipelineNameViaDialog(user, 'my-pipeline');
       fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  generate: {}' } });
@@ -884,7 +916,7 @@ describe('the PipelinePage', () => {
     it('saving a new pipeline sends the name and YAML config to the backend', async () => {
       const user = userEvent.setup();
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       await nameAndConfigure(user, 'my-pipeline', 'input:\n  generate:\n    mapping: root = "hello"');
 
@@ -904,7 +936,7 @@ describe('the PipelinePage', () => {
     it('lets the name be edited inline from the header title and submits it', async () => {
       const user = userEvent.setup();
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       fireEvent.change(screen.getByRole('textbox', { name: 'Pipeline name' }), { target: { value: 'inline-named' } });
 
@@ -920,7 +952,7 @@ describe('the PipelinePage', () => {
     it('blocks saving a new pipeline with an invalid name and shows the error inline', async () => {
       const user = userEvent.setup();
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -931,7 +963,7 @@ describe('the PipelinePage', () => {
     it("doesn't send an empty config to the backend, which would answer with a raw proto field error", async () => {
       const user = userEvent.setup();
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       await setPipelineNameViaDialog(user, 'my-pipeline');
 
@@ -947,9 +979,8 @@ describe('the PipelinePage', () => {
   describe('view mode', () => {
     it('leaving the view page navigates back to the pipeline list', async () => {
       const user = userEvent.setup();
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       expect(await screen.findByText('Edit pipeline')).toBeInTheDocument();
 
@@ -964,20 +995,17 @@ describe('the PipelinePage', () => {
     });
 
     it('displays the pipeline display name in the summary in view mode', async () => {
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       expect(await screen.findByRole('heading', { level: 1, name: 'Test Pipeline' })).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'Pipeline view' })).not.toBeInTheDocument();
     });
 
     it('hydrates the sidebar structure tree from the pipeline config in view mode', async () => {
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
       enableFeatures('enablePipelineDiagrams', 'enableRpcnVisualEditor');
       config.jwt = 'embedded-test-session';
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       await waitFor(() => expect(screen.getByText('stdin')).toBeInTheDocument());
       expect(screen.getByText('stdout')).toBeInTheDocument();
@@ -985,11 +1013,10 @@ describe('the PipelinePage', () => {
     });
 
     it('shows the structure-tree side-lane even when the visual editor flag is off', async () => {
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
       enableFeatures('enablePipelineDiagrams');
       config.jwt = 'embedded-test-session';
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       await waitFor(() => expect(screen.getAllByRole('tree').length).toBeGreaterThan(0));
       expect(screen.queryByTestId('flow-canvas')).not.toBeInTheDocument();
@@ -997,9 +1024,8 @@ describe('the PipelinePage', () => {
 
     it('view page exposes Monitor and YAML lanes; YAML shows the config read-only', async () => {
       const user = userEvent.setup();
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       expect(await screen.findByRole('tab', { name: 'YAML' })).toBeInTheDocument();
       expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
@@ -1010,9 +1036,7 @@ describe('the PipelinePage', () => {
     });
 
     it('hides the view-mode Visual lane unless the visual editor flag is enabled', async () => {
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       expect(await screen.findByRole('tab', { name: 'YAML' })).toBeInTheDocument();
       expect(screen.queryByRole('tab', { name: 'Visual' })).not.toBeInTheDocument();
@@ -1020,11 +1044,10 @@ describe('the PipelinePage', () => {
 
     it('view page Visual lane renders the full pipeline diagram from the pipeline config', async () => {
       const user = userEvent.setup();
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
       enableFeatures('enableRpcnVisualEditor', 'enablePipelineDiagrams');
       config.jwt = 'embedded-test-session';
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       await user.click(await screen.findByRole('tab', { name: 'Visual' }));
 
@@ -1034,9 +1057,8 @@ describe('the PipelinePage', () => {
 
     it('confirms before stopping a running pipeline', async () => {
       const user = userEvent.setup();
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       await user.click(await screen.findByTestId('pipeline-stop'));
 
@@ -1054,7 +1076,7 @@ describe('the PipelinePage', () => {
     it('restores and updates the existing fullscreen preference', async () => {
       localStorage.setItem('rp-pipeline-editor-mode', 'full');
       try {
-        const { user } = renderPipelinePage('create');
+        const { user } = await renderPipelinePage('create');
         await user.click(await screen.findByRole('button', { name: 'Exit fullscreen' }));
         expect(localStorage.getItem('rp-pipeline-editor-mode')).toBe('boxed');
         await user.click(screen.getByRole('button', { name: 'Enter fullscreen' }));
@@ -1068,7 +1090,7 @@ describe('the PipelinePage', () => {
       enableFeatures('enablePipelineDiagrams');
       config.jwt = 'embedded-test-session';
 
-      const { user } = renderPipelinePage('create');
+      const { user } = await renderPipelinePage('create');
 
       // A processor switch whose last case closes the component: revealing the switch selects its
       // whole line range, so the synchronous cursor event lands inside the nested `log` processor.
@@ -1102,11 +1124,10 @@ describe('the PipelinePage', () => {
 
     it('offers a "Start from a template" entry in the sidebar visualizer while the pipeline is empty', async () => {
       const user = userEvent.setup();
-      mockUsePipelineMode.mockReturnValue({ mode: 'create' });
       enableFeatures('enablePipelineDiagrams', 'enableRpcnVisualEditor', 'enableRpcnTemplateGallery');
       config.jwt = 'embedded-test-session';
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       // The template CTA lives alongside the YAML lane (not the default Visual lane), so switch there first.
       await user.click(await screen.findByRole('tab', { name: 'YAML' }));
@@ -1121,11 +1142,10 @@ describe('the PipelinePage', () => {
 
     it('opens editing on the Visual lane when the visual editor is enabled, and YAML swaps in the editor', async () => {
       const user = userEvent.setup();
-      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
       enableFeatures('enableRpcnVisualEditor', 'enablePipelineDiagrams');
       config.jwt = 'embedded-test-session';
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('edit', { transport: createTransport() });
 
       expect(await screen.findByTestId('flow-canvas')).toBeInTheDocument();
       expect(screen.queryByTestId('yaml-editor')).not.toBeInTheDocument();
@@ -1136,7 +1156,7 @@ describe('the PipelinePage', () => {
 
     it('clicking a sidebar variable button opens the command menu with the correct filter', async () => {
       const user = userEvent.setup();
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       const variablesButton = screen.getByRole('button', { name: /variables/iu });
       await user.click(variablesButton);
@@ -1151,7 +1171,7 @@ describe('the PipelinePage', () => {
       const user = userEvent.setup();
       enableFeatures('enableConnectSlashMenu');
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       // Wait for the editor mock to mount so useSlashCommand subscribes.
       await waitFor(() => {
@@ -1183,7 +1203,7 @@ describe('the PipelinePage', () => {
     it('shows the slash-command tip in the editor tips bar when the feature is enabled', async () => {
       enableFeatures('enableConnectSlashMenu');
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       await waitFor(() => {
         expect(screen.getByText(/to insert variables/u)).toBeInTheDocument();
@@ -1191,7 +1211,7 @@ describe('the PipelinePage', () => {
     });
 
     it('omits the slash-command tip when the feature is disabled', async () => {
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('create', { transport: createTransport() });
 
       await waitFor(() => {
         expect(screen.getByTestId('yaml-editor')).toBeInTheDocument();
@@ -1201,10 +1221,9 @@ describe('the PipelinePage', () => {
     });
 
     it('uses the new log explorer when the feature flag is enabled', async () => {
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
       enableFeatures('enableNewPipelineLogs');
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       await waitFor(() => {
         expect(screen.getByTestId('log-explorer')).toBeInTheDocument();
@@ -1214,9 +1233,7 @@ describe('the PipelinePage', () => {
     });
 
     it('uses the legacy logs tab when the new log explorer flag is off', async () => {
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       await waitFor(() => {
         expect(screen.getByTestId('logs-tab')).toBeInTheDocument();
@@ -1226,9 +1243,7 @@ describe('the PipelinePage', () => {
     });
 
     it('opening a pipeline in edit mode pre-fills the name and YAML from the server', async () => {
-      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('edit', { transport: createTransport() });
 
       await waitFor(() => {
         expect(screen.getByRole('textbox', { name: 'Pipeline name' })).toHaveValue('Test Pipeline');
@@ -1261,9 +1276,8 @@ describe('the PipelinePage', () => {
       // cannot authenticate at all.
       it('attaches the service account it created to the pipeline being edited', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({ getPipelineHandler: editablePipeline(REDPANDA_OUTPUT_YAML) }),
         });
 
@@ -1282,7 +1296,7 @@ describe('the PipelinePage', () => {
       // The save already read the account, so the edits it leaves behind must carry the new one.
       it('keeps an account attached during an in-flight save recoverable', async () => {
         const { updatePipelineHandler, releaseUpdate } = deferredUpdatePipeline();
-        const { user } = renderPipelinePage('edit', {
+        const { user } = await renderPipelinePage('edit', {
           getPipelineHandler: editablePipeline(REDPANDA_OUTPUT_YAML),
           updatePipelineHandler,
         });
@@ -1309,7 +1323,7 @@ describe('the PipelinePage', () => {
         };
         userStep.submission = { authMethod: 'service-account', existing: true };
 
-        const { user } = renderPipelinePage('edit', {
+        const { user } = await renderPipelinePage('edit', {
           getPipelineHandler: editablePipeline(REDPANDA_OUTPUT_YAML, existingLogin),
         });
 
@@ -1323,7 +1337,9 @@ describe('the PipelinePage', () => {
       });
 
       it('offers the account it attached to the next component', async () => {
-        const { user } = renderPipelinePage('edit', { getPipelineHandler: editablePipeline(REDPANDA_OUTPUT_YAML) });
+        const { user } = await renderPipelinePage('edit', {
+          getPipelineHandler: editablePipeline(REDPANDA_OUTPUT_YAML),
+        });
 
         await openAddUserDialog(user, 'output');
         expect(userStep.props.hasServiceAccount).toBe(false);
@@ -1340,9 +1356,8 @@ describe('the PipelinePage', () => {
         const user = userEvent.setup();
         localStorage.clear();
         useRpcnEditorAutosaveStore.getState().refresh();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({ getPipelineHandler: editablePipeline(REDPANDA_OUTPUT_YAML) }),
         });
 
@@ -1359,9 +1374,8 @@ describe('the PipelinePage', () => {
 
       it("won't deploy a config that logs in with a service account the pipeline doesn't have", async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({
             getPipelineHandler: editablePipeline(SERVICE_ACCOUNT_LOGIN_YAML),
           }),
@@ -1376,7 +1390,7 @@ describe('the PipelinePage', () => {
 
       it('attaches the service account it created to a new pipeline', async () => {
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline', Pipeline_State.STOPPED);
-        const { user } = renderPipelinePage('create', { createPipelineHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler });
 
         await setPipelineNameViaDialog(user, 'orders');
         await user.click(await screen.findByRole('tab', { name: 'YAML' }));
@@ -1397,9 +1411,10 @@ describe('the PipelinePage', () => {
         ['already names its topic', REDPANDA_OUTPUT_YAML, false],
       ])('warns about topic access only when the component %s', async (_case, configYaml, warns) => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, { transport: createTransport({ getPipelineHandler: editablePipeline(configYaml) }) });
+        await mountPipelinePage('edit', {
+          transport: createTransport({ getPipelineHandler: editablePipeline(configYaml) }),
+        });
 
         await user.click(await screen.findByTestId('add-user-output'));
         await screen.findByTestId('add-user-step');
@@ -1409,9 +1424,8 @@ describe('the PipelinePage', () => {
 
       it('starts the dialog from the consumer group the input reads with', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({
             getPipelineHandler: editablePipeline(
               'input:\n  redpanda:\n    topics: [orders]\n    consumer_group: orders-readers\noutput:\n  stdout: {}\n'
@@ -1431,10 +1445,9 @@ describe('the PipelinePage', () => {
 
       it('reads as the consumer group the dialog granted', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         userStep.submission = { username: 'orders-reader', saslMechanism: 'SCRAM-SHA-256', consumerGroup: 'orders-v2' };
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({
             getPipelineHandler: editablePipeline(
               'input:\n  redpanda:\n    topics: [orders]\n    consumer_group: orders-readers\noutput:\n  stdout: {}\n'
@@ -1480,7 +1493,7 @@ describe('pipelinePage saving and recovering work', () => {
             }),
           }),
         });
-      const { user } = renderPipelinePage('edit', { getPipelineHandler });
+      const { user } = await renderPipelinePage('edit', { getPipelineHandler });
 
       await replaceLoadedConfig('input:\n  stdin: {}\noutput:\n  drop: {}\n');
       const sent = await saveAndCapturePipeline(user, 'updatePipeline');
@@ -1513,7 +1526,7 @@ describe('pipelinePage saving and recovering work', () => {
         configYaml: 'input:\n  stdin: {}\noutput:\n  drop: {}\n',
         egressGatewayIds: [],
       });
-      const { user } = renderPipelinePage('edit', { getPipelineHandler });
+      const { user } = await renderPipelinePage('edit', { getPipelineHandler });
 
       await user.click(await screen.findByTestId('restore-autosave'));
       const sent = await saveAndCapturePipeline(user, 'updatePipeline');
@@ -1524,7 +1537,7 @@ describe('pipelinePage saving and recovering work', () => {
     describe('whether a draft is offered', () => {
       it('leads with Save draft on a new pipeline, and stores it without deploying', async () => {
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
-        const { user } = renderPipelinePage('create', { createPipelineHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler });
 
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  stdin: {}');
 
@@ -1540,7 +1553,7 @@ describe('pipelinePage saving and recovering work', () => {
 
       it("saves a draft that logs in with a service account the pipeline doesn't have yet", async () => {
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
-        const { user } = renderPipelinePage('create', { createPipelineHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler });
 
         await nameAndConfigure(user, 'my-pipeline', SERVICE_ACCOUNT_LOGIN_YAML);
 
@@ -1559,7 +1572,7 @@ describe('pipelinePage saving and recovering work', () => {
         const listPipelinesHandler = () =>
           listPipelinesResponse([create(PipelineSchema, { id: 'p1', displayName: 'Old pipeline' })]);
 
-        render(<PipelinePage />, { transport: createTransport({ listPipelinesHandler }) });
+        await mountPipelinePage('create', { transport: createTransport({ listPipelinesHandler }) });
 
         await setPipelineNameViaDialog(user, 'my-pipeline');
         await waitFor(() => expect(pipelineRequests.listPipelines.length).toBeGreaterThan(0));
@@ -1572,7 +1585,7 @@ describe('pipelinePage saving and recovering work', () => {
         const user = userEvent.setup();
         const listPipelinesHandler = () => listPipelinesResponse([]);
 
-        render(<PipelinePage />, { transport: createTransport({ listPipelinesHandler }) });
+        await mountPipelinePage('create', { transport: createTransport({ listPipelinesHandler }) });
 
         await setPipelineNameViaDialog(user, 'my-pipeline');
         await waitFor(() => expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft'));
@@ -1585,7 +1598,7 @@ describe('pipelinePage saving and recovering work', () => {
           throw new ConnectError('unavailable', Code.Unavailable);
         };
 
-        render(<PipelinePage />, { transport: createTransport({ listPipelinesHandler }) });
+        await mountPipelinePage('create', { transport: createTransport({ listPipelinesHandler }) });
 
         await setPipelineNameViaDialog(user, 'my-pipeline');
         await waitFor(() => expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Save draft'), {
@@ -1595,7 +1608,7 @@ describe('pipelinePage saving and recovering work', () => {
 
       // Until the sample answers, the primary save would deploy, so a quick click or ⌘S has to wait.
       it('holds save until it knows whether the cluster can store drafts', async () => {
-        const { user, answerSample } = renderCreatePageAwaitingDraftSample();
+        const { user, answerSample } = await renderCreatePageAwaitingDraftSample();
 
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  generate: {}');
         await waitFor(() => expect(pipelineRequests.listPipelines.length).toBeGreaterThan(0));
@@ -1615,7 +1628,7 @@ describe('pipelinePage saving and recovering work', () => {
       // do not leave the deployment running on the strength of a toast the user may not read.
       it('stops a create that came back deployed instead of drafted', async () => {
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate();
-        const { user } = renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
 
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  stdin: {}');
         const sent = await saveAndCapturePipeline(user, 'createPipeline');
@@ -1633,7 +1646,7 @@ describe('pipelinePage saving and recovering work', () => {
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate('new-pipeline', () => {
           throw new ConnectError('nope', Code.Unavailable);
         });
-        const { user } = renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
 
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  stdin: {}');
         await user.click(screen.getByTestId('save-pipeline'));
@@ -1645,7 +1658,7 @@ describe('pipelinePage saving and recovering work', () => {
       // No id to aim the stop at, so it never runs — the copy must not claim the deployment was parked.
       it('does not claim it stopped a deployment it could not address', async () => {
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate('');
-        const { user } = renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
 
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  stdin: {}');
         await user.click(screen.getByTestId('save-pipeline'));
@@ -1659,9 +1672,8 @@ describe('pipelinePage saving and recovering work', () => {
     describe('saving from the editor', () => {
       it('stays in the editor when a draft is saved from its own page', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({
             getPipelineHandler: () => pipelineResponse({ state: Pipeline_State.DRAFT }),
           }),
@@ -1705,7 +1717,7 @@ describe('pipelinePage saving and recovering work', () => {
         const user = userEvent.setup();
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
 
-        render(<PipelinePage />, { transport: createTransport({ createPipelineHandler }) });
+        await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler }) });
 
         await setPipelineNameViaDialog(user, 'work-in-progress');
         fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: configYaml } });
@@ -1723,7 +1735,7 @@ describe('pipelinePage saving and recovering work', () => {
         const user = userEvent.setup();
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
 
-        render(<PipelinePage />, { transport: createTransport({ createPipelineHandler }) });
+        await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler }) });
 
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: '' } });
         await user.click(screen.getByTestId('save-pipeline'));
@@ -1739,7 +1751,7 @@ describe('pipelinePage saving and recovering work', () => {
         const user = userEvent.setup();
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
 
-        render(<PipelinePage />, { transport: createTransport({ createPipelineHandler }) });
+        await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler }) });
 
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: '' } });
         fireEvent.change(screen.getByLabelText('Pipeline name'), { target: { value: 'orders v2 idea' } });
@@ -1753,7 +1765,7 @@ describe('pipelinePage saving and recovering work', () => {
         const user = userEvent.setup();
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
 
-        render(<PipelinePage />, { transport: createTransport({ createPipelineHandler }) });
+        await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler }) });
 
         fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
         await user.click(screen.getByTestId('save-pipeline'));
@@ -1768,7 +1780,7 @@ describe('pipelinePage saving and recovering work', () => {
       it('looks up untitled names only when saving, with a narrow request', async () => {
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
         const { listPipelinesHandler, requests } = recordedNameLookups();
-        const { user } = renderPipelinePage('create', { createPipelineHandler, listPipelinesHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler, listPipelinesHandler });
 
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
         expect(requests).toHaveLength(0);
@@ -1788,7 +1800,9 @@ describe('pipelinePage saving and recovering work', () => {
           listPipelinesResponse([create(PipelineSchema, { id: 'p1', displayName: 'Untitled pipeline' })])
         );
 
-        render(<PipelinePage />, { transport: createTransport({ createPipelineHandler, listPipelinesHandler }) });
+        await mountPipelinePage('create', {
+          transport: createTransport({ createPipelineHandler, listPipelinesHandler }),
+        });
 
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
         await user.click(screen.getByTestId('save-pipeline'));
@@ -1801,7 +1815,7 @@ describe('pipelinePage saving and recovering work', () => {
       it('shows the save as busy while the untitled name is being looked up', async () => {
         const { listPipelinesHandler, releaseLookup } = pendingNameLookups();
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
-        const { user } = renderPipelinePage('create', { createPipelineHandler, listPipelinesHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler, listPipelinesHandler });
 
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
         const saveButton = screen.getByTestId('save-pipeline');
@@ -1822,7 +1836,9 @@ describe('pipelinePage saving and recovering work', () => {
           throw new ConnectError('list unavailable', Code.Unavailable);
         });
 
-        render(<PipelinePage />, { transport: createTransport({ createPipelineHandler, listPipelinesHandler }) });
+        await mountPipelinePage('create', {
+          transport: createTransport({ createPipelineHandler, listPipelinesHandler }),
+        });
 
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  kafka_' } });
         await user.click(screen.getByTestId('save-pipeline'));
@@ -1835,7 +1851,7 @@ describe('pipelinePage saving and recovering work', () => {
     describe('saving and starting', () => {
       it('"Save and start" on a new pipeline deploys it for real', async () => {
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate();
-        const { user } = renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
 
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  stdin: {}');
 
@@ -1852,7 +1868,7 @@ describe('pipelinePage saving and recovering work', () => {
       it("won't start an empty pipeline", async () => {
         const user = userEvent.setup();
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('create', { transport: createTransport() });
 
         await setPipelineNameViaDialog(user, 'my-pipeline');
         await chooseSaveAndStart(user);
@@ -1863,18 +1879,15 @@ describe('pipelinePage saving and recovering work', () => {
       });
 
       it('says on the button that saving a running pipeline restarts it', async () => {
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         await waitFor(() => expect(screen.getByTestId('save-pipeline')).toHaveTextContent('Apply and restart'));
       });
 
       it('offers to start a stopped pipeline as part of saving it', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({
             getPipelineHandler: () => pipelineResponse({ state: Pipeline_State.STOPPED }),
           }),
@@ -1895,7 +1908,7 @@ describe('pipelinePage saving and recovering work', () => {
       it('falls back to deploy-then-stop when drafts are unavailable', async () => {
         config.featureFlags.enableRpcnPipelineDrafts = false;
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate();
-        const { user } = renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
 
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  stdin: {}');
 
@@ -1911,7 +1924,7 @@ describe('pipelinePage saving and recovering work', () => {
       it('does not claim a create it could never stop is parked', async () => {
         config.featureFlags.enableRpcnPipelineDrafts = false;
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate('');
-        const { user } = renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
 
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  stdin: {}');
         await user.click(screen.getByTestId('save-pipeline'));
@@ -1926,7 +1939,7 @@ describe('pipelinePage saving and recovering work', () => {
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate('new-pipeline', () => {
           throw new ConnectError('pipeline is not running', Code.Internal);
         });
-        const { user } = renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
+        const { user } = await renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
 
         await nameAndConfigure(user, 'my-pipeline', 'input:\n  stdin: {}');
         await user.click(screen.getByTestId('save-pipeline'));
@@ -1940,9 +1953,8 @@ describe('pipelinePage saving and recovering work', () => {
     describe('editing a draft', () => {
       it('editing a draft keeps it a draft, and says so', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({
             getPipelineHandler: () => pipelineResponse({ state: Pipeline_State.DRAFT }),
           }),
@@ -1965,7 +1977,7 @@ describe('pipelinePage saving and recovering work', () => {
               pipeline: create(PipelineSchema, { id: 'test-pipeline', state: Pipeline_State.STOPPED }),
             }),
           });
-        const { user } = renderPipelinePage('edit', {
+        const { user } = await renderPipelinePage('edit', {
           getPipelineHandler: () => pipelineResponse({ state: Pipeline_State.DRAFT }),
           updatePipelineHandler,
         });
@@ -1982,7 +1994,7 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('round-trips a partial config through the editor unchanged', async () => {
         const partialConfig = 'input:\n  kafka_\n# where was I\noutput:';
-        const { user } = renderPipelinePage('edit', {
+        const { user } = await renderPipelinePage('edit', {
           getPipelineHandler: () => pipelineResponse({ state: Pipeline_State.DRAFT, configYaml: partialConfig }),
         });
 
@@ -2000,12 +2012,11 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('reports a draft that has been started by someone else instead of deploying to it', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         const updatePipelineHandler = () => {
           throw new ConnectError('pipeline is not a draft', Code.FailedPrecondition);
         };
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({
             getPipelineHandler: () => pipelineResponse({ state: Pipeline_State.DRAFT }),
             updatePipelineHandler,
@@ -2022,12 +2033,11 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('does not blame drafts for a failed precondition on a pipeline that is not one', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         const updatePipelineHandler = () => {
           throw new ConnectError('pipeline is suspended', Code.FailedPrecondition);
         };
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({
             getPipelineHandler: () => pipelineResponse({ state: Pipeline_State.STOPPED }),
             updatePipelineHandler,
@@ -2046,12 +2056,11 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('a refused start keeps the saved draft and shows the issues on their lines', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         const startPipelineHandler = () => {
           throw invalidConfigError();
         };
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({
             getPipelineHandler: () => pipelineResponse({ state: Pipeline_State.DRAFT }),
             startPipelineHandler,
@@ -2076,18 +2085,14 @@ describe('pipelinePage saving and recovering work', () => {
 
     describe('when it is offered', () => {
       it('is offered while editing, even without the visual editor', async () => {
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         expect(await screen.findByRole('tab', { name: /unsaved changes/iu })).toBeInTheDocument();
         expect(screen.queryByRole('tab', { name: 'Visual' })).not.toBeInTheDocument();
       });
 
       it('is not offered in view mode', async () => {
-        mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('view', { transport: createTransport() });
 
         await screen.findByRole('tab', { name: 'Monitor' });
         expect(screen.queryByRole('tab', { name: /unsaved changes/iu })).not.toBeInTheDocument();
@@ -2096,16 +2101,14 @@ describe('pipelinePage saving and recovering work', () => {
       // Nothing is saved on the create page, so every component would be listed as "Added" and the count
       // would only restate how big the document is.
       it('is not offered while creating', async () => {
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('create', { transport: createTransport() });
 
         expect(await screen.findByRole('tab', { name: 'YAML' })).toBeInTheDocument();
         expect(screen.queryByRole('tab', { name: /unsaved changes/iu })).not.toBeInTheDocument();
       });
 
       it('is disabled while the editor matches what is saved', async () => {
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         await waitFor(() =>
           expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML)
@@ -2120,7 +2123,7 @@ describe('pipelinePage saving and recovering work', () => {
       });
 
       it('returns to the YAML lane once the edits are saved', async () => {
-        const { user } = renderPipelinePage('edit', {
+        const { user } = await renderPipelinePage('edit', {
           getPipelineHandler: () =>
             create(ConsoleGetPipelineResponseSchema, {
               response: create(GetPipelineResponseSchema, {
@@ -2149,7 +2152,7 @@ describe('pipelinePage saving and recovering work', () => {
 
     describe('what it shows', () => {
       it('diffs the deployed configuration against the edits, and counts the components touched', async () => {
-        const { user } = renderPipelinePage('edit');
+        const { user } = await renderPipelinePage('edit');
 
         const edited = 'input:\n  generate: {}\noutput:\n  stdout: {}';
         await replaceLoadedConfig(edited);
@@ -2166,9 +2169,8 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('counts and itemises a settings-only change', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         await waitFor(() =>
           expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML)
@@ -2185,9 +2187,8 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('warns that applying to a running pipeline restarts it', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         await waitFor(() =>
           expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML)
@@ -2202,9 +2203,8 @@ describe('pipelinePage saving and recovering work', () => {
       // than sit beside an empty column with a heading over it.
       it('drops the component column when nothing component-level changed', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         await waitFor(() =>
           expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML)
@@ -2218,9 +2218,8 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('heads the component column when something did change', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         await waitFor(() =>
           expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML)
@@ -2237,9 +2236,8 @@ describe('pipelinePage saving and recovering work', () => {
       // rather than on colour or left/right.
       it('says what the two sides of the diff are', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         await waitFor(() =>
           expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML)
@@ -2253,9 +2251,8 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('jumps from a changed component to its lines in the YAML lane', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         await waitFor(() =>
           expect((screen.getByTestId('yaml-editor') as HTMLTextAreaElement).value).toBe(DEPLOYED_YAML)
@@ -2282,7 +2279,7 @@ describe('pipelinePage saving and recovering work', () => {
       ['the detail view', 'view' as const],
       ['the editor', 'edit' as const],
     ])('deletes a draft from %s, after confirming', async (_name, mode) => {
-      const { user } = renderPipelinePage(mode, {
+      const { user } = await renderPipelinePage(mode, {
         getPipelineHandler: draftPipeline,
       });
 
@@ -2299,9 +2296,7 @@ describe('pipelinePage saving and recovering work', () => {
     });
 
     it('offers no draft delete on a deployed pipeline', async () => {
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
-
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('view', { transport: createTransport() });
 
       await screen.findByRole('button', { name: /edit pipeline/iu });
       expect(screen.queryByTestId('delete-draft')).not.toBeInTheDocument();
@@ -2310,7 +2305,6 @@ describe('pipelinePage saving and recovering work', () => {
     // The buffer would otherwise outlive the pipeline and offer to restore edits to something gone.
     it('drops the recovery buffer for a deleted draft', async () => {
       const user = userEvent.setup();
-      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
       localStorage.clear();
       useRpcnEditorAutosaveStore.getState().refresh();
       useRpcnEditorAutosaveStore.getState().save({
@@ -2322,7 +2316,7 @@ describe('pipelinePage saving and recovering work', () => {
         configYaml: 'input:\n  unsaved',
       });
 
-      render(<PipelinePage />, {
+      await mountPipelinePage('edit', {
         transport: createTransport({
           getPipelineHandler: draftPipeline,
         }),
@@ -2337,7 +2331,7 @@ describe('pipelinePage saving and recovering work', () => {
     // Deleting is a departure the user has already confirmed, so a second dialog would offer to save
     // the draft that was just deleted — writing to a pipeline that no longer exists.
     it('stands the unsaved-changes guard down after deleting, so no second dialog follows', async () => {
-      const { user } = renderPipelinePage('edit', {
+      const { user } = await renderPipelinePage('edit', {
         getPipelineHandler: draftPipeline,
       });
 
@@ -2379,7 +2373,7 @@ describe('pipelinePage saving and recovering work', () => {
           }),
         });
 
-      render(<PipelinePage />, { transport: createTransport({ createPipelineHandler }) });
+      await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler }) });
 
       fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  half_typed' } });
       await user.click(await screen.findByTestId('save-draft-and-leave'));
@@ -2399,7 +2393,7 @@ describe('pipelinePage saving and recovering work', () => {
         throw new ConnectError('pipeline quota exceeded', Code.ResourceExhausted);
       };
 
-      render(<PipelinePage />, { transport: createTransport({ createPipelineHandler }) });
+      await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler }) });
 
       fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  half_typed' } });
       await user.click(await screen.findByTestId('save-draft-and-leave'));
@@ -2417,7 +2411,7 @@ describe('pipelinePage saving and recovering work', () => {
       const createPipelineHandler = () => {
         throw new ConnectError('pipeline quota exceeded', Code.ResourceExhausted);
       };
-      const { user } = renderPipelineFromWizard({ createPipelineHandler });
+      const { user } = await renderPipelineFromWizard({ createPipelineHandler });
 
       await replaceLoadedConfig('input:\n  half_typed');
       await user.click(await screen.findByTestId('save-draft-and-leave'));
@@ -2433,9 +2427,8 @@ describe('pipelinePage saving and recovering work', () => {
 
     it('offers no draft on a running pipeline, and says why', async () => {
       blocked();
-      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
 
-      render(<PipelinePage />, { transport: createTransport() });
+      await mountPipelinePage('edit', { transport: createTransport() });
 
       expect(await screen.findByText(/restarts the pipeline/iu)).toBeInTheDocument();
       expect(screen.queryByTestId('save-draft-and-leave')).not.toBeInTheDocument();
@@ -2447,7 +2440,7 @@ describe('pipelinePage saving and recovering work', () => {
     // the work, and it has to say so.
     it('lets a deployed pipeline be left with the edits kept in this browser', async () => {
       const { proceed } = blocked();
-      const { user } = renderPipelinePage('edit');
+      const { user } = await renderPipelinePage('edit');
 
       await replaceLoadedConfig('input:\n  half_typed');
 
@@ -2463,7 +2456,7 @@ describe('pipelinePage saving and recovering work', () => {
     it('drops the recovery buffer when the changes are discarded on purpose', async () => {
       const { proceed } = blocked();
 
-      const { user } = renderPipelineFromWizard();
+      const { user } = await renderPipelineFromWizard();
 
       await replaceLoadedConfig('input:\n  half_typed');
       await waitFor(
@@ -2480,15 +2473,16 @@ describe('pipelinePage saving and recovering work', () => {
     // A save that navigates stands the guard down for its own departure; coming back to edit must not
     // find it still standing down.
     it('re-arms the guard when the page returns to editing after a save', async () => {
-      const { user, rerender } = renderPipelinePage('edit', {
+      const { user, router } = await renderPipelinePage('edit', {
         getPipelineHandler: editablePipeline(DEPLOYED_YAML),
       });
       await replaceLoadedConfig('input:\n  edited: {}');
       await user.click(await screen.findByTestId('save-pipeline'));
       await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
 
-      rerenderInMode(rerender, 'view');
-      rerenderInMode(rerender, 'edit');
+      await openPipelineMode(router, 'view');
+      await openPipelineMode(router, 'edit');
+      await screen.findByTestId('yaml-editor');
 
       typeConfig('input:\n  edited_again: {}');
       await waitFor(() => expect(lastShouldBlockFn()()).toBe(true));
@@ -2509,31 +2503,28 @@ describe('pipelinePage saving and recovering work', () => {
       const SAVED_AT = 1_700_000_000_000;
 
       it('warns when the pipeline was written after the buffer was captured', async () => {
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', SAVED_AT - 60_000);
 
-        render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
+        await mountPipelinePage('edit', { transport: transportWithUpdateTime(SAVED_AT) });
 
         const notice = await screen.findByTestId('autosave-restore-notice');
         expect(notice).toHaveTextContent(/Someone else saved this pipeline while you were away/u);
       });
 
       it('does not warn when the pipeline has not moved since', async () => {
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', SAVED_AT);
 
-        render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
+        await mountPipelinePage('edit', { transport: transportWithUpdateTime(SAVED_AT) });
 
         const notice = await screen.findByTestId('autosave-restore-notice');
         expect(notice).toHaveTextContent(/You left this editor without saving/u);
       });
 
       it('ignores a browser clock that disagrees with the server', async () => {
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         // updatedAt is ~now, decades after SAVED_AT, yet the recorded baseline still matches.
         seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', SAVED_AT);
 
-        render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
+        await mountPipelinePage('edit', { transport: transportWithUpdateTime(SAVED_AT) });
 
         const notice = await screen.findByTestId('autosave-restore-notice');
         expect(notice).not.toHaveTextContent(/Someone else saved this pipeline/u);
@@ -2545,7 +2536,7 @@ describe('pipelinePage saving and recovering work', () => {
         let updatedAt = SAVED_AT;
         const getPipelineHandler = () => pipelineAt(updatedAt);
 
-        renderPipelinePage('edit', { getPipelineHandler });
+        await renderPipelinePage('edit', { getPipelineHandler });
         await waitFor(() => expect(screen.getByTestId('yaml-editor')).toHaveValue(DEPLOYED_YAML));
 
         updatedAt += 60_000;
@@ -2562,10 +2553,9 @@ describe('pipelinePage saving and recovering work', () => {
       });
 
       it('treats a buffer with no recorded baseline as not stale', async () => {
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         seedBuffer('test-pipeline', 'input:\n  recovered: {}', 'Test Pipeline', null);
 
-        render(<PipelinePage />, { transport: transportWithUpdateTime(SAVED_AT) });
+        await mountPipelinePage('edit', { transport: transportWithUpdateTime(SAVED_AT) });
 
         const notice = await screen.findByTestId('autosave-restore-notice');
         expect(notice).toHaveTextContent(/You left this editor without saving/u);
@@ -2574,7 +2564,7 @@ describe('pipelinePage saving and recovering work', () => {
 
     describe('writing and offering the buffer', () => {
       it('mirrors the editor into local storage as the user types', async () => {
-        renderPipelineFromWizard();
+        await renderPipelineFromWizard();
 
         await replaceLoadedConfig('input:\n  mid_sentence');
 
@@ -2589,10 +2579,9 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('offers to restore a buffer over the loaded pipeline, and leaves the loaded config alone until then', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         seedBuffer('test-pipeline', 'input:\n  recovered: {}');
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         const yamlEditor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
         await waitFor(() => expect(yamlEditor.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}'));
@@ -2606,7 +2595,6 @@ describe('pipelinePage saving and recovering work', () => {
       // A save writes the settings as well as the configuration, so an unsaved resize is recoverable work.
       // Offering the buffer only when the YAML differed dropped it silently.
       it('offers to restore a buffer whose settings differ, even with identical configuration', async () => {
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         useRpcnEditorAutosaveStore.getState().save({
           targetKey: 'test-pipeline',
           name: 'Test Pipeline',
@@ -2616,7 +2604,7 @@ describe('pipelinePage saving and recovering work', () => {
           configYaml: 'input:\n  stdin: {}\noutput:\n  stdout: {}',
         });
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         expect(await screen.findByTestId('autosave-restore-notice')).toBeInTheDocument();
       });
@@ -2634,10 +2622,9 @@ describe('pipelinePage saving and recovering work', () => {
         // Loading a pipeline settles the document back to "nothing to recover". Tidying up on that signal
         // would delete the recovery buffer about a second before the user could click Restore.
         it('keeps a buffer left by an earlier session while the editor just sits there', async () => {
-          mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
           seedBuffer('test-pipeline', 'input:\n  recovered: {}');
 
-          render(<PipelinePage />, { transport: createTransport() });
+          await mountPipelinePage('edit', { transport: createTransport() });
 
           expect(await screen.findByTestId('autosave-restore-notice')).toBeInTheDocument();
 
@@ -2650,9 +2637,7 @@ describe('pipelinePage saving and recovering work', () => {
         // The notice is for work left by an *earlier* session. Comparing live buffer against live editor
         // made this session's own buffer look recoverable, so the banner blinked once per debounce.
         it('never offers to recover the buffer this editor just wrote', async () => {
-          mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-
-          render(<PipelinePage />, { transport: createTransport() });
+          await mountPipelinePage('edit', { transport: createTransport() });
 
           const yamlEditor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
           await waitFor(() => expect(yamlEditor.value).toBe('input:\n  stdin: {}\noutput:\n  stdout: {}'));
@@ -2689,7 +2674,7 @@ describe('pipelinePage saving and recovering work', () => {
           serviceAccount: { serviceAccountId: 'sa-123', secretName },
         });
 
-        const { user } = renderPipelinePage('edit');
+        const { user } = await renderPipelinePage('edit');
 
         await user.click(await screen.findByTestId('restore-autosave'));
         const sent = await saveAndCapturePipeline(user, 'updatePipeline');
@@ -2701,7 +2686,6 @@ describe('pipelinePage saving and recovering work', () => {
       // guard disarmed when only a setting differed.
       it('arms the unsaved-changes guard after restoring a settings-only buffer', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         useRpcnEditorAutosaveStore.getState().save({
           targetKey: 'test-pipeline',
           name: 'Test Pipeline',
@@ -2711,7 +2695,7 @@ describe('pipelinePage saving and recovering work', () => {
           configYaml: 'input:\n  stdin: {}\noutput:\n  stdout: {}',
         });
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         await user.click(await screen.findByTestId('restore-autosave'));
 
@@ -2722,10 +2706,9 @@ describe('pipelinePage saving and recovering work', () => {
       // A snapshot, so the version the user was shown survives autosave overwriting the stored copy.
       it('restores the version it offered, even after autosave has moved on', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         seedBuffer('test-pipeline', 'input:\n  from_last_session: {}');
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         const yamlEditor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
         expect(await screen.findByTestId('autosave-restore-notice')).toBeInTheDocument();
@@ -2746,10 +2729,9 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('withdraws the offer once the work it was protecting is saved', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         seedBuffer('test-pipeline', 'input:\n  from_last_session: {}');
 
-        render(<PipelinePage />, {
+        await mountPipelinePage('edit', {
           transport: createTransport({
             getPipelineHandler: draftPipeline,
           }),
@@ -2765,10 +2747,9 @@ describe('pipelinePage saving and recovering work', () => {
 
       it('discarding a buffer drops it and leaves the loaded config alone', async () => {
         const user = userEvent.setup();
-        mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
         seedBuffer('test-pipeline', 'input:\n  recovered: {}');
 
-        render(<PipelinePage />, { transport: createTransport() });
+        await mountPipelinePage('edit', { transport: createTransport() });
 
         await user.click(await screen.findByTestId('discard-autosave'));
 
@@ -2789,7 +2770,7 @@ describe('pipelinePage saving and recovering work', () => {
           });
         seedBuffer('create', 'input:\n  stale: {}', 'work in progress');
 
-        render(<PipelinePage />, { transport: createTransport({ createPipelineHandler }) });
+        await mountPipelinePage('create', { transport: createTransport({ createPipelineHandler }) });
 
         fireEvent.change(screen.getByTestId('yaml-editor'), { target: { value: 'input:\n  stdin: {}' } });
         await user.click(screen.getByTestId('save-pipeline'));
@@ -2805,7 +2786,6 @@ describe('pipelinePage saving and recovering work', () => {
   describe('a draft on its own page', () => {
     beforeEach(() => {
       enableFeatures('enableRpcnPipelineDrafts');
-      mockUsePipelineMode.mockReturnValue({ mode: 'view', pipelineId: 'test-pipeline' });
     });
 
     // Drain the hand-off, so a refusal in one test can't seed the editor in another.
@@ -2815,7 +2795,7 @@ describe('pipelinePage saving and recovering work', () => {
 
     it('explains itself instead of offering monitoring it cannot have', async () => {
       logsTabRenders.count = 0;
-      render(<PipelinePage />, { transport: draftTransport() });
+      await mountPipelinePage('view', { transport: draftTransport() });
 
       expect(await screen.findByTestId('draft-view-notice')).toBeInTheDocument();
       expect(screen.queryByRole('tab', { name: 'Monitor' })).not.toBeInTheDocument();
@@ -2828,7 +2808,7 @@ describe('pipelinePage saving and recovering work', () => {
     it('starts from the detail view', async () => {
       const user = userEvent.setup();
 
-      render(<PipelinePage />, { transport: draftTransport() });
+      await mountPipelinePage('view', { transport: draftTransport() });
 
       await confirmStart(user);
 
@@ -2847,7 +2827,7 @@ describe('pipelinePage saving and recovering work', () => {
         ]);
       };
 
-      render(<PipelinePage />, { transport: draftTransport({ startPipelineHandler }) });
+      await mountPipelinePage('view', { transport: draftTransport({ startPipelineHandler }) });
 
       await confirmStart(user);
 
@@ -2870,14 +2850,13 @@ describe('pipelinePage saving and recovering work', () => {
           },
         ]);
       };
-      const { unmount } = render(<PipelinePage />, { transport: draftTransport({ startPipelineHandler }) });
+      const { unmount } = await mountPipelinePage('view', { transport: draftTransport({ startPipelineHandler }) });
       await confirmStart(user);
       await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
       unmount();
 
       // The editor the navigation lands on. Hydration clears hints, so they are seeded after it.
-      mockUsePipelineMode.mockReturnValue({ mode: 'edit', pipelineId: 'test-pipeline' });
-      render(<PipelinePage />, { transport: draftTransport() });
+      await mountPipelinePage('edit', { transport: draftTransport() });
 
       expect(await screen.findByText(/secret NOT_YET_CREATED does not exist/u)).toBeInTheDocument();
     });
@@ -2885,7 +2864,7 @@ describe('pipelinePage saving and recovering work', () => {
     it('names the topics and the compute before it commits to starting', async () => {
       const user = userEvent.setup();
 
-      render(<PipelinePage />, {
+      await mountPipelinePage('view', {
         transport: draftTransport({
           configYaml: 'input:\n  redpanda:\n    topics: [orders]\noutput:\n  redpanda:\n    topic: orders-dlq',
         }),
@@ -2902,7 +2881,7 @@ describe('pipelinePage saving and recovering work', () => {
     it('starts nothing when the confirmation is dismissed', async () => {
       const user = userEvent.setup();
 
-      render(<PipelinePage />, { transport: draftTransport() });
+      await mountPipelinePage('view', { transport: draftTransport() });
 
       await user.click(await screen.findByTestId('start-draft'));
       await user.click(await screen.findByRole('button', { name: /cancel/iu }));
@@ -2912,7 +2891,7 @@ describe('pipelinePage saving and recovering work', () => {
     });
 
     it('starts through the draft path, which can report a rejected config', async () => {
-      render(<PipelinePage />, { transport: draftTransport() });
+      await mountPipelinePage('view', { transport: draftTransport() });
 
       await screen.findByTestId('draft-view-notice');
       // Same button copy as any other pipeline, but the generic start has nowhere to send a lint failure.
