@@ -152,7 +152,6 @@ function renderPropertyInput(p: Property, fieldId: string) {
           showStepControls
           step={1}
           type="number"
-          // Keep the input controlled with '' when the stored value is not numeric.
           value={Number.isNaN(Number(v)) ? '' : Number(v)}
         />
       );

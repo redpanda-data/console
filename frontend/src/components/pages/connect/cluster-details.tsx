@@ -31,12 +31,10 @@ import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
 };
-// Ten a page (the Registry default) is the legacy page size for this table.
 const CONNECTORS_TABLE_OPTIONS = { enableHiding: false };
 
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
@@ -197,8 +195,6 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
   return (
     <div>
       <div className="mb-2 flex">
-        {/* tests/shared/connector.utils.ts clicks this with getByRole('button'), which this
-            nesting produces — and the Registry Button takes no route `params`. */}
         <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
           <Button variant="primary">Create connector</Button>
         </Link>
@@ -226,4 +222,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
   );
 };
 
+/**
+ * The create action has a button role; the route link supplies the typed route parameters.
+ */
 export default KafkaClusterDetails;

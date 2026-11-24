@@ -27,7 +27,8 @@ export const DebugEditor = (p: { observable: { jsonText: string } }) => {
         onChange={(v) => {
           if (v) {
             if (!(obs.jsonText || v)) {
-              return; // dont replace undefiend with empty (which would trigger our 'autorun')
+              // WARNING: Do not replace undefined with empty text here; it would trigger the config autorun.
+              return;
             }
             updateJsonText(obs, v);
           }

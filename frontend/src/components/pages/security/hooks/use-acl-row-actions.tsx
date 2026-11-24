@@ -23,7 +23,6 @@ export type AclRowActionsContextValue = {
   onFailure: (failure: { err: unknown }) => void;
 };
 
-/** Every ACL bound to this principal on this host, whatever the resource or operation. */
 const allAclsFor = (principal: string, host: string) =>
   create(DeleteACLsRequestSchema, {
     filter: {

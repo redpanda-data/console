@@ -117,7 +117,6 @@ const SCHEMA_COMPATIBILITY_FILTER_OPTIONS = Object.values(SchemaRegistryCompatib
   value: mode,
 }));
 
-// Subject rows enriched with per-subject details so type/compatibility can be filtered list-wide.
 type EnrichedSubject = SchemaRegistrySubject & {
   details?: SchemaRegistrySubjectDetails;
   detailsLoading: boolean;
@@ -176,7 +175,7 @@ function useSchemaRegistryOverview() {
     isError,
     schemaMode,
     schemaCompatibility,
-    // A missing permission keeps its own tooltip, so the fence's reason shows only where it's the cause.
+    // WARNING: Keep the permission explanation when access is already denied; show the fence reason only when the fence is the blocker.
     manageFencedReason: api.userData?.canManageSchemaRegistry === false ? undefined : editSchemasReason,
     createFencedReason: api.userData?.canCreateSchemas === false ? undefined : editSchemasReason,
   };
@@ -682,9 +681,6 @@ const SchemaList: FC = () => {
 
   return (
     <PageContent key="b">
-      {/* Statistics Bar — the context selector lives here, not in the table filters,
-          because switching context changes the whole page (mode, compatibility,
-          create-schema default), not just the rows shown. */}
       <StatGroup
         className="w-fit"
         columns={schemaRegistryContextsSupported ? 3 : 2}
@@ -924,4 +920,7 @@ const SchemaList: FC = () => {
   );
 };
 
+/**
+ * Changing context affects the whole page, including mode, compatibility, and create defaults; it is not a table-only filter.
+ */
 export default SchemaList;

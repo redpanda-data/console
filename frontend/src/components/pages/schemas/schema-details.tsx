@@ -114,9 +114,9 @@ function useSchemaDetailsRoute(subjectNameProp: string) {
 function useSubjectDetailsData(subjectNameRaw: string) {
   const { data: schemaSubjects } = useListSchemasQuery();
   const { data: subject, isLoading: isLoadingSubject } = useSchemaDetailsQuery(subjectNameRaw);
-  useSchemaCompatibilityQuery(); // Fetch for other components
-  useSchemaModeQuery(); // Fetch for other components
-  useSchemaTypesQuery(); // Fetch for other components
+  useSchemaCompatibilityQuery();
+  useSchemaModeQuery();
+  useSchemaTypesQuery();
   return {
     subject,
     isLoadingSubject,
@@ -156,7 +156,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   const { subject, isLoadingSubject, isSoftDeleted } = useSubjectDetailsData(subjectNameRaw);
   const { canManageSchemaRegistry, canCreateSchemas, canDeleteSchemas } = useSchemaRegistryPermissions();
   const { subjectDeleteKind, setSubjectDeleteKind, executeDeleteSubject } = useSubjectDeletion(subjectNameRaw);
-  // A missing permission keeps its own tooltip, so the fence's reason shows only where it's the cause.
+  // WARNING: Keep the permission explanation when access is already denied; show the fence reason only when the fence is the blocker.
   const editSchemasReason = useClusterFenceGuard().reasonFor('editSchemas');
   const addVersionFencedReason = canCreateSchemas === false ? undefined : editSchemasReason;
   const deleteSubjectFencedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
@@ -337,7 +337,6 @@ function schemaVersionDefaults(subjectData: SchemaRegistrySubjectDetails, queryV
 
   const requestedVersionExists = versionNumber ? subjectData.schemas.some((s) => s.version === versionNumber) : true;
 
-  // Use URL parameter if provided and exists, otherwise fall back to latest active version
   const defaultVersion =
     versionNumber && requestedVersionExists
       ? versionNumber
@@ -893,4 +892,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
   );
 };
 
+/**
+ * Reads the shared compatibility, mode, and schema-type caches. Selects a valid linked version or falls back to the latest active version.
+ */
 export default SchemaDetailsView;

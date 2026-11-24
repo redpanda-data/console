@@ -171,7 +171,6 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
       </Dialog>
       <Collapsible data-testid={`row-${group.principalName}`} onOpenChange={onToggle} open={isExpanded}>
         <div className="overflow-hidden rounded-lg border">
-          {/* Card header — distinct background makes each principal easy to scan */}
           <CollapsibleTrigger
             render={
               <div

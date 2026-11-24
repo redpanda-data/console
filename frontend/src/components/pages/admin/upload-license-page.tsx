@@ -47,7 +47,6 @@ const UploadLicenseForm: FC<{
         {Boolean(showFileUpload) && (
           <div>
             <Dropzone
-              // Rejections arrive only via onError (maxFiles is 1); onDrop is skipped for them.
               onDrop={(acceptedFiles) => {
                 const file = acceptedFiles.at(0);
                 if (!file) {
@@ -57,15 +56,14 @@ const UploadLicenseForm: FC<{
                 file
                   .text()
                   .then((text) => {
-                    // Only mark the drop accepted once the read succeeded, or the dropzone would
-                    // show the filename while `licenseFile` stayed undefined.
+                    // WARNING: Wait for the file read before marking the drop accepted; the filename alone does not mean a license can be submitted.
                     setLicenseFile(text);
                     setDroppedFiles(acceptedFiles);
                   })
                   .catch((err: Error) => setErrorMessage(err.message));
               }}
               onError={(err) => {
-                // A rejected drop replaces nothing; drop the previous file so the error is about what is shown.
+                // WARNING: Clear the previous selection after a rejected drop so the displayed failure cannot leave a stale license ready to submit.
                 setErrorMessage(err.message);
                 setLicenseFile(undefined);
                 setDroppedFiles(undefined);
@@ -91,7 +89,6 @@ const UploadLicenseForm: FC<{
                 autoComplete="off"
                 id="license"
                 onChange={(e) => setLicense(e.target.value)}
-                // `rows` only applies without content sizing.
                 resize="vertical"
                 rows={10}
                 spellCheck={false}
@@ -142,7 +139,6 @@ const UploadLicensePageContent: FC = () => {
       {success ? (
         <div className="mb-20 flex flex-col items-center gap-4 text-center">
           <TonedIcon className="size-[72px]" icon={CheckCircle2Icon} tone="success" />
-          {/* license.e2e.test.ts asserts on `h1:has-text("License uploaded")`. */}
           <h1 className="text-heading-lg">License uploaded</h1>
           <div className="flex flex-col gap-4">
             <div>

@@ -38,7 +38,6 @@ type RoleCreateDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-/** The name checks, plus whether the fence rejects creating roles right now. */
 const useRoleNameChecks = (roleName: string) => ({
   ...useRoleNameAvailability(roleName),
   fenced: Boolean(useClusterFenceGuard().reasonFor('editRoles')),

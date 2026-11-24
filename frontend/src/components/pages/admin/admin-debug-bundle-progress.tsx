@@ -36,7 +36,7 @@ export default class AdminPageDebugBundleProgress extends pageWithContent(() => 
 
   refreshData() {
     this.api.refreshDebugBundleStatuses().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: Request errors are reported by the API layer; do not duplicate the report in the progress page.
     });
   }
 }
@@ -62,11 +62,11 @@ const AdminPageDebugBundleProgressContent: FC = () => {
 
   useEffect(() => {
     api.refreshDebugBundleStatuses().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: Request errors are reported by the API layer; do not duplicate the report in the progress page.
     });
     const interval = setInterval(() => {
       api.refreshDebugBundleStatuses().catch(() => {
-        // Error handling managed by API layer
+        // WARNING: Request errors are reported by the API layer; do not duplicate the report in the progress page.
       });
     }, 2000);
     return () => clearInterval(interval);
@@ -109,7 +109,7 @@ const AdminPageDebugBundleProgressContent: FC = () => {
                   for (const status of statuses) {
                     if (status.value.case === 'bundleStatus') {
                       api.cancelDebugBundleProcess({ jobId: status.value.value.jobId }).catch(() => {
-                        // Error handling managed by API layer
+                        // WARNING: Request errors are reported by the API layer; do not duplicate the report in the progress page.
                       });
                     }
                   }

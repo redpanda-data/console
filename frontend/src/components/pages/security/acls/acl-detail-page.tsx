@@ -31,7 +31,6 @@ type AclDetailContentProps = {
   aclName: string;
   host: string | undefined;
   principalName: string;
-  /** One entry per host the principal has ACLs on. */
   data: AclDetail[];
 };
 

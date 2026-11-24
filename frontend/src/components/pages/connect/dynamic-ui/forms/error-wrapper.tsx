@@ -8,6 +8,9 @@ import { ExpandableText } from '../../../../misc/expandable-text';
 const isRequiredError = (name: string) => `Required configuration "${name}" must be provided`;
 const isEmpty = (property: Property) => property.value === '' || property.value === null;
 
+/**
+ * Clicking the field advances its validation error when several are present. Keep the layout wrapper so full-width field styles do not stretch controls such as a switch.
+ */
 export const ErrorWrapper = (
   props: PropsWithoutRef<{
     property: Property;
@@ -32,19 +35,13 @@ export const ErrorWrapper = (
 
   return (
     <div>
-      {/*
-        `onClick` on the field, as before: a property can carry several validation errors and the
-        only way to see the rest is to click the field, which advances `currentErrorIndex`.
-      */}
       <Field data-invalid={isInvalid || undefined} onClick={cycleError}>
         <FieldLabel htmlFor={inputId} id={inputId ? `${inputId}-label` : undefined} required={isRequired}>
           {property.entry.definition.display_name}
         </FieldLabel>
-        {/* Documentation sits between label and control. */}
         <FieldDescription>
           <ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>
         </FieldDescription>
-        {/* Wrapped so `Field`'s vertical `[&>*]:w-full` lands here and not on a Switch. */}
         <div>{input}</div>
         {errorText ? <FieldError>{errorText}</FieldError> : null}
       </Field>

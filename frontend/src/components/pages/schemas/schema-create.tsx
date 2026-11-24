@@ -88,6 +88,9 @@ function createInitialSchemaState() {
   } satisfies SchemaEditorStateData;
 }
 
+/**
+ * Supports the formats reported by the Registry, offering JSON only when supported. Required errors appear after interaction and registration opens the created subject.
+ */
 export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
   initPage(p: PageInitHelper) {
     p.title = 'Create schema';
@@ -185,14 +188,7 @@ export const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: stri
   );
 };
 
-/*
-    This component is about the "Save", "Validate", and "Cancel" buttons at the bottom of the page.
-    Those buttons are shared across both page variants, thus it was extracted into its own component
- */
-const SchemaPageButtons = (p: {
-  parentSubjectName?: string; // cancel button needs to know where to navigate to; was the page reached though 'New schema' or 'Add version'?
-  editorState: SchemaEditorStateHelper;
-}) => {
+const SchemaPageButtons = (p: { parentSubjectName?: string; editorState: SchemaEditorStateHelper }) => {
   const queryClient = useQueryClient();
   const [isValidating, setValidating] = useState(false);
   const [isCreating, setCreating] = useState(false);
@@ -244,7 +240,7 @@ const SchemaPageButtons = (p: {
           action="editSchemas"
           disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
           onClick={async () => {
-            // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
+            // WARNING: Validate before registering; create can answer with a generic server error for invalid schema text.
             setValidating(true);
             const validationResponse = await validateSchema(editorState).finally(() => setValidating(false));
 
@@ -315,8 +311,6 @@ const SchemaPageButtons = (p: {
   );
 };
 
-// Registers the schema, refreshes its cached details, and opens the subject at
-// its latest version; `onSettled` runs once the create request settles.
 async function createSchemaAndOpen(
   editorState: SchemaEditorStateHelper,
   queryClient: QueryClient,
@@ -350,10 +344,10 @@ async function createSchemaAndOpen(
 }
 
 async function validateSchema(state: SchemaEditorStateHelper): Promise<{
-  isValid: boolean; // is the schema valid at all (can be parsed, no unknown types etc)
-  errorDetails?: string; // details about why the schema is not valid
-  isCompatible?: boolean; // is the new schema not compatible with older versions; only set when the schema is valid
-  compatibilityError?: { errorType: string; description: string }; // detailed compatibility error from schema registry
+  isValid: boolean;
+  errorDetails?: string;
+  isCompatible?: boolean;
+  compatibilityError?: { errorType: string; description: string };
 }> {
   if (!state.computedSubjectName) {
     return { isValid: false, errorDetails: 'Missing subject name' };
@@ -388,7 +382,6 @@ const BASE_FORMAT_OPTIONS = [
 ];
 const JSON_FORMAT_OPTION = { value: 'JSON', label: 'JSON' };
 
-// Schema formats the registry accepts; JSON only when it reports support for it.
 function useSchemaFormatOptions() {
   const { data: schemaTypes } = useSchemaTypesQuery();
 
@@ -400,8 +393,6 @@ function useSchemaFormatOptions() {
   return supportsJson ? [...BASE_FORMAT_OPTIONS, JSON_FORMAT_OPTION] : BASE_FORMAT_OPTIONS;
 }
 
-// Existing contexts (without the synthetic "All"), as options keyed by label
-// for the context combobox and by id for the reference context selects.
 function useSchemaEditorContexts(srContextsEnabled: boolean) {
   const { data: apiContexts } = useSchemaRegistryContextsQuery(srContextsEnabled);
   const { data: subjects } = useListSchemasQuery();
@@ -426,7 +417,7 @@ function useSchemaEditorContexts(srContextsEnabled: boolean) {
   return { contextOptions, contextSelectOptions };
 }
 
-// Switching format replaces the schema text, so a picked format waits for confirmation.
+// WARNING: Confirm a format switch before applying it; switching replaces the user's current schema text.
 function useFormatSwitch(currentFormat: string, onStateChange: SetSchemaState) {
   const [switchFormatOpen, setSwitchFormatOpen] = useState(false);
   const [pendingFormat, setPendingFormat] = useState<string | null>(null);
@@ -474,7 +465,6 @@ function ContextField({
       <FieldLabel>Context</FieldLabel>
       <FieldDescription>Select an existing context or type a new name to create one.</FieldDescription>
       <Combobox
-        // index.scss's base `svg` rule offsets the icons.
         className="[&_svg]:block!"
         creatable
         createLabel="context"
@@ -521,7 +511,6 @@ const SchemaEditor = (p: {
     state.format,
     p.onStateChange
   );
-  // Only surface "required" errors after the user has interacted with a field, not on mount.
   const [touched, setTouched] = useState<{ context: boolean; topic: boolean }>({ context: false, topic: false });
 
   const showTopicNameInput = state.strategy === 'TOPIC' || state.strategy === 'TOPIC_RECORD_NAME';
@@ -852,12 +841,12 @@ const ReferencesEditor = (p: {
                 }
 
                 if (!details) {
-                  return; // failed to get details
+                  return;
                 }
 
                 p.onStateChange((prev) => {
                   const r = prev.references[index];
-                  // Need to make sure that, after refreshing, the subject is still the same
+                  // WARNING: Check the subject after refresh; a late response must not overwrite a selection that has changed.
                   if (r?.subject !== e) {
                     return prev;
                   }

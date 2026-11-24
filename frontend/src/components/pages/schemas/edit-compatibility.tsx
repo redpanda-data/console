@@ -115,8 +115,6 @@ const EDIT_COMPATIBILITY_PAGE: SchemaEditPageKind = {
   segment: 'edit-compatibility',
 };
 
-// The global mode and compatibility, plus the subject's details or the
-// context's compatibility when the page edits one of those.
 function useEditCompatibilityData({ subjectName, contextName }: SchemaEditTarget) {
   const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
   const { data: schemaCompatibility, isLoading: isCompatibilityLoading } = useSchemaCompatibilityQuery();
@@ -176,6 +174,9 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string; contextName?: stri
   );
 };
 
+/**
+ * Reads global settings and either subject details or context compatibility according to the edited scope.
+ */
 export default EditSchemaCompatibilityPage;
 
 function useSaveCompatibility({ subjectName, contextName }: SchemaEditTarget, onClose: () => void) {
@@ -259,7 +260,6 @@ function EditSchemaCompatibility(p: {
 
         <div className="text-body" data-testid="edit-compatibility-description">
           Compatibility determines how schema validation occurs when producers are sending messages to Redpanda.
-          {/* <Link>Learn more.</Link> */}
         </div>
 
         <div className="mt-6 max-w-[800px]">

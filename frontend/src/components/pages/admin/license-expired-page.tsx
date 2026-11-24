@@ -5,10 +5,6 @@ import { appGlobal } from '../../../state/app-global';
 import { DISABLE_SSO_DOCS_LINK } from '../../license/license-utils';
 import { PageComponent } from '../page';
 
-/**
- * Formats a list of enabled enterprise feature names into a human-readable string.
- * Returns undefined if no features are enabled.
- */
 function formatEnabledFeatures(features: { name: string; enabled: boolean }[]) {
   const enabledFeatures = features.filter((f) => f.enabled).map((f) => f.name);
 
@@ -35,7 +31,7 @@ export default class LicenseExpiredPage extends PageComponent {
 
   refreshData() {
     this.api.listLicenses().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: Let the API layer report the request error; the expired-license overlay must stay available.
     });
   }
 
@@ -44,7 +40,6 @@ export default class LicenseExpiredPage extends PageComponent {
 
     return (
       <div className="flex items-center justify-center p-4">
-        {/* Scrim over the page underneath; the panel sits one layer above it. */}
         <div className="fixed top-0 left-0 z-[1000] h-screen w-screen bg-background opacity-50" />
         <div className="z-[1001] mx-auto max-w-[600px] p-8 text-center">
           <div className="flex flex-col items-center gap-6">

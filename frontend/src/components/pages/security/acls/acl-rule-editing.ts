@@ -117,7 +117,7 @@ export const getPermissionModeChange: (rule: Rule, mode: string) => Partial<Rule
   ),
 });
 
-// Moving one operation off the mode's permission turns an "allow all" or "deny all" rule into a custom one.
+// WARNING: Moving one operation off the common permission must convert an all-operations mode to a custom rule.
 const keepsMode = (mode: ModeType, value: string) =>
   (mode !== ModeAllowAll || value === OperationTypeAllow) && (mode !== ModeDenyAll || value === OperationTypeDeny);
 

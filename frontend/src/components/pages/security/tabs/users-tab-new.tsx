@@ -351,7 +351,8 @@ const UserActions = ({ user }: { user: UserListEntry }) => {
     try {
       await deleteUserMutation({ name: user.name });
     } catch {
-      return; // Error toast shown by mutation's onError
+      // WARNING: The mutation already reports failure; do not show a second toast for the same error.
+      return;
     }
     const failures = (await removeUserFromAllRoles(user.name)).filter((r) => r.status === 'rejected');
     if (failures.length > 0) {

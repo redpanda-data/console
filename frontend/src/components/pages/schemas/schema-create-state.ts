@@ -12,7 +12,7 @@ export type NamingStrategy = 'TOPIC' | 'RECORD_NAME' | 'TOPIC_RECORD_NAME' | 'CU
 
 export type SchemaEditorStateData = {
   strategy: NamingStrategy;
-  userInput: string; // holds either topicName or custom input
+  userInput: string;
   keyOrValue: 'KEY' | 'VALUE' | undefined;
   format: 'AVRO' | 'PROTOBUF' | 'JSON';
   schemaText: string;
@@ -40,17 +40,19 @@ function matchRecordName(schemaText: string, regex: RegExp) {
   return ar[1];
 }
 
-// Avro and JSON schemas carry the record name in a top-level `name` field.
 function jsonRecordName(schemaText: string): string {
   try {
     const { name } = JSON.parse(schemaText);
     return name;
   } catch {
-    // no op - schema may be incomplete during editing
+    // WARNING: An incomplete schema is expected during editing; do not turn a partial parse into a form crash.
   }
   return matchRecordName(schemaText, JSON_NAME_REGEX);
 }
 
+/**
+ * Avro and JSON use the top-level name field.
+ */
 export function computeRecordName(state: SchemaEditorStateData): string {
   if (state.format === 'AVRO' || state.format === 'JSON') {
     return jsonRecordName(state.schemaText);
@@ -58,7 +60,6 @@ export function computeRecordName(state: SchemaEditorStateData): string {
   return matchRecordName(state.schemaText, PROTOBUF_MESSAGE_NAME_REGEX);
 }
 
-// The subject name each naming strategy builds, before the key/value suffix.
 const SUBJECT_NAME_BY_STRATEGY: Record<NamingStrategy, (userInput: string, recordName: string) => string> = {
   TOPIC: (userInput) => userInput,
   RECORD_NAME: (_userInput, recordName) => recordName,
@@ -105,7 +106,6 @@ function subjectNameParts(subjectName: string, srContextsEnabled: boolean) {
   return { contextId: contextNameToId(parsed.context), userInput: parsed.displayName };
 }
 
-// The schema's metadata as editable rows, plus a trailing empty row to type into.
 function metadataRows(schema: SchemaRegistryVersionedSchema): SchemaEditorStateData['metadataProperties'] {
   const emptyRow = { id: crypto.randomUUID(), key: '', value: '' };
   if (!schema.metadata?.properties) {

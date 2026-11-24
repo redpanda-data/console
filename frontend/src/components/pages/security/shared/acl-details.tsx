@@ -22,9 +22,12 @@ type ACLDetailsProps = {
     host: string;
   };
   rules: Rule[];
-  isSimpleView?: boolean; // this prop show SharedConfig, this is used for emmbedded this component on legacy user page
+  isSimpleView?: boolean;
 };
 
+/**
+ * The simple view supports embedding on the legacy user page.
+ */
 export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDetailsProps) {
   const navigate = useNavigate();
 

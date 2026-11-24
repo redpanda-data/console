@@ -83,10 +83,6 @@ const TIME_UNITS = [
   { value: 60, label: 'Minutes' },
 ];
 
-/**
- * A labelled multi-select: the trigger is a div with a hardcoded aria-label, so the visible label
- * reaches it through aria-labelledby (which wins). Click-to-focus is not wired.
- */
 const LabelledMultiSelect = ({
   labelId,
   options,
@@ -121,7 +117,6 @@ const LabelledMultiSelect = ({
   );
 };
 
-/** A number paired with its unit. An empty field reads NaN; the input renders '' to stay controlled. */
 const NumberWithUnitField = ({
   id,
   label,
@@ -138,7 +133,6 @@ const NumberWithUnitField = ({
   description: string;
   error?: string;
   units: { value: number; label: string }[];
-  /** `cpuProfilerWaitSeconds` is optional in form state; the rest are always set. */
   value: number | undefined;
   unit: number;
   onValueChange: (next: number) => void;
@@ -162,14 +156,12 @@ const NumberWithUnitField = ({
   </Field>
 );
 
-/** `data-invalid={false}` would render as the string "false", so the falsy case has to be undefined. */
+// WARNING: Omit a false data-invalid; a rendered false string still matches attribute-presence styles.
 const invalidFlag = (violation?: string) => (violation ? true : undefined);
 
-// The running job's status when there is one; brokers can also report a finished or failed bundle.
 const pickCurrentStatus = <T extends { status: DebugBundleStatus_Status }>(bundleStatuses: T[]) =>
   bundleStatuses.find((s) => s.status === DebugBundleStatus_Status.RUNNING) ?? bundleStatuses.at(0);
 
-// Blank or non-numeric text leaves the field unset rather than sending 0.
 const optionalNumber = (text: string) => Number(text) || undefined;
 
 const Header: FC<{ mode?: 'default' | 'advanced' }> = ({ mode = 'default' }) => (
@@ -194,7 +186,6 @@ type ErrorDetail = {
   debug?: ErrorDebugInfo;
 };
 
-// This is a tmp workaround until we figure out how to properly type response errors from the backend
 type ErrorResponse = {
   code: string;
   message: string;
@@ -205,6 +196,9 @@ type FieldViolationsMap = {
   [field: string]: string;
 };
 
+/**
+ * The visible multi-select label is linked through aria-labelledby. A job opens as a link only once its ID exists; an empty ID would route nowhere.
+ */
 export class AdminDebugBundle extends pageWithContent(() => <AdminDebugBundleContent />) {
   initPage(p: PageInitHelper) {
     p.title = 'Debug bundle';
@@ -216,7 +210,7 @@ export class AdminDebugBundle extends pageWithContent(() => <AdminDebugBundleCon
 
   refreshData() {
     this.api.refreshDebugBundleStatuses().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: The API layer reports this request failure; do not show it a second time from the page.
     });
   }
 }
@@ -226,7 +220,7 @@ type BrokerBundleStatus = GetDebugBundleStatusResponse_DebugBundleBrokerStatus;
 const isBundleIn = (status: DebugBundleStatus_Status) => (s: BrokerBundleStatus) =>
   s.value.case === 'bundleStatus' && s.value.value.status === status;
 
-// A running job on any broker outranks every finished state; the others need at least one broker.
+// WARNING: A running job on any broker wins over finished states so a partial response cannot hide active collection.
 const summarizeBundleStatuses = (statuses: BrokerBundleStatus[]) => {
   const isInProgress = statuses.some(isBundleIn(DebugBundleStatus_Status.RUNNING));
   const isSettled = statuses.length > 0 && !isInProgress;
@@ -244,8 +238,6 @@ const DebugBundleInProgress: FC<{ status?: DebugBundleStatus }> = ({ status }) =
   return (
     <div>
       <Header />
-      {/* debug-bundle-page.ts looks this up with getByRole('link'), so it must not become a button.
-          Rendered only with a job id: `$jobId` needs a segment, and an empty one routes nowhere. */}
       {jobId ? (
         <Link
           className={cn(buttonVariants({ variant: 'link' }), 'mt-4')}
@@ -326,7 +318,7 @@ const NewDebugBundleForm: FC<{
   useEffect(() => {
     api.refreshBrokers(true);
     api.refreshPartitions('all', true).catch(() => {
-      // Error handling managed by API layer
+      // WARNING: The API layer reports this request failure; do not show it a second time from the form.
     });
   }, []);
 
@@ -406,7 +398,6 @@ const NewDebugBundleForm: FC<{
         <div className="mt-4 flex w-full flex-col gap-2 sm:w-[500px]">
           <Alert className="my-2" icon={<InfoIcon />} variant="informative">
             <AlertDescription>
-              {/* One block child: AlertDescription is a grid, so loose text runs each become a row. */}
               <p>
                 This is an advanced feature, best used if you have received direction to do so from Redpanda support.
               </p>

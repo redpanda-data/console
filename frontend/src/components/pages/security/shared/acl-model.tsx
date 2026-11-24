@@ -158,7 +158,7 @@ export type ResourceTypeSelectionProps = {
 };
 
 export const parsePrincipal = (principal: string) => {
-  let [type, name] = principal.split(':'); // Split at the first colon
+  let [type, name] = principal.split(':');
   name = name ?? '';
   return {
     type,
@@ -340,7 +340,6 @@ const initializeHostsMap = (resources: ListACLsResponse['resources']) => {
 
 type RuleTarget = Pick<Rule, 'resourceType' | 'selectorType' | 'selectorValue'>;
 
-// The host's rule for this resource selector, created with the host's next rule id on first use.
 const getOrCreateRule = (hostData: HostData, ruleKey: string, target: RuleTarget) => {
   const existing = hostData.rulesMap.get(ruleKey);
   if (existing) {

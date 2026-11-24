@@ -63,14 +63,12 @@ import Tabs from '../../misc/tabs/tabs';
 import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
-// Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
 const LOGS_TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
   getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
 };
 
-// Ten a page (the Registry default) is the legacy page size for this table.
 const TASKS_TABLE_OPTIONS = { enableHiding: false };
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
@@ -282,14 +280,11 @@ const ConnectorTabs = ({
         },
         {
           key: 'logs',
-          // The Tabs wrapper takes a boolean; the reason goes in a tooltip on the trigger.
           disabled: !logsTopic,
           title: logsTopic ? (
             'Logs'
           ) : (
             <Tooltip delayDuration={150}>
-              {/* The disabled trigger sets `aria-disabled:pointer-events-none`, which cascades —
-                  without re-enabling them here the tooltip could never open. */}
               <TooltipTrigger render={<span className="pointer-events-auto">Logs</span>} />
               <TooltipContent side="top">{`Logs topic '${LOGS_TOPIC_NAME}' does not exist.`}</TooltipContent>
             </Tooltip>
@@ -424,10 +419,7 @@ const ConnectorConfirmModals = ({
         await connectClusterStore.deleteConnector(connectorName);
       }}
       onSuccess={() => {
-        // Navigate after the success toast has been queued.
-        // Refreshing before navigation would cause the connector to disappear
-        // from the store, unmounting this component before the toast renders.
-        // The cluster-list page refreshes on its own when it mounts.
+        // WARNING: Queue the success toast before navigation; refreshing first removes the connector and unmounts this page before it can report success.
         appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(clusterName)}`);
       }}
       successMessage={(c) => (
@@ -450,7 +442,6 @@ const ConfigOverviewTab = (p: {
 
   return (
     <div
-      // The template areas are inline: Tailwind has no arbitrary grid-template-areas utility.
       className="grid items-start gap-6"
       style={{
         gridTemplateAreas: '"errors errors" "health details" "tasks details"',
@@ -601,8 +592,6 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     ConnectClusterStore.connectClusters.clear();
     await this.api.refreshConnectClusters();
 
-    // refresh topics so we know whether or not we can show the "go to error logs topic" button in the connector details error popup
-    // and show the logs tab
     this.api.refreshTopics(force);
   }
 
@@ -616,7 +605,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
       return <NotConfigured />;
     }
 
-    // Touch observables so PageComponent's Reaction tracks them for re-renders.
+    // WARNING: Keep these reads during render; the PageComponent reaction only tracks observables it reads here.
     void api.topics;
 
     return (
@@ -631,9 +620,11 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
   }
 }
 
+/**
+ * The logs table uses stable keys so expanded rows survive refresh and filtering. Keep a pointer-capable wrapper for permission tooltips; disabled controls do not receive hover.
+ */
 export default KafkaConnectorDetails;
 
-// Visible, non-secret, high-importance properties with a value; the name is already the title.
 function isConnectorDetailsProperty(x: Property) {
   return (
     !x.isHidden &&
@@ -704,10 +695,6 @@ const ConnectorDetails = (p: {
   );
 };
 
-/**
- * Wraps a control that is disabled without `canEditConnectCluster`, explaining why. Tooltip has no
- * prop to suppress itself, so the wrapper renders the child bare when the permission is present.
- */
 const NoEditPermissionTooltip = ({
   canEdit,
   children,
@@ -721,7 +708,6 @@ const NoEditPermissionTooltip = ({
 
   return (
     <Tooltip delayDuration={150}>
-      {/* A disabled button fires no pointer events, so the tooltip hangs off a wrapper. */}
       <TooltipTrigger render={<span className="inline-flex">{children}</span>} />
       <TooltipContent side="top">
         You don't have 'canEditConnectCluster' permissions for this connect cluster
@@ -759,7 +745,6 @@ function restartConnectorLogSearch(
     });
 }
 
-// Streams the connector's log messages from the logs topic, restarting for another connector or on refresh.
 function useConnectorLogs(connectorName: string) {
   const [logState, setLogState] = useState<ConnectorLogState>(EMPTY_CONNECTOR_LOGS);
   const searchRef = useRef<MessageSearch | null>(null);
@@ -768,7 +753,7 @@ function useConnectorLogs(connectorName: string) {
     queueMicrotask(() => setLogState(EMPTY_CONNECTOR_LOGS));
     restartConnectorLogSearch(searchRef, connectorName, setLogState);
     return () => {
-      // `refresh` may have replaced the search this run started, so stop whichever is current.
+      // WARNING: Stop the current search during cleanup; Refresh can already have replaced the one that started this effect.
       searchRef.current?.stopSearch();
     };
   }, [connectorName]);
@@ -827,11 +812,9 @@ function useConnectorLogs(connectorName: string) {
 }
 
 function useLogMessageColumns(topic: Topic | undefined) {
-  // Memoised: a new columns array per render makes the table re-create every header and cell, which
-  // this tab would do every 200 ms while logs stream (the sort menu could never stay open).
+  // WARNING: Keep column identities stable while logs stream; recreating columns remounts the open sort menu.
   return useMemo(
     () => [
-      // The Registry DataTable renders no expander column for `subComponent`.
       {
         id: 'expander',
         enableSorting: false,
@@ -866,9 +849,7 @@ function useLogMessageColumns(topic: Topic | undefined) {
         id: 'value',
         header: 'Value',
         accessorKey: 'value',
-        // A decoded preview; sorting the raw value means nothing.
         enableSorting: false,
-        // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
         cell: ({ row: { original } }) => (
           <div className="w-screen max-w-full">
             <MessagePreview

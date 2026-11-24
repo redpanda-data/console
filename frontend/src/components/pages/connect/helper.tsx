@@ -87,7 +87,7 @@ export type ConnectorMetadata = {
   readonly classNamePrefix?: string;
 
   readonly logo?: JSX.Element;
-  readonly friendlyName?: string; // override display name (instead of just 'className without namespace')
+  readonly friendlyName?: string;
   readonly description?: string;
   readonly learnMoreLink?: string;
   readonly author?: string;
@@ -379,7 +379,6 @@ function trimConnectorMetadataCache() {
   }
 }
 
-// An exact match wins over a prefix match; anything else gets the fallback icon.
 function matchConnectorMetadata(className: string) {
   return (
     connectorMetadata.find((e) => e.className && e.className === className) ??
@@ -419,7 +418,6 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
       ) : null}
 
       <Popover>
-        {/* Hover-to-open; Base UI defaults to click. */}
         <PopoverTrigger
           openOnHover
           render={
@@ -428,7 +426,6 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
             </button>
           }
         />
-        {/* PopoverContent is a fixed `w-72`, so the width is set here to fit the content. */}
         <PopoverContent className="w-auto max-w-[500px]" side="right">
           <div className="whitespace-pre-wrap">{c}</div>
         </PopoverContent>
@@ -510,7 +507,6 @@ export function NotConfigured() {
   return (
     <PageContent key="b">
       <Section>
-        {/* Same shape as the already-migrated SchemaNotConfiguredPage. */}
         <Empty>
           <EmptyHeader>
             <EmptyTitle>Not configured</EmptyTitle>
@@ -536,14 +532,14 @@ export function NotConfigured() {
 }
 
 type ConfirmModalProps<T> = {
-  target: () => T | null; // when set, dialog is shown
-  clearTarget: () => void; // called when the dialog is done
+  target: () => T | null;
+  clearTarget: () => void;
 
-  content: (target: T) => JSX.Element; // "are you sure you want to ..."
-  successMessage: (target: T) => JSX.Element; // "x done successfully"
+  content: (target: T) => JSX.Element;
+  successMessage: (target: T) => JSX.Element;
 
   onOk: (target: T) => Promise<void>;
-  onSuccess?: (target: T) => void; // called after the success toast; use for navigation
+  onSuccess?: (target: T) => void;
 };
 
 function parseApiError(text: string) {
@@ -571,6 +567,9 @@ function describeConfirmError(error: string | Error) {
   };
 }
 
+/**
+ * Use the presence of a target to open, and clear it when the action finishes. Invoke onSuccess after queuing the toast. Keep cancellation as the first focusable action and long errors scrollable inside the dialog.
+ */
 export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | Error | null>(null);
@@ -624,8 +623,6 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm</AlertDialogTitle>
         </AlertDialogHeader>
-        {/* min-h-0 + overflow-y-auto: AlertDialogContent is `overflow-hidden max-h-[85vh]`, so a
-            long API error would otherwise be clipped with no way to scroll to the footer. */}
         <AlertDialogDescription className="min-h-0 overflow-y-auto">
           <div className="text-foreground">
             {content}
@@ -640,7 +637,6 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
           </div>
         </AlertDialogDescription>
         <AlertDialogFooter>
-          {/* Cancel first: Base UI focuses the first tabbable. */}
           <Button onClick={cancel} variant="outline">
             No
           </Button>

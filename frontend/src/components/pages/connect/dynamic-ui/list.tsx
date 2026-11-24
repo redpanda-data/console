@@ -41,7 +41,6 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps) => {
 
   return (
     <>
-      {/* Input. The hint is shown while the field has focus, not on hover, so the Tooltip is controlled. */}
       <Tooltip open={hasFocus}>
         <TooltipTrigger
           render={

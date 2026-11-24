@@ -21,6 +21,9 @@ const getPrincipalRoleNames = (userName: string, principalType: 'User' | 'Group'
     .filter(([, members]) => members.any((m) => m.name === userName && m.principalType === principalType))
     .map(([roleName]) => roleName);
 
+/**
+ * Hide roles when unsupported; a supported empty list is shown as No roles.
+ */
 export const UserRoleTags = ({
   userName,
   principalType = 'User',
@@ -35,7 +38,6 @@ export const UserRoleTags = ({
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const navigate = useNavigate();
   const hasAcls = usePrincipalHasAcls(`${principalType}:${userName}`, !!userName);
-  // Roles only show when the cluster supports them; an empty list then reads "No roles".
   const roles = featureRolesApi ? getPrincipalRoleNames(userName, principalType) : [];
   const visibleRoles = roles.slice(0, Math.min(roles.length, showMaxItems));
   const hiddenCount = showMaxItems === Number.POSITIVE_INFINITY ? 0 : Math.max(0, roles.length - showMaxItems);

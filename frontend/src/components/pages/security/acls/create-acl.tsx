@@ -81,17 +81,14 @@ const FIRST_CHAR_REGEX = /^\w/u;
 const COLON_REGEX = /:/u;
 const PRINCIPAL_PREFIX_REGEX = /^[^:]+:/u;
 
-export const formatLabel = (text: string) => {
-  return text
+export const formatLabel = (text: string) =>
+  text
     .replace(UNDERSCORE_REGEX, ' ')
     .toLowerCase()
     .replace(FIRST_CHAR_REGEX, (c) => c.toUpperCase())
-    .replace('id', 'ID'); // transactional ids => transactional IDs
-};
+    .replace('id', 'ID');
 
-export const formatSummaryLabel = (text: string) => {
-  return text.replace('id', 'ID'); // transactional ids => transactional IDs
-};
+export const formatSummaryLabel = (text: string) => text.replace('id', 'ID');
 
 const getResourceName = (resourceType: ResourceType) => {
   const resourceNames: Record<string, string> = {
@@ -254,105 +251,101 @@ const ResourceTypeSelection = ({
   );
 };
 
-const Summary = ({ sharedConfig, rules }: SummaryProps) => {
-  return (
-    <Card size="full">
-      <CardHeader>
-        <h3>Summary</h3>
-      </CardHeader>
-      <CardContent>
-        {/* Shared Configuration Summary */}
-        <div>
-          <div className="rounded-lg border-0">
-            <div className="flex items-center justify-between text-body">
-              <span className="text-subtle">Principal:</span>
-              <span className="font-medium text-strong">{sharedConfig.principal.replace(COLON_REGEX, ': ')}</span>
-            </div>
-            <div className="flex items-center justify-between text-body">
-              <span className="text-subtle">Host:</span>
-              <span className="font-medium text-strong">
-                {sharedConfig.host === '*' ? 'All hosts' : sharedConfig.host}
-              </span>
-            </div>
+const Summary = ({ sharedConfig, rules }: SummaryProps) => (
+  <Card size="full">
+    <CardHeader>
+      <h3>Summary</h3>
+    </CardHeader>
+    <CardContent>
+      <div>
+        <div className="rounded-lg border-0">
+          <div className="flex items-center justify-between text-body">
+            <span className="text-subtle">Principal:</span>
+            <span className="font-medium text-strong">{sharedConfig.principal.replace(COLON_REGEX, ': ')}</span>
+          </div>
+          <div className="flex items-center justify-between text-body">
+            <span className="text-subtle">Host:</span>
+            <span className="font-medium text-strong">
+              {sharedConfig.host === '*' ? 'All hosts' : sharedConfig.host}
+            </span>
           </div>
         </div>
+      </div>
 
-        {/* Rules Summary */}
-        <div className="space-y-3">
-          {rules.map((rule) => {
-            const ops = Object.entries(rule.operations);
-            const enabledOperations = ops
-              .filter(([_, operationValue]) => operationValue !== OperationTypeNotSet)
-              .map(([op, operationValue]) => ({
-                name: formatLabel(op),
-                value: operationValue,
-                originalOperationName: op,
-              }));
+      <div className="space-y-3">
+        {rules.map((rule) => {
+          const ops = Object.entries(rule.operations);
+          const enabledOperations = ops
+            .filter(([_, operationValue]) => operationValue !== OperationTypeNotSet)
+            .map(([op, operationValue]) => ({
+              name: formatLabel(op),
+              value: operationValue,
+              originalOperationName: op,
+            }));
 
-            const allAllow =
-              enabledOperations.length > 0 &&
-              enabledOperations.length === ops.length &&
-              enabledOperations.every((op) => op.value === OperationTypeAllow);
-            const allDeny =
-              enabledOperations.length > 0 &&
-              enabledOperations.length === ops.length &&
-              enabledOperations.every((op) => op.value === OperationTypeDeny);
-            const showSummary = allAllow || allDeny;
+          const allAllow =
+            enabledOperations.length > 0 &&
+            enabledOperations.length === ops.length &&
+            enabledOperations.every((op) => op.value === OperationTypeAllow);
+          const allDeny =
+            enabledOperations.length > 0 &&
+            enabledOperations.length === ops.length &&
+            enabledOperations.every((op) => op.value === OperationTypeDeny);
+          const showSummary = allAllow || allDeny;
 
-            return (
-              <div
-                className="space-y-2 rounded-lg border border-border bg-card/40 p-3"
-                data-testid={`summary-card-${getRuleDataTestId(rule)}`}
-                key={rule.id}
+          return (
+            <div
+              className="space-y-2 rounded-lg border border-border bg-card/40 p-3"
+              data-testid={`summary-card-${getRuleDataTestId(rule)}`}
+              key={rule.id}
+            >
+              <p
+                className="text-body-sm text-subtle first-letter:uppercase"
+                data-testid={`${getRuleDataTestId(rule)}-title`}
               >
-                <p
-                  className="text-body-sm text-subtle first-letter:uppercase"
-                  data-testid={`${getRuleDataTestId(rule)}-title`}
-                >
-                  {getRuleSummaryTitle(rule)}
-                </p>
+                {getRuleSummaryTitle(rule)}
+              </p>
 
-                <div>
-                  {enabledOperations.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {showSummary ? (
+              <div>
+                {enabledOperations.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {showSummary ? (
+                      <span
+                        className={clsx(
+                          'inline-flex items-center rounded-full px-2 py-1 text-body-sm font-medium',
+                          allAllow ? 'bg-success-wash text-success' : 'bg-destructive-wash text-destructive'
+                        )}
+                      >
+                        {allAllow ? 'Allow all' : 'Deny all'}
+                      </span>
+                    ) : (
+                      enabledOperations.map((op) => (
                         <span
                           className={clsx(
                             'inline-flex items-center rounded-full px-2 py-1 text-body-sm font-medium',
-                            allAllow ? 'bg-success-wash text-success' : 'bg-destructive-wash text-destructive'
+                            op.value === OperationTypeAllow
+                              ? 'bg-success-wash text-success'
+                              : 'bg-destructive-wash text-destructive'
                           )}
+                          data-testid={`${getRuleDataTestId(rule)}-op-${op.originalOperationName}`}
+                          key={op.name}
                         >
-                          {allAllow ? 'Allow all' : 'Deny all'}
+                          {op.name}: {op.value}
                         </span>
-                      ) : (
-                        enabledOperations.map((op) => (
-                          <span
-                            className={clsx(
-                              'inline-flex items-center rounded-full px-2 py-1 text-body-sm font-medium',
-                              op.value === OperationTypeAllow
-                                ? 'bg-success-wash text-success'
-                                : 'bg-destructive-wash text-destructive'
-                            )}
-                            data-testid={`${getRuleDataTestId(rule)}-op-${op.originalOperationName}`}
-                            key={op.name}
-                          >
-                            {op.name}: {op.value}
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-body-sm text-disabled italic">No operations configured</span>
-                  )}
-                </div>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-body-sm text-disabled italic">No operations configured</span>
+                )}
               </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+            </div>
+          );
+        })}
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const AclRules = ({
   rules,
@@ -418,7 +411,6 @@ const AclRules = ({
                 </Button>
               </div>
 
-              {/* Show selector if resource type is not Cluster or SchemaRegistry */}
               {!(rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) && (
                 <fieldset aria-labelledby={`${labelIdPrefix}-${rule.id}-selector`} className="mb-6 space-y-2">
                   <FieldTitle id={`${labelIdPrefix}-${rule.id}-selector`}>Selector</FieldTitle>

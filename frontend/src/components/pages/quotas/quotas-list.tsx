@@ -86,7 +86,6 @@ const InfoTooltip = ({ children }: { children: React.ReactNode }) => (
   </Tooltip>
 );
 
-/** Sortable column header matching the look of DataTableColumnHeader, with an optional info tooltip. */
 function SortableHeader({
   column,
   title,
@@ -107,7 +106,6 @@ function SortableHeader({
   );
 }
 
-/** Renders for a rate that has no quota set — an em-dash with a tooltip explaining there is no limit. */
 const NOT_CONFIGURED_LABEL = 'No limit configured';
 
 const NotConfigured = () => (
@@ -115,7 +113,6 @@ const NotConfigured = () => (
     <TooltipTrigger
       render={
         <span className="cursor-help text-muted-foreground">
-          {/* The em-dash is decorative; screen readers announce the sr-only label instead. */}
           <span aria-hidden="true">—</span>
           <span className="sr-only">{NOT_CONFIGURED_LABEL}</span>
         </span>
@@ -324,4 +321,7 @@ const QuotasList = () => {
   );
 };
 
+/**
+ * An unset limit uses a decorative dash and a separate screen-reader label.
+ */
 export default QuotasList;

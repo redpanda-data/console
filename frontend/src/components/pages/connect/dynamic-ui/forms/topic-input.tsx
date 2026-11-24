@@ -102,7 +102,6 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
           <ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>
         </FieldDescription>
 
-        {/* A 'source' connector imports data into the cluster. So we let the user choose the name of the topic directly  */}
         {isRegex || p.connectorType === 'source' ? (
           <Input
             autoComplete="off"

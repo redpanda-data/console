@@ -53,7 +53,6 @@ const TABLE_OPTIONS = {
 
 const AclRowActionsContext = createContext<AclRowActionsContextValue | null>(null);
 
-/** Resolves to whether `action` succeeded; a failure is logged and reported instead of thrown. */
 const succeedsOrReports = async (
   action: () => Promise<void>,
   failureMessage: string,
@@ -95,7 +94,7 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
   }
   const { users, canDeleteUsers } = ctx;
 
-  // Only a User row may offer the user deletes; a same-named Group would delete an unrelated user.
+  // WARNING: Only a User row can offer account deletion; a Group with the same name is a different principal.
   const hasAccount = record.principalType === 'User' && users.some((u) => u.name === record.principalName);
   const canDeleteUser = hasAccount && canDeleteUsers;
 

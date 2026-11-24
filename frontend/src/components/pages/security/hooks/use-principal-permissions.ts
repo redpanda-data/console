@@ -93,7 +93,6 @@ const getRoleAcls = (aclsByPrincipal: Map<string, FlatAclEntry[]>) =>
       .map(([principal, acls]) => [principal.slice(ROLE_PRINCIPAL_PREFIX.length), acls])
   );
 
-/** The ACLs a principal inherits, one group per role it belongs to that grants any. */
 const getRoleAclGroups: (
   roleMembers: RoleMembers,
   roleAcls: Map<string, FlatAclEntry[]>,
@@ -128,6 +127,9 @@ const toPrincipalPermissionGroup: (
   };
 };
 
+/**
+ * Groups inherited ACLs by the roles that grant them.
+ */
 export function useUserPermissions(userName: string) {
   const { data: allAclsData, isLoading } = useQuery(listACLs, {});
   const roleMembers = useStore(useRolesStore, (s) => s.roleMembers);

@@ -29,7 +29,8 @@ export function useRoleMembership(roleName: string) {
         })
       );
     } catch {
-      return false; // Error handling is done in onError callback
+      // WARNING: The mutation's onError already reports failure; return false without duplicating it.
+      return false;
     }
     toast.success(`${principalType} "${name}" added to role`);
     return true;

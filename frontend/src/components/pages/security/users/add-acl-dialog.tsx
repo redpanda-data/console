@@ -116,7 +116,7 @@ const getResourceName = (values: FormValues) => {
   if (values.resourceType === ACL_ResourceType.CLUSTER) {
     return 'kafka-cluster';
   }
-  // ANY is a query-only pattern type; it is created as LITERAL with a wildcard name
+  // WARNING: ANY is a query-only pattern type; write a LITERAL with a wildcard name instead.
   return values.patternType === ACL_ResourcePatternType.ANY ? '*' : values.resourceName || '*';
 };
 
@@ -135,10 +135,6 @@ const toCreateAclRequest = (values: FormValues) =>
 const isRenderableViolation = (violation: { field: string }, renderableFieldNames: Set<string>) =>
   Boolean(violation.field) && renderableFieldNames.has(violation.field);
 
-/**
- * Puts each server field violation on its rendered field and returns the message for the form-level alert:
- * the other violations, else the raw error when no field took one, else `null`.
- */
 const getSubmitErrorMessage = (
   err: unknown,
   setError: UseFormSetError<FormValues>,
@@ -237,6 +233,9 @@ type AddAclDialogProps = {
   principal?: string;
 };
 
+/**
+ * Assigns server violations to their rendered fields and keeps unmatched violations on the form alert.
+ */
 export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProps) => {
   const { mutateAsync: createACL, isPending } = useCreateACLMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
