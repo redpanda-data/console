@@ -19,7 +19,7 @@ import { render, screen, waitFor } from 'test-utils';
 import { AuthenticationSection } from './authentication-section';
 import { AUTH_METHOD, FormSchema, type FormValues, initialValues } from '../model';
 
-const VIEW_REQUIRED_ACLS_RE = /view required acls/i;
+const VIEW_REQUIRED_ACLS_RE = /view required acls/iu;
 
 rs.mock('config', () => ({
   isEmbedded: rs.fn(() => false),
@@ -33,9 +33,7 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
     mode: 'onBlur',
   });
 
-  const onSubmit = () => {
-    // Test form submission
-  };
+  const onSubmit = () => {};
 
   return (
     <Form {...form}>

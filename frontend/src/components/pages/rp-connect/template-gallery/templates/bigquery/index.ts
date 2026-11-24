@@ -30,7 +30,6 @@ export const bigqueryTemplate: PipelineTemplate = {
       section: 'sink',
       kind: 'string',
       label: 'GCP project ID',
-      // Optional: connector falls back to the project in the credentials JSON or GOOGLE_CLOUD_PROJECT.
       required: false,
       placeholder: 'Inferred from credentials if blank',
       schemaField: 'project',

@@ -16,14 +16,14 @@ import KowlEditor, { type IStandaloneCodeEditor } from './kowl-editor';
 const READ_ONLY_EDITOR_OPTIONS = {
   readOnly: true,
   domReadOnly: true,
-  // PERFORMANCE CONFIG: Fixes blank content bug when scrolling large JSON (40-50KB+)
-  // Issue: wordWrap: 'on' + 40KB single-line strings = blank content appears during scroll
-  // Solution: Wrap at fixed column to break long lines into manageable chunks
+  // WARNING: Keep fixed-column wrapping; wordWrap 'on' can blank the viewer for large single-line payloads.
   wordWrap: 'wordWrapColumn',
-  wordWrapColumn: 120, // Lines >120 chars wrap. Prevents blank screen with large payloads
-  wrappingStrategy: 'simple', // 'advanced' causes 2s+ delays on large content
-  stopRenderingLineAfter: 10_000, // DO NOT set to -1: causes severe performance issues
-  maxTokenizationLineLength: 20_000, // Syntax highlighting limit
+  wordWrapColumn: 120,
+  // WARNING: Keep simple wrapping; advanced wrapping stalls on large payloads.
+  wrappingStrategy: 'simple',
+  // WARNING: Keep the line rendering cap; disabling it can make the large-payload viewer unresponsive.
+  stopRenderingLineAfter: 10_000,
+  maxTokenizationLineLength: 20_000,
   automaticLayout: false,
   folding: false,
   showFoldingControls: 'never',
@@ -48,13 +48,13 @@ const READ_ONLY_EDITOR_OPTIONS = {
   scrollBeyondLastLine: false,
 } as const;
 
+/**
+ * Read-only JSON viewer. Enable `escapeLatin1` for Avro JSON bytes so copying text
+ * preserves the original byte escapes instead of yielding UTF-8 glyphs.
+ */
 export const KowlJsonView = (props: {
   srcObj: object | string | null | undefined;
   style?: CSSProperties;
-  // escapeLatin1 re-escapes code points in 0x80-0xFF as \u00XX so bytes from
-  // Avro's JSON bytes encoding survive copy-paste out of the viewer. Without
-  // this, JSON.stringify emits the code point as a literal glyph and the
-  // clipboard receives the UTF-8 encoding, not the original byte.
   escapeLatin1?: boolean;
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -66,7 +66,7 @@ export const KowlJsonView = (props: {
     if (!props.escapeLatin1) {
       return raw;
     }
-    return raw.replace(/[\u0080-\u00ff]/g, (c) => `\\u00${c.charCodeAt(0).toString(16).padStart(2, '0')}`);
+    return raw.replace(/[\u0080-\u00ff]/gu, (c) => `\\u00${c.charCodeAt(0).toString(16).padStart(2, '0')}`);
   }, [props.srcObj, props.escapeLatin1]);
 
   const scheduleLayout = useCallback(() => {

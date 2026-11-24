@@ -1,3 +1,5 @@
+import { spawnSync } from 'bun';
+
 import { describe, expect, test } from 'bun:test';
 import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -6,7 +8,6 @@ import { fileURLToPath } from 'node:url';
 
 const frontendRoot = new URL('../', import.meta.url);
 
-// Keep interrupted probes outside Git without losing project imports or type inference.
 function createLintProject(source: string) {
   const directory = mkdtempSync(join(tmpdir(), 'console-biome-test-'));
   const file = join(directory, 'probe.tsx');
@@ -88,8 +89,6 @@ describe('frontend lint policy', () => {
     ]);
   });
 });
-
-import { spawnSync } from 'bun';
 
 test('enforces the default ten-statement limit and component appearance policy', () => {
   const rejected = lint(`

@@ -46,7 +46,6 @@ import { ClusterFenceSourcePanel } from '../../../cluster-fence/cluster-fence-so
 import { getShadowLinkStateLabel } from '../model';
 import { isShadowLinkingDisabledError } from '../shadowlink-helpers';
 
-// Extracted component for table body content
 const ShadowLinkTableRows = ({
   isLoading,
   table,
@@ -122,7 +121,6 @@ const useShadowLinksPageTitle = () => {
 
 type ShadowLinksQueryError = ReturnType<typeof useListShadowLinksQuery>['error'];
 
-// Show toast on error (except for feature-disabled or unavailable admin API errors)
 const useShadowLinksErrorToast = (error: ShadowLinksQueryError) => {
   useEffect(() => {
     if (
@@ -138,7 +136,6 @@ const useShadowLinksErrorToast = (error: ShadowLinksQueryError) => {
   }, [error]);
 };
 
-// Empty state when no shadowlinks exist
 const ShadowLinkCreateEmptyState = () => {
   const navigate = useNavigate();
 
@@ -160,9 +157,7 @@ type ShadowLinkListFallbackOptions = {
   onRetry: () => void;
 };
 
-/** The state shown in place of the list, or `null` when there are shadow links to list. */
 const getShadowLinkListFallback = ({ error, isEmpty, onRetry }: ShadowLinkListFallbackOptions) => {
-  // Admin API unavailable
   if (error?.code === Code.Unavailable) {
     return <ShadowLinkUnavailableState />;
   }
@@ -172,7 +167,6 @@ const getShadowLinkListFallback = ({ error, isEmpty, onRetry }: ShadowLinkListFa
   if (isShadowLinkingDisabledError(error)) {
     return <ShadowLinkFeatureDisabledState />;
   }
-  // Error state for other errors
   if (error) {
     return <ShadowLinkErrorState errorMessage={error.message} onRetry={onRetry} />;
   }
@@ -232,10 +226,8 @@ const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLi
 const ShadowLinksOnThisCluster = () => {
   const navigate = useNavigate();
 
-  // React Query hooks
   const { data: shadowLinksData, isLoading, error, refetch } = useListShadowLinksQuery({});
 
-  // Get shadowlinks array from response
   const shadowLinks = React.useMemo(() => shadowLinksData?.shadowLinks || [], [shadowLinksData]);
 
   useShadowLinksErrorToast(error);
@@ -262,7 +254,6 @@ const ShadowLinksOnThisCluster = () => {
           Manage shadow links to replicate topics from source clusters for disaster recovery and high availability.
         </div>
 
-        {/* Only one shadow link is allowed, so creating another is disabled once one exists */}
         <ShadowLinkListToolbar
           hasShadowLink={shadowLinks.length > 0}
           isLoading={isLoading}
@@ -294,23 +285,12 @@ const ShadowLinksOnThisCluster = () => {
 
 type ShadowLinksTab = 'links' | 'source';
 
-/**
- * Only the list's first load. A failed list loads again from nothing each time the page mounts it,
- * so waiting on every load would swap the page out, mount the list again and load it again.
- */
 const isFirstLoad = ({ isLoading, isFetched }: ReturnType<typeof useListShadowLinksQuery>) => isLoading && !isFetched;
 
-/**
- * Whether the page opens on the Cluster fence tab: the cluster matters as a source, because links read
- * from it or its fence isn't unfenced. Embedded in Redpanda Cloud, Console knows the links that read
- * from it.
- * Without that list, as in a self-hosted Console, any cluster may be a source, and a source doesn't
- * need shadow linking turned on. Undefined until that's known.
- */
 const opensOnFence = (
   { known, summary, unreadable, blocking, isLoading, isError }: ReturnType<typeof useClusterFenceStatusQuery>,
   topology: ShadowLinkTopology | null
-): boolean | undefined => {
+) => {
   const fenceInUse = (known && hasFenceActivity(summary.phase)) || unreadable || blocking;
   if (fenceInUse || (topology?.readers.length ?? 0) > 0) {
     return true;
@@ -322,11 +302,7 @@ const opensOnFence = (
   return !topology && known;
 };
 
-/**
- * Open on the fence where it matters, unless this cluster has shadow links of its own; otherwise
- * Links on this cluster, with its Create shadow link prompt. Undefined until that's decided.
- */
-const useDefaultTab = (): ShadowLinksTab | undefined => {
+const useDefaultTab: () => ShadowLinksTab | undefined = () => {
   const fenceFirst = opensOnFence(
     useClusterFenceStatusQuery(),
     useClusterFenceStore((state) => state.topology)
@@ -341,17 +317,11 @@ const useDefaultTab = (): ShadowLinksTab | undefined => {
   return fenceFirst ? 'source' : 'links';
 };
 
-const useRequestedTab = (): ShadowLinksTab | undefined => {
-  // Read from the location, not the route match: the page also renders outside its route in tests.
+const useRequestedTab: () => ShadowLinksTab | undefined = () => {
   const searchTab = (useLocation().search as { tab?: unknown }).tab;
   return searchTab === 'links' || searchTab === 'source' ? searchTab : undefined;
 };
 
-/**
- * Writes the resolved default tab into the URL, so the banner and the host see which tab is showing.
- * Only while the location is this page: the router keeps the page mounted while the next one loads,
- * and writing the tab then would send the user straight back here.
- */
 const useDefaultTabInUrl = (
   fenceTab: boolean,
   requestedTab: ShadowLinksTab | undefined,
@@ -368,11 +338,6 @@ const useDefaultTabInUrl = (
   }, [onThisPage, fenceTab, requestedTab, defaultTab, navigate]);
 };
 
-/**
- * The tab to show, and whether there's a Cluster fence tab at all: on every cluster that can be
- * fenced, so a cluster can be fenced before any shadow link reads from it. A cluster that's only a
- * shadow gets it too, and its Fence button says why it can't fence.
- */
 const useShadowLinksTab = () => {
   const requestedTab = useRequestedTab();
   const fenceTab = useClusterFenceStatusQuery().available;
@@ -381,6 +346,11 @@ const useShadowLinksTab = () => {
   return { fenceTab, tab: requestedTab ?? defaultTab };
 };
 
+/**
+ * The first load may suspend the page, but subsequent failed loads must not remount the list or they can retry forever. Record the resolved tab in the URL only while on this route; the router keeps it mounted during navigation.
+ *
+ * Default to the fence when the cluster is a relevant source and has no links of its own. A self-hosted cluster may be a source even without shadow linking enabled. Provide the fence tab before any link exists, and explain why fencing is unavailable on a shadow-only cluster.
+ */
 export const ShadowLinkListPage = () => {
   const navigate = useNavigate();
   const { fenceTab, tab } = useShadowLinksTab();

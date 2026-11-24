@@ -14,14 +14,13 @@ import { useListQueries } from 'react-query/api/observability';
 import { appGlobal } from 'state/app-global';
 import { setPageHeader } from 'state/ui-state';
 
-const MetricChart = lazy(() => import('./metric-chart').then((m) => ({ default: m.MetricChart })));
-
 import { ObservabilityToolbar } from './observability-toolbar';
 import { calculateTimeRange, type TimeRange } from '../../../utils/time-range';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 
-// Owns the time-range picker. A refresh bumps `refreshKey`, which recomputes the same range ending now.
+const MetricChart = lazy(() => import('./metric-chart').then((m) => ({ default: m.MetricChart })));
+
 const useRefreshableTimeRange = (refetch: () => unknown) => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<TimeRange>('1h');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -51,7 +50,6 @@ const ObservabilityPage: FC = () => {
   } = useListQueries({
     filter: {
       tags: {
-        // We show in the cluster observability page only metric charts marked with (all) the following tags.
         component: 'cluster',
         category: 'overview',
       },

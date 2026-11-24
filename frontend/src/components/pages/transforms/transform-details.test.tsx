@@ -12,7 +12,6 @@ import { appGlobal } from '../../../state/app-global';
 import { type MessageSearchRequest, useTransformsStore } from '../../../state/backend-api';
 import type { TopicMessage } from '../../../state/rest-interfaces';
 
-/** Every log search the page started, in order; each stays open until stopped, like the real stream. */
 const { logSearches } = rs.hoisted(() => ({ logSearches: [] as FakeLogSearch[] }));
 
 rs.mock('../../../state/backend-api', () => ({
@@ -28,9 +27,7 @@ function createFakeLogSearch() {
     searchRequest: null as MessageSearchRequest | null,
     startSearch: rs.fn((request: MessageSearchRequest) => {
       search.searchRequest = request;
-      return new Promise<TopicMessage[]>(() => {
-        // stays open until stopped
-      });
+      return new Promise<TopicMessage[]>(() => {});
     }),
     stopSearch: rs.fn(),
   };
@@ -38,7 +35,6 @@ function createFakeLogSearch() {
   return search;
 }
 
-/** The decoded backend filter of the most recent log search. */
 function lastLogFilter() {
   const request = logSearches.at(-1)?.searchRequest;
   if (!request) {
@@ -50,7 +46,6 @@ function lastLogFilter() {
 const initialState = useTransformsStore.getState();
 const initialRefresh = appGlobal.onRefresh;
 afterEach(() => {
-  // The page is still mounted and subscribed when this runs.
   act(() => {
     useTransformsStore.setState(initialState, true);
   });
@@ -58,7 +53,6 @@ afterEach(() => {
   logSearches.length = 0;
 });
 
-// Two running partitions whose lag order is the reverse of their id order.
 function renderTransformWithPartitionLags() {
   const transform = create(TransformMetadataSchema, {
     name: 'example',
@@ -102,7 +96,6 @@ test('sorts transform partitions by lag in both directions', async () => {
 const transformNamed = (name: string) =>
   create(TransformMetadataSchema, { name, inputTopicName: 'input', outputTopicNames: ['output'] });
 
-/** Opens the Logs tab of `example`, with `other` also deployed. */
 async function openExampleLogs(user: ReturnType<typeof userEvent.setup>) {
   const transforms = [transformNamed('example'), transformNamed('other')];
   useTransformsStore.setState({

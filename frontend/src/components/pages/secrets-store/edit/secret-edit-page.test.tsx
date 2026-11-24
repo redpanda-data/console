@@ -1,152 +1,80 @@
-import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import userEvent, { type UserEvent } from '@testing-library/user-event';
-import { GetSecretRequestSchema, GetSecretResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
-import { getSecret, updateSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {
-  GetSecretRequestSchema as GetSecretRequestSchemaDataPlane,
-  GetSecretResponseSchema as GetSecretResponseSchemaDataPlane,
-  Scope,
-  SecretSchema,
-} from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  RouterProvider,
+} from '@tanstack/react-router';
+import userEvent, { type UserEvent } from '@testing-library/user-event';
+import type { GetSecretRequest, UpdateSecretRequest } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import {
+  getSecret,
+  listSecrets,
+  updateSecret,
+} from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
+import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
+import { render, screen, waitFor } from 'test-utils';
 
-rs.mock('config', () => ({
-  config: {
-    jwt: 'test-jwt-token',
-    controlplaneUrl: 'http://localhost:9090',
-  },
-  isFeatureFlagEnabled: rs.fn(() => false),
-  addBearerTokenInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
-}));
-
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
+import { SecretEditPage } from './secret-edit-page';
+import { trackedRouters } from '../../../../../tests/harness-cleanup';
+import { SecretsStoreListPage } from '../secrets-store-list-page';
 
 const SECRET_ID = 'TEST_SECRET';
 
-rs.mock('@tanstack/react-router', () => {
-  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
-  return {
-    ...actual,
-    getRouteApi: () => ({
-      useParams: () => ({ id: SECRET_ID }),
-    }),
-  };
-});
+const MCP_SCOPE = /MCP Server$/u;
 
-global.ResizeObserver = class ResizeObserver {
-  observe() {
-    // Mock implementation
-  }
-  unobserve() {
-    // Mock implementation
-  }
-  disconnect() {
-    // Mock implementation
-  }
-};
-
-Element.prototype.scrollIntoView = rs.fn();
-
-import { SecretEditPage } from './secret-edit-page';
-
-const UPDATE_SECRET_BUTTON_REGEX = /update secret/i;
-
-function renderEditPage() {
-  const existingSecret = create(SecretSchema, {
-    id: 'TEST_SECRET',
-    scopes: [Scope.AI_GATEWAY],
-    labels: { env: 'production' },
-  });
-
-  const getSecretMock = rs.fn().mockReturnValue(
-    create(GetSecretResponseSchema, {
-      response: create(GetSecretResponseSchemaDataPlane, {
-        secret: existingSecret,
-      }),
-    })
-  );
-
-  const updateSecretMock = rs.fn().mockResolvedValue({});
-
+async function renderEditPage() {
+  const reads: GetSecretRequest[] = [];
+  const updates: UpdateSecretRequest[] = [];
   const transport = createRouterTransport(({ rpc }) => {
-    rpc(getSecret, getSecretMock);
-    rpc(updateSecret, updateSecretMock);
+    rpc(getSecret, (request) => {
+      reads.push(request);
+      return { response: { secret: { id: SECRET_ID, scopes: [Scope.AI_GATEWAY], labels: { env: 'production' } } } };
+    });
+    rpc(updateSecret, (request) => {
+      updates.push(request);
+      return {};
+    });
+    rpc(listSecrets, () => ({ response: { secrets: [] } }));
   });
-
-  renderWithFileRoutes(<SecretEditPage />, { transport });
-
-  return { getSecretMock, updateSecretMock };
+  const root = createRootRoute({ component: Outlet });
+  const routes = [
+    createRoute({ getParentRoute: () => root, path: '/secrets/$id/edit', component: SecretEditPage }),
+    createRoute({ getParentRoute: () => root, path: '/secrets', component: SecretsStoreListPage }),
+  ];
+  const router = createRouter({
+    routeTree: root.addChildren(routes),
+    history: createMemoryHistory({ initialEntries: [`/secrets/${SECRET_ID}/edit`] }),
+  });
+  trackedRouters.add(router);
+  await router.load();
+  render(<RouterProvider router={router} />, { transport });
+  return { router, reads, updates };
 }
 
-/** Opens the scopes multi-select, picks both options by label, then closes the dropdown. */
-async function selectScopes(user: UserEvent, firstLabel: string, secondLabel: string) {
-  // Open the scopes multi-select using the testId
-  const scopesButton = screen.getByTestId('secret-scopes-select');
-  await user.click(scopesButton);
-
-  // Wait for dropdown to open
-  await waitFor(() => {
-    const firstOptionElements = screen.getAllByText(firstLabel);
-    expect(firstOptionElements.length).toBeGreaterThan(0);
-    expect(firstOptionElements[0]).toBeVisible();
-  });
-
-  // Click on the first matching option in the dropdown for each label
-  await user.click(screen.getAllByText(firstLabel)[0]);
-  await user.click(screen.getAllByText(secondLabel)[0]);
-
-  // Close the dropdown
+async function selectAdditionalScopes(user: UserEvent) {
+  await user.click(screen.getByTestId('secret-scopes-select'));
+  await user.click(await screen.findByRole('option', { name: MCP_SCOPE }));
+  await user.click(screen.getByRole('option', { name: 'Redpanda Connect' }));
   await user.keyboard('{Escape}');
 }
 
-async function submitWhenEnabled(user: UserEvent) {
-  const submitButton = screen.getByRole('button', { name: UPDATE_SECRET_BUTTON_REGEX });
-  await waitFor(() => {
-    expect(submitButton).toBeEnabled();
-  });
+test('loads the route secret and updates its scopes without replacing the value', async () => {
+  const user = userEvent.setup();
+  const { router, reads, updates } = await renderEditPage();
+  expect(await screen.findByDisplayValue(SECRET_ID)).toBeDisabled();
+  expect(new Set(reads.map((read) => read.request?.id))).toEqual(new Set([SECRET_ID]));
+  await selectAdditionalScopes(user);
+  await user.click(screen.getByRole('button', { name: 'Update Secret' }));
 
-  await user.click(submitButton);
-}
-
-describe('the SecretEditPage', () => {
-  test('should update an existing secret', async () => {
-    const user = userEvent.setup();
-
-    const { getSecretMock, updateSecretMock } = renderEditPage();
-
-    // Wait for secret to load
-    await waitFor(() => {
-      expect(getSecretMock).toHaveBeenCalledWith(
-        create(GetSecretRequestSchema, {
-          request: create(GetSecretRequestSchemaDataPlane, {
-            id: 'TEST_SECRET',
-          }),
-        }),
-        expect.anything()
-      );
-    });
-
-    // Verify the form is populated with existing data
-    await waitFor(() => {
-      const idInput = screen.getByDisplayValue('TEST_SECRET');
-      expect(idInput).toBeDisabled();
-    });
-
-    // Add MCP Server and Redpanda Connect scopes
-    await selectScopes(user, 'MCP Server', 'Redpanda Connect');
-
-    // Submit the form
-    await submitWhenEnabled(user);
-
-    // Verify the update mutation was called
-    await waitFor(() => {
-      expect(updateSecretMock).toHaveBeenCalledTimes(1);
-    });
+  await waitFor(() => expect(router.state.location.pathname).toBe('/secrets'));
+  expect(updates).toHaveLength(1);
+  expect(updates[0].request).toMatchObject({
+    id: SECRET_ID,
+    secretData: new Uint8Array(0),
+    scopes: [Scope.AI_GATEWAY, Scope.MCP_SERVER, Scope.REDPANDA_CONNECT],
+    labels: { env: 'production' },
   });
 });

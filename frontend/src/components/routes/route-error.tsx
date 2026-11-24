@@ -18,9 +18,7 @@ type RouteErrorProps = {
   error: unknown;
 };
 
-// Router error boundaries can receive a rejection/throw that isn't a proper Error
-// (e.g. an aborted request during navigation), so never assume `error.message` exists.
-const getRouteErrorMessage = (error: unknown): string => {
+const getRouteErrorMessage = (error: unknown) => {
   if (error instanceof Error && error.message) {
     return error.message;
   }
@@ -33,6 +31,7 @@ const getRouteErrorMessage = (error: unknown): string => {
 /**
  * Default error component for route-level errors.
  * Displayed when a route's loader throws an error.
+ * Also renders useful fallback text for non-Error rejections, including aborted requests during navigation.
  */
 export const RouteError = ({ error }: RouteErrorProps) => {
   const router = useRouter();

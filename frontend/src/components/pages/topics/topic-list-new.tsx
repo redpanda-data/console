@@ -61,7 +61,7 @@ const nameFilterFn = (row: DataTableRow<Topic>, columnId: string, filterValue: s
     return true;
   }
   try {
-    return new RegExp(filterValue, 'i').test(String(row.getValue(columnId)));
+    return new RegExp(filterValue, 'iu').test(String(row.getValue(columnId)));
   } catch {
     return String(row.getValue(columnId)).toLowerCase().includes(filterValue.toLowerCase());
   }
@@ -69,7 +69,6 @@ const nameFilterFn = (row: DataTableRow<Topic>, columnId: string, filterValue: s
 
 type SetPageIndex = (pageIndex: number) => unknown;
 
-// Registers the page header and the global refresh handler for the topic list.
 function useTopicListPage(refetchTopics: () => unknown) {
   useLayoutEffect(() => {
     setPageHeader('Topics', [{ title: 'Topics', linkTo: '/topics' }]);
@@ -228,7 +227,7 @@ function useTopicNameFilter(setPageIndex: SetPageIndex) {
   return { columnFilters, handleColumnFiltersChange };
 }
 
-function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColumnDef<Topic>[] {
+function buildTopicColumns(onDeleteTopic: (topic: Topic) => void) {
   return [
     {
       accessorKey: 'topicName',
@@ -313,7 +312,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
         </DropdownMenu>
       ),
     },
-  ];
+  ] satisfies DataTableColumnDef<Topic>[];
 }
 
 function useTopicListTable({
@@ -512,7 +511,6 @@ const TopicList: FC = () => {
           }
         >
           <div className="relative">
-            {/* The slots stay mounted so the input's padding follows them: an empty slot measures 0. */}
             <ListLayoutSearchInput
               data-testid="search-field-input"
               onChange={(e) => table.getColumn('topicName')?.setFilterValue(e.target.value || undefined)}
@@ -639,7 +637,6 @@ const iconClosedEye = (
   </span>
 );
 
-// Edit and delete actions are left out so a read-only principal doesn't flag every topic.
 const viewTopicActions: TopicAction[] = [
   'seeTopic',
   'viewPartitions',
@@ -649,7 +646,7 @@ const viewTopicActions: TopicAction[] = [
   'viewConfig',
 ];
 
-function countMissingViewActions(actions: TopicAction[]): number {
+function countMissingViewActions(actions: TopicAction[]) {
   let missing = 0;
   for (const a of viewTopicActions) {
     if (!actions.includes(a)) {
@@ -704,7 +701,7 @@ const TopicName = ({ topic }: { topic: Topic }) => {
 };
 
 function hasDeletePrivilege() {
-  // TODO - we will provide ACL for this
+  // WARNING: This placeholder does not prove delete authorization; keep access enforcement at the request boundary.
   return true;
 }
 

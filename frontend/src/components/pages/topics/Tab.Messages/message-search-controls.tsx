@@ -70,26 +70,22 @@ import { prettyBytes, prettyMilliseconds } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
 import RemovableFilter from '../../../misc/removable-filter';
 
-function getOffsetOrigin(startOffset: number): PartitionOffsetOriginType {
+function getOffsetOrigin(startOffset: number) {
   return (startOffset >= 0 ? PartitionOffsetOrigin.Custom : startOffset) as PartitionOffsetOriginType;
 }
 
-// Continuous pagination is only available with Newest or Beginning start offsets.
-function supportsContinuousPagination(origin: PartitionOffsetOriginType): boolean {
+function supportsContinuousPagination(origin: PartitionOffsetOriginType) {
   return origin === PartitionOffsetOrigin.EndMinusResults || origin === PartitionOffsetOrigin.Start;
 }
 
-// The start offset for a newly chosen origin; choosing Offset keeps a custom offset already set.
-function nextStartOffset(origin: PartitionOffsetOriginType, startOffset: number): number | undefined {
+function nextStartOffset(origin: PartitionOffsetOriginType, startOffset: number) {
   if (origin === PartitionOffsetOrigin.Custom) {
     return startOffset < 0 ? 0 : undefined;
   }
   return origin;
 }
 
-// The timestamp for a newly chosen origin: now when switching TO Timestamp mode (unless one is set),
-// and cleared from the URL when switching away from Timestamp.
-function nextStartTimestamp(origin: PartitionOffsetOriginType, startTimestamp: number): number | null | undefined {
+function nextStartTimestamp(origin: PartitionOffsetOriginType, startTimestamp: number) {
   if (origin === PartitionOffsetOrigin.Timestamp) {
     return startTimestamp === -1 ? Date.now() : undefined;
   }
@@ -154,9 +150,7 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
   const { startOffset, setStartOffset, startTimestamp, setStartTimestamp, maxResults } = query;
   const [customStartOffsetValue, setCustomStartOffsetValue] = useState<number | string>(0);
 
-  // Page resets live in the setters, not in effects watching the URL: navigating away briefly
-  // renders this view with the next route's (empty) search, and an effect reacting to that
-  // queues a nuqs update that navigates back to this topic (UX-1514).
+  // WARNING: Reset pagination in setters, not URL effects; a queued nuqs update can navigate back after the topic unmounts.
   const changeStartOffset = (value: number) => {
     if (value !== startOffset) {
       paging.setPageIndex(0);
@@ -179,12 +173,10 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
               changeStartOffset(offset);
             }
 
-            // Auto-disable continuous pagination for unsupported offsets
             if (paging.continuousPaginationEnabled && !supportsContinuousPagination(e)) {
               paging.setContinuousPaginationEnabled(false);
             }
 
-            // Handle timestamp parameter in URL
             const timestamp = nextStartTimestamp(e, startTimestamp);
             if (timestamp !== undefined) {
               setStartTimestamp(timestamp);
@@ -306,16 +298,6 @@ function ContinuousPaginationControl({ paging, startOffset }: { paging: MessageP
   );
 }
 
-/**
- * A dropdown menu item for the "Add filter" menu. When `disabledReason` is set the item
- * renders as a visually-disabled row that shows a tooltip explaining why on hover.
- *
- * We deliberately do NOT render a disabled `<DropdownMenuItem>` here: Base UI wraps every
- * menu item in a `MotionHighlight` layer that keeps intercepting pointer events even when
- * the item is disabled, so a tooltip attached to a wrapping element never receives hover.
- * Rendering the disabled state as a plain styled `<span>` (mirroring the menu-item styling)
- * lets the tooltip trigger receive hover reliably while the row stays non-interactive.
- */
 const AddFilterMenuItem: FC<{
   testId: string;
   disabledReason?: string;
@@ -352,7 +334,6 @@ const AddFilterMenuItem: FC<{
   );
 };
 
-// Why a JavaScript filter cannot be added (undefined = enabled).
 function getJsFilterDisabledReason(canUseSearchFilters: boolean, continuousPaginationEnabled: boolean) {
   if (isServerless()) {
     return 'JavaScript filters are not available in Serverless clusters.';
@@ -378,7 +359,6 @@ function AddFilterMenu({
 }) {
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(topicName));
 
-  // Reasons explaining why a filter cannot be added (undefined = enabled).
   const partitionFilterDisabledReason = settings.dynamicFilters.includes('partition')
     ? 'Partition filter is already added. Use the existing Partition control to filter, or remove it first.'
     : undefined;
@@ -458,7 +438,6 @@ function MessageSettingsMenu({ dialogs }: { dialogs: MessageViewDialogs }) {
 function SearchActionButton({ search }: { search: MessageSearchController }) {
   return (
     <div className="flex items-end">
-      {/* Refresh Button */}
       {search.searchPhase === null && (
         <TooltipProvider>
           <Tooltip>
@@ -518,7 +497,6 @@ function QuickSearchRow({
 }) {
   return (
     <div className="col-span-full mt-4 flex gap-4">
-      {/* Quick Search */}
       <Input
         data-testid="message-quick-search-input"
         onChange={(x) => {
@@ -559,7 +537,11 @@ type MessageSearchControlsProps = ParamsProps & {
   dialogs: MessageViewDialogs;
 };
 
-/** The search toolbar: start offset, result limit, filters, settings, quick search, and search progress. */
+/**
+ * The search toolbar: start offset, result limit, filters, settings, quick search, and search progress.
+ *
+ * Continuous pagination is only available for beginning/newest. A disabled filter uses a non-interactive tooltip trigger; Base UI's disabled menu layer intercepts hover, hiding the explanation otherwise.
+ */
 export function MessageSearchControls(props: MessageSearchControlsProps) {
   const { topic, query, paging, settings, filters, setFilters, search } = props;
   const [currentJSFilter, setCurrentJSFilter] = useState<FilterEntry | null>(null);
@@ -615,7 +597,6 @@ export function MessageSearchControls(props: MessageSearchControlsProps) {
             topicName={topic.topicName}
           />
 
-          {/* Search Progress Indicator: "Consuming Messages 30/30" */}
           {Boolean(search.searchPhase && search.searchPhase.length > 0) && (
             <StatusIndicator
               bytesConsumed={prettyBytes(search.bytesConsumed)}
@@ -638,7 +619,6 @@ export function MessageSearchControls(props: MessageSearchControlsProps) {
           <SearchActionButton search={search} />
         </div>
 
-        {/* Filter Tags */}
         <MessageSearchFilterBar
           filters={filters}
           onEdit={(filter) => {
@@ -659,13 +639,10 @@ export function MessageSearchControls(props: MessageSearchControlsProps) {
           currentFilter={currentJSFilter}
           onClose={() => setCurrentJSFilter(null)}
           onSave={(filter) => {
-            // Check if filter exists in the array by ID
             const existingIndex = filters.findIndex((f) => f.id === filter.id);
             if (existingIndex >= 0) {
-              // Update existing filter
               setFilters(filters.map((f) => (f.id === filter.id ? filter : f)));
             } else {
-              // Add new filter
               setFilters([...filters, filter]);
             }
             search.searchFunc('manual');

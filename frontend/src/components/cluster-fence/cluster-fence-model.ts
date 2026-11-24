@@ -26,7 +26,6 @@ export const FENCE_PHASE_LABEL: Record<FencePhase, string> = {
   unfencing: 'Unfencing',
 };
 
-/** A move still waiting on an answering broker after this long names that broker. */
 const BEHIND_NOTICE_MS = 30 * 1000;
 
 const PHASE_BY_STATE: Partial<Record<ClusterFenceState, FencePhase>> = {
@@ -37,22 +36,22 @@ const PHASE_BY_STATE: Partial<Record<ClusterFenceState, FencePhase>> = {
 };
 
 /** Undefined for a state this version of Console doesn't know, which must never read as unfenced. */
-export const toFencePhase = (state: ClusterFenceState | undefined): FencePhase | undefined =>
+export const toFencePhase = (state: ClusterFenceState | undefined) =>
   state === undefined ? undefined : PHASE_BY_STATE[state];
 
-export const hasFenceActivity = (phase: FencePhase): boolean => phase !== 'unfenced';
+export const hasFenceActivity = (phase: FencePhase) => phase !== 'unfenced';
 
 /**
  * Each broker starts blocking as soon as it picks up Fence, and stops as soon as it picks up Unfence,
  * so the cluster blocks while fencing and fenced. Console disables the writes a fence rejects in these
  * phases; while unfencing they stay enabled, since brokers accept them again as they pick up Unfence.
  */
-export const isBlockingPhase = (phase: FencePhase): boolean => phase === 'fencing' || phase === 'fenced';
+export const isBlockingPhase = (phase: FencePhase) => phase === 'fencing' || phase === 'fenced';
 
-export const isTransitionPhase = (phase: FencePhase): boolean => phase === 'fencing' || phase === 'unfencing';
+export const isTransitionPhase = (phase: FencePhase) => phase === 'fencing' || phase === 'unfencing';
 
 /** Fence while fencing or fenced changes nothing. */
-export const canFenceFromPhase = (phase: FencePhase): boolean => phase === 'unfenced' || phase === 'unfencing';
+export const canFenceFromPhase = (phase: FencePhase) => phase === 'unfenced' || phase === 'unfencing';
 
 export type BrokerProgress = {
   nodeId: number;
@@ -70,9 +69,11 @@ export type BrokerProgress = {
   errorMessage?: string;
 };
 
-export const getBrokerProgress = (response: GetClusterFenceStatusResponse | undefined): BrokerProgress[] => {
+export const getBrokerProgress: (response: GetClusterFenceStatusResponse | undefined) => BrokerProgress[] = (
+  response
+) => {
   const fence = response?.fence;
-  return (response?.brokers ?? []).map((broker): BrokerProgress => {
+  return (response?.brokers ?? []).map<BrokerProgress>((broker) => {
     if (!broker.fence) {
       return { nodeId: broker.nodeId, status: 'not-answering', blocks: undefined, errorMessage: broker.errorMessage };
     }
@@ -113,7 +114,7 @@ export const UNFENCED_SUMMARY: FenceSummary = {
 };
 
 /** Undefined when the response has no fence, or a state Console doesn't know. */
-export const summarizeFence = (fence: ClusterFence | undefined): FenceSummary | undefined => {
+export const summarizeFence: (fence: ClusterFence | undefined) => FenceSummary | undefined = (fence) => {
   const phase = toFencePhase(fence?.state);
   if (!(fence && phase)) {
     return;
@@ -128,7 +129,7 @@ export const summarizeFence = (fence: ClusterFence | undefined): FenceSummary | 
 };
 
 /** Redpanda keeps exempt names as a set, so order and repeats don't count. */
-export const sameFenceSettings = (a: ReadPolicy, b: ReadPolicy): boolean => {
+export const sameFenceSettings = (a: ReadPolicy, b: ReadPolicy) => {
   const names = new Set(a.exemptPrincipals);
   const otherNames = new Set(b.exemptPrincipals);
   return (
@@ -143,7 +144,7 @@ const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
 /** Compact time-in-state, such as `12 min`, `2 h 14 min` or `3 days`. */
-export const formatFenceDuration = (elapsedMs: number): string => {
+export const formatFenceDuration = (elapsedMs: number) => {
   if (elapsedMs < MINUTE_MS) {
     return 'less than a minute';
   }
@@ -182,10 +183,7 @@ const idsWith = (brokers: readonly BrokerProgress[], status: BrokerProgress['sta
  * blocking copy of an earlier revision, and none that accepts writes: a Fence sent while unfencing
  * also leaves blocking copies behind, next to brokers that already picked up Unfence.
  */
-export const isApplyingNewSettings = (
-  summary: Pick<FenceSummary, 'phase'>,
-  brokers: readonly BrokerProgress[]
-): boolean =>
+export const isApplyingNewSettings = (summary: Pick<FenceSummary, 'phase'>, brokers: readonly BrokerProgress[]) =>
   summary.phase === 'fencing' &&
   brokers.some((broker) => broker.status === 'behind' && broker.blocks === true) &&
   !brokers.some((broker) => broker.blocks === false);
@@ -200,7 +198,7 @@ const describeFencedReads = ({ allowAllReads }: Pick<FenceSummary, 'allowAllRead
 export const describeFencePhase = (
   summary: Pick<FenceSummary, 'phase' | 'allowAllReads'>,
   brokers: readonly BrokerProgress[]
-): string => {
+) => {
   switch (summary.phase) {
     case 'unfenced':
       return 'Clients write and read as usual.';
@@ -224,7 +222,7 @@ export const describeHeldMove = (
   summary: Pick<FenceSummary, 'phase' | 'stateChangedAt'>,
   brokers: readonly BrokerProgress[],
   now: number
-): string => {
+) => {
   const down = idsWith(brokers, 'not-answering');
   if (!isTransitionPhase(summary.phase)) {
     return down.length > 0 ? `${unreachableBrokersSubject(down)} answering.` : '';
@@ -249,7 +247,7 @@ export type LinkIdentity = { authentication?: 'sasl' | 'mtls' | 'none'; principa
  * blocks every link. Otherwise undefined when Console can't tell: an mTLS link reads as whatever the
  * cluster's mapping rules make of its certificate.
  */
-export const linkCanRead = (policy: ReadPolicy, link: LinkIdentity): boolean | undefined => {
+export const linkCanRead = (policy: ReadPolicy, link: LinkIdentity) => {
   if (policy.allowAllReads) {
     return true;
   }
@@ -265,7 +263,7 @@ export const linkCanRead = (policy: ReadPolicy, link: LinkIdentity): boolean | u
 };
 
 /** The name that would exempt this link, when there is one Console knows. */
-export const exemptNameFor = (link: LinkIdentity): string | undefined => {
+export const exemptNameFor = (link: LinkIdentity) => {
   if (link.authentication === 'none') {
     return '';
   }
@@ -285,10 +283,8 @@ export const toExemptName = (principal: string) => {
 
 type ReadPolicyWarning = {
   id: string;
-  /** `danger` locks out every shadow link; `warning` matches nobody; `info` explains a rule. */
   severity: 'danger' | 'warning' | 'info';
   message: string;
-  /** A one-click correction, such as the bare name for a `User:` entry. */
   fix?: { label: string; principals: (principals: string[]) => string[] };
 };
 
@@ -297,7 +293,7 @@ const EMPTY_EXEMPT_WARNING =
 
 export const SUPERUSERS_NOT_EXEMPT = 'Superusers aren’t exempt unless they’re on the list.';
 
-const userPrefixWarning = (principal: string): ReadPolicyWarning => {
+const userPrefixWarning: (principal: string) => ReadPolicyWarning = (principal) => {
   const bare = toExemptName(principal);
   return {
     id: `prefix-${principal}`,
@@ -310,8 +306,12 @@ const userPrefixWarning = (principal: string): ReadPolicyWarning => {
   };
 };
 
-/** The cases the broker only logs on the controller leader, plus the rules that surprise people. */
-export const getReadPolicyWarnings = (principals: string[], allowAllReads: boolean): ReadPolicyWarning[] => {
+/**
+ * The cases the broker only logs on the controller leader, plus the rules that surprise people.
+ *
+ * Distinguishes a policy that locks out all readers from an entry that matches nobody. A warning may include a correction for the exemption list.
+ */
+export const getReadPolicyWarnings = (principals: string[], allowAllReads: boolean) => {
   if (allowAllReads) {
     return [];
   }
@@ -330,32 +330,32 @@ export const getReadPolicyWarnings = (principals: string[], allowAllReads: boole
   return warnings;
 };
 
-const FENCED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|shadow.?fence|cluster.?fence/i;
+const FENCED_READ_REJECTION = /POLICY_VIOLATION|configured (?:cluster )?policy|shadow.?fence|cluster.?fence/iu;
 
 /**
  * A failed message search that reads like the fence turned the fetch away, not like a bad filter.
  * Only a hint: it's asked only while the cluster is known to block reads.
  */
-export const isFencedReadError = (message: string): boolean => FENCED_READ_REJECTION.test(message);
+export const isFencedReadError = (message: string) => FENCED_READ_REJECTION.test(message);
 
-/**
- * The Kafka-namespace topics Redpanda doesn't count as user topics. Any other name is fenced,
- * `_`-prefixed or not.
- */
 const NON_USER_TOPICS = new Set(['__consumer_offsets', '_schemas', '_redpanda.audit_log', '_redpanda.transform_logs']);
 
-/** Whether a fence rejects creating, deleting or changing the config of this topic. */
-export const isFencedTopic = (topic: string): boolean => !NON_USER_TOPICS.has(topic);
+/**
+ * Whether a fence rejects creating, deleting or changing the config of this topic.
+ *
+ * Only Redpanda's known internal Kafka topics are exempt. An underscore prefix alone doesn't make a topic internal.
+ */
+export const isFencedTopic = (topic: string) => !NON_USER_TOPICS.has(topic);
 
 /** Whether a fence rejects producing to this topic: `_schemas` too, since the fence covers Schema Registry. */
-export const isFencedTopicWrite = (topic: string): boolean => topic === '_schemas' || isFencedTopic(topic);
+export const isFencedTopicWrite = (topic: string) => topic === '_schemas' || isFencedTopic(topic);
 
 /** Fence fails while the cluster has a shadow link of its own that hasn't failed over. */
 export const SHADOW_CLUSTER_CANT_FENCE =
   'This cluster has a shadow link that hasn’t failed over, so it’s still a shadow cluster. Fence its source instead, or fail the link over first.';
 
 /** A link that has failed over no longer makes its cluster a shadow, so it doesn't stop Fence. */
-export const linksThatStopFence = <Link extends { state: ShadowLinkState }>(links: readonly Link[]): Link[] =>
+export const linksThatStopFence = <Link extends { state: ShadowLinkState }>(links: readonly Link[]) =>
   links.filter((link) => link.state !== ShadowLinkState.FAILED_OVER);
 
 /** For a message search the fence rejected; Console's own user is rarely exempt. */
@@ -385,15 +385,11 @@ const moveSplitDetail = (
     ? `${words.allowed} again on ${brokersPhrase(open)}. Still ${words.rejected.toLowerCase()} on ${brokersPhrase(blocking)} until the change reaches ${reach(blocking)}.`
     : `${words.rejected} on ${brokersPhrase(blocking)}. Still ${words.allowed.toLowerCase()} on ${brokersPhrase(open)} until the fence reaches ${reach(open)}.`;
 
-/**
- * During a move only the brokers that already have it reject. The details stay general: the
- * error codes clients get are cluster settings, so Console can't name them.
- */
-const splitVerdict = (
+const splitVerdict: (
   summary: Pick<FenceSummary, 'phase'>,
   brokers: readonly BrokerProgress[],
-  words = { allowed: 'Allowed', rejected: 'Rejected' }
-): Verdict => {
+  words?: { allowed: string; rejected: string }
+) => Verdict = (summary, brokers, words = { allowed: 'Allowed', rejected: 'Rejected' }) => {
   const blocking = brokers.filter((broker) => broker.blocks === true).map((broker) => broker.nodeId);
   const open = brokers.filter((broker) => broker.blocks === false).map((broker) => broker.nodeId);
   if (blocking.length > 0 && open.length > 0) {
@@ -407,7 +403,7 @@ const splitVerdict = (
 
 type ReadCheck = (policy: ReadPolicy) => boolean | undefined;
 
-/** Undefined for a broker that didn't answer, which counts neither way, as with writes. */
+// WARNING: An unanswered broker contributes neither an allow nor a deny verdict.
 const brokerRead = (broker: BrokerProgress, policy: ReadPolicy, canRead: ReadCheck) => {
   if (broker.blocks === undefined) {
     return;
@@ -422,7 +418,6 @@ const brokerRead = (broker: BrokerProgress, policy: ReadPolicy, canRead: ReadChe
   return verdict ? 'allows' : 'rejects';
 };
 
-/** A broker that still enforces settings other than the cluster's, so its reads go by those. */
 const onEarlierSettings = (broker: BrokerProgress, policy: ReadPolicy) =>
   broker.blocks === true && broker.copy?.readPolicy !== undefined && !sameFenceSettings(broker.copy.readPolicy, policy);
 
@@ -444,8 +439,7 @@ const readSplitDetail = (
 
 const UNKNOWN_READ: Verdict = { verdict: 'unknown', detail: MTLS_LINK_NOTE };
 
-/** Without brokers to go by, the cluster's own fence and read policy decide. */
-const clusterReadVerdict = (summary: Pick<FenceSummary, 'phase'> & ReadPolicy, canRead: ReadCheck): Verdict => {
+const clusterReadVerdict = (summary: Pick<FenceSummary, 'phase'> & ReadPolicy, canRead: ReadCheck) => {
   const verdict = isBlockingPhase(summary.phase) ? canRead(summary) : true;
   if (verdict === undefined) {
     return UNKNOWN_READ;
@@ -453,16 +447,11 @@ const clusterReadVerdict = (summary: Pick<FenceSummary, 'phase'> & ReadPolicy, c
   return verdict ? ALLOWED : REJECTED;
 };
 
-/**
- * Each broker reads by its own copy of the read policy: after a settings change, a broker the new
- * settings haven't reached keeps the old exempt list and Allow all reads until they do. Unknown when
- * a blocking broker can't tell, as for an mTLS link.
- */
-const readVerdict = (
+const readVerdict: (
   summary: Pick<FenceSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads'>,
   brokers: readonly BrokerProgress[],
   canRead: ReadCheck
-): Verdict => {
+) => Verdict = (summary, brokers, canRead) => {
   if (brokers.length === 0) {
     return clusterReadVerdict(summary, canRead);
   }
@@ -480,8 +469,10 @@ const readVerdict = (
     : { verdict: 'partly', detail: readSplitDetail(summary, rejecting, allowing) };
 };
 
-/** Each broker ends the open transactions it coordinates as soon as the fence reaches it. */
-const transactionVerdict = (summary: Pick<FenceSummary, 'phase'>, brokers: readonly BrokerProgress[]): Verdict => {
+const transactionVerdict: (summary: Pick<FenceSummary, 'phase'>, brokers: readonly BrokerProgress[]) => Verdict = (
+  summary,
+  brokers
+) => {
   const verdict = splitVerdict(summary, brokers, { allowed: 'Open', rejected: 'Ended' });
   if (verdict.verdict === 'rejected') {
     return {
@@ -495,6 +486,8 @@ const transactionVerdict = (summary: Pick<FenceSummary, 'phase'>, brokers: reado
 /**
  * What a client sees on this cluster right now, row by row, as the reference player shows it.
  * `links` are the shadow links that read from this cluster, when Console knows them.
+ *
+ * During a move, an answering broker enforces its own fence and read policy, even if it has not received the latest settings. An unanswered broker is unknown. A broker ends its coordinated transactions when the fence reaches it. Without broker copies, use the cluster policy.
  */
 export const getClientEffects = ({
   summary,
@@ -504,7 +497,7 @@ export const getClientEffects = ({
   summary: Pick<FenceSummary, 'phase' | 'exemptPrincipals' | 'allowAllReads'>;
   brokers: readonly BrokerProgress[];
   links?: readonly (LinkIdentity & { linkName: string })[];
-}): ClientEffect[] => {
+}) => {
   const knownLinks = links ?? [];
   const linkRows: ClientEffect[] = knownLinks.map((link) => ({
     id: `link-${link.linkName}`,
@@ -512,7 +505,6 @@ export const getClientEffects = ({
     ...readVerdict(summary, brokers, (policy) => linkCanRead(policy, link)),
   }));
   const consume = readVerdict(summary, brokers, (policy) => policy.allowAllReads);
-  /** Without the links themselves, a reminder that comes last: not every cluster is a link's source. */
   const anyLinkRow: ClientEffect[] =
     knownLinks.length > 0
       ? []
@@ -541,5 +533,5 @@ export const getClientEffects = ({
     { id: 'schema', label: 'A Schema Registry write', ...rejected },
     { id: 'transaction', label: 'An open transaction', ...transactionVerdict(summary, brokers) },
     ...anyLinkRow,
-  ];
+  ] satisfies ClientEffect[];
 };

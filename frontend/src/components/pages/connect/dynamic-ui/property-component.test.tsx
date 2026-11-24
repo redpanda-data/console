@@ -6,7 +6,7 @@ import { useReducer } from 'react';
 import { PropertyComponent } from './property-component';
 import type { Property } from '../../../../state/connect/state';
 
-const makeProperty = (type: 'DOUBLE' | 'FLOAT' | 'PASSWORD', crud: 'create' | 'update' = 'create'): Property => ({
+const makeProperty = (type: 'DOUBLE' | 'FLOAT' | 'PASSWORD', crud: 'create' | 'update' = 'create') => ({
   name: 'example',
   entry: {
     definition: {

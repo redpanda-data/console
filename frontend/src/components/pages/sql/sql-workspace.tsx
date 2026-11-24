@@ -79,25 +79,20 @@ import {
 } from './sql-types';
 import { createTableSql, SqlWizard, type WizardTopic } from './sql-wizard';
 
-// Start with a blank editor — the results pane prompts the caller to run a
-// query (or create a table from a topic when the catalog is empty) instead of
-// pre-running a system query.
 const INITIAL_QUERY = '';
 
-function columnDefFromProto(column: SqlColumn): ColumnDef {
+function columnDefFromProto(column: SqlColumn) {
   return {
     name: column.name,
     type: column.type,
     kind: columnKindForPgType(column.type),
     short: column.type.toLowerCase(),
     isArray: isArrayPgType(column.type),
-  };
+  } satisfies ColumnDef;
 }
 
-function cellValueForColumn(value: SqlValue, column: ColumnDef): CellValue {
+function cellValueForColumn(value: SqlValue, column: ColumnDef) {
   let cell: CellValue = value.nullValue ? null : (value.value ?? null);
-  // Arrays keep their raw string form — only scalar bools coerce. Case-insensitive
-  // so 'TRUE'/'T'/'True' don't slip through as a falsey render.
   if (cell !== null && column.kind === 'bool' && !column.isArray) {
     const v = cell.toLowerCase();
     cell = v === 'true' || v === 't';
@@ -105,7 +100,7 @@ function cellValueForColumn(value: SqlValue, column: ColumnDef): CellValue {
   return cell;
 }
 
-function resultRowFromProto(row: SqlRow, columns: ColumnDef[]): ResultRow {
+function resultRowFromProto(row: SqlRow, columns: ColumnDef[]) {
   const result: ResultRow = {};
   row.values.forEach((value, index) => {
     const column = columns[index];
@@ -117,7 +112,6 @@ function resultRowFromProto(row: SqlRow, columns: ColumnDef[]): ResultRow {
   return result;
 }
 
-// Standalone renders its own breadcrumb header; the embedded host supplies its own.
 const setStudioPageHeader = () => {
   uiState.pageTitle = 'SQL';
   uiState.pageBreadcrumbs = [{ title: 'SQL', linkTo: '/sql', heading: 'SQL' }];
@@ -132,11 +126,8 @@ export type SqlWorkspaceProps = {
   sqlRole?: SqlRole;
 };
 
-// Bounce clusters that genuinely lack SQLService and own the studio page header.
 function useSqlStudioPage() {
   const navigate = useNavigate();
-  // The route guard skips the redirect while endpoint compatibility is still
-  // loading; once it resolves, bounce clusters that genuinely lack SQLService.
   const endpointsLoaded = useSupportedFeaturesStore((s) => s.endpointCompatibility !== null);
   useEffect(() => {
     if (endpointsLoaded && !isSupported(Feature.SQLService)) {
@@ -146,30 +137,20 @@ function useSqlStudioPage() {
     }
   }, [endpointsLoaded, navigate]);
 
-  // Pre-paint so the previous route's title doesn't flash in the app header.
   useLayoutEffect(() => {
     setStudioPageHeader();
   }, []);
 }
 
-// Caller's effective role: an explicit prop wins (tests/storybook), otherwise
-// derive it from the SQL identity — admin unlocks write/DDL affordances like
-// the "Add a topic" button. Falls back to viewer until the lookup resolves.
-function useSqlRole(sqlRoleProp: SqlRole | undefined): SqlRole {
+function useSqlRole(sqlRoleProp: SqlRole | undefined) {
   const { data: identity } = useGetSqlIdentityQuery();
   return sqlRoleProp ?? (identity?.isAdmin ? 'admin' : 'viewer');
 }
 
-// The catalog tree's view model, plus the Redpanda-catalog tables fetched up
-// front so the add-topic wizard, editor autocomplete and the bridge indicator
-// can resolve table refs.
 function useSqlCatalogs() {
   const { data: catalogsData, isLoading, isFetching: isFetchingCatalogs } = useListCatalogsQuery();
 
-  // Map proto catalogs to the tree view model. Tables/columns are filled in by
-  // the catalog-tree agent via ListTables/DescribeTable.
   const catalogs = useMemo<Catalog[]>(() => {
-    // MVP surfaces only the Redpanda catalog; Iceberg catalog support lands later.
     const list = (catalogsData?.catalogs ?? []).filter((c) => c.type === CatalogType.REDPANDA);
     return list.map((c) => ({
       name: c.name,
@@ -184,9 +165,6 @@ function useSqlCatalogs() {
     catalog: redpandaCatalogName,
   });
 
-  // Catalogs enriched with the fetched Redpanda-catalog tables, so editor
-  // autocomplete can resolve table references — the bare catalog list seeds
-  // namespaces with empty `tables`.
   const completionCatalogs = useMemo<Catalog[]>(
     () =>
       catalogs.map((catalog) =>
@@ -205,19 +183,10 @@ function useSqlCatalogs() {
   };
 }
 
-// Bridge-query indicator for the queried topic.
-function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null): BridgeInfo | undefined {
-  // Whether the queried topic is Iceberg-tiered — the authoritative bridge-query
-  // signal (`redpanda.iceberg.mode`), independent of any lag metric. A topic that
-  // is tiered but hasn't started translating yet emits no lag series, so the badge
-  // must key off the config, not metric presence (else a not-yet-synced bridge
-  // query — every row served from the topic — would look like a plain query).
+function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null) {
   const { isIceberg: bridgeTopicTiered } = useTopicIcebergQuery(bridgeTopic ?? '', {
     enabled: Boolean(bridgeTopic),
   });
-  // Bridge-query lag for the queried topic, read from the ObservabilityService
-  // (per-topic named queries) — decoupled from ExecuteQuery. Drives only the lag
-  // timeline; the badge itself comes from `bridgeTopicTiered` above.
   const bridgeTxLag = useExecuteInstantQuery(
     {
       queryName: 'iceberg_topic_translation_lag',
@@ -239,9 +208,6 @@ function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null): 
     { enabled: Boolean(bridgeTopic) }
   );
   return useMemo<BridgeInfo | undefined>(() => {
-    // Bridge-ness is the topic being Iceberg-tiered — not whether lag has shown up.
-    // Lag defaults to 0 when its series is absent (e.g. translation hasn't started),
-    // which the timeline reads as "fully caught up" and hides; the badge still shows.
     if (!(bridgeTopic && bridgeTopicTiered)) {
       return;
     }
@@ -256,7 +222,7 @@ function useBridgeInfo(bridgeTopic: string | null, bridgeRunAt: number | null): 
 type ExecuteQueryMutation = ReturnType<typeof useExecuteQueryMutation>;
 type InvalidateSqlCatalog = ReturnType<typeof useInvalidateSqlCatalog>;
 
-function successRun(res: ExecuteQueryResponse, token: number, start: number): QueryRun {
+function successRun(res: ExecuteQueryResponse, token: number, start: number) {
   const columns = res.columns.map(columnDefFromProto);
   const rows = res.rows.map((row) => resultRowFromProto(row, columns));
   return {
@@ -267,14 +233,20 @@ function successRun(res: ExecuteQueryResponse, token: number, start: number): Qu
     totalRows: rows.length,
     elapsedMs: Math.round(performance.now() - start),
     truncated: res.truncated,
-  };
+  } satisfies QueryRun;
 }
 
-function failedRun(error: ConnectError, token: number): QueryRun {
+function failedRun(error: ConnectError, token: number) {
   if (error.code === Code.Canceled) {
-    return { state: 'canceled', token };
+    return { state: 'canceled', token } satisfies QueryRun;
   }
-  return { state: 'error', token, title: 'Query failed', message: error.message, hint: hintFromError(error) };
+  return {
+    state: 'error',
+    token,
+    title: 'Query failed',
+    message: error.message,
+    hint: hintFromError(error),
+  } satisfies QueryRun;
 }
 
 type ExecuteRunDeps = {
@@ -285,12 +257,9 @@ type ExecuteRunDeps = {
   setRun: Dispatch<SetStateAction<QueryRun>>;
 };
 
-// Sends one editor statement; a response for a superseded run is dropped.
 function executeRun(sql: string, token: number, deps: ExecuteRunDeps) {
   deps.setRun({ state: 'running', token });
   const start = performance.now();
-  // Abort a still-running previous run: its response would be dropped by the
-  // token guard anyway, and aborting also stops it on the engine.
   deps.abortRef.current?.abort();
   const aborter = new AbortController();
   deps.abortRef.current = aborter;
@@ -298,7 +267,6 @@ function executeRun(sql: string, token: number, deps: ExecuteRunDeps) {
     { request: create(ExecuteQueryRequestSchema, { statement: sql }), signal: aborter.signal },
     {
       onSuccess: (res) => {
-        // Refresh even when a newer run superseded this one: the DDL still ran.
         if (isCatalogChangingKeyword(sql)) {
           deps.invalidateSqlCatalog();
         }
@@ -315,28 +283,15 @@ function executeRun(sql: string, token: number, deps: ExecuteRunDeps) {
   );
 }
 
-// Editor runs: the current run state, its bridge indicator, and run/cancel actions.
 function useSqlRun(
   completionCatalogs: Catalog[],
   executeQuery: ExecuteQueryMutation,
   invalidateSqlCatalog: InvalidateSqlCatalog
 ) {
   const [run, setRun] = useState<QueryRun>({ state: 'idle' });
-  // Topic whose Iceberg lag drives the bridge-query indicator. Set when a table
-  // is queried from the catalog tree; the lag itself comes from the
-  // ObservabilityService (useBridgeInfo), so ExecuteQuery stays untouched.
   const [bridgeTopic, setBridgeTopic] = useState<string | null>(null);
-  // Timestamp of the run that set bridgeTopic — stamped into the lag query so
-  // re-running the same query refetches (new key) instead of serving a cached
-  // snapshot, and reflects the lag at that query's time.
   const [bridgeRunAt, setBridgeRunAt] = useState<number | null>(null);
-  // Per-instance monotonic run token: drops out-of-order responses without
-  // sharing state across concurrently-mounted SqlWorkspace instances.
   const latestRunToken = useRef(0);
-  // Aborter for the in-flight editor run. Aborting the request cancels the
-  // query on the engine (the backend sends a wire-protocol CancelRequest when
-  // the caller disconnects), so this powers the Cancel button, supersession by
-  // a newer run, and unmount cleanup.
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => () => abortRef.current?.abort(), []);
   const bridge = useBridgeInfo(bridgeTopic, bridgeRunAt);
@@ -345,11 +300,7 @@ function useSqlRun(
     (sql: string) => {
       const token = (latestRunToken.current += 1);
       const kw = firstKeyword(sql);
-      // Block writes/DDL/DCL on the first keyword; read-shaped statements
-      // (SELECT/WITH/EXPLAIN/SHOW/…) pass and the server rejects what it can't run.
       const blocked = !kw || isWriteKeyword(sql);
-      // Drive the bridge indicator off the executed query (single tiered topic),
-      // not the catalog click — so it only shows for the topic actually queried.
       const nextBridgeTopic = blocked ? null : bridgeTopicForQuery(sql, completionCatalogs);
       setBridgeTopic(nextBridgeTopic);
       setBridgeRunAt(nextBridgeTopic ? Date.now() : null);
@@ -368,12 +319,9 @@ function useSqlRun(
   return { run, bridge, doRun, onCancelRun };
 }
 
-// Opens `SELECT * FROM <catalog>=><table>` for a table picked in the catalog tree.
 function useQueryTableOpener() {
   const editorRef = useRef<SqlEditorHandle>(null);
   const onQueryTable = useCallback((catalog: Catalog, table: TableRef) => {
-    // Redpanda SQL (Oxla) addresses catalog-qualified tables with the `=>`
-    // operator, e.g. `default_redpanda_catalog=>cars` — not `catalog.table`.
     const ref = `${catalog.name}=>${table.name}`;
     const sql = `SELECT *\nFROM ${ref}\nLIMIT 100;`;
     editorRef.current?.setQuery(sql, table.name);
@@ -381,7 +329,6 @@ function useQueryTableOpener() {
   return { editorRef, onQueryTable };
 }
 
-// The add-topic wizard: open state, pickable topics, and table creation.
 function useAddTopicWizard(
   executeQuery: ExecuteQueryMutation,
   invalidateSqlCatalog: InvalidateSqlCatalog,
@@ -391,8 +338,6 @@ function useAddTopicWizard(
   const [wizardError, setWizardError] = useState<string | undefined>(undefined);
   const { data: topicsData } = useLegacyListTopicsQuery(undefined, { hideInternalTopics: true });
 
-  // Topics already exposed as tables in the Redpanda catalog — excluded from
-  // the wizard's topic picker so you can't create a duplicate.
   const takenTopics = useMemo(() => {
     const taken = new Set<string>();
     for (const t of redpandaTables ?? []) {
@@ -425,8 +370,6 @@ function useAddTopicWizard(
   const onCreateTable = useCallback(
     ({ topic, tableName }: { topic: string; tableName: string }) => {
       setWizardError(undefined);
-      // Shares one builder with the wizard's "this will run" preview so the two
-      // can't drift.
       const statement = createTableSql(tableName, topic);
       executeQuery.mutate(
         { request: create(ExecuteQueryRequestSchema, { statement }) },
@@ -446,6 +389,12 @@ function useAddTopicWizard(
   return { wizardOpen, wizardError, wizardTopics, openWizard, closeWizard, onCreateTable };
 }
 
+/**
+ * The bridge indicator follows the executed topic’s tiering configuration, independent of lag samples.
+ * Cancelling, superseding, or unmounting an editor run aborts its request so the engine can stop the query.
+ *
+ * The catalog tree currently exposes Redpanda catalogs only.
+ */
 export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   useSqlStudioPage();
   const {
@@ -468,12 +417,7 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
   );
 
   return (
-    <div
-      // In-flow page (footer below), viewport-bounded like the RPCN editor
-      // (page-fill-viewport, globals.css).
-      className="page-fill-viewport flex min-h-[500px] flex-col bg-background text-strong"
-      ref={expandedModeRef}
-    >
+    <div className="page-fill-viewport flex min-h-[500px] flex-col bg-background text-strong" ref={expandedModeRef}>
       <div className={cn('flex h-[52px] shrink-0 items-center gap-3 px-1', expanded ? 'px-4' : 'mt-3')}>
         <div className="flex items-center gap-2 text-heading-md font-semibold tracking-heading text-strong [&_svg]:text-action-primary">
           <Database size={20} /> Redpanda SQL <span className="font-medium text-muted-foreground">· Studio</span>
@@ -489,8 +433,6 @@ export function SqlWorkspace({ sqlRole: sqlRoleProp }: SqlWorkspaceProps) {
       <div
         className={cn(
           'flex min-h-0 flex-1 overflow-hidden bg-background transition-[margin,border-radius,border-color,box-shadow] duration-300 ease-in-out',
-          // Boxed: rounded card below the studio header. Full: flush sides; top/bottom
-          // borders stay so clipped scrollable content keeps a visible edge.
           expanded ? 'rounded-none border border-x-transparent shadow-none' : 'mt-3 rounded-xl border shadow-sm'
         )}
       >

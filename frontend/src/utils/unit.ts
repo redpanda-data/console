@@ -9,16 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Unit abbreviations map
- */
 const UNIT_ABBREV: Record<string, string> = {
-  // Bytes
   byte: 'B',
   bytes: 'B',
   b: 'B',
 
-  // Time
   second: 's',
   seconds: 's',
   sec: 's',
@@ -41,24 +36,17 @@ const UNIT_ABBREV: Record<string, string> = {
   d: 'd',
 };
 
-/**
- * Abbreviate a single unit
- */
-function abbreviateUnit(unit: string): string {
+function abbreviateUnit(unit: string) {
   const normalized = unit.toLowerCase().trim();
 
   if (UNIT_ABBREV[normalized]) {
     return UNIT_ABBREV[normalized];
   }
 
-  // Truncate to 3 chars
   return normalized.substring(0, 3);
 }
 
-/**
- * Canonicalize a unit to form "x" or "x/y"
- */
-function canonicalizeUnit(unit: string): string {
+function canonicalizeUnit(unit: string) {
   if (!unit) {
     return '';
   }
@@ -73,10 +61,7 @@ function canonicalizeUnit(unit: string): string {
   return abbreviateUnit(normalized);
 }
 
-/**
- * Format a number and return formatted value and scale
- */
-function formatNumber(value: number): { formatted: string; scale: string } {
+function formatNumber(value: number) {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
 
@@ -96,7 +81,7 @@ function formatNumber(value: number): { formatted: string; scale: string } {
 /**
  * Format a number with its unit
  */
-export function formatWithUnit(value: number, unit: string | undefined): string {
+export function formatWithUnit(value: number, unit: string | undefined) {
   if (!unit) {
     const { formatted, scale } = formatNumber(value);
     return `${formatted}${scale}`;
@@ -105,11 +90,9 @@ export function formatWithUnit(value: number, unit: string | undefined): string 
   const canonical = canonicalizeUnit(unit);
   const { formatted, scale } = formatNumber(value);
 
-  // If numerator is B (bytes), attach scale to the unit
   if (canonical === 'B' || canonical.startsWith('B/')) {
     return `${formatted} ${scale}${canonical}`.trim();
   }
 
-  // For other units, attach scale to the number
   return `${formatted}${scale} ${canonical}`.trim();
 }

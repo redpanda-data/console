@@ -13,8 +13,6 @@ import { loader } from '@monaco-editor/react';
 // biome-ignore lint/performance/noNamespaceImport: Monaco's loader needs the complete runtime
 import * as monaco from 'monaco-editor';
 
-// Use `new Worker(new URL(...))` so rsbuild bundles each as its own chunk
-// (needed for monaco-yaml's CJS/ESM interop).
 window.MonacoEnvironment = {
   getWorker(_workerId, label) {
     switch (label) {
@@ -31,7 +29,6 @@ window.MonacoEnvironment = {
   },
 };
 
-// Tell monaco editor where to load dependencies from
 loader.config({ monaco });
 
 // biome-ignore lint/performance/noBarrelFile: on-demand adapter configures the shared runtime before either editor mounts

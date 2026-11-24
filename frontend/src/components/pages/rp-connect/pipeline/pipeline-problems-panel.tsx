@@ -40,15 +40,12 @@ type PipelineProblemsPanelProps = {
   deprecations?: PipelineProblem[];
 };
 
-// Section heading in the expanded panel, shown only when more than one kind of issue is present.
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   <div className="px-2 pt-1.5 pb-0.5 text-body-sm font-medium tracking-wide text-muted-foreground uppercase">
     {children}
   </div>
 );
 
-// One problem (or, with `warning`, a deprecation): clickable row that selects its node, or inert
-// when it maps to no node.
 const ProblemRow = ({
   problem,
   onSelect,
@@ -99,7 +96,6 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
     <div className="flex items-center justify-between gap-2 px-2 pt-1.5 pb-1">
       <span className="text-body-sm font-medium tracking-wide text-muted-foreground uppercase">Missing secrets</span>
       {onAddSecrets ? (
-        // The icon is a child rather than the `icon` prop, which would widen the `xs` gap.
         <Button data-testid="missing-secrets-add" onClick={onAddSecrets} size="xs" variant="outline">
           Add secrets
           <KeyRound className="size-3" />
@@ -120,8 +116,7 @@ const SecretsSection = ({ missingSecrets, onAddSecrets }: { missingSecrets: stri
   </div>
 );
 
-// The chip's wording: specific when there's only one kind of issue, "issues" for a mix.
-function issuesLabel(problemCount: number, secretCount: number, deprecationCount: number): string {
+function issuesLabel(problemCount: number, secretCount: number, deprecationCount: number) {
   const counts = [problemCount, secretCount, deprecationCount];
   if (counts.filter((count) => count > 0).length > 1) {
     return pluralizeWithNumber(problemCount + secretCount + deprecationCount, 'issue');
@@ -135,12 +130,11 @@ function issuesLabel(problemCount: number, secretCount: number, deprecationCount
   return pluralizeWithNumber(deprecationCount, 'deprecated component');
 }
 
-// Clicking a located issue selects its node and collapses the list.
 function selectHandler(
   problem: PipelineProblem,
   onSelectProblem: PipelineProblemsPanelProps['onSelectProblem'],
   close: () => void
-): (() => void) | undefined {
+) {
   const { nodeId, target, caseTarget } = problem;
   if (!(nodeId && target)) {
     return;

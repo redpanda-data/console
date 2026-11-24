@@ -1,8 +1,3 @@
-/**
- * Shared JSON Schema utilities for generating defaults and working with schemas
- * Used by Redpanda Connect features
- */
-
 import type { JsonObject, JsonValue } from './json-utils';
 
 export type JsonSchemaConst = {
@@ -43,25 +38,20 @@ export type JsonSchemaType = {
   $ref?: string;
 };
 
-/**
- * Generates a default value based on a JSON schema type
- *
- * @param schema The JSON schema definition
- * @param propertyName Optional property name for checking if it's required in parent schema
- * @param parentSchema Optional parent schema to check required array
- * @returns A default value matching the schema type
- */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: legacy code
+/**
+ * An explicit default takes precedence. Otherwise the parent schema determines
+ * whether the property needs a fallback.
+ */
 export function generateDefaultFromJsonSchema(
   schema: JsonSchemaType,
   propertyName?: string,
   parentSchema?: JsonSchemaType
-): JsonValue {
+) {
   if ('default' in schema && schema.default !== undefined) {
     return schema.default;
   }
 
-  // Check if this property is required in the parent schema
   const isRequired = propertyName && parentSchema ? isPropertyRequired(propertyName, parentSchema) : false;
 
   switch (schema.type) {
@@ -72,8 +62,10 @@ export function generateDefaultFromJsonSchema(
       return isRequired ? 0 : undefined;
     case 'boolean':
       return isRequired ? false : undefined;
-    case 'array':
-      return schema.items ? [generateDefaultFromJsonSchema(schema.items)] : [];
+    case 'array': {
+      const items: JsonValue[] = schema.items ? [generateDefaultFromJsonSchema(schema.items)] : [];
+      return items;
+    }
     case 'object':
       return generateObjectDefault(schema);
     case 'null':
@@ -89,11 +81,11 @@ export function generateDefaultFromJsonSchema(
  * @param schema The parent schema containing the required array
  * @returns true if the property is required, false otherwise
  */
-export function isPropertyRequired(propertyName: string, schema: JsonSchemaType): boolean {
+export function isPropertyRequired(propertyName: string, schema: JsonSchemaType) {
   return schema.required?.includes(propertyName) ?? false;
 }
 
-function generateObjectDefault(schema: JsonSchemaType): JsonObject {
+function generateObjectDefault(schema: JsonSchemaType) {
   const result: JsonObject = {};
   for (const [key, property] of Object.entries(schema.properties ?? {})) {
     if (isPropertyRequired(key, schema)) {

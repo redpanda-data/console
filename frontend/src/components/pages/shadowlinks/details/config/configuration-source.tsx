@@ -25,7 +25,7 @@ import type React from 'react';
 import { TlsCertificatesConfig } from './tls-certificates-config';
 import type { UnifiedShadowLink } from '../../model';
 
-const getScramMechanismLabel = (mechanism: number | undefined): string => {
+const getScramMechanismLabel = (mechanism: number | undefined) => {
   switch (mechanism) {
     case ScramMechanism.SCRAM_SHA_256:
       return 'SCRAM-SHA-256';
@@ -58,13 +58,10 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
   const scramConfig =
     authConfig?.authentication?.case === 'scramConfiguration' ? authConfig.authentication.value : undefined;
 
-  // Determine TLS status based on enabled boolean
   const isTlsEnabled = Boolean(tlsSettings?.enabled);
 
-  // Check if TLS certificates are configured (based on oneof tls_settings)
   const hasTLSCerts = Boolean(tlsSettings?.tlsSettings?.case);
 
-  // Determine authentication status
   const isAuthEnabled = Boolean(scramConfig);
 
   const scramMechanismLabel = getScramMechanismLabel(scramConfig?.scramMechanism);
@@ -74,7 +71,6 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
       <h2 className="text-heading-lg" data-testid="shadowing-title">
         Source
       </h2>
-      {/* Name Section */}
       <Card size="full" testId="source-name-card">
         <CardHeader>
           <h3 className="text-heading-md">Name</h3>
@@ -86,7 +82,6 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
         </CardContent>
       </Card>
 
-      {/* Source Cluster Section */}
       <Card size="full" testId="source-cluster-card">
         <CardHeader>
           <h3 className="text-heading-md">Source cluster</h3>
@@ -131,7 +126,6 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
         </CardContent>
       </Card>
 
-      {/* Authentication Section */}
       <Card size="full" testId="authentication-card">
         <CardHeader>
           <h3 className="text-heading-md">Authentication</h3>
@@ -164,7 +158,6 @@ export const ConfigurationSource = ({ shadowLink }: ConfigurationSourceProps) =>
         </CardContent>
       </Card>
 
-      {/* Advanced Options Section */}
       <Card size="full" testId="advanced-options-card">
         <CardContent>
           <Accordion>

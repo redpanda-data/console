@@ -31,15 +31,12 @@ describe('columnKindForPgType', () => {
     ['BOOL', 'bool'],
     ['TIMESTAMPTZ', 'time'],
     ['TIMESTAMP', 'time'],
-    // INTERVAL/POINT contain the INT substring but must not read as numeric.
     ['INTERVAL', 'time'],
     ['POINT', 'str'],
     ['JSON', 'json'],
     ['JSONB', 'json'],
     ['TEXT', 'str'],
     ['UNKNOWN_TYPE', 'str'],
-    // Composite columns arrive pre-labelled as "record"/"record[]" from the
-    // backend and render with the JSON tree viewer.
     ['record', 'json'],
     ['record[]', 'json'],
   ] as const)('%s → %s', (pgType, kind) => {

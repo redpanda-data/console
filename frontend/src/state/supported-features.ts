@@ -9,13 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-//
-// We know what features the cluster supports by calling './api/console/endpoints'.
-// That only tells us the actual routes we can use though.
-// This file translates supported routes to specific frontend features.
-// That way we can easily check if (for example) "partition reassignment" should be visible/allowed.
-//
-
 import { create } from 'zustand';
 
 import type { EndpointCompatibility } from './rest-interfaces';
@@ -99,11 +92,7 @@ export class Feature {
   };
 }
 
-/**
- * Compute whether a feature is supported given endpoint compatibility data.
- * Pure function — no side effects.
- */
-function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { supported: boolean; error?: string } {
+function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null) {
   if (!c) {
     switch (f.endpoint) {
       case Feature.SchemaRegistryACLApi.endpoint:
@@ -150,7 +139,7 @@ function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { s
  * For reactive usage in React components, prefer using the store selector directly:
  *   useSupportedFeaturesStore((s) => s.schemaRegistryACLApi)
  */
-export function isSupported(f: FeatureEntry): boolean {
+export function isSupported(f: FeatureEntry) {
   const state = useSupportedFeaturesStore.getState();
   const result = computeSupported(f, state.endpointCompatibility);
   if (result.error) {
@@ -159,15 +148,11 @@ export function isSupported(f: FeatureEntry): boolean {
   return result.supported;
 }
 
-/**
- * A list of features we should hide instead of showing a disabled message.
- */
 const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.SQLService];
-export function shouldHideIfNotSupported(f: FeatureEntry): boolean {
+export function shouldHideIfNotSupported(f: FeatureEntry) {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
 }
 
-/** Compute all feature flags from endpoint compatibility data */
 function computeAllFeatures(c: EndpointCompatibility | null) {
   const errors: string[] = [];
   const compute = (f: FeatureEntry) => {
@@ -206,11 +191,9 @@ function computeAllFeatures(c: EndpointCompatibility | null) {
 }
 
 type SupportedFeaturesStore = {
-  // State
   endpointCompatibility: EndpointCompatibility | null;
   featureErrors: string[];
 
-  // Feature flags (recomputed when endpointCompatibility changes)
   clusterConfig: boolean;
   consumerGroups: boolean;
   getReassignments: boolean;
@@ -235,7 +218,6 @@ type SupportedFeaturesStore = {
   schemaRegistryContexts: boolean;
   sqlApi: boolean;
 
-  // Actions
   setEndpointCompatibility: (ec: EndpointCompatibility) => void;
   addFeatureError: (error: string) => void;
   clearFeatureErrors: () => void;
@@ -244,11 +226,9 @@ type SupportedFeaturesStore = {
 const initialFeatures = computeAllFeatures(null);
 
 export const useSupportedFeaturesStore = create<SupportedFeaturesStore>((set) => ({
-  // Initial state
   endpointCompatibility: null,
   ...initialFeatures,
 
-  // Actions
   setEndpointCompatibility: (ec: EndpointCompatibility) =>
     set({
       endpointCompatibility: ec,
@@ -262,7 +242,6 @@ export const useSupportedFeaturesStore = create<SupportedFeaturesStore>((set) =>
   clearFeatureErrors: () => set({ featureErrors: [] }),
 }));
 
-// Create singleton instance for backwards compatibility
 const Features = {
   get clusterConfig() {
     return useSupportedFeaturesStore.getState().clusterConfig;

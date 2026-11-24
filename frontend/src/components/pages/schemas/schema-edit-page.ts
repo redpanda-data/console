@@ -4,27 +4,25 @@ import { toast } from 'sonner';
 
 import { type BreadcrumbEntry, uiState } from '../../../state/ui-state';
 
-// Shared by the edit-mode and edit-compatibility pages, which edit one setting
-// for a subject, a context, or the whole registry.
-
 /** What an edit page edits: one subject, one context, or (neither) the global config. */
 export type SchemaEditTarget = { subjectName?: string; contextName?: string };
 
 /** An edit page's title, breadcrumb label and route segment, e.g. `Edit Mode` at `…/edit-mode`. */
 export type SchemaEditPageKind = { pageTitle: string; crumbTitle: string; segment: string };
 
-export function decodeSchemaEditTarget(subjectNameEncoded?: string, contextNameEncoded?: string): SchemaEditTarget {
-  return {
+export function decodeSchemaEditTarget(subjectNameEncoded?: string, contextNameEncoded?: string) {
+  const schemaEditTarget: SchemaEditTarget = {
     subjectName: subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined,
     contextName: contextNameEncoded ? decodeURIComponent(contextNameEncoded) : undefined,
   };
+  return schemaEditTarget;
 }
 
 export function schemaEditBreadcrumbs(
   { subjectName, contextName }: SchemaEditTarget,
   { crumbTitle, segment }: SchemaEditPageKind
-): BreadcrumbEntry[] {
-  const root = { title: 'Schema Registry', linkTo: '/schema-registry' };
+) {
+  const root: BreadcrumbEntry = { title: 'Schema Registry', linkTo: '/schema-registry' };
   if (contextName) {
     return [
       root,
@@ -51,7 +49,6 @@ export function useSchemaEditPageHeader({ subjectName, contextName }: SchemaEdit
   );
 }
 
-// Closing runs from button clicks and mutation callbacks, so report a failed navigation instead of dropping it.
 function reportCloseError(error: unknown) {
   toast.error('Failed to navigate', { description: String(error) });
 }
@@ -80,7 +77,7 @@ export function schemaEditPageStatus({
   contextsUnsupported: boolean;
   isLoading: boolean;
   schemaMode: string | null | undefined;
-}): SchemaEditPageStatus {
+}) {
   if (contextsUnsupported) {
     return 'contexts-unsupported';
   }

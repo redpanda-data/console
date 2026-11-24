@@ -42,7 +42,6 @@ const ACTION_PHRASE: Record<Exclude<FencedAction, 'createShadowLink'>, string> =
   deleteConsumerGroup: 'delete consumer groups',
 };
 
-/** For a topic action, whether the fence covers that topic: internal topics stay open. */
 const TOPIC_IN_SCOPE: Partial<Record<FencedAction, (topic: string) => boolean>> = {
   createTopic: isFencedTopic,
   deleteTopic: isFencedTopic,
@@ -58,25 +57,22 @@ const fencedActionReason = (action: FencedAction) =>
 /**
  * Disables write controls up front while the cluster blocks, so users get a reason instead of a
  * raw POLICY_VIOLATION after they submit. Until a status loads, nothing is disabled.
+ *
+ * Pass a topic for an operation on one topic so its internal-topic exemption is considered.
  */
 export const useClusterFenceGuard = () => {
   const { blocking, summary } = useClusterFenceStatusQuery();
   const readsBlocked = blocking && !summary.allowAllReads;
 
-  /** Pass `topic` for a change to one topic, so the fence's internal-topic exemption applies. */
   const reasonFor = useCallback(
-    (action: FencedAction, topic?: string): string | undefined => {
+    (action: FencedAction, topic?: string) => {
       const covered = topic === undefined || (TOPIC_IN_SCOPE[action]?.(topic) ?? true);
       return blocking && covered ? fencedActionReason(action) : undefined;
     },
     [blocking]
   );
 
-  /** Whether a failed message search is most likely the fence turning Console's fetch away. */
-  const isFencedRead = useCallback(
-    (message: string): boolean => readsBlocked && isFencedReadError(message),
-    [readsBlocked]
-  );
+  const isFencedRead = useCallback((message: string) => readsBlocked && isFencedReadError(message), [readsBlocked]);
 
   return { reasonFor, isFencedRead };
 };

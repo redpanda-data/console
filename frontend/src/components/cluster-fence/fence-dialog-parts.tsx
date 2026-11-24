@@ -22,6 +22,8 @@ import type { FenceSummary } from './cluster-fence-model';
  * while the dialog is open fails instead of being overwritten, and `changed` says so up front.
  * `settling` covers this dialog's own write, whose new revision isn't someone else's change, and
  * `own` is a fence an earlier write of this dialog left behind, which replaces the pinned one.
+ *
+ * Refresh adopts the current fence revision; callers must reseed their form from that same revision.
  */
 export const useOpenedFence = (live: FenceSummary, settling: boolean, own?: FenceSummary) => {
   const [pinned, setPinned] = useState(live);
@@ -29,7 +31,6 @@ export const useOpenedFence = (live: FenceSummary, settling: boolean, own?: Fenc
   return {
     opened,
     changed: !settling && live.revision !== opened.revision,
-    /** Adopts the fence as it is now; callers reseed their form from the same value. */
     refresh: () => setPinned(live),
   };
 };

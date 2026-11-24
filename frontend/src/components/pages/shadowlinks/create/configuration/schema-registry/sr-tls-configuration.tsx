@@ -46,24 +46,15 @@ const CERTIFICATE_LABELS: Record<SrCertificateType, string> = {
   clientKey: 'Client private key',
 };
 
-// The client cert/key pair error lives on the sibling field, so uploads and
-// removals refresh the other side too.
 const CERTIFICATE_PAIR_SIBLING: Partial<Record<SrCertificateType, SrCertificateType>> = {
   clientCert: 'clientKey',
   clientKey: 'clientCert',
 };
 
-// trigger() runs detached from these handlers and rejects only if the resolver
-// itself throws; report that instead of dropping it.
 const reportRevalidationError = (error: unknown) => {
   toast.error('Failed to validate the form', { description: String(error) });
 };
 
-/**
- * Trash affordance overlaid on the top-right corner of a dropzone or
- * configured-material row. Stops propagation so the click never reaches the
- * dropzone's file picker underneath.
- */
 const RemoveMaterialButton = ({ label, onRemove, testId }: { label: string; onRemove: () => void; testId: string }) => (
   <Button
     aria-label={label}
@@ -81,19 +72,12 @@ const RemoveMaterialButton = ({ label, onRemove, testId }: { label: string; onRe
   </Button>
 );
 
-/**
- * Duplicated from connection/mtls-configuration.tsx rather than parameterized:
- * that component hardwires the connection step's 'mtls.*' field paths, its
- * file-path input mode, and the embedded secret-selector flow, none of which
- * apply here — the Schema Registry section is PEM uploads only.
- */
 function SrCertificateDropzone({ certType, optional }: { certType: SrCertificateType; optional?: boolean }) {
   const { control, setValue, trigger } = useFormContext<FormValues>();
   const cert = useWatch({ control, name: `schemaRegistry.mtls.${certType}` });
   const [uploadError, setUploadError] = useState<string | null>(null);
   const label = CERTIFICATE_LABELS[certType];
   const hasCert = hasSrCertificate(cert);
-  // PEMs hydrated from the API carry no file name; show a generic label.
   const fileName = hasCert ? cert?.fileName || 'Configured certificate' : undefined;
 
   const handleDrop = useCallback(
@@ -191,11 +175,6 @@ const SrMtlsConfiguredBadge = () => {
   return hasSrCertificate(clientCert) && hasKeyMaterial ? <ConfiguredBadge /> : null;
 };
 
-/**
- * Shown in place of the key dropzone when the stored key exists only
- * server-side (the API never returns it). Removing it reveals the dropzone;
- * an empty key in the update request keeps the stored one.
- */
 const ExistingKeyRow = () => {
   const { control, setValue, trigger } = useFormContext<FormValues>();
   const fingerprint = useWatch({ control, name: 'schemaRegistry.mtls.existingKeyFingerprint' });
@@ -203,7 +182,6 @@ const ExistingKeyRow = () => {
   const handleRemove = () => {
     setValue('schemaRegistry.mtls.existingKeyConfigured', false, { shouldDirty: true });
     setValue('schemaRegistry.mtls.existingKeyFingerprint', '', { shouldDirty: true });
-    // The pair error for a now-keyless cert lands on the clientKey field.
     trigger(['schemaRegistry.mtls.clientKey', 'schemaRegistry.mtls.clientCert']).catch(reportRevalidationError);
   };
 
@@ -235,11 +213,6 @@ const ExistingKeyRow = () => {
   );
 };
 
-/**
- * Embedded-mode client-key picker (lives in Cloud Secrets, not as a file).
- * Mirrors ClientKeySecretField in connection/mtls-configuration.tsx: the
- * secret reference is stored in the pemContent slot and sent verbatim.
- */
 const SrClientKeySecretField = () => {
   const { control, trigger } = useFormContext<FormValues>();
 
@@ -266,7 +239,6 @@ const SrClientKeySecretField = () => {
               customText={SR_CLIENT_KEY_SECRET_TEXT}
               onChange={(secretId) => {
                 field.onChange(secretId ? { pemContent: toSecretReference(secretId), fileName: '' } : undefined);
-                // The cert/key pair error lives on the sibling field too.
                 trigger(['schemaRegistry.mtls.clientKey', 'schemaRegistry.mtls.clientCert']).catch(
                   reportRevalidationError
                 );
@@ -297,10 +269,6 @@ const SrClientKeyField = () => {
   return isEmbedded() ? <SrClientKeySecretField /> : <SrCertificateDropzone certType="clientKey" />;
 };
 
-/**
- * Read-only view for TLS configured as certificate file paths (e.g. via rpk):
- * Console can't edit those, only round-trip them.
- */
 const SrTlsFilePathsNotice = ({
   filePaths,
 }: {
@@ -329,6 +297,9 @@ const SrTlsFilePathsNotice = ({
   </div>
 );
 
+/**
+ * The API editor accepts PEM uploads or embedded secret references, not TLS path edits. The read-only file-path and server-stored-key rows preserve configurations from rpk/API-created links. Removing a stored key reveals the key picker; an empty update key keeps the stored value.
+ */
 export const SrTlsConfiguration = () => {
   const { control, getValues, trigger } = useFormContext<FormValues>();
   const useTls = useWatch({ control, name: 'schemaRegistry.useTls' });
@@ -340,8 +311,6 @@ export const SrTlsConfiguration = () => {
   const mtlsErrors = errors.schemaRegistry?.mtls;
   const hasMtlsError = Boolean(mtlsErrors?.clientCert || mtlsErrors?.clientKey);
 
-  // Snapshot at mount for initial open state; afterwards the user controls
-  // open/close.
   const [caOpen, setCaOpen] = useState(() => hasSrCertificate(getValues('schemaRegistry.mtls.ca')));
   const [mtlsOpen, setMtlsOpen] = useState(() => {
     const mtls = getValues('schemaRegistry.mtls');
@@ -361,8 +330,7 @@ export const SrTlsConfiguration = () => {
                 checked={field.value}
                 onCheckedChange={(checked) => {
                   field.onChange(checked);
-                  // The https-required error lives on the source URL field, so
-                  // toggling TLS must refresh it or a stale error lingers.
+                  // WARNING: Revalidate the source URL when TLS changes; otherwise the old scheme error remains on another field.
                   trigger('schemaRegistry.sourceUrl').catch(reportRevalidationError);
                 }}
                 testId="sr-tls-toggle"
@@ -403,9 +371,7 @@ export const SrTlsConfiguration = () => {
                 description="Authenticate the shadow cluster to the source Schema Registry with a client certificate."
                 label="Use mutual TLS (mTLS)"
                 onOpenChange={setMtlsOpen}
-                // Forced open while a pair-consistency error exists: the error
-                // messages render inside this panel, and a collapsed panel would
-                // otherwise block the wizard with no visible feedback.
+                // WARNING: Keep the TLS section open when it contains an error; the hidden error otherwise blocks the wizard without feedback.
                 open={mtlsOpen || hasMtlsError}
                 testId="sr-tls-mtls-disclosure"
                 triggerTestId="sr-tls-mtls-disclosure-trigger"

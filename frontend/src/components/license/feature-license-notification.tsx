@@ -16,9 +16,6 @@ import {
   UpgradeButton,
   UploadLicenseButton,
 } from './license-utils';
-
-const WARNING_THRESHOLD_DAYS = 5;
-
 import { RegisterModal } from './register-modal';
 import {
   type License,
@@ -28,15 +25,25 @@ import {
 import { api } from '../../state/backend-api';
 import { Alert, AlertDescription } from '../redpanda-ui/components/alert';
 
+type FeatureLicenseAlert = { message: ReactElement; variant: 'destructive' | 'informative' };
+
+const WARNING_THRESHOLD_DAYS = 5;
+
 // biome-ignore lint/nursery/useMaxParams: Refactoring to options object would require updating all call sites
-const getLicenseAlertContentForFeature = (
+const getLicenseAlertContentForFeature: (
   _featureName: 'rbac' | 'reassignPartitions',
   license: License | undefined,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[],
   bakedInTrial: boolean,
   onRegisterModalOpen: () => void
+) => FeatureLicenseAlert | null = (
+  _featureName,
+  license,
+  enterpriseFeaturesUsed,
+  bakedInTrial,
+  onRegisterModalOpen
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-): { message: ReactElement; variant: 'destructive' | 'informative' } | null => {
+) => {
   if (license === undefined) {
     return null;
   }
@@ -67,7 +74,6 @@ const getLicenseAlertContentForFeature = (
     };
   }
 
-  // Redpanda
   return api.isRedpanda
     ? getRedpandaFeatureAlert(license, msToExpiration, enterpriseFeaturesUsed)
     : getKafkaFeatureAlert(license, msToExpiration);
@@ -77,7 +83,7 @@ function getRedpandaFeatureAlert(
   license: License,
   msToExpiration: number,
   enterpriseFeaturesUsed: ListEnterpriseFeaturesResponse_Feature[]
-): { message: ReactElement; variant: 'destructive' | 'informative' } | null {
+) {
   if (
     msToExpiration > 15 * MS_IN_DAY &&
     msToExpiration < 30 * MS_IN_DAY &&
@@ -94,7 +100,7 @@ function getRedpandaFeatureAlert(
         </div>
       ),
       variant: 'informative',
-    };
+    } satisfies FeatureLicenseAlert;
   }
   if (msToExpiration > -1 && msToExpiration < 15 * MS_IN_DAY && coreHasEnterpriseFeatures(enterpriseFeaturesUsed)) {
     return {
@@ -118,15 +124,11 @@ function getRedpandaFeatureAlert(
         </div>
       ),
       variant: 'destructive',
-    };
+    } satisfies FeatureLicenseAlert;
   }
   return null;
 }
-function getKafkaFeatureAlert(
-  license: License,
-  msToExpiration: number
-): { message: ReactElement; variant: 'destructive' | 'informative' } | null {
-  // Kafka
+function getKafkaFeatureAlert(license: License, msToExpiration: number) {
   if (msToExpiration > 15 * MS_IN_DAY && msToExpiration < 30 * MS_IN_DAY) {
     if (license.type === License_Type.TRIAL) {
       return {
@@ -140,7 +142,7 @@ function getKafkaFeatureAlert(
           </div>
         ),
         variant: 'informative',
-      };
+      } satisfies FeatureLicenseAlert;
     }
     return {
       message: (
@@ -155,7 +157,7 @@ function getKafkaFeatureAlert(
         </div>
       ),
       variant: 'informative',
-    };
+    } satisfies FeatureLicenseAlert;
   }
   if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY && license.type === License_Type.TRIAL) {
     return {
@@ -179,10 +181,13 @@ function getKafkaFeatureAlert(
         </div>
       ),
       variant: 'destructive',
-    };
+    } satisfies FeatureLicenseAlert;
   }
   return null;
 }
+/**
+ * Treat the trial as baked-in only while all returned licenses are baked-in, and wait for broker distribution before showing a Redpanda license notice.
+ */
 export const FeatureLicenseNotification: FC<{
   featureName: 'reassignPartitions' | 'rbac';
 }> = ({ featureName }) => {
@@ -190,23 +195,19 @@ export const FeatureLicenseNotification: FC<{
 
   useEffect(() => {
     api.refreshClusterOverview().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: The API store owns this refresh failure; do not duplicate the error in the notification.
     });
     api.listLicenses().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: The API store owns license request errors; do not infer an expired license from a failed request.
     });
   }, []);
 
   const licenses = api.licenses
     .filter((lic) => lic.type === License_Type.TRIAL || lic.type === License_Type.COMMUNITY)
-    .sort((a, b) => LICENSE_WEIGHT[a.type] - LICENSE_WEIGHT[b.type]); // Sort by priority
+    .sort((a, b) => LICENSE_WEIGHT[a.type] - LICENSE_WEIGHT[b.type]);
 
-  // Choose the license with the latest expiration time
   const license = getLatestExpiringLicense(licenses);
 
-  // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.
-  // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where,
-  // use has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
   const bakedInTrial = licenses.every((lic) => isBakedInTrial(lic));
 
   const alertContent = getLicenseAlertContentForFeature(
@@ -219,7 +220,6 @@ export const FeatureLicenseNotification: FC<{
     }
   );
 
-  // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
   if (api.clusterOverview === null || !license || alertContent === null) {
     return null;
   }

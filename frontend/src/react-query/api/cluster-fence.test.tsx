@@ -13,6 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createRouterTransport, type Transport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, onTestFinished, rs, test } from '@rstest/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { config } from 'config';
 import {
   ClusterFenceState,
   FenceResponseSchema,
@@ -31,25 +32,28 @@ import { useSupportedFeaturesStore } from 'state/supported-features';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { connectQueryWrapper } from 'test-utils';
 
-const flags = rs.hoisted(() => ({ enableClusterFencing: true }));
-const host = rs.hoisted(() => ({ embedded: true }));
-
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
-  return {
-    ...actual,
-    isEmbedded: rs.fn(() => host.embedded),
-    isFeatureFlagEnabled: rs.fn((key: string) => flags[key as keyof typeof flags] ?? false),
-    isServerless: rs.fn(() => false),
-  };
-});
-
 import {
   describeClusterFenceError,
   isStaleRevisionError,
   useClusterFenceStatusQuery,
   useFenceClusterMutation,
 } from './cluster-fence';
+
+beforeEach(() => {
+  const originalHost = { jwt: config.jwt, isServerless: config.isServerless, featureFlags: config.featureFlags };
+  const originalFeatures = useSupportedFeaturesStore.getState();
+  const originalFence = useClusterFenceStore.getState();
+  config.jwt = 'test-token';
+  config.isServerless = false;
+  config.featureFlags = { ...config.featureFlags, enableClusterFencing: true };
+  useSupportedFeaturesStore.setState({ clusterFence: true });
+  useClusterFenceStore.setState({ phase: null });
+  onTestFinished(() => {
+    Object.assign(config, originalHost);
+    useSupportedFeaturesStore.setState(originalFeatures);
+    useClusterFenceStore.setState(originalFence);
+  });
+});
 
 const fencedStatus = create(GetClusterFenceStatusResponseSchema, {
   fence: {
@@ -61,176 +65,190 @@ const fencedStatus = create(GetClusterFenceStatusResponseSchema, {
 });
 
 const renderStatusQuery = (transport: Transport) => {
-  const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+  const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false, retryDelay: 0 } } }, transport);
   return renderHook(() => useClusterFenceStatusQuery(), { wrapper });
 };
 
-/** Unfenced, no leader while every broker answers unfenced, fenced, then no leader again with brokers that never answer. */
-const twoLeaderLosses = () => {
-  const unfenced = { state: ClusterFenceState.UNFENCED, revision: 1n };
-  const noLeader = () => {
-    throw new ConnectError('no controller leader', Code.Unavailable);
-  };
-  const readController = rs
-    .fn<() => typeof fencedStatus>()
-    .mockReturnValueOnce(
-      create(GetClusterFenceStatusResponseSchema, { fence: unfenced, brokers: [{ nodeId: 1, fence: unfenced }] })
-    )
-    .mockImplementationOnce(noLeader)
-    .mockReturnValueOnce(fencedStatus)
-    .mockImplementation(noLeader);
-  const readBroker = rs
-    .fn<() => GetClusterFenceBrokerStatusResponse | Promise<GetClusterFenceBrokerStatusResponse>>()
-    .mockReturnValueOnce(create(GetClusterFenceBrokerStatusResponseSchema, { broker: { nodeId: 1, fence: unfenced } }))
-    .mockImplementation(() => new Promise<never>(rs.fn()));
-  return createRouterTransport(({ rpc }) => {
-    rpc(getClusterFenceStatus, readController);
-    rpc(getClusterFenceBrokerStatus, readBroker);
+const unfenced = { state: ClusterFenceState.UNFENCED, revision: 1n };
+const unfencedStatus = create(GetClusterFenceStatusResponseSchema, {
+  fence: unfenced,
+  brokers: [{ nodeId: 1, fence: unfenced }],
+});
+const noLeader = new ConnectError('no controller leader', Code.Unavailable);
+
+const serveFenceStatus = (
+  initialStatus: typeof fencedStatus | ConnectError,
+  readBroker?: () => GetClusterFenceBrokerStatusResponse | Promise<GetClusterFenceBrokerStatusResponse>
+) => {
+  let status = initialStatus;
+  let controllerReads = 0;
+  const brokerReads: (number | undefined)[] = [];
+  const transport = createRouterTransport(({ rpc }) => {
+    rpc(getClusterFenceStatus, () => {
+      controllerReads += 1;
+      if (status instanceof ConnectError) {
+        throw status;
+      }
+      return status;
+    });
+    if (readBroker) {
+      rpc(getClusterFenceBrokerStatus, ({ nodeId }) => {
+        brokerReads.push(nodeId);
+        return readBroker();
+      });
+    }
   });
+
+  return {
+    transport,
+    controllerReads: () => controllerReads,
+    brokerReads,
+    publish: (nextStatus: typeof status) => {
+      status = nextStatus;
+    },
+  };
 };
 
-const refetchUntil = async (result: ReturnType<typeof renderStatusQuery>['result'], until: () => void) => {
+const pendingBrokerRead = () => {
+  const pending = Promise.withResolvers<GetClusterFenceBrokerStatusResponse>();
+  onTestFinished(() => {
+    pending.resolve(create(GetClusterFenceBrokerStatusResponseSchema));
+  });
+  return pending.promise;
+};
+
+const brokerAt = (state: ClusterFenceState, revision: bigint) =>
+  create(GetClusterFenceBrokerStatusResponseSchema, {
+    broker: { nodeId: 1, fence: { state, revision } },
+  });
+
+const refetchStatus = async (
+  server: ReturnType<typeof serveFenceStatus>,
+  result: ReturnType<typeof renderStatusQuery>['result'],
+  status: typeof fencedStatus | ConnectError
+) => {
+  server.publish(status);
   await act(() => result.current.refetch());
-  await waitFor(until);
+};
+
+const installTestClock = () => {
+  rs.useFakeTimers();
+  onTestFinished(() => {
+    rs.useRealTimers();
+  });
 };
 
 describe('useClusterFenceStatusQuery', () => {
-  beforeEach(() => {
-    flags.enableClusterFencing = true;
-    host.embedded = true;
-    useSupportedFeaturesStore.setState({ clusterFence: true });
-    useClusterFenceStore.setState({ phase: null });
-  });
+  test('reads and polls the fence when the flag is on and the backend serves the API', async () => {
+    installTestClock();
+    const server = serveFenceStatus(fencedStatus);
+    const { result } = renderStatusQuery(server.transport);
 
-  test('reads the fence when the flag is on and the backend serves the API', async () => {
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(getClusterFenceStatus, () => fencedStatus);
+    await act(() => rs.advanceTimersByTimeAsync(1000));
+    expect(result.current).toMatchObject({
+      known: true,
+      blocking: true,
+      summary: { phase: 'fenced', exemptPrincipals: ['shadow-orders'] },
+      brokers: [{ nodeId: 1, status: 'confirmed', copy: { phase: 'fenced', revision: 3n }, blocks: true }],
     });
-
-    const { result } = renderStatusQuery(transport);
-
-    await waitFor(() => expect(result.current.known).toBe(true));
-    expect(result.current.summary).toMatchObject({ phase: 'fenced', exemptPrincipals: ['shadow-orders'] });
-    expect(result.current.brokers).toEqual([
-      { nodeId: 1, status: 'confirmed', copy: { phase: 'fenced', revision: 3n }, blocks: true },
-    ]);
-    expect(result.current.blocking).toBe(true);
     expect(useClusterFenceStore.getState().phase).toBe('fenced');
+    expect(server.controllerReads()).toBe(1);
+
+    await act(() => rs.advanceTimersByTimeAsync(15_000));
+    expect(server.controllerReads()).toBe(2);
   });
 
   test('uses fresh blocking broker copies after a cached unfenced controller loses leadership', async () => {
-    const readController = rs
-      .fn<() => typeof fencedStatus>()
-      .mockReturnValueOnce(
-        create(GetClusterFenceStatusResponseSchema, {
-          fence: { state: ClusterFenceState.UNFENCED, revision: 1n },
-          brokers: [{ nodeId: 1, fence: { state: ClusterFenceState.UNFENCED, revision: 1n } }],
-        })
-      )
-      .mockImplementation(() => {
-        throw new ConnectError('no controller leader', Code.Unavailable);
-      });
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(getClusterFenceStatus, readController);
-      rpc(getClusterFenceBrokerStatus, () =>
-        create(GetClusterFenceBrokerStatusResponseSchema, {
-          broker: { nodeId: 1, fence: { state: ClusterFenceState.FENCED, revision: 2n } },
-        })
-      );
-    });
-    const { result } = renderStatusQuery(transport);
+    const server = serveFenceStatus(unfencedStatus, () => brokerAt(ClusterFenceState.FENCED, 2n));
+    const { result } = renderStatusQuery(server.transport);
     await waitFor(() => expect(result.current.known).toBe(true));
     expect(result.current.blocking).toBe(false);
-    await act(() => result.current.refetch());
+
+    await refetchStatus(server, result, noLeader);
+
     await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'fenced', revision: 2n }]));
     expect(result.current.known).toBe(false);
     expect(result.current.blocking).toBe(true);
+    expect(server.brokerReads).toEqual([1]);
   });
 
-  test.each<[string, () => GetClusterFenceBrokerStatusResponse | Promise<GetClusterFenceBrokerStatusResponse>]>([
-    /** An executor that never calls resolve or reject. */
-    ['still loading', () => new Promise<never>(rs.fn())],
-    [
-      'failing',
-      () => {
-        throw new ConnectError('broker unreachable', Code.Unavailable);
-      },
-    ],
-  ])(
+  test.each([
+    ['still loading', undefined],
+    ['failing', 'broker unreachable'],
+  ] as const)(
     'keeps blocking on a fenced status the controller can no longer confirm while broker copies are %s',
-    async (label, brokerStatus) => {
-      const readController = rs
-        .fn<() => typeof fencedStatus>()
-        .mockReturnValueOnce(fencedStatus)
-        .mockImplementation(() => {
-          throw new ConnectError('no controller leader', Code.Unavailable);
-        });
-      const transport = createRouterTransport(({ rpc }) => {
-        rpc(getClusterFenceStatus, readController);
-        rpc(getClusterFenceBrokerStatus, brokerStatus);
+    async (_label, errorMessage) => {
+      const pending = pendingBrokerRead();
+      const server = serveFenceStatus(fencedStatus, () => {
+        if (errorMessage) {
+          throw new ConnectError(errorMessage, Code.Unavailable);
+        }
+        return pending;
       });
-      const { result } = renderStatusQuery(transport);
-      await waitFor(() => expect(result.current.blocking).toBe(true));
-      await act(() => result.current.refetch());
-      await waitFor(() => expect(result.current.known).toBe(false));
-      if (label === 'failing') {
-        await waitFor(() =>
-          expect(result.current.ownCopies).toEqual([{ nodeId: 1, errorMessage: 'broker unreachable' }])
-        );
-      }
+      const { result } = renderStatusQuery(server.transport);
+      await waitFor(() => expect(result.current.known).toBe(true));
+      expect(result.current.blocking).toBe(true);
+
+      await refetchStatus(server, result, noLeader);
+
+      await waitFor(() => {
+        expect(server.brokerReads).toEqual([1]);
+        expect(result.current.ownCopies).toEqual([{ nodeId: 1, errorMessage }]);
+      });
+      expect(result.current.known).toBe(false);
       expect(result.current.blocking).toBe(true);
     }
   );
 
   test('reads broker copies afresh each time the leader goes, never from an earlier time', async () => {
-    const { result } = renderStatusQuery(twoLeaderLosses());
+    const brokerResponses = [brokerAt(ClusterFenceState.UNFENCED, 1n), pendingBrokerRead()];
+    const server = serveFenceStatus(unfencedStatus, async () => {
+      const response = brokerResponses.shift();
+      if (!response) {
+        throw new ConnectError('Unexpected broker read', Code.Internal);
+      }
+      return await response;
+    });
+    const { result } = renderStatusQuery(server.transport);
     await waitFor(() => expect(result.current.known).toBe(true));
-    await refetchUntil(result, () =>
-      expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'unfenced', revision: 1n }])
-    );
-    expect(result.current.blocking).toBe(false);
 
-    await refetchUntil(result, () => expect(result.current.summary.phase).toBe('fenced'));
-    await refetchUntil(result, () => expect(result.current.known).toBe(false));
-    expect(result.current.ownCopies).toEqual([{ nodeId: 1 }]);
-    expect(result.current.blocking).toBe(true);
+    await refetchStatus(server, result, noLeader);
+    await waitFor(() =>
+      expect(result.current).toMatchObject({
+        ownCopies: [{ nodeId: 1, phase: 'unfenced', revision: 1n }],
+        blocking: false,
+      })
+    );
+
+    await refetchStatus(server, result, fencedStatus);
+    await waitFor(() => expect(result.current.summary.phase).toBe('fenced'));
+
+    await refetchStatus(server, result, noLeader);
+    await waitFor(() => {
+      expect(server.brokerReads).toEqual([1, 1]);
+      expect(result.current).toMatchObject({ known: false, blocking: true });
+      expect(result.current.ownCopies).toEqual([{ nodeId: 1 }]);
+    });
   });
 
   test('stops blocking once every broker’s own copy says unfenced, whatever the last status said', async () => {
-    const readController = rs
-      .fn<() => typeof fencedStatus>()
-      .mockReturnValueOnce(fencedStatus)
-      .mockImplementation(() => {
-        throw new ConnectError('no controller leader', Code.Unavailable);
-      });
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(getClusterFenceStatus, readController);
-      rpc(getClusterFenceBrokerStatus, () =>
-        create(GetClusterFenceBrokerStatusResponseSchema, {
-          broker: { nodeId: 1, fence: { state: ClusterFenceState.UNFENCED, revision: 4n } },
-        })
-      );
-    });
-    const { result } = renderStatusQuery(transport);
+    const server = serveFenceStatus(fencedStatus, () => brokerAt(ClusterFenceState.UNFENCED, 4n));
+    const { result } = renderStatusQuery(server.transport);
     await waitFor(() => expect(result.current.blocking).toBe(true));
-    await act(() => result.current.refetch());
+
+    await refetchStatus(server, result, noLeader);
+
     await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'unfenced', revision: 4n }]));
     expect(result.current.blocking).toBe(false);
   });
 
   test('retains last-known controller presentation after an ordinary refresh failure', async () => {
-    const readStatus = rs
-      .fn<() => typeof fencedStatus>()
-      .mockReturnValueOnce(fencedStatus)
-      .mockImplementation(() => {
-        throw new ConnectError('temporary failure', Code.Internal);
-      });
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(getClusterFenceStatus, readStatus);
-    });
-    const { result } = renderStatusQuery(transport);
+    const server = serveFenceStatus(fencedStatus);
+    const { result } = renderStatusQuery(server.transport);
     await waitFor(() => expect(result.current.known).toBe(true));
-    await act(() => result.current.refetch());
+
+    await refetchStatus(server, result, new ConnectError('temporary failure', Code.Internal));
+
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.known).toBe(true);
     expect(result.current.summary.phase).toBe('fenced');
@@ -238,8 +256,8 @@ describe('useClusterFenceStatusQuery', () => {
   });
 
   test('self-hosted, reads the fence whenever the backend serves the API, with no flag', async () => {
-    host.embedded = false;
-    flags.enableClusterFencing = false;
+    config.jwt = undefined;
+    config.featureFlags.enableClusterFencing = false;
     const transport = createRouterTransport(({ rpc }) => {
       rpc(getClusterFenceStatus, () => fencedStatus);
     });
@@ -254,35 +272,29 @@ describe('useClusterFenceStatusQuery', () => {
     [
       'the host’s flag is off',
       () => {
-        flags.enableClusterFencing = false;
+        config.featureFlags.enableClusterFencing = false;
       },
     ],
     [
       'self-hosted, the backend doesn’t serve the API',
       () => {
-        host.embedded = false;
+        config.jwt = undefined;
         useSupportedFeaturesStore.setState({ clusterFence: false });
       },
     ],
     ['the backend doesn’t serve the API', () => useSupportedFeaturesStore.setState({ clusterFence: false })],
   ])('stays idle when %s', async (_label, arrange) => {
-    rs.useFakeTimers();
-    onTestFinished(() => {
-      rs.useRealTimers();
-    });
+    installTestClock();
     arrange();
-    const handler = rs.fn(() => fencedStatus);
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(getClusterFenceStatus, handler);
-    });
+    const server = serveFenceStatus(fencedStatus);
 
-    const { result } = renderStatusQuery(transport);
+    const { result } = renderStatusQuery(server.transport);
 
+    await act(() => rs.advanceTimersByTimeAsync(30_000));
     expect(result.current.available).toBe(false);
     expect(result.current.known).toBe(false);
-    // Run every timer already queued, and the microtasks between them, so a would-be read has a chance to run.
-    await rs.runOnlyPendingTimersAsync();
-    expect(handler).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(server.controllerReads()).toBe(0);
   });
 });
 
@@ -386,7 +398,10 @@ describe('useFenceClusterMutation', () => {
     const result = renderFenceMutation(transport);
 
     await act(async () => {
-      await result.current.mutateAsync({ settings: reviewed, opened: openedAt(4) }).catch(() => undefined);
+      await expect(result.current.mutateAsync({ settings: reviewed, opened: openedAt(4) })).rejects.toMatchObject({
+        code: Code.FailedPrecondition,
+        rawMessage: 'a data migration is still running',
+      });
     });
 
     expect(calls).toEqual(['save', 'fence']);
@@ -397,51 +412,27 @@ describe('useFenceClusterMutation', () => {
 });
 
 describe('useClusterFenceStatusQuery when the status can’t be read', () => {
-  beforeEach(() => {
-    flags.enableClusterFencing = true;
-    host.embedded = true;
-    useSupportedFeaturesStore.setState({ clusterFence: true });
-  });
-
-  const intervalOf = (queryClient: ReturnType<typeof connectQueryWrapper>['queryClient']) => {
-    const query = queryClient
-      .getQueryCache()
-      .getAll()
-      .find((candidate) => JSON.stringify(candidate.queryKey).includes('GetClusterFenceStatus'));
-    const interval = query?.observers[0]?.options.refetchInterval as ((q: typeof query) => number | false) | undefined;
-    return interval?.(query);
-  };
-
-  const renderFailingStatus = (error: ConnectError) => {
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(getClusterFenceStatus, () => {
-        throw error;
-      });
-    });
-    const { wrapper, queryClient } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-    return { result: renderHook(() => useClusterFenceStatusQuery(), { wrapper }).result, queryClient };
-  };
-
-  test('a viewer without permission stops polling, and the status says why rather than vanishing', async () => {
-    const { result, queryClient } = renderFailingStatus(new ConnectError('denied', Code.PermissionDenied));
-
-    await waitFor(() => expect(result.current.access).toBe('forbidden'));
-    expect(result.current.available).toBe(true);
-    expect(result.current.known).toBe(false);
-    expect(intervalOf(queryClient)).toBe(false);
-  });
-
   test.each([
-    ['without the API', new ConnectError('no such service', Code.Unimplemented)],
-    ['without the endpoint', new ConnectError('not found', Code.NotFound)],
-    ['where fencing isn’t active on every broker', new ConnectError('feature is not active', Code.FailedPrecondition)],
-  ])('a cluster %s has no fencing, and stops asking', async (_label, error) => {
-    const { result, queryClient } = renderFailingStatus(error);
+    ['a viewer without permission', new ConnectError('denied', Code.PermissionDenied), 'forbidden', true],
+    ['a cluster without the API', new ConnectError('no such service', Code.Unimplemented), 'unsupported', false],
+    ['a cluster without the endpoint', new ConnectError('not found', Code.NotFound), 'unsupported', false],
+    [
+      'a cluster where fencing isn’t active on every broker',
+      new ConnectError('feature is not active', Code.FailedPrecondition),
+      'unsupported',
+      false,
+    ],
+  ] as const)('stops polling and exposes the access state for %s', async (_label, error, access, available) => {
+    installTestClock();
+    const server = serveFenceStatus(error);
+    const { result } = renderStatusQuery(server.transport);
 
-    await waitFor(() => expect(result.current.available).toBe(false));
-    expect(result.current.access).toBe('unsupported');
-    expect(result.current.blocking).toBe(false);
-    expect(intervalOf(queryClient)).toBe(false);
+    await act(() => rs.advanceTimersByTimeAsync(1000));
+    expect(result.current).toMatchObject({ access, available, known: false, blocking: false });
+    expect(server.controllerReads()).toBe(1);
+
+    await act(() => rs.advanceTimersByTimeAsync(30_000));
+    expect(server.controllerReads()).toBe(1);
   });
 
   test('with no controller leader, asks the broker for its own copy and keeps blocking writes it rejects', async () => {

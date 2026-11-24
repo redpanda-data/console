@@ -100,7 +100,6 @@ const Step = ({
   </li>
 );
 
-/** One side of the failover: the source's three steps run there, the last three here. */
 const Lane = ({
   title,
   description,
@@ -112,7 +111,6 @@ const Lane = ({
   title: string;
   description: string;
   testId: string;
-  /** Shadow linking's steps, outlined in the reference to set them apart from the cluster fence API's. */
   dashed?: boolean;
   action?: ReactNode;
   children: ReactNode;
@@ -133,10 +131,6 @@ const Lane = ({
   </section>
 );
 
-/**
- * The source's steps run on its own Console, so this lane only reports them and links there: to the
- * settings with this link's user already added when they would block it, otherwise to the fence.
- */
 const OpenSourceButton = ({ fence, link }: { fence: SourceFenceStep; link: LinkIdentity }) => {
   const openCluster = useClusterFenceStore((state) => state.openCluster);
   const { source } = fence;
@@ -173,7 +167,6 @@ const linkUserLabel = (link: LinkIdentity) => {
   return link.principal;
 };
 
-/** Says why the exempt badge reads as it does, when it isn't a plain Exempt. */
 const exemptNote = ({ fence, source, linkExempt }: CloudStep, link: LinkIdentity) => {
   if (linkExempt === undefined) {
     return link.authentication === 'mtls'
@@ -265,8 +258,7 @@ const lagNumber = new Intl.NumberFormat();
 
 const plural = (count: number, one: string, many: string) => (count === 1 ? one : many);
 
-/** For example "47 of 48 topics caught up. orders-events is 1,204 messages behind." */
-const describeLag = (lag: LagStep): string => {
+const describeLag = (lag: LagStep) => {
   if (lag.syncing === 0) {
     return 'No topics are syncing.';
   }
@@ -371,21 +363,20 @@ const LAG_BADGE: Partial<Record<LagStep['status'], BadgeSpec>> = {
   blocked: { label: 'Link can’t read', variant: 'warning' },
 };
 
-const lagBadge = (lag: LagStep, failedOver: boolean): BadgeSpec | undefined => {
+const lagBadge: (lag: LagStep, failedOver: boolean) => BadgeSpec | undefined = (lag, failedOver) => {
   if (failedOver) {
     return;
   }
   return lag.stale ? { label: 'Out of date', variant: 'warning' } : LAG_BADGE[lag.status];
 };
 
-const failoverBadge = ({ done, inProgress }: FailoverReadiness['failover']): BadgeSpec | undefined => {
+const failoverBadge: (options: FailoverReadiness['failover']) => BadgeSpec | undefined = ({ done, inProgress }) => {
   if (done) {
     return { label: 'Failed over', variant: 'success' };
   }
   return inProgress > 0 ? { label: 'Failing over', variant: 'informative', pulsing: true } : undefined;
 };
 
-/** Status only: Fail over all topics at the top of the page is the one way to fail over. */
 const FailoverStepBody = ({
   readiness,
   linkName,
@@ -440,7 +431,6 @@ const UNREADABLE_SENTENCE: Partial<Record<NonNullable<TransientReason>, string>>
   'not-running': 'It isn’t running. ',
 };
 
-/** In place of the source's steps, when its fence was read earlier in this visit but can't be now. */
 const UnreadableSource = ({ fence }: { fence: Extract<SourceFenceStep, { kind: 'unreadable' }> }) => (
   <li className="py-5">
     <Alert testId="failover-fence-unreadable" variant="warning">
@@ -510,6 +500,8 @@ type FailoverTabProps = {
  * The reference's failover, start to finish: three steps on the source cluster through its cluster
  * fence API, then three here through shadow linking. Every source step runs on the source's own
  * Console; this page only reads its fence, from that Console.
+ *
+ * Reports the source steps on this page without performing them: operators follow the source link to its fence or to its settings with this link's user selected. Fail over all topics is the sole control for executing failover on the shadow. If a previously read source is unavailable, it is reported instead of assuming completion.
  */
 export const FailoverTab = ({ shadowLink, readiness, linkIdentity, onRetryTopics }: FailoverTabProps) => {
   const clusterName = useClusterFenceStore((state) => state.topology?.clusterName) ?? 'this cluster';

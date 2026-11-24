@@ -28,7 +28,6 @@ const REGISTRATION_MODIFIERS = new Set([
 ]);
 const SKIPS = new Set(['fixme', 'skip', 'todo']);
 const SKIPPING_APIS = new Set(['xdescribe', 'xit', 'xtest']);
-// Whether a literal condition of `true` skips (`skipIf`) or runs (`if`/`runIf`) the test.
 const SKIPS_WHEN: Record<string, boolean> = { if: false, runIf: false, skipIf: true, todoIf: true };
 const STATEMENT = /(?:Declaration|Statement)$/u;
 
@@ -40,7 +39,6 @@ const SKIP_MESSAGE =
 const hasAnyKey = (node: Node | undefined, keys: string[]) =>
   keys.some((key) => propertyValue(node, key) !== undefined);
 
-/** Playwright's `testInfo.setTimeout()`: the second parameter of a test body. */
 function isTestInfoTimeout(sourceCode: SourceCode, callee: Node) {
   const object = callee.type === 'MemberExpression' ? unwrap(callee.object) : undefined;
   if (memberName(callee) !== 'setTimeout' || object?.type !== 'Identifier') {
@@ -54,7 +52,6 @@ function isTestInfoTimeout(sourceCode: SourceCode, callee: Node) {
   return fn.parent?.type === 'CallExpression' && testChain(sourceCode, fn.parent.callee) !== undefined;
 }
 
-/** `test(name, fn, 5000)`, `test(name, fn, { retry })` and `test(name, { timeout }, fn)`. */
 function registrationOverridesTimeout(call: ESTree.CallExpression) {
   const [, second, third] = call.arguments.map((argument) => unwrap(argument));
   if (third !== undefined && !isFunction(third)) {
@@ -72,7 +69,6 @@ function chainOverridesTimeout(chain: TestChain, call: ESTree.CallExpression) {
     return true;
   }
   if (isHook(chain.api)) {
-    // Bun and Rstest hooks take the timeout as their second argument.
     const timeout = unwrap(call.arguments[1]);
     return chain.members.length === 0 && timeout !== undefined && !isFunction(timeout);
   }
@@ -95,7 +91,6 @@ function overridesTimeout(sourceCode: SourceCode, call: ESTree.CallExpression) {
   return chain !== undefined && chainOverridesTimeout(chain, call);
 }
 
-/** `test.skip()` under `if`/`?:`/`&&` in its test body is a runtime decision, not a static skip. */
 function underCondition(node: Node) {
   let child = node;
   let current = node.parent;
@@ -112,8 +107,7 @@ function underCondition(node: Node) {
   return false;
 }
 
-/** `skipIf(true)` and `runIf(false)` are static; any other condition is a runtime decision. */
-function literalCondition(chain: TestChain): 'dynamic' | 'skips' | undefined {
+function literalCondition(chain: TestChain) {
   for (const member of chain.members) {
     const skipsWhen = SKIPS_WHEN[member];
     const condition = unwrap(chain.calls.find((call) => memberName(call.callee) === member)?.arguments[0]);
@@ -126,7 +120,6 @@ function literalCondition(chain: TestChain): 'dynamic' | 'skips' | undefined {
   }
 }
 
-/** `test.skip(title, body)`, `test.skip()`, `test.skip(true, why)`; `test.skip(condition, why)` is dynamic. */
 function isStaticDirectSkip(call: ESTree.CallExpression) {
   const [first, second] = call.arguments.map((argument) => unwrap(argument));
   if (first === undefined) {
@@ -168,7 +161,6 @@ function statementOf(node: Node) {
   return current;
 }
 
-/** The comment lines directly above a statement, skipping comments that trail earlier code. */
 function commentsAbove(sourceCode: SourceCode, statement: Node) {
   const block: string[] = [];
   let { line } = statement.loc.start;
@@ -183,7 +175,6 @@ function commentsAbove(sourceCode: SourceCode, statement: Node) {
   return block;
 }
 
-/** Comments before the first statement of the skipped test's body. */
 function commentsAtBodyStart(sourceCode: SourceCode, call: ESTree.CallExpression) {
   const body = call.arguments.map((argument) => unwrap(argument)).findLast(isFunction)?.body;
   if (body?.type !== 'BlockStatement') {
@@ -208,6 +199,9 @@ function isTracked(sourceCode: SourceCode, chain: TestChain, call: ESTree.CallEx
   return hasTrackingIssue(text) && hasSubstantiveReason(text);
 }
 
+/**
+ * Handles inline runner options, timeout setters and static skips. Runtime conditions still decide dynamic skips. Curried calls are checked at the outer registration.
+ */
 export default defineRule({
   meta: {
     type: 'problem',
@@ -227,7 +221,6 @@ export default defineRule({
         if (overridesTimeout(sourceCode, call)) {
           context.report({ node: call, message: TIMEOUT_MESSAGE });
         }
-        // A curried registration such as `test.skipIf(x)(name, fn)` is judged once, at its outer call.
         if (call.parent?.type === 'CallExpression' && unwrap(call.parent.callee) === call) {
           return;
         }

@@ -29,7 +29,6 @@ const edges: Edge[] = [
 const refData = (decorated: Edge[]) =>
   decorated.find((e) => e.id.startsWith('ref-'))?.data as { dimmed?: boolean; emphasized?: boolean; faint?: boolean };
 
-/** The data of edge `id`, failing loudly (rather than reading through `undefined`) when there is none. */
 const edgeData = (decorated: Edge[], id: string) => {
   const data = decorated.find((e) => e.id === id)?.data;
   if (!data) {
@@ -41,7 +40,7 @@ const edgeData = (decorated: Edge[], id: string) => {
 const scope = (...ids: string[]) => new Set(ids);
 
 describe('scopeBounds — body bounds plus the entry marker', () => {
-  const node = (id: string, x: number, y: number, type = 'flowCard'): Node => ({
+  const node = (id: string, x: number, y: number, type = 'flowCard') => ({
     id,
     position: { x, y },
     initialWidth: 200,
@@ -52,8 +51,6 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
   const noMeasure = new Map<string, { measured?: { width?: number; height?: number } }>();
 
   it('keeps everything but the entry marker in the body (the join stays inside)', () => {
-    // Marker (col 0, the entry) fans to two outputs (col 1) and reconverges at a join (col 2). Only
-    // the marker is the entry; the outputs AND the join are body, so the box covers them all.
     const marker = node('marker', 0, 300, 'flowSplit');
     const out1 = node('out1', 500, 0);
     const out2 = node('out2', 500, 600);
@@ -64,8 +61,8 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
       noMeasure,
       (n) => n.id === 'marker'
     );
-    expect(geom?.body).toEqual({ minX: 500, minY: 0, maxX: 1200, maxY: 680 }); // outputs + join
-    expect(geom?.entry).toEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 }); // just the entry marker
+    expect(geom?.body).toEqual({ minX: 500, minY: 0, maxX: 1200, maxY: 680 });
+    expect(geom?.entry).toEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 });
   });
 
   it('has a null entry when nothing is flagged', () => {
@@ -78,14 +75,13 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
 
   it('ignores nodes outside the scope; returns null when the scope is only the entry', () => {
     const marker = node('marker', 0, 300, 'flowSplit');
-    const outsider = node('outsider', 5000, 5000); // NOT in scope — must not stretch the bounds
+    const outsider = node('outsider', 5000, 5000);
     expect(scopeBounds([marker, outsider], scope('marker'), noMeasure)?.body).toEqual({
       minX: 0,
       minY: 300,
       maxX: 200,
       maxY: 380,
     });
-    // Only the entry marker is in scope → no body → null.
     expect(scopeBounds([marker, outsider], scope('marker'), noMeasure, (n) => n.id === 'marker')).toBeNull();
     expect(scopeBounds([marker, outsider], scope('nope'), noMeasure)).toBeNull();
   });
@@ -95,20 +91,19 @@ describe('regionGeometry — the arm reaches the entry marker', () => {
   const body = { minX: 500, minY: 300, maxX: 700, maxY: 480 };
 
   it('wraps a same-row marker with a thin arm clamped to the body height', () => {
-    const marker = { minX: 0, minY: 340, maxX: 200, maxY: 420 }; // within the body's rows
+    const marker = { minX: 0, minY: 340, maxX: 200, maxY: 420 };
     const { rects } = regionGeometry(body, marker, 6, 6);
-    expect(rects).toHaveLength(2); // padded body + one arm
+    expect(rects).toHaveLength(2);
     const arm = rects[1];
-    expect(arm.maxX).toBe(body.minX - 6); // arm abuts the padded body's left edge
+    expect(arm.maxX).toBe(body.minX - 6);
     expect(arm.minY).toBeGreaterThanOrEqual(body.minY - 6);
     expect(arm.maxY).toBeLessThanOrEqual(body.maxY + 6);
   });
 
   it('stretches the arm up to meet the body when the marker sits clear above it (try/catch)', () => {
-    const marker = { minX: 0, minY: 100, maxX: 200, maxY: 180 }; // fully above the body
+    const marker = { minX: 0, minY: 100, maxX: 200, maxY: 180 };
     const { rects } = regionGeometry(body, marker, 6, 6);
     const arm = rects[1];
-    // The arm covers the marker's row AND reaches down to the padded body top, so they connect.
     expect(arm.minY).toBe(marker.minY - 6);
     expect(arm.maxY).toBe(body.minY - 6);
   });
@@ -116,12 +111,9 @@ describe('regionGeometry — the arm reaches the entry marker', () => {
 
 describe('decorateEdges', () => {
   it('keeps resource-reference edges faint until an endpoint is selected or hovered', () => {
-    // Reference edges never fully dim: even with an unrelated node selected they stay faint
-    // (a visible hint) rather than vanishing like dimmed flow edges.
     expect(refData(decorateEdges(edges, {}))).toMatchObject({ faint: true });
     expect(refData(decorateEdges(edges, { selectedScope: scope('b') }))).toMatchObject({ faint: true });
 
-    // Selecting (or hovering) either endpoint renders the edge full-strength.
     expect(refData(decorateEdges(edges, { selectedScope: scope('a') }))).toMatchObject({
       faint: false,
       emphasized: true,
@@ -131,7 +123,6 @@ describe('decorateEdges', () => {
       emphasized: true,
     });
 
-    // Selecting the resource itself reveals who uses it.
     expect(refData(decorateEdges(edges, { selectedScope: scope('resource-0') }))).toMatchObject({ emphasized: true });
   });
 
@@ -148,14 +139,11 @@ describe('decorateEdges', () => {
     expect(spine.dimmed).toBe(false);
     expect(fanout.dimmed).toBe(true);
 
-    // No selection → no dimming anywhere.
     const plain = decorateEdges(edges, {});
     expect(edgeData(plain, 'fanout-c').dimmed).toBeUndefined();
   });
 
   it("keeps a selected container's internal wiring lit (scope includes descendants)", () => {
-    // Selecting container 'a' (subtree includes 'b','c'): the fan edge between its children must
-    // stay lit, not dim as "unrelated".
     const decorated = decorateEdges(edges, { selectedScope: scope('a', 'b', 'c') });
     const fanout = decorated.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean; emphasized?: boolean };
     expect(fanout.emphasized).toBe(true);
@@ -181,7 +169,7 @@ describe('selectionTargetForNode', () => {
     id: 'proc-0-case-1',
     parentId: 'proc-0',
     position: { x: 0, y: 0 },
-    data: { label: 'case 1', isCase: true }, // no editTarget
+    data: { label: 'case 1', isCase: true },
   };
 
   it('selects an editable node directly', () => {
@@ -231,10 +219,8 @@ describe('injectNodeData — appearance', () => {
   const base = { collapsedIds: new Set<string>(), toggleCollapse: () => undefined };
 
   it('marks a node new this render as appeared and drops its reposition transition', () => {
-    // Empty previousIds → the node is appearing (e.g. revealed by expanding).
     const injected = injectNodeData(node, { ...base, previousIds: new Set() });
     expect((injected.data as { appeared?: boolean }).appeared).toBe(true);
-    // No transform transition, so it snaps to its spot instead of flying from origin.
     expect((injected.style as { transition?: string }).transition).toBeUndefined();
   });
 

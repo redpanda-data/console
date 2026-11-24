@@ -19,13 +19,12 @@ const openConfigs = async () => {
   const user = userEvent.setup();
   render(<DebugDialog onOpenChange={() => undefined} open />);
   await user.click(screen.getByRole('button', { name: 'Configs' }));
-  // The panels swap once the previous one has animated out.
   await screen.findByRole('region', { name: 'Simple' });
   return user;
 };
 
-const FILTER_CONFIGS_RE = /filter configs/i;
-const NEEDS_SECRETS_RE = /needs the secrets/;
+const FILTER_CONFIGS_RE = /filter configs/iu;
+const NEEDS_SECRETS_RE = /needs the secrets/u;
 
 const sectionNames = () => screen.getAllByRole('region').map((s) => s.getAttribute('aria-label'));
 
@@ -33,7 +32,6 @@ describe('the DebugDialog — Connect configs', () => {
   test('lists the configs under a heading per group', async () => {
     await openConfigs();
     expect(sectionNames()).toEqual(['Simple', 'Medium', 'Complex', 'Edge cases', 'Stop conditions', 'Invalid']);
-    // A stop-condition config lists under Stop conditions and keeps its other tag as a badge.
     const stops = screen.getByRole('region', { name: 'Stop conditions' });
     expect(within(stops).getByText('Stop conditions that never fire')).toBeInTheDocument();
     expect(within(stops).getAllByText('edge-case').length).toBeGreaterThan(0);

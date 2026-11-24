@@ -9,373 +9,287 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { cleanup } from '@testing-library/react';
+import { afterAll, afterEach, beforeAll, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { renderWithFileRoutes, screen } from 'test-utils';
-
-// Real navigate() resolves once the route commits.
-const mockNavigate = rs.fn(() => Promise.resolve());
-const mockMutateGlobal = rs.fn();
-const mockMutateSubject = rs.fn();
-const mockMutateContext = rs.fn();
-rs.mock('sonner', () => ({
-  toast: {
-    success: rs.fn(),
-    error: rs.fn(),
-  },
-}));
-
-rs.mock('@tanstack/react-router', () => {
-  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
-
-rs.mock('react-query/api/schema-registry', () => {
-  const actual = rs.requireActual<typeof import('react-query/api/schema-registry')>('react-query/api/schema-registry');
-  return {
-    ...actual,
-    useSchemaModeQuery: rs.fn(() => ({
-      data: 'READWRITE',
-      isLoading: false,
-    })),
-    useSchemaDetailsQuery: rs.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
-      data: undefined,
-      isLoading: false,
-    })),
-    useUpdateGlobalModeMutation: rs.fn(() => ({
-      mutate: mockMutateGlobal,
-      isPending: false,
-    })),
-    useUpdateSubjectModeMutation: rs.fn(() => ({
-      mutate: mockMutateSubject,
-      isPending: false,
-    })),
-    useSchemaRegistryContextsQuery: rs.fn(() => ({
-      data: [],
-      isLoading: false,
-    })),
-    useUpdateContextModeMutation: rs.fn(() => ({
-      mutate: mockMutateContext,
-      isPending: false,
-    })),
-  };
-});
-
-rs.mock('state/backend-api', () => {
-  const actual = rs.requireActual<typeof import('state/backend-api')>('state/backend-api');
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
-      userData: { canManageSchemaRegistry: true },
-    },
-  };
-});
-
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
-
-import {
-  useSchemaDetailsQuery,
-  useSchemaModeQuery,
-  useSchemaRegistryContextsQuery,
-} from 'react-query/api/schema-registry';
-import { toast } from 'sonner';
-import { api } from 'state/backend-api';
+import { config } from 'config';
+import { type HttpHandler, HttpResponse, http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
+import { AuthenticationMethod } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import type { SchemaRegistryContextResponse } from 'react-query/api/schema-registry';
+import { Toaster } from 'sonner';
+import { useApiStore } from 'state/backend-api';
+import type { SchemaRegistryModeResponse, SchemaRegistrySubjectDetails, UserData } from 'state/rest-interfaces';
 import { useSupportedFeaturesStore } from 'state/supported-features';
+import { cleanup, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import EditSchemaModePage from './edit-mode';
+import type { SchemaEditTarget } from './schema-edit-page';
 
-describe('the EditSchemaModePage', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
+const SUBJECT = 'orders-value';
+const CONTEXT = '.staging';
+const GLOBAL_MODE = { mode: 'READWRITE' } satisfies SchemaRegistryModeResponse;
+const SUBJECT_DETAILS = {
+  name: SUBJECT,
+  type: 'AVRO',
+  compatibility: 'BACKWARD',
+  mode: 'READWRITE',
+  versions: [{ version: 1, isSoftDeleted: false }],
+  latestActiveVersion: 1,
+  schemas: [
+    {
+      id: 1,
+      version: 1,
+      type: 'AVRO',
+      schema: '{"type":"record","name":"Order","fields":[]}',
+      isSoftDeleted: false,
+      references: [],
+    },
+  ],
+} satisfies SchemaRegistrySubjectDetails;
+
+const CONTEXT_DETAILS = [
+  { name: CONTEXT, mode: 'IMPORT', compatibility: 'BACKWARD' },
+] satisfies SchemaRegistryContextResponse[];
+const READ_WRITE_RADIO = /^Read\/Write /u;
+const READ_ONLY_RADIO = /^Read Only /u;
+const IMPORT_RADIO = /^Import /u;
+const DEFAULT_RADIO = /^Default /u;
+
+const schemaApi = new URL(`${config.restBasePath}/schema-registry`, window.location.href).href;
+const server = setupServer(
+  http.get(`${schemaApi}/mode`, () => HttpResponse.json(GLOBAL_MODE)),
+  http.get(`${schemaApi}/subjects/orders-value/versions/all`, () => HttpResponse.json(SUBJECT_DETAILS)),
+  http.get(`${schemaApi}/contexts`, () => HttpResponse.json(CONTEXT_DETAILS))
+);
+
+const guardedFetch = globalThis.fetch;
+const initialUserData = useApiStore.getState().userData;
+const initialContexts = useSupportedFeaturesStore.getState().schemaRegistryContexts;
+
+beforeAll(() => {
+  server.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in the schema editor');
+    },
   });
+});
 
-  afterEach(() => {
-    rs.restoreAllMocks();
-  });
+afterEach(() => {
+  cleanup();
+  server.resetHandlers();
+  useApiStore.setState({ userData: initialUserData });
+  useSupportedFeaturesStore.setState({ schemaRegistryContexts: initialContexts });
+});
 
-  describe('global mode (no subjectName)', () => {
-    test('renders 3 mode options for global mode', async () => {
-      renderWithFileRoutes(<EditSchemaModePage />);
+afterAll(() => {
+  server.close();
+});
 
-      expect(await screen.findByText('Read/Write')).toBeInTheDocument();
-      expect(screen.getByText('Read Only')).toBeInTheDocument();
-      expect(screen.getByText('Import')).toBeInTheDocument();
-      // Should NOT show Default option when no subjectName
-      expect(screen.queryByText('Default')).not.toBeInTheDocument();
+function renderEditor(target: SchemaEditTarget = {}, handlers: HttpHandler[] = [], contextsSupported = true) {
+  useSupportedFeaturesStore.setState({ schemaRegistryContexts: contextsSupported });
+  server.use(...handlers);
+
+  let editPath = '';
+  if (target.subjectName) {
+    editPath = `/subjects/${target.subjectName}`;
+  } else if (target.contextName) {
+    editPath = `/contexts/${target.contextName}`;
+  }
+  return renderWithFileRoutes(
+    <>
+      <Toaster />
+      <EditSchemaModePage {...target} />
+    </>,
+    { initialLocation: `/schema-registry${editPath}/edit-mode` }
+  );
+}
+
+test('only offers explicit modes when editing the global setting', async () => {
+  renderEditor();
+
+  expect(await screen.findByRole('radio', { name: READ_WRITE_RADIO })).toBeChecked();
+  expect(screen.getByRole('radio', { name: IMPORT_RADIO })).toBeInTheDocument();
+  expect(screen.queryByRole('radio', { name: DEFAULT_RADIO })).not.toBeInTheDocument();
+  expect(screen.queryByTestId('edit-mode-subject-name')).not.toBeInTheDocument();
+});
+
+test('offers Default and a schema preview when editing a subject', async () => {
+  renderEditor({ subjectName: SUBJECT });
+
+  expect(await screen.findByRole('radio', { name: READ_WRITE_RADIO })).toBeChecked();
+  expect(screen.getByRole('radio', { name: READ_ONLY_RADIO })).toBeInTheDocument();
+  expect(screen.getByRole('radio', { name: IMPORT_RADIO })).toBeInTheDocument();
+  expect(screen.getByRole('radio', { name: 'Default Use the globally configured default mode.' })).toBeInTheDocument();
+  expect(screen.getByTestId('edit-mode-subject-name')).toHaveTextContent(SUBJECT);
+});
+
+test.each([
+  { mode: 'READWRITE', choice: null },
+  { mode: 'READONLY', choice: READ_ONLY_RADIO },
+])('saves $mode globally and returns to the registry', async ({ mode, choice }) => {
+  const user = userEvent.setup();
+  const writes: unknown[] = [];
+  const { router } = renderEditor({}, [
+    http.put(`${schemaApi}/mode`, async ({ request }) => {
+      writes.push(await request.json());
+      return HttpResponse.json({ mode } satisfies SchemaRegistryModeResponse);
+    }),
+  ]);
+
+  const save = await screen.findByRole('button', { name: 'Save' });
+
+  if (choice) {
+    await user.click(screen.getByRole('radio', { name: choice }));
+  }
+  await user.click(save);
+
+  expect(await screen.findByText(`Mode updated to ${mode}`)).toBeInTheDocument();
+  expect(writes).toEqual([{ mode }]);
+  await waitFor(() => expect(router.state.location.href).toBe('/schema-registry'));
+});
+
+test('saves the current subject mode, not the global mode', async () => {
+  const user = userEvent.setup();
+  const writes: unknown[] = [];
+  const { router } = renderEditor({ subjectName: SUBJECT }, [
+    http.get(`${schemaApi}/mode`, () => HttpResponse.json({ mode: 'READONLY' } satisfies SchemaRegistryModeResponse)),
+    http.put(`${schemaApi}/mode/orders-value`, async ({ request }) => {
+      writes.push(await request.json());
+      return HttpResponse.json(GLOBAL_MODE);
+    }),
+  ]);
+
+  expect(await screen.findByRole('radio', { name: READ_WRITE_RADIO })).toBeChecked();
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  await waitFor(() => expect(router.state.location.href).toBe('/schema-registry/subjects/orders-value'));
+  expect(writes).toEqual([{ mode: 'READWRITE' }]);
+});
+
+test('resets the subject mode to the global default', async () => {
+  const user = userEvent.setup();
+  const writes: (ReadableStream | null)[] = [];
+  const { router } = renderEditor({ subjectName: SUBJECT }, [
+    http.delete(`${schemaApi}/mode/orders-value`, ({ request }) => {
+      writes.push(request.body);
+      return HttpResponse.json(null);
+    }),
+  ]);
+
+  await user.click(await screen.findByRole('radio', { name: DEFAULT_RADIO }));
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  await waitFor(() => expect(router.state.location.href).toBe('/schema-registry/subjects/orders-value'));
+  expect(writes).toEqual([null]);
+});
+
+test.each([
+  { label: 'global', target: {}, destination: '/schema-registry' },
+  { label: 'subject', target: { subjectName: SUBJECT }, destination: '/schema-registry/subjects/orders-value' },
+])('cancels the $label edit without saving', async ({ target, destination }) => {
+  const user = userEvent.setup();
+  const { router } = renderEditor(target);
+
+  await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+  await waitFor(() => expect(router.state.location.href).toBe(destination));
+});
+
+test('shows the context name and current mode', async () => {
+  renderEditor({ contextName: CONTEXT });
+
+  expect(await screen.findByTestId('edit-mode-context-name')).toHaveTextContent(CONTEXT);
+  expect(screen.getByRole('radio', { name: IMPORT_RADIO })).toBeChecked();
+});
+
+test('shows the unsupported page when contexts are disabled', async () => {
+  renderEditor({ contextName: CONTEXT }, [], false);
+
+  expect(await screen.findByTestId('contexts-not-supported')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+});
+
+test('shows the not-configured page when the registry is disabled', async () => {
+  renderEditor({}, [http.get(`${schemaApi}/mode`, () => HttpResponse.json({ isConfigured: false }))]);
+
+  expect(await screen.findByTestId('schema-not-configured')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+});
+
+test.each([
+  { label: 'mode', target: {}, endpoint: '/mode', data: GLOBAL_MODE },
+  {
+    label: 'subject details',
+    target: { subjectName: SUBJECT },
+    endpoint: '/subjects/orders-value/versions/all',
+    data: SUBJECT_DETAILS,
+  },
+] as const)('holds the form behind a skeleton while $label is loading', async ({ target, endpoint, data }) => {
+  let requestStarted = false;
+  const response = Promise.withResolvers<Response>();
+  const { container, router } = renderEditor(target, [
+    http.get(`${schemaApi}${endpoint}`, () => {
+      requestStarted = true;
+      return response.promise;
+    }),
+  ]);
+
+  try {
+    await waitFor(() => {
+      expect(requestStarted).toBe(true);
+      expect(router.options.context?.queryClient.isFetching()).toBe(1);
     });
+    expect(container.querySelector('[data-slot="skeleton"]')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+  } finally {
+    response.resolve(HttpResponse.json(data));
+  }
+  expect(await screen.findByRole('button', { name: 'Save' })).toBeEnabled();
+});
 
-    test('calls global mutation on save', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaModePage />);
+test('shows the server error and stays on the edit page if the update fails', async () => {
+  const user = userEvent.setup();
+  const { router } = renderEditor({}, [
+    http.put(`${schemaApi}/mode`, () => HttpResponse.text('Registry refused this update', { status: 502 })),
+  ]);
+  const editPage = router.state.location.href;
 
-      await user.click(screen.getByTestId('edit-mode-save-btn'));
+  await user.click(await screen.findByRole('button', { name: 'Save' }));
 
-      expect(mockMutateGlobal).toHaveBeenCalledWith(
-        'READWRITE',
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
-    });
+  expect(await screen.findByText('Failed to update mode')).toBeInTheDocument();
+  expect(screen.getByText('Error: Registry refused this update')).toBeInTheDocument();
+  expect(router.state.location.href).toBe(editPage);
+});
 
-    test('allows selecting a different mode before saving', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaModePage />);
+test('disables Save for a user without registry management permission', async () => {
+  const user: UserData = {
+    displayName: 'Read-only operator',
+    avatarUrl: '',
+    authenticationMethod: AuthenticationMethod.UNSPECIFIED,
+    canViewConsoleUsers: false,
+    canListAcls: false,
+    canListQuotas: false,
+    canReassignPartitions: false,
+    canPatchConfigs: false,
+    canCreateRoles: false,
+    canManageUsers: false,
+    canViewPermissionsList: false,
+    canManageLicense: false,
+    canViewSchemas: true,
+    canCreateSchemas: false,
+    canDeleteSchemas: false,
+    canManageSchemaRegistry: false,
+    canViewDebugBundle: false,
+    canListTransforms: false,
+    canCreateTransforms: false,
+    canDeleteTransforms: false,
+  };
+  useApiStore.setState({ userData: user });
+  renderEditor();
 
-      // Click the Read Only option
-      await user.click(screen.getByText('Read Only'));
-      await user.click(screen.getByTestId('edit-mode-save-btn'));
-
-      expect(mockMutateGlobal).toHaveBeenCalledWith(
-        'READONLY',
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
-    });
-
-    test('calls navigate on cancel', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaModePage />);
-
-      await user.click(screen.getByTestId('edit-mode-cancel-btn'));
-
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/schema-registry' });
-    });
-
-    test('does not show schema preview panel', async () => {
-      renderWithFileRoutes(<EditSchemaModePage />);
-      // Await Radio group settling so absence assertions run inside act scope.
-      await screen.findByTestId('edit-mode-description');
-
-      // This is only present in the subject-mode.
-      expect(screen.queryByTestId('edit-mode-subject-name')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('per-subject mode (with subjectName)', () => {
-    const subjectName = 'my-test-subject';
-
-    beforeEach(() => {
-      rs.mocked(useSchemaDetailsQuery).mockReturnValue({
-        data: {
-          name: subjectName,
-          mode: 'READWRITE',
-          compatibility: 'BACKWARD',
-          latestActiveVersion: 1,
-          schemas: {
-            first: () => ({
-              version: 1,
-              id: 1,
-              type: 'AVRO',
-              schema: '{"type":"record","name":"Test","fields":[]}',
-              isSoftDeleted: false,
-            }),
-            count: () => 1,
-          },
-        } as never,
-        isLoading: false,
-      } as never);
-    });
-
-    test('renders 4 mode options including Default', async () => {
-      renderWithFileRoutes(<EditSchemaModePage subjectName={subjectName} />);
-
-      expect(await screen.findByText('Default')).toBeInTheDocument();
-      expect(screen.getByText('Read/Write')).toBeInTheDocument();
-      expect(screen.getByText('Read Only')).toBeInTheDocument();
-      expect(screen.getByText('Import')).toBeInTheDocument();
-    });
-
-    test('shows Default option description', async () => {
-      renderWithFileRoutes(<EditSchemaModePage subjectName={subjectName} />);
-
-      expect(await screen.findByText('Use the globally configured default mode.')).toBeInTheDocument();
-    });
-
-    test('calls subject mutation on save', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaModePage subjectName={subjectName} />);
-
-      await user.click(screen.getByTestId('edit-mode-save-btn'));
-
-      expect(mockMutateSubject).toHaveBeenCalledWith(
-        { subjectName, mode: 'READWRITE' },
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
-      expect(mockMutateGlobal).not.toHaveBeenCalled();
-    });
-
-    test('can select Default mode and save', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaModePage subjectName={subjectName} />);
-
-      await user.click(screen.getByText('Default'));
-      await user.click(screen.getByTestId('edit-mode-save-btn'));
-
-      expect(mockMutateSubject).toHaveBeenCalledWith(
-        { subjectName, mode: 'DEFAULT' },
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
-    });
-
-    test('navigates back to subject page on cancel', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaModePage subjectName={subjectName} />);
-
-      await user.click(screen.getByTestId('edit-mode-cancel-btn'));
-
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}`,
-      });
-    });
-
-    test('shows subject name in schema preview panel', async () => {
-      renderWithFileRoutes(<EditSchemaModePage subjectName={subjectName} />);
-
-      expect(await screen.findByTestId('edit-mode-subject-name')).toHaveTextContent(subjectName);
-    });
-  });
-
-  describe('per-context mode (with contextName)', () => {
-    beforeEach(() => {
-      useSupportedFeaturesStore.setState({ schemaRegistryContexts: true });
-    });
-
-    afterEach(() => {
-      // Unmount the React tree BEFORE mutating the supported-features store.
-      // Otherwise the setState notifies still-mounted Radix Radio / Tooltip
-      // subscribers outside any act boundary and emits "update inside a test
-      // was not wrapped in act(...)" warnings attributed to the just-finished
-      // test. The global afterEach also calls cleanup() but runs after this
-      // block, so we have to unmount eagerly here.
-      cleanup();
-      useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
-    });
-
-    test('shows not-supported page when contexts feature is disabled', async () => {
-      useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
-      renderWithFileRoutes(<EditSchemaModePage contextName=".test" />);
-
-      expect(await screen.findByTestId('contexts-not-supported')).toBeInTheDocument();
-      expect(screen.queryByTestId('edit-mode-description')).not.toBeInTheDocument();
-    });
-
-    test('shows context name in header when editing context mode', async () => {
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }],
-        isLoading: false,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaModePage contextName=".test" />);
-
-      expect(await screen.findByTestId('edit-mode-context-name')).toHaveTextContent('.test');
-    });
-  });
-
-  describe('loading and edge cases', () => {
-    test('shows skeleton while loading mode', () => {
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaModePage />);
-
-      // Should not render the form content
-      expect(screen.queryByTestId('edit-mode-description')).not.toBeInTheDocument();
-    });
-
-    test('shows skeleton while loading subject details', () => {
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: 'READWRITE',
-        isLoading: false,
-      } as never);
-      rs.mocked(useSchemaDetailsQuery).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaModePage subjectName="test-subject" />);
-
-      expect(screen.queryByTestId('edit-mode-description')).not.toBeInTheDocument();
-    });
-
-    test('disables save button when user lacks permission', async () => {
-      (api as Record<string, unknown>).userData = { canManageSchemaRegistry: false };
-
-      renderWithFileRoutes(<EditSchemaModePage />);
-
-      const saveBtn = await screen.findByTestId('edit-mode-save-btn');
-      expect(saveBtn).toBeDisabled();
-
-      // Restore
-      (api as Record<string, unknown>).userData = { canManageSchemaRegistry: true };
-    });
-
-    test('shows not configured page when schema registry is not configured', () => {
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: null,
-        isLoading: false,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaModePage />);
-
-      expect(screen.queryByTestId('edit-mode-description')).not.toBeInTheDocument();
-
-      // Restore default mock
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: 'READWRITE',
-        isLoading: false,
-      } as never);
-    });
-
-    test('calls onSuccess callback which shows toast and navigates', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaModePage />);
-
-      await user.click(screen.getByTestId('edit-mode-save-btn'));
-
-      // Get the onSuccess callback from the mutation call
-      const mutateCall = mockMutateGlobal.mock.calls[0];
-      const callbacks = mutateCall[1];
-      callbacks.onSuccess();
-
-      expect(toast.success).toHaveBeenCalledWith('Mode updated to READWRITE');
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/schema-registry' });
-    });
-
-    test('calls onError callback which shows error toast', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaModePage />);
-
-      await user.click(screen.getByTestId('edit-mode-save-btn'));
-
-      const mutateCall = mockMutateGlobal.mock.calls[0];
-      const callbacks = mutateCall[1];
-      callbacks.onError(new Error('Server error'));
-
-      expect(toast.error).toHaveBeenCalledWith('Failed to update mode', {
-        description: 'Error: Server error',
-      });
-    });
-  });
+  expect(await screen.findByRole('button', { name: 'Save' })).toBeDisabled();
 });

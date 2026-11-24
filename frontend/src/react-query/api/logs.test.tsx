@@ -9,354 +9,235 @@
  * by the Apache License, Version 2.0
  */
 
-import { Code, ConnectError } from '@connectrpc/connect';
+import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError, createClient, createRouterTransport, type HandlerContext } from '@connectrpc/connect';
+import { createAsyncIterable } from '@connectrpc/connect/protocol';
+import { afterEach, expect, test } from '@rstest/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
+import { cleanup, renderHook, waitFor } from '@testing-library/react';
+import { config } from 'config';
+import { CompressionType, PayloadEncoding } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
+import { ConsoleService } from 'protogen/redpanda/api/console/v1alpha1/console_service_pb';
+import {
+  type ListMessagesRequest,
+  type ListMessagesResponse,
+  ListMessagesResponse_DataMessageSchema,
+  ListMessagesResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import type { PropsWithChildren } from 'react';
 import { toast } from 'sonner';
 
-import type { TopicMessage } from '../../state/rest-interfaces';
-import { PartitionOffsetOrigin } from '../../state/ui';
-
-// Track messages returned by convertListMessageData
-let convertCallIndex = 0;
-const fakeMessages: TopicMessage[] = [];
-
-rs.mock('../../utils/message-converters', () => ({
-  // Tests that run two streams at once pass the message in the payload instead of relying on call order.
-  convertListMessageData: (value: { message?: TopicMessage }) => {
-    if (value?.message) {
-      return value.message;
-    }
-    const msg = fakeMessages[convertCallIndex];
-    convertCallIndex++;
-    return msg;
-  },
-}));
-
-rs.mock('sonner', () => ({
-  toast: { error: rs.fn(), success: rs.fn() },
-}));
-
-// Mock config with a fake consoleClient
-const mockListMessages = rs.fn();
-rs.mock('../../config', () => ({
-  config: {
-    get consoleClient() {
-      return { listMessages: mockListMessages };
-    },
-  },
-}));
-
 import { LIVE_INITIAL_STATE, liveReducer, MAX_LIVE_LOG_MESSAGES, useLogSearch } from './logs';
+import { PartitionOffsetOrigin } from '../../state/ui';
+import { convertListMessageData } from '../../utils/message-converters';
 
-function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
-  return {
-    partitionID: 0,
-    offset: id,
-    timestamp: Date.UTC(2026, 0, 15) + id,
-    compression: 'uncompressed',
-    isTransactional: false,
-    headers: [],
-    key: { payload: keyJson, isPayloadNull: false, encoding: 'text', schemaId: 0, size: 0 },
-    value: { payload: { message: `msg-${id}` }, isPayloadNull: false, encoding: 'json', schemaId: 0, size: 10 },
-    valueJson: JSON.stringify({ message: `msg-${id}` }),
-    valueBinHexPreview: '',
-    keyJson,
-    keyBinHexPreview: '',
-  } as TopicMessage;
+const PIPELINE = 'pipeline-1';
+const LOGS_TOPIC = '__redpanda.connect.logs';
+const LIVE_START = BigInt(PartitionOffsetOrigin.End);
+const HISTORY_START = BigInt(PartitionOffsetOrigin.EndMinusResults);
+const originalClient = config.consoleClient;
+const clients = new Set<QueryClient>();
+const DONE = create(ListMessagesResponseSchema, { controlMessage: { case: 'done', value: {} } });
+
+afterEach(() => {
+  try {
+    cleanup();
+    for (const client of clients) {
+      client.clear();
+    }
+    toast.dismiss();
+  } finally {
+    clients.clear();
+    config.consoleClient = originalClient;
+  }
+});
+
+function logRecord(offset: number) {
+  const message = JSON.stringify({ message: `msg-${offset}` });
+  return create(ListMessagesResponse_DataMessageSchema, {
+    partitionId: 0,
+    offset: BigInt(offset),
+    timestamp: BigInt(Date.UTC(2026, 0, 15) + offset),
+    compression: CompressionType.UNCOMPRESSED,
+    key: { normalizedPayload: new TextEncoder().encode(PIPELINE) },
+    value: {
+      encoding: PayloadEncoding.JSON,
+      normalizedPayload: new TextEncoder().encode(message),
+      payloadSize: message.length,
+    },
+  });
 }
 
-function createWrapper({ retry = false }: { retry?: boolean | number } = {}) {
+const dataFrame = (offset: number) =>
+  create(ListMessagesResponseSchema, { controlMessage: { case: 'data', value: logRecord(offset) } });
+
+const phaseFrame = (phase: string) =>
+  create(ListMessagesResponseSchema, { controlMessage: { case: 'phase', value: { phase } } });
+
+const progressFrame = (bytesConsumed: bigint, messagesConsumed: bigint) =>
+  create(ListMessagesResponseSchema, {
+    controlMessage: { case: 'progress', value: { bytesConsumed, messagesConsumed } },
+  });
+
+function untilAborted(signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    if (signal.aborted) {
+      resolve();
+    } else {
+      signal.addEventListener('abort', () => resolve(), { once: true });
+    }
+  });
+}
+
+async function* holdStream({ signal }: HandlerContext, ...frames: ListMessagesResponse[]) {
+  yield* frames;
+  await untilAborted(signal);
+}
+
+type Reply = (context: HandlerContext) => AsyncIterable<ListMessagesResponse>;
+
+function serveLogs({ history, live }: { history: Reply; live?: Reply }) {
+  const attempts: { request: ListMessagesRequest; signal: AbortSignal }[] = [];
+  config.consoleClient = createClient(
+    ConsoleService,
+    createRouterTransport(({ service }) => {
+      service(ConsoleService, {
+        listMessages(request, context) {
+          attempts.push({ request, signal: context.signal });
+          if (request.startOffset === HISTORY_START) {
+            return history(context);
+          }
+          if (request.startOffset === LIVE_START && live) {
+            return live(context);
+          }
+          throw new ConnectError('Unexpected log stream', Code.FailedPrecondition);
+        },
+      });
+    })
+  );
+  return attempts;
+}
+
+function renderLogSearch({ live = false, retry = 0 } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry, retryDelay: 0 } },
   });
-  return ({ children }: PropsWithChildren) => (
+  clients.add(queryClient);
+  const wrapper = ({ children }: PropsWithChildren) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-}
-
-const dataOf = (message: TopicMessage) => ({ controlMessage: { case: 'data' as const, value: { message } } });
-const DONE = { controlMessage: { case: 'done' as const, value: {} } };
-const LIVE_START_OFFSET = BigInt(PartitionOffsetOrigin.End);
-
-type StreamRequest = { startOffset: bigint };
-type StreamOptions = { signal: AbortSignal };
-
-/** Live mode opens a history read and a tail side by side; this tells them apart. */
-function mockStreams(streams: {
-  history: (opts: StreamOptions) => Iterable<unknown> | AsyncIterable<unknown>;
-  live: (opts: StreamOptions) => Iterable<unknown> | AsyncIterable<unknown>;
-}) {
-  mockListMessages.mockImplementation((req: StreamRequest, opts: StreamOptions) =>
-    req.startOffset === LIVE_START_OFFSET ? streams.live(opts) : streams.history(opts)
+  const view = renderHook(
+    ({ live: enabledLive }) =>
+      useLogSearch({ pipelineId: PIPELINE, live: enabledLive, enabled: true, serverless: false }),
+    { wrapper, initialProps: { live } }
   );
+  return { ...view, queryClient };
 }
 
-const untilAborted = (signal: AbortSignal) =>
-  new Promise<void>((resolve) => {
-    signal.addEventListener('abort', () => resolve());
+const logHistory = () => createAsyncIterable([dataFrame(1), dataFrame(2), DONE]);
+const errorToasts = () => toast.getHistory().filter((entry) => 'type' in entry && entry.type === 'error').length;
+
+const timeoutFailure = () => {
+  throw new ConnectError('the operation timed out', Code.DeadlineExceeded);
+};
+
+test('merges history and the live stream in newest-first order without duplicates', async () => {
+  const attempts = serveLogs({
+    history: logHistory,
+    live: (context) => holdStream(context, dataFrame(2), dataFrame(3)),
   });
+  const { result } = renderLogSearch({ live: true });
 
-describe('useLogSearch live mode', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    convertCallIndex = 0;
-    fakeMessages.length = 0;
-  });
-
-  test('shows recent history, with new messages on top', async () => {
-    mockStreams({
-      *history() {
-        yield dataOf(makeMessage(1));
-        yield dataOf(makeMessage(2));
-        yield DONE;
-      },
-      async *live({ signal }) {
-        yield dataOf(makeMessage(3));
-        await untilAborted(signal);
-      },
-    });
-
-    const { result } = renderHook(
-      () => useLogSearch({ pipelineId: 'pipeline-1', live: true, enabled: true, serverless: false }),
-      { wrapper: createWrapper() }
-    );
-
-    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3, 2, 1]));
-  });
-
-  test('keeps one copy of a message both the history and the tail returned', async () => {
-    mockStreams({
-      *history() {
-        yield dataOf(makeMessage(1));
-        yield dataOf(makeMessage(2));
-        yield DONE;
-      },
-      async *live({ signal }) {
-        yield dataOf(makeMessage(2));
-        yield dataOf(makeMessage(3));
-        await untilAborted(signal);
-      },
-    });
-
-    const { result } = renderHook(
-      () => useLogSearch({ pipelineId: 'pipeline-1', live: true, enabled: true, serverless: false }),
-      { wrapper: createWrapper() }
-    );
-
-    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3, 2, 1]));
-  });
-
-  // The tail heartbeats with empty progress while open, which isn't a search in progress.
-  test('stops searching once history is read, while the tail stays open', async () => {
-    mockStreams({
-      *history() {
-        yield dataOf(makeMessage(1));
-        yield DONE;
-      },
-      async *live({ signal }) {
-        yield { controlMessage: { case: 'phase' as const, value: { phase: 'Consuming messages' } } };
-        yield { controlMessage: { case: 'progress' as const, value: { bytesConsumed: 0n, messagesConsumed: 0n } } };
-        await untilAborted(signal);
-      },
-    });
-
-    const { result } = renderHook(
-      () => useLogSearch({ pipelineId: 'pipeline-1', live: true, enabled: true, serverless: false }),
-      { wrapper: createWrapper() }
-    );
-
-    await waitFor(() => expect(result.current.messages).toHaveLength(1));
-    expect(result.current.phase).toBeNull();
-  });
-
-  // Refresh is off while live, so the error would offer a retry that can't be taken.
-  test('keeps the tail showing when the history read fails', async () => {
-    mockStreams({
-      // biome-ignore lint/correctness/useYield: fails before the first message
-      *history() {
-        throw new ConnectError('the operation timed out', Code.DeadlineExceeded);
-      },
-      async *live({ signal }) {
-        yield dataOf(makeMessage(3));
-        await untilAborted(signal);
-      },
-    });
-
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { result, rerender } = renderHook(
-      () => useLogSearch({ pipelineId: 'pipeline-1', live: true, enabled: true, serverless: false }),
-      {
-        wrapper: ({ children }: PropsWithChildren) => (
-          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-        ),
-      }
-    );
-
-    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3]));
-    await waitFor(() =>
-      expect(
-        queryClient
-          .getQueryCache()
-          .getAll()
-          .some((query) => query.state.status === 'error')
-      ).toBe(true)
-    );
-    rerender();
-    expect(result.current.error).toBeNull();
-  });
-
-  // Entering re-reads so logs written since the search aren't skipped; leaving re-reads because the
-  // tail's messages go with it.
-  test.each([
-    ['entering', false],
-    ['leaving', true],
-  ])('reads history again on %s live mode', async (_case, startsLive) => {
-    const history = rs.fn(function* streamMessages() {
-      yield DONE;
-    });
-    mockStreams({
-      history,
-      async *live({ signal }) {
-        await untilAborted(signal);
-      },
-    });
-
-    const { result, rerender } = renderHook(
-      ({ live }: { live: boolean }) =>
-        useLogSearch({ pipelineId: 'pipeline-1', live, enabled: true, serverless: false }),
-      { wrapper: createWrapper(), initialProps: { live: startsLive } }
-    );
-    await waitFor(() => expect(result.current.phase).toBeNull());
-    const reads = history.mock.calls.length;
-
-    rerender({ live: !startsLive });
-
-    await waitFor(() => expect(history).toHaveBeenCalledTimes(reads + 1));
-  });
+  await waitFor(() => expect(result.current.messages.map(({ offset }) => offset)).toEqual([3, 2, 1]));
+  expect(attempts.map(({ request }) => request.topic)).toEqual([LOGS_TOPIC, LOGS_TOPIC]);
 });
 
-describe('useLogSearch history mode', () => {
-  beforeEach(() => {
-    rs.useFakeTimers({ shouldAdvanceTime: true });
-    rs.clearAllMocks();
-    convertCallIndex = 0;
-    fakeMessages.length = 0;
+test('clears the searching phase after history arrives while the tail remains open', async () => {
+  const attempts = serveLogs({
+    history: () => createAsyncIterable([dataFrame(1), DONE]),
+    live: (context) => holdStream(context, phaseFrame('Consuming messages'), progressFrame(0n, 0n)),
   });
+  const { result } = renderLogSearch({ live: true });
 
-  afterEach(() => {
-    rs.useRealTimers();
+  await waitFor(() => expect(result.current.messages).toHaveLength(1));
+  expect(result.current.phase).toBeNull();
+  expect(attempts.find(({ request }) => request.startOffset === LIVE_START)?.signal.aborted).toBe(false);
+});
+
+test('continues to display live logs after the history request times out', async () => {
+  serveLogs({ history: timeoutFailure, live: (context) => holdStream(context, dataFrame(3)) });
+  const { result, queryClient } = renderLogSearch({ live: true });
+
+  await waitFor(() => expect(queryClient.getQueryState(['log-history', PIPELINE])?.status).toBe('error'));
+  await waitFor(() => expect(result.current.messages.map(({ offset }) => offset)).toEqual([3]));
+  expect(result.current.error).toBeNull();
+});
+
+test('refreshes history on both transitions into and out of live mode', async () => {
+  const attempts = serveLogs({ history: logHistory, live: holdStream });
+  const { rerender } = renderLogSearch();
+  const historyReads = () => attempts.filter(({ request }) => request.startOffset === HISTORY_START);
+  await waitFor(() => expect(historyReads()).toHaveLength(1));
+
+  rerender({ live: true });
+  await waitFor(() => expect(historyReads()).toHaveLength(2));
+
+  rerender({ live: false });
+  await waitFor(() => expect(historyReads()).toHaveLength(3));
+});
+
+test('publishes data and progress before a history stream completes', async () => {
+  serveLogs({
+    history: (context) =>
+      holdStream(context, phaseFrame('Consuming messages'), progressFrame(10_000n, 99n), dataFrame(1)),
   });
+  const { result } = renderLogSearch();
 
-  test('reports progress during history streaming', async () => {
-    fakeMessages.push(makeMessage(1));
+  await waitFor(() => expect(result.current.messages).toHaveLength(1));
+  expect(result.current.phase).toBe('Consuming messages');
+  expect(result.current.progress).toEqual({ bytesConsumed: 10_000, messagesConsumed: 99 });
+  expect(result.current.messages[0]?.valueJson).toBe('{"message":"msg-1"}');
+});
 
-    mockListMessages.mockImplementation(async function* streamMessages() {
-      yield {
-        controlMessage: {
-          case: 'progress' as const,
-          value: { bytesConsumed: 10_000n, messagesConsumed: 99n },
-        },
-      };
-      yield {
-        controlMessage: { case: 'data' as const, value: {} },
-      };
-      // Pause before done so the 200ms flush interval fires while phase is active
-      await rs.advanceTimersByTimeAsync(250);
-      yield {
-        controlMessage: { case: 'done' as const, value: {} },
-      };
-    });
+test('returns history alone in newest-first order', async () => {
+  serveLogs({ history: () => createAsyncIterable([dataFrame(1), dataFrame(2), dataFrame(3), DONE]) });
+  const { result } = renderLogSearch();
 
-    const { result } = renderHook(
-      () =>
-        useLogSearch({
-          pipelineId: 'pipeline-1',
-          live: false,
-          enabled: true,
-          serverless: false,
-        }),
-      { wrapper: createWrapper() }
-    );
+  await waitFor(() => expect(result.current.messages.map(({ offset }) => offset)).toEqual([3, 2, 1]));
+});
 
-    await waitFor(() => {
-      expect(result.current.messages).toHaveLength(1);
-      expect(result.current.progress.bytesConsumed).toBe(10_000);
-      expect(result.current.progress.messagesConsumed).toBe(99);
-    });
-  });
-
-  test('returns history messages newest-first (matches live ordering)', async () => {
-    fakeMessages.push(makeMessage(1), makeMessage(2), makeMessage(3));
-
-    mockListMessages.mockImplementation(function* streamMessages() {
-      for (const _msg of fakeMessages) {
-        yield { controlMessage: { case: 'data' as const, value: {} } };
-      }
-      yield { controlMessage: { case: 'done' as const, value: {} } };
-    });
-
-    const { result } = renderHook(
-      () => useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless: false }),
-      { wrapper: createWrapper() }
-    );
-
-    await waitFor(() => {
-      expect(result.current.messages).toHaveLength(3);
-    });
-
-    expect(result.current.messages[0].offset).toBe(3);
-    expect(result.current.messages[2].offset).toBe(1);
-  });
-
-  test('treats a missing logs topic as no logs, not an error', async () => {
-    mockListMessages.mockImplementation(function* streamMessages() {
-      yield { controlMessage: { case: 'phase' as const, value: { phase: 'Get Partitions' } } };
+test('treats a missing logs topic as a successful empty result without a toast', async () => {
+  const before = errorToasts();
+  serveLogs({
+    history: () => {
       throw new ConnectError(
-        'failed to get metadata for topic __redpanda.connect.logs: UNKNOWN_TOPIC_OR_PARTITION: This server does not host this topic-partition.',
+        'failed to get metadata for __redpanda.connect.logs: UNKNOWN_TOPIC_OR_PARTITION',
         Code.Unknown
       );
-    });
-
-    const { result } = renderHook(
-      () => useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless: false }),
-      { wrapper: createWrapper() }
-    );
-
-    await waitFor(() => expect(result.current.phase).toBeNull());
-    expect(result.current.error).toBeNull();
-    expect(result.current.messages).toEqual([]);
-    expect(toast.error).not.toHaveBeenCalled();
+    },
   });
+  const { result, queryClient } = renderLogSearch();
 
-  // The embedded app's client retries once by default.
-  test('does not retry a timed-out search, and says it timed out', async () => {
-    mockListMessages.mockImplementation(function* streamMessages() {
-      yield { controlMessage: { case: 'phase' as const, value: { phase: 'Consuming messages' } } };
-      throw new ConnectError('the operation timed out', Code.DeadlineExceeded);
-    });
-
-    const { result } = renderHook(
-      () => useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless: false }),
-      { wrapper: createWrapper({ retry: 1 }) }
-    );
-
-    await waitFor(() => expect(result.current.error).toBe('The log search timed out. Refresh to try again.'));
-    expect(mockListMessages).toHaveBeenCalledTimes(1);
-  });
+  await waitFor(() => expect(queryClient.getQueryState(['log-history', PIPELINE])?.status).toBe('success'));
+  expect(result.current).toMatchObject({ phase: null, error: null, messages: [] });
+  expect(errorToasts()).toBe(before);
 });
 
-describe('liveReducer flushMessages cap', () => {
-  test('caps the live buffer to MAX_LIVE_LOG_MESSAGES, keeping the newest entries', () => {
-    const batch = Array.from({ length: MAX_LIVE_LOG_MESSAGES + 10 }, (_, i) => makeMessage(i));
+test('reports a timed-out search without scheduling another request', async () => {
+  const attempts = serveLogs({ history: timeoutFailure });
+  const { result } = renderLogSearch({ retry: 1 });
 
-    const next = liveReducer(LIVE_INITIAL_STATE, { type: 'flushMessages', msgs: batch });
+  await waitFor(() => expect(result.current.error).toBe('The log search timed out. Refresh to try again.'));
+  expect(attempts).toHaveLength(1);
+});
 
-    expect(next.messages).toHaveLength(MAX_LIVE_LOG_MESSAGES);
-    // Newest-first: msgs are reversed on flush, so the highest offset is at the front.
-    expect(next.messages[0].offset).toBe(MAX_LIVE_LOG_MESSAGES + 9);
-    // Oldest entries are dropped by the sliding window.
-    expect(next.messages.some((m) => m.offset === 0)).toBe(false);
-  });
+test('the live buffer drops the oldest entries when it reaches capacity', () => {
+  const batch = Array.from({ length: MAX_LIVE_LOG_MESSAGES + 10 }, (_, offset) =>
+    convertListMessageData(logRecord(offset))
+  );
+  const next = liveReducer(LIVE_INITIAL_STATE, { type: 'flushMessages', msgs: batch });
+
+  expect(next.messages).toHaveLength(MAX_LIVE_LOG_MESSAGES);
+  expect(next.messages[0]?.offset).toBe(MAX_LIVE_LOG_MESSAGES + 9);
+  expect(next.messages.at(-1)?.offset).toBe(10);
 });

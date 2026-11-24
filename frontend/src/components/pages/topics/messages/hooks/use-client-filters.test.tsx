@@ -15,7 +15,7 @@ import { renderHook } from '@testing-library/react';
 import { matchesQuickSearch, useClientFilters } from './use-client-filters';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
-const makeMsg = (overrides: { offset?: number; partitionID?: number; value?: unknown }): TopicMessage =>
+const makeMsg = (overrides: { offset?: number; partitionID?: number; value?: unknown }) =>
   ({
     partitionID: overrides.partitionID ?? 0,
     offset: overrides.offset ?? 1,
@@ -34,9 +34,7 @@ const makeMsg = (overrides: { offset?: number; partitionID?: number; value?: unk
 describe('matchesQuickSearch — partition range-check', () => {
   test('an out-of-range partition token stays live text (no filter applied) when partitionCount is known', () => {
     const msg = makeMsg({ partitionID: 0 });
-    // Without the range-check this parses as `partition:9999` and matches nothing.
     expect(matchesQuickSearch(msg, 'partition:9999', 3)).toBe(false);
-    // Falls back to a substring search over offset/key/value instead of a bogus field filter.
     const haystackMsg = makeMsg({ partitionID: 0, value: { note: 'see partition:9999 in the logs' } });
     expect(matchesQuickSearch(haystackMsg, 'partition:9999', 3)).toBe(true);
   });
@@ -55,8 +53,6 @@ describe('useClientFilters — partition range-check', () => {
   test('quick search does not silently blank the table when the typed partition exceeds partitionCount', () => {
     const messages = [makeMsg({ partitionID: 0, offset: 1 }), makeMsg({ partitionID: 1, offset: 2 })];
     const { result } = renderHook(() => useClientFilters(messages, 'partition:9999', [], 3));
-    // Bug: without threading partitionCount through, this parsed as a real (always-false) field
-    // filter and returned zero rows instead of staying live/unmatched text.
     expect(result.current).toHaveLength(0);
     expect(result.current).not.toBe(messages);
   });

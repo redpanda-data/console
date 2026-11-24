@@ -12,6 +12,7 @@
 import { Link } from '@tanstack/react-router';
 
 import { api, useApiStoreHook } from '../../../state/backend-api';
+import { pageWithContent } from '../page-with-content';
 import '../../../utils/array-extensions';
 import { Button } from 'components/redpanda-ui/components/button';
 import { type FC, useEffect } from 'react';
@@ -20,10 +21,12 @@ import DebugBundleOverview from './debug-bundle-overview';
 import { DebugBundleStatus_Status } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { appGlobal } from '../../../state/app-global';
 import DebugBundleLink from '../../debugBundle/debug-bundle-link';
-import { PageComponent, type PageInitHelper } from '../page';
+import type { PageInitHelper } from '../page';
 
-export default class AdminPageDebugBundleProgress extends PageComponent {
-  initPage(p: PageInitHelper): void {
+export default class AdminPageDebugBundleProgress extends pageWithContent(() => (
+  <AdminPageDebugBundleProgressContent />
+)) {
+  initPage(p: PageInitHelper) {
     p.title = 'Generate debug bundle';
     p.addBreadcrumb('Generate debug bundle', '/debug-bundle/progress');
 
@@ -32,13 +35,9 @@ export default class AdminPageDebugBundleProgress extends PageComponent {
   }
 
   refreshData() {
-    api.refreshDebugBundleStatuses().catch(() => {
-      // Error handling managed by API layer
+    this.api.refreshDebugBundleStatuses().catch(() => {
+      // WARNING: Request errors are reported by the API layer; do not duplicate the report in the progress page.
     });
-  }
-
-  render() {
-    return <AdminPageDebugBundleProgressContent />;
   }
 }
 
@@ -61,14 +60,13 @@ const AdminPageDebugBundleProgressContent: FC = () => {
     !isInProgress &&
     statuses.some((s) => s.value.case === 'bundleStatus' && s.value.value.status === DebugBundleStatus_Status.SUCCESS);
 
-  // Fetch immediately on mount, then poll every 2 seconds
   useEffect(() => {
     api.refreshDebugBundleStatuses().catch(() => {
-      // Error handling managed by API layer
+      // WARNING: Request errors are reported by the API layer; do not duplicate the report in the progress page.
     });
     const interval = setInterval(() => {
       api.refreshDebugBundleStatuses().catch(() => {
-        // Error handling managed by API layer
+        // WARNING: Request errors are reported by the API layer; do not duplicate the report in the progress page.
       });
     }, 2000);
     return () => clearInterval(interval);
@@ -111,7 +109,7 @@ const AdminPageDebugBundleProgressContent: FC = () => {
                   for (const status of statuses) {
                     if (status.value.case === 'bundleStatus') {
                       api.cancelDebugBundleProcess({ jobId: status.value.value.jobId }).catch(() => {
-                        // Error handling managed by API layer
+                        // WARNING: Request errors are reported by the API layer; do not duplicate the report in the progress page.
                       });
                     }
                   }

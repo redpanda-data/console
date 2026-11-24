@@ -63,14 +63,12 @@ import Tabs from '../../misc/tabs/tabs';
 import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
-// Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
 const LOGS_TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
   getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
 };
 
-// Ten a page (the Registry default) is the legacy page size for this table.
 const TASKS_TABLE_OPTIONS = { enableHiding: false };
 
 const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
@@ -178,10 +176,8 @@ type ConnectorSectionProps = {
 const ConnectorActions = ({ connectClusterStore, connector, connectorName, setS }: ConnectorSectionProps) => {
   const canEdit = connectClusterStore.canEdit;
 
-  // [Pause] [Restart] [Delete]
   return (
     <div className="flex flex-row items-center gap-3">
-      {/* [Pause/Resume] */}
       {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
         <NoEditPermissionTooltip canEdit={canEdit}>
           <Button
@@ -197,7 +193,6 @@ const ConnectorActions = ({ connectClusterStore, connector, connectorName, setS 
         </NoEditPermissionTooltip>
       ) : null}
 
-      {/* [Restart] */}
       <NoEditPermissionTooltip canEdit={canEdit}>
         <Button
           className="min-w-32"
@@ -211,7 +206,6 @@ const ConnectorActions = ({ connectClusterStore, connector, connectorName, setS 
         </Button>
       </NoEditPermissionTooltip>
 
-      {/* [Delete] */}
       <NoEditPermissionTooltip canEdit={canEdit}>
         <Button
           className="min-w-32"
@@ -267,7 +261,6 @@ const ConnectorTabs = ({
                 )}
               </div>
 
-              {/* Update Config Button */}
               <div className="m-4 mb-6 flex">
                 <NoEditPermissionTooltip canEdit={canEdit}>
                   <Button
@@ -287,14 +280,11 @@ const ConnectorTabs = ({
         },
         {
           key: 'logs',
-          // The Tabs wrapper takes a boolean; the reason goes in a tooltip on the trigger.
           disabled: !logsTopic,
           title: logsTopic ? (
             'Logs'
           ) : (
             <Tooltip delayDuration={150}>
-              {/* The disabled trigger sets `aria-disabled:pointer-events-none`, which cascades —
-                  without re-enabling them here the tooltip could never open. */}
               <TooltipTrigger render={<span className="pointer-events-auto">Logs</span>} />
               <TooltipContent side="top">{`Logs topic '${LOGS_TOPIC_NAME}' does not exist.`}</TooltipContent>
             </Tooltip>
@@ -323,7 +313,6 @@ const ConnectorConfirmModals = ({
   refreshData: (force: boolean) => Promise<void>;
 }) => (
   <>
-    {/* Pause/Resume Modal */}
     <ConfirmModal<ClusterConnectorInfo>
       clearTarget={() => {
         setS({ pausingConnector: null });
@@ -352,7 +341,6 @@ const ConnectorConfirmModals = ({
       target={() => $state.pausingConnector}
     />
 
-    {/* Restart */}
     <ConfirmModal<ClusterConnectorInfo>
       clearTarget={() => {
         setS({ restartingConnector: null });
@@ -374,7 +362,6 @@ const ConnectorConfirmModals = ({
       target={() => $state.restartingConnector}
     />
 
-    {/* Update Config */}
     <ConfirmModal<UpdatingConnectorData>
       clearTarget={() => {
         setS({ updatingConnector: null });
@@ -398,7 +385,6 @@ const ConnectorConfirmModals = ({
       target={() => $state.updatingConnector}
     />
 
-    {/* Restart Task */}
     <ConfirmModal<RestartingTaskData>
       clearTarget={() => {
         setS({ restartingTask: null });
@@ -420,7 +406,6 @@ const ConnectorConfirmModals = ({
       target={() => $state.restartingTask}
     />
 
-    {/* Delete Connector */}
     <ConfirmModal<string>
       clearTarget={() => {
         setS({ deletingConnector: null });
@@ -434,10 +419,7 @@ const ConnectorConfirmModals = ({
         await connectClusterStore.deleteConnector(connectorName);
       }}
       onSuccess={() => {
-        // Navigate after the success toast has been queued.
-        // Refreshing before navigation would cause the connector to disappear
-        // from the store, unmounting this component before the toast renders.
-        // The cluster-list page refreshes on its own when it mounts.
+        // WARNING: Queue the success toast before navigation; refreshing first removes the connector and unmounts this page before it can report success.
         appGlobal.historyPush(`/connect-clusters/${encodeURIComponent(clusterName)}`);
       }}
       successMessage={(c) => (
@@ -460,7 +442,6 @@ const ConfigOverviewTab = (p: {
 
   return (
     <div
-      // The template areas are inline: Tailwind has no arbitrary grid-template-areas utility.
       className="grid items-start gap-6"
       style={{
         gridTemplateAreas: '"errors errors" "health details" "tasks details"',
@@ -494,7 +475,6 @@ const ConfigOverviewTab = (p: {
         <DataTable<ClusterConnectorTaskInfo>
           columns={taskColumns}
           data={connectClusterStore.getConnectorTasks(connectorName) ?? []}
-          // Legacy parity: ten a page, pager only past that.
           pagination={(connectClusterStore.getConnectorTasks(connectorName)?.length ?? 0) > 10}
           sorting
           tableOptions={TASKS_TABLE_OPTIONS}
@@ -587,7 +567,7 @@ const ConnectorErrorModal = (p: { error: ConnectorError }) => {
 };
 
 class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connector: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const clusterName = decodeURIComponent(this.props.clusterName);
     const connector = decodeURIComponent(this.props.connector);
     p.title = connector;
@@ -608,14 +588,14 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     appGlobal.onRefresh = () => this.refreshData(true).catch(console.error);
   }
 
-  async refreshData(force: boolean): Promise<void> {
+  async refreshData(force: boolean) {
     ConnectClusterStore.connectClusters.clear();
-    await api.refreshConnectClusters();
+    await this.api.refreshConnectClusters();
 
-    // refresh topics so we know whether or not we can show the "go to error logs topic" button in the connector details error popup
-    // and show the logs tab
-    api.refreshTopics(force);
+    this.api.refreshTopics(force);
   }
+
+  private readonly refreshConnectorData = this.refreshData.bind(this);
 
   render() {
     const clusterName = decodeURIComponent(this.props.clusterName);
@@ -625,21 +605,27 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
       return <NotConfigured />;
     }
 
-    // Touch observables so PageComponent's Reaction tracks them for re-renders.
+    // WARNING: Keep these reads during render; the PageComponent reaction only tracks observables it reads here.
     void api.topics;
 
     return (
       <PageContent>
-        <KafkaConnectorMain clusterName={clusterName} connectorName={connectorName} refreshData={this.refreshData} />
+        <KafkaConnectorMain
+          clusterName={clusterName}
+          connectorName={connectorName}
+          refreshData={this.refreshConnectorData}
+        />
       </PageContent>
     );
   }
 }
 
+/**
+ * The logs table uses stable keys so expanded rows survive refresh and filtering. Keep a pointer-capable wrapper for permission tooltips; disabled controls do not receive hover.
+ */
 export default KafkaConnectorDetails;
 
-// Visible, non-secret, high-importance properties with a value; the name is already the title.
-function isConnectorDetailsProperty(x: Property): boolean {
+function isConnectorDetailsProperty(x: Property) {
   return (
     !x.isHidden &&
     x.entry.definition.type !== DataType.Password &&
@@ -680,7 +666,6 @@ const ConnectorDetails = (p: {
       value: String(e.value),
     };
 
-    // Try to undo mapping
     if (e.entry.metadata.recommended_values?.length) {
       const match = e.entry.metadata.recommended_values.find((x) => x.value === e.value);
       if (match) {
@@ -710,10 +695,6 @@ const ConnectorDetails = (p: {
   );
 };
 
-/**
- * Wraps a control that is disabled without `canEditConnectCluster`, explaining why. Tooltip has no
- * prop to suppress itself, so the wrapper renders the child bare when the permission is present.
- */
 const NoEditPermissionTooltip = ({
   canEdit,
   children,
@@ -727,7 +708,6 @@ const NoEditPermissionTooltip = ({
 
   return (
     <Tooltip delayDuration={150}>
-      {/* A disabled button fires no pointer events, so the tooltip hangs off a wrapper. */}
       <TooltipTrigger render={<span className="inline-flex">{children}</span>} />
       <TooltipContent side="top">
         You don't have 'canEditConnectCluster' permissions for this connect cluster
@@ -747,7 +727,6 @@ type ConnectorLogState = { messages: TopicMessage[]; isComplete: boolean };
 
 const EMPTY_CONNECTOR_LOGS: ConnectorLogState = { messages: [], isComplete: false };
 
-// Stops the running log search and starts a fresh one for `connectorName`.
 function restartConnectorLogSearch(
   searchRef: React.RefObject<MessageSearch | null>,
   connectorName: string,
@@ -766,8 +745,7 @@ function restartConnectorLogSearch(
     });
 }
 
-// Streams the connector's log messages from the logs topic, restarting for another connector or on refresh.
-function useConnectorLogs(connectorName: string): ConnectorLogs {
+function useConnectorLogs(connectorName: string) {
   const [logState, setLogState] = useState<ConnectorLogState>(EMPTY_CONNECTOR_LOGS);
   const searchRef = useRef<MessageSearch | null>(null);
 
@@ -775,7 +753,7 @@ function useConnectorLogs(connectorName: string): ConnectorLogs {
     queueMicrotask(() => setLogState(EMPTY_CONNECTOR_LOGS));
     restartConnectorLogSearch(searchRef, connectorName, setLogState);
     return () => {
-      // `refresh` may have replaced the search this run started, so stop whichever is current.
+      // WARNING: Stop the current search during cleanup; Refresh can already have replaced the one that started this effect.
       searchRef.current?.stopSearch();
     };
   }, [connectorName]);
@@ -830,15 +808,13 @@ function useConnectorLogs(connectorName: string): ConnectorLogs {
       setLogState(EMPTY_CONNECTOR_LOGS);
       restartConnectorLogSearch(searchRef, connectorName, setLogState);
     },
-  };
+  } satisfies ConnectorLogs;
 }
 
-function useLogMessageColumns(topic: Topic | undefined): DataTableColumnDef<TopicMessage>[] {
-  // Memoised: a new columns array per render makes the table re-create every header and cell, which
-  // this tab would do every 200 ms while logs stream (the sort menu could never stay open).
+function useLogMessageColumns(topic: Topic | undefined) {
+  // WARNING: Keep column identities stable while logs stream; recreating columns remounts the open sort menu.
   return useMemo(
     () => [
-      // The Registry DataTable renders no expander column for `subComponent`.
       {
         id: 'expander',
         enableSorting: false,
@@ -873,9 +849,7 @@ function useLogMessageColumns(topic: Topic | undefined): DataTableColumnDef<Topi
         id: 'value',
         header: 'Value',
         accessorKey: 'value',
-        // A decoded preview; sorting the raw value means nothing.
         enableSorting: false,
-        // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
         cell: ({ row: { original } }) => (
           <div className="w-screen max-w-full">
             <MessagePreview
@@ -888,7 +862,7 @@ function useLogMessageColumns(topic: Topic | undefined): DataTableColumnDef<Topi
       },
     ],
     [topic]
-  );
+  ) satisfies DataTableColumnDef<TopicMessage>[];
 }
 
 const LogsTab = (p: {

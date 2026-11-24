@@ -15,7 +15,6 @@ const HOOK_NAME = /^use[A-Z0-9]/u;
 const hooklessMessage = (name: string) =>
   `"${name}" calls no hook while it runs, so it is a plain function with a hook's name and call-site rules. Rename it (for example, drop the "use" prefix); do not add a hook call just to keep the name. Hook calls inside callbacks it returns or registers do not count.`;
 
-/** A named import keeps its exported name under any alias; React 19 `use` counts only from React. */
 function isHookIdentifier(sourceCode: SourceCode, identifier: Identifier) {
   const binding = importOf(sourceCode, identifier);
   if (!binding || binding.imported === 'default' || binding.imported === '*') {
@@ -37,15 +36,15 @@ function isHookCallee(sourceCode: SourceCode, callee: Node) {
   return HOOK_NAME.test(property) || (property === 'use' && importOf(sourceCode, member.root)?.source === 'react');
 }
 
-/** An immediately invoked function runs as part of the caller. */
 function runsImmediately(node: FunctionNode) {
   const { parent } = node;
   return parent?.type === 'CallExpression' && unwrap(parent.callee) === node;
 }
 
-function callsHook(sourceCode: SourceCode, value: unknown): boolean {
+function callsHook(sourceCode: SourceCode, value: unknown) {
   if (Array.isArray(value)) {
-    return value.some((child) => callsHook(sourceCode, child));
+    const found: boolean = value.some((child) => callsHook(sourceCode, child));
+    return found;
   }
   if (!isNode(value) || (isFunction(value) && !runsImmediately(value))) {
     return false;
@@ -53,9 +52,13 @@ function callsHook(sourceCode: SourceCode, value: unknown): boolean {
   if (value.type === 'CallExpression' && isHookCallee(sourceCode, value.callee)) {
     return true;
   }
-  return Object.entries(value).some(([key, child]) => key !== 'parent' && callsHook(sourceCode, child));
+  const found: boolean = Object.entries(value).some(([key, child]) => key !== 'parent' && callsHook(sourceCode, child));
+  return found;
 }
 
+/**
+ * Includes immediately invoked functions, not deferred callbacks. Import aliases retain their exported hook name; bare use counts only when it comes from React.
+ */
 export default defineRule({
   meta: {
     type: 'problem',

@@ -10,3 +10,7 @@ bun run test:browser
 ```
 
 The loading-boundary cases use the production stylesheet, hold the editor snapshot animations active, and check that background controls remain clickable. Reduced-motion mode must create no animations.
+
+Run `bun run test:browser:components` for colocated `*.browser.test.tsx` suites. These
+render the actual Console components in Chromium to exercise editor models, layout,
+and virtualized pagination. The first frontend integration shard runs them in CI.

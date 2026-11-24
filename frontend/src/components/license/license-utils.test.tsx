@@ -25,22 +25,14 @@ import { renderWithRouter } from '../../test-utils';
 import { LicenseNotification } from './license-notification';
 import { OverviewLicenseNotification } from './overview-license-notification';
 
-const DATE_FORMAT_REGEX = /\d{2}\/\d{2}\/\d{4}/;
-const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expire in 28 days/;
-const TRIAL_NOTICE_REGEX = /This cluster is on an Enterprise trial/;
-// Every expiry below is relative to this instant, which each test pins as the system time.
+const DATE_FORMAT_REGEX = /\d{2}\/\d{2}\/\d{4}/u;
+const LICENSE_EXPIRE_MESSAGE_REGEX = /Your Redpanda Enterprise license will expire in 28 days/u;
+const TRIAL_NOTICE_REGEX = /This cluster is on an Enterprise trial/u;
 const NOW = new Date('2026-01-15T12:00:00Z');
 const NOW_SECONDS = Math.floor(NOW.getTime() / 1000);
 const { mockLocation } = rs.hoisted(() => ({ mockLocation: { pathname: '/overview' } }));
 
-/**
- * Returns a Unix timestamp (seconds since epoch) offset by a given number of days.
- * A negative `daysOffset` will give a past timestamp, and a positive one will give a future timestamp.
- *
- * @param daysOffset - The number of days to offset (default is 0).
- * @returns Unix timestamp in seconds.
- */
-const getUnixTimestampWithExpiration = (daysOffset = 0): number => NOW_SECONDS + daysOffset * 86_400;
+const getUnixTimestampWithExpiration = (daysOffset = 0) => NOW_SECONDS + daysOffset * 86_400;
 
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
@@ -93,7 +85,7 @@ rs.mock('../../state/backend-api', () => {
   return {
     ...actual,
     api: mockApi,
-    useApiStoreHook<T>(selector: (state: typeof mockApi) => T): T {
+    useApiStoreHook<T>(selector: (state: typeof mockApi) => T) {
       return selector(mockApi);
     },
   };
@@ -109,13 +101,13 @@ const mockLicenseCommunity = create(LicenseSchema, {
 
 const mockLicenseEnterprise = create(LicenseSchema, {
   type: License_Type.ENTERPRISE,
-  expiresAt: BigInt(NOW_SECONDS + 60 * 60 * 24 * 30), // expires in 30 days
+  expiresAt: BigInt(NOW_SECONDS + 60 * 60 * 24 * 30),
   source: License_Source.REDPANDA_CORE,
 });
 
 const expiredLicense = create(LicenseSchema, {
   type: License_Type.ENTERPRISE,
-  expiresAt: BigInt(NOW_SECONDS - 60 * 60 * 24), // expired yesterday
+  expiresAt: BigInt(NOW_SECONDS - 60 * 60 * 24),
   source: License_Source.REDPANDA_CONSOLE,
 });
 
@@ -198,7 +190,7 @@ describe('licenseUtils', () => {
       test('should return false for a license not expiring soon', () => {
         const licenseNotExpiringSoon = create(LicenseSchema, {
           ...mockLicenseEnterprise,
-          expiresAt: BigInt(NOW_SECONDS + 60 * 60 * 24 * 60), // expires in 60 days
+          expiresAt: BigInt(NOW_SECONDS + 60 * 60 * 24 * 60),
         });
         expect(licenseSoonToExpire(licenseNotExpiringSoon)).toBe(false);
       });
@@ -261,7 +253,7 @@ describe('licenseUtils', () => {
 
     describe('prettyExpirationDate', () => {
       test('should return a formatted expiration date for an expiring license', () => {
-        expect(prettyExpirationDate(mockLicenseEnterprise)).toMatch(DATE_FORMAT_REGEX); // MM/DD/YYYY format
+        expect(prettyExpirationDate(mockLicenseEnterprise)).toMatch(DATE_FORMAT_REGEX);
       });
 
       test('should return an empty string for a community license', () => {
@@ -295,7 +287,7 @@ describe('licenseUtils', () => {
         ];
 
         const result = licensesToSimplifiedPreview(licenses);
-        expect(result).toEqual([{ name: 'Enterprise', expiresAt: '09/08/2034', isExpired: false }]); // Based on the earlier expiration timestamp
+        expect(result).toEqual([{ name: 'Enterprise', expiresAt: '09/08/2034', isExpired: false }]);
       });
 
       test('should handle licenses with different types separately', () => {
@@ -315,7 +307,7 @@ describe('licenseUtils', () => {
         const result = licensesToSimplifiedPreview(licenses);
         expect(result).toEqual([
           { name: 'Console Community', expiresAt: '', isExpired: false },
-          { name: 'Redpanda Enterprise', expiresAt: '07/15/2122', isExpired: false }, // Based on the expiration timestamp
+          { name: 'Redpanda Enterprise', expiresAt: '07/15/2122', isExpired: false },
         ]);
       });
     });
@@ -424,11 +416,8 @@ describe('licenseUtils', () => {
         route: '/overview',
       });
 
-      // Check that user is informed about a license that will expire.
       expect(screen.getByText(LICENSE_EXPIRE_MESSAGE_REGEX)).toBeInTheDocument();
-      // The Registry Alert carries its tone in the variant classes, not a data-status attribute.
       expect(screen.queryByTestId('license-alert')).toHaveClass('bg-informative-wash');
-      // Check for CTAs
       expect(screen.getAllByRole('link').find((el) => el.textContent === 'Request a license')).toHaveAttribute(
         'href',
         'https://support.redpanda.com/'
@@ -463,7 +452,6 @@ describe('licenseUtils', () => {
     });
 
     test('hides the trial notice once the cluster holds an active enterprise license', () => {
-      // Console keeps the trial it copied from the cluster at boot; the cluster has since been licensed.
       api.licenses = [bakedInTrial(License_Source.REDPANDA_CONSOLE), enterprise(License_Source.REDPANDA_CORE, 90)];
       const screen = renderWithRouter(<OverviewLicenseNotification />, { route: '/overview' });
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();

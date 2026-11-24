@@ -35,7 +35,7 @@ type UseRefFormDialogReturn<TTarget> = {
 
 const DEFAULT_TIMEOUT = 30_000;
 
-function raceWithTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+function raceWithTimeout<T>(promise: Promise<T>, ms: number) {
   let timerId: ReturnType<typeof setTimeout>;
   return Promise.race([
     promise.finally(() => clearTimeout(timerId)),
@@ -45,11 +45,10 @@ function raceWithTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
-function isTimeoutError(error: unknown): boolean {
+function isTimeoutError(error: unknown) {
   return error instanceof Error && error.message === 'timeout';
 }
 
-/** What the dialog does with each way a submission can end; an aborted one ends silently. */
 type SubmissionHandlers<TData> = {
   onSubmitted: (data: TData) => void;
   onTimeout: () => void;
@@ -67,13 +66,12 @@ function settleSubmissionError<TData>(error: unknown, abort: AbortController, ha
   }
 }
 
-// The handlers run inside the try, so one that throws settles like a failed submit.
 async function settleSubmission<TData>(
   formRef: RefFormSubmittable<TData>,
   abort: AbortController,
   timeout: number,
   handlers: SubmissionHandlers<TData>
-): Promise<void> {
+) {
   try {
     const result = await raceWithTimeout(formRef.triggerSubmit(abort.signal), timeout);
 
@@ -91,9 +89,8 @@ async function settleSubmission<TData>(
   }
 }
 
-function useRefFormDialog<TData, TTarget = boolean>(
-  options: UseRefFormDialogOptions<TData, TTarget>
-): UseRefFormDialogReturn<TTarget> {
+/** Keeps a failed submission open for retry. Closing ignores any result that arrives later. */
+function useRefFormDialog<TData, TTarget = boolean>(options: UseRefFormDialogOptions<TData, TTarget>) {
   const { ref, onSuccess, timeout = DEFAULT_TIMEOUT } = options;
   const [target, setTarget] = useState<TTarget | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -130,12 +127,13 @@ function useRefFormDialog<TData, TTarget = boolean>(
         close();
       },
       onFailed: () => {
+        abortRef.current = null;
         setIsSubmitting(false);
       },
     });
   }, [ref, target, onSuccess, timeout, close]);
 
-  return {
+  const dialogState: UseRefFormDialogReturn<TTarget> = {
     isOpen: target !== null,
     isSubmitting,
     target,
@@ -143,6 +141,7 @@ function useRefFormDialog<TData, TTarget = boolean>(
     close,
     submit,
   };
+  return dialogState;
 }
 
 export type { RefFormSubmittable, UseRefFormDialogOptions, UseRefFormDialogReturn };

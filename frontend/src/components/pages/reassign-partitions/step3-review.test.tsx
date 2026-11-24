@@ -1,7 +1,6 @@
-import { afterEach, expect, rs, test } from '@rstest/core';
+import { afterEach, expect, test } from '@rstest/core';
 import { act, render, screen } from '@testing-library/react';
 
-import ReassignPartitions from './reassign-partitions';
 import { StepReview } from './step3-review';
 import { useApiStore } from '../../../state/backend-api';
 import type { Partition, Topic } from '../../../state/rest-interfaces';
@@ -12,7 +11,6 @@ const initialThrottle = uiSettings.reassignment.maxReplicationTraffic;
 afterEach(() => {
   useApiStore.setState(initialApiState, true);
   uiSettings.reassignment = { ...uiSettings.reassignment, maxReplicationTraffic: initialThrottle };
-  rs.restoreAllMocks();
 });
 
 const topic: Topic = {
@@ -42,13 +40,11 @@ const partition: Partition = {
 };
 
 const renderStepReview = () => {
+  uiSettings.reassignment = { ...uiSettings.reassignment, maxReplicationTraffic: null };
   useApiStore.setState({ topics: [topic], topicPartitions: new Map([[topic.topicName, [partition]]]) });
-  rs.spyOn(ReassignPartitions.prototype, 'refreshData').mockImplementation(() => undefined);
   render(
     <StepReview
       assignments={{ topics: [{ topicName: topic.topicName, partitions: [{ partitionId: 0, replicas: [2] }] }] }}
-      partitionSelection={{ alpha: [0] }}
-      reassignPartitions={new ReassignPartitions({ matchedPath: '/reassign-partitions' })}
       topicsWithMoves={[
         {
           topicName: topic.topicName,
@@ -75,7 +71,6 @@ test('follows the throttle setting without waiting for a re-render', () => {
   renderStepReview();
   const throttleValue = () => screen.getByText('Traffic Throttle').nextElementSibling;
   expect(throttleValue()).toHaveTextContent('disabled');
-  // The write the slider handler makes: a nested assignment would not notify the settings store.
   act(() => {
     uiSettings.reassignment = { ...uiSettings.reassignment, maxReplicationTraffic: 1024 };
   });

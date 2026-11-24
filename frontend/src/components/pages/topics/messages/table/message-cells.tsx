@@ -27,10 +27,8 @@ export type ValuePreviewConfig = {
   displayMode: 'single' | 'wrap' | 'rows';
 };
 
-/** Max characters of the one-line JSON preview shown in key/value cells (mirrors the mock's ~92ch). */
 const PREVIEW_MAX_CHARS = 92;
 
-// The hover hint shows more than the cell without covering the table; the detail panel has the rest.
 const PAYLOAD_HINT_MAX_CHARS = 300;
 
 const truncate = (text: string, max = PREVIEW_MAX_CHARS) => (text.length > max ? `${text.slice(0, max)}…` : text);
@@ -54,8 +52,7 @@ export const SizeCell = ({ size }: { size: number }) => (
 
 type PayloadText = { text: string; muted: boolean; error?: boolean };
 
-/** Payloads with nothing to preview inline: a null record, or one too large to have been fetched. */
-const unavailablePayloadText = (payload: Payload): PayloadText | undefined => {
+const unavailablePayloadText: (payload: Payload) => PayloadText | undefined = (payload) => {
   if (payload.isPayloadNull) {
     return { text: 'null', muted: true };
   }
@@ -64,8 +61,11 @@ const unavailablePayloadText = (payload: Payload): PayloadText | undefined => {
   }
 };
 
-/** The best decoded form: JSON, then the hex preview, then a deserialization-failure hint. */
-const decodedPayloadText = (payload: Payload, json: string, hexPreview: string): PayloadText => {
+const decodedPayloadText: (payload: Payload, json: string, hexPreview: string) => PayloadText = (
+  payload,
+  json,
+  hexPreview
+) => {
   if (json) {
     return { text: json, muted: false };
   }
@@ -78,13 +78,9 @@ const decodedPayloadText = (payload: Payload, json: string, hexPreview: string):
   return { text: '', muted: true };
 };
 
-const payloadText = (payload: Payload, json: string, hexPreview: string): PayloadText =>
+const payloadText: (payload: Payload, json: string, hexPreview: string) => PayloadText = (payload, json, hexPreview) =>
   unavailablePayloadText(payload) ?? decodedPayloadText(payload, json, hexPreview);
 
-/**
- * Meta row shown under key/value content in `detailed` density:
- * the decoder badge and payload byte size, per the design mock.
- */
 const PayloadMeta = ({ payload }: { payload: Payload }) => (
   <span className="mt-0.5 flex items-center gap-2">
     <Badge size="sm" tone="default" variant="subtle">

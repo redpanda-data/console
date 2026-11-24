@@ -1,4 +1,4 @@
-import type { ESTree, SourceCode, Variable } from '@oxlint/plugins';
+import type { ESTree, SourceCode } from '@oxlint/plugins';
 
 export type Node = ESTree.Node;
 export type FunctionNode = ESTree.Function | ESTree.ArrowFunctionExpression;
@@ -38,7 +38,7 @@ function isWrapper(node: Node): node is Wrapper {
 }
 
 /** Strips parentheses, optional chains and type-only wrappers. */
-export function unwrap(node: Node | null | undefined): Node | undefined {
+export function unwrap(node: Node | null | undefined) {
   let current = node ?? undefined;
   while (current && isWrapper(current)) {
     current = current.expression;
@@ -52,7 +52,7 @@ export function isIdentifier(node: Node | null | undefined, name?: string): node
 }
 
 /** The text of a string literal or an interpolation-free template literal. */
-export function stringValue(node: Node | null | undefined): string | undefined {
+export function stringValue(node: Node | null | undefined) {
   const target = unwrap(node);
   if (target?.type === 'Literal' && typeof target.value === 'string') {
     return target.value;
@@ -63,7 +63,7 @@ export function stringValue(node: Node | null | undefined): string | undefined {
 }
 
 /** The static key of an object property or pattern entry: `{ key }`, `{ 'key': x }`, not `{ [key]: x }`. */
-export function propertyKey(node: Node | null | undefined): string | undefined {
+export function propertyKey(node: Node | null | undefined) {
   if (node?.type !== 'Property') {
     return;
   }
@@ -84,7 +84,7 @@ export function propertyValue(node: Node | null | undefined, key: string) {
 }
 
 /** The static name of a member property; computed keys only count when they are string literals. */
-export function memberName(node: Node | null | undefined): string | undefined {
+export function memberName(node: Node | null | undefined) {
   const target = unwrap(node);
   if (target?.type !== 'MemberExpression') {
     return;
@@ -96,7 +96,9 @@ export function memberName(node: Node | null | undefined): string | undefined {
 }
 
 /** `a.b.c` as `[a, ['b', 'c']]`, looking through wrappers; undefined for dynamic keys or call links. */
-export function memberPath(node: Node | null | undefined): { root: Identifier; path: string[] } | undefined {
+export const memberPath: (node: Node | null | undefined) => { root: Identifier; path: string[] } | undefined = (
+  node
+) => {
   const target = unwrap(node);
   if (isIdentifier(target)) {
     return { root: target, path: [] };
@@ -107,9 +109,9 @@ export function memberPath(node: Node | null | undefined): { root: Identifier; p
   }
   const object = memberPath(target.object);
   return object && { root: object.root, path: [...object.path, name] };
-}
+};
 
-export function findVariable(sourceCode: SourceCode, identifier: NamedIdentifier): Variable | undefined {
+export function findVariable(sourceCode: SourceCode, identifier: NamedIdentifier) {
   let scope: ReturnType<SourceCode['getScope']> | null = sourceCode.getScope(identifier);
   while (scope) {
     const variable = scope.set.get(identifier.name);
@@ -143,7 +145,7 @@ export function importOf(sourceCode: SourceCode, identifier: NamedIdentifier) {
 }
 
 /** The initializer of a `const name = init` binding, when that is how the name was declared. */
-export function initializerOf(sourceCode: SourceCode, identifier: NamedIdentifier): Node | undefined {
+export function initializerOf(sourceCode: SourceCode, identifier: NamedIdentifier) {
   const definition = findVariable(sourceCode, identifier)?.defs[0];
   if (definition?.type !== 'Variable' || definition.node.type !== 'VariableDeclarator') {
     return;
@@ -152,7 +154,7 @@ export function initializerOf(sourceCode: SourceCode, identifier: NamedIdentifie
 }
 
 /** `globalThis.Date.now` and `Date.now` name the same thing when `globalThis` is the global. */
-export function globalPath(sourceCode: SourceCode, node: Node | null | undefined): string | undefined {
+export function globalPath(sourceCode: SourceCode, node: Node | null | undefined) {
   const member = memberPath(node);
   if (!(member && isGlobal(sourceCode, member.root))) {
     return;
@@ -164,12 +166,16 @@ export function globalPath(sourceCode: SourceCode, node: Node | null | undefined
   return names.join('.');
 }
 
-function children(node: Node): unknown[] {
-  return Object.entries(node).flatMap(([key, value]) => (key === 'parent' ? [] : [value]));
+function children(node: Node) {
+  return Object.entries(node).flatMap<unknown>(([key, value]) => (key === 'parent' ? [] : [value]));
 }
 
 /** Depth-first search that does not enter nested functions, which run on their own schedule. */
-export function someInRun(value: unknown, match: (node: Node) => boolean, root?: Node): boolean {
+export const someInRun: (value: unknown, match: (node: Node) => boolean, root?: Node) => boolean = (
+  value,
+  match,
+  root
+) => {
   if (Array.isArray(value)) {
     return value.some((child) => someInRun(child, match, root));
   }
@@ -180,9 +186,9 @@ export function someInRun(value: unknown, match: (node: Node) => boolean, root?:
     return false;
   }
   return match(value) || children(value).some((child) => someInRun(child, match, root));
-}
+};
 
-export function enclosingFunction(node: Node): FunctionNode | ESTree.Program | undefined {
+export function enclosingFunction(node: Node) {
   let current = node.parent;
   while (current && !isFunction(current) && current.type !== 'Program') {
     current = current.parent;

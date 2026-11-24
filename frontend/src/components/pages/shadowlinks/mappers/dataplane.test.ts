@@ -22,7 +22,6 @@ import {
 import { buildDefaultFormValues, fromDataplaneShadowLink } from './dataplane';
 import { describe, expect, test } from 'bun:test';
 import { FormSchema, initialValues, SCHEMA_REGISTRY_MODE } from '../create/model';
-import type { UnifiedSchemaRegistryApiOptions } from '../model';
 
 const buildShadowLink = (schemaRegistrySyncOptions?: MessageInitShape<typeof SchemaRegistrySyncOptionsSchema>) =>
   create(ShadowLinkSchema, {
@@ -33,7 +32,7 @@ const buildShadowLink = (schemaRegistrySyncOptions?: MessageInitShape<typeof Sch
 
 const mapApiOptions = (
   apiOptions: MessageInitShape<typeof SchemaRegistrySyncOptionsSchema>['schemaRegistryShadowingMode']
-): UnifiedSchemaRegistryApiOptions => {
+) => {
   const shadowLink = buildShadowLink({ schemaRegistryShadowingMode: apiOptions });
   const mode =
     fromDataplaneShadowLink(shadowLink).configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
@@ -107,7 +106,6 @@ describe('fromDataplaneShadowLink schema registry sync options', () => {
 
     expect(api.sourceUrl).toBe('https://sr.example.com');
     expect(api.basicAuth).toEqual({ username: 'sr-user', passwordSet: true, passwordSetAt });
-    // The password must never reach the unified model
     expect(api.basicAuth && 'password' in api.basicAuth).toBe(false);
     expect(api).toMatchObject({
       tlsSettings: { enabled: true, tlsSettings: { case: 'tlsPemSettings' } },
@@ -260,7 +258,6 @@ describe('buildDefaultFormValues role hydration', () => {
 
     const formValues = buildDefaultFormValues(shadowLink);
 
-    // Keeps role sync disabled: an untouched edit produces no role diff
     expect(formValues.rolesMode).toBe('specify');
     expect(formValues.roles).toEqual([]);
   });
@@ -308,7 +305,6 @@ describe('buildDefaultFormValues schema registry hydration', () => {
     expect(formValues.schemaRegistry.scopeMode).toBe('specify');
     expect(formValues.schemaRegistry.syncBehavior.tailInterval).toBe('10s');
     expect(formValues.schemaRegistry.paused).toBe(true);
-    // The hydrated form must be submittable without touching unrelated fields.
     expect(FormSchema.safeParse(formValues).success).toBe(true);
   });
 

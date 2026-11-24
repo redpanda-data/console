@@ -78,7 +78,7 @@ declare global {
   }
 }
 
-Array.prototype.remove = function remove<T>(this: T[], obj: T): boolean {
+Array.prototype.remove = function remove<T>(this: T[], obj: T) {
   const index = this.indexOf(obj);
   if (index === -1) {
     return false;
@@ -87,7 +87,7 @@ Array.prototype.remove = function remove<T>(this: T[], obj: T): boolean {
   return true;
 };
 
-Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x: T) => boolean): number {
+Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x: T) => boolean) {
   let count = 0;
   for (let i = 0; i < this.length; i++) {
     if (selector(this[i])) {
@@ -99,7 +99,7 @@ Array.prototype.removeAll = function removeAll<T>(this: T[], selector: (x: T) =>
   return count;
 };
 
-Array.prototype.first = function first<T>(this: T[], selector?: (x: T) => boolean): T | undefined {
+Array.prototype.first = function first<T>(this: T[], selector?: (x: T) => boolean) {
   if (!selector) {
     return this.length > 0 ? this[0] : undefined;
   }
@@ -111,7 +111,7 @@ Array.prototype.first = function first<T>(this: T[], selector?: (x: T) => boolea
   }
 };
 
-Array.prototype.last = function last<T>(this: T[], selector?: (x: T) => boolean): T | undefined {
+Array.prototype.last = function last<T>(this: T[], selector?: (x: T) => boolean) {
   for (let i = this.length - 1; i >= 0; i--) {
     if (!selector || selector(this[i])) {
       return this[i];
@@ -199,8 +199,8 @@ Array.prototype.all = function all<T>(this: T[], selector: (x: T) => boolean) {
   return this.every(selector);
 };
 
-Array.prototype.groupBy = function groupBy<T, K>(this: T[], keySelector: (x: T) => K): Map<K, T[]> {
-  const map = new Map();
+Array.prototype.groupBy = function groupBy<T, K>(this: T[], keySelector: (x: T) => K) {
+  const map = new Map<K, T[]>();
   for (const item of this) {
     const key = keySelector(item);
     const collection = map.get(key);
@@ -213,7 +213,7 @@ Array.prototype.groupBy = function groupBy<T, K>(this: T[], keySelector: (x: T) 
   return map;
 };
 
-Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x: T) => K): { key: K; items: T[] }[] {
+Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x: T) => K) {
   const map = this.groupBy(keySelector);
 
   const ar: { key: K; items: T[] }[] = [];
@@ -225,15 +225,15 @@ Array.prototype.groupInto = function groupInto<T, K>(this: T[], keySelector: (x:
   return ar;
 };
 
-Array.prototype.filterNull = function filterNull<T>(this: (T | null | undefined)[]): T[] {
+Array.prototype.filterNull = function filterNull<T>(this: (T | null | undefined)[]) {
   return this.filter((x) => x !== null) as T[];
 };
 
-Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefined)[]): T[] {
+Array.prototype.filterFalsy = function filterFalsy<T>(this: (T | null | undefined)[]) {
   return this.filter(Boolean) as T[];
 };
 
-Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { removed: number; added: number } {
+Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]) {
   if (haveSameArrayItems(this, newData)) {
     return { removed: 0, added: 0 };
   }
@@ -249,7 +249,7 @@ Array.prototype.updateWith = function updateWith<T>(this: T[], newData: T[]): { 
   return { removed: removed.length, added: added.length };
 };
 
-Array.prototype.isEqual = function isEqual(this: string[], other: string[]): boolean {
+Array.prototype.isEqual = function isEqual(this: string[], other: string[]) {
   if (this.length === 0 && other.length === 0) {
     return true;
   }
@@ -267,7 +267,7 @@ Array.prototype.isEqual = function isEqual(this: string[], other: string[]): boo
   return true;
 };
 
-Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) => unknown): T[] {
+Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) => unknown) {
   if (!keySelector) {
     return [...new Set(this)];
   }
@@ -286,7 +286,7 @@ Array.prototype.distinct = function distinct<T>(this: T[], keySelector?: (x: T) 
   return ar;
 };
 
-Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: T[]): void {
+Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: T[]) {
   if (this.length + elements.length > 50) {
     const s = new Set(this);
     for (const e of elements) {
@@ -303,7 +303,7 @@ Array.prototype.pushDistinct = function pushDistinct<T>(this: T[], ...elements: 
   }
 };
 
-Array.prototype.intersection = function intersection<T>(this: T[], other: T[]): T[] {
+Array.prototype.intersection = function intersection<T>(this: T[], other: T[]) {
   const thisSet = new Set<T>(this);
   const results: T[] = [];
   for (const e of other) {
@@ -314,7 +314,7 @@ Array.prototype.intersection = function intersection<T>(this: T[], other: T[]): 
   return results;
 };
 
-Array.prototype.except = function except<T>(this: T[], other: T[]): T[] {
+Array.prototype.except = function except<T>(this: T[], other: T[]) {
   const ar: T[] = [];
   const otherSet = new Set<T>(other);
   for (const e of this) {
@@ -329,7 +329,7 @@ Array.prototype.except = function except<T>(this: T[], other: T[]): T[] {
 Array.prototype.genericJoin = function genericJoin<T>(
   this: T[],
   getSeparator: (last: T, current: T, index: number) => T
-): T[] {
+) {
   const ar: T[] = [];
   for (let i = 1; i < this.length; i++) {
     const last = this[i - 1];
@@ -340,7 +340,6 @@ Array.prototype.genericJoin = function genericJoin<T>(
     ar.push(last, separator);
   }
 
-  // add final element
   const lastElement = this.at(-1);
   if (lastElement !== undefined) {
     ar.push(lastElement);
@@ -353,7 +352,7 @@ Array.prototype.toMap = function toMap<TItem, TKey, TValue>(
   this: TItem[],
   computeKey: (item: TItem) => TKey,
   computeValue: (item: TItem) => TValue
-): Map<TKey, TValue> {
+) {
   const map = new Map<TKey, TValue>();
 
   for (const item of this) {
@@ -365,7 +364,7 @@ Array.prototype.toMap = function toMap<TItem, TKey, TValue>(
   return map;
 };
 
-Array.prototype.joinStr = function joinStr(this: (string | null | undefined)[], separator: string): string {
+Array.prototype.joinStr = function joinStr(this: (string | null | undefined)[], separator: string) {
   let r = '';
   for (const str of this) {
     if (str === null || str === undefined || str === '') {
@@ -382,7 +381,7 @@ Array.prototype.joinStr = function joinStr(this: (string | null | undefined)[], 
   return r;
 };
 
-Array.prototype.orderBy = function orderBy<T>(this: T[], getElementOrder: (item: T) => number): T[] {
+Array.prototype.orderBy = function orderBy<T>(this: T[], getElementOrder: (item: T) => number) {
   const result = this.slice();
 
   const elementOrder = new Map<T, number>();
@@ -407,7 +406,7 @@ Array.prototype.orderBy = function orderBy<T>(this: T[], getElementOrder: (item:
   return result;
 };
 
-function haveSameArrayItems<T>(current: T[], next: T[]): boolean {
+function haveSameArrayItems<T>(current: T[], next: T[]) {
   if (current.length !== next.length) {
     return false;
   }

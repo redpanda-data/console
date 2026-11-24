@@ -31,7 +31,6 @@ describe('changedNodeIds', () => {
     - mapping: 'root = this'
 output:
   drop: {}`;
-    // Going from the shorter config back to base "adds" the log processor.
     expect(changedNodeIds(without, base)).toContain('proc-1');
   });
 
@@ -70,7 +69,6 @@ output:
 output:
   drop: {}`;
     const next = nested.replace('root = this', 'root = this.foo');
-    // Editing the mapping changes the switch + case config too, but only the mapping is reported.
     expect(changedNodeIds(nested, next)).toEqual(['proc-0-case-1-p0']);
   });
 
@@ -84,7 +82,6 @@ describe('changedNodeIdsFromBaseline', () => {
   it('matches changedNodeIds when diffing against pre-computed baseline signatures', () => {
     const baseline = nodeConfigSignatures(base);
     const next = base.replace('message: hi', 'message: bye');
-    // One baseline serves repeated diffs (the panel re-diffs every keystroke against a constant baseline).
     expect(changedNodeIdsFromBaseline(baseline, next)).toEqual(changedNodeIds(base, next));
     expect(changedNodeIdsFromBaseline(baseline, base)).toEqual([]);
   });

@@ -37,10 +37,7 @@ export type MockConnectNetworkFailureArgs = {
   reason?: 'failed' | 'timedout' | 'connectionrefused';
 };
 
-/**
- * Maps a Connect error code to the HTTP status Connect transports use for JSON responses.
- */
-function connectCodeToHttpStatus(code: ConnectErrorCode): number {
+function connectCodeToHttpStatus(code: ConnectErrorCode) {
   switch (code) {
     case 'invalid_argument':
     case 'out_of_range':
@@ -71,22 +68,12 @@ function connectCodeToHttpStatus(code: ConnectErrorCode): number {
   }
 }
 
-/**
- * Fulfills all matching requests with a Connect-JSON error envelope. Since createConnectTransport
- * in src/config.ts and src/federation/console-app.tsx does not opt into useBinaryFormat, requests
- * use `application/json` and responses just need `{ code, message }` plus the correct HTTP status.
- *
- * Note on react-query retries: page.route persists for all matching calls, so retries see the same
- * error. If a test needs to simulate recover-on-retry, use `times: 1` or swap the route mid-test.
- */
-/**
- * DEBUG flag for diagnosing mock interception issues. Flip to true while iterating,
- * false before commit. Gated at module level so route handlers log only when we
- * ask them to (no performance hit in normal runs, no process.env dependency).
- */
 const DEBUG_CONNECT_MOCK = false;
 
-export async function mockConnectError(args: MockConnectErrorArgs): Promise<void> {
+/**
+ * Returns a Connect-JSON envelope and the corresponding HTTP status for every matched call, including retries. The E2E transports use JSON rather than binary framing.
+ */
+export async function mockConnectError(args: MockConnectErrorArgs) {
   const { page, urlGlob, code, message = `mocked ${code}`, times } = args;
   if (DEBUG_CONNECT_MOCK) {
     // biome-ignore lint/suspicious/noConsole: diagnostic gated behind DEBUG_CONNECT_MOCK
@@ -116,7 +103,7 @@ export async function mockConnectError(args: MockConnectErrorArgs): Promise<void
  * Aborts all matching requests with a network-level failure. Use for simulating offline/timeout
  * behavior where no response envelope is sent at all.
  */
-export async function mockConnectNetworkFailure(args: MockConnectNetworkFailureArgs): Promise<void> {
+export async function mockConnectNetworkFailure(args: MockConnectNetworkFailureArgs) {
   const { page, urlGlob, reason = 'failed' } = args;
   await page.route(urlGlob, (route) => route.abort(reason));
 }
@@ -127,7 +114,7 @@ export async function mockConnectNetworkFailure(args: MockConnectNetworkFailureA
  *
  * @example rpcUrl('redpanda.api.dataplane.v1.UserService', 'CreateUser')
  */
-export function rpcUrl(fullyQualifiedService: string, method: string): string {
+export function rpcUrl(fullyQualifiedService: string, method: string) {
   return `**/${fullyQualifiedService}/${method}`;
 }
 
@@ -135,10 +122,7 @@ export function rpcUrl(fullyQualifiedService: string, method: string): string {
  * Convenience wrapper around page.route that records request bodies so assertions can verify
  * that the expected RPC was invoked with the expected input.
  */
-export async function captureConnectRequests(
-  page: Page,
-  urlGlob: string
-): Promise<{ requests: Array<{ url: string; postData: string | null }>; stop: () => Promise<void> }> {
+export async function captureConnectRequests(page: Page, urlGlob: string) {
   const requests: Array<{ url: string; postData: string | null }> = [];
   const handler = async (route: Route) => {
     requests.push({ url: route.request().url(), postData: route.request().postData() });

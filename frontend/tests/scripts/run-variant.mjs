@@ -9,8 +9,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const testsDir = resolve(__dirname, '..');
 
-// Listen on `port` once: calls `onFree` after the listener closes, or `onBusy`
-// when the bind fails.
 function probePort(port, onFree, onBusy) {
   const srv = net.createServer();
   srv.unref();
@@ -20,11 +18,7 @@ function probePort(port, onFree, onBusy) {
   });
 }
 
-// Find a free TCP port in a NON-ephemeral range. Binding to :0 returns an
-// ephemeral port (macOS 49152–65535), which the OS may hand to an outbound
-// connection in the gap before Docker binds it (→ "address already in use").
-// Probing a fixed range below that window avoids the race. `taken` excludes
-// ports already chosen this run so we don't hand out duplicates.
+// WARNING: Do not bind port zero; it reserves an ephemeral port that an outbound connection can take before Docker binds it.
 function getFreePort(taken = new Set(), min = 20_000, max = 45_000) {
   return new Promise((resolveP, rejectP) => {
     let attempts = 0;
@@ -51,9 +45,7 @@ function getFreePort(taken = new Set(), min = 20_000, max = 45_000) {
   });
 }
 
-// Assigns a free port to each key, one key at a time: a probe only records its
-// port in `taken` once it finishes, so concurrent probes could hand two services
-// the same port.
+// WARNING: Allocate ports serially; a probe reserves its port only after it closes, so parallel calls can duplicate it.
 async function allocatePorts([key, ...remainingKeys], taken, ports = {}) {
   if (key === undefined) {
     return ports;
@@ -62,10 +54,6 @@ async function allocatePorts([key, ...remainingKeys], taken, ports = {}) {
   return allocatePorts(remainingKeys, taken, ports);
 }
 
-// Allocate a fresh free host port for every service the variant exposes, so
-// local runs never collide with whatever is already on the default ports (e.g.
-// a dev Console on :3000). CI keeps the fixed variant.json ports — separate
-// runners, no collisions — unless E2E_DYNAMIC_PORTS=1 is set.
 function resolveDynamicPorts(variant) {
   const staticPorts = variant.config.ports ?? {};
   const useDynamic =
@@ -105,7 +93,6 @@ function printUnknownVariant(variantName) {
   printUsage();
 }
 
-// Returns the variant and its Rstest config path, or null after explaining why it cannot run.
 function findRunnableVariant(variantName) {
   const variant = getVariant(variantName);
 
@@ -130,9 +117,7 @@ function printVariantHeader(variant, configPath) {
   console.log('');
 }
 
-// Pick free host ports up front (before Rstest loads its config, so the
-// config's baseURL can read REACT_APP_ORIGIN). global-setup merges
-// E2E_PORTS_OVERRIDE over variant.json for the container port mappings.
+// WARNING: Resolve dynamic ports before loading Rstest config; its browser origin and the container mapping must agree.
 async function resolvePortEnv(variant) {
   const dynamicPorts = await resolveDynamicPorts(variant);
   const portEnv = {};
@@ -156,7 +141,7 @@ function spawnRstest(variant, configPath, rstestArgs, portEnv) {
     env: {
       ...process.env,
       E2E_VARIANT: variant.name,
-      // Force IPv4 for testcontainers wait strategies (localhost resolves to ::1 on macOS, causing hangs)
+      // WARNING: Keep IPv4 as the default Testcontainers host; resolving localhost to ::1 can hang on Docker Desktop.
       TESTCONTAINERS_HOST_OVERRIDE: process.env.TESTCONTAINERS_HOST_OVERRIDE ?? '127.0.0.1',
       ...portEnv,
     },
@@ -193,7 +178,6 @@ async function runVariant(variantName, rstestArgs = []) {
   return waitForSuccessfulExit(child);
 }
 
-// CLI
 const args = process.argv.slice(2);
 
 if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {

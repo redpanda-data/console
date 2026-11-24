@@ -8,9 +8,7 @@ import type React from 'react';
 const disclosurePanelVariants = cva('', {
   variants: {
     panel: {
-      // An inset, outlined well for an optional group of fields.
       inset: 'rounded-md border bg-muted/30 p-4',
-      // Fields laid straight under the trigger, aligned with its label.
       plain: 'flex flex-col gap-4',
     },
   },

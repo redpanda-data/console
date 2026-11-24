@@ -9,66 +9,36 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
-import { timestampFromDate } from '@bufbuild/protobuf/wkt';
-import { createRouterTransport } from '@connectrpc/connect';
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { renderHook, waitFor } from '@testing-library/react';
-import { UnifiedShadowLinkState } from 'components/pages/shadowlinks/model';
-import { DeleteShadowLinkResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
-import { deleteShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
+import { Operation_State } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/operation_pb';
 import {
-  type GetShadowLinkResponse,
-  GetShadowLinkResponseSchema,
-  ShadowLinkSchema,
-} from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
+  type ShadowLinkSchema as ControlplaneShadowLinkSchema,
+  ShadowLink_State as ControlplaneState,
+} from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
+import {
+  deleteShadowLink as deleteControlplaneLink,
+  getShadowLink as getControlplaneLink,
+  listShadowLinks as listControlplaneLinks,
+} from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/controlplane/v1/shadow_link-ShadowLinkService_connectquery';
+import type { MessageInitShape } from '@bufbuild/protobuf';
+import { timestampFromDate } from '@bufbuild/protobuf/wkt';
+import { Code, ConnectError, createConnectRouter, createRouterTransport, type Transport } from '@connectrpc/connect';
+import { createFetchHandler } from '@connectrpc/connect/protocol';
+import { afterAll, afterEach, beforeAll, describe, expect, onTestFinished, test } from '@rstest/core';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { UnifiedShadowLinkState } from 'components/pages/shadowlinks/model';
+import { config } from 'config';
+import { http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
+import { deleteShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import {
   failOver,
   getShadowLink,
   listShadowLinkTopics,
 } from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
-import { ShadowLinkConfigurationsSchema, ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { ShadowLinkState, ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { connectQueryWrapper } from 'test-utils';
 
-// Mock config module
-rs.mock('config', () => ({
-  isEmbedded: rs.fn(),
-}));
-
-// Mock the controlplane query hook
-rs.mock('./controlplane/shadowlink', () => ({
-  useControlplaneGetShadowLinkByNameQuery: rs.fn(),
-  useControlplaneUpdateShadowLinkMutation: rs.fn(() => ({
-    mutateAsync: rs.fn(),
-    isPending: false,
-  })),
-  useControlplaneDeleteShadowLinkMutation: rs.fn(() => ({
-    mutate: rs.fn(),
-    isPending: false,
-  })),
-}));
-
-// Mock the controlplane mapper for the fallback scenario. Form-value building
-// delegates to the real mapper so useEditShadowLink tests exercise actual
-// hydration (rs.clearAllMocks clears calls, not this implementation).
-rs.mock('components/pages/shadowlinks/mappers/controlplane', () => {
-  const actual = rs.requireActual<typeof import('components/pages/shadowlinks/mappers/controlplane')>(
-    'components/pages/shadowlinks/mappers/controlplane'
-  );
-  return {
-    fromControlplaneShadowLink: rs.fn(),
-    buildDefaultFormValuesFromControlplane: rs.fn(actual.buildDefaultFormValuesFromControlplane),
-  };
-});
-
-import { fromControlplaneShadowLink } from 'components/pages/shadowlinks/mappers/controlplane';
-// Import after mocks are set up
-import { isEmbedded } from 'config';
-
-import {
-  useControlplaneDeleteShadowLinkMutation,
-  useControlplaneGetShadowLinkByNameQuery,
-} from './controlplane/shadowlink';
 import {
   useDeleteShadowLinkUnified,
   useEditShadowLink,
@@ -77,384 +47,246 @@ import {
   useListShadowTopicQuery,
 } from './shadowlink';
 
-const mockIsEmbedded = rs.mocked(isEmbedded);
-const mockUseControlplaneGetShadowLinkByNameQuery = rs.mocked(useControlplaneGetShadowLinkByNameQuery);
-const mockFromControlplaneShadowLink = rs.mocked(fromControlplaneShadowLink);
-const mockUseControlplaneDeleteShadowLinkMutation = rs.mocked(useControlplaneDeleteShadowLinkMutation);
+const name = 'test-shadow-link';
+const clusterId = 'sr-456';
+const controlplaneId = 'cp-id-456';
+const dataplaneId = 'test-uid-123';
+const baseUrl = 'https://controlplane.test';
+const server = setupServer();
+const guardedFetch = globalThis.fetch;
 
-// Test data factories
-const createMockDataplaneShadowLink = () =>
-  create(ShadowLinkSchema, {
-    name: 'test-shadow-link',
-    uid: 'test-uid-123',
-    state: ShadowLinkState.ACTIVE,
-    configurations: create(ShadowLinkConfigurationsSchema, {
-      clientOptions: {
-        bootstrapServers: ['localhost:9092'],
-      },
-    }),
+beforeAll(() => {
+  server.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in the shadow link tests');
+    },
   });
-
-const createMockControlplaneResponse = () => ({
-  id: 'cp-id-456',
-  name: 'test-shadow-link',
-  state: 5, // ACTIVE in controlplane
-  shadowRedpandaId: 'sr-456',
-  createdAt: timestampFromDate(new Date('2025-01-01T00:00:00Z')),
-  updatedAt: timestampFromDate(new Date('2025-01-02T00:00:00Z')),
 });
 
-const mockControlplaneQueryData = (data: unknown) => {
-  mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
-    data,
-    isLoading: false,
-    error: null,
-    refetch: rs.fn(),
-  } as any);
+afterEach(() => {
+  cleanup();
+  server.resetHandlers();
+});
+
+afterAll(() => {
+  server.close();
+});
+
+const serveControlplane = (
+  embedded: boolean,
+  syncOptions?: MessageInitShape<typeof ControlplaneShadowLinkSchema>['schemaRegistrySyncOptions']
+) => {
+  const originalConfig = { jwt: config.jwt, clusterId: config.clusterId, controlplaneUrl: config.controlplaneUrl };
+  Object.assign(config, { jwt: embedded ? 'test-token' : undefined, clusterId, controlplaneUrl: baseUrl });
+  onTestFinished(() => {
+    Object.assign(config, originalConfig);
+  });
+
+  const reads: string[] = [];
+  const deletedIds: string[] = [];
+  const link = {
+    id: controlplaneId,
+    name,
+    state: ControlplaneState.PAUSED,
+    shadowRedpandaId: clusterId,
+    createdAt: timestampFromDate(new Date('2025-01-01T00:00:00Z')),
+    updatedAt: timestampFromDate(new Date('2025-01-02T00:00:00Z')),
+    schemaRegistrySyncOptions: syncOptions,
+  };
+  const activeLinks = new Map([[link.id, link]]);
+  const { handlers } = createConnectRouter()
+    .rpc(listControlplaneLinks, ({ filter }, { requestHeader }) => {
+      reads.push('list');
+      if (requestHeader.get('Authorization') !== 'Bearer test-token') {
+        throw new ConnectError('Missing host token', Code.Unauthenticated);
+      }
+      return {
+        shadowLinks: [...activeLinks.values()].filter((item) => item.shadowRedpandaId === filter?.shadowRedpandaId),
+      };
+    })
+    .rpc(getControlplaneLink, ({ id }) => {
+      reads.push('get');
+      return { shadowLink: activeLinks.get(id) };
+    })
+    .rpc(deleteControlplaneLink, ({ id }) => {
+      deletedIds.push(id);
+      if (!activeLinks.delete(id)) {
+        throw new ConnectError('Unknown link', Code.NotFound);
+      }
+      return { operation: { state: Operation_State.COMPLETED } };
+    });
+
+  server.use(
+    ...handlers.map((handler) => {
+      const handle = createFetchHandler(handler);
+      return http.post(baseUrl + handler.requestPath, ({ request }) => handle(request));
+    })
+  );
+  return { reads, deletedIds };
 };
 
-/** Renders the unified hook over a dataplane GetShadowLink handler and waits until loading settles. */
-const renderLoadedUnifiedHook = async (getShadowLinkResponse: () => GetShadowLinkResponse, waitTimeout?: number) => {
-  const mockGetShadowLink = rs.fn();
+const shadowLinkWrapper = (transport: Transport) =>
+  connectQueryWrapper({ defaultOptions: { queries: { retry: false, retryDelay: 0 } } }, transport).wrapper;
+
+const renderUnified = (readDataplane: 'available' | 'unavailable') => {
+  const readNames: string[] = [];
   const transport = createRouterTransport(({ rpc }) => {
     rpc(getShadowLink, (request) => {
-      mockGetShadowLink(request);
-      return getShadowLinkResponse();
+      readNames.push(request.name);
+      if (readDataplane === 'unavailable') {
+        throw new ConnectError('Dataplane unavailable', Code.Unavailable);
+      }
+      return {
+        shadowLink: {
+          name: request.name,
+          uid: dataplaneId,
+          state: ShadowLinkState.ACTIVE,
+          configurations: { clientOptions: { bootstrapServers: ['localhost:9092'] } },
+        },
+      };
     });
   });
-
-  const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-
-  const { result } = renderHook(() => useGetShadowLinkUnified({ name: 'test-shadow-link' }), { wrapper });
-
-  // Wait for data to load
-  await waitFor(
-    () => {
-      expect(result.current.isLoading).toBe(false);
-    },
-    waitTimeout === undefined ? undefined : { timeout: waitTimeout }
-  );
-  return { result, mockGetShadowLink };
-};
-
-/** The dataplane read always runs; the controlplane read is enabled only in embedded mode. */
-const expectShadowLinkQueries = (mockGetShadowLink: ReturnType<typeof rs.fn>, controlplaneEnabled: boolean) => {
-  expect(mockGetShadowLink).toHaveBeenCalledWith(expect.objectContaining({ name: 'test-shadow-link' }));
-  expect(mockUseControlplaneGetShadowLinkByNameQuery).toHaveBeenCalledWith(
-    { name: 'test-shadow-link' },
-    { enabled: controlplaneEnabled }
-  );
-};
-
-const createPartialUnifiedData = () => ({
-  name: 'test-shadow-link',
-  id: 'cp-id-456',
-  state: UnifiedShadowLinkState.ACTIVE,
-  tasksStatus: [],
-  syncedShadowTopicProperties: [],
-  shadowRedpandaId: 'sr-456',
-});
-
-const expectPartialControlplaneData = (data: { name?: string; id?: string; shadowRedpandaId?: string } | undefined) => {
-  expect(data?.name).toBe('test-shadow-link');
-  expect(data?.id).toBe('cp-id-456');
-  expect(data?.shadowRedpandaId).toBe('sr-456');
+  return {
+    ...renderHook(() => useGetShadowLinkUnified({ name }), { wrapper: shadowLinkWrapper(transport) }),
+    readNames,
+  };
 };
 
 describe('useGetShadowLinkUnified', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-  });
+  test('returns only dataplane data in standalone mode', async () => {
+    const { reads } = serveControlplane(false);
+    const { result, readNames } = renderUnified('available');
 
-  test('returns dataplane data in non-embedded mode', async () => {
-    // Setup: non-embedded mode
-    mockIsEmbedded.mockReturnValue(false);
-
-    // Mock controlplane to return nothing (not enabled)
-    mockControlplaneQueryData(undefined);
-
-    const mockShadowLink = createMockDataplaneShadowLink();
-    const { result, mockGetShadowLink } = await renderLoadedUnifiedHook(() =>
-      create(GetShadowLinkResponseSchema, { shadowLink: mockShadowLink })
-    );
-
-    // Verify dataplane query was called, and controlplane query called with enabled: false
-    expectShadowLinkQueries(mockGetShadowLink, false);
-
-    // Verify data comes from dataplane
-    expect(result.current.data?.name).toBe('test-shadow-link');
-    expect(result.current.data?.id).toBe('test-uid-123');
-    expect(result.current.data?.state).toBe(UnifiedShadowLinkState.ACTIVE);
-    expect(result.current.error).toBeNull();
-
-    // Verify controlplane fields are NOT set
+    await waitFor(() => expect(result.current.data?.id).toBe(dataplaneId));
+    expect(result.current.data).toMatchObject({ name, state: UnifiedShadowLinkState.ACTIVE });
     expect(result.current.data?.shadowRedpandaId).toBeUndefined();
+    expect(result.current.error).toBeNull();
+    expect(readNames).toEqual([name]);
+    expect(reads).toEqual([]);
   });
 
-  test('returns merged data with controlplane state in embedded mode', async () => {
-    // Setup: embedded mode
-    mockIsEmbedded.mockReturnValue(true);
+  test('merges dataplane identity with controlplane state and timestamps in embedded mode', async () => {
+    serveControlplane(true);
+    const { result, readNames } = renderUnified('available');
 
-    // Mock controlplane to return data
-    mockControlplaneQueryData(createMockControlplaneResponse());
-
-    const { result, mockGetShadowLink } = await renderLoadedUnifiedHook(() =>
-      create(GetShadowLinkResponseSchema, { shadowLink: createMockDataplaneShadowLink() })
-    );
-
-    // Verify dataplane query was called, and controlplane query called with enabled: true
-    expectShadowLinkQueries(mockGetShadowLink, true);
-
-    // Verify basic data from dataplane
-    expect(result.current.data?.name).toBe('test-shadow-link');
-
-    // Verify controlplane overrides are applied
-    expect(result.current.data?.shadowRedpandaId).toBe('sr-456');
-    expect(result.current.data?.createdAt).toEqual(new Date('2025-01-01T00:00:00Z'));
-    expect(result.current.data?.updatedAt).toEqual(new Date('2025-01-02T00:00:00Z'));
-
-    // Verify state is from controlplane mapping
-    expect(result.current.data?.state).toBe(UnifiedShadowLinkState.ACTIVE);
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.controlplaneError).toBeNull();
+    expect(result.current.data).toMatchObject({
+      name,
+      id: dataplaneId,
+      state: UnifiedShadowLinkState.PAUSED,
+      shadowRedpandaId: clusterId,
+      createdAt: new Date('2025-01-01T00:00:00Z'),
+      updatedAt: new Date('2025-01-02T00:00:00Z'),
+    });
     expect(result.current.error).toBeNull();
+    expect(readNames).toEqual([name]);
   });
 
-  test('returns controlplane data as fallback when dataplane fails in embedded mode', async () => {
-    // Setup: embedded mode with dataplane failure
-    mockIsEmbedded.mockReturnValue(true);
+  test('falls back to controlplane data but still exposes the dataplane failure in embedded mode', async () => {
+    serveControlplane(true);
+    const { result, readNames } = renderUnified('unavailable');
 
-    // Mock controlplane to return data
-    const mockControlplaneData = createMockControlplaneResponse();
-    mockControlplaneQueryData(mockControlplaneData);
-
-    // Mock the controlplane mapper to return partial data
-    mockFromControlplaneShadowLink.mockReturnValue(createPartialUnifiedData());
-
-    // Dataplane failure: the transport throws. Wait for data to load (dataplane will fail after retry, but
-    // controlplane succeeds); increased timeout to account for retry: 1 in embedded mode.
-    const { result, mockGetShadowLink } = await renderLoadedUnifiedHook(() => {
-      throw new Error('Dataplane unavailable');
-    }, 3000);
-
-    // Verify dataplane query was called (and failed), and controlplane query called with enabled: true
-    expectShadowLinkQueries(mockGetShadowLink, true);
-
-    // Verify dataplane error is captured
-    expect(result.current.dataplaneError).not.toBeNull();
-
-    // Verify fromControlplaneShadowLink was called as fallback
-    expect(mockFromControlplaneShadowLink).toHaveBeenCalledWith(mockControlplaneData);
-
-    // Verify partial data from controlplane fallback
-    expectPartialControlplaneData(result.current.data);
-
-    // No combined error since we have data from controlplane fallback
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.controlplaneError).toBeNull();
+    expect(result.current.dataplaneError).toMatchObject({
+      code: Code.Unavailable,
+      rawMessage: 'Dataplane unavailable',
+    });
+    expect(result.current.data).toMatchObject({
+      name,
+      id: controlplaneId,
+      state: UnifiedShadowLinkState.PAUSED,
+      shadowRedpandaId: clusterId,
+    });
     expect(result.current.error).toBeNull();
+    expect(readNames).toEqual([name, name]);
   });
 });
 
 describe('useEditShadowLink', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-  });
-
-  const renderEditHook = () => {
-    // Dataplane transport exists but is never queried in embedded mode
-    const transport = createRouterTransport(({ rpc }) => {
-      rpc(getShadowLink, () => create(GetShadowLinkResponseSchema, {}));
+  test.each([
+    ['api', { case: 'shadowSchemaRegistryApi', value: { sourceUrl: 'https://sr.example.com' } }],
+    ['topic', { case: 'shadowSchemaRegistryTopic', value: {} }],
+  ] as const)('hydrates %s mode from the controlplane link', async (mode, schemaRegistryShadowingMode) => {
+    serveControlplane(true, { schemaRegistryShadowingMode });
+    const { result } = renderHook(() => useEditShadowLink(name), {
+      wrapper: shadowLinkWrapper(createRouterTransport(() => undefined)),
     });
-    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-    return renderHook(() => useEditShadowLink('test-shadow-link'), { wrapper });
-  };
 
-  // The edit page derives all API-mode behavior (locked tabs, gate-off
-  // read-only card) from the hydrated form values, so the mode must survive
-  // hydration from controlplane data.
-  test('hydrates API mode from controlplane data in embedded mode', async () => {
-    mockIsEmbedded.mockReturnValue(true);
-    mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
-      data: {
-        ...createMockControlplaneResponse(),
-        schemaRegistrySyncOptions: {
-          schemaRegistryShadowingMode: {
-            case: 'shadowSchemaRegistryApi',
-            value: { sourceUrl: 'https://sr.example.com' },
-          },
-        },
-      },
-      isLoading: false,
-      error: null,
-      refetch: rs.fn(),
-    } as any);
-
-    const { result } = renderEditHook();
-
-    await waitFor(() => {
-      expect(result.current.hasData).toBe(true);
-    });
-    expect(result.current.formValues?.schemaRegistry.mode).toBe('api');
-  });
-
-  test('hydrates topic mode (not api) for a topic-mode controlplane link in embedded mode', async () => {
-    mockIsEmbedded.mockReturnValue(true);
-    mockUseControlplaneGetShadowLinkByNameQuery.mockReturnValue({
-      data: {
-        ...createMockControlplaneResponse(),
-        schemaRegistrySyncOptions: {
-          schemaRegistryShadowingMode: { case: 'shadowSchemaRegistryTopic', value: {} },
-        },
-      },
-      isLoading: false,
-      error: null,
-      refetch: rs.fn(),
-    } as any);
-
-    const { result } = renderEditHook();
-
-    await waitFor(() => {
-      expect(result.current.hasData).toBe(true);
-    });
-    expect(result.current.formValues?.schemaRegistry.mode).toBe('topic');
+    await waitFor(() => expect(result.current.hasData).toBe(true));
+    expect(result.current.formValues?.schemaRegistry.mode).toBe(mode);
   });
 });
 
-/** Embedded mode, the controlplane lookup, and a controlplane delete mutation to observe. */
-const setupDeleteMocks = (embedded: boolean, controlplaneData: unknown) => {
-  mockIsEmbedded.mockReturnValue(embedded);
-  mockControlplaneQueryData(controlplaneData);
-
-  const mockControlplaneMutate = rs.fn();
-  mockUseControlplaneDeleteShadowLinkMutation.mockReturnValue({
-    mutate: mockControlplaneMutate,
-    isPending: false,
-  } as any);
-
-  return { mockControlplaneMutate, mockDataplaneDelete: rs.fn() };
-};
-
-/** Renders the delete hook over a transport whose dataplane delete reports to `mockDataplaneDelete`. */
-const renderDeleteHook = (mockDataplaneDelete: ReturnType<typeof rs.fn>) => {
-  const transport = createRouterTransport(({ rpc }) => {
-    rpc(getShadowLink, () => create(GetShadowLinkResponseSchema, {}));
-    rpc(deleteShadowLink, (request) => {
-      mockDataplaneDelete(request);
-      return create(DeleteShadowLinkResponseSchema, {});
-    });
+async function deleteLink(result: { current: ReturnType<typeof useDeleteShadowLinkUnified> }, force: boolean) {
+  const completed = Promise.withResolvers<void>();
+  await act(async () => {
+    result.current.deleteShadowLink({ force, onSuccess: completed.resolve, onError: completed.reject });
+    await completed.promise;
   });
-
-  const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-
-  return renderHook(() => useDeleteShadowLinkUnified({ name: 'test-shadow-link' }), { wrapper });
-};
+}
 
 describe('useDeleteShadowLinkUnified', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-  });
-
-  test('calls controlplane delete mutation when in embedded mode and does NOT call dataplane', () => {
-    // Setup: embedded mode, with the controlplane query returning a shadowlink with ID
-    const { mockControlplaneMutate, mockDataplaneDelete } = setupDeleteMocks(true, {
-      id: 'cp-shadow-link-id-123',
-      name: 'test-shadow-link',
+  test.each([
+    ['embedded', true],
+    ['standalone', false],
+  ] as const)('deletes via the correct service in %s mode', async (_mode, embedded) => {
+    const { deletedIds } = serveControlplane(embedded);
+    const dataplaneDeletes: { name: string; force: boolean }[] = [];
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(deleteShadowLink, (request) => {
+        dataplaneDeletes.push({ name: request.name, force: request.force });
+        return {};
+      });
+    });
+    const { result } = renderHook(() => useDeleteShadowLinkUnified({ name }), {
+      wrapper: shadowLinkWrapper(transport),
     });
 
-    // The transport's dataplane delete mock verifies it's NOT called
-    const { result } = renderDeleteHook(mockDataplaneDelete);
+    expect(result.current.canDelete).toBe(!embedded);
+    await waitFor(() => expect(result.current.canDelete).toBe(true));
 
-    // Verify controlplane query was called with enabled: true
-    expect(mockUseControlplaneGetShadowLinkByNameQuery).toHaveBeenCalledWith(
-      { name: 'test-shadow-link' },
-      { enabled: true }
-    );
+    await deleteLink(result, !embedded);
 
-    // Verify canDelete is true (ID is available)
-    expect(result.current.canDelete).toBe(true);
-
-    // Call delete function
-    const callbacks = { onSuccess: rs.fn(), onError: rs.fn() };
-    result.current.deleteShadowLink({ force: false, ...callbacks });
-
-    // Verify controlplane mutation was called with the ID
-    expect(mockControlplaneMutate).toHaveBeenCalledWith({ id: 'cp-shadow-link-id-123' }, callbacks);
-
-    // Verify dataplane delete was NOT called
-    expect(mockDataplaneDelete).not.toHaveBeenCalled();
-  });
-
-  test('calls dataplane delete mutation when not in embedded mode and does NOT call controlplane', async () => {
-    // Setup: non-embedded mode, controlplane query returns nothing (not enabled), and its delete
-    // mutation is mocked to verify it's NOT called
-    const { mockControlplaneMutate, mockDataplaneDelete } = setupDeleteMocks(false, undefined);
-
-    const { result } = renderDeleteHook(mockDataplaneDelete);
-
-    // Verify controlplane query was called with enabled: false
-    expect(mockUseControlplaneGetShadowLinkByNameQuery).toHaveBeenCalledWith(
-      { name: 'test-shadow-link' },
-      { enabled: false }
-    );
-
-    // Verify canDelete is true (always true in non-embedded mode)
-    expect(result.current.canDelete).toBe(true);
-
-    // Call delete function
-    result.current.deleteShadowLink({ force: true, onSuccess: rs.fn(), onError: rs.fn() });
-
-    // Wait for the dataplane delete mutation to be called
-    await waitFor(() => {
-      expect(mockDataplaneDelete).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'test-shadow-link', force: true })
-      );
-    });
-
-    // Verify controlplane mutation was NOT called
-    expect(mockControlplaneMutate).not.toHaveBeenCalled();
+    expect(deletedIds).toEqual(embedded ? [controlplaneId] : []);
+    expect(dataplaneDeletes).toEqual(embedded ? [] : [{ name, force: true }]);
+    await waitFor(() => expect(result.current.canDelete).toBe(!embedded));
   });
 });
 
 describe('useFailoverShadowLinkMutation', () => {
-  const setup = (refreshTopics: boolean) => {
-    const reads = { topics: 0 };
+  test.each([
+    ['refreshes topic state immediately when requested', true, ShadowTopicState.FAILING_OVER, 2],
+    ['leaves topic state unchanged by default', false, ShadowTopicState.ACTIVE, 1],
+  ] as const)('%s', async (_label, refresh, expectedState, expectedReads) => {
+    let topicReads = 0;
+    let topicState = ShadowTopicState.ACTIVE;
     const transport = createRouterTransport(({ rpc }) => {
       rpc(listShadowLinkTopics, () => {
-        reads.topics += 1;
-        return { shadowTopics: [] };
+        topicReads += 1;
+        return { shadowTopics: [{ topicName: 'orders', state: topicState }] };
       });
-      rpc(failOver, () => ({ name: 'test-shadow-link' }));
+      rpc(failOver, () => {
+        topicState = ShadowTopicState.FAILING_OVER;
+        return { name };
+      });
     });
-    const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
-    const onSuccess = rs.fn();
     const { result } = renderHook(
       () => ({
-        topics: useListShadowTopicQuery({ shadowLinkName: 'test-shadow-link', pageSize: -1 }),
-        failover: useFailoverShadowLinkMutation({ onSuccess, refreshTopics }),
+        topics: useListShadowTopicQuery({ shadowLinkName: name, pageSize: -1 }),
+        failover: useFailoverShadowLinkMutation(refresh ? { refreshTopics: true } : undefined),
       }),
-      { wrapper }
+      { wrapper: shadowLinkWrapper(transport) }
     );
-    const failOverLink = () =>
-      result.current.failover.mutate({ name: 'test-shadow-link' } as Parameters<
-        typeof result.current.failover.mutate
-      >[0]);
-    return { reads, result, onSuccess, failOverLink };
-  };
 
-  test('re-reads the link’s topics once the failover is accepted, so their state shows straight away', async () => {
-    const { reads, result, failOverLink } = setup(true);
-    await waitFor(() => expect(result.current.topics.isSuccess).toBe(true));
-    expect(reads.topics).toBe(1);
+    await waitFor(() => expect(result.current.topics.data?.shadowTopics[0]?.state).toBe(ShadowTopicState.ACTIVE));
+    await act(() => result.current.failover.mutateAsync({ name }));
 
-    failOverLink();
-
-    await waitFor(() => expect(reads.topics).toBe(2));
-  });
-
-  test('leaves the topics alone unless asked, as it did before the Failover tab', async () => {
-    const { reads, result, onSuccess, failOverLink } = setup(false);
-    await waitFor(() => expect(result.current.topics.isSuccess).toBe(true));
-
-    failOverLink();
-
-    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
-    expect(reads.topics).toBe(1);
+    await waitFor(() => expect(result.current.topics.data?.shadowTopics[0]?.state).toBe(expectedState));
+    expect(topicReads).toBe(expectedReads);
   });
 });

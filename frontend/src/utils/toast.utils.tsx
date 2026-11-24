@@ -52,8 +52,7 @@ const getToastId = ({ initialId, resourceName }: GetToastIdProps) => {
   return initialId ? `${initialId}_${resourceName}` : resourceName;
 };
 
-// Base UI: timeout 0 means sticky, and a `loading` toast never times out.
-const toTimeout = (status: ToastStatus | undefined, duration: number | null | undefined): number => {
+const toTimeout = (status: ToastStatus | undefined, duration: number | null | undefined) => {
   if (duration === null) {
     return 0;
   }
@@ -64,15 +63,7 @@ const toTimeout = (status: ToastStatus | undefined, duration: number | null | un
 };
 
 /** Returns the toast id, for `updateToast` / `closeToast`. */
-export const showToast = ({
-  id,
-  resourceName,
-  status,
-  title,
-  description,
-  duration,
-  onClose,
-}: ShowToastOptions): string =>
+export const showToast = ({ id, resourceName, status, title, description, duration, onClose }: ShowToastOptions) =>
   toast.add({
     id: getToastId({ initialId: id, resourceName }),
     type: status,
@@ -93,7 +84,6 @@ export const updateToast = (id: string, { status, title, description, duration }
   });
 };
 
-// Base UI closes every toast when the id is missing.
 export const closeToast = (id: string) => {
   if (id) {
     toast.close(id);
@@ -102,8 +92,8 @@ export const closeToast = (id: string) => {
 
 type FormatToastMessageProps = {
   error: Omit<ErrorHttpPayload, 'userMessage'>;
-  action: string; // verb (fetch, upgrade, delete, edit, get)
-  entity: string; // noun (cluster, token, namespace, organization)
+  action: string;
+  entity: string;
   customReason?: string;
   customCode?: number;
 };
@@ -130,19 +120,19 @@ export const formatToastErrorMessage = ({
   return `Failed to ${action} ${entity} due to: ${customReason || error.reason} (code: ${error.internalCode})`;
 };
 
-function collectBadRequestDetails(error: ConnectError): string[] {
+function collectBadRequestDetails(error: ConnectError) {
   return error
     .findDetails(BadRequestSchema)
     .flatMap((br) => br.fieldViolations.map((v) => (v.field ? `${v.field}: ${v.description}` : v.description)));
 }
 
-function collectViolationDescriptions(error: ConnectError): string[] {
+function collectViolationDescriptions(error: ConnectError) {
   const preconditions = error.findDetails(PreconditionFailureSchema).flatMap((pf) => pf.violations);
   const quotas = error.findDetails(QuotaFailureSchema).flatMap((qf) => qf.violations);
   return [...preconditions, ...quotas].map((v) => v.description).filter(Boolean);
 }
 
-function collectResourceInfoDetails(error: ConnectError): string[] {
+function collectResourceInfoDetails(error: ConnectError) {
   return error.findDetails(ResourceInfoSchema).flatMap((ri) => {
     if (!ri.resourceName) {
       return [];
@@ -152,10 +142,7 @@ function collectResourceInfoDetails(error: ConnectError): string[] {
   });
 }
 
-/**
- * Extracts human-readable detail strings from well-known gRPC error detail types.
- */
-function collectErrorDetails(error: ConnectError): string[] {
+function collectErrorDetails(error: ConnectError) {
   return [
     ...collectBadRequestDetails(error),
     ...collectViolationDescriptions(error),
@@ -163,26 +150,11 @@ function collectErrorDetails(error: ConnectError): string[] {
   ];
 }
 
-/**
- * The Kafka error name Redpanda answers with when a fence rejects a request. Produce is rejected with a
- * timeout instead, but produce errors don't come through these toasts, and a timeout is too common
- * a failure to blame on the fence.
- */
 const FENCE_REJECTION_REASONS = new Set(['POLICY_VIOLATION']);
-/**
- * Redpanda's own text when the fence refuses a request outside Kafka: a role change (FAILED_PRECONDITION
- * from Admin API v2, 409 from v1) or a new shadow link. The fence's own errors, such as a stale revision,
- * say "Cluster fence" and must not match.
- */
-const FENCE_REFUSAL = /operation blocked by the cluster fence|the cluster is fenced/i;
-const TRAILING_PERIOD = /\.$/;
+const FENCE_REFUSAL = /operation blocked by the cluster fence|the cluster is fenced/iu;
+const TRAILING_PERIOD = /\.$/u;
 
-/**
- * A fence rejection reads as a policy violation, which looks like an outage. Only when
- * the cluster is known to be fenced, and the error is one a fence produces, is the fence named as the
- * likely cause, after the broker's own message.
- */
-const clusterFenceHint = (error: ConnectError): string | undefined => {
+const clusterFenceHint: (error: ConnectError) => string | undefined = (error) => {
   const { phase } = useClusterFenceStore.getState();
   if (!(phase && hasFenceActivity(phase))) {
     return;
@@ -198,13 +170,16 @@ const clusterFenceHint = (error: ConnectError): string | undefined => {
     : 'This cluster is fenced, which rejects writes and most changes a shadow link copies until it’s unfenced.';
 };
 
-export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToastMessageGRPCProps): string {
+/**
+ * Adds a fence hint only when the cluster is known to be fenced and the broker specifically reports a policy violation or fence refusal. Ordinary timeouts and errors changing the fence itself must not be attributed to it.
+ */
+export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToastMessageGRPCProps) {
   const message = formatGRPCErrorMessage({ error, action, entity });
   const hint = clusterFenceHint(error);
   return hint ? `${message.replace(TRAILING_PERIOD, '')}. ${hint}` : message;
 }
 
-function formatGRPCErrorMessage({ error, action, entity }: FormatToastMessageGRPCProps): string {
+function formatGRPCErrorMessage({ error, action, entity }: FormatToastMessageGRPCProps) {
   const localizedText = error.findDetails(LocalizedMessageSchema).find((m) => m.message)?.message;
 
   const baseMessage = localizedText || error.rawMessage;
@@ -224,7 +199,7 @@ function formatGRPCErrorMessage({ error, action, entity }: FormatToastMessageGRP
   return result;
 }
 
-function formatErrorReasons(error: ConnectError): string {
+function formatErrorReasons(error: ConnectError) {
   return error
     .findDetails(ErrorInfoSchema)
     .filter((info) => info.reason)

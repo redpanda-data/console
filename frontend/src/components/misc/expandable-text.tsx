@@ -21,7 +21,6 @@ export function ExpandableText(p: { children: string; maxChars: number }) {
   const isTruncated = showExpander && !expanded;
   const text = isTruncated ? p.children.slice(0, p.maxChars) : p.children;
 
-  // A span: valid in inline and <p> slots alike.
   return (
     <span>
       {text}

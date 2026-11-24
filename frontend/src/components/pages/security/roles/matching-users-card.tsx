@@ -80,7 +80,6 @@ const RoleMemberSection = ({ members, emptyTitle, deletingPrincipal, ...rowProps
 type AddRoleMemberProps = {
   gbacEnabled: boolean;
   isSubmitting: boolean;
-  /** Users not in the role yet. */
   userSuggestions: string[];
   onAdd: (principalType: 'User' | 'Group', name: string) => Promise<boolean>;
 };
@@ -200,7 +199,6 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
 
             {isRole && !membership.isLoading && (
               <>
-                {/* Users section */}
                 <span className="text-body-sm font-medium tracking-wide text-foreground uppercase">Users</span>
                 <RoleMemberSection
                   deletingPrincipal={membership.deletingPrincipal}
@@ -210,7 +208,6 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
                   testIdPrefix="user"
                 />
 
-                {/* Groups section — only when GBAC is enabled */}
                 {gbacEnabled && (
                   <>
                     <span className="mt-2 text-body-sm font-medium tracking-wide text-foreground uppercase">
@@ -229,7 +226,6 @@ export function MatchingUsersCard({ principalType, principal }: MatchingUsersCar
             )}
           </div>
 
-          {/* Add member — only for RedpandaRole */}
           {isRole && (
             <div className="border-t border-border pt-2">
               <AddRoleMember

@@ -96,9 +96,6 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
           continuousMode: urlState.continuousMode,
           onContinuousModeChange: (enabled) => {
             urlState.setContinuousMode(enabled);
-            // Continuous mode's page holds every loaded row in one page (see
-            // messages-table.tsx) — staying on a later pageIndex than that yields a
-            // permanently blank table with no page controls to get back with.
             urlState.setPageIndex(0);
           },
           partitionId: urlState.partitionId,
@@ -203,7 +200,6 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         )}
       </ResizablePanelGroup>
 
-      {/* Expanded presentation replaces the docked slot entirely (fixed full-viewport overlay) */}
       {table.selectedMessage && detail.detailExpanded && (
         <MessageDetailPanel
           expandButtonRef={detail.expandButtonRef}
@@ -223,11 +219,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         elapsedMs={search.elapsedMs}
         isLoadingMore={search.isLoadingMore}
         loadMoreCount={urlState.maxResults}
-        onLoadMore={() =>
-          search.loadMore(urlState.maxResults).catch(() => {
-            // errors are surfaced through search.error
-          })
-        }
+        onLoadMore={() => search.loadMore(urlState.maxResults).catch(() => {})}
         onPageChange={urlState.setPageIndex}
         pageIndex={urlState.pageIndex}
         pageSize={urlState.pageSize}

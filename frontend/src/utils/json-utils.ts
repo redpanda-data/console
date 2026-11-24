@@ -26,8 +26,7 @@ export type DataType =
   | 'null';
 
 const seen = new Set();
-// Serialize object to json, handling reference loops gracefully
-export function toJson(obj: unknown, space?: string | number | undefined): string {
+export function toJson(obj: unknown, space?: string | number | undefined) {
   seen.clear();
   try {
     return JSON.stringify(
@@ -52,17 +51,16 @@ export function toJson(obj: unknown, space?: string | number | undefined): strin
     seen.clear();
   }
 }
-// Clone object using serialization
 
-export function clone<T>(obj: T): T {
+export function clone<T>(obj: T) {
   if (!obj) {
     return obj;
   }
-  return JSON.parse(toJson(obj));
+  const copy: T = JSON.parse(toJson(obj));
+  return copy;
 }
-// Accesses all members of an object by serializing it
 
-export function touch(obj: unknown): void {
+export function touch(obj: unknown) {
   JSON.stringify(obj, (_k, v) => {
     if (typeof v === 'object') {
       return v;
@@ -76,7 +74,7 @@ export function touch(obj: unknown): void {
  * @param value The JSON value to analyze
  * @returns The specific data type including "array" and "null" as distinct types
  */
-export function getDataType(value: JsonValue): DataType {
+export function getDataType(value: JsonValue) {
   if (Array.isArray(value)) {
     return 'array';
   }
@@ -91,16 +89,14 @@ export function getDataType(value: JsonValue): DataType {
  * @param str The string to parse
  * @returns Object with success boolean and either parsed data or original string
  */
-export function tryParseJson(str: string): {
-  success: boolean;
-  data: JsonValue;
-} {
+export function tryParseJson(str: string) {
   const trimmed = str.trim();
   if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
     return { success: false, data: str };
   }
   try {
-    return { success: true, data: JSON.parse(str) };
+    const data: JsonValue = JSON.parse(str);
+    return { success: true, data };
   } catch {
     return { success: false, data: str };
   }
@@ -113,7 +109,7 @@ export function tryParseJson(str: string): {
  * @param value The new value to set
  * @returns A new JSON value with the updated path
  */
-export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonValue): JsonValue {
+export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonValue) {
   if (path.length === 0) {
     return value;
   }
@@ -131,10 +127,7 @@ export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonVal
   return mutableObj;
 }
 
-/**
- * Updates an array at a specific path
- */
-function updateArray(array: JsonValue[], path: string[], value: JsonValue): JsonValue[] {
+function updateArray(array: JsonValue[], path: string[], value: JsonValue) {
   const [index, ...restPath] = path;
   const arrayIndex = Number(index);
 
@@ -151,7 +144,7 @@ function updateArray(array: JsonValue[], path: string[], value: JsonValue): Json
   return newArray;
 }
 
-function copyDenseArray(array: JsonValue[], length: number): JsonValue[] {
+function copyDenseArray(array: JsonValue[], length: number) {
   const copy: JsonValue[] = new Array(length).fill(null);
   for (let index = 0; index < array.length; index++) {
     copy[index] = index in array ? array[index] : null;
@@ -159,13 +152,9 @@ function copyDenseArray(array: JsonValue[], length: number): JsonValue[] {
   return copy;
 }
 
-/**
- * Updates an object at a specific path
- */
-function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonObject {
+function updateObject(obj: JsonObject, path: string[], value: JsonValue) {
   const [key, ...restPath] = path;
 
-  // Validate object key
   if (typeof key !== 'string') {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.error(`Invalid object key: ${key}`);
@@ -189,7 +178,11 @@ function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonOb
  * @param defaultValue Value to return if path doesn't exist
  * @returns The value at the path, or defaultValue if not found
  */
-export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: JsonValue = null): JsonValue {
+export const getValueAtPath: (obj: JsonValue, path: string[], defaultValue?: JsonValue) => JsonValue = (
+  obj,
+  path,
+  defaultValue = null
+) => {
   if (path.length === 0) {
     return obj;
   }
@@ -209,9 +202,9 @@ export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: Jso
   }
 
   return defaultValue;
-}
+};
 
-function getArrayValueAtPath(array: JsonValue[], key: string, rest: string[], defaultValue: JsonValue): JsonValue {
+function getArrayValueAtPath(array: JsonValue[], key: string, rest: string[], defaultValue: JsonValue) {
   const index = Number(key);
   if (Number.isNaN(index) || index < 0 || index >= array.length) {
     return defaultValue;
@@ -223,33 +216,32 @@ function getArrayValueAtPath(array: JsonValue[], key: string, rest: string[], de
  * Walks objects and arrays replacing any string that parses as JSON with the parsed value; strings
  * that don't parse are left alone. `depth`/`maxDepth` bound the recursion.
  */
-export function deepParseJson(value: unknown, depth = 0, maxDepth = 10): unknown {
-  // Prevent infinite recursion
+export const deepParseJson: (value: unknown, depth?: number, maxDepth?: number) => unknown = (
+  value,
+  depth = 0,
+  maxDepth = 10
+) => {
   if (depth > maxDepth || value === null || value === undefined) {
     return value;
   }
 
-  // Handle arrays - recursively parse each element
   if (Array.isArray(value)) {
     return value.map((item) => deepParseJson(item, depth + 1, maxDepth));
   }
 
-  // Handle objects - recursively parse each property
   if (typeof value === 'object') {
     return deepParseObject(value, depth, maxDepth);
   }
 
-  // Handle strings - attempt to parse as JSON
   if (typeof value === 'string') {
     const parseResult = tryParseJson(value);
     return parseResult.success ? deepParseJson(parseResult.data, depth + 1, maxDepth) : value;
   }
 
-  // For all other types (number, boolean, etc.), return as-is
   return value;
-}
+};
 
-function deepParseObject(value: object, depth: number, maxDepth: number): Record<string, unknown> {
+function deepParseObject(value: object, depth: number, maxDepth: number) {
   const result: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(value)) {
     result[key] = deepParseJson(val, depth + 1, maxDepth);

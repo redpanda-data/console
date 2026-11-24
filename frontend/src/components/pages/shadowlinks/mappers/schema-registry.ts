@@ -9,14 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Schema Registry sync-options mappers shared by the dataplane and
- * controlplane mappers. Both planes carry the same redpanda.core.admin.v2
- * messages (dataplane via local protogen, controlplane via the @buf npm SDK),
- * so unlike the per-plane client-options mappers there is no structural
- * difference to justify duplicating this logic.
- */
-
 import { type Duration, timestampDate } from '@bufbuild/protobuf/wkt';
 import {
   type SchemaRegistryAuthOptions,
@@ -72,7 +64,7 @@ export type SchemaRegistrySyncOptionsMessage = {
  * Convert a proto Duration to seconds.
  * Zero or unset durations map to undefined so the cluster default applies.
  */
-export function durationToSeconds(duration: Duration | undefined): number | undefined {
+export function durationToSeconds(duration: Duration | undefined) {
   if (!duration) {
     return;
   }
@@ -83,7 +75,7 @@ export function durationToSeconds(duration: Duration | undefined): number | unde
 /**
  * Map the core common TLS settings oneof to unified type
  */
-export function mapTLSSettings(tlsSettings: TLSSettings | undefined): UnifiedTLSSettings | undefined {
+export function mapTLSSettings(tlsSettings: TLSSettings | undefined) {
   if (!tlsSettings) {
     return;
   }
@@ -116,17 +108,14 @@ export function mapTLSSettings(tlsSettings: TLSSettings | undefined): UnifiedTLS
   return {
     enabled: tlsSettings.enabled,
     tlsSettings: tlsSettingsValue,
-  };
+  } satisfies UnifiedTLSSettings;
 }
 
-/**
- * Map the schema registry destination context mapping to unified type
- */
-function mapDestinationMapping(
-  destination: SchemaRegistryContextDestination | undefined
-): UnifiedSchemaRegistryApiOptions['destinationMapping'] {
+type DestinationMapping = UnifiedSchemaRegistryApiOptions['destinationMapping'];
+
+function mapDestinationMapping(destination: SchemaRegistryContextDestination | undefined) {
   if (destination?.mapping?.case === 'identity') {
-    return { case: 'identity' };
+    return { case: 'identity' } satisfies DestinationMapping;
   }
   if (destination?.mapping?.case === 'exact') {
     return {
@@ -135,15 +124,11 @@ function mapDestinationMapping(
         source: mapping.source,
         destination: mapping.destination,
       })),
-    };
+    } satisfies DestinationMapping;
   }
 }
 
-/**
- * Map API-mode schema registry options to unified type.
- * The password itself is never mapped — only password_set/password_set_at.
- */
-function mapSchemaRegistryApiOptions(api: SchemaRegistryApiOptionsMessage): UnifiedSchemaRegistryApiOptions {
+function mapSchemaRegistryApiOptions(api: SchemaRegistryApiOptionsMessage) {
   const basic = api.authOptions?.authOptions?.case === 'basic' ? api.authOptions.authOptions.value : undefined;
 
   return {
@@ -169,10 +154,10 @@ function mapSchemaRegistryApiOptions(api: SchemaRegistryApiOptionsMessage): Unif
     destinationMapping: mapDestinationMapping(api.destination),
     unsupportedSchemaFeaturePolicy: api.unsupportedSchemaFeaturePolicy,
     paused: api.paused,
-  };
+  } satisfies UnifiedSchemaRegistryApiOptions;
 }
 
-const formatSubSecondDuration = (totalNs: number): string => {
+const formatSubSecondDuration = (totalNs: number) => {
   if (totalNs % 1000 !== 0) {
     return `${totalNs}ns`;
   }
@@ -183,7 +168,7 @@ const formatSubSecondDuration = (totalNs: number): string => {
   return `${totalUs / 1000}ms`;
 };
 
-const formatWholeSecondsDuration = (seconds: number): string => {
+const formatWholeSecondsDuration = (seconds: number) => {
   if (seconds % 60 !== 0) {
     return `${seconds}s`;
   }
@@ -201,7 +186,7 @@ const formatWholeSecondsDuration = (seconds: number): string => {
  * (which rpk accepts and so must round-trip), pretty-ms emits either rejected multi-unit strings
  * ("1m 30s") or lossy ones (90s -> "1m"), and date-fns produces prose.
  */
-export function formatDurationForInput(duration: Duration | undefined): string {
+export function formatDurationForInput(duration: Duration | undefined) {
   if (!duration) {
     return '';
   }
@@ -211,15 +196,13 @@ export function formatDurationForInput(duration: Duration | undefined): string {
   }
 
   if (duration.nanos !== 0) {
-    // Sub-second precision present, so the largest exact unit is at most ms.
     return formatSubSecondDuration(seconds * 1_000_000_000 + duration.nanos);
   }
   return formatWholeSecondsDuration(seconds);
 }
 
-function mapTlsToMtlsSlice(tls: TLSSettings | undefined): SchemaRegistryFormValues['mtls'] {
+function mapTlsToMtlsSlice(tls: TLSSettings | undefined) {
   const base = structuredClone(initialValues.schemaRegistry.mtls);
-  // Round-tripped so rebuilding the whole message doesn't reset the flag.
   base.doNotSetSniHostname = Boolean(tls?.doNotSetSniHostname);
   const settings = tls?.tlsSettings;
 
@@ -237,10 +220,7 @@ function mapTlsToMtlsSlice(tls: TLSSettings | undefined): SchemaRegistryFormValu
       ca: pem.ca ? { pemContent: pem.ca, fileName: '' } : undefined,
       clientCert: pem.cert ? { pemContent: pem.cert, fileName: '' } : undefined,
       clientKey: pem.key ? { pemContent: pem.key, fileName: '' } : undefined,
-      // The key is redacted on GET; a fingerprint marks a key kept
-      // server-side. A returned cert implies the same (the proto requires
-      // key and cert to be provided together), covering backends that omit
-      // the fingerprint.
+      // WARNING: A redacted key can still exist on the server; a returned certificate implies a retained key even without a fingerprint.
       existingKeyConfigured: !pem.key && Boolean(pem.keyFingerprint || pem.cert),
       existingKeyFingerprint: pem.keyFingerprint ?? '',
     };
@@ -248,25 +228,18 @@ function mapTlsToMtlsSlice(tls: TLSSettings | undefined): SchemaRegistryFormValu
   return base;
 }
 
-function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage): SchemaRegistryFormValues {
+function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage) {
   const basic = api.authOptions?.authOptions?.case === 'basic' ? api.authOptions.authOptions.value : undefined;
   const filter = api.sourceFilter;
   const hasFilter = Boolean(filter && ((filter.contexts?.length ?? 0) > 0 || (filter.subjects?.length ?? 0) > 0));
   const exactMappings =
     api.destination?.mapping?.case === 'exact' ? (api.destination.mapping.value.mappings ?? []) : [];
 
-  // Every field is set explicitly (no base spread) so adding a schema field
-  // without deciding its hydration fails to compile.
   return {
     mode: SCHEMA_REGISTRY_MODE.API,
     sourceUrl: api.sourceUrl,
     authMethod: basic ? SR_AUTH_METHOD.BASIC : SR_AUTH_METHOD.NONE,
-    // The password is never returned; like the connection credentials it is
-    // re-entered on save.
     basicCredentials: { username: basic?.username ?? '', password: '' },
-    // TLS settings may be omitted entirely (e.g. rpk-created links); infer
-    // the toggle from the URL scheme so the hydrated form passes the URL/TLS
-    // cross-check untouched.
     useTls: api.tlsSettings ? api.tlsSettings.enabled : api.sourceUrl.trim().toLowerCase().startsWith('https:'),
     mtls: mapTlsToMtlsSlice(api.tlsSettings),
     scopeMode: hasFilter ? 'specify' : 'all',
@@ -282,7 +255,7 @@ function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage): Schem
         api.unsupportedSchemaFeaturePolicy === UnsupportedSchemaFeaturePolicy.REMOVE ? 'remove' : 'fail',
     },
     paused: api.paused,
-  };
+  } satisfies SchemaRegistryFormValues;
 }
 
 /**
@@ -292,35 +265,42 @@ function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage): Schem
  * existingKeyFingerprint (sending them empty on update keeps the stored
  * values).
  */
-export function mapSchemaRegistrySyncOptionsToFormValues(
-  options: SchemaRegistrySyncOptionsMessage | undefined
-): Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'> {
+export function mapSchemaRegistrySyncOptionsToFormValues(options: SchemaRegistrySyncOptionsMessage | undefined) {
+  type SchemaRegistryFormOptions = Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'>;
   const mode = options?.schemaRegistryShadowingMode;
 
   if (mode?.case === 'shadowSchemaRegistryTopic') {
     const schemaRegistry = structuredClone(initialValues.schemaRegistry);
     schemaRegistry.mode = SCHEMA_REGISTRY_MODE.TOPIC;
-    return { enableSchemaRegistrySync: true, schemaRegistry };
+    return { enableSchemaRegistrySync: true, schemaRegistry } satisfies SchemaRegistryFormOptions;
   }
   if (mode?.case === 'shadowSchemaRegistryApi') {
-    return { enableSchemaRegistrySync: false, schemaRegistry: applyApiOptionsToFormSlice(mode.value) };
+    return {
+      enableSchemaRegistrySync: false,
+      schemaRegistry: applyApiOptionsToFormSlice(mode.value),
+    } satisfies SchemaRegistryFormOptions;
   }
-  return { enableSchemaRegistrySync: false, schemaRegistry: structuredClone(initialValues.schemaRegistry) };
+  return {
+    enableSchemaRegistrySync: false,
+    schemaRegistry: structuredClone(initialValues.schemaRegistry),
+  } satisfies SchemaRegistryFormOptions;
 }
 
 /**
  * Map schema registry sync options to unified type
+ *
+ * Both planes carry the same admin-v2 wire message even though they source types differently. Hydrate password presence and timestamps only; never expect a returned password.
  */
-export function mapSchemaRegistrySyncOptions(
-  options: SchemaRegistrySyncOptionsMessage | undefined
-): UnifiedSchemaRegistrySyncOptions | undefined {
+export function mapSchemaRegistrySyncOptions(options: SchemaRegistrySyncOptionsMessage | undefined) {
   if (!options) {
     return;
   }
 
   const mode = options.schemaRegistryShadowingMode;
   if (mode?.case === 'shadowSchemaRegistryTopic') {
-    return { schemaRegistryShadowingMode: { case: 'shadowSchemaRegistryTopic', value: {} } };
+    return {
+      schemaRegistryShadowingMode: { case: 'shadowSchemaRegistryTopic', value: {} },
+    } satisfies UnifiedSchemaRegistrySyncOptions;
   }
   if (mode?.case === 'shadowSchemaRegistryApi') {
     return {
@@ -328,7 +308,7 @@ export function mapSchemaRegistrySyncOptions(
         case: 'shadowSchemaRegistryApi',
         value: mapSchemaRegistryApiOptions(mode.value),
       },
-    };
+    } satisfies UnifiedSchemaRegistrySyncOptions;
   }
-  return { schemaRegistryShadowingMode: { case: undefined } };
+  return { schemaRegistryShadowingMode: { case: undefined } } satisfies UnifiedSchemaRegistrySyncOptions;
 }

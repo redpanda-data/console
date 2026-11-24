@@ -3,9 +3,8 @@ import { type RetentionSizeUnit, type RetentionTimeUnit, sizeFactors, timeFactor
 
 import type { AddTopicFormData } from '../types/wizard';
 
-const DECIMAL_PLACES_REGEX = /\.\d{4,}/;
+const DECIMAL_PLACES_REGEX = /\.\d{4,}/u;
 
-// Default values for topic creation
 export const DEFAULT_RETENTION_TIME_MS = 7;
 export const DEFAULT_RETENTION_TIME_UNIT: RetentionTimeUnit = 'days';
 export const DEFAULT_RETENTION_SIZE = 1;
@@ -21,7 +20,7 @@ export const TOPIC_FORM_DEFAULTS = {
   retentionSizeUnit: DEFAULT_RETENTION_SIZE_UNIT,
 } as const;
 
-export const isUsingDefaultRetentionSettings = (data: AddTopicFormData): boolean =>
+export const isUsingDefaultRetentionSettings = (data: AddTopicFormData) =>
   data.retentionTimeMs === DEFAULT_RETENTION_TIME_MS &&
   data.retentionTimeUnit === DEFAULT_RETENTION_TIME_UNIT &&
   data.retentionSize === DEFAULT_RETENTION_SIZE &&
@@ -36,8 +35,7 @@ export const resetToDefaults = (form: UseFormReturn<AddTopicFormData>) => {
   form.setValue('retentionSizeUnit', TOPIC_FORM_DEFAULTS.retentionSizeUnit);
 };
 
-export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: RetentionTimeUnit } => {
-  // Find the best unit by choosing the shortest text representation (same logic as create-topic-dialog)
+export const findBestRetentionTimeUnit: (ms: number) => { value: number; unit: RetentionTimeUnit } = (ms) => {
   const validUnits = Object.entries(timeFactors)
     .filter(([unit]) => unit !== 'default' && unit !== 'infinite')
     .map(([unit, factor]) => ({
@@ -50,7 +48,7 @@ export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: Re
       value: ms / factor,
       textLength: String(ms / factor).length,
     }))
-    .filter(({ value: v }) => v >= 1) // Only units that give us >= 1
+    .filter(({ value: v }) => v >= 1)
     .sort((a, b) => a.textLength - b.textLength);
 
   const best = validUnits[0];
@@ -59,7 +57,6 @@ export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: Re
   }
 
   let value = best.value;
-  // Clean up decimal places like create-topic-dialog
   if (DECIMAL_PLACES_REGEX.test(String(value))) {
     value = Math.round(value);
   }
@@ -67,8 +64,7 @@ export const findBestRetentionTimeUnit = (ms: number): { value: number; unit: Re
   return { value, unit: best.unit };
 };
 
-export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit: RetentionSizeUnit } => {
-  // Find the best unit by choosing the shortest text representation (same logic as create-topic-dialog)
+export const findBestRetentionSizeUnit: (bytes: number) => { value: number; unit: RetentionSizeUnit } = (bytes) => {
   const validUnits = Object.entries(sizeFactors)
     .filter(([unit]) => unit !== 'default' && unit !== 'infinite')
     .map(([unit, factor]) => ({
@@ -81,7 +77,7 @@ export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit:
       value: bytes / factor,
       textLength: String(bytes / factor).length,
     }))
-    .filter(({ value: v }) => v >= 1) // Only units that give us >= 1
+    .filter(({ value: v }) => v >= 1)
     .sort((a, b) => a.textLength - b.textLength);
 
   const best = validUnits[0];
@@ -90,7 +86,6 @@ export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit:
   }
 
   let value = best.value;
-  // Clean up decimal places like create-topic-dialog
   if (DECIMAL_PLACES_REGEX.test(String(value))) {
     value = Math.round(value);
   }
@@ -100,15 +95,14 @@ export const findBestRetentionSizeUnit = (bytes: number): { value: number; unit:
 
 type TopicConfigEntries = { configEntries?: Array<{ name: string; value: string | null }> };
 
-// A retention entry's value: -1 = infinite, otherwise the best-fitting unit; defaults when unset.
 function parseRetention<Unit extends string>(
   raw: string | null | undefined,
   defaults: { value: number; unit: Unit },
   findBestUnit: (amount: number) => { value: number; unit: Unit }
-): { value: number; unit: Unit | 'infinite' } {
+) {
   const amount = raw ? Number.parseInt(raw, 10) : 0;
   if (amount === -1) {
-    return { value: defaults.value, unit: 'infinite' };
+    return { value: defaults.value, unit: 'infinite' } satisfies { value: number; unit: Unit | 'infinite' };
   }
   return amount > 0 ? findBestUnit(amount) : defaults;
 }
@@ -143,7 +137,6 @@ export const parseTopicConfigFromExisting = (
 export const parseRetentionFromConfig = (config: TopicConfigEntries) =>
   parseTopicConfigFromExisting({ topicName: '' }, config);
 
-// Form helper functions for input handling
 export const createNumberChangeHandler =
   (onChange: (value?: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value ? Number.parseInt(e.target.value, 10) : undefined);
@@ -154,24 +147,20 @@ export const createFloatChangeHandler =
     onChange(e.target.value ? Number.parseFloat(e.target.value) : 0);
   };
 
-// Generate unit options from create-topic-dialog factors for consistency
-export const getRetentionTimeUnitOptions = () => {
-  return Object.keys(timeFactors)
-    .filter((unit) => unit !== 'default') // Exclude default from UI options
+export const getRetentionTimeUnitOptions = () =>
+  Object.keys(timeFactors)
+    .filter((unit) => unit !== 'default')
     .map((unit) => ({
       value: unit,
       label: unit === 'infinite' ? 'Infinite' : unit,
     }));
-};
 
-export const getRetentionSizeUnitOptions = () => {
-  return Object.keys(sizeFactors)
-    .filter((unit) => unit !== 'default') // Exclude default from UI options
+export const getRetentionSizeUnitOptions = () =>
+  Object.keys(sizeFactors)
+    .filter((unit) => unit !== 'default')
     .map((unit) => ({
       value: unit,
       label: unit === 'infinite' ? 'Infinite' : unit,
     }));
-};
 
-// Check if retention unit is disabled (infinite or default)
-export const isRetentionUnitDisabled = (unit: string): boolean => unit === 'default' || unit === 'infinite';
+export const isRetentionUnitDisabled = (unit: string) => unit === 'default' || unit === 'infinite';

@@ -176,7 +176,6 @@ const getRoleChanges = (originalRoles: string[], selectedRoles: string[]) => ({
   removedRoles: originalRoles.except(selectedRoles),
 });
 
-// Removals first, then additions.
 const toMembershipUpdates = (userName: string, addedRoles: string[], removedRoles: string[]) => [
   ...removedRoles.map((r) =>
     create(UpdateRoleMembershipRequestSchema, { roleName: r, remove: [{ principal: userName }] })
@@ -211,7 +210,7 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
 
     try {
       await Promise.allSettled(promises);
-      // TODO: Until we haven't migrated everything from mobx is better to not remove this
+      // WARNING: Keep legacy role readers refreshed until the older store's consumers have migrated.
       await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
       showToast({
         status: 'success',

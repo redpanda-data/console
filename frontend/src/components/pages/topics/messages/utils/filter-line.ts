@@ -12,27 +12,15 @@
 import { parseFilterInput, tokenEditText } from './filter-token';
 import type { FieldFilterToken } from '../types';
 
-const WHITESPACE_PATTERN = /\s/;
-const VALUE_START_PATTERN = /[:=<>]/;
+const WHITESPACE_PATTERN = /\s/u;
+const VALUE_START_PATTERN = /[:=<>]/u;
 
 export type LineWord = { text: string; start: number; end: number };
 
-/**
- * A `"` opens quote mode only where a value can actually start — right at `start`, or right after
- * a `:`/`=`/`<`/`>` operator — so a stray/literal quote elsewhere in a word (`key:a"b`) doesn't get
- * misread as opening a multi-word span and swallow the rest of the line.
- */
-const opensQuote = (text: string, i: number, start: number): boolean =>
+const opensQuote = (text: string, i: number, start: number) =>
   text[i] === '"' && (i === start || VALUE_START_PATTERN.test(text[i - 1]));
 
-/**
- * Scans forward from `start` (a word's first character) to find where it ends — see `opensQuote`
- * for when a `"` starts a multi-word quoted span. Once inside a quote, `\"`/`\\` escapes are
- * skipped over rather than treated as the closing quote, matching how `parseFilterInput`/
- * `decodeValue` decode an escaped value. An unterminated quote (no closing `"` anywhere later)
- * counts as still-being-typed and swallows the rest of the line into one word.
- */
-function findWordEnd(text: string, start: number): number {
+function findWordEnd(text: string, start: number) {
   let i = start;
   while (i < text.length && !WHITESPACE_PATTERN.test(text[i])) {
     i = opensQuote(text, i, start) ? skipQuotedSpan(text, i) : i + 1;
@@ -40,8 +28,7 @@ function findWordEnd(text: string, start: number): number {
   return i;
 }
 
-/** Index just past the quoted span whose opening `"` is at `openQuote` (see `findWordEnd`). */
-function skipQuotedSpan(text: string, openQuote: number): number {
+function skipQuotedSpan(text: string, openQuote: number) {
   let i = openQuote + 1;
   while (i < text.length) {
     if (text[i] === '\\' && i + 1 < text.length) {
@@ -55,8 +42,7 @@ function skipQuotedSpan(text: string, openQuote: number): number {
   return i;
 }
 
-/** Index of the first non-whitespace character at or after `from` (`text.length` when there is none). */
-const skipWhitespace = (text: string, from: number): number => {
+const skipWhitespace = (text: string, from: number) => {
   let i = from;
   while (i < text.length && WHITESPACE_PATTERN.test(text[i])) {
     i += 1;
@@ -64,8 +50,12 @@ const skipWhitespace = (text: string, from: number): number => {
   return i;
 };
 
-/** Splits a line into whitespace-delimited words — see `findWordEnd` for the quote-handling rules. */
-export function tokenizeLine(text: string): LineWord[] {
+/**
+ * Splits a line into whitespace-delimited words — see `findWordEnd` for the quote-handling rules.
+ *
+ * A quote opens a value only at a word start or after an operator, so a literal quote does not swallow later words. Escaped quotes stay inside the span; an unclosed span remains one word while editing.
+ */
+export function tokenizeLine(text: string) {
   const words: LineWord[] = [];
   let start = skipWhitespace(text, 0);
   while (start < text.length) {
@@ -98,25 +88,28 @@ export type ParsedFilterLine = {
  * instant a word is syntactically complete — there's no separate commit
  * step, just continuous re-parsing on every edit.
  */
-export function parseFilterLine(text: string, options?: { partitionCount?: number }): ParsedFilterLine {
+export function parseFilterLine(text: string, options?: { partitionCount?: number }) {
   const words = tokenizeLine(text).map((word) => ({ word, parsed: parseFilterInput(word.text, options) }));
   const recognized = words.filter((entry): entry is RecognizedWord => entry.parsed !== null);
-  // The last `partition:` word wins, as each one overrides the one before it.
   const partitionWord = recognized.findLast(({ parsed }) => parsed.field === 'partition');
 
-  return {
+  const parsedFilterLine: ParsedFilterLine = {
     partitionId: partitionWord ? Number(partitionWord.parsed.value) : null,
     fieldTokens: recognized
       .filter(({ parsed }) => parsed.field !== 'partition')
-      .map(
-        ({ parsed }): FieldFilterToken => ({ kind: 'field', field: parsed.field, op: parsed.op, value: parsed.value })
-      ),
+      .map<FieldFilterToken>(({ parsed }) => ({
+        kind: 'field',
+        field: parsed.field,
+        op: parsed.op,
+        value: parsed.value,
+      })),
     remainder: words
       .filter(({ parsed }) => parsed === null)
       .map(({ word }) => word.text)
       .join(' '),
     tokenRanges: recognized.map(({ word }) => ({ start: word.start, end: word.end })),
   };
+  return parsedFilterLine;
 }
 
 type RecognizedWord = { word: LineWord; parsed: NonNullable<ReturnType<typeof parseFilterInput>> };
@@ -127,7 +120,7 @@ type RecognizedWord = { word: LineWord; parsed: NonNullable<ReturnType<typeof pa
  * the filter bar (initial mount, "Clear all", browser back/forward); never
  * during normal typing, so it never fights the user's own edits.
  */
-export function formatFilterLine(partitionId: number, fieldTokens: FieldFilterToken[], remainder: string): string {
+export function formatFilterLine(partitionId: number, fieldTokens: FieldFilterToken[], remainder: string) {
   const parts: string[] = [];
   if (partitionId >= 0) {
     parts.push(`partition:${partitionId}`);
@@ -142,7 +135,7 @@ export function formatFilterLine(partitionId: number, fieldTokens: FieldFilterTo
 }
 
 /** The word (if any) touching the caret — drives the autocomplete dropdown and tells suggestion-acceptance which range to replace. */
-export function wordRangeAtCaret(text: string, caret: number): LineWord | null {
+export function wordRangeAtCaret(text: string, caret: number) {
   for (const word of tokenizeLine(text)) {
     if (caret >= word.start && caret <= word.end) {
       return word;

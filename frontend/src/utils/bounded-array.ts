@@ -15,7 +15,7 @@
  * For immutable state (zustand `setState`, reducers) where an unbounded append would
  * otherwise retain every entry for the lifetime of a long-lived tab.
  */
-export function boundedAppend<T>(arr: readonly T[], item: T, max: number): T[] {
+export function boundedAppend<T>(arr: readonly T[], item: T, max: number) {
   const next = [...arr, item];
   return next.length > max ? next.slice(next.length - max) : next;
 }
@@ -26,7 +26,7 @@ export function boundedAppend<T>(arr: readonly T[], item: T, max: number): T[] {
  * For long-lived push-buffers (e.g. the live-tail message array) where bounding memory
  * matters more than keeping the full history.
  */
-export function trimToLast<T>(buffer: T[], max: number): void {
+export function trimToLast<T>(buffer: T[], max: number) {
   if (buffer.length > max) {
     buffer.splice(0, buffer.length - max);
   }
@@ -38,7 +38,7 @@ export function trimToLast<T>(buffer: T[], max: number): void {
  * amortized to roughly once per `slack` items instead of running on every push past the cap —
  * important on hot append paths (e.g. a high-volume live-tail stream).
  */
-export function appendWithSlackCap<T>(buffer: T[], item: T, max: number, slack: number): void {
+export function appendWithSlackCap<T>(buffer: T[], item: T, max: number, slack: number) {
   buffer.push(item);
   if (buffer.length > max + slack) {
     trimToLast(buffer, max);
@@ -52,7 +52,7 @@ export function appendWithSlackCap<T>(buffer: T[], item: T, max: number, slack: 
  * entries for entities that no longer exist (deleted, or a different cluster after a remount).
  * Pruning to the current set never drops a live entity, so callers re-fetch nothing.
  */
-export function pruneMapToKeys<V>(map: ReadonlyMap<string, V>, validKeys: ReadonlySet<string>): Map<string, V> {
+export function pruneMapToKeys<V>(map: ReadonlyMap<string, V>, validKeys: ReadonlySet<string>) {
   const next = new Map<string, V>();
   for (const [key, value] of map) {
     if (validKeys.has(key)) {

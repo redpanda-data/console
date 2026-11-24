@@ -12,7 +12,7 @@
 import type { SchemaRegistryContextResponse } from '../../../react-query/api/schema-registry';
 import type { SchemaRegistrySubject, SchemaVersion } from '../../../state/rest-interfaces';
 
-export const CONTEXT_PREFIX_RE = /^:\.([^:]+):(.+)$/;
+export const CONTEXT_PREFIX_RE = /^:\.(?<context>[^:]+):(?<subject>.+)$/u;
 
 export type ParsedSubject = {
   context: string;
@@ -20,9 +20,11 @@ export type ParsedSubject = {
   qualifiedName: string;
 };
 
-// Extract context and display name from a subject.
-// E.g. ":.staging:my-topic" → { context: "staging", … }
-export function parseSubjectContext(name: string): ParsedSubject {
+/**
+ * Extract context and display name from a subject.
+ * E.g. ":.staging:my-topic" → { context: "staging", … }
+ */
+export function parseSubjectContext(name: string) {
   const match = CONTEXT_PREFIX_RE.exec(name);
   if (match) {
     return {
@@ -38,27 +40,31 @@ export function parseSubjectContext(name: string): ParsedSubject {
   };
 }
 
-// Schema Registry context of a subject as the backend expects it:
-// ":.staging:my-topic" → ".staging", "my-topic" → "." (the default context).
-export function subjectSchemaContext(name: string): string {
+/**
+ * Schema Registry context of a subject as the backend expects it:
+ * ":.staging:my-topic" → ".staging", "my-topic" → "." (the default context).
+ */
+export function subjectSchemaContext(name: string) {
   const match = CONTEXT_PREFIX_RE.exec(name);
   return match ? `.${match[1]}` : '.';
 }
 
-// Schema Registry context a topic is bound to via redpanda.schema.registry.context,
-// "." (default) if none.
-export function topicSchemaContext(configEntries?: ReadonlyArray<{ name: string; value?: string | null }>): string {
+/**
+ * Schema Registry context a topic is bound to via redpanda.schema.registry.context,
+ * "." (default) if none.
+ */
+export function topicSchemaContext(configEntries?: ReadonlyArray<{ name: string; value?: string | null }>) {
   const raw = configEntries?.find((e) => e.name === 'redpanda.schema.registry.context')?.value?.trim() ?? '';
-  const name = raw.replace(/^:|:$/g, '');
+  const name = raw.replace(/^:|:$/gu, '');
   if (name === '' || name === '.') {
     return '.';
   }
   return name.startsWith('.') ? name : `.${name}`;
 }
 
-// Schema IDs are context-local: prefer the subject that lives in the given context.
-export function pickSubjectForContext(subjects: SchemaVersion[], schemaContext: string): SchemaVersion | undefined {
-  return subjects.find((s) => subjectSchemaContext(s.subject) === schemaContext) ?? subjects[0];
+/** Schema IDs are context-local: prefer the subject that lives in the given context. */
+export function pickSubjectForContext(subjects: SchemaVersion[], schemaContext: string) {
+  return subjects.find((s) => subjectSchemaContext(s.subject) === schemaContext) ?? subjects.at(0);
 }
 
 export const ALL_CONTEXT_ID = '__all__';
@@ -73,9 +79,7 @@ export type DerivedContext = {
   compatibility: string;
 };
 
-// Active subjects per context key: DEFAULT_CONTEXT_ID for the default
-// context, otherwise the context name without its leading dot.
-function countSubjectsByContext(activeSubjects: SchemaRegistrySubject[]): Map<string, number> {
+function countSubjectsByContext(activeSubjects: SchemaRegistrySubject[]) {
   const countByContext = new Map<string, number>();
   for (const subject of activeSubjects) {
     const { context } = parseSubjectContext(subject.name);
@@ -85,19 +89,18 @@ function countSubjectsByContext(activeSubjects: SchemaRegistrySubject[]): Map<st
   return countByContext;
 }
 
-// Merge backend context list with subject counts for
-// the dropdown. Order: Default, named (sorted), All.
-export function deriveContexts(
-  apiContexts: SchemaRegistryContextResponse[],
-  subjects: SchemaRegistrySubject[]
-): DerivedContext[] {
+/**
+ * Merge backend context list with subject counts for
+ * the dropdown. Order: Default, named (sorted), All. Counts exclude soft-deleted
+ * subjects; All borrows the default context's mode and compatibility.
+ */
+export function deriveContexts(apiContexts: SchemaRegistryContextResponse[], subjects: SchemaRegistrySubject[]) {
   const activeSubjects = subjects.filter((s) => !s.isSoftDeleted);
   const countByContext = countSubjectsByContext(activeSubjects);
   const defaultApiContexts = apiContexts.filter((ctx) => ctx.name === '.');
   const namedApiContexts = apiContexts.filter((ctx) => ctx.name !== '.').sort((a, b) => a.name.localeCompare(b.name));
   const defaultContext = defaultApiContexts.at(-1);
 
-  // Default first, then named contexts alphabetically, then All at the bottom
   return [
     ...defaultApiContexts.map((ctx) => ({
       id: DEFAULT_CONTEXT_ID,
@@ -113,7 +116,6 @@ export function deriveContexts(
       mode: ctx.mode,
       compatibility: ctx.compatibility,
     })),
-    // "All" uses the default context's mode/compat, falling back to empty strings
     {
       id: ALL_CONTEXT_ID,
       label: 'All',
@@ -124,16 +126,20 @@ export function deriveContexts(
   ];
 }
 
-// True for actual SR contexts (not the synthetic
-// "All" or "Default" entries).
-export function isNamedContext(contextId: string): boolean {
+/**
+ * True for actual SR contexts (not the synthetic
+ * "All" or "Default" entries).
+ */
+export function isNamedContext(contextId: string) {
   return contextId != '' && contextId !== ALL_CONTEXT_ID && contextId !== DEFAULT_CONTEXT_ID;
 }
 
-// Convert a raw context name (e.g. from a URL param or parseSubjectContext)
-// into the internal context ID used by the editor state.
-// ".staging" → ".staging", "default" → DEFAULT_CONTEXT_ID, "prod" → ".prod"
-export function contextNameToId(name: string): string {
+/**
+ * Convert a raw context name (e.g. from a URL param or parseSubjectContext)
+ * into the internal context ID used by the editor state.
+ * ".staging" → ".staging", "default" → DEFAULT_CONTEXT_ID, "prod" → ".prod"
+ */
+export function contextNameToId(name: string) {
   if (name === 'default') {
     return DEFAULT_CONTEXT_ID;
   }
@@ -143,10 +149,12 @@ export function contextNameToId(name: string): string {
   return `.${name}`;
 }
 
-// Build a qualified subject name from context + subject.
-// Named contexts (e.g. ".staging") → ":.staging:subject"
-// Default context → plain "subject"
-export function buildQualifiedSubjectName(contextId: string, subjectName: string): string {
+/**
+ * Build a qualified subject name from context + subject.
+ * Named contexts (e.g. ".staging") → ":.staging:subject"
+ * Default context → plain "subject"
+ */
+export function buildQualifiedSubjectName(contextId: string, subjectName: string) {
   if (!subjectName) {
     return '';
   }
@@ -156,24 +164,28 @@ export function buildQualifiedSubjectName(contextId: string, subjectName: string
   return subjectName;
 }
 
-// Map between internal context IDs and display labels.
-// DEFAULT_CONTEXT_ID ('__default__') ↔ 'Default'; all others pass through.
-export function contextIdToLabel(contextId: string): string {
+/**
+ * Map between internal context IDs and display labels.
+ * DEFAULT_CONTEXT_ID ('__default__') ↔ 'Default'; all others pass through.
+ */
+export function contextIdToLabel(contextId: string) {
   return contextId === DEFAULT_CONTEXT_ID ? DEFAULT_CONTEXT_LABEL : contextId;
 }
 
-export function contextLabelToId(label: string): string {
+export function contextLabelToId(label: string) {
   return label === DEFAULT_CONTEXT_LABEL ? DEFAULT_CONTEXT_ID : label;
 }
 
-// Build qualified references for API calls (create/validate).
-// When the parent subject is in a named context and a reference targets the
-// default context, explicitly qualify it as `:.:subject` so the SR doesn't
-// auto-prefix with the parent's context.
+/**
+ * Build qualified references for API calls (create/validate).
+ * When the parent subject is in a named context and a reference targets the
+ * default context, explicitly qualify it as `:.:subject` so the SR doesn't
+ * auto-prefix with the parent's context.
+ */
 export function buildQualifiedReferences(
   refs: { name: string; subject: string; version: number; context: string }[],
   parentContext: string
-): { name: string; subject: string; version: number }[] {
+) {
   return refs
     .filter((x) => x.name && x.subject)
     .map((r) => ({
@@ -186,7 +198,6 @@ export function buildQualifiedReferences(
     }));
 }
 
-// Simple English pluralization: 1 subject / 3 subjects.
 export function pluralize(count: number, singular: string) {
   return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }

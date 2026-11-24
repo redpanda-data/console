@@ -11,37 +11,29 @@
 
 import React from 'react';
 
+import { PageInitHelper } from './page-init-helper';
 import {
+  api,
+  pipelinesApi,
+  rpcnSecretManagerApi,
+  transformsApi,
   useApiStore,
   usePipelinesStore,
   useRolesStore,
   useRpcnSecretManagerStore,
   useTransformsStore,
 } from '../../state/backend-api';
-import { type BreadcrumbEntry, type BreadcrumbOptions, setPageHeader } from '../../state/ui-state';
 
-//
-// Page Types
-//
+export { PageInitHelper } from './page-init-helper';
+
 // biome-ignore lint/complexity/noBannedTypes: Empty object type needed for routes without params
 export type NoRouteParams = {};
 
 export type PageProps<TRouteParams = NoRouteParams> = TRouteParams & { matchedPath: string };
 
-export class PageInitHelper {
-  private pageTitle = '';
-  private pageBreadcrumbs: BreadcrumbEntry[] = [];
-
-  set title(title: string) {
-    this.pageTitle = title;
-  }
-  addBreadcrumb(title: string, to: string, heading?: string, options?: BreadcrumbOptions) {
-    this.pageBreadcrumbs.push({ title, linkTo: to, heading, options });
-  }
-  _flush() {
-    setPageHeader(this.pageTitle, this.pageBreadcrumbs);
-  }
-}
+/**
+ * Legacy pages initialize in the base constructor, before subclass fields are assigned. Live API facades must be available then. The component subscribes to facade stores after mount.
+ */
 export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.Component<PageProps<TRouteParams>> {
   private _storeUnsubscribers: Array<() => void> = [];
 
@@ -54,8 +46,6 @@ export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.
   }
 
   componentDidMount() {
-    // Subscribe to all Zustand stores that pages read from via api.*, rolesApi.*, etc.
-    // Each store change triggers a re-render so pages see fresh data.
     const update = () => this.forceUpdate();
     this._storeUnsubscribers = [
       useApiStore.subscribe(update),
@@ -64,8 +54,7 @@ export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.
       useRpcnSecretManagerStore.subscribe(update),
       useTransformsStore.subscribe(update),
     ];
-    // Force a re-render to catch any store updates that arrived before this subscription was set up
-    // (e.g. fast API responses from initPage's constructor-time calls)
+    // WARNING: Render once after subscribing; a constructor-started request can settle before mount.
     this.forceUpdate();
   }
 
@@ -76,6 +65,10 @@ export abstract class PageComponent<TRouteParams = NoRouteParams> extends React.
     this._storeUnsubscribers = [];
   }
 
+  protected readonly api = api;
+  protected readonly pipelinesApi = pipelinesApi;
+  protected readonly rpcnSecretManagerApi = rpcnSecretManagerApi;
+  protected readonly transformsApi = transformsApi;
   abstract initPage(p: PageInitHelper): void;
 }
 export type PageComponentType<TRouteParams = NoRouteParams> = new (

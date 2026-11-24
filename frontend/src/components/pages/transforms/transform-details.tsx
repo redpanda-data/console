@@ -59,7 +59,7 @@ import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
 class TransformDetails extends PageComponent<{ transformName: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const transformName = decodeURIComponentPercents(this.props.transformName);
     p.title = transformName;
     p.addBreadcrumb('Transforms', '/transforms');
@@ -73,7 +73,7 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
   }
 
   refreshData(force: boolean) {
-    transformsApi.refreshTransforms(force);
+    this.transformsApi.refreshTransforms(force);
   }
 
   render() {
@@ -133,14 +133,15 @@ class TransformDetails extends PageComponent<{ transformName: string }> {
     );
   }
 }
+/**
+ * Expanded log rows retain message identity across refreshes. A manual refresh starts a new search, and unmount cancels the active search.
+ */
 export default TransformDetails;
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
 };
-// Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
 const LOGS_TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
@@ -198,7 +199,6 @@ const OverviewTab = (p: { transform: TransformMetadata }) => {
                 </>
               ),
             },
-            // { key: '', value: p.transform.environmentVariables }
           ],
           {
             keyStyle: { fontWeight: 600, verticalAlign: 'baseline' },
@@ -227,7 +227,6 @@ type TransformLogState = { messages: TopicMessage[]; isComplete: boolean };
 
 const EMPTY_TRANSFORM_LOGS: TransformLogState = { messages: [], isComplete: false };
 
-// Stops the running log search and starts a fresh one for `transformName`.
 function restartTransformLogSearch(
   searchRef: RefObject<MessageSearch | null>,
   transformName: string,
@@ -241,7 +240,6 @@ function restartTransformLogSearch(
   });
 }
 
-// Streams the transform's log messages, restarting for another transform; `refresh` restarts the search.
 const useTransformLogs = (transformName: string) => {
   const [logState, setLogState] = useState<TransformLogState>(EMPTY_TRANSFORM_LOGS);
   const searchRef = useRef<MessageSearch | null>(null);
@@ -250,7 +248,7 @@ const useTransformLogs = (transformName: string) => {
     queueMicrotask(() => setLogState(EMPTY_TRANSFORM_LOGS));
     restartTransformLogSearch(searchRef, transformName, setLogState);
     return () => {
-      // `refresh` may have replaced the search this run started, so stop whichever is current.
+      // WARNING: Stop whichever search is current; a manual refresh may have replaced the search started by this effect.
       searchRef.current?.stopSearch();
     };
   }, [transformName]);
@@ -315,8 +313,7 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
 
   const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
     () => [
-      // `subComponent` renders no affordance of its own, so the expander is explicit.
-      // The Registry only sets aria-expanded on the row, and only for `expandRowByClick`, so it goes here.
+      // WARNING: Keep aria-expanded on the expander; the table sets it on the row only in click-to-expand mode.
       {
         id: 'expander',
         enableSorting: false,
@@ -349,10 +346,8 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
       },
       {
         header: 'Value',
-        // The cell renders a decoded preview; sorting the raw value was never meaningful.
         enableSorting: false,
         accessorKey: 'value',
-        // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
         cell: ({ row: { original } }) => (
           <div className="w-screen max-w-full">
             <MessagePreview
@@ -393,14 +388,11 @@ const LogsTab = (p: { transform: TransformMetadata }) => {
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
-          // No pager under the loading or empty row.
           data={filteredMessages}
           emptyText="No messages"
           isLoading={!isComplete && messages.length === 0}
           pagination={filteredMessages.length > 0}
           sorting
-          // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
-          //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={({ row: { original } }) => (
             <ExpandedMessage loadLargeMessage={() => loadLargeMessageOf(original)} msg={original} />
           )}

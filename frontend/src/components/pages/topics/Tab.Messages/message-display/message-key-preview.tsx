@@ -10,7 +10,6 @@
  */
 
 import { WarningIcon } from 'components/icons';
-import type { ReactNode } from 'react';
 
 import { highlightControlChars } from './highlight-control-chars';
 import { type PreviewDisplayMode, renderPreviewTags } from './preview-tags-text';
@@ -19,17 +18,15 @@ import type { PreviewTagV2 } from '../../../../../state/ui';
 import { cullText, prettyBytes } from '../../../../../utils/utils';
 import { EmptyBadge } from '../common/empty-badge';
 
-function isPrimitivePayload(payload: unknown): boolean {
+function isPrimitivePayload(payload: unknown) {
   return typeof payload === 'string' || typeof payload === 'number' || typeof payload === 'boolean';
 }
 
-// Only 'object' is left after binary, control-character text, and primitives.
-// Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-function isObjectKey(key: Payload): boolean {
+function isObjectKey(key: Payload) {
   return !(key.encoding === 'binary' || key.encoding === 'utf8WithControlChars' || isPrimitivePayload(key.payload));
 }
 
-function getKeyPreviewText(msg: TopicMessage): ReactNode {
+function getKeyPreviewText(msg: TopicMessage) {
   const key = msg.key;
   if (key.encoding === 'binary') {
     return cullText(msg.keyBinHexPreview as string, 44);
@@ -40,7 +37,6 @@ function getKeyPreviewText(msg: TopicMessage): ReactNode {
   if (isPrimitivePayload(key.payload)) {
     return cullText(key.payload as string, 44);
   }
-  // Normal display (json, no filters). Reuse the cached JSON string.
   return cullText(msg.keyJson, 44);
 }
 
@@ -48,7 +44,7 @@ function renderKeyPreview(
   msg: TopicMessage,
   previewFields: () => PreviewTagV2[],
   previewDisplayMode: PreviewDisplayMode | undefined
-): ReactNode {
+) {
   const key = msg.key;
   if (key.isPayloadNull) {
     return <EmptyBadge mode="null" />;
@@ -57,7 +53,6 @@ function renderKeyPreview(
     return <EmptyBadge mode="empty" />;
   }
 
-  // Preview tags replace the whole cell for an object key.
   const tagsPreview = isObjectKey(key) ? renderPreviewTags(key.payload, previewFields, previewDisplayMode) : null;
   if (tagsPreview) {
     return tagsPreview;
@@ -89,7 +84,6 @@ export const MessageKeyPreview = ({
   if (key.troubleshootReport && key.troubleshootReport.length > 0) {
     return (
       <div className="flex items-center gap-2 text-destructive">
-        {/* fontSize was inert on lucide icons, so master rendered these at 24. */}
         <WarningIcon size={24} />
         There were issues deserializing the key
       </div>

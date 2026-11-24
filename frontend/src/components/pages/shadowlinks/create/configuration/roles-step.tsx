@@ -65,13 +65,11 @@ export const RolesStep = () => {
   const handleModeChange = (mode: string) => {
     setValue('rolesMode', mode as 'all' | 'specify');
 
-    // Auto-expand when switching to specify mode
     if (mode === 'specify') {
       setIsOpen(true);
     }
 
     if (mode === 'specify' && fields.length === 0) {
-      // Add an empty filter when switching to specify mode
       append({
         name: '',
         patternType: PatternType.LITERAL,
@@ -107,7 +105,6 @@ export const RolesStep = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Resume/summary view when collapsed */}
           {!isOpen && rolesMode === 'specify' && fields.length > 0 && (
             <div className="mt-4 space-y-2">
               {fields.map((field, index) => {
@@ -130,7 +127,6 @@ export const RolesStep = () => {
             </div>
           )}
 
-          {/* Full editable view when expanded */}
           <CollapsibleContent>
             <TabsContent value="all">
               <Alert>

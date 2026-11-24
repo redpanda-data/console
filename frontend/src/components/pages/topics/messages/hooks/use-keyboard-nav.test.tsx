@@ -9,69 +9,76 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { renderHook } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { describe, expect, test } from '@rstest/core';
+import { act, fireEvent, renderHook } from '@testing-library/react';
+import { useState } from 'react';
 
 import { useKeyboardNav } from './use-keyboard-nav';
 
-rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
+const values = new Map([
+  ['a', '{"status":"created"}'],
+  ['b', '{"status":"shipped"}'],
+  ['c', '{"status":"delivered"}'],
+]);
+const visibleKeys = [...values.keys()];
+const getCopyText = (key: string) => values.get(key);
 
-const renderNav = (overrides: Partial<Parameters<typeof useKeyboardNav>[0]> = {}) => {
-  const onSelect = rs.fn();
-  const getCopyText = rs.fn((key: string) => `copy-text-for-${key}`);
-  renderHook(() =>
-    useKeyboardNav({
-      visibleKeys: ['a', 'b', 'c'],
-      selectedKey: 'a',
-      onSelect,
-      getCopyText,
-      enabled: true,
-      ...overrides,
-    })
-  );
-  return { onSelect, getCopyText };
-};
+const renderNav = (enabled = true) =>
+  renderHook(() => {
+    const [selectedKey, onSelect] = useState<string | null>('a');
+    useKeyboardNav({ visibleKeys, selectedKey, onSelect, getCopyText, enabled });
+    return selectedKey;
+  });
+
+const pressKeys = (...events: KeyboardEvent[]) =>
+  act(() => {
+    for (const event of events) {
+      fireEvent(window, event);
+    }
+    return Promise.resolve();
+  });
+
+const keyDown = (key: string, modifiers: KeyboardEventInit = {}) =>
+  new KeyboardEvent('keydown', { key, cancelable: true, ...modifiers });
 
 describe('useKeyboardNav', () => {
-  let writeText: ReturnType<typeof rs.fn>;
+  test('plain "c" copies the selected row’s JSON value', async () => {
+    await navigator.clipboard.writeText('previous value');
+    renderNav();
 
-  beforeEach(() => {
-    writeText = rs.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    await pressKeys(keyDown('c'));
+
+    expect(await navigator.clipboard.readText()).toBe('{"status":"created"}');
   });
 
-  afterEach(() => {
-    rs.restoreAllMocks();
+  test('modified copy keys leave the clipboard and browser shortcuts alone', async () => {
+    await navigator.clipboard.writeText('previous value');
+    renderNav();
+
+    const events = [keyDown('c', { metaKey: true }), keyDown('c', { ctrlKey: true }), keyDown('c', { altKey: true })];
+    await pressKeys(...events);
+
+    expect(events.map((event) => event.defaultPrevented)).toEqual([false, false, false]);
+    expect(await navigator.clipboard.readText()).toBe('previous value');
   });
 
-  test('plain "c" copies the selected row\'s value', async () => {
-    const { getCopyText } = renderNav();
-    await userEvent.keyboard('c');
-    expect(getCopyText).toHaveBeenCalledWith('a');
-    expect(writeText).toHaveBeenCalledWith('copy-text-for-a');
+  test('j/k move selection down and up', async () => {
+    const { result } = renderNav();
+
+    await pressKeys(keyDown('j'));
+    expect(result.current).toBe('b');
+    await pressKeys(keyDown('k'));
+    expect(result.current).toBe('a');
   });
 
-  test("cmd+C / Ctrl+C / Alt+C do not hijack the browser's own copy shortcut", async () => {
-    const { getCopyText } = renderNav();
-    await userEvent.keyboard('{Meta>}c{/Meta}');
-    await userEvent.keyboard('{Control>}c{/Control}');
-    await userEvent.keyboard('{Alt>}c{/Alt}');
-    expect(getCopyText).not.toHaveBeenCalled();
-    expect(writeText).not.toHaveBeenCalled();
-  });
+  test('disabled shortcuts do not move selection or copy the selected value', async () => {
+    await navigator.clipboard.writeText('previous value');
+    const { result } = renderNav(false);
 
-  test('j/k still move selection with no modifiers', async () => {
-    const { onSelect } = renderNav();
-    await userEvent.keyboard('j');
-    expect(onSelect).toHaveBeenCalledWith('b');
-  });
+    await pressKeys(keyDown('j'));
+    await pressKeys(keyDown('c'));
 
-  test('disabled means no listener at all', async () => {
-    const { onSelect, getCopyText } = renderNav({ enabled: false });
-    await userEvent.keyboard('j');
-    await userEvent.keyboard('c');
-    expect(onSelect).not.toHaveBeenCalled();
-    expect(getCopyText).not.toHaveBeenCalled();
+    expect(result.current).toBe('a');
+    expect(await navigator.clipboard.readText()).toBe('previous value');
   });
 });

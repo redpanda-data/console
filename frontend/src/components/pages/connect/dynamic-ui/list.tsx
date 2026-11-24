@@ -17,10 +17,8 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { type JSX, useEffect, useRef, useState } from 'react';
 
-const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/i;
+const VALID_NAME_REGEX = /^[a-z][a-z_\d]*$/iu;
 
-// Keep stable reference to the latest onChange so useEffect doesn't re-run on every render
-// but still calls the most recent version of the callback.
 const useLatestRef = <T,>(value: T) => {
   const ref = useRef(value);
   useEffect(() => {
@@ -37,13 +35,12 @@ type ItemProps = {
   onDelete: () => void;
 };
 
-const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element => {
+const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps) => {
   const [hasFocus, setHasFocus] = useState(false);
   const [valuePending, setValuePending] = useState('');
 
   return (
     <>
-      {/* Input. The hint is shown while the field has focus, not on hover, so the Tooltip is controlled. */}
       <Tooltip open={hasFocus}>
         <TooltipTrigger
           render={
@@ -59,15 +56,12 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  // can we rename that entry?
                   if (allItems.some((x) => x.id === valuePending)) {
-                    // no, already exists
                     e.stopPropagation();
                     return;
                   }
 
                   if (VALID_NAME_REGEX.test(valuePending) === false) {
-                    // no, invalid characters
                     e.stopPropagation();
                     return;
                   }
@@ -87,7 +81,6 @@ const Item = ({ item, allItems, onUpdate, onDelete }: ItemProps): JSX.Element =>
         <TooltipContent side="top">[Enter] confirm, [ESC] cancel</TooltipContent>
       </Tooltip>
 
-      {/* Delete */}
       <button className="deleteButton" onClick={onDelete} type="button">
         <CloseIcon />
       </button>

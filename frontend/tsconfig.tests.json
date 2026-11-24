@@ -5,9 +5,10 @@
     "incremental": false
   },
   "include": [
-    "tests/**/*.spec.ts",
+    "tests/**/*.browser.test.ts",
+    "tests/**/*.e2e.test.ts",
     "tests/**/*.cases.ts",
-    "tests/**/fixtures.ts",
+    "tests/**/*.fixture.ts",
     "tests/shared/e2e.ts",
     "tests/shared/assertions.ts",
     "tests/shared/playwright-options.ts",

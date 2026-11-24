@@ -51,7 +51,6 @@ export const READ_SCOPE_META: Record<ReadScopeMode, { label: string; description
 
 const SCOPE_MODES: ReadScopeMode[] = ['newest', 'oldest', 'offset', 'timestamp'];
 
-/** Modes that support continuous (load-as-you-scroll) pagination. */
 const supportsContinuous = (mode: ReadScopeMode) => mode === 'newest' || mode === 'oldest';
 
 export type ReadScopePopoverProps = {
@@ -251,7 +250,6 @@ export const ReadScopePopover = ({
               </fieldset>
             )}
 
-            {/* Continuous pagination only exists for the newest/oldest scopes */}
             {continuousAvailable && (
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">

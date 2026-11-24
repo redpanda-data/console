@@ -58,7 +58,6 @@ export const useLegacyListTopicsQuery = (
   const legacyListTopicsResult = useTanstackQuery<GetTopicsResponse>({
     queryKey: infiniteQueryKey,
     queryFn: async () => {
-      // Add JWT Bearer token if available (same as REST and gRPC calls)
       const headers: HeadersInit = {};
       if (config.jwt) {
         headers.Authorization = `Bearer ${config.jwt}`;
@@ -69,8 +68,6 @@ export const useLegacyListTopicsQuery = (
         headers,
       });
 
-      // config.fetch wraps window.fetch, which does not reject on 4xx/5xx — guard explicitly, or an
-      // error body parses as a "successful" empty result and the topics page silently shows 0 topics.
       if (!response.ok) {
         throw new Error(`Failed to fetch topics: ${response.status} ${response.statusText}`);
       }
@@ -163,7 +160,7 @@ export const useTopicConfigQuery = (topicName: string, enabled = true) => {
     enabled: enabled && !!topicName,
     staleTime: TOPIC_CONFIG_CACHE_STALE_TIME,
     retry: (failureCount, error) => {
-      // Don't retry on authorization errors
+      // WARNING: Do not retry authorization failures; the same credential cannot gain access by repeating the request.
       if (error && typeof error === 'object' && 'statusText' in error) {
         return false;
       }
@@ -189,11 +186,9 @@ export const useUpdateTopicConfigMutation = () => {
       await api.changeTopicConfig(topicName, configs);
       return { topicName, configs };
     },
-    onSuccess: (data) => {
-      // Invalidate the specific topic config to refetch fresh data
-      return queryClient.invalidateQueries({
+    onSuccess: (data) =>
+      queryClient.invalidateQueries({
         queryKey: ['topicConfig', data.topicName],
-      });
-    },
+      }),
   });
 };

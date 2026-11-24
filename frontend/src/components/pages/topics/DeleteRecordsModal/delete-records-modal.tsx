@@ -40,7 +40,7 @@ import { Slider } from 'components/redpanda-ui/components/slider';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { defineStepper } from 'components/redpanda-ui/components/stepper';
 import { List, ListItem } from 'components/redpanda-ui/components/typography';
-import { type JSX, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { api, useApiStoreHook } from '../../../../state/backend-api';
@@ -53,7 +53,7 @@ type AllPartitions = 'allPartitions';
 type SpecificPartition = 'specificPartition';
 type PartitionOption = null | AllPartitions | SpecificPartition;
 
-const DIGITS_ONLY_REGEX = /^\d*$/;
+const DIGITS_ONLY_REGEX = /^\d*$/u;
 
 const { Stepper } = defineStepper(
   { id: 'partitions', title: 'Select partitions' },
@@ -141,7 +141,7 @@ function SelectPartitionStep({
   onPartitionSpecified: (v: number | null) => void;
   specificPartition: number | null;
   partitions: number[];
-}): JSX.Element {
+}) {
   return (
     <div className="space-y-4">
       <DeleteRecordsIntro>
@@ -154,7 +154,6 @@ function SelectPartitionStep({
           if (option === 'allPartitions') {
             onSpecificPartitionSelected(null);
           } else if (option === 'specificPartition' && specificPartition === null) {
-            // Preselect the first partition so the dropdown isn't empty and the user can proceed.
             onSpecificPartitionSelected(partitions[0] ?? null);
           }
           onPartitionOptionSelected(option);
@@ -363,11 +362,10 @@ const ManualOffsetSlider = ({
   onOffsetSpecified: (v: number) => void;
 }) => {
   const { marks, min, max } = getMarks(partition);
-  // Default to the partition's low watermark — offset 0 is below the valid range.
+  // WARNING: An offset of zero can predate retained data; initialize the slider to the selected partition's low watermark.
   const [sliderValue, setSliderValue] = useState(min);
 
-  // Report the low-watermark default to the parent so submitting without moving the
-  // slider uses a valid in-range value instead of 0.
+  // WARNING: Report the default offset even without a slider gesture; submitting an untouched modal must still use a valid offset.
   // biome-ignore lint/correctness/useExhaustiveDependencies: report the initial default once on mount
   useEffect(() => {
     onOffsetSpecified(min);
@@ -455,15 +453,12 @@ function getMarks(partition: Partition) {
 }
 
 function formatMarks(marks: number[]) {
-  return marks.reduce(
-    (acc, it) => {
-      const key = it.toFixed(0);
-      const value = prettyNumber(it);
-      acc[key] = value;
-      return acc;
-    },
-    {} as { [index: string]: string }
-  );
+  return marks.reduce<Record<string, string>>((acc, it) => {
+    const key = it.toFixed(0);
+    const value = prettyNumber(it);
+    acc[key] = value;
+    return acc;
+  }, {});
 }
 
 type DeleteRecordsModalProps = {
@@ -484,8 +479,7 @@ type DeleteRecordsCallbacks = {
 
 function useDeleteRecordsWizard() {
   const [wizardState, setWizardState] = useState(createInitialWizardState);
-  // Reset the offset choice whenever the partition selection changes — the available
-  // offset options differ between all-partitions and a specific partition.
+  // WARNING: Reset the offset when switching partition scope; an offset valid in one scope may be invalid in the other.
   const setPartitionOption = (v: PartitionOption) =>
     setWizardState((prev) => ({ ...prev, partitionOption: v, offsetOption: null }));
   const setSpecifiedPartition = (v: null | number) => setWizardState((prev) => ({ ...prev, specifiedPartition: v }));
@@ -595,11 +589,11 @@ function isPrimaryDisabled(state: WizardState, hasErrors: boolean, isOffsetStep:
   );
 }
 
-function getPartitionInfo({ specifiedPartition, partitionOption }: WizardState): PartitionInfo {
+function getPartitionInfo({ specifiedPartition, partitionOption }: WizardState) {
   if (specifiedPartition !== null && partitionOption === 'specificPartition') {
-    return ['specificPartition', specifiedPartition];
+    return ['specificPartition', specifiedPartition] satisfies PartitionInfo;
   }
-  return 'allPartitions';
+  return 'allPartitions' as const;
 }
 
 function getPrimaryLabel(hasErrors: boolean, isLast: boolean) {
@@ -609,7 +603,7 @@ function getPrimaryLabel(hasErrors: boolean, isLast: boolean) {
   return isLast ? 'Delete Records' : 'Choose End Offset';
 }
 
-export default function DeleteRecordsModal(props: DeleteRecordsModalProps): JSX.Element | null {
+export default function DeleteRecordsModal(props: DeleteRecordsModalProps) {
   const { visible, topic, onCancel, onFinish } = props;
 
   useEffect(() => {

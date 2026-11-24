@@ -33,7 +33,6 @@ import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, SCHEMA_REGISTRY_MODE, TLS_MODE } from '../create/model';
 
-// Base form values for testing
 const baseFormValues: FormValues = {
   name: 'test-shadow-link',
   bootstrapServers: [{ value: 'localhost:9092' }],
@@ -81,8 +80,6 @@ const baseFormValues: FormValues = {
   schemaRegistry: initialValues.schemaRegistry,
 };
 
-// Helper to create a minimal ShadowLink proto for testing
-// This matches the baseFormValues structure to ensure no false positives
 const createBaseShadowLink = () =>
   create(ShadowLinkSchema, {
     name: 'test-shadow-link',
@@ -145,15 +142,12 @@ const createBaseShadowLink = () =>
           }),
         ],
       }),
-      // Schema registry sync disabled (no schemaRegistryShadowingMode set)
     }),
     tasksStatus: [],
     syncedShadowTopicProperties: [],
   });
 
-// Helper to create a minimal controlplane ShadowLink for testing.
-// Hydrating it through buildDefaultFormValuesFromControlplane must equal
-// baseFormValues so unchanged categories never produce false-positive masks.
+// WARNING: Hydrate untouched categories to the same values; unequal fixtures manufacture field masks unrelated to the test.
 const createBaseControlplaneShadowLink = () =>
   create(CpShadowLinkSchema, {
     id: 'cp-shadow-link-id',
@@ -198,12 +192,8 @@ const createBaseControlplaneShadowLink = () =>
         },
       ],
     },
-    // Schema registry sync disabled (no schemaRegistryShadowingMode set)
   });
 
-/**
- * Pause role sync with a custom interval: neither is exposed in the UI, so both must round-trip
- */
 const pauseRoleSyncWithCustomInterval = (roleSyncOptions: { paused: boolean; interval?: Duration } | undefined) => {
   if (!roleSyncOptions) {
     throw new Error('base shadow link must have role sync options');
@@ -327,8 +317,7 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      // The whole role_sync_options message is replaced by the mask path, so
-      // the fields the UI never exposes must carry over from the fetched link
+      // WARNING: A role_sync_options mask replaces the parent message; preserve fields the form never exposes.
       expect(result.updateMask?.paths).toContain('role_sync_options');
       expect(result.shadowLink?.roleSyncOptions?.paused).toBe(true);
       expect(result.shadowLink?.roleSyncOptions?.interval?.seconds).toBe(300n);
@@ -354,7 +343,6 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      // Controlplane uses flat structure - properties directly on shadowLink
       expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['changed:9092']);
       expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
         expect.objectContaining({
@@ -566,7 +554,6 @@ describe('buildDataplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      // Dataplane uses nested structure - configurations object contains all options
       expect(result.shadowLink?.configurations).toBeDefined();
       expect(result.shadowLink?.configurations?.clientOptions).toBeDefined();
       expect(result.shadowLink?.configurations?.topicMetadataSyncOptions).toBeDefined();
@@ -705,8 +692,7 @@ describe('buildDataplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      // The whole role_sync_options message is replaced by the mask path, so
-      // the fields the UI never exposes must carry over from the fetched link
+      // WARNING: A role_sync_options mask replaces the parent message; preserve fields the form never exposes.
       expect(result.updateMask?.paths).toContain('configurations.role_sync_options');
       expect(result.shadowLink?.configurations?.roleSyncOptions?.paused).toBe(true);
       expect(result.shadowLink?.configurations?.roleSyncOptions?.interval?.seconds).toBe(300n);
@@ -718,7 +704,7 @@ describe('buildDataplaneUpdateRequest', () => {
 });
 
 describe('schema registry api mode through both builders', () => {
-  const apiFormValues = (): FormValues => ({
+  const apiFormValues: () => FormValues = () => ({
     ...baseFormValues,
     schemaRegistry: {
       ...initialValues.schemaRegistry,

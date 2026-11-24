@@ -9,216 +9,240 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, describe, expect, it, rs } from '@rstest/core';
-import { act, renderHook } from '@testing-library/react';
+import { Code, ConnectError, createRouterTransport, type MethodImpl } from '@connectrpc/connect';
+import { afterAll, afterEach, beforeAll, expect, rs, test } from '@rstest/core';
+import userEvent from '@testing-library/user-event';
+import { AddTopicStep } from 'components/pages/rp-connect/onboarding/add-topic-step';
+import type { AddTopicFormData, BaseStepRef } from 'components/pages/rp-connect/types/wizard';
+import { Button } from 'components/redpanda-ui/components/button';
+import { config, createAuthInjectingFetch } from 'config';
+import { HttpResponse, http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
+import { getKafkaInfo } from 'protogen/redpanda/api/console/v1alpha1/cluster_status-ClusterStatusService_connectquery';
+import type { CreateTopicRequest } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
+import { useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { useApiStore } from 'state/backend-api';
+import { act, cleanup, fireEvent, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-import { type RefFormSubmittable, useRefFormDialog } from './use-ref-form-dialog';
+import { useRefFormDialog } from './use-ref-form-dialog';
 
-rs.mock('sonner', () => ({ toast: { error: rs.fn() } }));
+const guardedFetch = globalThis.fetch;
+const originalRestFetch = config.fetch;
+const initialApiState = useApiStore.getState();
+const topicsUrl = new URL(`${config.restBasePath}/topics`, window.location.href).href;
+const server = setupServer(http.get(topicsUrl, () => HttpResponse.json({ topics: [] })));
 
-// Import after mock so we get the mocked version
-const getToastError = async () => {
-  const { toast } = await import('sonner');
-  return toast.error as ReturnType<typeof rs.fn>;
-};
-
-// Renders the hook around a form whose submit is `triggerSubmit`, with the dialog already open.
-function renderOpenDialog(
-  triggerSubmit: RefFormSubmittable<unknown>['triggerSubmit'],
-  options: { timeout?: number } = {}
-) {
-  const ref = { current: { triggerSubmit } };
-  const onSuccess = rs.fn();
-  const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess, ...options }));
-
-  act(() => {
-    result.current.open();
+beforeAll(() => {
+  server.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in the topic dialog');
+    },
   });
+  config.fetch = createAuthInjectingFetch(globalThis.fetch);
+});
 
-  return { result, onSuccess };
+afterEach(() => {
+  rs.useRealTimers();
+  cleanup();
+  server.resetHandlers();
+  useApiStore.setState(initialApiState, true);
+  toast.dismiss();
+});
+
+afterAll(() => {
+  config.fetch = originalRestFetch;
+  server.close();
+});
+
+function TopicDialog({ timeout }: { timeout?: number }) {
+  const form = useRef<BaseStepRef<AddTopicFormData>>(null);
+  const [binding, setBinding] = useState('');
+  const [finished, setFinished] = useState(0);
+  const dialog = useRefFormDialog<AddTopicFormData, string>({
+    ref: form,
+    onSuccess: ({ topicName }, target) => setBinding(`${target}: ${topicName}`),
+    timeout,
+  });
+  return (
+    <>
+      <Button onClick={() => dialog.open('output')} type="button">
+        Add output topic
+      </Button>
+      {dialog.isOpen ? (
+        <section aria-label={`Topic in ${dialog.target}`}>
+          <AddTopicStep hideTitle ref={form} selectionMode="new" />
+          <Button
+            disabled={dialog.isSubmitting}
+            onClick={async () => {
+              await dialog.submit();
+              setFinished((count) => count + 1);
+            }}
+            type="button"
+          >
+            Save topic
+          </Button>
+          <Button onClick={dialog.close} type="button">
+            Cancel
+          </Button>
+        </section>
+      ) : null}
+      <output aria-label="Attached topic">{binding}</output>
+      <output aria-label="Finished submissions">{finished}</output>
+    </>
+  );
 }
 
-// Starts a submit without awaiting it, so the test can act while it is in flight.
-function startSubmit(result: { current: { submit: () => Promise<void> } }): Promise<void> {
-  let submitPromise!: Promise<void>;
-  act(() => {
-    submitPromise = result.current.submit();
-  });
-  return submitPromise;
+function createResponse(request: CreateTopicRequest) {
+  if (!request.topic?.name) {
+    throw new ConnectError('missing topic name', Code.InvalidArgument);
+  }
+  return {
+    topicName: request.topic.name,
+    partitionCount: request.topic.partitionCount,
+    replicationFactor: request.topic.replicationFactor,
+  };
 }
 
-describe('useRefFormDialog', () => {
-  afterEach(() => {
-    rs.useRealTimers();
+function renderTopicDialog({
+  createHandler = createResponse,
+  timeout,
+}: {
+  createHandler?: MethodImpl<typeof createTopic>;
+  timeout?: number;
+} = {}) {
+  const requests: CreateTopicRequest[] = [];
+  const transport = createRouterTransport(({ rpc }) => {
+    rpc(getKafkaInfo, () => ({ brokersOnline: 3 }));
+    rpc(createTopic, (request, context) => {
+      requests.push(request);
+      return createHandler(request, context);
+    });
+  });
+  renderWithFileRoutes(<TopicDialog timeout={timeout} />, { transport });
+  return { requests, user: userEvent.setup() };
+}
+
+type User = ReturnType<typeof userEvent.setup>;
+
+const topicRegion = () => screen.queryByRole('region', { name: 'Topic in output' });
+const saveButton = () => screen.getByRole('button', { name: 'Save topic' });
+const finished = () => screen.getByLabelText('Finished submissions');
+const attachedTopic = () => screen.getByLabelText('Attached topic');
+
+async function openTopic(user: User) {
+  await user.click(screen.getByRole('button', { name: 'Add output topic' }));
+  return screen.findByPlaceholderText('Enter a topic name');
+}
+
+function pendingTopicCreation() {
+  const started = Promise.withResolvers<CreateTopicRequest>();
+  const response = Promise.withResolvers<void>();
+  return {
+    started: started.promise,
+    finish: () => response.resolve(),
+    async handler(request: CreateTopicRequest) {
+      started.resolve(request);
+      await response.promise;
+      return createResponse(request);
+    },
+  };
+}
+
+async function enterPendingTopic(timeout?: number) {
+  const pending = pendingTopicCreation();
+  const { user } = renderTopicDialog({ createHandler: pending.handler, timeout });
+  await user.type(await openTopic(user), 'orders');
+  return { pending, user };
+}
+
+async function startPendingSave({ started }: ReturnType<typeof pendingTopicCreation>) {
+  await act(async () => {
+    fireEvent.click(saveButton());
+    expect(await started).toMatchObject({ topic: { name: 'orders' } });
+  });
+  expect(saveButton()).toBeDisabled();
+}
+
+async function expectInvalidTopicForm(requests: CreateTopicRequest[]) {
+  expect(await screen.findByText('Topic name is required.')).toBeVisible();
+  expect(saveButton()).toBeEnabled();
+  expect(requests).toHaveLength(0);
+  expect(attachedTopic()).toBeEmptyDOMElement();
+}
+
+const expectTopicAttached = () =>
+  waitFor(() => {
+    expect(attachedTopic()).toHaveTextContent('output: orders');
+    expect(topicRegion()).not.toBeInTheDocument();
   });
 
-  it('starts closed and not submitting', () => {
-    const ref = { current: null };
-    const onSuccess = rs.fn();
+test('applies the topic to the target and closes the form on success', async () => {
+  const { requests, user } = renderTopicDialog();
+  expect(topicRegion()).not.toBeInTheDocument();
+  await user.type(await openTopic(user), 'orders');
+  expect(topicRegion()).toBeVisible();
 
-    const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
+  await user.click(saveButton());
 
-    expect(result.current.isOpen).toBe(false);
-    expect(result.current.isSubmitting).toBe(false);
-    expect(result.current.target).toBeNull();
-  });
+  await expectTopicAttached();
+  expect(requests).toMatchObject([{ topic: { name: 'orders', partitionCount: 1, replicationFactor: 3 } }]);
+});
 
-  it('opens with target and derives isOpen', () => {
-    const ref = { current: null };
-    const onSuccess = rs.fn();
+test('keeps invalid input open so the user can correct it and save', async () => {
+  const { requests, user } = renderTopicDialog();
+  const input = await openTopic(user);
+  await user.click(saveButton());
 
-    const { result } = renderHook(() => useRefFormDialog<string, string>({ ref, onSuccess }));
+  await expectInvalidTopicForm(requests);
 
-    act(() => {
-      result.current.open('my-target');
-    });
+  await user.type(input, 'orders');
+  await user.click(saveButton());
 
-    expect(result.current.isOpen).toBe(true);
-    expect(result.current.target).toBe('my-target');
-  });
+  await waitFor(() => expect(finished()).toHaveTextContent('2'));
+  expect(requests).toMatchObject([{ topic: { name: 'orders' } }]);
+  await expectTopicAttached();
+});
 
-  it('defaults target to true when open is called without argument', () => {
-    const ref = { current: null };
-    const onSuccess = rs.fn();
+test('ignores a create response that arrives after cancellation', async () => {
+  const { pending, user } = await enterPendingTopic();
+  try {
+    await startPendingSave(pending);
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(topicRegion()).not.toBeInTheDocument();
+  } finally {
+    pending.finish();
+  }
 
-    const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
+  await waitFor(() => expect(finished()).toHaveTextContent('1'));
+  expect(attachedTopic()).toBeEmptyDOMElement();
+});
 
-    act(() => {
-      result.current.open();
-    });
+test('reports the deadline and closes while the create request is still pending', async () => {
+  const { pending } = await enterPendingTopic(5000);
+  rs.useFakeTimers();
 
-    expect(result.current.isOpen).toBe(true);
-    expect(result.current.target).toBe(true);
-  });
+  try {
+    await startPendingSave(pending);
+    await act(() => rs.advanceTimersByTimeAsync(5000));
 
-  it('close resets all state', () => {
-    const ref = { current: null };
-    const onSuccess = rs.fn();
-
-    const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
-
-    act(() => {
-      result.current.open('target');
-    });
-
-    expect(result.current.isOpen).toBe(true);
-
-    act(() => {
-      result.current.close();
-    });
-
-    expect(result.current.isOpen).toBe(false);
-    expect(result.current.isSubmitting).toBe(false);
-    expect(result.current.target).toBeNull();
-  });
-
-  it('calls onSuccess and closes on successful submit', async () => {
-    const data = { id: 42 };
-    const triggerSubmit = rs.fn().mockResolvedValue({ success: true, data });
-    const ref = { current: { triggerSubmit } };
-    const onSuccess = rs.fn();
-
-    const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
-
-    act(() => {
-      result.current.open();
-    });
-
-    await act(async () => {
-      await result.current.submit();
-    });
-
-    expect(onSuccess).toHaveBeenCalledWith(data, true);
-    expect(result.current.isOpen).toBe(false);
-    expect(result.current.isSubmitting).toBe(false);
-  });
-
-  it('keeps dialog open on failed submit', async () => {
-    const triggerSubmit = rs.fn().mockResolvedValue({ success: false });
-    const ref = { current: { triggerSubmit } };
-    const onSuccess = rs.fn();
-
-    const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
-
-    act(() => {
-      result.current.open();
-    });
-
-    await act(async () => {
-      await result.current.submit();
-    });
-
-    expect(onSuccess).not.toHaveBeenCalled();
-    expect(result.current.isOpen).toBe(true);
-    expect(result.current.isSubmitting).toBe(false);
-  });
-
-  it('aborts in-flight submit when close is called', async () => {
-    let resolveSubmit!: (value: { success: boolean; data?: unknown }) => void;
-    const inflightPromise = new Promise<{ success: boolean; data?: unknown }>((resolve) => {
-      resolveSubmit = resolve;
-    });
-    const triggerSubmit = rs.fn().mockReturnValue(inflightPromise);
-    const { result, onSuccess } = renderOpenDialog(triggerSubmit);
-
-    // Start submit but don't await it yet
-    const submitPromise = startSubmit(result);
-
-    // Close while submit is in-flight
-    act(() => {
-      result.current.close();
-    });
-
-    // Now resolve the submit with success
-    resolveSubmit({ success: true, data: { id: 1 } });
-
-    await act(async () => {
-      await submitPromise;
-    });
-
-    // onSuccess should NOT have been called because abort happened
-    expect(onSuccess).not.toHaveBeenCalled();
-    // Dialog should remain closed (close() was called)
-    expect(result.current.isOpen).toBe(false);
-  });
-
-  it('shows timeout toast and closes on timeout', async () => {
-    rs.useFakeTimers();
-
-    const neverResolves = new Promise<never>(() => {
-      // intentionally never resolves
-    });
-    const triggerSubmit = rs.fn().mockReturnValue(neverResolves);
-    const { result } = renderOpenDialog(triggerSubmit, { timeout: 5000 });
-
-    const submitPromise = startSubmit(result);
-
-    // Advance timers past the timeout
-    await act(async () => {
-      rs.advanceTimersByTime(6000);
-      await submitPromise;
-    });
-
-    const toastError = await getToastError();
-    expect(toastError).toHaveBeenCalledWith('Request timed out');
-    expect(result.current.isOpen).toBe(false);
-    expect(result.current.isSubmitting).toBe(false);
-  });
-
-  it('does nothing when submit is called while closed', async () => {
-    const triggerSubmit = rs.fn().mockResolvedValue({ success: true, data: {} });
-    const ref = { current: { triggerSubmit } };
-    const onSuccess = rs.fn();
-
-    const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
-
-    // Dialog is closed (target is null) — submit should be a no-op
-    await act(async () => {
-      await result.current.submit();
-    });
-
-    expect(triggerSubmit).not.toHaveBeenCalled();
-    expect(onSuccess).not.toHaveBeenCalled();
-    expect(result.current.isOpen).toBe(false);
-  });
+    expect(finished()).toHaveTextContent('1');
+    expect(toast.getToasts()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'error',
+          title: 'Request timed out',
+        }),
+      ])
+    );
+    expect(topicRegion()).not.toBeInTheDocument();
+    expect(attachedTopic()).toBeEmptyDOMElement();
+  } finally {
+    await act(() => pending.finish());
+  }
 });

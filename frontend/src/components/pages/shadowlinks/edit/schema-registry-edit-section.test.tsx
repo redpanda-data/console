@@ -20,7 +20,7 @@ import { SchemaRegistryEditSection, type SchemaRegistryEditSectionProps } from '
 import { FormSchema, type FormValues, initialValues, SCHEMA_REGISTRY_MODE } from '../create/model';
 import { setSchemaRegistrySyncGateSupported as setSrSyncSupported } from '../shadowlink-test-helpers';
 
-const hydratedApiValues = (): FormValues => {
+const hydratedApiValues = () => {
   const values = structuredClone(initialValues);
   values.schemaRegistry.mode = SCHEMA_REGISTRY_MODE.API;
   values.schemaRegistry.sourceUrl = 'https://sr.example.com';
@@ -30,7 +30,7 @@ const hydratedApiValues = (): FormValues => {
   return values;
 };
 
-const hydratedTopicValues = (): FormValues => {
+const hydratedTopicValues = () => {
   const values = structuredClone(initialValues);
   values.schemaRegistry.mode = SCHEMA_REGISTRY_MODE.TOPIC;
   values.enableSchemaRegistrySync = true;
@@ -132,9 +132,6 @@ describe('the SchemaRegistryEditSection', () => {
     });
 
     test('reconciles a legacy switch-off made before the gate opened', () => {
-      // The switch was toggled off while the gate was closed: the boolean is
-      // false but the mode still says topic. The tabs must not disagree with
-      // what would be submitted.
       const staleValues = hydratedTopicValues();
       staleValues.enableSchemaRegistrySync = false;
 

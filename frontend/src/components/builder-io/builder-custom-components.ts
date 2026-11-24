@@ -1,4 +1,3 @@
-// your-custom-components.ts (React version)
 import type { RegisteredComponent } from '@builder.io/sdk-react';
 import { Banner, BannerClose, BannerContent } from 'components/redpanda-ui/components/banner';
 

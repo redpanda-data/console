@@ -5,7 +5,9 @@ import { defineConfig } from '@rsbuild/core';
 import { react19ModuleFederationConfig } from './module-federation.config';
 import baseConfig, { consolePlugins, consoleTools } from './rsbuild.config';
 
-// Build after the main app: its clean step removes this subtree.
+/**
+ * Build after the main app; the main build's clean step removes this subtree.
+ */
 export default defineConfig({
   plugins: consolePlugins(react19ModuleFederationConfig),
   source: baseConfig.source,

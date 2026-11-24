@@ -52,22 +52,10 @@ export type FilterBarProps = {
   canUseJsFilters: boolean;
 };
 
-// Shared "this is a filter" text style across the JS chip, the suggestion dropdown's preview
-// labels, and (via inheritance from OVERLAY_FONT_CLASS below) the highlighted pills in the
-// free-text line — one constant instead of three independent copies, so they can't quietly
-// drift the way the JS chip's text already had (13px next to the pills' enforced 14px). Must
-// stay `text-sm` to match OVERLAY_FONT_CLASS: the pills get their size by inheriting the
-// overlay's own font, not from a class on the pill span itself, so this is the one value that
-// keeps all three in lockstep.
 const FILTER_BADGE_TEXT_CLASS = 'font-mono text-sm';
 
 type EmittedState = { partitionId: number; fieldTokens: FieldFilterToken[]; quickSearch: string };
 
-/**
- * A piece only counts as genuinely external when it both changed since the previous render AND
- * differs from what the bar itself last emitted — one that's merely still catching up to its own
- * emission is neither (it hasn't changed since last render).
- */
 const externalChanges = (incoming: EmittedState, prev: EmittedState, last: EmittedState) => ({
   partitionId: incoming.partitionId !== prev.partitionId && incoming.partitionId !== last.partitionId,
   fieldTokens: !(
@@ -76,45 +64,23 @@ const externalChanges = (incoming: EmittedState, prev: EmittedState, last: Emitt
   quickSearch: incoming.quickSearch !== prev.quickSearch && incoming.quickSearch !== last.quickSearch,
 });
 
-/** Picks, per piece, the external incoming value or a fallback — shared by the "what should
- * `rawText` become" and "what should we now consider last-emitted" resync computations. */
-const mergeExternal = (
+const mergeExternal: (
   external: ReturnType<typeof externalChanges>,
   incoming: EmittedState,
   fallback: { partitionId: number; fieldTokens: FieldFilterToken[]; quickSearch: string }
-): EmittedState => ({
+) => EmittedState = (external, incoming, fallback) => ({
   partitionId: external.partitionId ? incoming.partitionId : fallback.partitionId,
   fieldTokens: external.fieldTokens ? incoming.fieldTokens : fallback.fieldTokens,
   quickSearch: external.quickSearch ? incoming.quickSearch : fallback.quickSearch,
 });
 
-// The overlay and the real input beneath it must render `rawText` at the exact same width,
-// character for character, or the pill highlights drift out from under their text. Monospace
-// gives every character (including the space between two adjacent pills) a fixed, generous
-// width to work with — on a proportional font a single space is only ~4px, not enough room for
-// both a pill's own padding and a visible gap to its neighbor at the same time. Keep this in
-// sync with FILTER_BADGE_TEXT_CLASS above — same size, so the pills painted here read as the
-// same "filter" language as the JS chip and the suggestion dropdown's labels.
+// WARNING: Use the same monospace metrics for the input and overlay; different character widths displace the highlights.
 const OVERLAY_FONT_CLASS = 'font-mono text-sm';
 
-// Padding on the horizontal axis adds to an inline element's layout width, so it's offset by an
-// equal negative margin — net effect on the real input's character positions is zero, which is
-// what keeps the overlay pixel-aligned. Vertical padding on an inline element paints past the
-// line box without affecting line height, so it's free and needs no such compensation.
-//
-// The horizontal value is capped by actual measurement, not guessing: this font/size renders a
-// single space at ~7.4px (measured via getBoundingClientRect on a probe span — see the filter
-// bar's design notes), and that one space is the entire budget shared by two adjacent pills. At
-// 2px/side, two neighbors consume 4px of it, leaving a ~3.4px visible gap; going past ~3px/side
-// (6px total) leaves no gap at all and the pills visually fuse.
-//
-// Border-only look, matching the JS filter chip (border, no fill) rather than a flat highlight —
-// `outline` instead of `border` because outline is a pure paint effect that (like box-shadow)
-// never participates in box-model layout, so it needs no width compensation of its own.
+// WARNING: Cancel horizontal padding with a matching negative margin and use an outline so the overlay does not change text widths.
 const PILL_HIGHLIGHT_CLASS = 'rounded-md px-0.5 py-1 -mx-0.5 outline-1 outline-border/60';
 
-/** Text a suggestion/ghost action should splice in at the current word, or `null` for actions handled specially (opening the JS dialog). */
-const replacementTextFor = (action: SuggestionAction): string | null => {
+const replacementTextFor = (action: SuggestionAction) => {
   switch (action.type) {
     case 'set-pending':
       return `${action.field}:`;
@@ -131,11 +97,9 @@ const replacementTextFor = (action: SuggestionAction): string | null => {
 
 type TextRange = Pick<LineWord, 'start' | 'end'>;
 
-/** `text` with `range` replaced by `replacement`. */
 const spliceRange = (text: string, range: TextRange, replacement: string) =>
   text.slice(0, range.start) + replacement + text.slice(range.end);
 
-/** Every setter and callback applying a suggestion touches, gathered per application. */
 type LineEdit = {
   rawText: string;
   setRawText: (text: string) => void;
@@ -149,13 +113,11 @@ type LineEdit = {
   input: HTMLInputElement | null;
 };
 
-/** Replaces the line's text and reports the pieces it now parses into. */
 const commitLine = (edit: LineEdit, next: string) => {
   edit.setRawText(next);
   edit.deriveAndEmit(next);
 };
 
-/** `open-js`: the word under the caret leaves the line and seeds the JavaScript filter dialog instead. */
 const moveWordToJsEditor = (
   edit: LineEdit,
   range: TextRange,
@@ -167,20 +129,16 @@ const moveWordToJsEditor = (
   edit.onEditJsFilter(null, action.code, action.name);
 };
 
-/** The line with the suggestion's text spliced over `range`, and the caret position just past it. */
 const spliceSuggestion = (rawText: string, action: SuggestionAction, range: TextRange) => {
   const replacement = replacementTextFor(action);
   if (replacement === null) {
     return null;
   }
-  // A complete token gets a trailing separator so typing continues naturally into the
-  // next term — unless one is already there (e.g. inserting mid-line, before existing text).
   const needsSeparator = action.type === 'commit-field' && rawText[range.end] !== ' ';
   const withSpace = needsSeparator ? `${replacement} ` : replacement;
   return { next: spliceRange(rawText, range, withSpace), caret: range.start + withSpace.length };
 };
 
-/** A committed field token becomes a recent search; confirming a full-text search closes the popup. */
 const noteAppliedAction = (edit: LineEdit, action: SuggestionAction) => {
   if (action.type === 'commit-field') {
     edit.recordRecent({
@@ -196,7 +154,7 @@ const noteAppliedAction = (edit: LineEdit, action: SuggestionAction) => {
 const placeCaret = (edit: LineEdit, caret: number) => {
   const el = edit.input;
   el?.focus();
-  // caret placement must wait for the controlled value to render
+  // WARNING: Place the caret after the controlled value renders; placing it earlier uses the previous string's range.
   setTimeout(() => el?.setSelectionRange(caret, caret), 0);
   edit.setCaretPos(caret);
 };
@@ -213,23 +171,17 @@ const insertSuggestion = (edit: LineEdit, action: SuggestionAction, range: TextR
   placeCaret(edit, spliced.caret);
 };
 
-/**
- * When some piece changed outside the bar: the line to show now and what to treat as last
- * emitted. Null when every piece is unchanged or still catching up to the bar's own emission.
- */
-const resyncFromProps = (
+const resyncFromProps: (
   incoming: EmittedState,
   prev: EmittedState,
   last: EmittedState,
   rawText: string,
   partitionCount: number | undefined
-): { text: string; emitted: EmittedState } | null => {
+) => { text: string; emitted: EmittedState } | null = (incoming, prev, last, rawText, partitionCount) => {
   const external = externalChanges(incoming, prev, last);
   if (!(external.partitionId || external.fieldTokens || external.quickSearch)) {
     return null;
   }
-  // Only the genuinely external piece(s) get applied; every other piece is re-derived from
-  // the text already on screen rather than a possibly-still-catching-up prop.
   const current = parseFilterLine(rawText, { partitionCount });
   const resynced = mergeExternal(external, incoming, {
     partitionId: current.partitionId ?? -1,
@@ -255,10 +207,6 @@ type FilterLineOptions = Pick<
   | 'onRemoveJsFilter'
 >;
 
-/**
- * The free-text line (`rawText` + caret) and its two-way sync with the partition, field-token
- * and quick-search props it parses into.
- */
 function useFilterLine({
   partitionId,
   fieldTokens,
@@ -272,17 +220,8 @@ function useFilterLine({
 }: FilterLineOptions) {
   const [rawText, setRawText] = useState(() => formatFilterLine(partitionId, fieldTokens, quickSearch));
   const [caretPos, setCaretPos] = useState(0);
-  // What we last reported upward, so the resync effect below can tell "the
-  // parent just echoed what we told it" apart from a genuinely external
-  // change (initial mount, Clear all, browser back/forward) — the former
-  // must never reformat `rawText` mid-edit, or it'll fight the user's typing.
+  // WARNING: Keep previous props separate from the last emitted state; late echoes are not external changes and can erase in-progress edits.
   const lastEmittedRef = useRef<EmittedState>({ partitionId, fieldTokens, quickSearch });
-  // Props as of the previous render, independent of `lastEmittedRef` — lets the effect below
-  // tell "this piece hasn't caught up to our own emission yet" apart from "this piece changed."
-  // Comparing only against `lastEmittedRef` breaks the moment the three onChange calls echo
-  // back as separate renders instead of one atomic update: a piece that simply hasn't arrived
-  // yet still differs from `lastEmittedRef` and used to be misread as an external change that
-  // then wiped whatever the *other* two pieces held mid-edit.
   const prevPropsRef = useRef<EmittedState>({ partitionId, fieldTokens, quickSearch });
 
   useEffect(() => {
@@ -304,9 +243,6 @@ function useFilterLine({
         fieldTokens: parsed.fieldTokens,
         quickSearch: parsed.remainder,
       };
-      // Only call up when a piece actually changed — typing inside plain text
-      // (no field tokens involved) shouldn't fire onPartitionIdChange(-1) etc.
-      // on every keystroke just because nothing there changed.
       if (nextPartitionId !== partitionId) {
         onPartitionIdChange(nextPartitionId);
       }
@@ -347,19 +283,12 @@ function useFilterLine({
   return { rawText, setRawText, caretPos, setCaretPos, deriveAndEmit, highlightRanges, clearAll };
 }
 
-/** The suggestion popup's open state and keyboard cursor; any click outside `containerRef` closes it. */
 function useSuggestionDropdown() {
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
-  // Whether the user explicitly moved the active item with ArrowUp/ArrowDown/hover since it
-  // was last reset — Enter only auto-applies the top suggestion when they typed something
-  // (non-empty query) or explicitly chose it this way; otherwise a stray Enter (e.g. right
-  // after committing, when the caret sits past a trailing space with an empty query) would
-  // silently apply whatever default suggestion happens to be first.
   const [navigated, setNavigated] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -387,7 +316,6 @@ type FilterSuggestionsOptions = Pick<FilterBarProps, 'messages' | 'fieldTokens' 
   recents: RecentSearch[];
 };
 
-/** Suggestions and ghost completion for the word under the caret. */
 function useFilterSuggestions({
   rawText,
   caretPos,
@@ -400,10 +328,6 @@ function useFilterSuggestions({
   const currentWord = useMemo(() => wordRangeAtCaret(rawText, caretPos), [rawText, caretPos]);
   const query = currentWord?.text ?? '';
 
-  // Never suggest re-adding something that's already an active filter — besides being a
-  // pointless suggestion, it's what let a stray Enter re-insert (duplicate) the filter you
-  // just typed: right after committing, the caret sits past the trailing space with an empty
-  // current word, so the just-recorded recent became the top "active" suggestion.
   const visibleRecents = useMemo(() => {
     const activeLabels = new Set(fieldTokens.map((t) => formatTokenText(t)));
     if (partitionId >= 0) {
@@ -435,7 +359,6 @@ type SuggestionActionsOptions = {
   onEditJsFilter: FilterBarProps['onEditJsFilter'];
 };
 
-/** Applying suggestions (click, Enter, Tab) and the input's keyboard handling. */
 function useSuggestionActions({
   line,
   dropdown,
@@ -593,6 +516,11 @@ const SuggestionList = ({ id, heading, items, activeIdx, onApply, onHover }: Sug
   );
 };
 
+/**
+ * Enter applies a suggestion only after the user types a query or explicitly moves to a suggestion.
+ *
+ * Reconciles partition, field tokens, and quick search separately. An incoming piece is external only if it changed since the last render and differs from the last emitted value; late URL echoes must not overwrite typing.
+ */
 export const FilterBar = ({
   messages,
   quickSearch,
@@ -653,9 +581,7 @@ export const FilterBar = ({
           dropdown.open && 'border-primary'
         )}
         onClick={() => inputRef.current?.focus()}
-        onKeyDown={() => {
-          // clicks focus the input; keyboard handling lives on the input itself
-        }}
+        onKeyDown={() => {}}
       >
         <TonedIcon className="size-4 shrink-0" icon={SearchIcon} tone="muted" />
         {jsFilters.map((filter) => (

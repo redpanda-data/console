@@ -13,31 +13,33 @@ import { distinctFieldValues, matchesFieldFilter, resolveField, valuePaths } fro
 import { describe, expect, test } from 'bun:test';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
-const makeMsg = (overrides: {
-  offset?: number;
-  partitionID?: number;
-  key?: unknown;
-  value?: unknown;
-}): TopicMessage => ({
-  partitionID: overrides.partitionID ?? 0,
-  offset: overrides.offset ?? 1,
-  timestamp: 0,
-  compression: 'uncompressed',
-  isTransactional: false,
-  headers: [],
-  key: { payload: overrides.key ?? 'k', isPayloadNull: overrides.key === null, size: 1, encoding: 'json', schemaId: 0 },
-  value: {
-    payload: overrides.value ?? {},
-    isPayloadNull: overrides.value === null,
-    size: 1,
-    encoding: 'json',
-    schemaId: 0,
-  },
-  keyJson: JSON.stringify(overrides.key ?? 'k'),
-  valueJson: JSON.stringify(overrides.value ?? {}),
-  keyBinHexPreview: '',
-  valueBinHexPreview: '',
-});
+const makeMsg: (overrides: { offset?: number; partitionID?: number; key?: unknown; value?: unknown }) => TopicMessage =
+  (overrides) => ({
+    partitionID: overrides.partitionID ?? 0,
+    offset: overrides.offset ?? 1,
+    timestamp: 0,
+    compression: 'uncompressed',
+    isTransactional: false,
+    headers: [],
+    key: {
+      payload: overrides.key ?? 'k',
+      isPayloadNull: overrides.key === null,
+      size: 1,
+      encoding: 'json',
+      schemaId: 0,
+    },
+    value: {
+      payload: overrides.value ?? {},
+      isPayloadNull: overrides.value === null,
+      size: 1,
+      encoding: 'json',
+      schemaId: 0,
+    },
+    keyJson: JSON.stringify(overrides.key ?? 'k'),
+    valueJson: JSON.stringify(overrides.value ?? {}),
+    keyBinHexPreview: '',
+    valueBinHexPreview: '',
+  });
 
 describe('resolveField', () => {
   const msg = makeMsg({ offset: 42, partitionID: 2, key: 'abc', value: { address: { city: 'Berlin' }, version: 3 } });

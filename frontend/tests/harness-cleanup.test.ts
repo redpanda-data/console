@@ -9,72 +9,69 @@
  * by the Apache License, Version 2.0
  */
 
-import { QueryClient } from '@tanstack/react-query';
+import { isCancelledError, QueryClient } from '@tanstack/react-query';
+import { createBrowserHistory } from '@tanstack/react-router';
 
 import { cleanupTestHarness, trackedQueryClients, trackedRouters, trackedTeardowns } from './harness-cleanup';
-import { describe, expect, mock, spyOn, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
-function deferQueryCancellation(queryClient: QueryClient) {
-  let finishCancellation: (() => void) | undefined;
-  const cancelQueries = spyOn(queryClient, 'cancelQueries').mockImplementation(
-    () =>
-      new Promise<void>((resolve) => {
-        finishCancellation = resolve;
-      })
-  );
-  return { cancelQueries, finishCancellation: () => finishCancellation?.() };
+const activeKey = ['active-request'];
+
+function launchActiveQuery(client: QueryClient) {
+  const finished = Promise.withResolvers<void>();
+  const query = client.fetchQuery({
+    queryKey: activeKey,
+    queryFn: ({ signal }) => {
+      signal.addEventListener('abort', () => finished.reject(signal.reason), { once: true });
+      return finished.promise;
+    },
+  });
+  return query.catch((error: unknown) => error);
 }
 
-function trackResourcesWithDeferredCancellation() {
-  const queryClient = new QueryClient();
-  const { cancelQueries, finishCancellation } = deferQueryCancellation(queryClient);
-  const clear = spyOn(queryClient, 'clear');
-  const unmount = spyOn(queryClient, 'unmount');
-  const destroyHistory = mock();
-  const teardown = mock();
+function trackResources() {
+  const client = new QueryClient();
+  client.mount();
+  const result = launchActiveQuery(client);
+  const { pushState } = window.history;
+  const history = createBrowserHistory();
+  const teardown = new AbortController();
 
-  trackedQueryClients.add(queryClient);
-  trackedRouters.add({ history: { destroy: destroyHistory } });
-  trackedTeardowns.add(teardown);
+  trackedQueryClients.add(client);
+  trackedRouters.add({ history });
+  trackedTeardowns.add(() => teardown.abort());
 
-  return { cancelQueries, clear, destroyHistory, finishCancellation, teardown, unmount };
+  return { client, result, pushState, history, teardown };
 }
 
-function expectRetainedResourcesReleased({
-  clear,
-  destroyHistory,
-  teardown,
-  unmount,
-}: ReturnType<typeof trackResourcesWithDeferredCancellation>) {
-  expect(clear).toHaveBeenCalledTimes(1);
-  expect(unmount).toHaveBeenCalledTimes(1);
-  expect(destroyHistory).toHaveBeenCalledTimes(1);
-  expect(teardown).toHaveBeenCalledTimes(1);
+async function expectRelease({ client, result, pushState, teardown }: ReturnType<typeof trackResources>) {
+  expect(isCancelledError(await result)).toBe(true);
+  expect(client.getQueryState(activeKey)).toBeUndefined();
+  expect(window.history.pushState).toBe(pushState);
+  expect(teardown.signal.aborted).toBe(true);
   expect(trackedQueryClients).toHaveLength(0);
   expect(trackedRouters).toHaveLength(0);
   expect(trackedTeardowns).toHaveLength(0);
 }
 
 describe('cleanupTestHarness', () => {
-  test('waits for query cancellation before clearing retained resources', async () => {
-    const resources = trackResourcesWithDeferredCancellation();
-
+  test('waits for query cancellation before releasing the cache, history and teardowns', async () => {
+    const resources = trackResources();
     const cleanup = cleanupTestHarness();
-
-    expect(resources.cancelQueries).toHaveBeenCalledTimes(1);
-    expect(resources.clear).not.toHaveBeenCalled();
-    expect(resources.unmount).not.toHaveBeenCalled();
-
-    resources.finishCancellation();
-    await cleanup;
-
-    expectRetainedResourcesReleased(resources);
+    try {
+      expect(resources.client.getQueryState(activeKey)).toBeDefined();
+      expect(window.history.pushState).not.toBe(resources.pushState);
+      expect(resources.teardown.signal.aborted).toBe(false);
+    } finally {
+      await cleanup;
+    }
+    await expectRelease(resources);
   });
 
   test('runs every teardown and reports failures', async () => {
     const firstError = new Error('first teardown failed');
     const secondError = new Error('second teardown failed');
-    const finalTeardown = mock();
+    const teardown = new AbortController();
 
     trackedTeardowns.add(() => {
       throw firstError;
@@ -82,12 +79,12 @@ describe('cleanupTestHarness', () => {
     trackedTeardowns.add(() => {
       throw secondError;
     });
-    trackedTeardowns.add(finalTeardown);
+    trackedTeardowns.add(() => teardown.abort());
 
     await expect(cleanupTestHarness()).rejects.toMatchObject({
       errors: [firstError, secondError],
     });
-    expect(finalTeardown).toHaveBeenCalledTimes(1);
+    expect(teardown.signal.aborted).toBe(true);
     expect(trackedTeardowns).toHaveLength(0);
   });
 });

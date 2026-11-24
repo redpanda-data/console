@@ -17,7 +17,6 @@ describe('brand icons', () => {
     expect(svg).toHaveAttribute('height', '16');
     expect(svg).toHaveAttribute('fill', 'currentColor');
     expect(svg).toHaveClass('h-5', 'w-5');
-    // allow: to-be-in-document — SVG <title> is never rendered, so visibility does not apply
     expect(screen.getByTitle(title)).toBeInTheDocument();
   });
 

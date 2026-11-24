@@ -9,11 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-
-// Enable automatic store reset between tests - must be before imports
-rs.mock('zustand');
-
+import { beforeEach, describe, expect, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
 
 import {
@@ -34,6 +30,7 @@ function renderStoresWithReset() {
 
 describe('the RPCN Wizard Store', () => {
   beforeEach(() => {
+    useRpcnWizardStore.setState(useRpcnWizardStore.getInitialState(), true);
     sessionStorage.clear();
   });
 
@@ -114,7 +111,6 @@ describe('the RPCN Wizard Store', () => {
           result.current.reset();
         });
 
-        // Actions should still work after reset
         expect(() => {
           act(() => {
             result.current.setWizardData({ input: { connectionName: 'new', connectionType: 'input' } });
@@ -157,7 +153,6 @@ describe('the RPCN Wizard Store', () => {
           result.current.reset();
         });
 
-        // Persist middleware should clear storage on reset
         const stored = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
         const parsed = stored ? JSON.parse(stored) : {};
         expect(parsed.input).toBeUndefined();
@@ -178,7 +173,7 @@ describe('the RPCN Wizard Store', () => {
         if (stored) {
           const parsed = JSON.parse(stored);
           expect(parsed.input).toBeDefined();
-          expect(parsed.hasHydrated).toBeUndefined(); // Should NOT be persisted
+          expect(parsed.hasHydrated).toBeUndefined();
         }
       });
     });
@@ -193,19 +188,16 @@ describe('the RPCN Wizard Store', () => {
       test('should reset hasHydrated to false on reset', () => {
         const { result } = renderHook(() => useRpcnWizardStore());
 
-        // Simulate hydration complete
         act(() => {
           result.current.setHasHydrated(true);
         });
 
         expect(result.current.hasHydrated).toBe(true);
 
-        // Add some data
         act(() => {
           result.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
         });
 
-        // Reset should clear data AND reset hydration flag
         act(() => {
           result.current.reset();
         });
@@ -268,7 +260,6 @@ describe('the RPCN Wizard Store', () => {
         result.current.setTopicData({ topicName: 'my-topic' });
       });
 
-      // Should not create any sessionStorage entry
       const allKeys = Object.keys(sessionStorage);
       const topicKeys = allKeys.filter((key) => key.includes('topic'));
       expect(topicKeys).toHaveLength(0);
@@ -285,7 +276,6 @@ describe('the RPCN Wizard Store', () => {
         result.current.reset();
       });
 
-      // Actions should still work after reset
       expect(() => {
         act(() => {
           result.current.setTopicData({ topicName: 'topic-2' });
@@ -345,7 +335,6 @@ describe('the RPCN Wizard Store', () => {
         result.current.setUserData({ username: 'test-user' });
       });
 
-      // Should not create any sessionStorage entry
       const allKeys = Object.keys(sessionStorage);
       const userKeys = allKeys.filter((key) => key.includes('user'));
       expect(userKeys).toHaveLength(0);
@@ -362,7 +351,6 @@ describe('the RPCN Wizard Store', () => {
         result.current.reset();
       });
 
-      // Actions should still work after reset
       expect(() => {
         act(() => {
           result.current.setUserData({ username: 'user-2' });
@@ -377,7 +365,6 @@ describe('the RPCN Wizard Store', () => {
     test('should reset all three stores', () => {
       const { wizardResult, topicResult, userResult, resetResult } = renderStoresWithReset();
 
-      // Set data in all stores
       act(() => {
         wizardResult.current.setWizardData({ input: { connectionName: 'test', connectionType: 'input' } });
         topicResult.current.setTopicData({ topicName: 'my-topic' });
@@ -388,7 +375,6 @@ describe('the RPCN Wizard Store', () => {
       expect(topicResult.current.topicName).toBe('my-topic');
       expect(userResult.current.username).toBe('test-user');
 
-      // Reset all stores
       act(() => {
         resetResult.current();
       });
@@ -482,10 +468,8 @@ describe('the RPCN Wizard Store', () => {
     });
 
     test('hasHydrated should return hydration status', () => {
-      // Initially false
       expect(rpcnWizardStore.hasHydrated()).toBe(false);
 
-      // Set to true
       act(() => {
         useRpcnWizardStore.getState().setHasHydrated(true);
       });

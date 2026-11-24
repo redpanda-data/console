@@ -26,6 +26,7 @@ import {
   READ_UNTIL,
   type StopCondition,
   slotComponentKey,
+  tryYamlOperation,
   unwrapReadUntil,
   yamlFlag,
 } from './yaml';
@@ -58,11 +59,11 @@ export type MemberCounts = { total: number; continuous: number; unknown: number;
 type Config = Record<string, unknown>;
 type EndRule = (config: Config) => InputEndBehavior;
 
-const nonEmpty = (value: unknown): boolean => typeof value === 'string' && value.trim() !== '';
+const nonEmpty = (value: unknown) => typeof value === 'string' && value.trim() !== '';
 
-const natural = (reason: string): InputEndBehavior => ({ kind: 'natural', reason });
-const continuous = (reason: string, finiteHint?: string): InputEndBehavior =>
-  finiteHint ? { kind: 'continuous', reason, finiteHint } : { kind: 'continuous', reason };
+const natural = (reason: string) => ({ kind: 'natural', reason }) satisfies InputEndBehavior;
+const continuous = (reason: string, finiteHint?: string) =>
+  (finiteHint ? { kind: 'continuous', reason, finiteHint } : { kind: 'continuous', reason }) satisfies InputEndBehavior;
 
 const UNKNOWN: InputEndBehavior = {
   kind: 'unknown',
@@ -71,14 +72,8 @@ const UNKNOWN: InputEndBehavior = {
 
 const UNTIL_STOPPED = 'until the pipeline is stopped';
 
-const always =
-  (reason: string): EndRule =>
-  () =>
-    natural(reason);
-const never =
-  (reason: string): EndRule =>
-  () =>
-    continuous(reason);
+const always = (reason: string) => (() => natural(reason)) satisfies EndRule;
+const never = (reason: string) => (() => continuous(reason)) satisfies EndRule;
 
 const CONSUMES = never(`Keeps consuming new messages ${UNTIL_STOPPED}.`);
 const LISTENS = never(`Listens for incoming requests ${UNTIL_STOPPED}.`);
@@ -87,37 +82,34 @@ const POLLS = never(`Polls for new data ${UNTIL_STOPPED}.`);
 const ROWS = always('Reads every row its query returns, then stops.');
 const RECORDS = always('Reads every record its query returns, then stops.');
 
-// A CDC input that can read a one-off snapshot instead of streaming.
-const snapshotOnly =
-  (what: string): EndRule =>
-  (c) =>
+const snapshotOnly = (what: string) =>
+  ((c) =>
     c.snapshot_mode === 'snapshot_only'
       ? natural(`Reads a snapshot of the ${what}, then stops.`)
       : continuous(
           `Streams ${what} changes ${UNTIL_STOPPED}.`,
           'Set `snapshot_mode: snapshot_only` to read a snapshot and stop.'
-        );
+        )) satisfies EndRule;
 
-// Connect truncates an int field, so `count: 0.5` is 0 (unlimited).
-const positiveInteger = (value: unknown): number | undefined => {
+const positiveInteger = (value: unknown) => {
   const n = typeof value === 'string' ? Number(value) : value;
   return typeof n === 'number' && Number.isFinite(n) && Math.trunc(n) >= 1 ? Math.trunc(n) : undefined;
 };
 
 const envRef = (value: unknown): value is string => typeof value === 'string' && isEnvRef(value);
 
-const dependsOn = (field: string, value: string): InputEndBehavior => ({
-  kind: 'unknown',
-  reason: `Whether it stops depends on \`${field}\`, set from \`${value.trim()}\`.`,
-});
+const dependsOn = (field: string, value: string) =>
+  ({
+    kind: 'unknown',
+    reason: `Whether it stops depends on \`${field}\`, set from \`${value.trim()}\`.`,
+  }) satisfies InputEndBehavior;
 
-// A boolean field with its default when unset; undefined when only the runtime can tell (an env var).
-const flag = (value: unknown, fallback: boolean): boolean | undefined =>
+const flag = (value: unknown, fallback: boolean) =>
   value === undefined || value === null ? fallback : yamlFlag(value);
 
-const DELETED_RE = /\bdeleted\(\s*\)/;
+const DELETED_RE = /\bdeleted\(\s*\)/u;
 
-function generateEnd(c: Config): InputEndBehavior {
+function generateEnd(c: Config) {
   if (envRef(c.count)) {
     return dependsOn('count', c.count);
   }
@@ -132,10 +124,9 @@ function generateEnd(c: Config): InputEndBehavior {
   return finiteGenerateEnd(c, count);
 }
 
-function finiteGenerateEnd(c: Config, count: number): InputEndBehavior {
+function finiteGenerateEnd(c: Config, count: number) {
   const messages = count === 1 ? '1 message' : `${count} messages`;
   const interval = typeof c.interval === 'string' ? c.interval.trim() : '';
-  // An interval that isn't a duration is a cron expression: nothing is generated before its first tick.
   const cron = interval !== '' && parseGoDuration(interval) === undefined && !isEnvRef(interval);
   const caveats = [
     cron ? `Each run waits for the next \`${interval}\` tick before its first message.` : undefined,
@@ -149,7 +140,7 @@ function finiteGenerateEnd(c: Config, count: number): InputEndBehavior {
   return caveats.length > 0 ? { ...behavior, caveat: caveats.join(' ') } : behavior;
 }
 
-function httpClientEnd(c: Config): InputEndBehavior {
+function httpClientEnd(c: Config) {
   const stream = asRecord(c.stream);
   const enabled = flag(stream?.enabled, false);
   if (enabled === undefined) {
@@ -170,8 +161,6 @@ function httpClientEnd(c: Config): InputEndBehavior {
     : natural('Reads the response stream, then stops when the server closes it.');
 }
 
-// Per Redpanda Connect 4.100: which inputs return end-of-input, and under what config. Components
-// missing here are `unknown`; composites (broker, sequence, resource, read_until) are handled below.
 const END_RULES: Record<string, EndRule> = {
   amqp_0_9: CONSUMES,
   aws_cloudwatch_logs: never(`Tails the log groups ${UNTIL_STOPPED}.`),
@@ -179,7 +168,6 @@ const END_RULES: Record<string, EndRule> = {
     if (envRef(c.snapshot_mode)) {
       return dependsOn('snapshot_mode', c.snapshot_mode);
     }
-    // Any snapshot is refused with tag discovery or several tables, so snapshot_only isn't offered there.
     const multiTable = c.table_discovery_mode === 'tag' || (Array.isArray(c.tables) && c.tables.length > 1);
     const mode = typeof c.snapshot_mode === 'string' ? c.snapshot_mode : 'none';
     if (multiTable && mode !== 'none') {
@@ -205,7 +193,6 @@ const END_RULES: Record<string, EndRule> = {
         )
       : natural('Reads every object in the bucket, then stops.'),
   aws_sqs: CONSUMES,
-  // With `targets_input`, it follows that input instead (see classifySlot).
   azure_blob_storage: always('Reads every blob in the container, then stops.'),
   azure_cosmosdb: RECORDS,
   azure_queue_storage: CONSUMES,
@@ -264,7 +251,6 @@ const END_RULES: Record<string, EndRule> = {
   sql_raw: ROWS,
   sql_select: ROWS,
   timeplus: never(`Re-runs its query ${UNTIL_STOPPED}.`),
-  // Self-hosted only, kept so a shared config classifies the same.
   csv: always('Reads every row in the files, then stops.'),
   file: always('Reads every file to the end, then stops.'),
   stdin: always('Reads until its input closes, then stops.'),
@@ -288,12 +274,10 @@ const MAX_RESOURCE_DEPTH = 4;
 type ClassifyContext = {
   inputResources: Map<string, unknown>;
   depth: number;
-  /** The slots being classified, outermost first: an alias back to one of them is a loop. */
   open: Set<object>;
 };
 
-// "Its input has" / "Both inputs have" / "2 of 3 inputs have": which members `verb` applies to.
-function membersPhrase(n: number, total: number, [one, many]: [string, string]): string {
+function membersPhrase(n: number, total: number, [one, many]: [string, string]) {
   if (total === 1) {
     return `Its input ${one}`;
   }
@@ -304,8 +288,7 @@ function membersPhrase(n: number, total: number, [one, many]: [string, string]):
   return `${n} of ${total} inputs ${n === 1 ? one : many}`;
 }
 
-// The members that never stop, with the negation folded in when it's all of them.
-function neverStopPhrase(n: number, total: number): string {
+function neverStopPhrase(n: number, total: number) {
   if (total === 1) {
     return 'Its input never stops on its own';
   }
@@ -315,64 +298,69 @@ function neverStopPhrase(n: number, total: number): string {
   return `${n} of ${total} inputs never ${n === 1 ? 'stops' : 'stop'} on ${n === 1 ? 'its' : 'their'} own`;
 }
 
-// A broker or sequence hands on its members' batches as they come.
-function aggregate(name: string, slots: unknown[], ctx: ClassifyContext): InputEndBehavior {
+function aggregate(name: string, slots: unknown[], ctx: ClassifyContext) {
   const behaviors = slots.map((m) => classifySlot(m, ctx));
-  const result = aggregateEnd(name, behaviors);
+  const result: InputEndBehavior = aggregateEnd(name, behaviors);
   return behaviors.some((b) => b.batches) ? { ...result, batches: true } : result;
 }
 
-function memberCounts(behaviors: InputEndBehavior[]): MemberCounts {
+function memberCounts(behaviors: InputEndBehavior[]) {
   const count = (kind: InputEndKind) => behaviors.filter((b) => b.kind === kind).length;
   return {
     total: behaviors.length,
     continuous: count('continuous'),
     unknown: count('unknown'),
     invalid: count('invalid'),
-  };
+  } satisfies MemberCounts;
 }
 
-function invalidMembersEnd(name: string, behaviors: InputEndBehavior[], members: MemberCounts): InputEndBehavior {
+function invalidMembersEnd(name: string, behaviors: InputEndBehavior[], members: MemberCounts) {
   const phrase = membersPhrase(members.invalid, members.total, ['needs fixing', 'need fixing']);
-  // A sequence builds only its first input at start; a broken later one stalls it, retrying forever.
   const stalls = name === 'sequence' && behaviors[0].kind !== 'invalid';
   return {
     kind: 'invalid',
     reason: stalls ? `${phrase}, so the sequence stalls when it gets there.` : `${phrase}.`,
     members,
-  };
+  } satisfies InputEndBehavior;
 }
 
-function continuousMembersEnd(name: string, members: MemberCounts): InputEndBehavior {
+function continuousMembersEnd(name: string, members: MemberCounts) {
   const outcome = name === 'sequence' ? 'sequence never finishes' : 'broker keeps running';
-  return { ...continuous(`${neverStopPhrase(members.continuous, members.total)}, so the ${outcome}.`), members };
+  return {
+    ...continuous(`${neverStopPhrase(members.continuous, members.total)}, so the ${outcome}.`),
+    members,
+  } satisfies InputEndBehavior;
 }
 
-function unknownMembersEnd(members: MemberCounts): InputEndBehavior {
+function unknownMembersEnd(members: MemberCounts) {
   const phrase = membersPhrase(members.unknown, members.total, [
     'may not stop on its own',
     'may not stop on their own',
   ]);
-  return { kind: 'unknown', reason: `${phrase}.`, members };
+  return { kind: 'unknown', reason: `${phrase}.`, members } satisfies InputEndBehavior;
 }
 
-function stoppedMembersEnd(name: string, behaviors: InputEndBehavior[], members: MemberCounts): InputEndBehavior {
+function stoppedMembersEnd(name: string, behaviors: InputEndBehavior[], members: MemberCounts) {
   const reason =
     name === 'sequence' ? 'Stops after its last input stops.' : 'Stops once every one of its inputs has stopped.';
   const caveats = behaviors.filter((b) => b.caveat).length;
-  return caveats > 0
-    ? {
-        ...natural(reason),
-        members,
-        caveat: `${membersPhrase(caveats, members.total, ['might keep running', 'might keep running'])}.`,
-      }
-    : { ...natural(reason), members };
+  return (
+    caveats > 0
+      ? {
+          ...natural(reason),
+          members,
+          caveat: `${membersPhrase(caveats, members.total, ['might keep running', 'might keep running'])}.`,
+        }
+      : { ...natural(reason), members }
+  ) satisfies InputEndBehavior;
 }
 
-// A broker ends once every member has; a sequence moves to the next member only when one ends.
-function aggregateEnd(name: string, behaviors: InputEndBehavior[]): InputEndBehavior {
+function aggregateEnd(name: string, behaviors: InputEndBehavior[]) {
   if (behaviors.length === 0) {
-    return { kind: 'invalid', reason: 'It has no inputs yet, and Connect needs at least one.' };
+    return {
+      kind: 'invalid',
+      reason: 'It has no inputs yet, and Connect needs at least one.',
+    } satisfies InputEndBehavior;
   }
   const members = memberCounts(behaviors);
   if (members.invalid > 0) {
@@ -387,13 +375,11 @@ function aggregateEnd(name: string, behaviors: InputEndBehavior[]): InputEndBeha
   return stoppedMembersEnd(name, behaviors, members);
 }
 
-// A wrapper that runs another input ends as that input does; its stop condition isn't the wrapper's own.
-function inherited(inner: InputEndBehavior, reason: string): InputEndBehavior {
-  return { ...inner, kind: inner.kind === 'condition' ? 'natural' : inner.kind, reason };
+function inherited(inner: InputEndBehavior, reason: string) {
+  return { ...inner, kind: inner.kind === 'condition' ? 'natural' : inner.kind, reason } satisfies InputEndBehavior;
 }
 
-// Whether a batch policy groups messages; one that sets nothing, or a count of 1, doesn't.
-function policyBatches(policy: unknown): boolean {
+function policyBatches(policy: unknown) {
   const p = asRecord(policy) ?? {};
   if (Number(p.count) === 1) {
     return false;
@@ -407,9 +393,7 @@ function policyBatches(policy: unknown): boolean {
   );
 }
 
-// Connect sends a last partial batch only on a `period` timer: once the input ends, any other policy
-// waits on it forever. `batched` always batches; a broker skips batching when the policy sets nothing.
-function lastBatchWaits(policy: unknown, alwaysBatches: boolean): boolean {
+function lastBatchWaits(policy: unknown, alwaysBatches: boolean) {
   const p = asRecord(policy) ?? {};
   if (nonEmpty(p.period) || Number(p.count) === 1) {
     return false;
@@ -417,9 +401,7 @@ function lastBatchWaits(policy: unknown, alwaysBatches: boolean): boolean {
   return alwaysBatches || policyBatches(p);
 }
 
-// Whether an input hands on messages in batches: the ordered Kafka readers pass on each partition fetch
-// as one, `generate` per `batch_size`, and any input per its batch policy.
-function deliversBatches(name: string, config: Config): boolean {
+function deliversBatches(name: string, config: Config) {
   if (name === 'batched' || name === 'redpanda_common' || name === 'redpanda_migrator') {
     return true;
   }
@@ -433,8 +415,7 @@ function deliversBatches(name: string, config: Config): boolean {
   return policyBatches(config.batching);
 }
 
-// Connect refuses a policy with nothing to send a batch on; a broker skips one that sets nothing at all.
-function policyError(policy: unknown, alwaysBatches: boolean, field: string): InputEndBehavior | undefined {
+function policyError(policy: unknown, alwaysBatches: boolean, field: string) {
   const p = asRecord(policy) ?? {};
   const triggered =
     Number(p.count) > 0 ||
@@ -450,18 +431,18 @@ function policyError(policy: unknown, alwaysBatches: boolean, field: string): In
   return {
     kind: 'invalid',
     reason: `Its \`${field}\` has no \`count\`, \`byte_size\`, \`period\` or \`check\` to send a batch on, so Connect refuses it.`,
-  };
+  } satisfies InputEndBehavior | undefined;
 }
 
-const waitsOnLastBatch = (field: string): InputEndBehavior => ({
-  kind: 'unknown',
-  reason: `Its \`${field}\` has no \`period\`, so once its input ends, a last partial batch can wait forever.`,
-  finiteHint: `Set \`${field}.period\` (such as 1s) so the last batch is sent.`,
-});
+const waitsOnLastBatch = (field: string) =>
+  ({
+    kind: 'unknown',
+    reason: `Its \`${field}\` has no \`period\`, so once its input ends, a last partial batch can wait forever.`,
+    finiteHint: `Set \`${field}.period\` (such as 1s) so the last batch is sent.`,
+  }) satisfies InputEndBehavior;
 
 type WrapperRule = (value: Config, ctx: ClassifyContext) => InputEndBehavior | undefined;
 
-// Inputs that run other inputs end as those do; `undefined` falls through to END_RULES.
 const WRAPPER_RULES: Record<string, WrapperRule> = {
   broker: (value, ctx) => {
     const result = aggregate('broker', Array.isArray(value.inputs) ? value.inputs : [], ctx);
@@ -501,31 +482,26 @@ const code = (text: string) => `\`${text}\``;
 
 type ResourceFailure = { failed: InputEndBehavior };
 
-// The entry the reference `current` names, adding it to `chain`; why it can't be followed otherwise.
-function resourceHop(
-  current: unknown,
-  chain: Set<string>,
-  resources: Map<string, unknown>
-): ResourceFailure | { target: unknown } {
+function resourceHop(current: unknown, chain: Set<string>, resources: Map<string, unknown>) {
   if (typeof current !== 'string') {
-    return { failed: UNKNOWN };
+    return { failed: UNKNOWN } satisfies ResourceFailure;
   }
   if (chain.has(current)) {
     const loop = [...chain, current].map(code).join(' → ');
-    return { failed: { kind: 'unknown', reason: `Its input resources refer to each other in a loop (${loop}).` } };
+    return {
+      failed: { kind: 'unknown', reason: `Its input resources refer to each other in a loop (${loop}).` },
+    } satisfies ResourceFailure;
   }
   chain.add(current);
   const target = resources.get(current);
-  return target === undefined
-    ? { failed: { kind: 'unknown', reason: `There’s no input resource named ${code(current)}.` } }
-    : { target };
+  const hop: ResourceFailure | { target: unknown } =
+    target === undefined
+      ? { failed: { kind: 'unknown', reason: `There’s no input resource named ${code(current)}.` } }
+      : { target };
+  return hop;
 }
 
-// Follows plain `resource:` references from `label` to the entry they end on, and the labels on the way.
-function followResources(
-  label: unknown,
-  resources: Map<string, unknown>
-): ResourceFailure | { chain: string[]; target: unknown } {
+function followResources(label: unknown, resources: Map<string, unknown>) {
   const chain = new Set<string>();
   let current = label;
   for (;;) {
@@ -541,8 +517,7 @@ function followResources(
   }
 }
 
-// `resource: <label>` runs an `input_resources` entry; a chain of plain references is followed to its end.
-function classifyResource(label: unknown, ctx: ClassifyContext): InputEndBehavior {
+function classifyResource(label: unknown, ctx: ClassifyContext) {
   const followed = followResources(label, ctx.inputResources);
   if ('failed' in followed) {
     return followed.failed;
@@ -556,11 +531,9 @@ function classifyResource(label: unknown, ctx: ClassifyContext): InputEndBehavio
   return inherited(resolved, `Runs the input resource ${code(first)}${via}. ${resolved.reason}`);
 }
 
-// Checks Connect can never pass.
 const NEVER_TRUE = new Set(['false', 'null']);
 
-// Why the wrapper itself can't end its input (the start of a sentence), and the change that lets it.
-function inertStopWhy(stop: StopCondition, rereads: boolean): { why: string; hint: string } {
+function inertStopWhy(stop: StopCondition, rereads: boolean) {
   if (rereads) {
     return {
       why: 'It reads its input again each time it finishes and never goes idle',
@@ -579,11 +552,7 @@ function inertStopWhy(stop: StopCondition, rereads: boolean): { why: string; hin
   };
 }
 
-function caveatFor(
-  stop: StopCondition,
-  inner: InputEndBehavior,
-  { rereads, idleEnds }: StopEffects
-): string | undefined {
+function caveatFor(stop: StopCondition, inner: InputEndBehavior, { rereads, idleEnds }: StopEffects) {
   if (rereads) {
     return 'It reads its input again each time it finishes, until a message meets its check. If none does, it never stops.';
   }
@@ -596,7 +565,6 @@ function caveatFor(
   if (inner.kind === 'continuous') {
     return `${shortfall}, it keeps running. Add an idle timeout as a backstop.`;
   }
-  // Its input may never end; with `restart_input`, an idle timeout may never fire either.
   return stop.restartInput
     ? `${shortfall}, it may keep running: \`restart_input\` reads its input again whenever it finishes.`
     : `${shortfall}, it may keep running. Add an idle timeout as a backstop.`;
@@ -604,65 +572,56 @@ function caveatFor(
 
 type StopEffects = { checkEnds: boolean; idleEnds: boolean; rereads: boolean; mayReread: boolean };
 
-function stopEffects(stop: StopCondition, inner: InputEndBehavior): StopEffects {
+function stopEffects(stop: StopCondition, inner: InputEndBehavior) {
   const restarts = Boolean(stop.restartInput);
   const rereads = restarts && (inner.kind === 'natural' || inner.kind === 'condition');
-  // An input that may or may not end may or may not be read again, so its idle timeout can't be relied on.
   const mayReread = restarts && inner.kind === 'unknown';
   return {
     checkEnds: Boolean(stop.check) && !NEVER_TRUE.has(stop.check?.trim() ?? ''),
     idleEnds: idleTimeoutFires(stop.idleTimeout) && !(rereads || mayReread),
     rereads,
     mayReread,
-  };
+  } satisfies StopEffects;
 }
 
-// Connect's own start-up errors: an unparseable timeout, or nothing to stop on.
-function stopStartupError(stop: StopCondition): InputEndBehavior | undefined {
+function stopStartupError(stop: StopCondition) {
   if (stop.idleTimeout && classifyIdleTimeout(stop.idleTimeout) === 'invalid') {
     return {
       kind: 'invalid',
       reason: `Its idle timeout ${code(stop.idleTimeout.trim())} isn’t a duration such as 30s or 5m.`,
-    };
+    } satisfies InputEndBehavior | undefined;
   }
   if (!(stop.check || isIdleTimeoutSet(stop.idleTimeout))) {
-    return { kind: 'invalid', reason: 'Its stop condition needs a check or an idle timeout.' };
+    return { kind: 'invalid', reason: 'Its stop condition needs a check or an idle timeout.' } satisfies
+      | InputEndBehavior
+      | undefined;
   }
 }
 
-// A wrapper that never ends its input leaves it to end, or not, as it would bare.
-function inertStop(
-  stop: StopCondition,
-  inner: InputEndBehavior,
-  { rereads, mayReread }: StopEffects
-): InputEndBehavior {
+function inertStop(stop: StopCondition, inner: InputEndBehavior, { rereads, mayReread }: StopEffects) {
   if (mayReread && idleTimeoutFires(stop.idleTimeout)) {
     return {
       kind: 'unknown',
       reason: `Its idle timeout fires only if its input never finishes: \`restart_input\` reads it again each time it does. ${inner.reason}`,
       finiteHint: inertStopWhy(stop, true).hint,
-    };
+    } satisfies InputEndBehavior;
   }
   const { why, hint } = inertStopWhy(stop, rereads);
   if (rereads || inner.kind === 'continuous') {
     return continuous(`${why}, so it never stops.`, hint);
   }
-  // An inner stop condition ends the input as running dry would.
-  return inner.kind === 'natural' || inner.kind === 'condition'
-    ? { ...inner, kind: 'natural', reason: `${why}, so it stops when its input does. ${inner.reason}` }
-    : { kind: 'unknown', reason: `${why}. ${inner.reason}` };
+  return (
+    inner.kind === 'natural' || inner.kind === 'condition'
+      ? { ...inner, kind: 'natural', reason: `${why}, so it stops when its input does. ${inner.reason}` }
+      : { kind: 'unknown', reason: `${why}. ${inner.reason}` }
+  ) satisfies InputEndBehavior;
 }
 
-/**
- * A `read_until` ends its input on a check that passes or an idle timeout that fires. With
- * `restart_input`, an input that ends is read again straight away, so the idle timer never runs out.
- */
-function classifyStop(stop: StopCondition, inner: InputEndBehavior): InputEndBehavior {
+function classifyStop(stop: StopCondition, inner: InputEndBehavior) {
   const startupError = stopStartupError(stop);
   if (startupError) {
     return startupError;
   }
-  // A broken input inside still fails the pipeline, whatever stops it.
   if (inner.kind === 'invalid') {
     return inner;
   }
@@ -673,8 +632,7 @@ function classifyStop(stop: StopCondition, inner: InputEndBehavior): InputEndBeh
   return actingStop(stop, inner, effects);
 }
 
-// A wrapper that ends its input stops on the parts of its condition that act.
-function actingStop(stop: StopCondition, inner: InputEndBehavior, effects: StopEffects): InputEndBehavior {
+function actingStop(stop: StopCondition, inner: InputEndBehavior, effects: StopEffects) {
   const working: StopCondition = {
     check: effects.checkEnds ? stop.check : undefined,
     idleTimeout: effects.idleEnds ? stop.idleTimeout : undefined,
@@ -688,75 +646,71 @@ function actingStop(stop: StopCondition, inner: InputEndBehavior, effects: StopE
   return caveat ? { ...behavior, caveat } : behavior;
 }
 
-// Connect checks only the first message of each batch, so a match later in one goes unseen.
-const batchCaveat = (working: StopCondition, inner: InputEndBehavior): string | undefined =>
+const batchCaveat = (working: StopCondition, inner: InputEndBehavior) =>
   inner.batches && working.check && !parseMessageLimit(working.check)
     ? 'Its input reads in batches, and the check sees only the first message of each.'
     : undefined;
 
-// A `restart_input` set from an env var: known only when it ends the same way either way.
-function classifyStopWithRestartRef(stop: StopCondition, inner: InputEndBehavior, ref: string): InputEndBehavior {
+function classifyStopWithRestartRef(stop: StopCondition, inner: InputEndBehavior, ref: string) {
   const restarted = classifyStop({ ...stop, restartInput: true }, inner);
-  return restarted.kind === classifyStop({ ...stop, restartInput: false }, inner).kind
-    ? restarted
-    : dependsOn('restart_input', ref);
+  return (
+    restarted.kind === classifyStop({ ...stop, restartInput: false }, inner).kind
+      ? restarted
+      : dependsOn('restart_input', ref)
+  ) satisfies InputEndBehavior;
 }
 
-function classifySlot(slot: unknown, ctx: ClassifyContext): InputEndBehavior {
+function classifySlot(slot: unknown, ctx: ClassifyContext) {
   const record = asRecord(slot);
   if (!record) {
     return UNKNOWN;
   }
   if (ctx.open.has(record)) {
-    return { kind: 'invalid', reason: 'It contains itself through a YAML alias, which Connect can’t load.' };
+    return {
+      kind: 'invalid',
+      reason: 'It contains itself through a YAML alias, which Connect can’t load.',
+    } satisfies InputEndBehavior;
   }
   ctx.open.add(record);
   try {
-    return classifyRecord(record, ctx);
+    const behavior: InputEndBehavior = classifyRecord(record, ctx);
+    return behavior;
   } finally {
     ctx.open.delete(record);
   }
 }
 
-// A `read_until` around `component`, which still hands on batches if the input inside does.
-function classifyReadUntil(
-  record: Config,
-  component: Config,
-  stop: StopCondition,
-  ctx: ClassifyContext
-): InputEndBehavior {
+function classifyReadUntil(record: Config, component: Config, stop: StopCondition, ctx: ClassifyContext) {
   const inner = classifySlot(component, ctx);
   const restart = asRecord(record[READ_UNTIL])?.restart_input;
   const behavior = envRef(restart) ? classifyStopWithRestartRef(stop, inner, restart) : classifyStop(stop, inner);
-  return inner.batches ? { ...behavior, batches: true } : behavior;
+  return (inner.batches ? { ...behavior, batches: true } : behavior) satisfies InputEndBehavior;
 }
 
-// The rule for a component name from the YAML; only the table's own keys, so `constructor` finds none.
-const ownRule = <T>(rules: Record<string, T>, name: string): T | undefined =>
-  Object.hasOwn(rules, name) ? rules[name] : undefined;
+const ownRule = <T>(rules: Record<string, T>, name: string) => (Object.hasOwn(rules, name) ? rules[name] : undefined);
 
-function classifyComponent(name: string, value: unknown, ctx: ClassifyContext): InputEndBehavior {
+function classifyComponent(name: string, value: unknown, ctx: ClassifyContext) {
   if (name === READ_UNTIL) {
-    return { kind: 'invalid', reason: 'Its stop condition has no input to read from.' };
+    return { kind: 'invalid', reason: 'Its stop condition has no input to read from.' } satisfies InputEndBehavior;
   }
   if (name === 'resource') {
     return classifyResource(value, ctx);
   }
   const config = asRecord(value) ?? {};
   const behavior = ownRule(WRAPPER_RULES, name)?.(config, ctx) ?? ownRule(END_RULES, name)?.(config) ?? UNKNOWN;
-  return deliversBatches(name, config) ? { ...behavior, batches: true } : behavior;
+  return (deliversBatches(name, config) ? { ...behavior, batches: true } : behavior) satisfies InputEndBehavior;
 }
 
-function classifyRecord(record: Config, ctx: ClassifyContext): InputEndBehavior {
+function classifyRecord(record: Config, ctx: ClassifyContext) {
   const { component, stop } = unwrapReadUntil(record);
   if (stop) {
     return classifyReadUntil(record, component, stop, ctx);
   }
   const name = slotComponentKey(component);
-  return name ? classifyComponent(name, component[name], ctx) : UNKNOWN;
+  return (name ? classifyComponent(name, component[name], ctx) : UNKNOWN) satisfies InputEndBehavior;
 }
 
-function inputResourceMap(config: ParsedYamlConfig): Map<string, unknown> {
+function inputResourceMap(config: ParsedYamlConfig) {
   const map = new Map<string, unknown>();
   for (const item of Array.isArray(config.input_resources) ? config.input_resources : []) {
     const label = asRecord(item)?.label;
@@ -767,8 +721,13 @@ function inputResourceMap(config: ParsedYamlConfig): Map<string, unknown> {
   return map;
 }
 
-/** How the input held by `slot` (an object like `{ kafka: {…} }`) ends, resolving `resource:` references. */
-export function classifyInputSlot(slot: unknown, config: ParsedYamlConfig = {}): InputEndBehavior {
+/**
+ * Classify an input slot, following named resources but stopping on alias cycles.
+ * A broker ends after all members end; a sequence waits for each member before
+ * starting the next. A restarting `read_until` may keep its idle timer from
+ * firing, and a final partial batch needs a period to flush after input ends.
+ */
+export function classifyInputSlot(slot: unknown, config: ParsedYamlConfig = {}) {
   return classifySlot(slot, { inputResources: inputResourceMap(config), depth: 0, open: new Set() });
 }
 
@@ -790,7 +749,7 @@ const STATUS_BY_KIND: Record<InputEndKind, PipelineEndStatus> = {
 };
 
 /** The pipeline's status from its top-level input's behavior (`none` without an input). */
-export function pipelineEndStatus(behavior: InputEndBehavior | undefined): PipelineEndStatus {
+export function pipelineEndStatus(behavior: InputEndBehavior | undefined) {
   return behavior ? STATUS_BY_KIND[behavior.kind] : 'none';
 }
 
@@ -798,25 +757,23 @@ export function pipelineEndStatus(behavior: InputEndBehavior | undefined): Pipel
  * Whether a pipeline ends by itself: it does when its top-level input does. A finished Cloud pipeline
  * is stopped automatically, so `finite` is the gate for running it on a schedule.
  */
-export function summarizePipelineEnd(config: ParsedYamlConfig | null | undefined): PipelineEndSummary {
+export function summarizePipelineEnd(config: ParsedYamlConfig | null | undefined) {
   const input = asRecord(config?.input);
   if (!(config && input && slotComponentKey(input))) {
-    return { status: 'none' };
+    return { status: 'none' } satisfies PipelineEndSummary;
   }
   const behavior = classifyInputSlot(input, config);
-  return { status: pipelineEndStatus(behavior), behavior };
+  return { status: pipelineEndStatus(behavior), behavior } satisfies PipelineEndSummary;
 }
 
 /** {@link summarizePipelineEnd} from config text; undefined for YAML that doesn't parse. */
-export function readPipelineEnd(configYaml: string): PipelineEndSummary | undefined {
-  try {
-    return summarizePipelineEnd(parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null);
-  } catch {
-    // YAML that doesn't parse has no answer.
-  }
+export function readPipelineEnd(configYaml: string) {
+  return tryYamlOperation(() =>
+    summarizePipelineEnd(parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null)
+  );
 }
 
 /** {@link readPipelineEnd}, with unparseable YAML answered as having no input (`none`). */
-export function summarizePipelineEndYaml(configYaml: string): PipelineEndSummary {
-  return readPipelineEnd(configYaml) ?? { status: 'none' };
+export function summarizePipelineEndYaml(configYaml: string) {
+  return (readPipelineEnd(configYaml) ?? { status: 'none' }) satisfies PipelineEndSummary;
 }

@@ -26,7 +26,7 @@ const Key = ({ children }: { children: ReactNode }) => (
   </Kbd>
 );
 
-function visualTips(readOnly: boolean): Tip[] {
+function visualTips(readOnly: boolean) {
   const tips: Tip[] = [
     { id: 'select', content: <>Click a node to {readOnly ? 'inspect' : 'edit'} it</> },
     {
@@ -60,7 +60,7 @@ function visualTips(readOnly: boolean): Tip[] {
   return tips;
 }
 
-function yamlTips({ slashMenuEnabled, readOnly }: { slashMenuEnabled: boolean; readOnly: boolean }): Tip[] {
+function yamlTips({ slashMenuEnabled, readOnly }: { slashMenuEnabled: boolean; readOnly: boolean }) {
   const tips: Tip[] = [];
   if (slashMenuEnabled && !readOnly) {
     tips.push({
@@ -85,7 +85,7 @@ function yamlTips({ slashMenuEnabled, readOnly }: { slashMenuEnabled: boolean; r
   return tips;
 }
 
-function tipsFor(context: TipContext, options: { slashMenuEnabled: boolean; readOnly: boolean }): Tip[] {
+function tipsFor(context: TipContext, options: { slashMenuEnabled: boolean; readOnly: boolean }) {
   return context === 'visual' ? visualTips(options.readOnly) : yamlTips(options);
 }
 

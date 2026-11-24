@@ -45,16 +45,13 @@ import {
 import { CollapsibleSectionCard } from '../collapsible-section-card';
 import type { FormValues } from '../model';
 
-// Render labels via children to bypass Base UI's `<Select.Value>` auto-
-// resolution, which falls back to the raw numeric enum until the popup is
-// first opened.
-const renderResourceTypeLabel = (value: unknown): React.ReactNode =>
+const renderResourceTypeLabel: (value: unknown) => React.ReactNode = (value) =>
   value === undefined || value === null || value === '' ? null : getResourceTypeLabel(Number(value) as ACLResource);
-const renderPatternTypeLabel = (value: unknown): React.ReactNode =>
+const renderPatternTypeLabel: (value: unknown) => React.ReactNode = (value) =>
   value === undefined || value === null || value === '' ? null : getPatternTypeLabel(Number(value) as ACLPattern);
-const renderOperationLabel = (value: unknown): React.ReactNode =>
+const renderOperationLabel: (value: unknown) => React.ReactNode = (value) =>
   value === undefined || value === null || value === '' ? null : getOperationLabel(Number(value) as ACLOperation);
-const renderPermissionTypeLabel = (value: unknown): React.ReactNode =>
+const renderPermissionTypeLabel: (value: unknown) => React.ReactNode = (value) =>
   value === undefined || value === null || value === ''
     ? null
     : getPermissionTypeLabel(Number(value) as ACLPermissionType);
@@ -82,7 +79,6 @@ const matchesAllAcls = (filter: AclFilterValues | undefined) =>
   filter.permissionType === ACLPermissionType.ACL_PERMISSION_TYPE_ANY &&
   isBlank(filter.host);
 
-// ACL Filter Alert Component
 const ACLFilterAlert = ({ index }: { index: number }) => {
   const { control } = useFormContext<FormValues>();
   const filter = useWatch({ control, name: `aclFilters.${index}` });
@@ -112,13 +108,11 @@ export const AclsStep = () => {
   const handleModeChange = (mode: string) => {
     setValue('aclsMode', mode as 'all' | 'specify');
 
-    // Auto-expand when switching to specify mode
     if (mode === 'specify') {
       setIsOpen(true);
     }
 
     if (mode === 'specify' && fields.length === 0) {
-      // Add an empty filter when switching to specify mode
       append(allAclsFilter);
     }
   };
@@ -142,7 +136,6 @@ export const AclsStep = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Resume/summary view when collapsed */}
           {!isOpen && aclsMode === 'specify' && fields.length > 0 && (
             <div className="mt-4 space-y-3">
               {fields.map((field, index) => (
@@ -151,7 +144,6 @@ export const AclsStep = () => {
             </div>
           )}
 
-          {/* Full editable view when expanded */}
           <CollapsibleContent>
             <TabsContent value="all">
               <Alert>
@@ -180,7 +172,6 @@ export const AclsStep = () => {
                       </CardAction>
                     </CardHeader>
                     <CardContent>
-                      {/* Resource Filter - Full Width */}
                       <div>
                         <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-4">
                           <FormField
@@ -271,7 +262,6 @@ export const AclsStep = () => {
                         </div>
                       </div>
 
-                      {/* Access Filter - Full Width */}
                       <div>
                         <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-4">
                           <FormField

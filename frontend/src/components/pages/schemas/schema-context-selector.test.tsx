@@ -9,43 +9,36 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeAll, describe, expect, rs, test } from '@rstest/core';
+import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
+import { useState } from 'react';
 import { render, screen } from 'test-utils';
 
 import { SchemaContextSelector } from './schema-context-selector';
 import { ALL_CONTEXT_ID, DEFAULT_CONTEXT_ID, type DerivedContext } from './schema-context-utils';
 
-// Happy DOM polyfills needed by Radix Popover + cmdk
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
+const ALL_OPTION = /^All /u;
 
-beforeAll(() => {
-  Element.prototype.scrollIntoView = rs.fn();
-  if (!HTMLElement.prototype.hasPointerCapture) {
-    HTMLElement.prototype.hasPointerCapture = () => false;
-  }
-  if (!HTMLElement.prototype.setPointerCapture) {
-    HTMLElement.prototype.setPointerCapture = () => undefined;
-  }
-  if (!HTMLElement.prototype.releasePointerCapture) {
-    HTMLElement.prototype.releasePointerCapture = () => undefined;
-  }
-});
+function ContextSelector({ contexts, initialContext }: { contexts: DerivedContext[]; initialContext: string }) {
+  const [selectedContext, setSelectedContext] = useState(initialContext);
 
-function renderSelector(props: { contexts: DerivedContext[]; selectedContext: string; onContextChange: () => void }) {
-  return render(
+  return (
     <TooltipProvider>
-      <SchemaContextSelector {...props} />
+      <SchemaContextSelector
+        contexts={contexts}
+        onContextChange={setSelectedContext}
+        selectedContext={selectedContext}
+      />
     </TooltipProvider>
   );
 }
 
-const makeContexts = (): DerivedContext[] => [
+function renderSelector(initialContext: string) {
+  return render(<ContextSelector contexts={makeContexts()} initialContext={initialContext} />);
+}
+
+const makeContexts = () => [
   { id: DEFAULT_CONTEXT_ID, label: 'Default', subjectCount: 2, mode: 'READWRITE', compatibility: 'BACKWARD' },
   { id: '.staging', label: '.staging', subjectCount: 3, mode: 'READWRITE', compatibility: 'FULL' },
   { id: ALL_CONTEXT_ID, label: 'All', subjectCount: 5, mode: 'READWRITE', compatibility: 'BACKWARD' },
@@ -53,14 +46,14 @@ const makeContexts = (): DerivedContext[] => [
 
 describe('the SchemaContextSelector', () => {
   test('renders selected context label in trigger button', () => {
-    renderSelector({ contexts: makeContexts(), onContextChange: rs.fn(), selectedContext: DEFAULT_CONTEXT_ID });
+    renderSelector(DEFAULT_CONTEXT_ID);
 
     const trigger = screen.getByTestId('schema-context-selector');
     expect(trigger).toHaveTextContent('Default');
   });
 
   test('falls back to "All" label when selectedContext not in contexts', () => {
-    renderSelector({ contexts: makeContexts(), onContextChange: rs.fn(), selectedContext: 'nonexistent' });
+    renderSelector('nonexistent');
 
     const trigger = screen.getByTestId('schema-context-selector');
     expect(trigger).toHaveTextContent('All');
@@ -68,30 +61,29 @@ describe('the SchemaContextSelector', () => {
 
   test('opens popover on button click and shows all context options', async () => {
     const user = userEvent.setup();
-    renderSelector({ contexts: makeContexts(), onContextChange: rs.fn(), selectedContext: ALL_CONTEXT_ID });
+    renderSelector(ALL_CONTEXT_ID);
 
     await user.click(screen.getByTestId('schema-context-selector'));
 
     expect(screen.getByText('Default')).toBeInTheDocument();
     expect(screen.getByText('.staging')).toBeInTheDocument();
-    // "All" appears both in the trigger button and the popover list
-    expect(screen.getAllByText('All').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole('option', { name: ALL_OPTION })).toBeInTheDocument();
   });
 
-  test('calls onContextChange with correct id when option selected', async () => {
+  test('updates the selected context and closes the options on selection', async () => {
     const user = userEvent.setup();
-    const onContextChange = rs.fn();
-    renderSelector({ contexts: makeContexts(), onContextChange, selectedContext: ALL_CONTEXT_ID });
+    renderSelector(ALL_CONTEXT_ID);
 
     await user.click(screen.getByTestId('schema-context-selector'));
     await user.click(screen.getByText('.staging'));
 
-    expect(onContextChange).toHaveBeenCalledWith('.staging');
+    expect(screen.getByTestId('schema-context-selector')).toHaveTextContent('.staging');
+    expect(screen.queryByRole('option')).not.toBeInTheDocument();
   });
 
   test('displays subject count per context', async () => {
     const user = userEvent.setup();
-    renderSelector({ contexts: makeContexts(), onContextChange: rs.fn(), selectedContext: ALL_CONTEXT_ID });
+    renderSelector(ALL_CONTEXT_ID);
 
     await user.click(screen.getByTestId('schema-context-selector'));
 

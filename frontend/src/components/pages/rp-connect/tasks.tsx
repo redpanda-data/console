@@ -1,9 +1,9 @@
 export const MIN_TASKS = 1,
   MAX_TASKS = 72;
 
-const milliValueRegex = /^(\d+(\.\d+)?)(m?)$/;
+const milliValueRegex = /^(?<value>\d+(?<fractionalPart>\.\d+)?)(?<suffix>m?)$/u;
 
-export function cpuToTasks(cpu: string | undefined): number | undefined {
+export function cpuToTasks(cpu: string | undefined) {
   if (!cpu) {
     return;
   }
@@ -18,7 +18,7 @@ export function cpuToTasks(cpu: string | undefined): number | undefined {
   return cpuMilli / 100;
 }
 
-export function tasksToCPU(tasks: number | undefined): string | undefined {
+export function tasksToCPU(tasks: number | undefined) {
   if (!tasks) {
     return;
   }
@@ -26,7 +26,7 @@ export function tasksToCPU(tasks: number | undefined): string | undefined {
 }
 
 /** The Input enforces neither `min` nor `max`, so the bounds are applied here. */
-export function clampTasks(value: string | number): number {
+export function clampTasks(value: string | number) {
   const tasks = Number(value);
   if (!Number.isFinite(tasks) || tasks < MIN_TASKS) {
     return MIN_TASKS;

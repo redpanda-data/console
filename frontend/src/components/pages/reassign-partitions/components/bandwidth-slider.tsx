@@ -16,14 +16,6 @@ import { prettyNumber } from '../../../../utils/utils';
 import '../../../../utils/number-extensions';
 import { Slider } from 'components/redpanda-ui/components/slider';
 
-//
-// BandwidthSlider can work with two kinds of inputs
-// 1) Simple 'controlled state'
-//    You pass a 'value' and 'onChange' callback.
-// 2) A settings object (that is supposed to be a mobx observable)
-//    in which a 'maxReplicationTraffic' property exists.
-//    The property will be directly read from / written to.
-//
 type ValueAndChangeCallback = { value: number | null; onChange: (x: number | null) => void };
 type SettingsCallback = {
   settings: Pick<typeof uiSettings.reassignment, 'maxReplicationTraffic'>;
@@ -33,7 +25,6 @@ type SettingsCallback = {
 const SLIDER_MIN = 2;
 const SLIDER_MAX = 12;
 
-/** Marks are positioned by value. */
 const MARKS: { value: number; label: string }[] = [
   { value: 2, label: '-' },
   { value: 3, label: '1kB' },
@@ -44,10 +35,13 @@ const MARKS: { value: number; label: string }[] = [
 
 const percentOf = (value: number) => ((value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)) * 100;
 
+/**
+ * Positions marks and the drag-only value bubble on the same scale as the registry thumb.
+ */
 export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback) {
   const [isDragging, setIsDragging] = useState(false);
 
-  const getValue = (): number | null => {
+  const getValue = () => {
     if ('value' in props) {
       return props.value;
     }
@@ -63,8 +57,6 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
   };
 
   const value = getValue() ?? 0;
-  // `maxReplicationTraffic` defaults to 0, so log10 is -Infinity — which would make both the thumb
-  // position and the bubble's `left: …%` invalid. Clamp once and use the clamped value everywhere.
   const sliderValue = Math.min(Math.max(Math.log10(value), SLIDER_MIN), SLIDER_MAX);
 
   const tipText = (f: number | null) => {
@@ -81,9 +73,6 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
   return (
     <div
       className="relative mx-4 mt-6 mb-4"
-      // Pointer events, not mouse events: `onPointerEnter`/`Leave` are not flagged as
-      // mouse-only interactions on a non-interactive element, and the bubble is decorative —
-      // the Slider below is the control, and it is keyboard-operable on its own.
       onPointerEnter={() => {
         setIsDragging(true);
       }}
@@ -91,11 +80,6 @@ export function BandwidthSlider(props: ValueAndChangeCallback | SettingsCallback
         setIsDragging(false);
       }}
     >
-      {/*
-        The Registry Slider renders its own track and thumb and has no mark or thumb-tooltip slot,
-        so the marks and the value bubble are positioned against the same value scale here. The
-        bubble follows the thumb and is shown only while dragging.
-      */}
       {isDragging && tipText(sliderValue) ? (
         <div
           className="pointer-events-none absolute -top-7 -translate-x-1/2 rounded-md bg-primary px-2 py-1 text-body-sm whitespace-nowrap text-primary-foreground shadow-md"

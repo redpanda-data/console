@@ -13,22 +13,22 @@
 
 import type { SecretSlot, StringSlot, TopicSlot } from '../pipeline-template-types';
 
-// Postgres slot names allow only [a-z0-9_], max 63 chars; derive a deterministic one so a blank field stays valid and stable.
-export const toReplicationSlotName = (pipelineName: string): string => {
+/** Postgres slot names allow only [a-z0-9_], max 63 chars; derive a deterministic one so a blank field stays valid and stable. */
+export const toReplicationSlotName = (pipelineName: string) => {
   const sanitized = pipelineName
     .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, '_')
-    .replace(/^_+|_+$/g, '');
+    .replace(/[^a-z0-9_]+/gu, '_')
+    .replace(/^_+|_+$/gu, '');
   return `rpcn_${sanitized || 'pipeline'}`.slice(0, 63);
 };
 
-export const dsnSlot = (
+export const dsnSlot: (
   id: string,
   dbName: string,
   suggested: string,
   schemaField?: string,
-  section: 'source' | 'sink' = 'source'
-): SecretSlot => ({
+  section?: 'source' | 'sink'
+) => SecretSlot = (id, dbName, suggested, schemaField, section = 'source') => ({
   id,
   section,
   kind: 'secret',

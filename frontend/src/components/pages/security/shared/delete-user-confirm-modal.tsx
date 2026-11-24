@@ -55,7 +55,6 @@ export const DeleteUserConfirmModal: FC<DeleteUserConfirmModalProps> = ({
     clearError();
   };
 
-  // Dismissing mid-deletion would hide how it ended, so Escape and outside clicks wait for it to settle.
   const handleOpenChange = (o: boolean) => {
     if (o) {
       setOpen(true);

@@ -11,7 +11,6 @@
 
 import { InfoIcon, WarningIcon } from 'components/icons';
 import type React from 'react';
-import type { ReactNode } from 'react';
 
 import { type PreviewDisplayMode, renderPreviewTags } from './preview-tags-text';
 import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
@@ -19,7 +18,7 @@ import type { PreviewTagV2 } from '../../../../../state/ui';
 import { cullText, prettyBytes } from '../../../../../utils/utils';
 import { EmptyBadge } from '../common/empty-badge';
 
-function isEmptyValue(value: Payload): boolean {
+function isEmptyValue(value: Payload) {
   return (
     value.encoding === 'null' ||
     value.payload === null ||
@@ -27,22 +26,17 @@ function isEmptyValue(value: Payload): boolean {
   );
 }
 
-function isPrimitivePayload(payload: unknown): boolean {
+function isPrimitivePayload(payload: unknown) {
   return typeof payload === 'string' || typeof payload === 'number' || typeof payload === 'boolean';
 }
 
-function getValuePreviewText(msg: TopicMessage): ReactNode {
+function getValuePreviewText(msg: TopicMessage) {
   if (msg.value.encoding === 'binary') {
-    // If the original data was binary, display as hex dump
     return msg.valueBinHexPreview as React.ReactNode;
   }
   if (isPrimitivePayload(msg.value.payload)) {
-    // If we can show the value as a primitive, do so.
     return msg.value.payload as React.ReactNode;
   }
-  // Only thing left is 'object'
-  // Stuff like 'bigint', 'function', or 'symbol' would not have been deserialized
-  // Normal display (json, no filters). Reuse the cached JSON string.
   return cullText(msg.valueJson, 300);
 }
 
@@ -50,7 +44,7 @@ function renderValuePreview(
   msg: TopicMessage,
   previewFields: () => PreviewTagV2[],
   previewDisplayMode: PreviewDisplayMode | undefined
-): ReactNode {
+) {
   const value = msg.value;
   if (value.isPayloadNull) {
     return <EmptyBadge mode="null" />;
@@ -60,7 +54,6 @@ function renderValuePreview(
   }
 
   const isObject = !(value.encoding === 'binary' || isPrimitivePayload(value.payload));
-  // Preview tags replace the whole cell for an object payload.
   const tagsPreview = isObject ? renderPreviewTags(value.payload, previewFields, previewDisplayMode) : null;
   if (tagsPreview) {
     return tagsPreview;
@@ -96,7 +89,6 @@ export const MessagePreview = ({
   if (value.troubleshootReport && value.troubleshootReport.length > 0) {
     return (
       <div className="flex items-center gap-2 text-destructive">
-        {/* fontSize was inert on lucide icons, so master rendered these at 24. */}
         <WarningIcon size={24} />
         There were issues deserializing the value
       </div>

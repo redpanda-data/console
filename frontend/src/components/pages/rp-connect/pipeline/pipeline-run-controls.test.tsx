@@ -28,7 +28,6 @@ describe('the PipelineStateBadge', () => {
     render(<PipelineStateBadge state={Pipeline_State.STOPPED} />);
     const badge = screen.getByTestId('pipeline-state-badge');
     expect(badge).toHaveTextContent('Stopped');
-    // Status only: nothing here is clickable, so "Stopped" can't be mistaken for a control.
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByRole('switch')).not.toBeInTheDocument();
   });
@@ -75,7 +74,6 @@ describe('the PipelineRunButton', () => {
     const user = userEvent.setup();
     render(<PipelineRunButton pipelineId="p1" pipelineState={Pipeline_State.STARTING} />);
 
-    // Not locked mid-start — that's what rescues a pipeline stuck on its way up.
     const cancel = screen.getByTestId('pipeline-stop');
     expect(cancel).toHaveTextContent('Cancel start');
     expect(cancel).not.toBeDisabled();

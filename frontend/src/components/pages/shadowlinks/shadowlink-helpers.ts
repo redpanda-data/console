@@ -13,12 +13,7 @@ import { Code, type ConnectError } from '@connectrpc/connect';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
-// Helper function to get filter label from pattern and filter type
-export const getFilterTypeLabel = (
-  patternType: PatternType,
-  filterType: FilterType,
-  resourceType = 'topics'
-): string => {
+export const getFilterTypeLabel = (patternType: PatternType, filterType: FilterType, resourceType = 'topics') => {
   if (patternType === PatternType.LITERAL && filterType === FilterType.INCLUDE) {
     return `Include specific ${resourceType}`;
   }
@@ -34,8 +29,7 @@ export const getFilterTypeLabel = (
   return `Include specific ${resourceType}`;
 };
 
-// Helper functions to convert ACL enum values to readable labels
-export const getResourceTypeLabel = (type: ACLResource | undefined): string => {
+export const getResourceTypeLabel = (type: ACLResource | undefined) => {
   if (type === undefined) {
     return 'Any';
   }
@@ -59,7 +53,7 @@ export const getResourceTypeLabel = (type: ACLResource | undefined): string => {
   }
 };
 
-export const getPatternTypeLabel = (pattern: ACLPattern | undefined): string => {
+export const getPatternTypeLabel = (pattern: ACLPattern | undefined) => {
   if (pattern === undefined) {
     return 'Any';
   }
@@ -77,7 +71,7 @@ export const getPatternTypeLabel = (pattern: ACLPattern | undefined): string => 
   }
 };
 
-export const getOperationLabel = (operation: ACLOperation | undefined): string => {
+export const getOperationLabel = (operation: ACLOperation | undefined) => {
   if (operation === undefined) {
     return 'Any';
   }
@@ -109,7 +103,7 @@ export const getOperationLabel = (operation: ACLOperation | undefined): string =
   }
 };
 
-export const getPermissionTypeLabel = (permissionType: ACLPermissionType | undefined): string => {
+export const getPermissionTypeLabel = (permissionType: ACLPermissionType | undefined) => {
   if (permissionType === undefined) {
     return 'Any';
   }
@@ -126,5 +120,5 @@ export const getPermissionTypeLabel = (permissionType: ACLPermissionType | undef
 };
 
 /** Shadow linking is switched off on the cluster, which then can't have shadow links of its own. */
-export const isShadowLinkingDisabledError = (error: ConnectError | null | undefined): boolean =>
+export const isShadowLinkingDisabledError = (error: ConnectError | null | undefined) =>
   error?.code === Code.FailedPrecondition && error.message.includes('Cluster link feature is disabled');

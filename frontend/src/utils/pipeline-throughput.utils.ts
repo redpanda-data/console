@@ -10,14 +10,9 @@
  */
 
 export type TimeSeriesResult = { values: { timestamp?: { seconds: bigint }; value?: number }[]; name?: string };
-// null values mark no-data gaps so recharts breaks the line (see insertGapMarkers).
 export type MergedPoint = { timestamp: number; ingress: number | null; egress: number | null };
 
-export function addSeriesToMap(
-  map: Map<number, MergedPoint>,
-  results: TimeSeriesResult[],
-  key: 'ingress' | 'egress'
-): void {
+export function addSeriesToMap(map: Map<number, MergedPoint>, results: TimeSeriesResult[], key: 'ingress' | 'egress') {
   for (const series of results) {
     for (const point of series.values) {
       if (!point.timestamp || point.value === undefined) {
@@ -31,8 +26,7 @@ export function addSeriesToMap(
   }
 }
 
-// Smallest spacing between points — the fixed-step query step.
-function inferStepMs(points: MergedPoint[]): number | null {
+function inferStepMs(points: MergedPoint[]) {
   if (points.length < 2) {
     return null;
   }
@@ -47,7 +41,7 @@ function inferStepMs(points: MergedPoint[]): number | null {
 }
 
 /** Insert a null marker into any larger-than-step gap so recharts breaks the line at no-data stretches. */
-export function insertGapMarkers(points: MergedPoint[]): MergedPoint[] {
+export function insertGapMarkers(points: MergedPoint[]) {
   const step = inferStepMs(points);
   if (step === null) {
     return points;
@@ -63,7 +57,7 @@ export function insertGapMarkers(points: MergedPoint[]): MergedPoint[] {
   return result;
 }
 
-export function mergeTimeSeries(ingressResults: TimeSeriesResult[], egressResults: TimeSeriesResult[]): MergedPoint[] {
+export function mergeTimeSeries(ingressResults: TimeSeriesResult[], egressResults: TimeSeriesResult[]) {
   const map = new Map<number, MergedPoint>();
   addSeriesToMap(map, ingressResults, 'ingress');
   addSeriesToMap(map, egressResults, 'egress');
@@ -71,11 +65,11 @@ export function mergeTimeSeries(ingressResults: TimeSeriesResult[], egressResult
   return insertGapMarkers(sorted);
 }
 
-export function formatChartTimestamp(value: number): string {
+export function formatChartTimestamp(value: number) {
   return new Date(value).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function formatTooltipLabel(timestamp: number): string {
+export function formatTooltipLabel(timestamp: number) {
   return new Date(timestamp).toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',

@@ -1,0 +1,264 @@
+/**
+ * Copyright 2026 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { type Document, isMap, isSeq, type Pair, parseDocument } from 'yaml';
+
+import type { PipelineTemplate, TemplateSlot } from './pipeline-template-types';
+import { PIPELINE_TEMPLATES } from './pipeline-templates';
+import { stitchTemplateYaml } from './template-deploy';
+import { describe, expect, test } from 'bun:test';
+import schemaJson from '../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
+import type { RawFieldSpec } from '../types/schema';
+import { checkRequired, findComponentByName, resolveFieldByPath } from '../utils/schema';
+
+const componentList = schemaJson as unknown as ComponentList;
+
+type SnapshotField = {
+  is_optional?: boolean;
+  default?: unknown;
+  is_advanced?: boolean;
+  is_deprecated?: boolean;
+  children?: SnapshotField[];
+};
+
+const snapshotRequired = (f: SnapshotField) => {
+  if (f.is_optional || 'default' in f) {
+    return false;
+  }
+  if (!f.children?.length) {
+    return true;
+  }
+  return f.children.some(snapshotRequired);
+};
+
+const toRawFieldSpec: (f: SnapshotField) => RawFieldSpec = (f) =>
+  ({
+    ...f,
+    optional: f.is_optional,
+    defaultValue: typeof f.default === 'string' ? f.default : undefined,
+    advanced: f.is_advanced,
+    deprecated: f.is_deprecated,
+    requiredBySchema: snapshotRequired(f),
+    children: f.children?.map(toRawFieldSpec),
+  }) as unknown as RawFieldSpec;
+
+const FRAMEWORK_KEYS = new Set(['label', 'processors']);
+
+const sampleValues: (slotIds: string[]) => Record<string, string> = (slotIds) =>
+  Object.fromEntries(slotIds.map((id) => [id, `value_${id}`]));
+
+type FieldNode = { children?: { name: string }[] };
+
+function unknownFieldPathsOfPair(pair: Pair, componentConfig: FieldNode | undefined, prefix: string) {
+  const key = (pair.key as { value?: unknown } | null)?.value;
+  if (typeof key !== 'string') {
+    return [];
+  }
+  if (prefix === '' && FRAMEWORK_KEYS.has(key)) {
+    return [];
+  }
+  const path = prefix ? `${prefix}.${key}` : key;
+  const field = resolveFieldByPath(componentConfig as never, path);
+  if (!field) {
+    return [path];
+  }
+  return isMap(pair.value) && (field as FieldNode).children
+    ? collectUnknownFieldPaths(pair.value, componentConfig, path)
+    : [];
+}
+
+const collectUnknownFieldPaths: (node: unknown, componentConfig: FieldNode | undefined, prefix: string) => string[] = (
+  node,
+  componentConfig,
+  prefix
+) => {
+  if (!isMap(node)) {
+    return [];
+  }
+  return node.items.flatMap((pair) => unknownFieldPathsOfPair(pair, componentConfig, prefix));
+};
+
+type StitchedComponent = { type: 'input' | 'output'; name: string; config: unknown };
+
+function stitchedComponents(doc: Document) {
+  const components: StitchedComponent[] = [];
+  for (const type of ['input', 'output'] as const) {
+    const section = doc.get(type, true);
+    if (!isMap(section)) {
+      continue;
+    }
+    for (const pair of section.items) {
+      const name = (pair.key as { value?: unknown } | null)?.value;
+      if (typeof name === 'string') {
+        components.push({ type, name, config: pair.value });
+      }
+    }
+  }
+  return components;
+}
+
+function missingRequiredFields(config: unknown, comp: ReturnType<typeof findComponentByName>) {
+  const present = new Set(
+    isMap(config)
+      ? config.items.map((p) => (p.key as { value?: unknown } | null)?.value).filter((k) => typeof k === 'string')
+      : []
+  );
+  return (comp?.config?.children ?? [])
+    .filter((field) => checkRequired(toRawFieldSpec(field as unknown as SnapshotField)))
+    .map((field) => (field as { name?: string }).name)
+    .filter((name): name is string => !!name && !present.has(name));
+}
+
+function requireTemplate(id: string) {
+  const template = PIPELINE_TEMPLATES.find((t) => t.id === id);
+  expect(template).toBeDefined();
+  if (!template) {
+    throw new Error(`Expected the bundled template "${id}"`);
+  }
+  return template;
+}
+
+describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
+  test.each(PIPELINE_TEMPLATES.map((t) => ({ id: t.id, template: t })))(
+    '$id stitches to YAML with only known component fields',
+    ({ template }) => {
+      const yaml = stitchTemplateYaml({
+        template,
+        values: sampleValues(template.slots.map((s) => s.id)),
+        pipelineName: template.defaultPipelineName,
+      });
+
+      const doc = parseDocument(yaml);
+      expect(doc.errors, `template "${template.id}" stitched to invalid YAML`).toHaveLength(0);
+
+      for (const { type, name: componentName, config } of stitchedComponents(doc)) {
+        const comp = findComponentByName(componentList, componentName, type);
+        expect(comp, `template "${template.id}": ${type} "${componentName}" not in schema snapshot`).toBeDefined();
+
+        const unknownPaths = collectUnknownFieldPaths(config, comp?.config as FieldNode | undefined, '');
+        expect(
+          unknownPaths,
+          `template "${template.id}": ${type} "${componentName}" has fields not in schema: ${unknownPaths.join(', ')}`
+        ).toEqual([]);
+      }
+    }
+  );
+
+  test('every template stitches without leaving an unresolved slot token', () => {
+    for (const template of PIPELINE_TEMPLATES) {
+      const yaml = stitchTemplateYaml({
+        template,
+        values: sampleValues(template.slots.map((s) => s.id)),
+        pipelineName: template.defaultPipelineName,
+      });
+      expect(yaml, `template "${template.id}" left an unsubstituted slot token`).not.toContain('${slot.');
+    }
+  });
+
+  test('blank optional slots without a fallback are dropped, not left empty', () => {
+    const postgres = requireTemplate('postgres-cdc-to-redpanda');
+    const yaml = stitchTemplateYaml({
+      template: postgres,
+      values: { dsn: 'PG_DSN', slotName: '', includedTable: '', targetTopic: 'orders' },
+      pipelineName: 'my-pipeline',
+    });
+    const doc = parseDocument(yaml);
+    expect(doc.errors).toHaveLength(0);
+    expect(doc.getIn(['input', 'postgres_cdc', 'tables'])).toBeUndefined();
+  });
+
+  const endpointForSection = (template: PipelineTemplate, section: TemplateSlot['section']) => {
+    if (section === 'source') {
+      return template.source;
+    }
+    if (section === 'sink') {
+      return template.sink;
+    }
+  };
+
+  const isSlotRequired = (template: PipelineTemplate, slot: TemplateSlot) => {
+    if (slot.required !== undefined) {
+      return slot.required;
+    }
+    if (!slot.schemaField) {
+      return false;
+    }
+    const endpoint = endpointForSection(template, slot.section);
+    const comp = endpoint && findComponentByName(componentList, endpoint.component, endpoint.type);
+    const field = comp && resolveFieldByPath(comp.config, slot.schemaField);
+    return field ? checkRequired(toRawFieldSpec(field as unknown as SnapshotField)) : false;
+  };
+
+  const minimalValues: (template: PipelineTemplate) => Record<string, string> = (template) =>
+    Object.fromEntries(template.slots.map((s) => [s.id, isSlotRequired(template, s) ? `value_${s.id}` : '']));
+
+  test.each(PIPELINE_TEMPLATES.map((t) => ({ id: t.id, template: t })))(
+    '$id emits every schema-required field even with optional slots left blank',
+    ({ template }) => {
+      const yaml = stitchTemplateYaml({
+        template,
+        values: minimalValues(template),
+        pipelineName: template.defaultPipelineName,
+      });
+      const doc = parseDocument(yaml);
+      expect(doc.errors).toHaveLength(0);
+
+      for (const { type, name: componentName, config } of stitchedComponents(doc)) {
+        const missing = missingRequiredFields(config, findComponentByName(componentList, componentName, type));
+        expect(
+          missing,
+          `template "${template.id}": ${type} "${componentName}" omits required field(s): ${missing.join(', ')}`
+        ).toEqual([]);
+      }
+    }
+  );
+
+  test('slot_name falls back to a deterministic name derived from the pipeline', () => {
+    const postgres = requireTemplate('postgres-cdc-to-redpanda');
+    const yaml = stitchTemplateYaml({
+      template: postgres,
+      values: { dsn: 'PG_DSN', slotName: '', includedTable: 'users', targetTopic: 'orders' },
+      pipelineName: 'My Pipeline 1',
+    });
+    const doc = parseDocument(yaml);
+    expect(doc.getIn(['input', 'postgres_cdc', 'slot_name'])).toBe('rpcn_my_pipeline_1');
+  });
+
+  test('list slots expand comma-separated values into one sequence item each', () => {
+    const postgres = requireTemplate('postgres-cdc-to-redpanda');
+    const yaml = stitchTemplateYaml({
+      template: postgres,
+      values: { dsn: 'PG_DSN', slotName: '', includedTable: ' users,  orders ,invoices, ', targetTopic: 'orders' },
+      pipelineName: 'my-pipeline',
+    });
+    const doc = parseDocument(yaml);
+    expect(doc.errors).toHaveLength(0);
+    const tables = doc.getIn(['input', 'postgres_cdc', 'tables'], true);
+    expect(isSeq(tables)).toBe(true);
+    if (!isSeq(tables)) {
+      throw new Error('Expected the template tables sequence');
+    }
+    expect(tables.toJSON()).toEqual(['users', 'orders', 'invoices']);
+  });
+
+  test('a blank list slot still drops the whole sequence key', () => {
+    const mongodb = requireTemplate('mongodb-cdc-to-redpanda');
+    const yaml = stitchTemplateYaml({
+      template: mongodb,
+      values: { url: 'MONGODB_URL', database: 'mydb', collection: ' , ', targetTopic: 'orders' },
+      pipelineName: 'my-pipeline',
+    });
+    const doc = parseDocument(yaml);
+    expect(doc.errors).toHaveLength(0);
+    expect(doc.getIn(['input', 'mongodb_cdc', 'collections'])).toBeUndefined();
+  });
+});

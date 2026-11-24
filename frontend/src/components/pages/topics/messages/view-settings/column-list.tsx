@@ -19,7 +19,6 @@ import { type ReactNode, useState } from 'react';
 import { COLUMN_LABELS } from '../constants';
 import type { MessageColumnConfig } from '../types';
 
-/** Columns that expose extra configuration (decoder / display format / preview fields). */
 const CONFIGURABLE = new Set(['timestamp', 'key', 'value']);
 
 export type ColumnListProps = {
@@ -31,6 +30,9 @@ export type ColumnListProps = {
   configSummary: (columnId: MessageColumnConfig['id']) => string;
 };
 
+/**
+ * Drag handles rely on visually hidden text for a keyboard-accessible name.
+ */
 export const ColumnList = ({ columns, onColumnsChange, renderConfig, configSummary }: ColumnListProps) => {
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -65,7 +67,6 @@ export const ColumnList = ({ columns, onColumnsChange, renderConfig, configSumma
                     {...dragProvided.draggableProps}
                   >
                     <div className="flex items-center gap-2 px-1.5 py-1.5">
-                      {/* dragHandleProps make this a focusable role="button"; the sr-only text names it. */}
                       <ElementTooltip content="Drag to reorder">
                         <span className="cursor-grab text-muted-foreground/60" {...dragProvided.dragHandleProps}>
                           <GripVerticalIcon className="size-4" />

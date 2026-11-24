@@ -116,7 +116,7 @@ const getResourceName = (values: FormValues) => {
   if (values.resourceType === ACL_ResourceType.CLUSTER) {
     return 'kafka-cluster';
   }
-  // ANY is a query-only pattern type; it is created as LITERAL with a wildcard name
+  // WARNING: ANY is a query-only pattern type; write a LITERAL with a wildcard name instead.
   return values.patternType === ACL_ResourcePatternType.ANY ? '*' : values.resourceName || '*';
 };
 
@@ -132,19 +132,14 @@ const toCreateAclRequest = (values: FormValues) =>
     permissionType: values.permissionType,
   });
 
-// A violation the form can show next to its field.
 const isRenderableViolation = (violation: { field: string }, renderableFieldNames: Set<string>) =>
   Boolean(violation.field) && renderableFieldNames.has(violation.field);
 
-/**
- * Puts each server field violation on its rendered field and returns the message for the form-level alert:
- * the other violations, else the raw error when no field took one, else `null`.
- */
 const getSubmitErrorMessage = (
   err: unknown,
   setError: UseFormSetError<FormValues>,
   renderableFieldNames: Set<string>
-): string | null => {
+) => {
   if (!(err instanceof ConnectError)) {
     return err instanceof Error ? err.message : String(err);
   }
@@ -238,6 +233,9 @@ type AddAclDialogProps = {
   principal?: string;
 };
 
+/**
+ * Assigns server violations to their rendered fields and keeps unmatched violations on the form alert.
+ */
 export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProps) => {
   const { mutateAsync: createACL, isPending } = useCreateACLMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -273,8 +271,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
     form.clearErrors();
-    // When principal is pre-set via prop its field isn't rendered, so server violations
-    // on it must go to the global alert rather than being silently dropped.
+    // WARNING: Send violations on a hidden principal field to the global alert; the missing input cannot display them.
     const renderableFieldNames = principal
       ? new Set([...FORM_FIELD_NAMES].filter((f) => f !== 'principal'))
       : FORM_FIELD_NAMES;

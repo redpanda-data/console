@@ -41,7 +41,6 @@ export const PropertyGroupComponent = (props: {
   }
 
   if (g.group.name === 'Transforms') {
-    // Transforms + its sub groups
     const subGroups = props.allGroups
       .filter((subGroup) => subGroup.group.name?.startsWith('Transforms: '))
       .sort((a, b) => props.allGroups.indexOf(a) - props.allGroups.indexOf(b));
@@ -58,7 +57,6 @@ export const PropertyGroupComponent = (props: {
               <AccordionItem key={subGroup.group.name} value={subGroup.group.name ?? ''}>
                 <AccordionTrigger>
                   <div className="flex items-center gap-4">
-                    {/* The group name was rendered twice here before the migration. */}
                     <span className="text-heading-sm font-semibold">{subGroup.group.name}</span>
                     <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
                   </div>
@@ -79,7 +77,6 @@ export const PropertyGroupComponent = (props: {
       </div>
     );
   }
-  // Normal group
   return (
     <div>
       {Boolean(g.group.name) && <h3 className="mt-8 text-heading-md">{g.group.name}</h3>}

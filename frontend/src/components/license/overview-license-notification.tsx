@@ -23,21 +23,19 @@ import { RegisterModal } from './register-modal';
 import { type License, License_Type } from '../../protogen/redpanda/api/console/v1alpha1/license_pb';
 import { api, useApiStoreHook } from '../../state/backend-api';
 
-const getLicenseAlertContent = (
-  licenses: License[],
-  onRegisterModalOpen: () => void
+type OverviewLicenseAlert = { message: ReactElement; status: 'warning' | 'informative' };
+
+const getLicenseAlertContent: (licenses: License[], onRegisterModalOpen: () => void) => OverviewLicenseAlert | null = (
+  licenses,
+  onRegisterModalOpen
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-): { message: ReactElement; status: 'warning' | 'informative' } | null => {
+) => {
   if (licenses.length === 0) {
     return null;
   }
 
-  // Trial is either baked-in or extended. We need to check if any of the licenses are baked-in.
-  // We say the trial is baked-in if and only if all the licenses are baked-in. There can be a situation where,
-  // user has registered a license, it's updated in the brokers, but the console doesn't have the license re-loaded yet.
   const bakedInTrial = licenses.every((lic) => isBakedInTrial(lic));
 
-  // Choose the license with the latest expiration time
   const license = getLatestExpiringLicense(licenses);
 
   if (!license) {
@@ -46,7 +44,6 @@ const getLicenseAlertContent = (
 
   const msToExpiration = getMillisecondsToExpiration(license);
 
-  // Redpanda
   return api.isRedpanda
     ? bakedInTrial
       ? getBakedTrialAlert(license, msToExpiration, onRegisterModalOpen)
@@ -54,12 +51,7 @@ const getLicenseAlertContent = (
     : getKafkaTrialAlert(license, msToExpiration);
 };
 
-function getBakedTrialAlert(
-  license: License,
-  msToExpiration: number,
-  onRegisterModalOpen: () => void
-): { message: ReactElement; status: 'warning' | 'informative' } | null {
-  // Trial is baked-in and has expired
+function getBakedTrialAlert(license: License, msToExpiration: number, onRegisterModalOpen: () => void) {
   if (msToExpiration < 0) {
     return {
       message: (
@@ -76,10 +68,9 @@ function getBakedTrialAlert(
         </div>
       ),
       status: 'warning',
-    };
+    } satisfies OverviewLicenseAlert;
   }
 
-  // Trial is baked-in and has > 5 days left
   const WARNING_THRESHOLD_DAYS = 5;
   if (msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY) {
     return {
@@ -97,9 +88,8 @@ function getBakedTrialAlert(
         </div>
       ),
       status: 'informative',
-    };
+    } satisfies OverviewLicenseAlert;
   }
-  // Trial is baked-in and has < 5 days left
 
   if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
     return {
@@ -118,7 +108,7 @@ function getBakedTrialAlert(
         </div>
       ),
       status: 'warning',
-    };
+    } satisfies OverviewLicenseAlert;
   }
   return {
     message: (
@@ -136,12 +126,9 @@ function getBakedTrialAlert(
       </div>
     ),
     status: 'warning',
-  };
+  } satisfies OverviewLicenseAlert;
 }
-function getExtendedTrialAlert(
-  license: License,
-  msToExpiration: number
-): { message: ReactElement; status: 'warning' | 'informative' } | null {
+function getExtendedTrialAlert(license: License, msToExpiration: number) {
   if (msToExpiration < 0) {
     return {
       message: (
@@ -154,10 +141,9 @@ function getExtendedTrialAlert(
         </div>
       ),
       status: 'warning',
-    };
+    } satisfies OverviewLicenseAlert;
   }
 
-  // Trial is baked-in and has > 5 days left
   const WARNING_THRESHOLD_DAYS = 5;
   if (msToExpiration > WARNING_THRESHOLD_DAYS * MS_IN_DAY) {
     return {
@@ -171,9 +157,8 @@ function getExtendedTrialAlert(
         </div>
       ),
       status: 'informative',
-    };
+    } satisfies OverviewLicenseAlert;
   }
-  // Trial is baked-in and has < 5 days left
 
   if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
     return {
@@ -192,7 +177,7 @@ function getExtendedTrialAlert(
         </div>
       ),
       status: 'warning',
-    };
+    } satisfies OverviewLicenseAlert;
   }
   return {
     message: (
@@ -209,12 +194,9 @@ function getExtendedTrialAlert(
       </div>
     ),
     status: 'warning',
-  };
+  } satisfies OverviewLicenseAlert;
 }
-function getKafkaTrialAlert(
-  license: License,
-  msToExpiration: number
-): { message: ReactElement; status: 'warning' | 'informative' } | null {
+function getKafkaTrialAlert(license: License, msToExpiration: number) {
   if (msToExpiration > 0 && msToExpiration < 15 * MS_IN_DAY) {
     if (consoleHasEnterpriseFeature('SINGLE_SIGN_ON')) {
       return {
@@ -239,7 +221,7 @@ function getKafkaTrialAlert(
           </div>
         ),
         status: 'warning',
-      };
+      } satisfies OverviewLicenseAlert;
     }
     return {
       message: (
@@ -262,7 +244,7 @@ function getKafkaTrialAlert(
         </div>
       ),
       status: 'warning',
-    };
+    } satisfies OverviewLicenseAlert;
   }
 
   return null;
@@ -273,12 +255,8 @@ export const OverviewLicenseNotification: FC = () => {
   const [registerModalOpen, setIsRegisterModalOpen] = useState(false);
 
   useEffect(() => {
-    api.refreshClusterOverview().catch(() => {
-      // Error handling managed by API layer
-    });
-    api.listLicenses().catch(() => {
-      // Error handling managed by API layer
-    });
+    api.refreshClusterOverview().catch(() => {});
+    api.listLicenses().catch(() => {});
   }, []);
 
   const trialLicenses = licenses.filter((license) => license.type === License_Type.TRIAL);
@@ -287,7 +265,6 @@ export const OverviewLicenseNotification: FC = () => {
     setIsRegisterModalOpen(true);
   });
 
-  // This component needs info about whether we're using Redpanda or Kafka, without fetching clusterOverview first, we might get a malformed result
   if (
     clusterOverview === null ||
     trialLicenses.length === 0 ||

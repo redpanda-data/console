@@ -29,11 +29,10 @@ export type DeprecationNotice = ComponentRef & {
   docsUrl?: string;
 };
 
-export function isDeprecatedComponent(component: Pick<ConnectComponentSpec, 'status'>): boolean {
+export function isDeprecatedComponent(component: Pick<ConnectComponentSpec, 'status'>) {
   return component.status === ComponentStatus.DEPRECATED;
 }
 
-// What to use instead, per upstream's deprecation notes: ComponentSpec has no field for it.
 const REPLACEMENTS: Record<string, ComponentRef> = {
   'input:kafka': { name: 'redpanda', type: 'input' },
   'input:kafka_franz': { name: 'redpanda', type: 'input' },
@@ -45,28 +44,26 @@ const REPLACEMENTS: Record<string, ComponentRef> = {
   'processor:jira': { name: 'jira', type: 'input' },
 };
 
-export function deprecationNotice(
-  component: ConnectComponentSpec,
-  catalog: readonly ConnectComponentSpec[]
-): DeprecationNotice {
+export function deprecationNotice(component: ConnectComponentSpec, catalog: readonly ConnectComponentSpec[]) {
   const named = REPLACEMENTS[`${component.type}:${component.name}`];
   const replacement =
     named && catalog.some((c) => c.type === named.type && c.name === named.name && !isDeprecatedComponent(c))
       ? named
       : undefined;
   const docsTarget = replacement ?? component;
-  return {
+  const result: DeprecationNotice = {
     name: component.name,
     type: component.type,
     replacement,
     docsUrl: getConnectorDocsUrl(docsTarget.type, docsTarget.name),
   };
+  return result;
 }
 
 /** The warning every surface shows. */
-export function deprecationMessage({ name, replacement }: DeprecationNotice): string {
+export function deprecationMessage({ name, replacement }: DeprecationNotice) {
   return replacement
-    ? `${name} is deprecated. Use the ${replacement.name} ${replacement.type.replace(/_/g, ' ')} instead.`
+    ? `${name} is deprecated. Use the ${replacement.name} ${replacement.type.replace(/_/gu, ' ')} instead.`
     : `${name} is deprecated and may be removed in a future release.`;
 }
 
@@ -81,7 +78,6 @@ type FieldShape = Pick<RawFieldSpec, 'name' | 'type' | 'kind'> & { children?: re
 const COMPONENT_TYPES: ReadonlySet<string> = new Set(CONNECT_COMPONENT_TYPE);
 const PROCESSORS: FieldShape = { name: 'processors', type: 'processor', kind: 'array' };
 
-// Where components sit at the top level of a config.
 const CONFIG_ROOT: FieldShape = {
   name: '',
   type: 'object',
@@ -103,8 +99,7 @@ const CONFIG_ROOT: FieldShape = {
 
 type Walk = { catalog: readonly ConnectComponentSpec[]; lineCounter: LineCounter; usages: DeprecatedUsage[] };
 
-// The values a field holds, by its kind.
-function fieldValues(node: unknown, kind: string): unknown[] {
+function fieldValues(node: unknown, kind: string) {
   switch (kind) {
     case 'array':
       return isSeq(node) ? node.items : [];
@@ -117,8 +112,7 @@ function fieldValues(node: unknown, kind: string): unknown[] {
   }
 }
 
-// Follows the schema's component-typed fields, so nested components are found wherever they sit.
-function walkField(walk: Walk, node: unknown, field: FieldShape): void {
+function walkField(walk: Walk, node: unknown, field: FieldShape) {
   for (const value of fieldValues(node, field.kind)) {
     if (COMPONENT_TYPES.has(field.type)) {
       walkComponent(walk, value, field.type as ConnectComponentType);
@@ -130,8 +124,7 @@ function walkField(walk: Walk, node: unknown, field: FieldShape): void {
   }
 }
 
-// A component slot: `{ <name>: config }` plus `label`, and `processors` on inputs and outputs.
-function walkComponent(walk: Walk, node: unknown, type: ConnectComponentType): void {
+function walkComponent(walk: Walk, node: unknown, type: ConnectComponentType) {
   if (!isMap(node)) {
     return;
   }
@@ -142,7 +135,7 @@ function walkComponent(walk: Walk, node: unknown, type: ConnectComponentType): v
   }
 }
 
-function walkSlotKey(walk: Walk, key: Scalar<string>, value: unknown, type: ConnectComponentType): void {
+function walkSlotKey(walk: Walk, key: Scalar<string>, value: unknown, type: ConnectComponentType) {
   if (key.value === 'processors' && (type === 'input' || type === 'output')) {
     walkField(walk, value, PROCESSORS);
     return;
@@ -156,15 +149,14 @@ function walkSlotKey(walk: Walk, key: Scalar<string>, value: unknown, type: Conn
   }
 }
 
-function lineRange([startOffset, endOffset]: Range, lineCounter: LineCounter): DeprecatedUsage['range'] {
+function lineRange([startOffset, endOffset]: Range, lineCounter: LineCounter) {
   const start = lineCounter.linePos(startOffset);
   const end = lineCounter.linePos(endOffset);
   return { startLineNumber: start.line, startColumn: start.col, endLineNumber: end.line, endColumn: end.col };
 }
 
 /** Every deprecated component the YAML uses, nested ones included, in document order. */
-export function findDeprecatedUsages(yaml: string, components: readonly ConnectComponentSpec[]): DeprecatedUsage[] {
-  // Most configs use none; skip the parse unless a deprecated name appears at all.
+export function findDeprecatedUsages(yaml: string, components: readonly ConnectComponentSpec[]) {
   if (!components.some((c) => isDeprecatedComponent(c) && yaml.includes(c.name))) {
     return [];
   }

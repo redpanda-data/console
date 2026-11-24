@@ -39,11 +39,13 @@ const SKELETON_COLUMNS: { head: string; cell: ReactElement }[] = [
   { head: 'w-8', cell: <Skeleton className="h-8 w-8" /> },
 ];
 
-// After Output, as the table orders them.
 const RUNS_COLUMN = { head: 'w-12', cell: <Skeleton className="h-4 w-20" /> };
 
 const SKELETON_ROW_COUNT = 5;
 
+/**
+ * Reserve space for pagination so the first populated paint does not shift the rest of the table.
+ */
 export const PipelineListSkeleton = () => {
   const columns = [...SKELETON_COLUMNS.slice(0, 3), RUNS_COLUMN, ...SKELETON_COLUMNS.slice(3)];
   return (
@@ -54,7 +56,6 @@ export const PipelineListSkeleton = () => {
       </div>
       <div className="flex items-center gap-2">
         <Skeleton className="h-8 w-64" />
-        {/* Input, Output, Tags and Runs. */}
         {Array.from({ length: 4 }, (_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static skeletons
           <Skeleton className="h-8 w-20" key={i} />
@@ -83,7 +84,6 @@ export const PipelineListSkeleton = () => {
           ))}
         </TableBody>
       </Table>
-      {/* Stands in for the pagination footer: without it, the first real paint lifts the table. */}
       <div className="flex items-center justify-end gap-6 px-2">
         <Skeleton className="h-8 w-36" />
         <Skeleton className="h-8 w-24" />

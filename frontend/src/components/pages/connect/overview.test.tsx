@@ -11,23 +11,44 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
-import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
-import { config, isEmbedded } from 'config';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from '@rstest/core';
+import { config, createAuthInjectingFetch } from 'config';
+import { HttpResponse, http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
 import { ListPipelinesResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { SecretService } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
-import { toast } from 'sonner';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
-
-rs.mock('config', () => ({
-  ...rs.requireActual<typeof import('config')>('config'),
-  isEmbedded: rs.fn(),
-}));
 
 import KafkaConnectOverview from './overview';
 import { useApiStore } from '../../../state/backend-api';
 import type { KafkaConnectors } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
+
+const connectorsUrl = new URL(`${config.restBasePath}/kafka-connect/connectors`, window.location.href).href;
+const guardedFetch = globalThis.fetch;
+const originalFetch = config.fetch;
+const server = setupServer(
+  http.get(connectorsUrl, () => HttpResponse.json({ isConfigured: false, clusters: null } satisfies KafkaConnectors))
+);
+
+beforeAll(() => {
+  server.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in the Connect overview tests');
+    },
+  });
+  config.fetch = createAuthInjectingFetch(globalThis.fetch);
+});
+
+afterAll(() => {
+  config.fetch = originalFetch;
+  server.close();
+});
 
 const NEW_LIST_CTA = 'Create a pipeline';
 
@@ -36,28 +57,18 @@ const transport = createRouterTransport(({ rpc }) => {
 });
 
 const renderPage = (embedded: boolean) => {
-  rs.mocked(isEmbedded).mockReturnValue(embedded);
+  config.jwt = embedded ? 'embedded-test-token' : undefined;
   renderWithFileRoutes(<KafkaConnectOverview matchedPath="/connect-clusters" />, { transport });
 };
 
 describe('connect overview mount', () => {
   const initialState = useApiStore.getState();
   const initialFeatures = useSupportedFeaturesStore.getState();
-  const initialSecretsClient = config.rpcnSecretsClient;
-  beforeEach(() => {
-    const originalFetch = config.fetch;
-    rs.spyOn(config, 'fetch').mockImplementation((input, init) => {
-      if (input === `${config.restBasePath}/kafka-connect/connectors` && init?.method === 'GET') {
-        return Promise.resolve(Response.json({ isConfigured: false, clusters: null } satisfies KafkaConnectors));
-      }
-      return originalFetch(input, init);
-    });
-  });
+  const initialConfig = { rpcnSecretsClient: config.rpcnSecretsClient, jwt: config.jwt };
   afterEach(() => {
-    rs.restoreAllMocks();
     useApiStore.setState(initialState, true);
     useSupportedFeaturesStore.setState(initialFeatures, true);
-    config.rpcnSecretsClient = initialSecretsClient;
+    Object.assign(config, initialConfig);
   });
 
   it('renders the new pipelines list in Cloud', async () => {
@@ -74,11 +85,12 @@ describe('connect overview mount', () => {
   });
 
   it('loads connectors without probing unused secret scope permissions', async () => {
-    const toastError = rs.spyOn(toast, 'error');
+    const scopeReads: string[] = [];
     config.rpcnSecretsClient = createClient(
       SecretService,
       createRouterTransport(({ rpc }) => {
         rpc(SecretService.method.listSecretScopes, () => {
+          scopeReads.push('ListSecretScopes');
           throw new ConnectError('scope lookup denied', Code.PermissionDenied);
         });
       })
@@ -90,6 +102,7 @@ describe('connect overview mount', () => {
     await waitFor(() =>
       expect(useApiStore.getState().connectConnectors).toEqual({ isConfigured: false, clusters: null })
     );
-    expect(toastError).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: NEW_LIST_CTA })).toBeVisible();
+    expect(scopeReads).toEqual([]);
   });
 });

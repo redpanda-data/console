@@ -58,9 +58,6 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
                     {index === breadcrumbItems.length - 1 ? (
-                      // The current page's crumb isn't a link: it points at the exact URL
-                      // we're already on, and re-navigating to that bare path (no search/hash)
-                      // would drop the page's query params (filters, pagination, active tab).
                       <BreadcrumbPage>{item.title}</BreadcrumbPage>
                     ) : (
                       <BreadcrumbLink render={<Link to={item.linkTo}>{item.title}</Link>} />
@@ -71,8 +68,6 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
             </BreadcrumbList>
           </Breadcrumb>
         )}
-        {/* In this row, not the title row, so it holds its place on routes that hide the title row. This
-            load's availability rather than the live flag, so the switch writes the key the theme reads. */}
         {!isEmbedded() && isDarkModeAvailable() && (
           <div className="-my-1 ml-auto">
             <ThemeModeSwitch />
@@ -84,7 +79,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
 }
 
 function AppPageHeader() {
-  useApiStoreHook((s) => s.userData); // re-render when userData changes
+  useApiStoreHook((s) => s.userData);
   const hideTitleRow = useRouteOwnsTitleRow();
   const showRefresh = useShouldShowRefresh();
   const shouldHideHeader = useShouldHideHeader();
@@ -107,11 +102,8 @@ function AppPageHeader() {
   }
 
   return (
-    // Expanded pages release #mainLayout's gutter; keep the header off the viewport edge.
     <div className="page-expanded-inset transition-[padding] duration-300 ease-in-out">
       <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={!isEmbedded()} />
-      {/* Title + actions row. Hidden for breadcrumb-only headers (e.g. the SQL
-          studio, which carries its own title bar and toolbar). */}
       {!hideTitleRow && (
         <div className="flex items-center justify-between pt-6">
           <div className="flex flex-col gap-1">
@@ -152,7 +144,6 @@ function AppPageHeader() {
               ) : (
                 <TooltipProvider>
                   <Tooltip>
-                    {/* span wrapper: a disabled button swallows pointer events, so it can't anchor the tooltip itself */}
                     <TooltipTrigger
                       render={
                         <span className="inline-flex">
@@ -173,14 +164,14 @@ function AppPageHeader() {
   );
 }
 
+/**
+ * Routes that own their title bar still get breadcrumbs and the standalone theme
+ * switch. The switch uses the availability loaded for the page, not the live flag.
+ * A disabled refresh button needs a separate tooltip trigger to receive hover.
+ */
 export default AppPageHeader;
 
-/**
- * Whether the matched route draws its own title bar (`staticData.breadcrumbOnlyHeader`).
- *
- * Resolved from the pathname rather than `useMatches()`: committed matches lag the
- * location by a render on soft navigation, flashing the title row on the way in.
- */
+// WARNING: Read the live pathname, not committed matches; otherwise soft navigation flashes a second title bar before the route commits.
 function useRouteOwnsTitleRow() {
   const router = useRouter();
   const { pathname } = useLocation();
@@ -190,13 +181,6 @@ function useRouteOwnsTitleRow() {
   return matchedRoutes.some((route) => route.options.staticData?.breadcrumbOnlyHeader);
 }
 
-/**
- * Custom React Hook: Determines whether to show the refresh button based on route matches.
- * It checks various routes and conditions to decide if the refresh button should be displayed
- * in the header next to the breadcrumb.
- *
- * @returns {boolean} Indicates whether the refresh button should be shown (true/false).
- */
 const refreshHiddenRoutes = [
   { to: '/schema-registry/create' },
   { to: '/topics/$topicName/produce-record' },
@@ -221,33 +205,25 @@ function useShouldHideHeader() {
   const { pathname } = useLocation();
   const matchRoute = useMatchRoute();
 
-  // Hide header when PipelinePage renders (it has its own header/breadcrumbs)
   const isPipelineRoute =
     matchRoute({ to: '/rp-connect/$pipelineId' }) ||
     matchRoute({ to: '/rp-connect/$pipelineId/edit' }) ||
     matchRoute({ to: '/rp-connect/create' });
 
-  /**
-   * Flag is cloud-only (schema requires embedded mode).
-   * enablePipelineDiagrams: full new pipeline layout with diagrams.
-   */
   if (isPipelineRoute && isEmbedded() && isFeatureFlagEnabled('enablePipelineDiagrams')) {
     return true;
   }
 
-  // Only hide header in embedded mode for pages that have their own headers
   if (!isEmbedded()) {
     return false;
   }
 
-  // Pages that have their own header components - hide AppPageHeader for these
   const pagesWithOwnHeaders = ['/secrets'];
 
-  // Check if current path starts with any of the pages that have their own headers
   return pagesWithOwnHeaders.some((page) => pathname.startsWith(page));
 }
 
-function getBreadcrumbItems(pageBreadcrumbs: BreadcrumbEntry[], selectedClusterName: string | null): BreadcrumbEntry[] {
+function getBreadcrumbItems(pageBreadcrumbs: BreadcrumbEntry[], selectedClusterName: string | null) {
   const items = [...pageBreadcrumbs];
   if (!isEmbedded() && selectedClusterName) {
     items.unshift({ heading: '', title: 'Cluster', linkTo: '/' });

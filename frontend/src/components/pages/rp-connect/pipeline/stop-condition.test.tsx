@@ -17,6 +17,7 @@ import { render, screen } from 'test-utils';
 import { StopConditionEditor, StopConditionSection } from './stop-condition';
 import type { InputEndBehavior } from '../utils/input-end-behavior';
 import type { StopSlot } from '../utils/pipeline-flow-parser';
+import { resolveStopCondition, type StopConditionDraft, setStopCondition } from '../utils/read-until';
 
 const continuous: InputEndBehavior = {
   kind: 'continuous',
@@ -24,9 +25,8 @@ const continuous: InputEndBehavior = {
 };
 const natural: InputEndBehavior = { kind: 'natural', reason: 'Reads every object in the bucket, then stops.' };
 const openSlot: StopSlot = { path: ['input'], ownEnd: continuous };
-const CHOOSE_BELOW_RE = /Choose how it should stop below/;
+const CHOOSE_BELOW_RE = /Choose how it should stop below/u;
 
-// The editor, by default for a `redpanda` input with no stop condition.
 function renderEditor(props: Partial<ComponentProps<typeof StopConditionEditor>> = {}) {
   const user = userEvent.setup();
   const onApply = rs.fn(() => true);
@@ -146,7 +146,6 @@ describe('the StopConditionEditor', () => {
     await user.click(screen.getByRole('radio', { name: 'After a number of messages' }));
     const limit = screen.getByRole('textbox', { name: 'Message limit' });
     await user.click(limit);
-    // Past the end, as the radio group would otherwise take it.
     await user.keyboard('{End}{ArrowRight}');
     expect(screen.getByRole('radio', { name: 'After a number of messages' })).toBeChecked();
     expect(limit).toHaveFocus();
@@ -193,11 +192,22 @@ describe('the StopConditionEditor', () => {
 
 describe('the StopConditionEditor when it can’t make the edit', () => {
   test('stays open with its choices when the YAML edit is refused', async () => {
-    const { user, onApply, onClose } = renderEditor();
-    onApply.mockReturnValue(false);
+    const edits: (StopConditionDraft | null)[] = [];
+    const { user, onClose } = renderEditor({
+      onApply: (draft) => {
+        edits.push(draft);
+        return (
+          setStopCondition(
+            'input: [unclosed',
+            openSlot.path,
+            draft ? resolveStopCondition(openSlot.condition, draft) : null
+          ) !== null
+        );
+      },
+    });
     await user.click(screen.getByRole('radio', { name: 'After a number of messages' }));
     await replaceLimit(user, '500{enter}');
-    expect(onApply).toHaveBeenCalledWith({ messageLimit: 500 });
+    expect(edits).toEqual([{ messageLimit: 500 }]);
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole('textbox', { name: 'Message limit' })).toHaveValue('500');
   });

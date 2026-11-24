@@ -36,7 +36,8 @@ import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import { SearchInput } from '../../misc/search-input';
 import Section from '../../misc/section';
-import { PageComponent, type PageInitHelper } from '../page';
+import type { PageInitHelper } from '../page';
+import { pageWithContent } from '../page-with-content';
 import { TonedIcon } from '../shared/toned-icon';
 
 export const PartitionStatus = (p: { status: PartitionTransformStatus_PartitionStatus }) => {
@@ -70,8 +71,8 @@ export const PartitionStatus = (p: { status: PartitionTransformStatus_PartitionS
   }
 };
 
-class TransformsList extends PageComponent {
-  initPage(p: PageInitHelper): void {
+class TransformsList extends pageWithContent(() => <TransformsListContent />) {
+  initPage(p: PageInitHelper) {
     p.addBreadcrumb('Data Transforms', '/transforms');
 
     this.refreshData(true);
@@ -79,15 +80,10 @@ class TransformsList extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    transformsApi.refreshTransforms(force);
-  }
-
-  render() {
-    return <TransformsListContent />;
+    this.transformsApi.refreshTransforms(force);
   }
 }
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
@@ -183,15 +179,14 @@ const columns: DataTableColumnDef<TransformMetadata>[] = [
   },
 ];
 
-const compileQuickSearch = (quickSearch: string): RegExp | null => {
+const compileQuickSearch = (quickSearch: string) => {
   try {
-    return new RegExp(quickSearch, 'i');
+    return new RegExp(quickSearch, 'iu');
   } catch {
     return null;
   }
 };
 
-// Compiled once, not once per row. An invalid pattern matches nothing, as before.
 const filterByQuickSearch = (transforms: TransformMetadata[], quickSearch: string) => {
   if (!quickSearch) {
     return transforms;
@@ -256,4 +251,7 @@ const TransformsListContent: FC = () => {
   );
 };
 
+/**
+ * An invalid quick-search pattern matches no rows rather than throwing during render.
+ */
 export default TransformsList;

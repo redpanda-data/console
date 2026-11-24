@@ -40,7 +40,7 @@ type FilterTab = keyof typeof FILTER_TABS;
 
 const isFilterTab = (value: string): value is FilterTab => value in FILTER_TABS;
 
-const getFilterTab = (patternType: unknown, filterType: unknown): FilterTab =>
+const getFilterTab = (patternType: unknown, filterType: unknown) =>
   (Object.keys(FILTER_TABS) as FilterTab[]).find(
     (tab) => FILTER_TABS[tab].patternType === patternType && FILTER_TABS[tab].filterType === filterType
   ) ?? 'include-specific';
@@ -60,9 +60,9 @@ type FilterItemProps<TFieldValues extends FieldValues> = {
   fieldNamePrefix: string;
   onRemove: () => void;
   children: React.ReactNode;
-  viewType: boolean; // true = editable, false = resume/summary
+  viewType: boolean;
   'data-testid'?: string;
-  errorMessage?: string; // Error message to display in resume/summary view
+  errorMessage?: string;
 };
 
 type FilterItemSummaryProps = {
@@ -71,7 +71,6 @@ type FilterItemSummaryProps = {
   errorMessage?: string;
 };
 
-// Resume/summary view (non-editable)
 const FilterItemSummary = ({ filterLabel, nameValue, errorMessage }: FilterItemSummaryProps) => (
   <div>
     <Item>
@@ -183,7 +182,6 @@ export const FilterItem = <TFieldValues extends FieldValues>({
   const showMatchAllMessage =
     patternValue === PatternType.LITERAL && filterValue === FilterType.INCLUDE && nameValue === '*';
 
-  // Editable view (full form)
   return (
     <Card data-testid={dataTestId} size="full" variant="elevated">
       <CardContent>

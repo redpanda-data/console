@@ -43,7 +43,7 @@ export default defineRule({
           scheduled.push({ node, kind });
         }
       },
-      // A `beforeEach` that installs fake timers may come after the wait in source order.
+      // WARNING: Inspect waits after collecting hook registrations; a fake-clock beforeEach can appear below the wait.
       'Program:exit'() {
         for (const { node, kind } of scheduled) {
           if (!isControlled(regions, node, kind)) {

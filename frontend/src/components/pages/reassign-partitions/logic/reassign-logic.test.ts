@@ -13,26 +13,28 @@ import { type ApiData, computeReassignments, type TopicAssignments, type TopicPa
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import type { Broker, Partition, Topic } from '../../../../state/rest-interfaces';
 
-const makeBroker = (brokerId: number, rack: string): Broker => ({
-  brokerId,
-  logDirSize: 0,
-  address: `broker-${brokerId}`,
-  rack,
-  config: { configs: undefined, error: undefined },
-});
+const makeBroker = (brokerId: number, rack: string) =>
+  ({
+    brokerId,
+    logDirSize: 0,
+    address: `broker-${brokerId}`,
+    rack,
+    config: { configs: undefined, error: undefined },
+  }) satisfies Broker;
 
-const makeTopic = (topicName: string, partitionCount: number, replicationFactor: number): Topic => ({
-  topicName,
-  isInternal: false,
-  partitionCount,
-  replicationFactor,
-  cleanupPolicy: 'delete',
-  documentation: 'UNKNOWN',
-  logDirSummary: { totalSizeBytes: 0, replicaErrors: null, hint: null },
-  allowedActions: undefined,
-});
+const makeTopic = (topicName: string, partitionCount: number, replicationFactor: number) =>
+  ({
+    topicName,
+    isInternal: false,
+    partitionCount,
+    replicationFactor,
+    cleanupPolicy: 'delete',
+    documentation: 'UNKNOWN',
+    logDirSummary: { totalSizeBytes: 0, replicaErrors: null, hint: null },
+    allowedActions: undefined,
+  }) satisfies Topic;
 
-const makePartition = (id: number, replicas: number[], replicaSize: number): Partition =>
+const makePartition = (id: number, replicas: number[], replicaSize: number) =>
   ({
     id,
     partitionError: null,
@@ -47,7 +49,6 @@ const makePartition = (id: number, replicas: number[], replicaSize: number): Par
     replicaSize,
   }) as Partition;
 
-// Four brokers in two racks. Every replica of `alpha` sits in rack a, `beta` spans both racks.
 const brokers = [makeBroker(0, 'a'), makeBroker(1, 'a'), makeBroker(2, 'b'), makeBroker(3, 'b')];
 const alpha = makeTopic('alpha', 4, 2);
 const beta = makeTopic('beta', 2, 3);
@@ -63,10 +64,9 @@ const apiData: ApiData = {
   ]),
 };
 
-/** Fresh partition objects per test, since the computation sorts the selected partitions in place. */
-const select = (topic: Topic, partitions: Partition[]): TopicPartitions => ({ topic, partitions: [...partitions] });
+const copySelection = (topic: Topic, partitions: Partition[]) =>
+  ({ topic, partitions: partitions.slice() }) satisfies TopicPartitions;
 
-/** topic -> partition -> replica brokerIds, the first being the planned leader. */
 const replicaIds = (assignments: TopicAssignments) =>
   Object.fromEntries(
     Object.entries(assignments).map(([topicName, partitions]) => [
@@ -81,9 +81,9 @@ describe('computeReassignments', () => {
   let table: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    debug = spyOn(console, 'debug').mockImplementation(() => undefined);
-    error = spyOn(console, 'error').mockImplementation(() => undefined);
-    table = spyOn(console, 'table').mockImplementation(() => undefined);
+    debug = spyOn(console, 'debug');
+    error = spyOn(console, 'error');
+    table = spyOn(console, 'table');
   });
 
   afterEach(() => {
@@ -95,13 +95,12 @@ describe('computeReassignments', () => {
   test('spreads replicas across racks and balances leaders over all target brokers', () => {
     const result = computeReassignments(
       apiData,
-      [select(alpha, alphaPartitions), select(beta, betaPartitions)],
+      [copySelection(alpha, alphaPartitions), copySelection(beta, betaPartitions)],
       brokers
     );
 
     expect(replicaIds(result)).toEqual(EXPECTED_ALL_BROKERS);
     expect(error).not.toHaveBeenCalled();
-    // Two balancing rounds: the second swaps leaders without lowering the skew, which ends the loop.
     expect(debug).toHaveBeenCalledWith('leader skew in cluster', {
       actual: { skew: 5, min: '0 partitions (brokerId 2)', max: '5 partitions (brokerId 0)' },
       planned: { skew: 1, min: '1 partitions (brokerId 0)', max: '2 partitions (brokerId 2)' },
@@ -113,10 +112,9 @@ describe('computeReassignments', () => {
   });
 
   test('moves every replica onto the selected target brokers', () => {
-    const result = computeReassignments(apiData, [select(alpha, alphaPartitions)], [brokers[2], brokers[3]]);
+    const result = computeReassignments(apiData, [copySelection(alpha, alphaPartitions)], [brokers[2], brokers[3]]);
 
     expect(replicaIds(result)).toEqual(EXPECTED_RACK_B);
-    // Rack b alone now hosts every replica, so losing it takes each partition offline.
     expect(error).toHaveBeenCalledWith('Issues in topic "alpha" (RF: 2) (4 issues).');
     expect(table).toHaveBeenCalledWith(
       [0, 1, 2, 3].map((partitionId) => ({ partitionId, criticalBrokers: '', criticalRacks: 'b' }))
@@ -124,13 +122,13 @@ describe('computeReassignments', () => {
   });
 
   test('rejects a selection without partitions', () => {
-    expect(() => computeReassignments(apiData, [select(alpha, [])], brokers)).toThrow('No partitions selected');
+    expect(() => computeReassignments(apiData, [copySelection(alpha, [])], brokers)).toThrow('No partitions selected');
   });
 
   test('rejects fewer target brokers than the highest replication factor', () => {
-    expect(() => computeReassignments(apiData, [select(beta, betaPartitions)], [brokers[0], brokers[1]])).toThrow(
-      'You selected 2 target brokers, but the following topics have a replicationFactor of 3'
-    );
+    expect(() =>
+      computeReassignments(apiData, [copySelection(beta, betaPartitions)], [brokers[0], brokers[1]])
+    ).toThrow('You selected 2 target brokers, but the following topics have a replicationFactor of 3');
   });
 });
 

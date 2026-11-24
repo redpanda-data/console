@@ -18,7 +18,6 @@ export function useRoleMembership(roleName: string) {
   const { mutateAsync: updateMembership, isPending: isSubmitting } = useUpdateRoleMembershipMutation();
   const members = membersData?.members ?? [];
 
-  /** Resolves to whether the principal was added. */
   const addMember = async (principalType: 'User' | 'Group', name: string) => {
     try {
       await updateMembership(
@@ -30,7 +29,8 @@ export function useRoleMembership(roleName: string) {
         })
       );
     } catch {
-      return false; // Error handling is done in onError callback
+      // WARNING: The mutation's onError already reports failure; return false without duplicating it.
+      return false;
     }
     toast.success(`${principalType} "${name}" added to role`);
     return true;
@@ -49,9 +49,7 @@ export function useRoleMembership(roleName: string) {
       );
       toast.success('Member removed from role');
       setDeletingPrincipal(null);
-    } catch {
-      // Error handling is done in onError callback
-    }
+    } catch {}
   };
 
   return {

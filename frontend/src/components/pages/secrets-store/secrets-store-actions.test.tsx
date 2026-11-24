@@ -1,190 +1,94 @@
-import { create, type MessageInitShape } from '@bufbuild/protobuf';
+import type { MessageInitShape } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
-import { deleteSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
+import type { DeleteSecretRequest } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
+import { deleteSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {
-  DeleteSecretRequestSchema,
+  type ListResourcesRequest,
   ListResourcesResponse_Type,
-  ListResourcesResponseSchema,
+  type ListResourcesResponseSchema,
   Scope,
 } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { listResources } from 'protogen/redpanda/api/dataplane/v1/secret-SecretService_connectquery';
-import { render, screen, waitFor } from 'test-utils';
+import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-global.ResizeObserver = class ResizeObserver {
-  observe() {
-    // Mock implementation
-  }
-  unobserve() {
-    // Mock implementation
-  }
-  disconnect() {
-    // Mock implementation
-  }
-};
+import { SecretsStoreListPage } from './secrets-store-list-page';
 
-Element.prototype.scrollIntoView = rs.fn();
+const SECRET_ID = 'test-secret-id';
+const CONFIRMATION_PLACEHOLDER = /type "delete" to confirm/iu;
 
-import { SecretsStoreActionsCell } from './secrets-store-actions';
-import type { SecretTableRow } from './secrets-store-list-page';
-
-const DELETE_TEXT_REGEX = /delete/i;
-const CONFIRMATION_PLACEHOLDER_REGEX = /type "delete" to confirm/i;
-
-type RenderActionsCellOptions = {
-  secret: SecretTableRow;
-  onDelete: (secretId: string) => Promise<void>;
-  resources: MessageInitShape<typeof ListResourcesResponseSchema>['resources'];
-  deleteSecretMock?: ReturnType<typeof rs.fn>;
-};
-
-/** Renders the actions cell against a transport that lists `resources` for the secret. */
-function renderActionsCell({ secret, onDelete, resources, deleteSecretMock }: RenderActionsCellOptions) {
-  const listResourcesMock = rs.fn().mockReturnValue(
-    create(ListResourcesResponseSchema, {
-      resources,
-    })
-  );
-
+function renderActions(resources: MessageInitShape<typeof ListResourcesResponseSchema>['resources'] = []) {
+  const lookups: ListResourcesRequest[] = [];
+  const deletes: DeleteSecretRequest[] = [];
+  let exists = true;
   const transport = createRouterTransport(({ rpc }) => {
-    if (deleteSecretMock) {
-      rpc(deleteSecret, deleteSecretMock);
-    }
-    rpc(listResources, listResourcesMock);
+    rpc(listSecrets, () => ({ response: { secrets: exists ? [{ id: SECRET_ID, scopes: [Scope.MCP_SERVER] }] : [] } }));
+    rpc(listResources, (request) => {
+      lookups.push(request);
+      return { resources };
+    });
+    rpc(deleteSecret, (request) => {
+      deletes.push(request);
+      if (request.request?.id === SECRET_ID) {
+        exists = false;
+      }
+      return {};
+    });
   });
+  renderWithFileRoutes(<SecretsStoreListPage />, { transport });
+  return { lookups, deletes };
+}
 
-  const onEditMock = rs.fn();
-
-  render(<SecretsStoreActionsCell isDeleting={false} onDelete={onDelete} onEdit={onEditMock} secret={secret} />, {
-    transport,
-  });
-
-  return { listResourcesMock };
+async function openMenu(user: UserEvent) {
+  await user.click(await screen.findByTestId('secret-actions-menu-trigger'));
 }
 
 async function openDeleteDialog(user: UserEvent) {
-  // Open the dropdown menu
-  const menuButton = screen.getByTestId('secret-actions-menu-trigger');
-  await user.click(menuButton);
-
-  // Click the delete option to open the dialog
-  const deleteMenuItem = await screen.findByText(DELETE_TEXT_REGEX);
-  await user.click(deleteMenuItem);
+  await openMenu(user);
+  await user.click(await screen.findByRole('menuitem', { name: 'Delete' }));
 }
 
-async function confirmDelete(user: UserEvent) {
-  // Wait for the confirmation dialog
-  const confirmationInput = await screen.findByPlaceholderText(CONFIRMATION_PLACEHOLDER_REGEX);
+test('sends a confirmed delete to the server and refreshes the secret list', async () => {
+  const user = userEvent.setup();
+  const { deletes } = renderActions();
 
-  // Type the confirmation text
-  await user.type(confirmationInput, 'delete');
+  await openDeleteDialog(user);
+  const confirm = screen.getByRole('button', { name: 'Delete' });
+  expect(confirm).toBeDisabled();
+  expect(deletes).toHaveLength(0);
+  await user.type(screen.getByPlaceholderText(CONFIRMATION_PLACEHOLDER), 'delete');
+  await user.click(confirm);
 
-  // Click the confirm delete button
-  const confirmButton = screen.getByRole('button', { name: DELETE_TEXT_REGEX });
-  await user.click(confirmButton);
-}
+  expect(await screen.findByText('No secrets found.')).toBeVisible();
+  expect(deletes.map((request) => request.request?.id)).toEqual([SECRET_ID]);
+});
 
-describe('the SecretsStoreActionsCell', () => {
-  test('should trigger delete mutation', async () => {
-    const user = userEvent.setup();
+test('copies the secret ID and keeps the menu open', async () => {
+  const user = userEvent.setup();
+  renderActions();
 
-    const mockSecret: SecretTableRow = {
-      id: 'test-secret-id',
-      labels: { env: 'production' },
-      scopes: [Scope.MCP_SERVER],
-      scope: '',
-    };
+  await openMenu(user);
+  await user.click(await screen.findByRole('menuitem', { name: 'Copy ID' }));
 
-    const deleteSecretMock = rs.fn().mockResolvedValue({});
+  await waitFor(async () => expect(await navigator.clipboard.readText()).toBe(SECRET_ID));
+  expect(screen.getByRole('menuitem', { name: 'Copy ID' })).toBeVisible();
+});
 
-    // Simulate the actual delete handler from the list page
-    const handleDelete = async (secretId: string) => {
-      await deleteSecretMock(
-        create(DeleteSecretRequestSchema, {
-          id: secretId,
-        })
-      );
-    };
+test('looks up resources for the selected secret before confirmation', async () => {
+  const user = userEvent.setup();
+  const { lookups, deletes } = renderActions([
+    {
+      id: 'pipeline-1',
+      displayName: 'My Pipeline',
+      type: ListResourcesResponse_Type.PIPELINE,
+    },
+  ]);
 
-    renderActionsCell({ secret: mockSecret, onDelete: handleDelete, resources: [], deleteSecretMock });
+  await openDeleteDialog(user);
 
-    await openDeleteDialog(user);
-    await confirmDelete(user);
-
-    // Verify the delete mutation was called
-    await waitFor(() => {
-      expect(deleteSecretMock).toHaveBeenCalledTimes(1);
-      expect(deleteSecretMock).toHaveBeenCalledWith(
-        create(DeleteSecretRequestSchema, {
-          id: 'test-secret-id',
-        })
-      );
-    });
-  });
-
-  test('copies the secret ID from a menu item that keeps the menu open', async () => {
-    const user = userEvent.setup();
-
-    renderActionsCell({
-      secret: { id: 'test-secret-copy', labels: {}, scopes: [Scope.AI_GATEWAY], scope: '' },
-      onDelete: rs.fn(),
-      resources: [],
-    });
-
-    await user.click(screen.getByTestId('secret-actions-menu-trigger'));
-    const copyItem = await screen.findByRole('menuitem', { name: 'Copy ID' });
-    expect(copyItem).toHaveAttribute('data-testid', 'secret-copy-id-button');
-
-    await user.click(copyItem);
-
-    await waitFor(async () => {
-      expect(await navigator.clipboard.readText()).toBe('test-secret-copy');
-    });
-    expect(screen.getByRole('menuitem', { name: 'Copy ID' })).toBeVisible();
-  });
-
-  test('should show resources in use when secret is being used', async () => {
-    const user = userEvent.setup();
-
-    const mockSecret: SecretTableRow = {
-      id: 'test-secret-in-use',
-      labels: { env: 'staging' },
-      scopes: [Scope.REDPANDA_CONNECT],
-      scope: '',
-    };
-
-    const { listResourcesMock } = renderActionsCell({
-      secret: mockSecret,
-      onDelete: rs.fn(),
-      resources: [
-        {
-          id: 'pipeline-1',
-          displayName: 'My Pipeline',
-          type: ListResourcesResponse_Type.PIPELINE,
-        },
-      ],
-    });
-
-    await openDeleteDialog(user);
-
-    // Wait for resources query to be called with correct secret ID
-    await waitFor(() => {
-      expect(listResourcesMock).toHaveBeenCalledTimes(1);
-    });
-
-    // Verify the resource-in-use alert is displayed
-    const alert = await screen.findByTestId('resource-in-use-alert');
-    expect(alert).toBeInTheDocument();
-
-    // Verify alert title and description
-    await waitFor(() => {
-      expect(screen.getByText('Resource is in use')).toBeInTheDocument();
-    });
-
-    // Verify the resource type label is shown
-    expect(screen.getByText('Redpanda Connect Pipelines')).toBeInTheDocument();
-
-    // Verify the specific resource is listed
-    expect(screen.getByText('My Pipeline')).toBeInTheDocument();
-  });
+  expect(await screen.findByText('Resource is in use')).toBeVisible();
+  expect(screen.getByText('Redpanda Connect Pipelines')).toBeVisible();
+  expect(screen.getByText('My Pipeline')).toBeVisible();
+  expect(lookups.map((request) => request.filter?.secretId)).toEqual([SECRET_ID]);
+  expect(deletes).toHaveLength(0);
 });

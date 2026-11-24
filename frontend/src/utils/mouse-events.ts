@@ -22,5 +22,5 @@ type ClickIntent = {
  * so a container that navigates on click (a table row, a card) must leave them to the browser and let
  * the real anchor inside handle them.
  */
-export const isModifiedClick = (event: ClickIntent): boolean =>
+export const isModifiedClick = (event: ClickIntent) =>
   event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;

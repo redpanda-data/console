@@ -24,17 +24,13 @@ import { useControllableState } from 'components/redpanda-ui/lib/use-controllabl
 
 import { labelsToMap, SCOPE_OPTIONS } from './secret-form-shared';
 
-// cmdk calls scrollIntoView which is not available in Happy DOM
+// WARNING: Keep scrollIntoView available in the DOM harness; cmdk calls it when options move.
 beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
 });
 
 const EMPTY_SCOPES: string[] = [];
 
-/**
- * Helper component that mirrors the scope MultiSelect usage in the
- * secret create / edit pages, but without any form or routing wiring.
- */
 function ScopeMultiSelect({ defaultValue = EMPTY_SCOPES }: { defaultValue?: string[] }) {
   const [value, setValue] = useControllableState({ defaultProp: defaultValue });
 
@@ -64,11 +60,10 @@ type ScopeOption = (typeof SCOPE_OPTIONS)[number];
 
 const [FIRST_SCOPE, SECOND_SCOPE] = SCOPE_OPTIONS;
 
-/** The trigger shows the human-readable label, and not the raw enum value as standalone text. */
 function expectLabelWithoutRawValue(trigger: HTMLElement, option: ScopeOption) {
   expect(trigger).toHaveTextContent(option.label);
   const triggerText = trigger.textContent ?? '';
-  const rawNumberPattern = new RegExp(`(^|\\s)${option.value}(\\s|$)`);
+  const rawNumberPattern = new RegExp(`(^|\\s)${option.value}(\\s|$)`, 'u');
   if (!option.label.includes(option.value)) {
     expect(triggerText).not.toMatch(rawNumberPattern);
   }
@@ -100,7 +95,6 @@ describe('the SCOPE_OPTIONS labels', () => {
   it('all labels are plain strings, not JSX or raw enum numbers', () => {
     for (const option of SCOPE_OPTIONS) {
       expect(typeof option.label).toBe('string');
-      // The label should not be a stringified number (raw enum value)
       expect(Number.isNaN(Number(option.label))).toBe(true);
     }
   });
@@ -111,7 +105,6 @@ describe('the SCOPE_OPTIONS labels', () => {
     expect(SCOPE_OPTIONS.map((o) => o.label)).toEqual(expectedLabels);
 
     for (const option of SCOPE_OPTIONS) {
-      // Icons can be functions (lucide) or objects (forwardRef components)
       expect(['function', 'object']).toContain(typeof option.icon);
     }
   });
@@ -138,13 +131,10 @@ describe('scope MultiSelect trigger', () => {
 
     const trigger = screen.getByTestId('scope-trigger');
 
-    // Open the dropdown by clicking the trigger
     await user.click(trigger);
 
-    // Click the first option ("AI Gateway")
     await user.click(await screen.findByText(FIRST_SCOPE.label));
 
-    // The trigger should now show the human-readable label text, not the raw enum value
     expectLabelWithoutRawValue(trigger, FIRST_SCOPE);
   });
 
@@ -155,16 +145,13 @@ describe('scope MultiSelect trigger', () => {
 
     const trigger = screen.getByTestId('scope-trigger');
 
-    // Open dropdown and select two options
     await user.click(trigger);
 
     await user.click(await screen.findByText(FIRST_SCOPE.label));
     await user.click(await screen.findByText(SECOND_SCOPE.label));
 
-    // Close the dropdown
     await user.keyboard('{Escape}');
 
-    // Both labels should appear in the trigger, and raw numeric enum values should not appear as standalone text
     expectLabelWithoutRawValue(trigger, FIRST_SCOPE);
     expectLabelWithoutRawValue(trigger, SECOND_SCOPE);
   });

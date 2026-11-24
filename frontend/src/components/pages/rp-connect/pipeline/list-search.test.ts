@@ -35,7 +35,6 @@ describe('the list search params', () => {
       { id: 'inputs', value: ['redpanda'] },
       { id: 'end', value: ['finite'] },
     ]);
-    // The All tab filters nothing, and a blank search isn't a filter.
     expect(columnFiltersFromSearch({ tab: 'all', q: '  ' })).toEqual([]);
   });
 

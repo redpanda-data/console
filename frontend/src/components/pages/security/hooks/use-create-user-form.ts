@@ -17,7 +17,7 @@ type CreateUserFormState = {
   selectedRoles: string[];
 };
 
-const getInitialFormState = (): CreateUserFormState => ({
+const getInitialFormState: () => CreateUserFormState = () => ({
   username: '',
   password: generatePassword(30, false),
   mechanism: 'SCRAM-SHA-256',
@@ -26,8 +26,8 @@ const getInitialFormState = (): CreateUserFormState => ({
 });
 
 /**
- * The create-user form: its fields, the existing usernames, and `createUser`, which creates the user,
- * adds it to the selected roles (best-effort) and then calls `onCreated`.
+ * Creates the user before adding it to selected roles. Failed membership updates
+ * don't roll back the account or prevent `onCreated`.
  */
 export function useCreateUserForm(onCreated: () => void) {
   const [formState, setFormState] = useState(getInitialFormState);
@@ -41,7 +41,6 @@ export function useCreateUserForm(onCreated: () => void) {
     (value: CreateUserFormState[K]) =>
       setFormState((prev) => ({ ...prev, [key]: value }));
 
-  /** Creates the user, then adds it to the selected roles (best-effort); resolves to whether it was created. */
   const createUserWithRoles = async () => {
     const { username, password, mechanism, selectedRoles } = formState;
     try {
@@ -53,8 +52,6 @@ export function useCreateUserForm(onCreated: () => void) {
         }),
       });
     } catch {
-      // Toast is shown by useCreateUserMutation's onError handler.
-      // mutateAsync re-throws after onError, so we catch to prevent unhandled rejection.
       return false;
     }
     await Promise.allSettled(
@@ -65,8 +62,7 @@ export function useCreateUserForm(onCreated: () => void) {
     return true;
   };
 
-  /** Resolves to whether the user was created. */
-  const createUser = async (): Promise<boolean> => {
+  const createUser = async () => {
     setIsSubmitting(true);
     let created = false;
     try {

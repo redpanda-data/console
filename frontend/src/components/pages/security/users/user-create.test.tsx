@@ -9,317 +9,182 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { afterEach, describe, expect, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  ListRoleMembersResponseSchema,
-  ListRolesResponseSchema,
-  UpdateRoleMembershipResponseSchema,
-} from 'protogen/redpanda/api/dataplane/v1/security_pb';
+import type { UpdateRoleMembershipRequest } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import {
   listRoleMembers,
   listRoles,
   updateRoleMembership,
 } from 'protogen/redpanda/api/dataplane/v1/security-SecurityService_connectquery';
-import {
-  CreateUserResponseSchema,
-  ListUsersResponse_UserSchema,
-  ListUsersResponseSchema,
-  SASLMechanism,
-} from 'protogen/redpanda/api/dataplane/v1/user_pb';
+import { type CreateUserRequest, SASLMechanism } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
+import { Toaster } from 'sonner';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-// ── Mocks ──────────────────────────────────────────────────────────────────────
-
-rs.mock('config', () => ({
-  config: {
-    jwt: 'test-jwt-token',
-    controlplaneUrl: 'http://localhost:9090',
-    clusterId: 'test-cluster',
-    isServerless: false,
-  },
-  isFeatureFlagEnabled: rs.fn(() => false),
-  addBearerTokenInterceptor: rs.fn((next: unknown) => next),
-}));
-
-rs.mock('state/ui-state', () => ({
-  setPageHeader: rs.fn(),
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
-
-// Mock generatePassword for deterministic tests
-rs.mock('utils/password', () => ({
-  generatePassword: rs.fn(() => 'mock-password-1234567890'),
-}));
-
-let mockRolesApiEnabled = false;
-
-rs.mock('../../../../state/supported-features', () => {
-  const actual = rs.requireActual<typeof import('../../../../state/supported-features')>(
-    '../../../../state/supported-features'
-  );
-  return {
-    ...actual,
-    Features: { ...actual.Features, createUser: true, deleteUser: true, rolesApi: true },
-    useSupportedFeaturesStore: <T,>(selector: (s: Record<string, boolean>) => T) =>
-      selector({ createUser: true, deleteUser: true, rolesApi: mockRolesApiEnabled, schemaRegistryACLApi: false }),
-  };
-});
-
-// Polyfills
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
-Element.prototype.scrollIntoView = rs.fn();
-
-// ── Component import (after mocks) ──────────────────────────────────────────
 import UserCreatePage from './user-create';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+const INVALID_USERNAME = /username contains invalid characters/iu;
+const PERMISSION_DENIED = /permission denied/iu;
+const initialRolesApi = useSupportedFeaturesStore.getInitialState().rolesApi;
 
-function buildTransport(overrides?: {
-  listUsersMock?: ReturnType<typeof rs.fn>;
-  createUserMock?: ReturnType<typeof rs.fn>;
-  updateRoleMembershipMock?: ReturnType<typeof rs.fn>;
-  listRolesMock?: ReturnType<typeof rs.fn>;
-  listRoleMembersMock?: ReturnType<typeof rs.fn>;
-}) {
-  const listUsersMock =
-    overrides?.listUsersMock ??
-    rs.fn().mockReturnValue(
-      create(ListUsersResponseSchema, {
-        users: [],
-        nextPageToken: '',
-      })
-    );
+afterEach(() => {
+  useSupportedFeaturesStore.setState({ rolesApi: initialRolesApi });
+});
 
-  const createUserMock = overrides?.createUserMock ?? rs.fn().mockReturnValue(create(CreateUserResponseSchema, {}));
+type UserApi = {
+  users?: string[];
+  roles?: string[];
+  createError?: ConnectError;
+  membershipError?: ConnectError;
+};
 
-  const updateRoleMembershipMock =
-    overrides?.updateRoleMembershipMock ?? rs.fn().mockReturnValue(create(UpdateRoleMembershipResponseSchema, {}));
-
-  const listRolesMock =
-    overrides?.listRolesMock ??
-    rs.fn().mockReturnValue(
-      create(ListRolesResponseSchema, {
-        roles: [],
-        nextPageToken: '',
-      })
-    );
-
-  const listRoleMembersMock =
-    overrides?.listRoleMembersMock ??
-    rs.fn().mockReturnValue(
-      create(ListRoleMembersResponseSchema, {
-        members: [],
-        nextPageToken: '',
-      })
-    );
+function renderCreateUser({ users = [], roles = [], createError, membershipError }: UserApi = {}) {
+  const createdUsers: CreateUserRequest[] = [];
+  const membershipChanges: UpdateRoleMembershipRequest[] = [];
+  useSupportedFeaturesStore.setState({ rolesApi: roles.length > 0 });
 
   const transport = createRouterTransport(({ rpc }) => {
-    rpc(listUsers, listUsersMock);
-    rpc(createUser, createUserMock);
-    rpc(updateRoleMembership, updateRoleMembershipMock);
-    rpc(listRoles, listRolesMock);
-    rpc(listRoleMembers, listRoleMembersMock);
+    rpc(listUsers, () => ({ users: users.map((name) => ({ name })) }));
+    rpc(listRoles, () => ({ roles: roles.map((name) => ({ name })) }));
+    rpc(listRoleMembers, () => ({ members: [] }));
+    rpc(createUser, (request) => {
+      createdUsers.push(request);
+      if (createError) {
+        throw createError;
+      }
+      return {};
+    });
+    rpc(updateRoleMembership, (request) => {
+      membershipChanges.push(request);
+      if (membershipError) {
+        throw membershipError;
+      }
+      return {};
+    });
   });
 
-  return {
-    transport,
-    listUsersMock,
-    createUserMock,
-    updateRoleMembershipMock,
-    listRolesMock,
-    listRoleMembersMock,
-  };
+  renderWithFileRoutes(
+    <>
+      <UserCreatePage />
+      <Toaster />
+    </>,
+    { initialLocation: '/security/users/create', transport }
+  );
+  return { createdUsers, membershipChanges, user: userEvent.setup() };
 }
 
-type Transport = ReturnType<typeof buildTransport>['transport'];
+const submit = () => screen.getByTestId('create-user-submit');
 
-const listRolesReturning = (...names: string[]) =>
-  rs
-    .fn()
-    .mockReturnValue(create(ListRolesResponseSchema, { roles: names.map((name) => ({ name })), nextPageToken: '' }));
-
-async function selectRole(user: ReturnType<typeof userEvent.setup>, roleName: string) {
-  await waitFor(() => {
-    expect(screen.getByText('Assign roles')).toBeInTheDocument();
-  });
-  await user.click(screen.getByText('Select roles...'));
-  await waitFor(() => {
-    expect(screen.getByText(roleName)).toBeInTheDocument();
-  });
-  await user.click(screen.getByText(roleName));
+async function enterUsername(username: string) {
+  fireEvent.input(await screen.findByTestId('create-user-name'), { target: { value: username } });
 }
 
-/** Renders the page, types the username, optionally picks a role, and submits. */
-async function fillFormAndSubmit(transport: Transport, { username, role }: { username: string; role?: string }) {
-  const user = userEvent.setup();
-  renderWithFileRoutes(<UserCreatePage />, { transport });
-  await user.type(await screen.findByTestId('create-user-name'), username);
-  if (role) {
-    await selectRole(user, role);
+async function selectRoles(user: ReturnType<typeof userEvent.setup>, role: string, secondRole?: string) {
+  await user.click(await screen.findByText('Select roles...'));
+  await user.click(await screen.findByText(role));
+  if (secondRole) {
+    await user.click(await screen.findByText(secondRole));
   }
-  await user.click(screen.getByTestId('create-user-submit'));
 }
-
-// ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('the UserCreatePage', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    mockRolesApiEnabled = false;
+  test('rejects whitespace in usernames before making a request', async () => {
+    const { createdUsers } = renderCreateUser();
+
+    await enterUsername('user with spaces');
+
+    expect(screen.getByText(INVALID_USERNAME)).toBeVisible();
+    expect(submit()).toBeDisabled();
+    expect(createdUsers).toHaveLength(0);
   });
 
-  test('create button disabled when username has invalid characters', async () => {
-    const { transport } = buildTransport();
+  test('creates a SCRAM-SHA-256 user and confirms without assigning roles', async () => {
+    const { user, createdUsers, membershipChanges } = renderCreateUser();
+    await enterUsername('test-user');
+    const generatedPassword = screen.getByTestId('create-user-password');
 
-    renderWithFileRoutes(<UserCreatePage />, { transport });
+    await user.click(submit());
 
-    const usernameInput = await screen.findByTestId('create-user-name');
-    // Value-only assertion — bypass char-by-char user.type to save ~500ms.
-    fireEvent.input(usernameInput, { target: { value: 'user with spaces' } });
-
-    expect(screen.getByTestId('create-user-submit')).toBeDisabled();
+    expect(await screen.findByText('User created')).toBeVisible();
+    expect(createdUsers).toHaveLength(1);
+    expect(createdUsers[0]?.user).toMatchObject({
+      name: 'test-user',
+      mechanism: SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256,
+    });
+    expect(createdUsers[0]?.user?.password).toBeTruthy();
+    expect(generatedPassword).toHaveValue(createdUsers[0]?.user?.password);
+    expect(membershipChanges).toHaveLength(0);
   });
 
-  test('calls createUser gRPC on submit without role assignment', async () => {
-    const { transport, createUserMock, updateRoleMembershipMock } = buildTransport();
-
-    await fillFormAndSubmit(transport, { username: 'test-user' });
-
-    await waitFor(() => {
-      expect(createUserMock).toHaveBeenCalledTimes(1);
+  test('reports a rejected create request and leaves the form available to retry', async () => {
+    const { user, createdUsers, membershipChanges } = renderCreateUser({
+      createError: new ConnectError('permission denied', Code.PermissionDenied),
     });
+    await enterUsername('fail-user');
+    await user.click(submit());
 
-    const call = createUserMock.mock.calls[0][0];
-    expect(call.user?.name).toBe('test-user');
-    expect(call.user?.password).toBeDefined();
-    expect(call.user?.mechanism).toBe(SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256);
-
-    // No roles selected, so updateRoleMembership should not be called
-    expect(updateRoleMembershipMock).not.toHaveBeenCalled();
-  });
-
-  test('shows confirmation screen on success', async () => {
-    const { transport } = buildTransport();
-
-    await fillFormAndSubmit(transport, { username: 'new-user' });
-
-    await waitFor(() => {
-      expect(screen.getByText('User created')).toBeInTheDocument();
-    });
-  });
-
-  test('stays on form when createUser fails', async () => {
-    const createUserMock = rs.fn().mockImplementation(() => {
-      throw new ConnectError('permission denied', Code.PermissionDenied);
-    });
-    const { transport } = buildTransport({ createUserMock });
-
-    await fillFormAndSubmit(transport, { username: 'fail-user' });
-
-    // Should stay on the form (not navigate to confirmation)
-    await waitFor(() => {
-      expect(screen.getByTestId('create-user-name')).toBeInTheDocument();
-    });
+    expect(await screen.findByText(PERMISSION_DENIED)).toBeVisible();
+    await waitFor(() => expect(submit()).toBeEnabled());
+    expect(createdUsers).toHaveLength(1);
+    expect(membershipChanges).toHaveLength(0);
+    expect(screen.getByTestId('create-user-name')).toHaveValue('fail-user');
     expect(screen.queryByText('User created')).not.toBeInTheDocument();
   });
 
-  test('calls updateRoleMembership gRPC for each selected role', async () => {
-    mockRolesApiEnabled = true;
-    const { transport, createUserMock, updateRoleMembershipMock } = buildTransport({
-      listRolesMock: listRolesReturning('admin', 'viewer'),
-    });
+  test('adds the new user to every selected role', async () => {
+    const { user, createdUsers, membershipChanges } = renderCreateUser({ roles: ['admin', 'viewer'] });
+    await enterUsername('role-user');
+    await selectRoles(user, 'admin', 'viewer');
 
-    // Waits for the roles to load, then opens the roles selector and picks one
-    await fillFormAndSubmit(transport, { username: 'role-user', role: 'admin' });
+    await user.click(submit());
 
-    await waitFor(() => {
-      expect(createUserMock).toHaveBeenCalledTimes(1);
-    });
-
-    await waitFor(() => {
-      expect(updateRoleMembershipMock).toHaveBeenCalledTimes(1);
-    });
-
-    const membershipCall = updateRoleMembershipMock.mock.calls[0][0];
-    expect(membershipCall.roleName).toBe('admin');
-    expect(membershipCall.add).toHaveLength(1);
-    expect(membershipCall.add[0].principal).toBe('role-user');
+    expect(await screen.findByText('User created')).toBeVisible();
+    expect(createdUsers).toHaveLength(1);
+    expect(membershipChanges).toHaveLength(2);
+    for (const role of ['admin', 'viewer']) {
+      expect(membershipChanges).toContainEqual(
+        expect.objectContaining({ roleName: role, add: [expect.objectContaining({ principal: 'role-user' })] })
+      );
+    }
   });
 
-  test('shows confirmation even when role assignment fails', async () => {
-    mockRolesApiEnabled = true;
-    const updateRoleMembershipMock = rs.fn().mockImplementation(() => {
-      throw new ConnectError('permission denied', Code.PermissionDenied);
+  test('confirms user creation even if the requested role assignment fails', async () => {
+    const { user, createdUsers, membershipChanges } = renderCreateUser({
+      roles: ['admin'],
+      membershipError: new ConnectError('role assignment denied', Code.PermissionDenied),
     });
-    const { transport, createUserMock } = buildTransport({
-      listRolesMock: listRolesReturning('admin'),
-      updateRoleMembershipMock,
-    });
+    await enterUsername('partial-user');
+    await selectRoles(user, 'admin');
 
-    await fillFormAndSubmit(transport, { username: 'partial-user', role: 'admin' });
+    await user.click(submit());
 
-    // User creation succeeds
-    await waitFor(() => {
-      expect(createUserMock).toHaveBeenCalledTimes(1);
-    });
-
-    // Role assignment was attempted
-    await waitFor(() => {
-      expect(updateRoleMembershipMock).toHaveBeenCalledTimes(1);
-    });
-
-    // Confirmation screen still shown despite role failure (Promise.allSettled)
-    await waitFor(() => {
-      expect(screen.getByText('User created')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('User created')).toBeVisible();
+    expect(createdUsers).toHaveLength(1);
+    expect(membershipChanges).toHaveLength(1);
+    expect(membershipChanges[0]).toMatchObject({ roleName: 'admin', add: [{ principal: 'partial-user' }] });
   });
 
-  test('create button disabled when password is too short', async () => {
-    const { transport } = buildTransport();
+  test('rejects a password shorter than the minimum before making a request', async () => {
+    const { createdUsers } = renderCreateUser();
+    await enterUsername('valid-user');
 
-    renderWithFileRoutes(<UserCreatePage />, { transport });
+    fireEvent.input(screen.getByTestId('create-user-password'), { target: { value: 'ab' } });
 
-    const usernameInput = await screen.findByTestId('create-user-name');
-    // Value-only assertion — bypass char-by-char user.type to save ~500ms.
-    fireEvent.input(usernameInput, { target: { value: 'valid-user' } });
-
-    // Replace the password field value with a too-short password (< 4 chars)
-    const passwordInput = screen.getByTestId('create-user-password');
-    fireEvent.input(passwordInput, { target: { value: 'ab' } });
-
-    expect(screen.getByTestId('create-user-submit')).toBeDisabled();
+    expect(submit()).toBeDisabled();
+    expect(createdUsers).toHaveLength(0);
   });
 
-  test('shows error when username already exists', async () => {
-    const user = userEvent.setup();
-    const listUsersMock = rs.fn().mockReturnValue(
-      create(ListUsersResponseSchema, {
-        users: [create(ListUsersResponse_UserSchema, { name: 'bob' })],
-        nextPageToken: '',
-      })
-    );
-    const { transport } = buildTransport({ listUsersMock });
+  test('shows an error and blocks submission when the username already exists', async () => {
+    const { createdUsers } = renderCreateUser({ users: ['bob'] });
 
-    renderWithFileRoutes(<UserCreatePage />, { transport });
+    await enterUsername('bob');
 
-    const usernameInput = await screen.findByTestId('create-user-name');
-    await user.type(usernameInput, 'bob');
-
-    await waitFor(() => {
-      expect(screen.getByText('User already exists')).toBeInTheDocument();
-    });
-
-    expect(screen.getByTestId('create-user-submit')).toBeDisabled();
+    expect(await screen.findByText('User already exists')).toBeVisible();
+    expect(submit()).toBeDisabled();
+    expect(createdUsers).toHaveLength(0);
   });
 });

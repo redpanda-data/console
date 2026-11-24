@@ -75,11 +75,10 @@ function SelfHostedLayout() {
     <>
       <AnnouncementBar />
       <SidebarLayout>
-        {/* min-w-0: the inset is a row-flex item; without it, wide page content
-            (e.g. the messages table) floors its min-width and pushes the page
-            past the viewport, adding a horizontal scrollbar. */}
+        {
+          // WARNING: Keep the sidebar inset shrinkable; a wide table must not add a page-level horizontal scrollbar.
+        }
         <SidebarInset className="min-w-0">
-          {/* Centered page column; `page-expanded-*` release the gutter and cap (globals.css). */}
           <div className="page-expanded-flush page-expanded-uncap container mx-auto flex max-w-[1500px] flex-1 flex-col px-12 transition-[max-width,padding] duration-300 ease-in-out">
             <AppContent />
           </div>
@@ -97,10 +96,8 @@ function AppContent() {
   const toasterTheme = useThemeAppearance();
 
   return (
-    // Flex column + flex-1 so the footer's `margin-top: auto` pins it to the bottom.
     <div className="flex flex-1 flex-col" id="mainLayout">
       <TooltipProvider>
-        {/* Page */}
         <NullFallbackBoundary>
           <LicenseNotification />
         </NullFallbackBoundary>
@@ -118,11 +115,8 @@ function AppContent() {
 
         <AppFooter />
 
-        {/* Currently disabled, read todo comment on UpdatePopup */}
-        {/* <UpdatePopup /> */}
         <ErrorModalsRenderer />
 
-        {/* Toaster for notifications */}
         <Toaster position="top-right" richColors theme={toasterTheme} />
       </TooltipProvider>
     </div>

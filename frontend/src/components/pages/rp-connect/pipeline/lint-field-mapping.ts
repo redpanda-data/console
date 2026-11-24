@@ -21,30 +21,25 @@ type FieldSegment = { key: string; depth: number; startLine: number; endLine: nu
 
 type RangedNode = { range?: [number, number, number] | null } | null | undefined;
 
-// A mapping key a field can anchor to: a string scalar with a source range.
 type RangedStringKey = Scalar<string> & { range: [number, number, number] };
 
 function isRangedStringKey(key: unknown): key is RangedStringKey {
   return isScalar(key) && typeof key.value === 'string' && Boolean(key.range);
 }
 
-// The segment one mapping pair covers: from its key's line through the end of its value.
-function pairSegment(keyNode: RangedStringKey, value: unknown, path: string[], lineCounter: LineCounter): FieldSegment {
+function pairSegment(keyNode: RangedStringKey, value: unknown, path: string[], lineCounter: LineCounter) {
   const valueRange = (value as RangedNode)?.range;
-  // Value-end (range[1]), not node-end (range[2]) — node-end swallows trailing blank lines,
-  // which would bleed a hint on the next sibling's line into this field.
+  // WARNING: Use the value-end offset; a node-end can include trailing blanks and anchor a sibling’s hint to the wrong field.
   const endOffset = valueRange ? valueRange[1] : keyNode.range[1];
   return {
     key: path.join('/'),
     depth: path.length,
     startLine: lineCounter.linePos(keyNode.range[0]).line,
     endLine: lineCounter.linePos(Math.max(endOffset - 1, keyNode.range[0])).line,
-  };
+  } satisfies FieldSegment;
 }
 
-// Record a segment per mapping pair, recursing into nested mappings. Children are deeper, so the
-// deepest segment containing a line wins during lookup.
-function walkMapping(node: unknown, prefix: string[], out: FieldSegment[], lineCounter: LineCounter): void {
+function walkMapping(node: unknown, prefix: string[], out: FieldSegment[], lineCounter: LineCounter) {
   if (!isMap(node)) {
     return;
   }
@@ -59,8 +54,7 @@ function walkMapping(node: unknown, prefix: string[], out: FieldSegment[], lineC
   }
 }
 
-// The key itself when rendered, else its closest rendered ancestor (a group section), else nothing.
-function nearestRenderedAncestor(key: string, fieldKeys: ReadonlySet<string>): string | undefined {
+function nearestRenderedAncestor(key: string, fieldKeys: ReadonlySet<string>) {
   const path = key.split('/');
   while (path.length > 0) {
     const candidate = path.join('/');
@@ -71,8 +65,7 @@ function nearestRenderedAncestor(key: string, fieldKeys: ReadonlySet<string>): s
   }
 }
 
-// The deepest field whose YAML range contains the line.
-function fieldKeyForLine(segments: readonly FieldSegment[], line: number): string | undefined {
+function fieldKeyForLine(segments: readonly FieldSegment[], line: number) {
   let best: FieldSegment | undefined;
   for (const segment of segments) {
     if (line >= segment.startLine && line <= segment.endLine && (!best || segment.depth > best.depth)) {
@@ -82,17 +75,13 @@ function fieldKeyForLine(segments: readonly FieldSegment[], line: number): strin
   return best?.key;
 }
 
-const ESCAPE_RE = /[.*+?^${}()|[\]\\]/g;
-// Below this, a field name is too generic to trust as a loose mention ("id", "to") — but an
-// explicit `field X …` reference (see FIELD_TOKEN_RE) is exact and has no length limit.
+const ESCAPE_RE = /[.*+?^${}()|[\]\\]/gu;
 const MIN_MENTION_NAME_LENGTH = 3;
 
-// The lint convention for structural errors: "field id is required", "field `host` is required".
-// Dots only BETWEEN segments ("batching.count"), so a sentence-ending period isn't swallowed.
-const FIELD_TOKEN_RE = /\bfield\s+[`'"]?([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)/gi;
+// WARNING: Do not consume a trailing period as part of a field path; it would miss the field and send its error to the banner.
+const FIELD_TOKEN_RE = /\bfield\s+[`'"]?(?<field>[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)*)/giu;
 
-// Lower-cased names the hint references as "field X".
-function fieldTokens(hintText: string): Set<string> {
+function fieldTokens(hintText: string) {
   const tokens = new Set<string>();
   for (const match of hintText.matchAll(FIELD_TOKEN_RE)) {
     tokens.add(match[1].toLowerCase());
@@ -100,8 +89,7 @@ function fieldTokens(hintText: string): Set<string> {
   return tokens;
 }
 
-// Fields the hint names via the exact "field X" convention — precise, so any name length counts.
-function fieldKeysNamedExplicitly(hintText: string, fieldKeys: ReadonlySet<string>): string[] {
+function fieldKeysNamedExplicitly(hintText: string, fieldKeys: ReadonlySet<string>) {
   const tokens = fieldTokens(hintText);
   if (tokens.size === 0) {
     return [];
@@ -109,7 +97,6 @@ function fieldKeysNamedExplicitly(hintText: string, fieldKeys: ReadonlySet<strin
   const matches: string[] = [];
   for (const key of fieldKeys) {
     const name = key.split('/').at(-1) ?? key;
-    // Match the leaf name or the dotted path ("field batching.count is required").
     if (tokens.has(name.toLowerCase()) || tokens.has(key.replaceAll('/', '.').toLowerCase())) {
       matches.push(key);
     }
@@ -117,29 +104,22 @@ function fieldKeysNamedExplicitly(hintText: string, fieldKeys: ReadonlySet<strin
   return matches;
 }
 
-function fieldKeysMentioned(hintText: string, fieldKeys: ReadonlySet<string>): string[] {
+function fieldKeysMentioned(hintText: string, fieldKeys: ReadonlySet<string>) {
   const matches: string[] = [];
   for (const key of fieldKeys) {
     const name = key.split('/').at(-1) ?? key;
     if (name.length < MIN_MENTION_NAME_LENGTH) {
       continue;
     }
-    // Lint prose writes field names verbatim or with spaces ("a consumer group is mandatory…").
     const variants = name.includes('_') ? [name, name.replaceAll('_', ' ')] : [name];
-    if (variants.some((v) => new RegExp(`\\b${v.replace(ESCAPE_RE, '\\$&')}\\b`, 'i').test(hintText))) {
+    if (variants.some((v) => new RegExp(`\\b${v.replace(ESCAPE_RE, '\\$&')}\\b`, 'iu').test(hintText))) {
       matches.push(key);
     }
   }
   return matches;
 }
 
-// The `label` line plus every field of the inner config (paths relative to it).
-function pushComponentSegments(
-  wrapper: YAMLMap,
-  componentName: string,
-  out: FieldSegment[],
-  lineCounter: LineCounter
-): void {
+function pushComponentSegments(wrapper: YAMLMap, componentName: string, out: FieldSegment[], lineCounter: LineCounter) {
   for (const pair of wrapper.items) {
     const keyNode = pair.key;
     if (!isRangedStringKey(keyNode)) {
@@ -154,9 +134,7 @@ function pushComponentSegments(
   }
 }
 
-// Segments for the component entry at `target`: its `label` line plus every field of the inner
-// config (paths relative to it, matching the form's leaf keys).
-function collectFieldSegments(yaml: string, target: EditTarget, componentName: string): FieldSegment[] {
+function collectFieldSegments(yaml: string, target: EditTarget, componentName: string) {
   const segments: FieldSegment[] = [];
   try {
     const lineCounter = new LineCounter();
@@ -166,7 +144,7 @@ function collectFieldSegments(yaml: string, target: EditTarget, componentName: s
       pushComponentSegments(wrapper, componentName, segments, lineCounter);
     }
   } catch {
-    // Unparsable YAML: no line anchoring; mention matching below still applies.
+    // WARNING: Unparsable YAML removes line anchors, not lint hints; field-name matching still applies.
   }
   return segments;
 }
@@ -176,14 +154,13 @@ export type UnmappedLintHint = { hint: LintHint; fieldLabel?: string };
 
 type ResolvedHint = { anchors: { key: string; message: string }[]; fieldLabel?: string };
 
-// The hint anchored to each of `keys` with its message unchanged, or undefined when none matched.
-function anchoredToKeys(keys: string[], message: string): ResolvedHint | undefined {
-  return keys.length > 0 ? { anchors: keys.map((key) => ({ key, message })) } : undefined;
+function anchoredToKeys(keys: string[], message: string) {
+  const hint: ResolvedHint | undefined =
+    keys.length > 0 ? { anchors: keys.map((key) => ({ key, message })) } : undefined;
+  return hint;
 }
 
-// The line's field walked up to its nearest rendered ancestor (a group section), with the deeper
-// path noted in the message; undefined when no ancestor is rendered.
-function lineAnchoredHint(message: string, lineKey: string, fieldKeys: ReadonlySet<string>): ResolvedHint | undefined {
+function lineAnchoredHint(message: string, lineKey: string, fieldKeys: ReadonlySet<string>) {
   const lineAnchor = nearestRenderedAncestor(lineKey, fieldKeys);
   if (!lineAnchor) {
     return;
@@ -192,28 +169,22 @@ function lineAnchoredHint(message: string, lineKey: string, fieldKeys: ReadonlyS
   return { anchors: [{ key: lineAnchor, message: remainder ? `${message} (${remainder})` : message }] };
 }
 
-// Where one hint anchors, by signal strength: an explicit "field X …" reference (it beats the
-// line, which for a MISSING field can only point at the component — whose mapping starts on some
-// other field's line); then the line's field, walked up to its nearest rendered ancestor (a group
-// section) with the deeper path noted; then loose prose mentions. No anchors = the banner keeps
-// it, labelled with the line's field when known (a line number is meaningless in the form view).
-function resolveHint(hint: LintHint, segments: readonly FieldSegment[], fieldKeys: ReadonlySet<string>): ResolvedHint {
+function resolveHint(hint: LintHint, segments: readonly FieldSegment[], fieldKeys: ReadonlySet<string>) {
   const named = anchoredToKeys(fieldKeysNamedExplicitly(hint.hint, fieldKeys), hint.hint);
   if (named) {
     return named;
   }
   const lineKey = hint.line > 0 ? fieldKeyForLine(segments, hint.line) : undefined;
   const lineAnchored = lineKey ? lineAnchoredHint(hint.hint, lineKey, fieldKeys) : undefined;
-  return (
-    lineAnchored ??
+  const resolved: ResolvedHint = lineAnchored ??
     anchoredToKeys(fieldKeysMentioned(hint.hint, fieldKeys), hint.hint) ?? {
       anchors: [],
       fieldLabel: lineKey?.replaceAll('/', '.'),
-    }
-  );
+    };
+  return resolved;
 }
 
-function appendFieldMessages(byField: Map<string, string[]>, anchors: ResolvedHint['anchors']): void {
+function appendFieldMessages(byField: Map<string, string[]>, anchors: ResolvedHint['anchors']) {
   for (const { key, message } of anchors) {
     byField.set(key, [...(byField.get(key) ?? []), message]);
   }
@@ -224,6 +195,10 @@ function appendFieldMessages(byField: Map<string, string[]>, anchors: ResolvedHi
  * under the field (or inside the group section) it's about instead of as "(line 12)" in a banner
  * the user has to decode. Splits into per-field anchors (only keys the form renders) and the
  * rest for the banner. See `resolveHint` for the anchoring tiers.
+ *
+ * Explicit field references take priority over a line alone: a missing field does not have a source line. Then try the deepest segment and its nearest rendered ancestor, and finally loose prose mentions.
+ *
+ * Short names need an explicit reference; otherwise prose can contain unrelated words such as id. The banner retains unanchored errors and a field label when known.
  */
 export function mapLintHintsToFields(opts: {
   yaml: string;
@@ -232,7 +207,7 @@ export function mapLintHintsToFields(opts: {
   hints: readonly LintHint[];
   /** Keys the schema form actually renders — leaves and group sections (see `formFieldKeys`). */
   fieldKeys: ReadonlySet<string>;
-}): { byField: FieldLintErrors; unmapped: UnmappedLintHint[] } {
+}) {
   const segments = collectFieldSegments(opts.yaml, opts.target, opts.componentName);
   const byField = new Map<string, string[]>();
   const unmapped: UnmappedLintHint[] = [];
@@ -245,5 +220,6 @@ export function mapLintHintsToFields(opts: {
       appendFieldMessages(byField, resolved.anchors);
     }
   }
-  return { byField, unmapped };
+  const fieldHints: { byField: FieldLintErrors; unmapped: UnmappedLintHint[] } = { byField, unmapped };
+  return fieldHints;
 }

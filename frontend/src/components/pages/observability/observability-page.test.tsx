@@ -26,11 +26,8 @@ import {
 import * as React from 'react';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-// Recharts' ResponsiveContainer requires parent-container dimensions to
-// render. happy-dom reports 0×0 for every element, which makes recharts
-// emit "width(0) and height(0) of chart should be greater than 0" on every
-// chart mount. Mock ResponsiveContainer with a fixed-size passthrough div
-// so the inner LineChart gets a positive layout and the warning stops.
+import ObservabilityPage from './observability-page';
+
 function MockResponsiveContainer({ children }: { children: React.ReactNode }) {
   return React.createElement('div', { style: { width: 800, height: 600 } }, children);
 }
@@ -70,9 +67,6 @@ rs.mock('state/app-global', () => ({
   },
 }));
 
-import ObservabilityPage from './observability-page';
-
-// Two data points an hour apart, so the chart has a line to draw.
 function createLastHourTimeSeries() {
   const now = Date.UTC(2026, 0, 15, 12);
   const oneHourAgo = now - 60 * 60 * 1000;
@@ -114,31 +108,24 @@ describe('the ObservabilityPage', () => {
       queries: [query1, query2],
     });
 
-    const mockTimeSeries = createLastHourTimeSeries();
+    const fixtureTimeSeries = createLastHourTimeSeries();
 
-    const listQueriesMock = rs.fn().mockReturnValue(listQueriesResponse);
-    const executeRangeQueryMock = rs.fn().mockImplementation((request) => {
-      let metadata: typeof query1 | typeof query2 | undefined;
-      if (request.queryName === 'cpu_usage') {
-        metadata = query1;
-      } else if (request.queryName === 'memory_usage') {
-        metadata = query2;
-      }
-
-      return create(ExecuteRangeQueryResponseSchema, {
-        metadata,
-        results: [mockTimeSeries],
-      });
-    });
-
+    const queries = new Map([
+      [query1.name, query1],
+      [query2.name, query2],
+    ]);
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(listQueries, listQueriesMock);
-      rpc(executeRangeQuery, executeRangeQueryMock);
+      rpc(listQueries, () => listQueriesResponse);
+      rpc(executeRangeQuery, (request) =>
+        create(ExecuteRangeQueryResponseSchema, {
+          metadata: queries.get(request.queryName),
+          results: [fixtureTimeSeries],
+        })
+      );
     });
 
     renderWithFileRoutes(<ObservabilityPage />, { transport });
 
-    // Wait for titles to appear
     await waitFor(() => {
       expect(screen.getByText('CPU usage percentage')).toBeInTheDocument();
       expect(screen.getByText('Memory usage in bytes')).toBeInTheDocument();
@@ -150,10 +137,8 @@ describe('the ObservabilityPage', () => {
       queries: [],
     });
 
-    const listQueriesMock = rs.fn().mockReturnValue(listQueriesResponse);
-
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(listQueries, listQueriesMock);
+      rpc(listQueries, () => listQueriesResponse);
     });
 
     renderWithFileRoutes(<ObservabilityPage />, { transport });
@@ -164,12 +149,10 @@ describe('the ObservabilityPage', () => {
   });
 
   test('should display error message when query fails', async () => {
-    const listQueriesMock = rs.fn().mockImplementation(() => {
-      throw new Error('Failed to fetch metrics');
-    });
-
     const transport = createRouterTransport(({ rpc }) => {
-      rpc(listQueries, listQueriesMock);
+      rpc(listQueries, () => {
+        throw new Error('Failed to fetch metrics');
+      });
     });
 
     renderWithFileRoutes(<ObservabilityPage />, { transport });

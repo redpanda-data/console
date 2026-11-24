@@ -45,7 +45,7 @@ import { z } from 'zod';
 
 import type { Catalog, TableRef } from './sql-types';
 
-// Lets the workspace open a query in a new editor tab.
+/** Lets the workspace open a query in a new editor tab. */
 export type SqlEditorHandle = {
   /** Open `sql` in a new tab named `name` (or "Query N") and focus it. */
   setQuery: (sql: string, name?: string) => void;
@@ -66,7 +66,7 @@ const HistoryEntrySchema = z.object({ sql: z.string(), at: z.number() });
 
 type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 
-function loadHistory(): HistoryEntry[] {
+function loadHistory() {
   if (typeof localStorage === 'undefined') {
     return [];
   }
@@ -84,14 +84,14 @@ function loadHistory(): HistoryEntry[] {
   }
 }
 
-function saveHistory(list: HistoryEntry[]): void {
+function saveHistory(list: HistoryEntry[]) {
   if (typeof localStorage === 'undefined') {
     return;
   }
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 40)));
   } catch {
-    // best-effort; ignore quota/serialization failures
+    // WARNING: Local history is best-effort; a quota or serialization failure must not prevent a valid query from running.
   }
 }
 
@@ -100,8 +100,7 @@ type Tab = { id: number; name: string; sql: string };
 const DEFAULT_QUERY =
   'SELECT vin, make, model, year, price_usd\nFROM default_redpanda_catalog=>cars\nWHERE in_stock = true\nORDER BY price_usd DESC\nLIMIT 100;';
 
-// Transparent editor/gutter so the `bg-background` surface shows through.
-function editorChrome(mode: 'light' | 'dark'): Extension {
+function editorChrome(mode: 'light' | 'dark') {
   return EditorView.theme(
     {
       '&': { backgroundColor: 'transparent', height: '100%', fontSize: '13px' },
@@ -111,9 +110,7 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
         lineHeight: '21px',
       },
       '.cm-content': { padding: '12px 0' },
-      // A global `::selection` rule otherwise whitens selected text; theme the
-      // selection pair instead. Full focused path matches the base rule's
-      // specificity so this (later) theme wins.
+      // WARNING: Keep the focused selection rule at sufficient specificity; the global selection style otherwise whitens the foreground.
       '& .cm-selectionBackground, &.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground': {
         backgroundColor: 'var(--color-selection)',
       },
@@ -126,8 +123,7 @@ function editorChrome(mode: 'light' | 'dark'): Extension {
   );
 }
 
-// SQL syntax palette from semantic tokens, so it tracks light/dark.
-function sqlHighlight(): Extension {
+function sqlHighlight() {
   return syntaxHighlighting(
     HighlightStyle.define([
       { tag: tags.keyword, color: 'var(--color-secondary)', fontWeight: 'bold' },
@@ -150,17 +146,14 @@ function sqlHighlight(): Extension {
 const LIGHT_THEME: Extension = [editorChrome('light'), sqlHighlight()];
 const DARK_THEME: Extension = [editorChrome('dark'), sqlHighlight()];
 
-function tableNamespace(table: TableRef): SQLNamespace {
+function tableNamespace(table: TableRef) {
   return {
     self: { label: table.name, type: 'class' },
     children: (table.columns ?? []).map((col) => ({ label: col.name, type: 'property', detail: col.short })),
-  };
+  } satisfies SQLNamespace;
 }
 
-// Bare table name → columns. Powers alias/column resolution only
-// (schemaColumnSource); tables aren't nested under catalogs since Oxla uses
-// `catalog=>table` arrow notation, handled by catalogArrowSource.
-function buildSchema(catalogs: Catalog[]): SQLNamespace {
+function buildSchema(catalogs: Catalog[]) {
   const root: Record<string, SQLNamespace> = {};
   for (const catalog of catalogs) {
     for (const ns of catalog.namespaces) {
@@ -171,40 +164,31 @@ function buildSchema(catalogs: Catalog[]): SQLNamespace {
       }
     }
   }
-  return root;
+  return root satisfies SQLNamespace;
 }
 
-// Schema completion limited to dotted members (`c.` → columns); bare table
-// names are suppressed at the top level so catalogArrowSource owns them.
-function schemaColumnSource(catalogs: Catalog[]): (context: CompletionContext) => CompletionResult | null {
+function schemaColumnSource(catalogs: Catalog[]) {
   const source = schemaCompletionSource({ dialect: PostgreSQL, schema: buildSchema(catalogs) });
-  return (context) => {
+  return ((context) => {
     const result = source(context);
     if (!result || result instanceof Promise) {
       return null;
     }
     const dotted = context.state.sliceDoc(result.from - 1, result.from) === '.';
     return dotted ? result : null;
-  };
+  }) satisfies (context: CompletionContext) => CompletionResult | null;
 }
 
-// Matches an identifier followed by `=>` or `.` and a partial table name,
-// anchored at the cursor: [, name, gap1, separator, gap2, quote, partial].
-const CATALOG_REF_RE = /([A-Za-z_][\w$]*)(\s*)(=>|\.)(\s*)("?)([\w$]*)$/;
-const COMMENT_OR_STRING_NODE_RE = /Comment|String/;
-const CATALOG_REF_BOUNDARY_RE = /[\w$".]/;
-const COMPLETION_IDENTIFIER_RE = /[\w$]+/;
-const VALID_COMPLETION_RE = /^[\w$]*$/;
-const AFTER_FROM_OR_JOIN_RE = /\b(?:from|join)\s+["\w$]*$/i;
-// Cursor sits immediately after `FROM `/`JOIN ` and a single trailing space —
-// the moment to auto-open the catalog (`catalog=>`) helper.
-const FROM_JOIN_TRIGGER_RE = /\b(?:from|join)\s$/i;
+const CATALOG_REF_RE =
+  /(?<catalog>[A-Za-z_][\w$]*)(?<whitespaceBeforeSeparator>\s*)(?<separator>=>|\.)(?<whitespaceAfterSeparator>\s*)(?<quote>"?)(?<prefix>[\w$]*)$/u;
+const COMMENT_OR_STRING_NODE_RE = /Comment|String/u;
+const CATALOG_REF_BOUNDARY_RE = /[\w$".]/u;
+const COMPLETION_IDENTIFIER_RE = /[\w$]+/u;
+const VALID_COMPLETION_RE = /^[\w$]*$/u;
+const AFTER_FROM_OR_JOIN_RE = /\b(?:from|join)\s+["\w$]*$/iu;
+const FROM_JOIN_TRIGGER_RE = /\b(?:from|join)\s$/iu;
 
-function catalogTableCompletionResult(
-  catalog: Catalog,
-  ref: RegExpExecArray,
-  cursorPosition: number
-): CompletionResult {
+function catalogTableCompletionResult(catalog: Catalog, ref: RegExpExecArray, cursorPosition: number) {
   const [, , gap1, separator, gap2, quote, partial] = ref;
   const separatorFrom = cursorPosition - partial.length - quote.length - gap2.length - separator.length;
 
@@ -216,8 +200,6 @@ function catalogTableCompletionResult(
         label: table.name,
         type: 'class',
         boost: 50,
-        // Replace from the separator so a typed `.` (and any stray
-        // whitespace around it) is rewritten to `=>`.
         apply: (view: EditorView, _completion: unknown, _from: number, to: number) => {
           view.dispatch({
             changes: { from: separatorFrom - gap1.length, to, insert: `=>${table.name}` },
@@ -225,10 +207,10 @@ function catalogTableCompletionResult(
         },
       })),
     validFor: VALID_COMPLETION_RE,
-  };
+  } satisfies CompletionResult;
 }
 
-function catalogNameCompletionResult(catalogs: Catalog[], from: number, before: string): CompletionResult {
+function catalogNameCompletionResult(catalogs: Catalog[], from: number, before: string) {
   const afterFromClause = AFTER_FROM_OR_JOIN_RE.test(before);
   return {
     from,
@@ -237,7 +219,6 @@ function catalogNameCompletionResult(catalogs: Catalog[], from: number, before: 
       detail: '=>',
       type: 'namespace',
       boost: afterFromClause ? 60 : 0,
-      // Insert the arrow with the name and chain straight into the table list.
       apply: (view: EditorView, _completion: unknown, applyFrom: number, to: number) => {
         view.dispatch({
           changes: { from: applyFrom, to, insert: `${catalog.name}=>` },
@@ -247,12 +228,10 @@ function catalogNameCompletionResult(catalogs: Catalog[], from: number, before: 
       },
     })),
     validFor: VALID_COMPLETION_RE,
-  };
+  } satisfies CompletionResult;
 }
 
-// A `catalog=>` or `catalog.` reference ending at the cursor whose name is a
-// known catalog, with nothing identifier-like glued on before it.
-function catalogRefAtCursor(before: string, catalogs: Catalog[]): { catalog: Catalog; ref: RegExpExecArray } | null {
+function catalogRefAtCursor(before: string, catalogs: Catalog[]) {
   const ref = CATALOG_REF_RE.exec(before);
   if (!ref) {
     return null;
@@ -262,21 +241,12 @@ function catalogRefAtCursor(before: string, catalogs: Catalog[]): { catalog: Cat
   return catalog ? { catalog, ref } : null;
 }
 
-// Catalog names, offered while typing a word, on an explicit request, or once
-// the caller is right after FROM/JOIN even with no partial typed yet, so the
-// auto-trigger in the editor can pop `catalog=>`.
-function catalogNameCompletion(
-  context: CompletionContext,
-  catalogs: Catalog[],
-  lineFrom: number,
-  before: string
-): CompletionResult | null {
+function catalogNameCompletion(context: CompletionContext, catalogs: Catalog[], lineFrom: number, before: string) {
   const word = context.matchBefore(COMPLETION_IDENTIFIER_RE);
   const afterFromClause = AFTER_FROM_OR_JOIN_RE.test(before);
   if (!(word || context.explicit || afterFromClause)) {
     return null;
   }
-  // Skip when completing a dotted member (schema completion's territory).
   const wordFrom = word ? word.from : context.pos;
   if (before[wordFrom - lineFrom - 1] === '.') {
     return null;
@@ -284,11 +254,8 @@ function catalogNameCompletion(
   return catalogNameCompletionResult(catalogs, wordFrom, before);
 }
 
-// Completion for Oxla's `catalog=>table` notation (which the generic schema
-// completion can't model): catalog names after FROM/JOIN, then the catalog's
-// tables, rewriting a typed `catalog.` to `=>`.
-function catalogArrowSource(catalogs: Catalog[]): (context: CompletionContext) => CompletionResult | null {
-  return (context) => {
+function catalogArrowSource(catalogs: Catalog[]) {
+  return (context: CompletionContext) => {
     const nodeName = syntaxTree(context.state).resolveInner(context.pos, -1).name;
     if (COMMENT_OR_STRING_NODE_RE.test(nodeName)) {
       return null;
@@ -304,16 +271,14 @@ function catalogArrowSource(catalogs: Catalog[]): (context: CompletionContext) =
   };
 }
 
-// Reformat via sql-formatter (lazy-loaded; postgresql ≈ Oxla) in one
-// transaction so undo restores the original.
-async function formatDocument(view: EditorView): Promise<void> {
+async function formatDocument(view: EditorView) {
   const { format } = await import('sql-formatter');
   const current = view.state.doc.toString();
   let next: string;
   try {
     next = format(current, { language: 'postgresql', keywordCase: 'upper' });
   } catch {
-    // Unparseable SQL (mid-edit) — leave the text untouched.
+    // WARNING: Leave unparseable SQL intact; formatting an incomplete edit must not replace the query.
     return;
   }
   if (next !== current) {
@@ -335,7 +300,6 @@ function useNextTabId(initialId: number) {
 
 type EditorRef = RefObject<ReactCodeMirrorRef | null>;
 
-// Editor tabs, plus the imperative handle the workspace uses to open a query in a new tab.
 function useEditorTabs(
   initialQuery: string | undefined,
   editorRef: EditorRef,
@@ -357,7 +321,6 @@ function useEditorTabs(
         requestAnimationFrame(() => editorRef.current?.view?.focus());
       },
     }),
-    // editorRef is a stable ref object; listed because it arrives as a parameter here.
     [nextTabId, editorRef]
   );
 
@@ -391,11 +354,8 @@ function useEditorTabs(
   return { tabs, active, setActiveId, updateSql, addTab, closeTab };
 }
 
-// Running statements from the editor, recording each in the browser-local history.
 function useEditorRun(editorRef: EditorRef, activeSql: string, runQuery: (sql: string) => void) {
   const [history, setHistory] = useState<HistoryEntry[]>(loadHistory);
-  // Latest run callback, bound into the Cmd/Ctrl+Enter keymap (built once per
-  // catalog/theme change, not per render).
   const runRef = useRef<() => void>(() => undefined);
 
   const runText = (text: string) => {
@@ -410,7 +370,6 @@ function useEditorRun(editorRef: EditorRef, activeSql: string, runQuery: (sql: s
     runQuery(trimmed);
   };
 
-  // Run the current selection if any, else the whole tab.
   const doRun = () => {
     const state = editorRef.current?.view?.state;
     const sel = state?.selection.main;
@@ -421,7 +380,6 @@ function useEditorRun(editorRef: EditorRef, activeSql: string, runQuery: (sql: s
     runText(activeSql);
   };
 
-  // Keeps the keymap's run callback current without rebuilding the extensions.
   runRef.current = doRun;
 
   const runSelection = () => {
@@ -435,19 +393,16 @@ function useEditorRun(editorRef: EditorRef, activeSql: string, runQuery: (sql: s
   return { history, runRef, doRun, runSelection };
 }
 
-// CodeMirror extensions: SQL language, catalog-aware completion, theme and keymap.
 function useSqlExtensions(
   catalogs: Catalog[],
   appearance: ThemeAppearance,
   runRef: RefObject<() => void>,
   setHasSel: Dispatch<SetStateAction<boolean>>
 ) {
-  // runRef (a ref object) and setHasSel (a state setter) are stable, so only catalogs and theme rebuild these.
   return useMemo(() => {
-    // No `schema` here — schemaColumnSource adds it back for dotted members only.
     const sqlSupport = sqlLanguage({ dialect: PostgreSQL, upperCaseKeywords: true });
     return [
-      // Prec.highest so Mod-Enter beats the default keymap's insertBlankLine.
+      // WARNING: The run keymap must win over CodeMirror's default insertBlankLine binding for Mod-Enter.
       Prec.highest(
         keymap.of([
           {
@@ -457,8 +412,6 @@ function useSqlExtensions(
               return true;
             },
           },
-          // Tab accepts an open completion (Monaco muscle memory); falls
-          // through to the default Tab behavior when no popup is open.
           { key: 'Tab', run: acceptCompletion },
           {
             key: 'Shift-Alt-f',
@@ -477,8 +430,6 @@ function useSqlExtensions(
         if (update.selectionSet) {
           setHasSel(!update.state.selection.main.empty);
         }
-        // Auto-open the catalog helper right after a typed `FROM `/`JOIN `
-        // (typing events only, so formatting/seeding don't re-trigger it).
         if (update.docChanged && update.transactions.some((tr) => tr.isUserEvent('input.type'))) {
           const pos = update.state.selection.main.head;
           const lineText = update.state.doc.lineAt(pos);
@@ -493,6 +444,11 @@ function useSqlExtensions(
   }, [catalogs, appearance, runRef, setHasSel]);
 }
 
+/**
+ * Provides Oxla catalog completion after FROM/JOIN and rewrites a catalog dot to =>, while dotted aliases use column completion. Programmatic edits do not reopen the catalog prompt.
+ *
+ * Formatting is one undoable transaction; run the selection when present, otherwise the complete tab. Tab accepts a completion only with an open popup. Keep the run callback current without rebuilding editor extensions.
+ */
 export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
   function SqlEditorComponent(editorProps, forwardedRef) {
     const { onRun: runQuery, catalogs, initialQuery } = editorProps;
@@ -572,7 +528,7 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
                     variant="ghost"
                   >
                     <Terminal />
-                    <span className="truncate font-mono">{h.sql.replace(/\s+/g, ' ').slice(0, 60)}</span>
+                    <span className="truncate font-mono">{h.sql.replace(/\s+/gu, ' ').slice(0, 60)}</span>
                   </Button>
                 ))}
               </PopoverContent>
@@ -596,7 +552,6 @@ export const SqlEditor = forwardRef<SqlEditorHandle, SqlEditorProps>(
             </Button>
             <Button onClick={doRun} size="sm" variant="primary">
               <Play /> Run
-              {/* Inline hint, not boxed keys: the registry chip's chrome is for on-surface use. */}
               <span className="-ml-1 font-mono text-body-sm opacity-70">{isMacOS() ? '⌘↵' : 'Ctrl+↵'}</span>
             </Button>
           </div>

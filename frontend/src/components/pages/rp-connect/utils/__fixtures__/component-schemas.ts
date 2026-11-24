@@ -11,7 +11,6 @@
 
 import { create } from '@bufbuild/protobuf';
 import {
-  type ComponentList,
   ComponentListSchema,
   type ComponentSpec,
   ComponentSpecSchema,
@@ -22,10 +21,7 @@ import {
 
 import type { ConnectComponentSpec } from '../../types/schema';
 
-/**
- * Helper to create a FieldSpec for testing
- */
-function createField(field: Partial<FieldSpec>): FieldSpec {
+function createField(field: Partial<FieldSpec>) {
   const baseSpec: Record<string, unknown> = {
     name: field.name || '',
     type: field.type || 'string',
@@ -38,7 +34,6 @@ function createField(field: Partial<FieldSpec>): FieldSpec {
     examples: field.examples || [],
   };
 
-  // Only add defaultValue if explicitly provided
   if (field.defaultValue !== undefined) {
     baseSpec.defaultValue = field.defaultValue;
   }
@@ -187,7 +182,7 @@ export const mockKafkaOutput = create(ComponentSpecSchema, {
         type: 'object',
         kind: 'scalar',
         optional: true,
-        advanced: false, // Non-advanced config object
+        advanced: false,
         children: [
           createField({
             name: 'count',
@@ -203,7 +198,7 @@ export const mockKafkaOutput = create(ComponentSpecSchema, {
         type: 'object',
         kind: 'scalar',
         optional: true,
-        advanced: false, // Non-advanced config object
+        advanced: false,
         children: [
           createField({
             name: 'include_prefixes',
@@ -218,7 +213,7 @@ export const mockKafkaOutput = create(ComponentSpecSchema, {
         type: 'object',
         kind: 'scalar',
         optional: true,
-        advanced: false, // Non-advanced config object
+        advanced: false,
         children: [
           createField({
             name: 'initial_interval',
@@ -304,8 +299,6 @@ export const mockRedpandaMigratorOutput = create(ComponentSpecSchema, {
               }),
             ],
           }),
-          // Non-optional, non-advanced object with a required string grandchild.
-          // Tests: schema_registry (optional) → basic_auth (not optional) → username (required)
           createField({
             name: 'basic_auth',
             type: 'object',
@@ -511,13 +504,12 @@ export const mockAvroScanner = create(ComponentSpecSchema, {
     type: 'object',
     kind: 'scalar',
     optional: false,
-    defaultValue: '', // Empty string default for objects - will generate object from children
+    defaultValue: '',
     children: [
       createField({
         name: 'raw_json',
         type: 'bool',
         kind: 'scalar',
-        // No defaultValue - will generate boolean false
         advanced: true,
         optional: true,
       }),
@@ -661,7 +653,7 @@ export const mockRedpandaCommonInput = create(ComponentSpecSchema, {
 /**
  * Create a mock ComponentList with all test fixtures
  */
-export function createMockComponentList(): ComponentList {
+export function createMockComponentList() {
   return create(ComponentListSchema, {
     version: '1.0.0',
     inputs: [mockRedpandaInput],
@@ -678,15 +670,8 @@ export function createMockComponentList(): ComponentList {
   });
 }
 
-/**
- * Helper to create a field matching the actual backend JSON schema shape.
- * Unlike createField (which applies proto3 defaults), this only sets properties
- * that are explicitly provided — `optional` and `defaultValue` are undefined
- * when not set, matching what the real REST schema sends.
- *
- * Reference: src/assets/rp-connect-schema-full.json
- */
-function createSchemaField(field: Record<string, unknown>): FieldSpec {
+// WARNING: Keep omitted REST fields absent; applying proto defaults here would hide optionality regressions.
+function createSchemaField(field: Record<string, unknown>) {
   return field as unknown as FieldSpec;
 }
 
@@ -766,7 +751,7 @@ export const mockHttpClientInput: ConnectComponentSpec = {
 export function mockComponentToConnectSpec(
   component: ComponentSpec,
   type: 'input' | 'output' | 'cache' | 'processor' | 'scanner'
-): ConnectComponentSpec {
+) {
   return {
     ...component,
     type,
@@ -787,7 +772,6 @@ export const mockComponents = {
   memoryCache: mockComponentToConnectSpec(mockMemoryCache, 'cache'),
   bloblangProcessor: mockComponentToConnectSpec(mockBloblangProcessor, 'processor'),
   avroScanner: mockComponentToConnectSpec(mockAvroScanner, 'scanner'),
-  // Real JSON schema fixtures (no proto defaults applied)
   generateInput: mockGenerateInput,
   httpClientInput: mockHttpClientInput,
 };

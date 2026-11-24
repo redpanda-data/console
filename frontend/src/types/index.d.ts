@@ -7,7 +7,6 @@ declare module '*.svg';
 declare module '*.png';
 declare module '*.jpg';
 
-// Heap Analytics types
 declare global {
   type Window = {
     heap: {

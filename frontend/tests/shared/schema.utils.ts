@@ -8,12 +8,11 @@ export type CreateSchemaOptions = {
   keyOrValue?: 'KEY' | 'VALUE';
 };
 
-/** Replaces the Monaco editor's content with `text`. */
 const replaceEditorText = async (page: Page, text: string) => {
   const editor = page.locator('.monaco-editor').first();
   await editor.click();
   await page.keyboard.press('Control+A');
-  await page.keyboard.press('Meta+A'); // For Mac
+  await page.keyboard.press('Meta+A');
   await page.keyboard.press('Backspace');
   await page.keyboard.insertText(text);
 };
@@ -32,22 +31,18 @@ const selectFormatAndSubject = async (
     keyOrValue,
   }: Required<Omit<CreateSchemaOptions, 'schemaText' | 'keyOrValue'>> & Pick<CreateSchemaOptions, 'keyOrValue'>
 ) => {
-  // Select schema format
   if (schemaFormat !== 'AVRO') {
     await page.getByTestId('schema-format-select').click();
     await page.getByText(schemaFormat).click();
   }
 
-  // Select naming strategy
   await page.getByTestId('naming-strategy-select').click();
   await page.getByText(strategy).click();
 
-  // If strategy requires key/value selection
   if (strategy !== 'CUSTOM' && keyOrValue) {
     await page.getByLabel(keyOrValue === 'KEY' ? 'Key' : 'Value').check();
   }
 
-  // Fill subject name for CUSTOM strategy
   if (strategy === 'CUSTOM') {
     await page.getByTestId('subject-name-input').fill(subjectName);
   }
@@ -56,70 +51,59 @@ const selectFormatAndSubject = async (
 export const createSchema = async (
   page: Page,
   { subjectName, schemaFormat = 'AVRO', schemaText, strategy = 'CUSTOM', keyOrValue }: CreateSchemaOptions
-) => {
-  return await step(`Create schema: ${subjectName}`, async () => {
+) =>
+  await step(`Create schema: ${subjectName}`, async () => {
     await page.goto('/schema-registry');
     await page.getByRole('button', { name: 'Create new schema' }).click();
 
-    // Wait for create page to load
     await expect(page).toHaveURL('/schema-registry/create');
 
     await selectFormatAndSubject(page, { subjectName, schemaFormat, strategy, keyOrValue });
 
-    // Fill schema text in Monaco editor
     await replaceEditorText(page, schemaText);
     await validateSchemaText(page);
 
-    // Create schema
     await page.getByRole('button', { name: 'Create' }).click();
     await expect(page.getByText('Schema created successfully')).toBeVisible({ timeout: 5000 });
   });
-};
 
 export const deleteSchema = async (
   page: Page,
   { subjectName, permanent = false }: { subjectName: string; permanent?: boolean }
-) => {
-  return await step(`Delete schema: ${subjectName} (${permanent ? 'permanent' : 'soft'})`, async () => {
+) =>
+  await step(`Delete schema: ${subjectName} (${permanent ? 'permanent' : 'soft'})`, async () => {
     await page.goto('/schema-registry');
 
-    // Find the schema row, open its actions (kebab) menu, then click delete
     const row = page.getByTestId('schema-registry-table-name').filter({ hasText: subjectName });
     await expect(row).toBeVisible();
 
     await page.getByTestId(`schema-list-actions-trigger-${subjectName}`).click();
     await page.getByTestId(`schema-list-delete-btn-${subjectName}`).dispatchEvent('click');
 
-    // Confirm deletion in modal
     const confirmButton = page.getByRole('button', { name: permanent ? 'Permanently Delete' : 'Delete' });
     await confirmButton.click();
 
     await expect(page.getByText(permanent ? 'Subject permanently deleted' : 'Subject soft-deleted')).toBeVisible();
   });
-};
 
 export const addSchemaVersion = async (
   page: Page,
   { subjectName, schemaText }: { subjectName: string; schemaText: string }
-) => {
-  return await step(`Add version to schema: ${subjectName}`, async () => {
+) =>
+  await step(`Add version to schema: ${subjectName}`, async () => {
     await page.goto(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
 
-    // Click add version button
     await page.getByRole('button', { name: 'Add version' }).click();
     await expect(page).toHaveURL(
-      new RegExp(`/schema-registry/subjects/${encodeURIComponent(subjectName)}/add-version`)
+      new RegExp(`/schema-registry/subjects/${encodeURIComponent(subjectName)}/add-version`, 'u')
     );
 
-    // Update schema text in Monaco editor
     await replaceEditorText(page, schemaText);
     await validateSchemaText(page);
 
-    // Create new version
     await page.getByRole('button', { name: 'Create' }).click();
     await expect(page.getByText('Schema version created successfully')).toBeVisible({ timeout: 5000 });
   });
-};
 
 export const sampleAvroSchema = (recordName: string) =>
   JSON.stringify(

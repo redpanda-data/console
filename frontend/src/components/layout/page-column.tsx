@@ -13,17 +13,9 @@ import { type ReactNode, useLayoutEffect, useState } from 'react';
 
 import { chainToBody, documentTop } from '../../utils/dom-position';
 
-/** Read by `.page-fill-viewport` and `.page-fill-viewport-min` (globals.css). */
 const PAGE_TOP_VAR = '--console-page-top';
 
-/**
- * Publishes `--console-page-top`: where page content starts, from the document top.
- * Measured, not hardcoded — the chrome above a page differs per shell and per route, and
- * the host's share of it can change without Console shipping.
- */
 const usePublishPageTop = () => {
-  // State, not a ref, so re-attaching re-runs the effect: ErrorDisplay swaps the column
-  // out while the API is erroring, and it must be re-measured when it comes back.
   const [columnEl, setColumnEl] = useState<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
@@ -32,11 +24,9 @@ const usePublishPageTop = () => {
       return;
     }
 
-    // The write resizes the page, which resizes observed elements, so only write on change.
+    // WARNING: Only publish changed offsets to keep layout updates from feeding back into resize observations.
     const publish = createPageTopPublisher(columnEl);
 
-    // Only what sits above can push the page down: the shell's wrappers (the host's too,
-    // when embedded) and the preceding chrome inside #mainLayout.
     const observer = new ResizeObserver(publish);
     const observeAll = () => {
       observer.disconnect();
@@ -50,7 +40,6 @@ const usePublishPageTop = () => {
     };
     observeAll();
 
-    // That chrome mounts and unmounts per route, changing the set to observe.
     const mutationObserver = new MutationObserver(observeAll);
     mutationObserver.observe(layoutEl, { childList: true });
 
@@ -67,6 +56,10 @@ const usePublishPageTop = () => {
 /**
  * The column every page renders into: the gap below the app header, plus the offset
  * the `page-fill-viewport` utilities size against. Must sit directly inside `#mainLayout`.
+ * Remeasures when ancestors or preceding siblings resize. The callback ref
+ * also triggers measurement when the API error view swaps the column back in.
+ *
+ * Publishes the measured offset as `--console-page-top` because the host shell can resize independently.
  */
 export const PageColumn = ({ children }: { children: ReactNode }) => {
   const ref = usePublishPageTop();

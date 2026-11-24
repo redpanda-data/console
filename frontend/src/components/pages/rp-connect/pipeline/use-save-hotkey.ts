@@ -11,7 +11,7 @@
 
 import { useEffect, useRef } from 'react';
 
-// Modal dialogs only — aria-modal scoping keeps non-modal role="dialog" elements from disabling the shortcut.
+// WARNING: Only modal dialogs disable the save shortcut; non-modal dialog roles must not suppress it.
 const MODAL_DIALOG_SELECTOR = '[role="dialog"][aria-modal="true"], [role="alertdialog"]';
 
 type UseSaveHotkeyOptions = {
@@ -28,7 +28,6 @@ type UseSaveHotkeyOptions = {
  * The generic useHotKey is unsuitable: it always `preventDefault`s on a match, so it could do neither.
  */
 export function useSaveHotkey({ enabled, isSaving, onSave }: UseSaveHotkeyOptions) {
-  // Ref so the listener sees the latest isSaving/onSave without re-registering on every render.
   const latest = useRef({ isSaving, onSave });
   latest.current = { isSaving, onSave };
 
@@ -40,13 +39,11 @@ export function useSaveHotkey({ enabled, isSaving, onSave }: UseSaveHotkeyOption
       if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.key.toLowerCase() !== 's') {
         return;
       }
-      // Checked before preventDefault, so an unhandled press keeps browser behaviour.
       if (document.querySelector(MODAL_DIALOG_SELECTOR)) {
         return;
       }
       e.preventDefault();
-      // A held ⌘S auto-repeats keydown faster than `isSaving` re-renders (it flips on the
-      // mutation's isPending re-render) — only the first press may trigger a save.
+      // WARNING: Ignore held-key repeats; they can arrive before the first save marks the mutation pending.
       if (e.repeat) {
         return;
       }

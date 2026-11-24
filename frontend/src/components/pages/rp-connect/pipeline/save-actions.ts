@@ -32,8 +32,7 @@ const LINT_HINT_TYPE = 'redpanda.api.common.v1.LintHint';
 const ERROR_INFO_TYPE = 'google.rpc.ErrorInfo';
 const INVALID_CONFIG_REASON = 'REASON_CONNECT_INVALID_PIPELINE_CONFIGURATION';
 
-// Wire details are `{ type, debug }`; locally attached ones are `{ desc, value }`.
-function detailTypeAndPayload(detail: unknown): { typeName: string; payload: unknown } | null {
+function detailTypeAndPayload(detail: unknown) {
   if (detail === null || typeof detail !== 'object') {
     return null;
   }
@@ -48,7 +47,7 @@ function detailTypeAndPayload(detail: unknown): { typeName: string; payload: unk
   return null;
 }
 
-export function isInvalidConfigError(error: unknown): boolean {
+export function isInvalidConfigError(error: unknown) {
   if (!(error instanceof ConnectError) || error.code !== Code.InvalidArgument) {
     return false;
   }
@@ -67,62 +66,58 @@ export function isInvalidConfigError(error: unknown): boolean {
   });
 }
 
-/**
- * The service refuses a `draft: true` update once the pipeline has been started. Matched on the message as
- * well as the code: a suspended cluster also answers FAILED_PRECONDITION.
- */
-const NOT_A_DRAFT = /not a draft/i;
+const NOT_A_DRAFT = /not a draft/iu;
 
-export const isNoLongerDraftError = (error: unknown): boolean =>
+/**
+ * Check both code and text: a suspended cluster can also return FAILED_PRECONDITION but is not a draft conflict.
+ */
+export const isNoLongerDraftError = (error: unknown) =>
   error instanceof ConnectError && error.code === Code.FailedPrecondition && NOT_A_DRAFT.test(error.rawMessage);
 
 /**
  * A pre-drafts hop drops `draft` (Connect JSON discards unknown fields) and the pipeline deploys for
  * real, so the saved state is trusted over the flag that was sent.
  */
-export const wasDraftIgnored = (isDraftSave: boolean, saved: { state?: Pipeline_State } | undefined): boolean =>
+export const wasDraftIgnored = (isDraftSave: boolean, saved: { state?: Pipeline_State } | undefined) =>
   isDraftSave && saved !== undefined && saved.state !== Pipeline_State.DRAFT;
 
 export const NO_LONGER_DRAFT_MESSAGE =
   'This pipeline has been started since you opened it, so it is no longer a draft. Reload to see the running configuration before saving.';
 
-// STOPPING is in `STARTABLE_STATES` so a row menu can rescue a stuck stop, but a save offers nothing while it settles.
-const isStartableState = (state: Pipeline_State | undefined): boolean =>
+const isStartableState = (state: Pipeline_State | undefined) =>
   state !== undefined &&
   state !== Pipeline_State.STOPPING &&
   (STARTABLE_STATES as readonly Pipeline_State[]).includes(state);
 
-const isStoppableState = (state: Pipeline_State | undefined): boolean =>
+const isStoppableState = (state: Pipeline_State | undefined) =>
   state !== undefined && (STOPPABLE_STATES as readonly Pipeline_State[]).includes(state);
 
-const isUndeployed = (context: SaveContext): boolean =>
-  context.mode === 'create' || context.state === Pipeline_State.DRAFT;
+const isUndeployed = (context: SaveContext) => context.mode === 'create' || context.state === Pipeline_State.DRAFT;
 
-export function primaryRunIntent(context: SaveContext): SaveRunIntent {
+export function primaryRunIntent(context: SaveContext) {
   if (isUndeployed(context) && context.draftsEnabled) {
     return 'draft';
   }
-  // CreatePipeline always deploys, so without draft support a new pipeline is stopped right after.
   if (context.mode === 'create') {
     return 'stopped';
   }
   return 'keep';
 }
 
-export function alternateRunIntents(context: SaveContext): SaveRunIntent[] {
+export function alternateRunIntents(context: SaveContext) {
   if (isUndeployed(context)) {
-    return ['start'];
+    return ['start'] satisfies SaveRunIntent[];
   }
   if (isStoppableState(context.state)) {
-    return ['stopped'];
+    return ['stopped'] satisfies SaveRunIntent[];
   }
   if (isStartableState(context.state)) {
-    return ['start'];
+    return ['start'] satisfies SaveRunIntent[];
   }
-  return [];
+  return [] satisfies SaveRunIntent[];
 }
 
-export function runIntentLabel(intent: SaveRunIntent, context: SaveContext): string {
+export function runIntentLabel(intent: SaveRunIntent, context: SaveContext) {
   switch (intent) {
     case 'draft':
       return 'Save draft';
@@ -135,14 +130,14 @@ export function runIntentLabel(intent: SaveRunIntent, context: SaveContext): str
   }
 }
 
-export const isBlankConfig = (configYaml: string): boolean => configYaml.trim().length === 0;
+export const isBlankConfig = (configYaml: string) => configYaml.trim().length === 0;
 
 export const BLANK_CONFIG_MESSAGE = 'Add an input and an output before starting this pipeline.';
 
 export const MISSING_SERVICE_ACCOUNT_MESSAGE =
   "This config logs in with the pipeline's service account, but the pipeline doesn't have one. Create one with Add user on the component, or use a SASL user.";
 
-export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): string {
+export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent) {
   const isCreate = context.mode === 'create';
   if (run === 'draft') {
     return isCreate ? "Draft saved — it isn't running yet." : 'Draft saved';
@@ -161,30 +156,31 @@ export function saveSuccessMessage(context: SaveContext, run: SaveRunIntent): st
     : 'Pipeline updated';
 }
 
-/** The leave dialog's exit that keeps the work: a server-side draft, or this browser's recovery buffer. */
 type UnsavedChangesEscape = 'save-draft' | 'leave-for-now';
+type UnsavedChangesCopy = { body: string; escape: UnsavedChangesEscape };
 
-export function unsavedChangesCopy(context: SaveContext): { body: string; escape: UnsavedChangesEscape } {
+/** The leave dialog's exit that keeps the work: a server-side draft, or this browser's recovery buffer. */
+export function unsavedChangesCopy(context: SaveContext) {
   if (isUndeployed(context) && context.draftsEnabled) {
     return {
       body: 'Save them as a draft to come back to. A draft does not run, uses no compute and can be started when it is ready.',
       escape: 'save-draft',
-    };
+    } satisfies UnsavedChangesCopy;
   }
   if (context.mode === 'create') {
     return {
       body: 'Saving them creates the pipeline and then stops it, so it may run briefly. Keep editing to save, or leave for now — this browser keeps your edits and offers them back next time.',
       escape: 'leave-for-now',
-    };
+    } satisfies UnsavedChangesCopy;
   }
   if (isStoppableState(context.state)) {
     return {
       body: 'Saving applies them, which restarts the pipeline and drops in-flight messages. Or leave for now — this browser keeps your edits and offers them back next time.',
       escape: 'leave-for-now',
-    };
+    } satisfies UnsavedChangesCopy;
   }
   return {
     body: 'This pipeline is stopped, so saving them is safe and leaves it stopped. Keep editing to save, or leave for now — this browser keeps your edits and offers them back next time.',
     escape: 'leave-for-now',
-  };
+  } satisfies UnsavedChangesCopy;
 }

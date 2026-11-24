@@ -12,7 +12,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { HomeIcon } from 'components/icons';
 
-// Import existing component - will be colocated later
 import Overview from '../../components/pages/overview/overview';
 
 export const Route = createFileRoute('/overview/')({
@@ -23,7 +22,6 @@ export const Route = createFileRoute('/overview/')({
   component: OverviewWrapper,
 });
 
-// Wrapper function component for the class-based Overview page
 function OverviewWrapper() {
   return <Overview matchedPath="/overview" />;
 }

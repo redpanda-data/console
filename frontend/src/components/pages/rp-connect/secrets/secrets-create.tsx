@@ -15,7 +15,7 @@ import { PageComponent, type PageInitHelper } from '../../page';
 import { formatPipelineError } from '../errors';
 
 const returnToListTab = '/connect-clusters?defaultTab=redpanda-connect-secret';
-const SECRET_NAME_VALIDATION_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
+const SECRET_NAME_VALIDATION_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/u;
 const SECRET_NAME_MAX_LENGTH = 255;
 
 class RpConnectSecretCreate extends PageComponent {
@@ -29,11 +29,11 @@ class RpConnectSecretCreate extends PageComponent {
   }
 
   refreshData(force: boolean) {
-    rpcnSecretManagerApi.refreshSecrets(force);
+    this.rpcnSecretManagerApi.refreshSecrets(force);
   }
 
   render() {
-    if (!rpcnSecretManagerApi.secrets) {
+    if (!this.rpcnSecretManagerApi.secrets) {
       return DefaultSkeleton;
     }
     return <RpConnectSecretCreateContent />;
@@ -149,10 +149,8 @@ const RpConnectSecretCreateContent = () => {
           />
         </Field>
 
-        {/* ButtonGroup attaches its children, so a submit/cancel pair needs its own gap. */}
         <div className="flex gap-2">
           <Button
-            // `isLoading` hides the label, so the button needs its own name.
             aria-label="Create secret"
             disabled={isIdEmpty || isSecretEmpty || hasNameError}
             isLoading={isCreating}

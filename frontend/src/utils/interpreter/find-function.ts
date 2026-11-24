@@ -9,20 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-//
-// when in directory '/interpreter' run:
-//   tsc --project ./tsconfig.json
-//
-
 import { IsDev } from '../env';
 
-declare let value: unknown; // set/injected by backend
+// WARNING: The backend supplies the interpreter's root value; the root call reaches it through a null receiver.
+declare let value: unknown;
 
-// declare function find(propName: string, ignoreCase?:boolean): any;
-// declare function find(isMatch: (obj:object|Array<any>)=>boolean): any;
-// declare function find(pattern: object, ignoreCase?:boolean): object|undefined;
-function find(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown {
-  // `this` is null when called in root, otherwise the object it was called on
+function find(this: unknown | undefined, arg1: unknown, arg2: unknown) {
   const self = this === null ? value : this;
 
   const results = findGeneric(self, arg1, arg2, true);
@@ -32,11 +24,7 @@ function find(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown 
   }
 }
 
-// declare function findAll(propName: string, ignoreCase?:boolean): any[];
-// declare function findAll(isMatch: (obj:object|Array<any>)=>boolean): any[];
-// declare function findAll(pattern: object, ignoreCase?:boolean): object[];
-function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown): unknown[] {
-  // `this` is null when called in root, otherwise the object it was called on
+function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown) {
   const self = this === null ? value : this;
 
   const results = findGeneric(self, arg1, arg2, false);
@@ -44,31 +32,25 @@ function findAll(this: unknown | undefined, arg1: unknown, arg2: unknown): unkno
   return results;
 }
 
-// add find methods to all objects
 (Object.prototype as Record<string, unknown>).find = find;
 (Object.prototype as Record<string, unknown>).findAll = findAll;
 
-// calls findByName or findByCallback depending on the arguments
-function findGeneric(self: unknown, arg1: unknown, arg2: unknown, returnFirstResult: boolean): unknown[] {
-  // a truthy second argument means ignoreCase
+function findGeneric(self: unknown, arg1: unknown, arg2: unknown, returnFirstResult: boolean) {
   const caseSensitive = !arg2;
 
   if (typeof arg1 === 'string') {
-    // findByName
     return findByName(self, String(arg1), caseSensitive, returnFirstResult);
   }
   if (typeof arg1 === 'function') {
-    // findByCallback
     return findByCallback(self, arg1 as (object: unknown, key: string | number) => boolean, returnFirstResult);
   }
   if (typeof arg1 === 'object' && arg1 !== null) {
-    // findByPattern
     return findByPattern(self, arg1 as object, caseSensitive, returnFirstResult);
   }
   throw new Error('first parameter of find() must be: string, or function, or pattern object');
 }
 
-function findByName(obj: unknown, propertyName: string, caseSensitive: boolean, returnFirstResult: boolean): unknown[] {
+function findByName(obj: unknown, propertyName: string, caseSensitive: boolean, returnFirstResult: boolean) {
   const isMatch = caseSensitive
     ? (_: unknown, prop: string | number) => prop === propertyName
     : (_: unknown, prop: string | number) => String(prop).toUpperCase() === propertyName.toUpperCase();
@@ -80,7 +62,7 @@ function findByCallback(
   obj: unknown,
   isMatch: (object: unknown, key: string | number) => boolean,
   returnFirstResult: boolean
-): unknown[] {
+) {
   const ctx: PropertySearchContext = {
     isMatch,
     currentPath: [],
@@ -96,12 +78,12 @@ const logPatternMatch: (...args: unknown[]) => void = IsDev
   ? // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.debug
   : (..._args: unknown[]) => {
-      /* do nothing */
+      // WARNING: Do not log pattern matches in production; the arguments can contain message payloads.
     };
 
 type PatternMatchOptions = { caseSensitive: boolean };
 
-function stringsMatch(currentObjValue: string, patternValue: unknown, options: PatternMatchOptions): boolean {
+function stringsMatch(currentObjValue: string, patternValue: unknown, options: PatternMatchOptions) {
   if (options.caseSensitive) {
     if (currentObjValue !== patternValue) {
       logPatternMatch(`  strings don't match (case sensitive): "${currentObjValue}" != "${patternValue}"`);
@@ -114,7 +96,7 @@ function stringsMatch(currentObjValue: string, patternValue: unknown, options: P
   return true;
 }
 
-function primitivesMatch(currentObjValue: unknown, patternValue: unknown): boolean {
+function primitivesMatch(currentObjValue: unknown, patternValue: unknown) {
   if (currentObjValue !== patternValue) {
     logPatternMatch(`  primitives not equal: ${currentObjValue} != ${patternValue}`);
     return false;
@@ -122,15 +104,13 @@ function primitivesMatch(currentObjValue: unknown, patternValue: unknown): boole
   return true;
 }
 
-// Values of the same type: strings and primitives compare, objects recurse, anything else matches.
 function patternValueMatches(
   currentObjValue: unknown,
   patternValue: unknown,
   key: string,
   options: PatternMatchOptions
-): boolean {
+) {
   if (typeof currentObjValue === 'string') {
-    // Compare string
     return stringsMatch(currentObjValue, patternValue, options);
   }
   if (
@@ -138,7 +118,6 @@ function patternValueMatches(
     typeof currentObjValue === 'number' ||
     typeof currentObjValue === 'undefined'
   ) {
-    // Compare primitive
     return primitivesMatch(currentObjValue, patternValue);
   }
   if (
@@ -147,24 +126,15 @@ function patternValueMatches(
     typeof patternValue === 'object' &&
     patternValue !== null
   ) {
-    // Compare object
     logPatternMatch(`  -> descending into [${key}]`);
     return isPatternMatch(currentObjValue as object, patternValue as object, options);
   }
   return true;
 }
 
-function patternPropertyMatches(
-  currentObj: object,
-  currentPattern: object,
-  key: string,
-  options: PatternMatchOptions
-): boolean {
+function patternPropertyMatches(currentObj: object, currentPattern: object, key: string, options: PatternMatchOptions) {
   const patternValue = (currentPattern as Record<string, unknown>)[key];
 
-  // don't require objects to have the same functions
-  // todo: later we might want to have special functions that can compare against the actual value!
-  //       isSet, notNull, lengthGt(5), isEmpty, compare('literal', ignoreCase), ...
   if (typeof patternValue === 'function') {
     return true;
   }
@@ -180,7 +150,7 @@ function patternPropertyMatches(
   return patternValueMatches(currentObjValue, patternValue, key, options);
 }
 
-function isPatternMatch(currentObj: object, currentPattern: object, options: PatternMatchOptions): boolean {
+function isPatternMatch(currentObj: object, currentPattern: object, options: PatternMatchOptions) {
   if (typeof currentObj !== typeof currentPattern) {
     logPatternMatch(`  type mismatch obj<>pattern: '${typeof currentObj}' != '${typeof currentPattern}'`);
     return false;
@@ -194,12 +164,7 @@ function isPatternMatch(currentObj: object, currentPattern: object, options: Pat
   return true;
 }
 
-function findByPattern(
-  obj: unknown,
-  patternObj: object,
-  caseSensitive: boolean,
-  returnFirstResult: boolean
-): unknown[] {
+function findByPattern(obj: unknown, patternObj: object, caseSensitive: boolean, returnFirstResult: boolean) {
   const options: PatternMatchOptions = { caseSensitive };
   const ctx: ObjectSearchContext = {
     isMatch: (currentObj, currentPattern) => isPatternMatch(currentObj, currentPattern, options),
@@ -227,8 +192,7 @@ type ObjectSearchContext = {
   returnFirstResult: boolean;
 };
 
-// the match function may throw, which counts as no match
-function matchesSafely(ctx: PropertySearchContext, obj: object, key: string): boolean {
+function matchesSafely(ctx: PropertySearchContext, obj: object, key: string) {
   try {
     return ctx.isMatch(obj, key);
   } catch {
@@ -236,8 +200,7 @@ function matchesSafely(ctx: PropertySearchContext, obj: object, key: string): bo
   }
 }
 
-// records the property when it matches; returns whether it did
-function recordIfMatch(ctx: PropertySearchContext, obj: object, key: string, propValue: unknown): boolean {
+function recordIfMatch(ctx: PropertySearchContext, obj: object, key: string, propValue: unknown) {
   if (!matchesSafely(ctx, obj, key)) {
     return false;
   }
@@ -246,36 +209,30 @@ function recordIfMatch(ctx: PropertySearchContext, obj: object, key: string, pro
   return true;
 }
 
-function descendInto(ctx: PropertySearchContext, key: string, propValue: unknown): boolean {
+function descendInto(ctx: PropertySearchContext, key: string, propValue: unknown) {
   ctx.currentPath.push(key);
   const stop = findElement(ctx, propValue);
   ctx.currentPath.pop();
   return stop && ctx.returnFirstResult;
 }
 
-// returns 'shouldStop' for a single property of `obj`
-function visitProperty(ctx: PropertySearchContext, obj: object, key: string): boolean {
+function visitProperty(ctx: PropertySearchContext, obj: object, key: string) {
   const propValue = (obj as Record<string, unknown>)[key];
   if (typeof propValue === 'function') {
     return false;
   }
 
-  // Check if property is a match
   if (recordIfMatch(ctx, obj, key, propValue) && ctx.returnFirstResult) {
     return true;
   }
 
-  // Descend into object
   if (typeof propValue === 'object') {
     return descendInto(ctx, key, propValue);
   }
   return false;
 }
 
-// returns 'shouldStop'
-// true  -> stop
-// false -> continue
-function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
+function findElement(ctx: PropertySearchContext, obj: unknown) {
   if (typeof obj !== 'object' || obj === null) {
     return false;
   }
@@ -288,7 +245,7 @@ function findElement(ctx: PropertySearchContext, obj: unknown): boolean {
   return false;
 }
 
-function findObject(ctx: ObjectSearchContext, obj: unknown): boolean {
+function findObject(ctx: ObjectSearchContext, obj: unknown) {
   if (typeof obj === 'object' && obj !== null && ctx.isMatch(obj as object, ctx.pattern)) {
     ctx.results.push(obj as object);
     if (ctx.returnFirstResult) {
@@ -303,7 +260,7 @@ function findObject(ctx: ObjectSearchContext, obj: unknown): boolean {
   return findInChildObjects(ctx, obj);
 }
 
-function findInChildObjects(ctx: ObjectSearchContext, obj: object): boolean {
+function findInChildObjects(ctx: ObjectSearchContext, obj: object) {
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
       const propValue = (obj as Record<string, unknown>)[key];

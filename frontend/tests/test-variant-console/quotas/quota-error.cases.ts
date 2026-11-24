@@ -1,12 +1,3 @@
-/**
- * spec: UX-1208 — Phase 1 e2e test coverage (CRITICAL + HIGH)
- * parent epic: UX-1198 — REST-to-Connect RPC migration
- *
- * The existing quota empty-state test only verifies a bare "table renders" — it does
- * not distinguish between "no quotas configured" and "backend error". That's a silent
- * data-loss UX gap. This spec asserts the error path renders a distinct error UI.
- */
-
 import { mockConnectError, rpcUrl } from '../../shared/connect-mock';
 import { expect, test } from '../../shared/e2e';
 
@@ -23,18 +14,12 @@ test.describe('quotas page - Connect error handling', () => {
 
     await page.goto('/quotas', { waitUntil: 'domcontentloaded' });
 
-    // Structural: the Quotas heading must still render (chrome doesn't depend on the RPC).
     await expect(page.getByRole('heading', { name: 'Quotas' })).toBeVisible({ timeout: 10_000 });
 
-    // Structural regression guard: the page must NOT show quota data rows.
     const rowsWithData = page.getByRole('row').filter({ hasText: 'MiB' });
     await expect(rowsWithData).toHaveCount(0);
 
-    // Error UI: QuotasList renders a Registry Alert (role="alert") containing the ConnectError
-    // message when the failure is not permission-related. ConnectError stringifies as
-    // "[<code>] <rawMessage>", so the mocked rawMessage is the deterministic substring to assert.
-    // Timeout accommodates the query-client's exponential-backoff retry policy for Code.Internal
-    // (4 attempts: 0, 1s, 2s, 4s — see src/query-client.ts).
+    // WARNING: The query retries internal errors before rendering the alert; this wait includes its retry backoff.
     await expect(page.getByRole('alert')).toContainText('mocked backend failure', { timeout: 30_000 });
   });
 
@@ -49,13 +34,9 @@ test.describe('quotas page - Connect error handling', () => {
     await page.goto('/quotas', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'Quotas' })).toBeVisible({ timeout: 10_000 });
 
-    // Structural: raw "permission_denied" machine identifier must not leak to user.
     await expect(page.locator('body')).not.toContainText('permission_denied');
 
-    // QuotasList branches on error.message.includes('permission'|'forbidden') and renders
-    // a 403 Empty state with a fixed user-facing message — assert both the status code
-    // heading and the human-readable copy that appears in its place.
     await expect(page.getByRole('heading', { name: '403' })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/not allowed to view this page/i)).toBeVisible();
+    await expect(page.getByText(/not allowed to view this page/iu)).toBeVisible();
   });
 });

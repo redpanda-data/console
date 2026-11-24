@@ -47,7 +47,6 @@ import {
 } from 'utils/pipeline-throughput.utils';
 import { calculateTimeRange, getEvenlySpacedTimeTicks, getTimeRanges, type TimeRange } from 'utils/time-range';
 
-// Cap at 12h: the range-query backend can't serve a wider window at its default resolution (Prometheus' 11k-point limit).
 const TIME_RANGES = getTimeRanges(12 * 60 * 60 * 1000);
 
 const chartConfig = {
@@ -61,7 +60,6 @@ type ThroughputContentProps = {
   hasData: boolean;
   chartData: MergedPoint[];
   id: string;
-  // Full selected window [start, end] in ms, so the axis spans it even when data is sparse.
   domain: [number, number];
   onRetry: () => void;
 };
@@ -179,7 +177,6 @@ type PipelineThroughputCardProps = {
   pipelineId: string;
 };
 
-// Which throughput queries the observability catalog serves; a range query only runs for a served one.
 function useThroughputQueryCatalog() {
   const { data, isLoading, isError, refetch } = useListQueries({
     filter: {
@@ -223,8 +220,6 @@ function usePipelineThroughput(pipelineId: string, selectedTimeRange: TimeRange)
 
   const { refetch: refetchQueries } = catalog;
   const handleRefresh = useCallback(() => {
-    // The query-catalog key carries no timestamps, so a refreshKey bump alone never retries a failed
-    // ListQueries.
     refetchQueries();
     setRefreshKey((prev) => prev + 1);
   }, [refetchQueries]);
@@ -236,12 +231,10 @@ function usePipelineThroughput(pipelineId: string, selectedTimeRange: TimeRange)
 
   return {
     chartData,
-    // Anchor the axis to the full selected window, not just the data extent.
     domain: [timeRange.start.getTime(), timeRange.end.getTime()] satisfies [number, number],
-    // isPending stays true for disabled queries, so only count enabled ones to avoid an infinite skeleton.
+    // WARNING: Count only enabled pending queries; a disabled query stays pending and would leave the skeleton up forever.
     isLoading:
       catalog.isLoading || (catalog.hasInputQuery && ingress.isPending) || (catalog.hasOutputQuery && egress.isPending),
-    // A failed catalog lookup is the error state, not "no data yet": the range queries never run.
     isError: catalog.isError || ingress.isError || egress.isError,
     isFetching: ingress.isFetching || egress.isFetching,
     refresh: handleRefresh,

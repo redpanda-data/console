@@ -13,9 +13,8 @@ import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../state/ui';
 import { wrapFilterFragment } from '../../../../utils/filter-helper';
 
-// A rejection during a search that's being torn down by navigation isn't guaranteed to be a
-// proper Error, so never assume `.message` exists on it.
-export function getSearchErrorMessage(error: unknown): string {
+/** proper Error, so never assume `.message` exists on it. */
+export function getSearchErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {
     return error.message;
   }
@@ -25,7 +24,7 @@ export function getSearchErrorMessage(error: unknown): string {
   return 'Unknown error';
 }
 
-export function toDisplayError(error: unknown): Error {
+export function toDisplayError(error: unknown) {
   return error instanceof Error ? error : new Error(getSearchErrorMessage(error));
 }
 
@@ -33,7 +32,7 @@ export function toDisplayError(error: unknown): Error {
  * Combines the active JavaScript filters into one filter program: each filter becomes a named
  * function, and the program returns whether all of them accept the message.
  */
-export function buildFilterCode(filters: FilterEntry[]): { filterCode: string; functionCount: number } {
+export function buildFilterCode(filters: FilterEntry[]) {
   const activeFilters = filters.filter(
     (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
   );
@@ -61,14 +60,13 @@ export function buildSearchSignature(params: {
   keyDeserializer: number;
   valueDeserializer: number;
   filters: FilterEntry[];
-}): string {
+}) {
   const { startOffset, maxResults, partitionID, startTimestamp, keyDeserializer, valueDeserializer, filters } = params;
-  // Includes filters to detect changes
   const filtersSignature = filters.map((f) => `${f.id}:${f.isActive}:${f.transpiledCode}`).join('|');
   return `${startOffset} ${maxResults} ${partitionID} ${startTimestamp} ${keyDeserializer} ${valueDeserializer} ${filtersSignature}`;
 }
 
-function matchesQuickSearch(message: TopicMessage, quickSearch: string): boolean | undefined {
+function matchesQuickSearch(message: TopicMessage, quickSearch: string) {
   const searchStr = quickSearch.toLowerCase();
   return (
     message.offset.toString().toLowerCase().includes(searchStr) ||
@@ -133,7 +131,6 @@ export function computeLoadMoreNeed(params: {
   lastLoadMore: { pageIndex: number; total: number };
 }) {
   const { pageIndex, windowStartPage, pageSize, loadedCount, virtualStartIndex, lastLoadMore } = params;
-  // Compute window-local page position; lastLoadMore uses the global pageIndex to deduplicate across window shifts
   const localPage = Math.max(0, pageIndex - windowStartPage);
   const totalLoadedPages = Math.ceil(loadedCount / pageSize);
   const isOnLastPage = localPage === totalLoadedPages - 1;

@@ -31,37 +31,37 @@ export const REDPANDA_CONTEXTUAL_VARIABLES = {
   REDPANDA_SCHEMA_REGISTRY_URL: {
     name: 'REDPANDA_SCHEMA_REGISTRY_URL' as const,
     description: 'Schema Registry URL for the cluster',
-    usedIn: ['url'] as const, // Within schema_registry object
+    usedIn: ['url'] as const,
   },
   REDPANDA_ID: {
     name: 'REDPANDA_ID' as const,
     description: 'Cluster ID',
-    usedIn: [] as const, // Metadata/tracking
+    usedIn: [] as const,
   },
   REDPANDA_REGION: {
     name: 'REDPANDA_REGION' as const,
     description: 'Cloud region where pipeline is deployed',
-    usedIn: [] as const, // Regional context
+    usedIn: [] as const,
   },
   REDPANDA_PIPELINE_ID: {
     name: 'REDPANDA_PIPELINE_ID' as const,
     description: 'Pipeline ID currently running',
-    usedIn: [] as const, // Pipeline tracking
+    usedIn: [] as const,
   },
   REDPANDA_PIPELINE_NAME: {
     name: 'REDPANDA_PIPELINE_NAME' as const,
     description: 'Pipeline display name currently running',
-    usedIn: [] as const, // Pipeline tracking
+    usedIn: [] as const,
   },
 } as const;
 
-export const getContextualVariableSyntax = (name: string): string => `\${${name}}`;
+export const getContextualVariableSyntax = (name: string) => `\${${name}}`;
 
 export type ContextualVariableName = keyof typeof REDPANDA_CONTEXTUAL_VARIABLES;
 
-export const convertToScreamingSnakeCase = (value: string): string => value.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+export const convertToScreamingSnakeCase = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/gu, '_');
 
-export const getSecretSyntax = (secretName: string): string => `\${secrets.${secretName}}`;
+export const getSecretSyntax = (secretName: string) => `\${secrets.${secretName}}`;
 
 /** The secrets a pipeline reads a SASL user's credentials from. */
 export const userSecretIds = (username: string) => {

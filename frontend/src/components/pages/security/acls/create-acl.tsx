@@ -1,4 +1,4 @@
-/** biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
+/* biome-ignore-all lint/correctness/useUniqueElementIds: this is intentional for form usage */
 
 import clsx from 'clsx';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
@@ -76,27 +76,21 @@ import {
   type SummaryProps,
 } from '../shared/acl-model';
 
-const UNDERSCORE_REGEX = /_/g;
-const FIRST_CHAR_REGEX = /^\w/;
-const COLON_REGEX = /:/;
-const PRINCIPAL_PREFIX_REGEX = /^[^:]+:/;
+const UNDERSCORE_REGEX = /_/gu;
+const FIRST_CHAR_REGEX = /^\w/u;
+const COLON_REGEX = /:/u;
+const PRINCIPAL_PREFIX_REGEX = /^[^:]+:/u;
 
-// Helper function to convert UPPER_CASE strings to sentence case ex: ALTER => Alter ALTER_CONFIG => Alter config
-export const formatLabel = (text: string): string => {
-  return text
+export const formatLabel = (text: string) =>
+  text
     .replace(UNDERSCORE_REGEX, ' ')
     .toLowerCase()
     .replace(FIRST_CHAR_REGEX, (c) => c.toUpperCase())
-    .replace('id', 'ID'); // transactional ids => transactional IDs
-};
+    .replace('id', 'ID');
 
-// Helper function to format summary labels, keeping certain words capitalized
-export const formatSummaryLabel = (text: string): string => {
-  return text.replace('id', 'ID'); // transactional ids => transactional IDs
-};
+export const formatSummaryLabel = (text: string) => text.replace('id', 'ID');
 
-// Helper function to get resource name for selector label
-const getResourceName = (resourceType: ResourceType): string => {
+const getResourceName = (resourceType: ResourceType) => {
   const resourceNames: Record<string, string> = {
     [ResourceTypeTopic]: 'Topic',
     [ResourceTypeConsumerGroup]: 'Consumer group',
@@ -107,8 +101,7 @@ const getResourceName = (resourceType: ResourceType): string => {
   return resourceNames[resourceType] || resourceType;
 };
 
-// Helper function to get plural resource name
-const getPluralResourceName = (resourceType: ResourceType): string => {
+const getPluralResourceName = (resourceType: ResourceType) => {
   const pluralNames: Record<string, string> = {
     [ResourceTypeCluster]: 'clusters',
     [ResourceTypeTopic]: 'topics',
@@ -120,7 +113,7 @@ const getPluralResourceName = (resourceType: ResourceType): string => {
   return pluralNames[resourceType] || resourceType;
 };
 
-const getRuleSelectorSummary = (rule: Rule): string => {
+const getRuleSelectorSummary = (rule: Rule) => {
   if (rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) {
     return getResourceName(rule.resourceType);
   }
@@ -131,9 +124,9 @@ const getRuleSelectorSummary = (rule: Rule): string => {
   return `${getPluralResourceName(rule.resourceType)} ${matchType}: "${rule.selectorValue}"`;
 };
 
-const getRuleSummaryTitle = (rule: Rule): string => formatSummaryLabel(getRuleSelectorSummary(rule));
+const getRuleSummaryTitle = (rule: Rule) => formatSummaryLabel(getRuleSelectorSummary(rule));
 
-function stringToHostType(h: string): HostType {
+function stringToHostType(h: string) {
   switch (h) {
     case '*':
     case '':
@@ -154,7 +147,6 @@ const PermissionIcon = ({ value }: { value: string }) => {
   }
 };
 
-// Descriptions hold one API list per line.
 const PermissionDescription = ({ operation, resourceType }: { operation: string; resourceType: string }) => {
   const description = getPermissionDescription(operation, resourceType);
   if (!description) {
@@ -259,109 +251,101 @@ const ResourceTypeSelection = ({
   );
 };
 
-const Summary = ({ sharedConfig, rules }: SummaryProps) => {
-  return (
-    <Card size="full">
-      <CardHeader>
-        <h3>Summary</h3>
-      </CardHeader>
-      <CardContent>
-        {/* Shared Configuration Summary */}
-        <div>
-          <div className="rounded-lg border-0">
-            <div className="flex items-center justify-between text-body">
-              <span className="text-subtle">Principal:</span>
-              <span className="font-medium text-strong">{sharedConfig.principal.replace(COLON_REGEX, ': ')}</span>
-            </div>
-            <div className="flex items-center justify-between text-body">
-              <span className="text-subtle">Host:</span>
-              <span className="font-medium text-strong">
-                {sharedConfig.host === '*' ? 'All hosts' : sharedConfig.host}
-              </span>
-            </div>
+const Summary = ({ sharedConfig, rules }: SummaryProps) => (
+  <Card size="full">
+    <CardHeader>
+      <h3>Summary</h3>
+    </CardHeader>
+    <CardContent>
+      <div>
+        <div className="rounded-lg border-0">
+          <div className="flex items-center justify-between text-body">
+            <span className="text-subtle">Principal:</span>
+            <span className="font-medium text-strong">{sharedConfig.principal.replace(COLON_REGEX, ': ')}</span>
+          </div>
+          <div className="flex items-center justify-between text-body">
+            <span className="text-subtle">Host:</span>
+            <span className="font-medium text-strong">
+              {sharedConfig.host === '*' ? 'All hosts' : sharedConfig.host}
+            </span>
           </div>
         </div>
+      </div>
 
-        {/* Rules Summary */}
-        <div className="space-y-3">
-          {rules.map((rule) => {
-            const ops = Object.entries(rule.operations);
-            // Filter out operations that are not set
-            const enabledOperations = ops
-              .filter(([_, operationValue]) => operationValue !== OperationTypeNotSet)
-              .map(([op, operationValue]) => ({
-                name: formatLabel(op),
-                value: operationValue,
-                originalOperationName: op,
-              }));
+      <div className="space-y-3">
+        {rules.map((rule) => {
+          const ops = Object.entries(rule.operations);
+          const enabledOperations = ops
+            .filter(([_, operationValue]) => operationValue !== OperationTypeNotSet)
+            .map(([op, operationValue]) => ({
+              name: formatLabel(op),
+              value: operationValue,
+              originalOperationName: op,
+            }));
 
-            // Check if all operations have the same permission
-            const allAllow =
-              enabledOperations.length > 0 &&
-              enabledOperations.length === ops.length &&
-              enabledOperations.every((op) => op.value === OperationTypeAllow);
-            const allDeny =
-              enabledOperations.length > 0 &&
-              enabledOperations.length === ops.length &&
-              enabledOperations.every((op) => op.value === OperationTypeDeny);
-            const showSummary = allAllow || allDeny;
+          const allAllow =
+            enabledOperations.length > 0 &&
+            enabledOperations.length === ops.length &&
+            enabledOperations.every((op) => op.value === OperationTypeAllow);
+          const allDeny =
+            enabledOperations.length > 0 &&
+            enabledOperations.length === ops.length &&
+            enabledOperations.every((op) => op.value === OperationTypeDeny);
+          const showSummary = allAllow || allDeny;
 
-            return (
-              <div
-                className="space-y-2 rounded-lg border border-border bg-card/40 p-3"
-                data-testid={`summary-card-${getRuleDataTestId(rule)}`}
-                key={rule.id}
+          return (
+            <div
+              className="space-y-2 rounded-lg border border-border bg-card/40 p-3"
+              data-testid={`summary-card-${getRuleDataTestId(rule)}`}
+              key={rule.id}
+            >
+              <p
+                className="text-body-sm text-subtle first-letter:uppercase"
+                data-testid={`${getRuleDataTestId(rule)}-title`}
               >
-                {/* Combined Resource and Selector */}
-                <p
-                  className="text-body-sm text-subtle first-letter:uppercase"
-                  data-testid={`${getRuleDataTestId(rule)}-title`}
-                >
-                  {getRuleSummaryTitle(rule)}
-                </p>
+                {getRuleSummaryTitle(rule)}
+              </p>
 
-                {/* Operations */}
-                <div>
-                  {enabledOperations.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {showSummary ? (
+              <div>
+                {enabledOperations.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {showSummary ? (
+                      <span
+                        className={clsx(
+                          'inline-flex items-center rounded-full px-2 py-1 text-body-sm font-medium',
+                          allAllow ? 'bg-success-wash text-success' : 'bg-destructive-wash text-destructive'
+                        )}
+                      >
+                        {allAllow ? 'Allow all' : 'Deny all'}
+                      </span>
+                    ) : (
+                      enabledOperations.map((op) => (
                         <span
                           className={clsx(
                             'inline-flex items-center rounded-full px-2 py-1 text-body-sm font-medium',
-                            allAllow ? 'bg-success-wash text-success' : 'bg-destructive-wash text-destructive'
+                            op.value === OperationTypeAllow
+                              ? 'bg-success-wash text-success'
+                              : 'bg-destructive-wash text-destructive'
                           )}
+                          data-testid={`${getRuleDataTestId(rule)}-op-${op.originalOperationName}`}
+                          key={op.name}
                         >
-                          {allAllow ? 'Allow all' : 'Deny all'}
+                          {op.name}: {op.value}
                         </span>
-                      ) : (
-                        enabledOperations.map((op) => (
-                          <span
-                            className={clsx(
-                              'inline-flex items-center rounded-full px-2 py-1 text-body-sm font-medium',
-                              op.value === OperationTypeAllow
-                                ? 'bg-success-wash text-success'
-                                : 'bg-destructive-wash text-destructive'
-                            )}
-                            data-testid={`${getRuleDataTestId(rule)}-op-${op.originalOperationName}`}
-                            key={op.name}
-                          >
-                            {op.name}: {op.value}
-                          </span>
-                        ))
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-body-sm text-disabled italic">No operations configured</span>
-                  )}
-                </div>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-body-sm text-disabled italic">No operations configured</span>
+                )}
               </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+            </div>
+          );
+        })}
+      </div>
+    </CardContent>
+  </Card>
+);
 
 const AclRules = ({
   rules,
@@ -401,7 +385,6 @@ const AclRules = ({
             variant={'elevated'}
           >
             <CardContent>
-              {/* Resource Type Selection */}
               <div className="flex items-center justify-between">
                 <div>
                   <FieldTitle className="mb-1.5" id={`${labelIdPrefix}-${rule.id}-resource-type`}>
@@ -428,8 +411,6 @@ const AclRules = ({
                 </Button>
               </div>
 
-              {/* Resource Name Selector */}
-              {/* Show selector if resource type is not Cluster or SchemaRegistry */}
               {!(rule.resourceType === ResourceTypeCluster || rule.resourceType === ResourceTypeSchemaRegistry) && (
                 <fieldset aria-labelledby={`${labelIdPrefix}-${rule.id}-selector`} className="mb-6 space-y-2">
                   <FieldTitle id={`${labelIdPrefix}-${rule.id}-selector`}>Selector</FieldTitle>
@@ -491,7 +472,6 @@ const AclRules = ({
                 </fieldset>
               )}
 
-              {/* Permission Mode */}
               <fieldset aria-labelledby={`${labelIdPrefix}-${rule.id}-operations`}>
                 <div className="mb-3 flex items-center justify-between">
                   <FieldTitle id={`${labelIdPrefix}-${rule.id}-operations`}>Operations</FieldTitle>
@@ -538,7 +518,6 @@ const AclRules = ({
                   </div>
                 </div>
 
-                {/* Operations */}
                 <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                   {Object.entries(rule.operations).map(([operation, operationValue]) => (
                     <div className="flex items-center gap-1" key={operation}>
@@ -606,7 +585,6 @@ const AclRules = ({
           </Card>
         ))}
 
-        {/* Add Rule Button */}
         <div className="mt-6">
           <Button className="w-full" data-testid="add-acl-rule-button" onClick={addRule} variant="outline">
             <Plus className="h-4 w-4" />
@@ -679,7 +657,6 @@ const SharedConfiguration = ({
                   }}
                   onValueChange={(value) => {
                     setPrincipalType(value);
-                    // Update the principal to include the new type
                     const currentValue = parsePrincipal(sharedConfig.principal).name || '';
                     setSharedConfig({
                       ...sharedConfig,
@@ -813,11 +790,9 @@ export default function CreateACL({
 
   return (
     <div className="relative min-h-screen pb-20">
-      {/* Main Content */}
       <main className="pb-6">
         <div className="mx-auto">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Left Column - Main Form */}
             <div className="space-y-6 lg:col-span-2">
               <p className="h-12 text-body text-subtle">Configure access control rules for your Kafka resources.</p>
 
@@ -833,7 +808,6 @@ export default function CreateACL({
               <AclRules {...rulesEditor} schemaRegistryEnabled={schemaRegistryEnabled} />
             </div>
 
-            {/* Right Column - Summary Card */}
             <div className="lg:col-span-1">
               <div className="sticky top-20">
                 <Summary rules={rules} sharedConfig={sharedConfig} />

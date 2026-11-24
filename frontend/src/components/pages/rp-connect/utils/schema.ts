@@ -24,7 +24,7 @@ import type {
 } from '../types/schema';
 import { CONNECT_COMPONENT_TYPE } from '../types/schema';
 
-export function componentStatusToString(status: ComponentStatus): string {
+export function componentStatusToString(status: ComponentStatus) {
   switch (status) {
     case ComponentStatus.STABLE:
       return 'stable';
@@ -41,7 +41,6 @@ export function componentStatusToString(status: ComponentStatus): string {
   }
 }
 
-/** Maps component type to its plural proto ComponentList key and its YAML config key. */
 const COMPONENT_TYPE_MAPPINGS: Record<
   Exclude<ConnectComponentType, 'custom'>,
   { listKey: keyof ComponentList; yamlKey: ConnectConfigKey }
@@ -66,7 +65,7 @@ export function findComponentByName(
   componentList: ComponentList,
   name: string,
   type?: Exclude<ConnectComponentType, 'custom'>
-): ComponentSpec | undefined {
+) {
   const mappings = type ? [COMPONENT_TYPE_MAPPINGS[type]] : Object.values(COMPONENT_TYPE_MAPPINGS);
   for (const { listKey } of mappings) {
     const list = componentList[listKey] as ComponentSpec[] | undefined;
@@ -84,7 +83,7 @@ export function findComponentByName(
  * Walks a dotted field path (e.g. `tls.cert_file`) through a field-spec children tree.
  * Plain proto FieldSpec trees are accepted too (structurally assignable to RawFieldSpec).
  */
-export function resolveFieldByPath(root: RawFieldSpec | undefined, path: string): RawFieldSpec | undefined {
+export function resolveFieldByPath(root: RawFieldSpec | undefined, path: string) {
   if (!(root && path)) {
     return;
   }
@@ -98,9 +97,9 @@ export function resolveFieldByPath(root: RawFieldSpec | undefined, path: string)
   return current;
 }
 
-export function parseSchema(componentList: ComponentList): ConnectComponentSpec[] {
+export function parseSchema(componentList: ComponentList) {
   try {
-    return Object.entries(COMPONENT_TYPE_MAPPINGS).flatMap(([componentType, { listKey }]) =>
+    return Object.entries(COMPONENT_TYPE_MAPPINGS).flatMap<ConnectComponentSpec>(([componentType, { listKey }]) =>
       ((componentList[listKey] as ComponentSpec[]) || []).map((comp) => ({
         ...comp,
         type: componentType as Exclude<ConnectComponentType, 'custom'>,
@@ -119,7 +118,7 @@ export function parseSchema(componentList: ComponentList): ConnectComponentSpec[
   }
 }
 
-const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
+const generateRedpandaTopLevelConfig = () => {
   const userData = rpcnWizardStore.getUserData();
   const redpandaConfig: Record<string, unknown> = {};
 
@@ -139,10 +138,7 @@ const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
 };
 
 /** Converts a component spec into a default-valued config object following the Connect YAML schema. */
-export const schemaToConfig = (
-  componentSpec?: ConnectComponentSpec,
-  showAdvancedFields?: boolean
-): { config: Partial<ConnectConfigObject>; spec: ConnectComponentSpec } | undefined => {
+export const schemaToConfig = (componentSpec?: ConnectComponentSpec, showAdvancedFields?: boolean) => {
   if (!componentSpec?.config) {
     return;
   }
@@ -159,11 +155,7 @@ export const schemaToConfig = (
   return { config, spec: componentSpec };
 };
 
-// redpanda_common carries its SASL in a top-level `redpanda:` block beside the component.
-function redpandaCommonConfig(
-  componentSpec: ConnectComponentSpec,
-  connectionConfig: unknown
-): Partial<ConnectConfigObject> {
+function redpandaCommonConfig(componentSpec: ConnectComponentSpec, connectionConfig: unknown) {
   const config: Partial<ConnectConfigObject> = {};
   const redpandaBlockConfig = generateRedpandaTopLevelConfig();
 
@@ -185,11 +177,7 @@ function redpandaCommonConfig(
   return config;
 }
 
-/** The snippet that places a component's config under its section of the Connect YAML schema. */
-function componentSectionConfig(
-  componentSpec: ConnectComponentSpec,
-  connectionConfig: unknown
-): Partial<ConnectConfigObject> {
+function componentSectionConfig(componentSpec: ConnectComponentSpec, connectionConfig: unknown) {
   const config: Partial<ConnectConfigObject> = {};
 
   switch (componentSpec.type) {
@@ -229,7 +217,6 @@ function componentSectionConfig(
       break;
 
     case 'scanner':
-      // Scanners are embedded in inputs, so return the config directly.
       return { [componentSpec.name]: connectionConfig };
 
     default:
@@ -239,11 +226,7 @@ function componentSectionConfig(
   return config;
 }
 
-function populateWizardFields(
-  spec: RawFieldSpec,
-  componentName?: string,
-  parentName?: string
-): string | string[] | undefined {
+function populateWizardFields(spec: RawFieldSpec, componentName?: string, parentName?: string) {
   if (!spec.name) {
     return;
   }
@@ -259,7 +242,7 @@ function populateWizardFields(
     return userData.consumerGroup;
   }
 
-  // Only inject user/password secret refs in SASL context, to avoid leaking into TLS client_certs.
+  // WARNING: Inject secret references only in SASL; TLS client certificates must not acquire SASL credentials.
   if (
     componentName &&
     REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) &&
@@ -270,7 +253,7 @@ function populateWizardFields(
   }
 }
 
-function saslSecretRef(fieldName: string, username: string): string | undefined {
+function saslSecretRef(fieldName: string, username: string) {
   if (isUserField(fieldName)) {
     return getSecretSyntax(userSecretIds(username).username);
   }
@@ -280,12 +263,7 @@ function saslSecretRef(fieldName: string, username: string): string | undefined 
   }
 }
 
-/** Populates fields with Redpanda contextual variables (e.g. schema_registry.url) for supported components. */
-function populateContextualVariables(
-  spec: RawFieldSpec,
-  componentName?: string,
-  parentName?: string
-): string | string[] | undefined {
+function populateContextualVariables(spec: RawFieldSpec, componentName?: string, parentName?: string) {
   if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
     return;
   }
@@ -295,17 +273,11 @@ function populateContextualVariables(
   }
 }
 
-/** Redpanda Cloud connection defaults: TLS enabled, SASL mechanism from session or SCRAM-SHA-256. */
-function populateConnectionDefaults(
-  spec: RawFieldSpec,
-  componentName?: string,
-  parentName?: string
-): string | boolean | string[] | Record<string, unknown> | undefined {
+function populateConnectionDefaults(spec: RawFieldSpec, componentName?: string, parentName?: string) {
   if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
     return;
   }
 
-  // { enabled: true } bypasses child generation, so no client_certs/password leak.
   if (spec.name === 'tls' && spec.type === 'object') {
     return { enabled: true };
   }
@@ -317,21 +289,19 @@ function populateConnectionDefaults(
   }
 }
 
-const isRedpandaComponent = (name?: string): boolean => !!name && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(name);
+const isRedpandaComponent = (name?: string) => !!name && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(name);
 
 function shouldShowField(params: {
   spec: RawFieldSpec;
   showAdvancedFields: boolean;
   componentName: string | undefined;
-}): boolean {
+}) {
   const { spec, showAdvancedFields, componentName } = params;
 
-  // Deprecated fields never belong in a generated config.
   if (spec.deprecated) {
     return false;
   }
 
-  // Redpanda SASL: show when wizard has user data (even though it's advanced)
   if (isRedpandaComponent(componentName) && spec.name === 'sasl') {
     const userData = rpcnWizardStore.getUserData();
     return !!userData?.username;
@@ -344,14 +314,13 @@ function generateObjectValue(
   spec: RawFieldSpec,
   showAdvancedFields: boolean | undefined,
   componentName: string | undefined
-): Record<string, unknown> | undefined {
+) {
   if (!spec.children) {
     return {};
   }
 
   const obj: Record<string, unknown> = {};
-  // Pass only this node's optionality; a non-optional child under an optional parent
-  // starts a fresh required boundary rather than inheriting the grandparent's.
+  // WARNING: Use the immediate parent's optionality; inheriting a grandparent's flag changes required-field handling inside an existing object.
   const childAncestorOptional = spec.optional === true;
 
   for (const child of spec.children) {
@@ -370,15 +339,14 @@ function generateObjectValue(
   return obj;
 }
 
-// Wraps the object's generated children in a single-element array (`[{...}]`), or nothing when
-// no child produced a value.
 function generateObjectArrayValue(
   spec: RawFieldSpec,
   showAdvancedFields: boolean | undefined,
   componentName: string | undefined
-): unknown[] | undefined {
+) {
   const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-  return obj && Object.keys(obj).length > 0 ? [obj] : undefined;
+  const values: unknown[] | undefined = Object.keys(obj).length > 0 ? [obj] : undefined;
+  return values;
 }
 
 type GenerateDefaultValueOptions = {
@@ -388,11 +356,7 @@ type GenerateDefaultValueOptions = {
   ancestorOptional?: boolean;
 };
 
-/**
- * Converts string default values to their proper types.
- * Returns undefined for empty-string defaults on non-string types.
- */
-function convertDefaultValue(defaultValue: string, type: string, kind?: string): unknown {
+function convertDefaultValue(defaultValue: string, type: string, kind?: string) {
   if (defaultValue === '' && type !== 'string') {
     return;
   }
@@ -403,22 +367,19 @@ function convertDefaultValue(defaultValue: string, type: string, kind?: string):
     const num = Number(defaultValue);
     return Number.isNaN(num) ? defaultValue : num;
   }
-  // Backend serializes [] / {} defaults as JSON strings for structured kinds.
   if (kind === 'array' || kind === 'map' || kind === '2darray') {
     return parseStructuredDefault(defaultValue);
   }
   return defaultValue;
 }
 
-function parseStructuredDefault(defaultValue: string): unknown {
+function parseStructuredDefault(defaultValue: string) {
   try {
-    const parsed = JSON.parse(defaultValue);
+    const parsed: unknown = JSON.parse(defaultValue);
     if (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) {
       return parsed;
     }
-  } catch {
-    // Not valid JSON, fall through to return as string
-  }
+  } catch {}
   return defaultValue;
 }
 
@@ -434,8 +395,7 @@ export const SENTINEL_REQUIRED_FIELD = '__REQUIRED_FIELD__';
  * `defaultValue` is far more likely a lost default than a required field. Known cost of that mode —
  * string fields whose real default is "" show as required.
  */
-export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): boolean {
-  // Deprecated fields are being phased out; never force one regardless of signals.
+export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean) {
   if (spec.deprecated === true) {
     return false;
   }
@@ -448,34 +408,28 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   if (!spec.children?.length) {
     return true;
   }
-  // Object: required if any child is required.
-  return spec.children.some((c) => checkRequired(c));
+  const childRequired: boolean = spec.children.some((c) => checkRequired(c));
+  return childRequired;
 }
 
-// Without `requiredBySchema`, an empty default may be one the proto failed to carry.
-function mayHaveLostDefault(spec: RawFieldSpec, ancestorOptional?: boolean): boolean {
+function mayHaveLostDefault(spec: RawFieldSpec, ancestorOptional?: boolean) {
   return (
-    // Non-scalar under an optional ancestor: a collection default ([]/{}) was likely lost in proto.
-    // Scalars are still evaluated normally.
     (Boolean(ancestorOptional) && spec.kind !== 'scalar') ||
-    // Non-string types lose their defaults in proto (0/false/[] → ""), so can't be deemed required.
+    // WARNING: Do not infer non-string required fields from an empty proto default; serialization also drops false, zero, and empty collections.
     spec.type !== 'string' ||
-    // Advanced non-scalar fields typically had defaults that were lost in serialization.
     (spec.kind !== 'scalar' && Boolean(spec.advanced))
   );
 }
 
 const SCALAR_FIELD_TYPES = new Set<string>(['string', 'int', 'float', 'bool']);
 
-// Types whose value is a nested component edited on the canvas (all except the wizard-only `custom`).
 const COMPONENT_FIELD_TYPES = new Set<string>(CONNECT_COMPONENT_TYPE.filter((t) => t !== 'custom'));
 
-export function fieldHasOptions(spec: RawFieldSpec): boolean {
+export function fieldHasOptions(spec: RawFieldSpec) {
   return (spec.annotatedOptions?.length ?? 0) > 0;
 }
 
-// A scalar string that links to a cache/rate_limit resource by label rather than nesting a component.
-export function isResourceRefField(spec: RawFieldSpec): boolean {
+export function isResourceRefField(spec: RawFieldSpec) {
   return (
     Boolean(spec.name) &&
     spec.kind === 'scalar' &&
@@ -484,8 +438,7 @@ export function isResourceRefField(spec: RawFieldSpec): boolean {
   );
 }
 
-// A single editable value: a primitive, an enum select, or a resource reference (stored as a string).
-export function isScalarField(spec: RawFieldSpec): boolean {
+export function isScalarField(spec: RawFieldSpec) {
   return (
     Boolean(spec.name) &&
     spec.kind === 'scalar' &&
@@ -493,14 +446,11 @@ export function isScalarField(spec: RawFieldSpec): boolean {
   );
 }
 
-// A list of primitives (e.g. `topics: [a, b]`), edited one-per-line.
-export function isScalarArrayField(spec: RawFieldSpec): boolean {
+export function isScalarArrayField(spec: RawFieldSpec) {
   return Boolean(spec.name) && spec.kind === 'array' && SCALAR_FIELD_TYPES.has(spec.type) && !fieldHasOptions(spec);
 }
 
-// A nested object with its own fields (e.g. `tls`, `batching`), rendered as a collapsible
-// sub-section. benthos leaves `kind` empty on some object nodes (batching policies) — same thing.
-export function isObjectGroupField(spec: RawFieldSpec): boolean {
+export function isObjectGroupField(spec: RawFieldSpec) {
   return (
     Boolean(spec.name) &&
     (spec.kind === 'scalar' || (spec.kind === '' && spec.type === 'object')) &&
@@ -508,14 +458,12 @@ export function isObjectGroupField(spec: RawFieldSpec): boolean {
   );
 }
 
-// A field whose value is itself a nested component. Edited as its own canvas node, never inline.
-export function isComponentField(spec: RawFieldSpec): boolean {
+export function isComponentField(spec: RawFieldSpec) {
   return Boolean(spec.name) && COMPONENT_FIELD_TYPES.has(spec.type) && !isResourceRefField(spec);
 }
 
-// Fields rendered as form controls; deprecated fields, nested components, and complex fields
-// (object arrays, maps, …) are excluded and fall back to the raw-YAML section.
-export function isFormField(spec: RawFieldSpec): boolean {
+/** Fields rendered as form controls; deprecated fields, nested components, and complex fields */
+export function isFormField(spec: RawFieldSpec) {
   return (
     !(spec.deprecated || isComponentField(spec)) &&
     (isScalarField(spec) || isScalarArrayField(spec) || isObjectGroupField(spec))
@@ -523,15 +471,11 @@ export function isFormField(spec: RawFieldSpec): boolean {
 }
 
 /** Finds a parsed component spec by name; `type` disambiguates names shared across types (e.g. `redpanda`). */
-export function findConnectComponent(
-  components: ConnectComponentSpec[],
-  name: string,
-  type?: ConnectComponentType
-): ConnectComponentSpec | undefined {
+export function findConnectComponent(components: ConnectComponentSpec[], name: string, type?: ConnectComponentType) {
   return components.find((c) => (type === undefined || c.type === type) && c.name === name);
 }
 
-function getRequiredFieldTypeHint(spec: RawFieldSpec): string {
+function getRequiredFieldTypeHint(spec: RawFieldSpec) {
   const typeLabel = (() => {
     switch (spec.type) {
       case 'int':
@@ -543,7 +487,7 @@ function getRequiredFieldTypeHint(spec: RawFieldSpec): string {
       case 'unknown':
         return 'value';
       default:
-        return spec.type; // 'string', 'object'
+        return spec.type;
     }
   })();
   switch (spec.kind) {
@@ -558,10 +502,12 @@ function getRequiredFieldTypeHint(spec: RawFieldSpec): string {
   }
 }
 
-export function generateDefaultValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions = {}): unknown {
+/**
+ * The component root always emits its schema shape, including [] for an empty list or {} for a fieldless object.
+ */
+export function generateDefaultValue(spec: RawFieldSpec, options: GenerateDefaultValueOptions = {}) {
   const { showAdvancedFields, componentName, parentName } = options;
 
-  // For Redpanda secret components, auto-population wins over optional/advanced flags.
   const populated = isRedpandaComponent(componentName)
     ? populateRedpandaValue(spec, componentName, parentName)
     : undefined;
@@ -573,19 +519,19 @@ export function generateDefaultValue(spec: RawFieldSpec, options: GenerateDefaul
     return;
   }
 
-  return generateShownFieldValue(spec, options);
+  const value: unknown = generateShownFieldValue(spec, options);
+  return value;
 }
 
-function populateRedpandaValue(spec: RawFieldSpec, componentName?: string, parentName?: string): unknown {
-  return (
+function populateRedpandaValue(spec: RawFieldSpec, componentName?: string, parentName?: string) {
+  const value: unknown =
     populateWizardFields(spec, componentName, parentName) ??
     populateContextualVariables(spec, componentName, parentName) ??
-    populateConnectionDefaults(spec, componentName, parentName)
-  );
+    populateConnectionDefaults(spec, componentName, parentName);
+  return value;
 }
 
-// Comments the field and returns the placeholder the YAML output turns into that comment.
-function markRequired(spec: RawFieldSpec): string {
+function markRequired(spec: RawFieldSpec) {
   spec.comment = `Required - ${getRequiredFieldTypeHint(spec)}, must be manually set`;
   return SENTINEL_REQUIRED_FIELD;
 }
@@ -593,22 +539,18 @@ function markRequired(spec: RawFieldSpec): string {
 function generateShownFieldValue(
   spec: RawFieldSpec,
   { showAdvancedFields, componentName, ancestorOptional }: GenerateDefaultValueOptions
-): unknown {
+) {
   const required = checkRequired(spec, ancestorOptional);
 
-  // Objects build structure from children, so they never use the required sentinel.
   if (required && spec.type !== 'object') {
     return markRequired(spec);
   }
 
-  // A non-empty defaultValue survived serialization — use it (structured kinds arrive as JSON).
   const converted = spec.defaultValue ? convertDefaultValue(spec.defaultValue, spec.type, spec.kind) : undefined;
   if (converted !== undefined) {
     return converted;
   }
 
-  // SASL arrays for redpanda/kafka_franz components are generated even when optional/advanced so
-  // wizard-collected credentials land in the config.
   if (spec.kind === 'array' && spec.name?.toLowerCase() === 'sasl' && isRedpandaComponent(componentName)) {
     return generateObjectArrayValue(spec, showAdvancedFields, componentName);
   }
@@ -617,31 +559,23 @@ function generateShownFieldValue(
     return generateObjectStructure(spec, required, showAdvancedFields, componentName);
   }
 
-  // Everything else is a non-required field whose default didn't survive serialization (the proto
-  // only carries string defaults). Emit nothing so the engine's real default applies — zero-filling
-  // flips semantics (e.g. auto_replay_nacks defaults to true; a generated `false` overrides it).
+  // WARNING: Omit non-required values whose defaults were lost in the proto; filling zero values can override engine defaults.
 }
 
-// Object structure recursion. Some object nodes come with an empty kind — benthos leaves Kind
-// unset on e.g. batching policies; treat that as scalar.
 function generateObjectStructure(
   spec: RawFieldSpec,
   required: boolean,
   showAdvancedFields: boolean | undefined,
   componentName: string | undefined
-): unknown {
-  // The component root (name '') must always produce a type-correct value: inserting `switch`
-  // (root kind 'array') has to emit `[]`/`[{...}]`, and a field-less component like `drop` has
-  // to emit `{}` — returning undefined would drop the component key from the YAML entirely.
+) {
   const isComponentRoot = !spec.name;
   if (spec.kind === 'scalar' || spec.kind === '') {
     const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-    if (obj && Object.keys(obj).length > 0) {
+    if (Object.keys(obj).length > 0) {
       return obj;
     }
     return isComponentRoot ? {} : undefined;
   }
-  // Collections of objects are only seeded when the field is required or at the component root.
   if (!(required || isComponentRoot)) {
     return;
   }

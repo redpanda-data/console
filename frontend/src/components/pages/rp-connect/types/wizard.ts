@@ -17,18 +17,18 @@ const connectTilesListFormSchema = z.object({
 });
 
 export type OperationResult = {
-  operation: string; // e.g., "Create user", "Create ACL", "Create secret"
+  operation: string;
   success: boolean;
   message?: string;
   error?: string;
 };
 
 export type StepSubmissionResult<T> = {
-  success: boolean; // Overall success (all operations succeeded)
-  message?: string; // Overall summary message
-  error?: string; // Overall error message
-  data?: T; // Form data
-  operations?: OperationResult[]; // Detailed results for each operation
+  success: boolean;
+  message?: string;
+  error?: string;
+  data?: T;
+  operations?: OperationResult[];
 };
 
 export type BaseStepRef<T> = {
@@ -41,13 +41,11 @@ export type UserStepSubmissionData =
   | ServiceAccountSubmissionData
   | ExistingServiceAccountSubmissionData;
 
-// User step-specific submission result
 export type UserStepSubmissionResult = {
   success: boolean;
   data?: UserStepSubmissionData;
 };
 
-// New ref type for user step
 export type UserStepRef = {
   triggerSubmit: () => Promise<UserStepSubmissionResult>;
   isPending: boolean;
@@ -60,7 +58,7 @@ export const addTopicFormSchema = z.object({
   topicName: z
     .string()
     .min(1, { message: 'Topic name is required.' })
-    .regex(/^[a-zA-Z0-9._@-]+$/, {
+    .regex(/^[a-zA-Z0-9._@-]+$/u, {
       message:
         'Must not contain any whitespace. Must be alphanumeric and can contain underscores, periods, and hyphens.',
     }),
@@ -125,7 +123,6 @@ export const CreatableSelectionOptions = {
 
 export type CreatableSelectionType = (typeof CreatableSelectionOptions)[keyof typeof CreatableSelectionOptions];
 
-// Authentication method options for pipeline
 export const AuthenticationMethod = {
   SASL: 'sasl',
   SERVICE_ACCOUNT: 'service-account',
@@ -133,7 +130,6 @@ export const AuthenticationMethod = {
 
 export type AuthenticationMethodType = (typeof AuthenticationMethod)[keyof typeof AuthenticationMethod];
 
-// Service account submission data
 export type ServiceAccountSubmissionData = {
   authMethod: 'service-account';
   serviceAccountName: string;

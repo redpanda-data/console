@@ -22,7 +22,7 @@ import {
 
 const SCHEMA_REGISTRY_DISABLED_TEXT = 'Schema Registry is not enabled.';
 
-export const createRule = (id: number, resourceType: ResourceType): Rule => ({
+export const createRule: (id: number, resourceType: ResourceType) => Rule = (id, resourceType) => ({
   id,
   resourceType,
   mode: ModeCustom,
@@ -31,9 +31,12 @@ export const createRule = (id: number, resourceType: ResourceType): Rule => ({
   operations: { ...getOperationsForResourceType(resourceType) },
 });
 
-export const getInitialRules = (rules?: Rule[]): Rule[] => rules ?? [createRule(1, ResourceTypeCluster)];
+export const getInitialRules = (rules?: Rule[]) => rules ?? [createRule(1, ResourceTypeCluster)];
 
-export const getInitialSharedConfig = (sharedConfig?: Partial<SharedConfig>, principalType?: string): SharedConfig => ({
+export const getInitialSharedConfig: (sharedConfig?: Partial<SharedConfig>, principalType?: string) => SharedConfig = (
+  sharedConfig,
+  principalType
+) => ({
   principal: sharedConfig?.principal ?? (principalType ? `${principalType}` : 'User:'),
   host: sharedConfig?.host ?? '*',
 });
@@ -41,11 +44,14 @@ export const getInitialSharedConfig = (sharedConfig?: Partial<SharedConfig>, pri
 const hasRuleOfType = (rules: Rule[], resourceType: ResourceType) =>
   rules.some((rule) => rule.resourceType === resourceType);
 
-// Only one cluster rule may exist, so later rules default to topics.
-export const getNextRuleResourceType = (rules: Rule[]): ResourceType =>
+/** Only one cluster rule may exist, so later rules default to topics. */
+export const getNextRuleResourceType = (rules: Rule[]) =>
   hasRuleOfType(rules, ResourceTypeCluster) ? ResourceTypeTopic : ResourceTypeCluster;
 
-export const createAllowAllRules = (schemaRegistryEnabled: boolean, firstId: number): Rule[] => {
+export const createAllowAllRules: (schemaRegistryEnabled: boolean, firstId: number) => Rule[] = (
+  schemaRegistryEnabled,
+  firstId
+) => {
   const resourceTypes = [
     ResourceTypeCluster,
     ResourceTypeTopic,
@@ -68,7 +74,6 @@ export const createAllowAllRules = (schemaRegistryEnabled: boolean, firstId: num
 export const hasConfiguredOperation = (rules: Rule[]) =>
   rules.some((rule) => Object.values(rule.operations).some((operation) => operation !== OperationTypeNotSet));
 
-// A resource type limited to one rule stays selectable on the rule that already uses it.
 const isSingleRuleTypeDisabled = (rules: Rule[], ruleId: number, resourceType: ResourceType, available: boolean) => {
   const currentRule = rules.find((rule) => rule.id === ruleId);
   if (!currentRule || currentRule.resourceType === resourceType) {
@@ -96,30 +101,34 @@ export const getSubjectTooltipText = (schemaRegistryEnabled: boolean) =>
     ? 'Only one subject rule is allowed. A subject rule already exists.'
     : SCHEMA_REGISTRY_DISABLED_TEXT;
 
-export const getResourceTypeChange = (resourceType: ResourceType): Partial<Rule> => {
+export const getResourceTypeChange: (resourceType: ResourceType) => Partial<Rule> = (resourceType) => {
   const { id: _id, ...changes } = createRule(0, resourceType);
   return changes;
 };
 
-const getModeOperation = (mode: string, current: OperationType): OperationType => {
+const getModeOperation = (mode: string, current: OperationType) => {
   if (mode === ModeAllowAll) {
     return OperationTypeAllow;
   }
   return mode === ModeDenyAll ? OperationTypeDeny : current;
 };
 
-export const getPermissionModeChange = (rule: Rule, mode: string): Partial<Rule> => ({
+export const getPermissionModeChange: (rule: Rule, mode: string) => Partial<Rule> = (rule, mode) => ({
   mode: mode as ModeType,
   operations: Object.fromEntries(
     Object.entries(rule.operations).map(([op, operationValue]) => [op, getModeOperation(mode, operationValue)])
   ),
 });
 
-// Moving one operation off the mode's permission turns an "allow all" or "deny all" rule into a custom one.
+// WARNING: Moving one operation off the common permission must convert an all-operations mode to a custom rule.
 const keepsMode = (mode: ModeType, value: string) =>
   (mode !== ModeAllowAll || value === OperationTypeAllow) && (mode !== ModeDenyAll || value === OperationTypeDeny);
 
-export const getOperationChange = (rule: Rule, operation: string, value: string): Partial<Rule> => ({
+export const getOperationChange: (rule: Rule, operation: string, value: string) => Partial<Rule> = (
+  rule,
+  operation,
+  value
+) => ({
   operations: { ...rule.operations, [operation]: value as OperationType },
   mode: keepsMode(rule.mode, value) ? rule.mode : ModeCustom,
 });
@@ -171,5 +180,7 @@ const PERMISSION_DESCRIPTIONS: Record<string, Record<string, string>> = {
   },
 };
 
-export const getPermissionDescription = (operation: string, resourceType: string): string | undefined =>
-  PERMISSION_DESCRIPTIONS[resourceType]?.[operation];
+export const getPermissionDescription: (operation: string, resourceType: string) => string | undefined = (
+  operation,
+  resourceType
+) => PERMISSION_DESCRIPTIONS[resourceType]?.[operation];

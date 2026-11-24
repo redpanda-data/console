@@ -30,7 +30,6 @@ export const postgresCdcTemplate: PipelineTemplate = {
       kind: 'string',
       label: 'Schema',
       description: 'Postgres schema the source tables live in.',
-      // Schema-required with no engine default; fall back to the conventional 'public'.
       required: false,
       placeholder: 'public',
       defaultWhenBlank: () => 'public',
@@ -41,7 +40,6 @@ export const postgresCdcTemplate: PipelineTemplate = {
       section: 'source',
       kind: 'string',
       label: 'Logical replication slot',
-      // Optional in the form; derive a stable name from the pipeline when blank so redeploys reuse the slot instead of orphaning one.
       required: false,
       placeholder: 'Auto-generated from pipeline name if blank',
       schemaField: 'slot_name',

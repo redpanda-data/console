@@ -45,18 +45,14 @@ import { AlertDeleteFailed } from '../shared/alert-delete-failed';
 import { filterByName } from '../shared/filter-by-name';
 import { SecurityTabsNav } from '../shared/security-tabs-nav';
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding
-// is off at table level. `getRowId` keeps an open row menu on its own principal across a refetch.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
   getRowId: (row: SimpleAcl) => `${row.principal}:${row.host}`,
 };
 
-// Context, not props, so `columns` closes over nothing and lives at module scope.
 const AclRowActionsContext = createContext<AclRowActionsContextValue | null>(null);
 
-/** Resolves to whether `action` succeeded; a failure is logged and reported instead of thrown. */
 const succeedsOrReports = async (
   action: () => Promise<void>,
   failureMessage: string,
@@ -82,7 +78,6 @@ const deleteAclRecord = async (ctx: AclRowActionsContextValue, record: SimpleAcl
       'failed to delete acls',
       onFailure
     ));
-  // Deleting the account too would orphan the ACLs that just failed to go.
   if (!aclsDeleted) {
     return;
   }
@@ -99,14 +94,12 @@ const AclRowActions: FC<{ record: SimpleAcl }> = ({ record }) => {
   }
   const { users, canDeleteUsers } = ctx;
 
-  // Only a User row may offer the user deletes; a same-named Group would delete an unrelated user.
+  // WARNING: Only a User row can offer account deletion; a Group with the same name is a different principal.
   const hasAccount = record.principalType === 'User' && users.some((u) => u.name === record.principalName);
   const canDeleteUser = hasAccount && canDeleteUsers;
 
   const handle = (user: boolean, acls: boolean) => (e: { stopPropagation: () => void }) => {
-    deleteAclRecord(ctx, record, user, acls).catch(() => {
-      // Error handling managed by API layer
-    });
+    deleteAclRecord(ctx, record, user, acls).catch(() => {});
     e.stopPropagation();
   };
 
@@ -138,7 +131,6 @@ const columns: DataTableColumnDef<SimpleAcl>[] = [
   {
     id: 'principal',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Principal" />,
-    // Sort on what the cell renders, not the `User:`-prefixed `principal`.
     accessorFn: (row) => row.principalName,
     cell: ({ row: { original: record } }) => (
       <Link
@@ -272,7 +264,6 @@ const AclsTabBody = ({
   );
 };
 
-// Page state lives above the error and loading returns so a failed refetch does not reset it.
 const AclsTabContent: FC = () => {
   const [aclFailed, setAclFailed] = useState<{ err: unknown } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');

@@ -13,7 +13,11 @@ import { buildSuggestions, computeGhost, type SuggestionsInput } from './filter-
 import { describe, expect, test } from 'bun:test';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
-const makeMsg = (partitionID: number, offset: number, value: unknown): TopicMessage => ({
+const makeMsg: (partitionID: number, offset: number, value: unknown) => TopicMessage = (
+  partitionID,
+  offset,
+  value
+) => ({
   partitionID,
   offset,
   timestamp: 0,
@@ -34,7 +38,7 @@ const messages = [
   makeMsg(1, 3, { type: 'INVOICE', address: { city: 'Berlin' } }),
 ];
 
-const input = (overrides: Partial<SuggestionsInput>): SuggestionsInput => ({
+const input: (overrides: Partial<SuggestionsInput>) => SuggestionsInput = (overrides) => ({
   query: '',
   pendingField: null,
   messages,
@@ -119,7 +123,6 @@ describe('buildSuggestions', () => {
     });
 
     test('a completed offset:N/offset>N/offset<N word offers all three comparison alternatives', () => {
-      // pendingField is always null in the free-text bar — this is the reachable path
       for (const query of ['offset:2', 'offset>2', 'offset<2', 'offset=2']) {
         const result = buildSuggestions(input({ query }));
         expect(itemLabels(result)).toEqual(['offset > 2', 'offset < 2', 'offset = 2']);

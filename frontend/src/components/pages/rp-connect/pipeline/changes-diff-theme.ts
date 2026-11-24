@@ -12,7 +12,6 @@
 import type { Monaco } from '@monaco-editor/react';
 import { type EditorTheme, editorTheme } from 'components/redpanda-ui/lib/editor-theme';
 
-/** The tokens the diff paints on top of the editor theme, and which theme token each reads. */
 const DIFF_TOKENS = {
   removed: '--color-surface-destructive',
   inserted: '--color-surface-success',
@@ -28,7 +27,7 @@ const DIFF_ALPHA = {
   fill: 0.6,
 } as const;
 
-const withAlpha = (hex: string, alpha: number): string =>
+const withAlpha = (hex: string, alpha: number) =>
   `${hex}${Math.round(alpha * 255)
     .toString(16)
     .padStart(2, '0')}`;
@@ -52,10 +51,9 @@ const hexChannel = (value: number) =>
   Math.max(0, Math.min(255, Math.round(value)))
     .toString(16)
     .padStart(2, '0');
-const RGB_PARTS = /-?[\d.]+/g;
+const RGB_PARTS = /-?[\d.]+/gu;
 
-/** `rgb(24, 24, 24)` → `#181818`; alpha is dropped since the tiers above supply their own. */
-const toHex = (painted: string): string => {
+const toHex = (painted: string) => {
   const parts = (painted.match(RGB_PARTS) ?? []).map(Number);
   if (parts.length < 3) {
     return '#000000';
@@ -63,8 +61,7 @@ const toHex = (painted: string): string => {
   return `#${hexChannel(parts[0])}${hexChannel(parts[1])}${hexChannel(parts[2])}`;
 };
 
-// Monaco can't read CSS vars: paint each token on a probe and read the rgb() back, as redpanda-ui/lib/editor-theme does.
-const resolveDiffBase = (): DiffBase => {
+const resolveDiffBase = () => {
   const probe = document.createElement('span');
   probe.style.display = 'none';
   document.body.append(probe);
@@ -81,8 +78,7 @@ const resolveDiffBase = (): DiffBase => {
 
 export const DIFF_THEME = 'rpcn-changes-diff';
 
-// Transparent chrome so the panel surface shows through, as the YAML lanes' `redpanda-yaml` theme does.
-export const diffTheme = (editor: EditorTheme, base: DiffBase): EditorTheme => {
+export const diffTheme: (editor: EditorTheme, base: DiffBase) => EditorTheme = (editor, base) => {
   const colors = diffColors(base);
   return {
     ...editor,
@@ -103,7 +99,6 @@ export const diffTheme = (editor: EditorTheme, base: DiffBase): EditorTheme => {
   };
 };
 
-// A snapshot, not a binding — run again on every theme flip.
 export const applyDiffTheme = (monaco: Monaco) => {
   monaco.editor.defineTheme(DIFF_THEME, diffTheme(editorTheme({ transparentBackground: true }), resolveDiffBase()));
   monaco.editor.setTheme(DIFF_THEME);

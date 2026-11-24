@@ -76,14 +76,14 @@ export class TopicPage {
   }
 
   async fillPartitions(partitions: string) {
-    const partitionsInput = this.page.getByPlaceholder(/partitions/i);
+    const partitionsInput = this.page.getByPlaceholder(/partitions/iu);
     if (await partitionsInput.isVisible()) {
       await partitionsInput.fill(partitions);
     }
   }
 
   async fillReplicationFactor(replicationFactor: string) {
-    const replicationInput = this.page.getByPlaceholder(/replication/i);
+    const replicationInput = this.page.getByPlaceholder(/replication/iu);
     if ((await replicationInput.isVisible()) && !(await replicationInput.isDisabled())) {
       await replicationInput.fill(replicationFactor);
     }
@@ -114,7 +114,7 @@ export class TopicPage {
    * Topic details operations
    */
   async verifyTopicDetailsVisible(topicName: string) {
-    await expect(this.page).toHaveURL(new RegExp(`/topics/${topicName}`));
+    await expect(this.page).toHaveURL(new RegExp(`/topics/${topicName}`, 'u'));
     await expect(this.page.getByText(topicName)).toBeVisible();
   }
 
@@ -141,17 +141,16 @@ export class TopicPage {
     if (format === 'csv') {
       await this.page.getByTestId('csv_field').click();
     }
-    // JSON is default, no action needed
   }
 
   async confirmExport() {
-    const dialog = this.page.getByRole('dialog', { name: /save message/i });
-    const saveButton = dialog.getByRole('button', { name: /save/i });
+    const dialog = this.page.getByRole('dialog', { name: /save message/iu });
+    const saveButton = dialog.getByRole('button', { name: /save/iu });
     await saveButton.click();
   }
 
   async copyMessageValue() {
-    await this.page.getByRole('button', { name: /copy value/i }).click();
+    await this.page.getByRole('button', { name: /copy value/iu }).click();
   }
 
   async verifyClipboardContent(expectedContent: string) {
@@ -180,7 +179,7 @@ export class TopicPage {
     await expect(this.page.getByRole('heading', { name: groupName })).toBeVisible();
   }
 
-  async getConfigurationGroups(): Promise<string[]> {
+  async getConfigurationGroups() {
     return await this.page
       .getByRole('navigation', { name: 'Configuration categories' })
       .getByRole('button')
@@ -195,7 +194,7 @@ export class TopicPage {
   }
 
   async verifyOnTopicsListPage() {
-    await expect(this.page).toHaveURL(/\/topics\/?(\?.*)?$/);
+    await expect(this.page).toHaveURL(/\/topics\/?(?:\?.*)?$/u);
   }
 
   /**
@@ -208,7 +207,6 @@ export class TopicPage {
   }
 
   async fillKeyEditor(content: string) {
-    // The key is a single-line input until "Expand" swaps in the code editor.
     const keyInput = this.page.getByTestId('produce-key-editor').getByRole('textbox');
     await keyInput.fill(content);
     await expect(keyInput).toHaveValue(content);
@@ -227,7 +225,7 @@ export class TopicPage {
   }
 
   async verifyMessageProduced(message: string) {
-    await expect(this.page.getByRole('cell', { name: new RegExp(message, 'i') }).first()).toBeVisible({
+    await expect(this.page.getByRole('cell', { name: new RegExp(message, 'iu') }).first()).toBeVisible({
       timeout: 10_000,
     });
   }
@@ -239,11 +237,6 @@ export class TopicPage {
   async verifyMessageInTopic(message: string) {
     await expect(this.page.getByText(message)).toBeVisible();
   }
-
-  /**
-   * High-level convenience methods
-   * These combine multiple operations for common workflows
-   */
 
   /**
    * Creates a topic with the given name through the UI
@@ -267,10 +260,9 @@ export class TopicPage {
   async deleteTopic(topicName: string) {
     return await step('Delete topic', async () => {
       await this.goToTopicsList();
-      await this.verifyTopicInList(topicName); // Verify topic exists
+      await this.verifyTopicInList(topicName);
       await this.page.getByTestId(`topic-actions-trigger-${topicName}`).click();
       await this.page.getByTestId(`delete-topic-button-${topicName}`).dispatchEvent('click');
-      // New topic page requires typing "delete" to confirm
       const confirmationInput = this.page.getByPlaceholder('Type "delete" to confirm');
       if (await confirmationInput.isVisible({ timeout: 2000 }).catch(() => false)) {
         await confirmationInput.fill('delete');

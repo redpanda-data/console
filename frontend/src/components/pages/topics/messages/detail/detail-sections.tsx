@@ -24,8 +24,6 @@ import type { DetailSectionKey } from './detail-view-state';
 import { TonedIcon } from '../../../shared/toned-icon';
 import { PayloadComponent } from '../../Tab.Messages/message-display/payload-component';
 
-/** Accordion section with an uppercase label, optional right-side meta and copy action.
- * Open state is controlled by the parent `Accordion` root — it lives in the persisted detail view state. */
 const DetailSection = ({
   label,
   value,
@@ -37,22 +35,16 @@ const DetailSection = ({
   fill,
 }: {
   label: string;
-  /** Item value inside the parent `Accordion` root. */
   value: DetailSectionKey;
-  /** Only needed by `fill` styling; toggling is handled by the accordion root. */
   open?: boolean;
   meta?: string;
   copyContent?: string;
   children: ReactNode;
   testId: string;
-  /** Stretch this section to fill the remaining panel height while open. */
   fill?: boolean;
 }) => (
   <AccordionItem
     className={cn(
-      // `relative` anchors the copy button: it can't live in the trigger's `end` slot
-      // (a button inside the trigger button), so it overlays the header row instead.
-      // The simple accordion variant already draws the item's `border-b`.
       'relative shrink-0',
       fill &&
         open &&
@@ -132,7 +124,6 @@ export const MetadataSection = ({ msg }: SectionProps) => (
 
 const payloadMeta = (payload: Payload) => `${String(payload.encoding).toUpperCase()} – ${prettyBytes(payload.size)}`;
 
-/** Compact deserialization-failure report (e.g. a forced Protobuf decoder on text payloads). */
 const TroubleshootNote = ({ payload }: { payload: Payload }) => {
   const report = payload.troubleshootReport;
   if (!report || report.length === 0) {
@@ -181,7 +172,6 @@ const headerValueText = (value: Payload) => {
   return typeof value.payload === 'object' ? JSON.stringify(value.payload) : String(value.payload);
 };
 
-/** Compact key/value table (the design mock's header list — no table chrome or pagination). */
 const HeaderGrid = ({ headers }: { headers: TopicMessage['headers'] }) => (
   <div className="overflow-hidden rounded-md border bg-card">
     <table className="w-full table-fixed border-collapse">
@@ -235,6 +225,9 @@ export const HeadersSection = ({ msg }: SectionProps) => (
   </DetailSection>
 );
 
+/**
+ * The root owns persisted accordion state. In expanded layout the open value section can fill the remaining height.
+ */
 export const ValueSection = ({
   msg,
   loadLargeMessage,

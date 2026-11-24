@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const getStateFile = (variantName) => resolve(__dirname, '..', `.testcontainers-state-${variantName}.json`);
-const MISSING_DOCKER_RESOURCE_PATTERN = /No such (container|network)/i;
+const MISSING_DOCKER_RESOURCE_PATTERN = /No such (?:container|network)/iu;
 
 function isAlreadyRemoved(error) {
   const output = `${error?.message ?? ''}\n${error?.stderr ?? ''}`;

@@ -101,7 +101,6 @@ export function showErrorModal(title: string, subTitle: React.ReactNode, content
   const key = nextErrorKey;
   nextErrorKey += 1;
 
-  // keep formatting for strings
   let formattedContent = content;
   if (typeof content === 'string') {
     formattedContent = (
@@ -140,12 +139,10 @@ const onClose = (key: number) => {
   const next = errorModals.length > 1 ? errorModals[1] : undefined;
 
   if (next) {
-    // Switch to next — don't animate current or next modal
     current.animate = false;
     next.animate = false;
-    afterClose(key); // immediately switch to next
+    afterClose(key);
   } else {
-    // last modal
     current.animate = true;
     current.isVisible = false;
   }

@@ -31,7 +31,7 @@ function buildTabs(
   featureCreateUser: boolean,
   featureRolesApi: boolean,
   userData: { canManageUsers?: boolean; canListAcls?: boolean; canViewPermissionsList?: boolean } | null | undefined
-): TabConfig[] {
+) {
   const usersDisabledByApi = !featureCreateUser;
   const usersDisabledByRbac = userData?.canManageUsers !== undefined && userData?.canManageUsers === false;
 
@@ -78,7 +78,7 @@ function buildTabs(
   return result;
 }
 
-function deriveActiveTab(pathname: string, tabs: TabConfig[]): string {
+function deriveActiveTab(pathname: string, tabs: TabConfig[]) {
   for (const tab of tabs) {
     if (pathname === tab.path || pathname.startsWith(`${tab.path}/`)) {
       return tab.key;

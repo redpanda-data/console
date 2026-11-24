@@ -37,8 +37,9 @@ import {
 import { CollapsibleSectionCard } from '../create/collapsible-section-card';
 import type { FormValues } from '../create/model';
 
-/** Tone + emphasis for a status badge. `optional` carries no tone, so it stays a plain outline. */
-const getBadgeStyle = (status: ShadowingStatus): { tone?: BadgeTone; variant: BadgeEmphasis | BadgeVariant } => {
+const getBadgeStyle: (status: ShadowingStatus) => { tone?: BadgeTone; variant: BadgeEmphasis | BadgeVariant } = (
+  status
+) => {
   switch (status) {
     case 'always':
       return { tone: 'success', variant: 'subtle' };
@@ -51,10 +52,7 @@ const getBadgeStyle = (status: ShadowingStatus): { tone?: BadgeTone; variant: Ba
   }
 };
 
-/**
- * Format status label for display
- */
-const formatStatusLabel = (status: ShadowingStatus): string => {
+const formatStatusLabel: (status: ShadowingStatus) => string = (status) => {
   switch (status) {
     case 'always':
       return 'Always';
@@ -69,10 +67,7 @@ const formatStatusLabel = (status: ShadowingStatus): string => {
   }
 };
 
-/**
- * Get tooltip message for disabled properties
- */
-const getTooltipMessage = (property: { status: ShadowingStatus[] }): string | null => {
+const getTooltipMessage: (property: { status: ShadowingStatus[] }) => string | null = (property) => {
   if (property.status.includes('always')) {
     return 'Required property - always replicated to shadow cluster';
   }
@@ -82,9 +77,6 @@ const getTooltipMessage = (property: { status: ShadowingStatus[] }): string | nu
   return null;
 };
 
-/**
- * Individual property item with toggle switch
- */
 type TopicPropertyItemProps = {
   property: {
     name: string;
@@ -146,9 +138,6 @@ const TopicPropertyItem = ({ property, isSelected, isEditable, onToggle }: Topic
   );
 };
 
-/**
- * Exclude default properties toggle
- */
 const ExcludeDefaultToggle = () => {
   const { control } = useFormContext<FormValues>();
 
@@ -180,10 +169,6 @@ const ExcludeDefaultToggle = () => {
   );
 };
 
-/**
- * The explicit property list after the "exclude defaults" toggle flips, or `undefined` when it is
- * already in sync: excluding drops every default property, including adds the missing ones.
- */
 const syncDefaultProperties = (topicProperties: string[], excludeDefault: boolean | undefined) => {
   const defaultProps = getDefaultProperties();
   if (excludeDefault) {
@@ -194,6 +179,9 @@ const syncDefaultProperties = (topicProperties: string[], excludeDefault: boolea
   return propsToAdd.length > 0 ? [...topicProperties, ...propsToAdd] : undefined;
 };
 
+/**
+ * Excluding defaults drops those properties; including defaults adds only missing ones. A state already in sync does not write a new form value.
+ */
 export const TopicConfigTab = () => {
   const { control, setValue } = useFormContext<FormValues>();
   const [isOpen, setIsOpen] = useState(false);
@@ -203,20 +191,14 @@ export const TopicConfigTab = () => {
   const excludeDefault = useWatch({ control, name: 'excludeDefault' });
   const propertiesByCategory = getPropertiesByCategory();
 
-  /**
-   * Sync default properties when excludeDefault toggle changes
-   */
   useEffect(() => {
-    // Skip on initial mount or if excludeDefault hasn't changed
     if (prevExcludeDefault.current === excludeDefault) {
       return;
     }
 
-    // Update ref for next comparison
     const previousValue = prevExcludeDefault.current;
     prevExcludeDefault.current = excludeDefault;
 
-    // Skip on initial mount
     if (previousValue === undefined) {
       return;
     }
@@ -227,17 +209,12 @@ export const TopicConfigTab = () => {
     }
   }, [excludeDefault, topicProperties, setValue]);
 
-  /**
-   * Toggle a property in the topicProperties array
-   */
   const handlePropertyToggle = (propertyName: string, checked: boolean) => {
     if (checked) {
-      // Add property if not already in the list
       if (!topicProperties.includes(propertyName)) {
         setValue('topicProperties', [...topicProperties, propertyName], { shouldDirty: true });
       }
     } else {
-      // Remove property from the list
       setValue(
         'topicProperties',
         topicProperties.filter((p) => p !== propertyName),
@@ -246,11 +223,7 @@ export const TopicConfigTab = () => {
     }
   };
 
-  /**
-   * Check if a property is currently selected for replication
-   */
-  const isPropertySelected = (propertyName: string): boolean => {
-    // Always replicated properties are always "on"
+  const isPropertySelected = (propertyName: string) => {
     if (isPropertyAlwaysReplicated(propertyName)) {
       return true;
     }
@@ -274,10 +247,8 @@ export const TopicConfigTab = () => {
       toggleTestId="topic-config-toggle-button"
     >
       <CardContent>
-        {/* Exclude Default Toggle */}
         <ExcludeDefaultToggle />
 
-        {/* Summary view when collapsed */}
         {!isOpen && (
           <div className="space-y-2">
             <div className="text-body-sm">
@@ -287,7 +258,6 @@ export const TopicConfigTab = () => {
           </div>
         )}
 
-        {/* Full editable view when expanded */}
         <CollapsibleContent>
           <Accordion defaultValue={CATEGORY_ORDER} multiple>
             {CATEGORY_ORDER.map((category) => {

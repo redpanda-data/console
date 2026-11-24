@@ -14,19 +14,19 @@ import type { ReactNode } from 'react';
 import { splitControlChars } from './split-control-chars';
 import { getControlCharacterName } from '../helpers';
 
-// A control character renders as its name; a line feed also breaks the line.
-function controlCharElements(code: number, position: number): ReactNode[] {
+function controlCharElements(code: number, position: number) {
   const label = (
     <span className="controlChar" key={`char-${position}`}>
       {getControlCharacterName(code)}
     </span>
   );
-  return code === 10 ? [label, <br key={`break-${position}`} />] : [label];
+  const elements: ReactNode[] = code === 10 ? [label, <br key={`break-${position}`} />] : [label];
+  return elements;
 }
 
 /** Renders text with its ASCII control characters spelled out, for example `LF` for a line feed. */
-export function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
-  return splitControlChars(str, maxLength).flatMap((part, position) =>
+export function highlightControlChars(str: string, maxLength?: number) {
+  return splitControlChars(str, maxLength).flatMap<ReactNode>((part, position) =>
     typeof part === 'string' ? [part] : controlCharElements(part, position)
   );
 }

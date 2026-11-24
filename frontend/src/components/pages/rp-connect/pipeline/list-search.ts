@@ -14,9 +14,6 @@ import { z } from 'zod';
 
 import { PIPELINE_STATE_TABS, type PipelineStateTabId, stateFilterValues } from './list-utils';
 
-// The list's view as URL search params, so a view can be linked and survives a reload. Every key is
-// optional and drops out when it holds its default; a value that doesn't parse is ignored.
-
 const TAB_IDS = PIPELINE_STATE_TABS.map((tab) => tab.id) as [PipelineStateTabId, ...PipelineStateTabId[]];
 const SORTABLE_COLUMNS = ['state', 'name'] as const;
 const values = z.array(z.string()).optional().catch(undefined);
@@ -41,12 +38,11 @@ export const pipelineListSearchSchema = z.object({
 export type PipelineListSearch = z.infer<typeof pipelineListSearchSchema>;
 
 /** The search params' list keys, parsed; anything else in them is left out. */
-export function readPipelineListSearch(search: unknown): PipelineListSearch {
+export function readPipelineListSearch(search: unknown) {
   const parsed = pipelineListSearchSchema.safeParse(search ?? {});
   return parsed.success ? parsed.data : {};
 }
 
-// Facet columns and the search keys that hold them.
 const FILTER_KEYS = {
   inputs: 'input',
   outputs: 'output',
@@ -55,7 +51,7 @@ const FILTER_KEYS = {
 } as const satisfies Record<string, keyof PipelineListSearch>;
 
 /** The table's column filters for `search`: its tab, its name search, and each facet. */
-export function columnFiltersFromSearch(search: PipelineListSearch): ColumnFiltersState {
+export function columnFiltersFromSearch(search: PipelineListSearch) {
   const filters: ColumnFiltersState = [];
   const tab = PIPELINE_STATE_TABS.find((t) => t.id === search.tab);
   const states = tab ? stateFilterValues(tab) : undefined;
@@ -68,30 +64,29 @@ export function columnFiltersFromSearch(search: PipelineListSearch): ColumnFilte
   const facets = Object.entries(FILTER_KEYS).flatMap(([id, key]) =>
     search[key]?.length ? [{ id, value: search[key] }] : []
   );
-  return [...filters, ...facets];
+  const columnFiltersState: ColumnFiltersState = [...filters, ...facets];
+  return columnFiltersState;
 }
 
 /** The facet keys for a table's column filters; the tab and name search have keys of their own. */
-export function facetSearchFromFilters(
-  filters: ColumnFiltersState
-): Pick<PipelineListSearch, (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS]> {
-  return Object.fromEntries(
+export function facetSearchFromFilters(filters: ColumnFiltersState) {
+  const facets: Pick<PipelineListSearch, (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS]> = Object.fromEntries(
     Object.entries(FILTER_KEYS).map(([id, key]) => {
       const value = filters.find((filter) => filter.id === id)?.value;
       return [key, Array.isArray(value) && value.length > 0 ? (value as string[]) : undefined];
     })
   );
+  return facets;
 }
 
-// Status first, so error and transitioning pipelines land on page 1 of a large cluster.
 const DEFAULT_SORT: SortingState = [{ id: 'state', desc: false }];
 
-export function sortingFromSearch(search: PipelineListSearch): SortingState {
+export function sortingFromSearch(search: PipelineListSearch) {
   return search.sort ? [{ id: search.sort, desc: search.desc ?? false }] : DEFAULT_SORT;
 }
 
 /** The sort keys for a table's sorting; the default sort leaves them out. */
-export function sortSearchFromSorting(sorting: SortingState): Pick<PipelineListSearch, 'sort' | 'desc'> {
+export function sortSearchFromSorting(sorting: SortingState) {
   const [first] = sorting;
   const sort = SORTABLE_COLUMNS.find((id) => id === first?.id);
   if (!sort || (sort === 'state' && !first.desc)) {
@@ -104,7 +99,7 @@ export function sortSearchFromSorting(sorting: SortingState): Pick<PipelineListS
 export function nextPipelineListSearch(
   search: Record<string, unknown>,
   patch: Partial<Record<keyof PipelineListSearch, unknown>>
-): Record<string, unknown> {
+) {
   const next: Record<string, unknown> = { ...search, ...patch };
   for (const [key, value] of Object.entries(next)) {
     const empty = value === undefined || value === '' || (Array.isArray(value) && value.length === 0);

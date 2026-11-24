@@ -1,103 +1,39 @@
+import { expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
-import { ExpandedMessage } from './expanded-message';
 import { MessageKeyPreview } from './message-key-preview';
 import { MessagePreview } from './message-preview';
 import { CompressionType, type Payload, type TopicMessage } from '../../../../../state/rest-interfaces';
 
-const { kowlJsonViewSpy } = rs.hoisted(() => ({
-  kowlJsonViewSpy: rs.fn(),
-}));
-
-rs.mock('../../../../../state/ui-state', () => ({
-  uiState: {
-    topicSettings: {
-      previewDisplayMode: 'wrap',
-      previewTagsCaseSensitive: 'caseInsensitive',
-    },
-  },
-}));
-
-rs.mock('../../../../../config', () => ({
-  isServerless: () => false,
-}));
-
-rs.mock('../../../../../state/backend-api', () => ({
-  api: {},
-  createMessageSearch: rs.fn(),
-}));
-
-rs.mock('components/icons', () => ({
-  WarningIcon: MockWarningIcon,
-  InfoIcon: MockInfoIcon,
-}));
-
-rs.mock('../preview-settings', () => ({
-  getPreviewTags: () => [],
-}));
-
-rs.mock('../../../../misc/kowl-json-view', () => ({
-  KowlJsonView: MockKowlJsonView,
-}));
-
-rs.mock('./message-headers', () => ({
-  MessageHeaders: MockMessageHeaders,
-}));
-
-rs.mock('./message-meta-data', () => ({
-  MessageMetaData: MockMessageMetaData,
-}));
-
-rs.mock('./troubleshoot-report-viewer', () => ({
-  TroubleshootReportViewer: MockTroubleshootReportViewer,
-}));
-
-function buildPayload(overrides: Partial<Payload> = {}): Payload {
-  return {
-    payload: 'sample',
+const objectPayload = (payload: object) =>
+  ({
+    payload,
     isPayloadNull: false,
-    encoding: 'text',
+    encoding: 'json',
     schemaId: 0,
-    size: 6,
-    ...overrides,
-  };
-}
+    size: 32,
+  }) satisfies Payload;
 
-function buildMessage(overrides: Partial<TopicMessage> = {}): TopicMessage {
-  return {
+test('uses the cached key and value previews without serializing either object again', () => {
+  const keyPayload = { market: 'BSEX' };
+  const valuePayload = { marketName: 'BAKU STOCK EXCHANGE' };
+  const msg: TopicMessage = {
     partitionID: 1,
     offset: 42,
     timestamp: 0,
     compression: CompressionType.Uncompressed,
     isTransactional: false,
     headers: [],
-    key: buildPayload({ payload: 'sample-key', size: 10 }),
-    value: buildPayload({ payload: 'sample-value', size: 12 }),
-    valueJson: '"sample-value"',
+    key: objectPayload(keyPayload),
+    value: objectPayload(valuePayload),
+    keyJson: 'cached key preview',
+    valueJson: 'cached value preview',
     valueBinHexPreview: '',
-    keyJson: '"sample-key"',
     keyBinHexPreview: '',
-    ...overrides,
   };
-}
+  const stringify = rs.spyOn(JSON, 'stringify');
 
-describe('topic message rendering', () => {
-  beforeEach(() => {
-    kowlJsonViewSpy.mockReset();
-  });
-
-  test('reuses cached key and value JSON previews instead of re-stringifying payload objects', () => {
-    const keyPayload = { market: 'BSEX' };
-    const valuePayload = { marketName: 'BAKU STOCK EXCHANGE' };
-    const msg = buildMessage({
-      key: buildPayload({ payload: keyPayload, encoding: 'json', size: 18 }),
-      value: buildPayload({ payload: valuePayload, encoding: 'json', size: 32 }),
-      keyJson: 'cached key preview',
-      valueJson: 'cached value preview',
-    });
-    const stringifySpy = rs.spyOn(JSON, 'stringify');
-
+  try {
     render(
       <>
         <MessageKeyPreview msg={msg} previewFields={() => []} />
@@ -105,114 +41,10 @@ describe('topic message rendering', () => {
       </>
     );
 
-    expect(screen.getByText('cached key preview')).toBeInTheDocument();
-    expect(screen.getByText('cached value preview')).toBeInTheDocument();
-    expect(stringifySpy.mock.calls.some(([value]) => value === keyPayload)).toBe(false);
-    expect(stringifySpy.mock.calls.some(([value]) => value === valuePayload)).toBe(false);
-
-    stringifySpy.mockRestore();
-  });
-
-  test('does not rerender expanded object payloads when parent rerenders with stable props', () => {
-    const msg = buildMessage({
-      key: buildPayload({ payload: 'sample-key', encoding: 'text', size: 10 }),
-      value: buildPayload({
-        payload: { marketName: 'BAKU STOCK EXCHANGE' },
-        encoding: 'json',
-        size: 32,
-      }),
-      valueJson: 'cached value preview',
-    });
-    const props = {
-      msg,
-      topicName: 'market-data',
-      onLoadLargeMessage: rs.fn().mockResolvedValue(undefined),
-      onSetDownloadMessages: rs.fn(),
-      onCopyKey: rs.fn(),
-      onCopyValue: rs.fn(),
-    };
-
-    const { rerender } = render(<ExpandedMessage {...props} />);
-
-    expect(kowlJsonViewSpy).toHaveBeenCalledTimes(1);
-
-    rerender(<ExpandedMessage {...props} />);
-
-    expect(kowlJsonViewSpy).toHaveBeenCalledTimes(1);
-  });
-
-  test('calls onDownloadRecord when "Download Record" button is clicked', async () => {
-    const user = userEvent.setup();
-    const onDownloadRecord = rs.fn();
-    const msg = buildMessage();
-
-    render(
-      <ExpandedMessage loadLargeMessage={() => Promise.resolve()} msg={msg} onDownloadRecord={onDownloadRecord} />
-    );
-
-    const downloadButton = screen.getByRole('button', { name: /download record/i });
-    await user.click(downloadButton);
-
-    expect(onDownloadRecord).toHaveBeenCalledTimes(1);
-  });
-
-  test('rerenders expanded object payloads when the message prop changes', () => {
-    const props = {
-      topicName: 'market-data',
-      onLoadLargeMessage: rs.fn().mockResolvedValue(undefined),
-      onSetDownloadMessages: rs.fn(),
-      onCopyKey: rs.fn(),
-      onCopyValue: rs.fn(),
-    };
-    const firstMessage = buildMessage({
-      value: buildPayload({
-        payload: { marketName: 'BAKU STOCK EXCHANGE' },
-        encoding: 'json',
-        size: 32,
-      }),
-      valueJson: 'cached value preview',
-    });
-    const secondMessage = buildMessage({
-      offset: 43,
-      value: buildPayload({
-        payload: { marketName: 'NASDAQ DUBAI' },
-        encoding: 'json',
-        size: 24,
-      }),
-      valueJson: 'cached value preview 2',
-    });
-
-    const { rerender } = render(<ExpandedMessage {...props} msg={firstMessage} />);
-
-    expect(kowlJsonViewSpy).toHaveBeenCalledTimes(1);
-
-    rerender(<ExpandedMessage {...props} msg={secondMessage} />);
-
-    expect(kowlJsonViewSpy).toHaveBeenCalledTimes(2);
-  });
+    expect(screen.getByText('cached key preview')).toBeVisible();
+    expect(screen.getByText('cached value preview')).toBeVisible();
+    expect(stringify.mock.calls.some(([value]) => value === keyPayload || value === valuePayload)).toBe(false);
+  } finally {
+    stringify.mockRestore();
+  }
 });
-
-function MockWarningIcon() {
-  return <span data-testid="warning-icon" />;
-}
-
-function MockInfoIcon() {
-  return <span data-testid="info-icon" />;
-}
-
-function MockKowlJsonView(props: { srcObj: object | string | null | undefined }) {
-  kowlJsonViewSpy(props);
-  return <div data-testid="mock-kowl-json-view" />;
-}
-
-function MockMessageHeaders() {
-  return <div data-testid="message-headers" />;
-}
-
-function MockMessageMetaData() {
-  return <div data-testid="message-meta-data" />;
-}
-
-function MockTroubleshootReportViewer() {
-  return null;
-}

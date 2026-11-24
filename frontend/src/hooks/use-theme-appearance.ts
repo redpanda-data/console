@@ -11,42 +11,32 @@ export type ThemeAppearance = 'light' | 'dark';
 type Srgb = [r: number, g: number, b: number];
 
 const GROUND_TOKEN = '--color-background';
-/** Keep in step with `isDarkGround` in redpanda-ui/lib/editor-theme, or Monaco disagrees with the shell. */
+// WARNING: Keep the cutoff aligned with the registry editor's isDarkGround so Monaco and Console agree on the same theme.
 const DARK_BELOW = 0.4;
 
-/** Painting resolves the token whatever it is — a hex, a `var()` chain, a wash. */
-const paintGround = (): string => {
+const paintGround = () => {
   const probe = document.createElement('span');
   probe.style.display = 'none';
   probe.style.color = `var(${GROUND_TOKEN})`;
-  // `body` is missing only if this runs before mount; the root carries the same palette.
   (document.body ?? document.documentElement).append(probe);
   const painted = getComputedStyle(probe).color;
   probe.remove();
   return painted;
 };
 
-/** One pixel is all a single colour needs to rasterise. */
-const createPixelCanvas = (): HTMLCanvasElement => {
+const createPixelCanvas = () => {
   const canvas = document.createElement('canvas');
   canvas.width = 1;
   canvas.height = 1;
   return canvas;
 };
 
-/**
- * Canvas rather than a regex: a computed colour can come back as `rgb()`, `color(srgb …)` from a
- * `color-mix()`, or `oklch()` verbatim, and reading the first three numbers out of the last two
- * misreads them badly — `color(srgb 0.9 0.9 0.9)` is near-white, not near-black. Rasterising hands
- * back sRGB bytes for every format. Null when there is no canvas, as in jsdom.
- */
-const toSrgb = (painted: string): Srgb | null => {
+const toSrgb: (painted: string) => Srgb | null = (painted) => {
   const canvas = createPixelCanvas();
   const context = canvas.getContext('2d', { willReadFrequently: true });
   if (!(context && painted)) {
     return null;
   }
-  // An unparseable colour leaves the previous fill, so seed the safe answer rather than black.
   context.fillStyle = '#ffffff';
   context.fillStyle = painted;
   context.fillRect(0, 0, 1, 1);
@@ -63,7 +53,7 @@ const toLinear = (value: number) => {
  * Exported for tests — the DOM and canvas halves can't run in jsdom. An unreadable ground counts as
  * light: a light surface in a dark shell is untidy, the reverse can be unreadable.
  */
-export const classifyGround = (ground: Srgb | null): ThemeAppearance => {
+export const classifyGround: (ground: Srgb | null) => ThemeAppearance = (ground) => {
   if (!ground) {
     return 'light';
   }
@@ -72,14 +62,11 @@ export const classifyGround = (ground: Srgb | null): ThemeAppearance => {
   return luminance < DARK_BELOW ? 'dark' : 'light';
 };
 
-/** Shared: the appearance belongs to the document, not to any one subscriber. */
 let cached: ThemeAppearance | null = null;
 
-// A palette swap always lands on the root — that is how theme.css itself is keyed.
 const THEME_ATTRIBUTES = ['class', 'data-theme', 'data-theme-palette', 'style'];
 
-function subscribe(onStoreChange: () => void): () => void {
-  // Nothing was watching until now, so any cached answer may predate a theme change.
+function subscribe(onStoreChange: () => void) {
   cached = null;
   const observer = new MutationObserver(() => {
     cached = null;
@@ -89,12 +76,14 @@ function subscribe(onStoreChange: () => void): () => void {
   return () => observer.disconnect();
 }
 
-// Cached so this stays cheap across renders; the observer clears it.
-const getSnapshot = (): ThemeAppearance => {
+const getSnapshot = () => {
   cached ??= classifyGround(toSrgb(paintGround()));
   return cached;
 };
 
-export function useThemeAppearance(): ThemeAppearance {
-  return useSyncExternalStore(subscribe, getSnapshot, () => 'light');
+/**
+ * Derives appearance from the painted background, not a theme name or assumed CSS color syntax. Canvas normalizes variable-backed and wide-gamut colors to sRGB before classification. The snapshot is document-wide.
+ */
+export function useThemeAppearance() {
+  return useSyncExternalStore<ThemeAppearance>(subscribe, getSnapshot, () => 'light');
 }

@@ -12,7 +12,6 @@ export type SecretInputProps = {
 };
 
 const EditButton = ({ onClick }: { onClick: () => void }) => (
-  // Without a provider the trigger falls back to Base UI's 600ms open delay; the app's is 150ms.
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger
@@ -33,10 +32,12 @@ const ClearButton = ({ onClick }: { onClick: () => void }) => (
   </Button>
 );
 
+/**
+ * Uses its own edit buffer. Undo must remount the password input so the registry's reveal state cannot leave the restored secret visible.
+ */
 export const SecretInput = ({ id, value, onChange, required, updating = false }: SecretInputProps) => {
   const initialValueRef = useRef(value);
   const [canEdit, setCanEdit] = useState(!updating);
-  // Intentionally seeded from prop: localValue is edited independently during user interaction
   const [localValue, setLocalValue] = useState(() => value);
 
   const editButton = (
@@ -60,12 +61,6 @@ export const SecretInput = ({ id, value, onChange, required, updating = false }:
 
   return (
     <div className="flex flex-row gap-2">
-      {/*
-        The Registry Input owns the reveal toggle for `type="password"`, and disables it while the
-        field is read-only — which is the state an existing secret sits in before Edit. `key` is
-        what re-masks on Undo: the toggle's state lives inside the Input, so the transition out of
-        editing has to remount it or Undo would leave the restored secret in plain text.
-      */}
       <Input
         id={id}
         key={canEdit ? 'editing' : 'masked'}

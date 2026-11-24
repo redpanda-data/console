@@ -7,7 +7,6 @@ import { Feature, useSupportedFeaturesStore } from '../../state/supported-featur
 
 describe('the SidebarNavigation re-renders on endpointCompatibility change (UX-972)', () => {
   afterEach(() => {
-    // Reset store to initial state between tests
     useSupportedFeaturesStore.setState({
       endpointCompatibility: null,
       sqlApi: false,
@@ -67,19 +66,13 @@ describe('the SidebarNavigation re-renders on endpointCompatibility change (UX-9
       ],
     };
 
-    // Zustand's useSyncExternalStore subscriber schedules the re-render
-    // synchronously, but renderHook's TestComponent runs a trailing useEffect
-    // to sync `result.current`. Await act() around the store mutation so
-    // the boundary awaits the microtask + effect flush before the assertion.
     await act(() => {
       useSupportedFeaturesStore.getState().setEndpointCompatibility(compatibility);
     });
 
     expect(result.current).toBe(compatibility);
 
-    // Unmount before the afterEach's store reset fires, otherwise the
-    // reset triggers an update on the still-mounted TestComponent outside
-    // any act boundary and emits the "not wrapped in act(...)" warning.
+    // WARNING: Unmount before resetting the store; the subscribed hook would otherwise update outside act.
     unmount();
   });
 });

@@ -34,7 +34,8 @@ import { encodeURIComponentPercents } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import PageContent from '../../misc/page-content';
 import { SearchInput } from '../../misc/search-input';
-import { PageComponent, type PageInitHelper } from '../page';
+import type { PageInitHelper } from '../page';
+import { pageWithContent } from '../page-with-content';
 
 const STATUS_ICON_SIZE = 24;
 
@@ -48,7 +49,6 @@ const statusIconToneVariants = cva('contents', {
   },
 });
 
-/** Colours a status icon. `contents` draws no box, so the icon itself stays the flex item. */
 const StatusIconTone = ({
   tone,
   children,
@@ -56,9 +56,6 @@ const StatusIconTone = ({
   <span className={statusIconToneVariants({ tone })}>{children}</span>
 );
 
-/**
- * Navigates to /rp-connect/create (legacy flow)
- */
 const LegacyCreatePipelineButton = () => (
   <div>
     <Button as={Link} to="/rp-connect/create">
@@ -67,9 +64,6 @@ const LegacyCreatePipelineButton = () => (
   </div>
 );
 
-/**
- * Shows image, text, and create button
- */
 const LegacyEmptyState = () => (
   <div className="mb-4 flex flex-col items-center justify-center gap-4">
     <img alt="" src={EmptyConnectors} />
@@ -165,15 +159,12 @@ export const PipelineThroughput = (p: { pipeline: Pipeline }) => {
   );
 };
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding
-// is off at table level.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
 };
 
-// Hoisted: `PageComponent` force-updates on every api-store write, and a fresh array would
-// re-create every header and cell.
+// WARNING: Keep column definitions stable; API store writes rerender the page and rebuilding columns rerenders all cells and headers.
 const columns: DataTableColumnDef<Pipeline>[] = [
   {
     header: 'ID',
@@ -193,7 +184,6 @@ const columns: DataTableColumnDef<Pipeline>[] = [
     header: 'Pipeline',
     id: 'pipeline',
     enableSorting: false,
-    // The Registry DataTable ignores column sizes.
     cell: ({ row: { original } }) => (
       <div className="w-screen max-w-full">
         <Link
@@ -261,8 +251,8 @@ const columns: DataTableColumnDef<Pipeline>[] = [
 ];
 
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
-class RpConnectPipelinesList extends PageComponent<{}> {
-  initPage(p: PageInitHelper): void {
+class RpConnectPipelinesList extends pageWithContent(() => <RpConnectPipelinesListContent />) {
+  initPage(p: PageInitHelper) {
     p.addBreadcrumb('Redpanda Connect Pipelines', '/rp-connect');
 
     this.refreshData(true);
@@ -274,11 +264,9 @@ class RpConnectPipelinesList extends PageComponent<{}> {
       return;
     }
 
-    pipelinesApi.refreshPipelines(force).catch((err) => {
+    this.pipelinesApi.refreshPipelines(force).catch((err) => {
       if (String(err).includes('404')) {
-        // Hacky special handling for OSS version, it is possible for the /endpoints request to not complete in time for this to render
-        // so in this case there would be an error shown because we were too fast (with rendering, or the req was too slow)
-        // We don't want to show an error in that case
+        // WARNING: Wait for endpoint discovery before showing an OSS error; slow discovery is not backend rejection.
         return;
       }
 
@@ -291,22 +279,17 @@ class RpConnectPipelinesList extends PageComponent<{}> {
       }
     });
   }
-
-  render() {
-    return <RpConnectPipelinesListContent />;
-  }
 }
 
-/** The quick-search text as a case-insensitive pattern, or `null` when it is not a valid one. */
-const toQuickSearchRegExp = (quickSearch: string): RegExp | null => {
+const toQuickSearchRegExp = (quickSearch: string) => {
   try {
-    return new RegExp(quickSearch, 'i');
+    return new RegExp(quickSearch, 'iu');
   } catch {
     return null;
   }
 };
 
-// A nested write on the `uiSettings` proxy notifies nobody, so this subscribes to the store.
+// WARNING: Subscribe to the store; nested writes through uiSettings do not notify subscribers.
 const RpConnectPipelinesListContent: FC = () => {
   const { pipelinesList, updateSettings } = useUISettingsStore();
 
@@ -315,11 +298,10 @@ const RpConnectPipelinesListContent: FC = () => {
   }
 
   const quickSearch = pipelinesList.quickSearch;
-  // Compiled once, not once per row. An invalid pattern matches nothing, as before.
   const quickSearchRegExp = quickSearch ? toQuickSearchRegExp(quickSearch) : null;
 
   const filteredPipelines = (pipelinesApi.pipelines ?? [])
-    ?.filter((pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent') // Ensure we do not show the agents
+    ?.filter((pipeline) => pipeline?.tags?.__redpanda_cloud_pipeline_type !== 'agent')
     .filter((u) => {
       if (!quickSearch) {
         return true;

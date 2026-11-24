@@ -28,12 +28,15 @@ import type { EgressGatewayNames } from './changes-summary';
 import { egressGatewayOptions, isEgressGatewayPickerEnabled } from './egress-gateways';
 
 /** Names of the gateways this cluster's pipelines can use, by ID; empty unless the picker is enabled. */
-export function useEgressGatewayNames(): EgressGatewayNames {
+export function useEgressGatewayNames() {
   const { gateways } = useControlplaneListServerlessEgressGatewaysQuery({ enabled: isEgressGatewayPickerEnabled() });
-  return useMemo(() => new Map((gateways ?? []).map((gateway) => [gateway.id, gateway.displayName])), [gateways]);
+  return useMemo<EgressGatewayNames>(
+    () => new Map((gateways ?? []).map((gateway) => [gateway.id, gateway.displayName])),
+    [gateways]
+  );
 }
 
-/** A failed list must not read as an empty one; the selection stays, labelled by ID. */
+// WARNING: Keep the selected gateway by ID when the list fails; a failed load is not an empty list.
 function LoadError({ error }: { error: ConnectError | null }) {
   return error ? (
     <p className="text-sm text-destructive">Couldn't load egress gateways: {error.rawMessage || error.message}</p>
@@ -46,8 +49,6 @@ export function EgressGatewayField({ readonly }: { readonly?: boolean }) {
   const isEnabled = isEgressGatewayPickerEnabled();
   const { gateways, isLoading, error } = useControlplaneListServerlessEgressGatewaysQuery({ enabled: isEnabled });
 
-  // The select's chips read labels its items cache in their effects, after the render that showed the
-  // chips; render once more when the gateways arrive so the chips show names rather than IDs.
   const [, rerender] = useReducer((count: number) => count + 1, 0);
   useEffect(() => {
     if (gateways) {

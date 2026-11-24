@@ -75,7 +75,6 @@ export const useListACLsQuery = (
     ...input,
   });
 
-  // There is no pagination for this request, so we use regular useQuery
   const listACLsResult = useQuery(listACLs, listACLsRequest, {
     enabled: options?.enabled,
   });
@@ -117,9 +116,6 @@ export const useCreateACLMutation = () => {
   });
 };
 
-// New ACL implementation
-
-// Used by ACLs tab and Permissions List tab in the security section.
 export type SimpleAcl = {
   host: string;
   principal: string;
@@ -127,7 +123,6 @@ export type SimpleAcl = {
   principalName: string;
   hasAcl: boolean;
 };
-// Used by ACLs tab and Permissions List tab in the security section.
 export const useListACLAsPrincipalGroups = () =>
   useQuery(
     listACLs,
@@ -153,8 +148,6 @@ export const useListACLAsPrincipalGroups = () =>
       },
     }
   );
-
-// New ACL implementation
 
 interface ACLWithId extends CreateACLRequest {
   id: string;
@@ -191,8 +184,8 @@ export const useDeleteAclMutation = (
   });
 };
 
-function toAclsWithIds(rules: Rule[], sharedConfig: SharedConfig): ACLWithId[] {
-  return convertRulesToCreateACLRequests(rules, sharedConfig.principal, sharedConfig.host).map((r) => ({
+function toAclsWithIds(rules: Rule[], sharedConfig: SharedConfig) {
+  return convertRulesToCreateACLRequests(rules, sharedConfig.principal, sharedConfig.host).map<ACLWithId>((r) => ({
     ...r,
     id: getIdFromCreateACLRequest(r),
   }));
@@ -212,7 +205,6 @@ function deleteRequestForAcl(r: ACLWithId) {
   });
 }
 
-// One error per status code; `created` is true when at least one request went through.
 function summarizeAclResults(results: PromiseSettledResult<unknown>[]) {
   const errs = new Map<number, ConnectError>();
   const rejected = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
@@ -223,6 +215,9 @@ function summarizeAclResults(results: PromiseSettledResult<unknown>[]) {
   return { errors: errs.values().toArray(), created: rejected.length < results.length };
 }
 
+/**
+ * Deduplicates errors by status and reports whether at least one operation succeeded.
+ */
 export const useUpdateAclMutation = () => {
   const { mutateAsync: createACLMutation } = useMutation(createACL);
   const { mutateAsync: deleteACLMutation } = useMutation(deleteACLs);

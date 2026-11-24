@@ -57,7 +57,7 @@ import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
 class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
     const pipeline = pipelinesApi.pipelines?.first((x) => x.id === pipelineId);
     p.title = pipeline?.displayName ?? pipelineId;
@@ -69,7 +69,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   }
 
   refreshData(_force: boolean) {
-    pipelinesApi.refreshPipelines(_force);
+    this.pipelinesApi.refreshPipelines(_force);
   }
 
   render() {
@@ -119,7 +119,6 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
         </Link>
 
         <Button
-          // `isLoading` hides the label, so the button needs its own name.
           aria-label={isStopped ? 'Start' : 'Stop'}
           disabled={isChangingPauseState || isTransitioningState}
           isLoading={isChangingPauseState}
@@ -185,7 +184,6 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
         </Button>
       </div>
 
-      {/* The Registry Alert renders its own icon; AlertDescription is a grid. */}
       {Boolean(error) && (
         <Alert icon={<AlertIcon />} variant="destructive">
           <AlertDescription>
@@ -212,24 +210,17 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
   );
 };
 
-// Back-off between polls while a started or stopped pipeline settles.
 const PIPELINE_TRANSITION_POLL_DELAYS = [200, 400, 1000, 1000, 1000, 5000];
 
-/**
- * Refreshes the pipeline list until the pipeline leaves its starting/stopping state, or is gone. Each
- * poll backs off from the previous one and reads the list it refreshed, so attempts recurse in order.
- */
-async function watchPipelineUpdates(pipelineId: string, attempt = 0): Promise<void> {
+async function watchPipelineUpdates(pipelineId: string, attempt = 0) {
   await delay(PIPELINE_TRANSITION_POLL_DELAYS[Math.min(PIPELINE_TRANSITION_POLL_DELAYS.length - 1, attempt)]);
 
   await pipelinesApi.refreshPipelines(true);
-  // if we can't find the pipeline we're checking anymore it got deleted
   const p = pipelinesApi.pipelines?.first((x) => x.id === pipelineId);
   if (!p) {
     return;
   }
 
-  // if its no longer in a transition state, we're done
   if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) {
     return;
   }
@@ -256,18 +247,12 @@ const PipelineEditor = (p: { pipeline: Pipeline }) => {
   );
 };
 
-// The Registry pager owns page and pageSize, where the legacy table seeded them from the URL.
-// No column-visibility UI, so hiding is off. `getRowId` keeps an expanded row on its message.
 const LOGS_TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
   getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
 };
 
-/**
- * Streams the last hours of the pipeline's log messages, re-running the search when `refresh` is
- * called, and loads a message's full content on demand.
- */
 const PIPELINE_LOGS_TOPIC = '__redpanda.connect.logs';
 
 function usePipelineLogMessages(pipelineId: string) {
@@ -345,6 +330,11 @@ function usePipelineLogMessages(pipelineId: string) {
   };
 }
 
+/**
+ * Streams the recent window and reruns it on refresh; loads full messages on demand. Stable row keys keep an expanded message anchored.
+ *
+ * The topic message renderer is currently shared here; any extraction must keep it independent of topic-specific state.
+ */
 export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
   const topic = api.topics?.first((x) => x.topicName === PIPELINE_LOGS_TOPIC);
 
@@ -354,7 +344,6 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
   const isCompactTopic = topic ? topic.cleanupPolicy.includes('compact') : false;
   const messageTableColumns: DataTableColumnDef<TopicMessage>[] = useMemo(
     () => [
-      // `subComponent` renders no affordance of its own, so the expander is explicit.
       {
         id: 'expander',
         enableSorting: false,
@@ -385,9 +374,7 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
         id: 'value',
         header: 'Value',
         accessorKey: 'value',
-        // The cell renders a decoded preview, so the raw value is not worth sorting.
         enableSorting: false,
-        // The Registry DataTable ignores column sizes.
         cell: ({ row: { original } }) => (
           <div className="w-screen max-w-full">
             <MessagePreview isCompactTopic={isCompactTopic} msg={original} previewFields={() => []} />
@@ -438,15 +425,12 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
 
         <DataTable<TopicMessage>
           columns={messageTableColumns}
-          // No pager under the loading or empty row.
           data={filteredMessages}
           emptyText="No messages"
           getRowCanExpand={() => true}
           isLoading={!isComplete && messages.length === 0}
           pagination={filteredMessages.length > 0}
           sorting
-          // todo: message rendering should be extracted from TopicMessagesTab into a standalone component, in its own folder,
-          //       to make it clear that it does not depend on other functinoality from TopicMessagesTab
           subComponent={renderSubComponent}
           tableOptions={LOGS_TABLE_OPTIONS}
         />

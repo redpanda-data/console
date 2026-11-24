@@ -63,38 +63,29 @@ export type CatalogTreeProps = {
   isRefreshing?: boolean;
 };
 
-// Shared row layout: flex, gap, full-width, left-aligned, padded, rounded, with a
-// subtle hover background. Used by namespace rows and the "Add a topic" row.
 const ROW_BASE =
   'flex w-full cursor-pointer items-center gap-1.5 rounded border-0 bg-transparent px-2 py-1.5 text-left text-body text-strong hover:bg-accent';
 
-// Truncating label that fills the remaining row width.
 const LABEL = 'flex-1 overflow-hidden text-left text-ellipsis whitespace-nowrap';
 
-// Tree-wide state and callbacks, provided once by CatalogTree so the node
-// components stay lean instead of threading a dozen props per level.
 type CatalogTreeContextValue = {
   role: SqlRole;
   query: string;
   activeTableId?: string | null;
-  /** Expand state per node id. Undefined => default open (`!== false`). */
   open: Record<string, boolean>;
-  /** Expand state per table id. Undefined => closed. */
   openTables: Record<string, boolean>;
-  /** Pagination window per namespace id. */
   shown: Record<string, number>;
   toggle: (id: string) => void;
   toggleTable: (id: string) => void;
   loadMore: (namespaceId: string) => void;
   onQueryTable: (catalog: Catalog, table: TableRef) => void;
   onAddTable?: () => void;
-  /** tabIndex for a treeitem so the tree is a single tab stop (roving). */
   rowTabIndex: (id: string) => 0 | -1;
 };
 
 const CatalogTreeContext = createContext<CatalogTreeContextValue | null>(null);
 
-function useCatalogTree(): CatalogTreeContextValue {
+function useCatalogTree() {
   const ctx = useContext(CatalogTreeContext);
   if (!ctx) {
     throw new Error('useCatalogTree must be used within CatalogTree');
@@ -130,14 +121,13 @@ function EmptyNote({ children }: { children: ReactNode }) {
   return <div className="px-4 py-1.5 text-body-sm text-disabled">{children}</div>;
 }
 
-// The focused treeitem and the enabled rows it moves between, in render order.
 type TreeNav = {
   current: HTMLButtonElement;
   rows: HTMLButtonElement[];
   idx: number;
 };
 
-function findTreeNav(e: KeyboardEvent<HTMLDivElement>): TreeNav | null {
+function findTreeNav(e: KeyboardEvent<HTMLDivElement>) {
   const current = (e.target as HTMLElement).closest<HTMLButtonElement>('[role="treeitem"]');
   if (!current) {
     return null;
@@ -147,8 +137,6 @@ function findTreeNav(e: KeyboardEvent<HTMLDivElement>): TreeNav | null {
   return idx === -1 ? null : { current, rows, idx };
 }
 
-// Up/Down move between visible rows, Home/End jump, Right expands (or moves
-// into) a node, Left collapses.
 const TREE_KEY_ACTIONS = new Map<string, (nav: TreeNav) => void>([
   ['ArrowDown', ({ rows, idx }) => rows[idx + 1]?.focus()],
   ['ArrowUp', ({ rows, idx }) => rows[idx - 1]?.focus()],
@@ -174,8 +162,6 @@ const TREE_KEY_ACTIONS = new Map<string, (nav: TreeNav) => void>([
   ],
 ]);
 
-// Roving keyboard navigation for the tree, per the WAI-ARIA tree pattern.
-// Operates on the rendered treeitem buttons so it always matches what's visible.
 function handleTreeKeyDown(e: KeyboardEvent<HTMLDivElement>) {
   const action = TREE_KEY_ACTIONS.get(e.key);
   if (!action) {
@@ -194,8 +180,6 @@ type ColumnListProps = {
   tableName: string;
 };
 
-// Recursively renders column fields. Struct (json) fields get an expand chevron
-// that reveals their nested fields, indented one level per depth.
 function FieldRows({
   fields,
   depth,
@@ -261,7 +245,6 @@ function FieldRows({
   );
 }
 
-// Fetches columns for a single expanded table via DescribeTable.
 function ColumnList({ catalogName, tableName }: ColumnListProps) {
   const { data, isLoading } = useDescribeTableQuery({ catalog: catalogName, name: tableName });
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -295,18 +278,12 @@ function TableRow({ catalog, table }: TableRowProps) {
   const isOpen = Boolean(openTables[table.id]);
   const isActive = activeTableId === table.id;
   const isIceberg = catalog.engine === 'iceberg' || table.iceberg === true;
-  // A Redpanda-catalog table is Iceberg-tiered when its backing topic has
-  // `redpanda.iceberg.mode` enabled (read from the Kafka topic config). Fetched
-  // for every rendered row so the badge always shows; react-query caches each
-  // GetTopicConfigurations result so re-renders don't refetch.
   const { isIceberg: topicTiered } = useTopicIcebergQuery(table.topicName ?? '', {
     enabled: catalog.engine === 'redpanda' && Boolean(table.topicName),
   });
   const tiered = catalog.engine === 'redpanda' && topicTiered;
   const Chevron = isOpen ? ChevronDown : ChevronRight;
 
-  // The table icon picks up the Iceberg blue when the table is Iceberg-backed or
-  // tiered, the disabled grey when locked, else the action-primary accent.
   const tableIcoClass = cn('shrink-0 text-action-primary', {
     'text-informative': (isIceberg || tiered) && allowed,
     'text-disabled': !allowed,
@@ -388,7 +365,6 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
     hidden,
   } = namespaceTables(namespace, fetchedTables, query, shown[namespace.id] ?? CAT_LIMIT);
 
-  // When searching, hide namespaces whose name and tables both miss.
   if (hidden) {
     return null;
   }
@@ -449,8 +425,6 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
   );
 }
 
-// One catalog subtree. Owns the per-catalog ListTables fetch, gated on the
-// catalog (or an active search) being expanded.
 function CatalogNode({ catalog }: { catalog: Catalog }) {
   const { role, query, open, toggle, onAddTable, rowTabIndex } = useCatalogTree();
   const isCatalogOpen = open[catalog.name] !== false;
@@ -519,6 +493,11 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
   );
 }
 
+/**
+ * Keyboard re-entry returns to the last focused catalog row, not always the first row.
+ *
+ * Catalog nodes default open while table nodes default closed. Roving tabindex keeps the entire tree a single tab stop.
+ */
 export function CatalogTree({
   catalogs,
   sqlRole,
@@ -529,14 +508,10 @@ export function CatalogTree({
   onRefresh,
   isRefreshing,
 }: CatalogTreeProps) {
-  // Expand/collapse state per node id. Undefined => default open for catalogs
-  // and namespaces (see `!== false` checks in the nodes).
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [openTables, setOpenTables] = useState<Record<string, boolean>>({});
   const [shown, setShown] = useState<Record<string, number>>({});
   const [query, setQuery] = useState('');
-  // The single tabbable treeitem (WAI-ARIA roving tabIndex). Until the user
-  // focuses a row, the first catalog is the entry point.
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   const rovingId = activeRowId ?? catalogs[0]?.name ?? null;
 
@@ -555,8 +530,6 @@ export function CatalogTree({
     rowTabIndex: (id) => (id === rovingId ? 0 : -1),
   };
 
-  // Keep the roving tabIndex on whichever row the user last focused, so Shift+Tab
-  // and re-entry return to that row rather than the first one.
   const handleTreeFocus = (e: FocusEvent<HTMLDivElement>) => {
     const id = e.target.closest<HTMLElement>('[role="treeitem"]')?.getAttribute('data-tree-id');
     if (id && id !== activeRowId) {

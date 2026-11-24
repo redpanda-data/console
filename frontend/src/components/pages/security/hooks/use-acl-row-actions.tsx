@@ -4,7 +4,6 @@ import {
   ACL_PermissionType,
   ACL_ResourcePatternType,
   ACL_ResourceType,
-  type DeleteACLsRequest,
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
 import { toast } from 'sonner';
@@ -24,8 +23,7 @@ export type AclRowActionsContextValue = {
   onFailure: (failure: { err: unknown }) => void;
 };
 
-/** Every ACL bound to this principal on this host, whatever the resource or operation. */
-const allAclsFor = (principal: string, host: string): DeleteACLsRequest =>
+const allAclsFor = (principal: string, host: string) =>
   create(DeleteACLsRequestSchema, {
     filter: {
       principal,
@@ -42,7 +40,7 @@ const allAclsFor = (principal: string, host: string): DeleteACLsRequest =>
  * What the ACL rows need to delete a principal's ACLs or its user. The queries live here, once for the
  * table: `useListUsersQuery` auto-fetches every page from an effect, so one per row would too.
  */
-export function useAclRowActions(onFailure: AclRowActionsContextValue['onFailure']): AclRowActionsContextValue {
+export function useAclRowActions(onFailure: AclRowActionsContextValue['onFailure']) {
   const featureDeleteUser = useSupportedFeaturesStore((s) => s.deleteUser);
   const { data: redpandaInfo, isSuccess: isRedpandaInfoSuccess } = useGetRedpandaInfoQuery();
   const { data: usersData } = useListUsersQuery(undefined, {
@@ -52,7 +50,7 @@ export function useAclRowActions(onFailure: AclRowActionsContextValue['onFailure
   const { mutateAsync: deleteUserMut } = useDeleteUserMutation();
   const invalidateUsersCache = useInvalidateUsersCache();
 
-  return {
+  const aclRowActionsContextValue: AclRowActionsContextValue = {
     users: usersData?.users ?? [],
     canDeleteUsers: Boolean(featureDeleteUser),
     deleteAclsForPrincipal: async (principal, host) => {
@@ -74,4 +72,5 @@ export function useAclRowActions(onFailure: AclRowActionsContextValue['onFailure
     invalidateUsers: invalidateUsersCache,
     onFailure,
   };
+  return aclRowActionsContextValue;
 }

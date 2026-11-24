@@ -13,6 +13,8 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
+import { UserRoleTags } from './user-role-tags';
+
 const { mockRoleMembers, mockListACLsFilter } = rs.hoisted(() => ({
   mockRoleMembers: new Map<string, { name: string; principalType: string }[]>(),
   mockListACLsFilter: { captured: null as { principal: string } | null },
@@ -28,7 +30,6 @@ rs.mock('@connectrpc/connect-query', () => ({
 }));
 
 rs.mock('@tanstack/react-router', () => ({
-  // Real navigate() returns a promise that settles once the route commits.
   useNavigate: () => rs.fn(() => Promise.resolve()),
 }));
 
@@ -47,8 +48,6 @@ rs.mock('../../../../state/backend-api', () => ({
 rs.mock('../../../../state/supported-features', () => ({
   useSupportedFeaturesStore: <T,>(selector: (s: Record<string, boolean>) => T) => selector({ rolesApi: true }),
 }));
-
-import { UserRoleTags } from './user-role-tags';
 
 describe('the UserRoleTags', () => {
   beforeEach(() => {
@@ -77,7 +76,6 @@ describe('the UserRoleTags', () => {
   });
 
   test('group principal does NOT show roles that contain a User with the same name', () => {
-    // Role has a User member named "engineering" — should NOT match Group:engineering
     mockRoleMembers.set('admin', [{ name: 'engineering', principalType: 'User' }]);
 
     render(<UserRoleTags principalType="Group" userName="engineering" />);
@@ -86,7 +84,6 @@ describe('the UserRoleTags', () => {
   });
 
   test('group principal shows roles that contain a Group member with matching name', () => {
-    // Role has a Group member named "engineering" — SHOULD match
     mockRoleMembers.set('admin', [{ name: 'engineering', principalType: 'Group' }]);
 
     render(<UserRoleTags principalType="Group" userName="engineering" />);

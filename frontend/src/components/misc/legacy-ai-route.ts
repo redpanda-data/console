@@ -11,7 +11,7 @@ type LegacyAiRoute = keyof typeof LEGACY_AI_DESTINATIONS;
 
 const isLegacyAiRoute = (route: string): route is LegacyAiRoute => Object.hasOwn(LEGACY_AI_DESTINATIONS, route);
 
-export function getLegacyAiDestination(pathname: string, clusterId?: string): string | undefined {
+export function getLegacyAiDestination(pathname: string, clusterId?: string) {
   const route = pathname.split('/')[1];
   if (!(route && isLegacyAiRoute(route))) {
     return;

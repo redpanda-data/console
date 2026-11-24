@@ -69,7 +69,6 @@ async function loadLargeMessage({
   valueDeserializer,
   schemaContext,
 }: LoadLargeMessageParams) {
-  // Create a new search that looks for only this message specifically
   const search = createMessageSearch();
   const searchReq: MessageSearchRequest = {
     filterInterpreterCode: '',
@@ -87,8 +86,6 @@ async function loadLargeMessage({
   const result = await search.startSearch(searchReq);
 
   if (result && result.length === 1) {
-    // We must update the old message (that still says "payload too large")
-    // So we just find its index and replace it in the array we are currently displaying
     setSearchState((prev) => {
       const indexOfOldMessage = prev.messages.findIndex(
         (x) => x.partitionID === messagePartitionID && x.offset === offset
@@ -164,8 +161,7 @@ function useMessagesTable({
     },
     getRowCanExpand: () => true,
     autoResetPageIndex: false,
-    // Expanded rows must survive a data swap: loadLargeMessage replaces the message
-    // array, and v9 resets expanded state on every row-structure change.
+    // WARNING: Keep expanded row state across a large-payload reload; the table resets it when the message array changes.
     autoResetExpanded: false,
   });
 }
@@ -246,13 +242,11 @@ function ContinuousPagination({
   return (
     <div className="flex items-center justify-end px-2 py-2">
       <div className="flex items-center space-x-6 lg:space-x-8">
-        {/* Page counter */}
         <div className="flex w-[100px] items-center justify-center text-body font-medium">
           Page {pageIndex + 1}
           {hasMoreData ? '' : ` of ${windowStartPage + loadedPages}`}
         </div>
 
-        {/* Rows per page selector */}
         <div className="flex items-center space-x-2">
           <p className="text-body font-medium">Rows per page</p>
           <Select
@@ -276,7 +270,6 @@ function ContinuousPagination({
           </Select>
         </div>
 
-        {/* Navigation buttons */}
         <div className="flex items-center space-x-2">
           <Button
             className="hidden size-8 lg:flex"
@@ -321,7 +314,6 @@ function ContinuousPagination({
   );
 }
 
-// Sortable column titles, with an arrow for the active sort direction.
 function MessagesTableHeader({ table }: { table: MessagesTable }) {
   return (
     <TableHeader>
@@ -349,7 +341,6 @@ type MessageColumnsInput = Pick<MessagesResultsProps, 'topic' | 'query' | 'setti
   continuousPaginationEnabled: boolean;
 };
 
-// The table's columns for the topic's preview settings and the chosen deserializers.
 function messageColumnsFor({ topic, query, settings, dialogs, continuousPaginationEnabled }: MessageColumnsInput) {
   const topicSettings = settings.topicSettings;
   return buildMessageColumns({
@@ -357,7 +348,7 @@ function messageColumnsFor({ topic, query, settings, dialogs, continuousPaginati
     tsFormat: topicSettings?.previewTimestamps ?? 'default',
     keyDeserializer: query.keyDeserializer,
     valueDeserializer: query.valueDeserializer,
-    hasKeyTags: (topicSettings?.previewTags ?? []).filter((x) => x.isActive && x.searchInMessageKey).length > 0,
+    hasKeyTags: (topicSettings?.previewTags ?? []).some((x) => x.isActive && x.searchInMessageKey),
     previewDisplayMode: settings.previewDisplayMode,
     activePreviewTags: settings.activePreviewTags,
     isCompactTopic: topic.cleanupPolicy.includes('compact'),
@@ -448,19 +439,16 @@ export function MessagesResults({
         </Table>
       </div>
 
-      {/* Normal pagination */}
       {!continuousPaginationEnabled && filteredMessages.length > 0 && (
         <div className="pt-2">
           <DataTablePagination table={table} />
         </div>
       )}
 
-      {/* Infinite scroll pagination */}
       {continuousPaginationEnabled && filteredMessages.length > 0 && (
         <ContinuousPagination pageWindow={pageWindow} paging={paging} windowStartPage={windowStartPage} />
       )}
 
-      {/* Virtual page indicator for continuous pagination mode */}
       {continuousPaginationEnabled && messages.length > 0 && (
         <div className="mt-2 flex items-center justify-center gap-2 text-body text-muted-foreground">
           <span>
@@ -471,7 +459,6 @@ export function MessagesResults({
         </div>
       )}
 
-      {/* Warning when filters are active with continuous pagination */}
       {continuousPaginationEnabled && filtersCount > 0 && messages.length > 0 && (
         <Alert className="mt-4">
           <AlertDescription>
@@ -480,7 +467,6 @@ export function MessagesResults({
         </Alert>
       )}
 
-      {/* Loading indicator when fetching more pages */}
       <div
         className={clsx(
           'mt-4 flex h-6 items-center justify-center',

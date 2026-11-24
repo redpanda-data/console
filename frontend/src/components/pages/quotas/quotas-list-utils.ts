@@ -24,7 +24,7 @@ export type QuotaSortField = 'entityType' | 'entityName' | 'producerRate' | 'con
 export type QuotaSortDirection = 'asc' | 'desc';
 
 /** Maps protobuf EntityType enum to its display string. */
-export const mapEntityTypeToDisplay = (entityType: Quota_EntityType): QuotaEntityDisplay => {
+export const mapEntityTypeToDisplay: (entityType: Quota_EntityType) => QuotaEntityDisplay = (entityType) => {
   switch (entityType) {
     case Quota_EntityType.CLIENT_ID:
     case Quota_EntityType.CLIENT_ID_PREFIX:
@@ -39,7 +39,7 @@ export const mapEntityTypeToDisplay = (entityType: Quota_EntityType): QuotaEntit
 };
 
 /** Returns the value for a given quota type, or `undefined` when that type is not present. */
-export const getRate = (values: Quota_Value[], valueType: Quota_ValueType): number | undefined =>
+export const getRate = (values: Quota_Value[], valueType: Quota_ValueType) =>
   values.find((v) => v.valueType === valueType)?.value;
 
 /**
@@ -53,7 +53,7 @@ export const isQuotaConfigured = (value?: number): value is number => value !== 
  * too-large `?page=` can't render a false "No quotas configured" empty state. An empty
  * list has no pages, so it clamps to 0 (the genuine empty state).
  */
-export const clampPageIndex = (requestedPage: number, rowCount: number, pageSize: number): number => {
+export const clampPageIndex = (requestedPage: number, rowCount: number, pageSize: number) => {
   const pageCount = pageSize > 0 ? Math.ceil(rowCount / pageSize) : 0;
   if (pageCount <= 0) {
     return 0;
@@ -62,13 +62,16 @@ export const clampPageIndex = (requestedPage: number, rowCount: number, pageSize
 };
 
 /** Derives TanStack's SortingState from the URL search params. */
-export const searchToSorting = (sortField?: QuotaSortField, sortDirection?: QuotaSortDirection): SortingState =>
-  sortField ? [{ id: sortField, desc: sortDirection === 'desc' }] : [];
+export const searchToSorting: (sortField?: QuotaSortField, sortDirection?: QuotaSortDirection) => SortingState = (
+  sortField,
+  sortDirection
+) => (sortField ? [{ id: sortField, desc: sortDirection === 'desc' }] : []);
 
 /** Derives the URL search params from TanStack's SortingState. */
-export const sortingToSearch = (
-  sorting: SortingState
-): { sortField: QuotaSortField | undefined; sortDirection: QuotaSortDirection | undefined } => {
+export const sortingToSearch: (sorting: SortingState) => {
+  sortField: QuotaSortField | undefined;
+  sortDirection: QuotaSortDirection | undefined;
+} = (sorting) => {
   const first = sorting.at(0);
   if (!first) {
     return { sortField: undefined, sortDirection: undefined };

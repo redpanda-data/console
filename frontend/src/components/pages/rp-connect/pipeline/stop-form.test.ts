@@ -19,7 +19,6 @@ const continuous: InputEndBehavior = {
 };
 const natural: InputEndBehavior = { kind: 'natural', reason: 'Reads every object in the bucket, then stops.' };
 
-// The fields the schema reports a problem on.
 const problemsIn = (state: StopFormState) => {
   const result = stopFormSchema.safeParse(state);
   return result.success ? [] : result.error.issues.map((issue) => issue.path[0]);
@@ -51,7 +50,6 @@ describe('stop form model', () => {
     expect(problemsIn({ ...base, mode: 'count', limit: '10' })).toEqual([]);
     expect(problemsIn({ ...base, mode: 'check', check: '  ' })).toEqual(['check']);
     expect(problemsIn({ ...base, mode: 'idle', idle: 'later' })).toEqual(['idle']);
-    // An idle value that isn't used doesn't block.
     expect(problemsIn({ ...base, mode: 'count', limit: '10', idle: 'later' })).toEqual([]);
     expect(problemsIn({ ...base, mode: 'count', limit: '10', idle: 'later', alsoIdle: true })).toEqual(['idle']);
   });
@@ -67,7 +65,6 @@ describe('stop form model', () => {
       idleTimeout: '1m',
       restartInput: true,
     });
-    // Restart goes into the draft only while the form offers it.
     expect(draftFromStopForm({ ...base, mode: 'idle', idle: '2m', restart: true }, false)).toEqual({
       idleTimeout: '2m',
     });
@@ -77,13 +74,11 @@ describe('stop form model', () => {
   });
 
   test('offers restart_input with a count or check for an input that can finish, or whenever the YAML sets it', () => {
-    // A re-read input never goes idle, so an idle timeout alone doesn't offer it.
     expect(offersRestart('idle', natural)).toBe(false);
     expect(offersRestart('check', natural)).toBe(true);
     expect(offersRestart('count', continuous)).toBe(false);
     const set = { idleTimeout: '30s', restartInput: true };
     expect(offersRestart('idle', natural, set)).toBe(true);
-    // So applying the form as loaded writes back what the YAML has.
     const state = stopFormState(set);
     expect(draftFromStopForm(state, offersRestart(state.mode, natural, set))).toEqual(set);
   });

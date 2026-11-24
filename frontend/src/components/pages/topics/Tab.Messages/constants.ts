@@ -12,7 +12,6 @@
 import { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import type { DataColumnKey } from '../../../../state/ui';
 
-// Payload encoding options for deserializers
 export const payloadEncodingPairs = [
   { value: PayloadEncoding.UNSPECIFIED, label: 'Automatic' },
   { value: PayloadEncoding.NULL, label: 'None (Null)' },
@@ -32,15 +31,11 @@ export const payloadEncodingPairs = [
   { value: PayloadEncoding.CBOR, label: 'CBOR' },
 ];
 
-export const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
-  (acc, pair) => {
-    acc[pair.value] = pair.label;
-    return acc;
-  },
-  {} as Record<PayloadEncoding, string>
-);
+export const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce<Record<number, string>>((acc, pair) => {
+  acc[pair.value] = pair.label;
+  return acc;
+}, {});
 
-// Define the column order as a constant
 export const COLUMN_ORDER: DataColumnKey[] = [
   'timestamp',
   'partitionID',
@@ -51,5 +46,4 @@ export const COLUMN_ORDER: DataColumnKey[] = [
   'valueSize',
 ];
 
-// Regex for checking printable ASCII characters
-export const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
+export const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/u;

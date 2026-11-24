@@ -38,7 +38,6 @@ output:
   ${output}: {}
 `;
 
-/** The summary is always fed the ids the diff reports, so the tests do the same. */
 const summarize = (savedYaml: string, editedYaml: string) =>
   summarizeComponentChanges(savedYaml, editedYaml, changedNodeIds(savedYaml, editedYaml));
 
@@ -68,7 +67,6 @@ describe('summarizeComponentChanges', () => {
     expect(changes.some((c) => c.kind === 'added')).toBe(false);
   });
 
-  // Ids are positional: deleting the first processor renumbers the second into its slot.
   it('names the component that was removed, not the one that slid into its place', () => {
     const changes = summarize(
       config({ processors: ['mapping: root = this', 'log: {}'] }),
@@ -84,11 +82,10 @@ describe('summarizeComponentChanges', () => {
     expect(changes).toEqual([expect.objectContaining({ kind: 'added', id: 'proc-0' })]);
   });
 
-  // The section headings exist to hold children; counting them would double-report every change.
   it('never reports a section container', () => {
     const changes = summarize(config({ input: 'generate' }), config({ input: 'kafka_franz' }));
 
-    expect(changes.every((c) => !/^(input|output|pipeline)$/.test(c.id))).toBe(true);
+    expect(changes.every((c) => !/^(?:input|output|pipeline)$/u.test(c.id))).toBe(true);
   });
 
   it('says nothing about a document it cannot parse, rather than throwing', () => {
@@ -129,12 +126,10 @@ describe('summarizeSettingsChanges', () => {
     expect(changes.map((c) => c.from)).toEqual(['not set', 'none']);
   });
 
-  // A field the form has never populated is not a change from an empty one.
   it('treats an absent value and an empty one as the same', () => {
     expect(summarizeSettingsChanges({ description: '' }, {})).toEqual([]);
   });
 
-  // Trimming here would report no change for one the server would store.
   it('keeps a whitespace-only edit visible', () => {
     const [change] = summarizeSettingsChanges({ name: 'orders' }, { name: 'orders ' });
 
@@ -167,29 +162,26 @@ describe('summarizeSettingsChanges', () => {
 });
 
 describe('changesImpactMessage', () => {
-  // The running case is the one worth a warning: there is no apply-later.
   it('warns that applying to a running pipeline restarts it', () => {
     for (const state of [Pipeline_State.RUNNING, Pipeline_State.STARTING]) {
       const message = changesImpactMessage(state);
-      expect(message).toMatch(/not live/i);
-      expect(message).toMatch(/restarts/i);
+      expect(message).toMatch(/not live/iu);
+      expect(message).toMatch(/restarts/iu);
     }
   });
 
   it('says a draft edit is unsaved rather than unapplied', () => {
-    expect(changesImpactMessage(Pipeline_State.DRAFT)).toMatch(/aren't saved to the draft/i);
+    expect(changesImpactMessage(Pipeline_State.DRAFT)).toMatch(/aren't saved to the draft/iu);
   });
 
   it('does not talk about restarts for a stopped pipeline', () => {
     const message = changesImpactMessage(Pipeline_State.STOPPED);
-    expect(message).toMatch(/not saved/i);
-    expect(message).not.toMatch(/restart/i);
+    expect(message).toMatch(/not saved/iu);
+    expect(message).not.toMatch(/restart/iu);
   });
 });
 
 describe('changesImpactTone', () => {
-  // The editor header already shows "N issues to fix" in warning orange; a second orange line saying
-  // something far less urgent flattens both into undifferentiated alarm.
   it('warns only where applying actually costs something', () => {
     expect(changesImpactTone(Pipeline_State.RUNNING)).toBe('warning');
     expect(changesImpactTone(Pipeline_State.STARTING)).toBe('warning');
@@ -204,9 +196,8 @@ describe('changesImpactTone', () => {
 });
 
 describe('the NO_CHANGES_COPY', () => {
-  // The lane covers both halves of a save, so the empty state has to claim both are unchanged.
   it('accounts for the settings as well as the configuration', () => {
-    expect(NO_CHANGES_COPY.title).toMatch(/no unsaved changes/i);
-    expect(NO_CHANGES_COPY.body).toMatch(/settings/i);
+    expect(NO_CHANGES_COPY.title).toMatch(/no unsaved changes/iu);
+    expect(NO_CHANGES_COPY.body).toMatch(/settings/iu);
   });
 });

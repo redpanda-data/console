@@ -6,7 +6,6 @@ export type ConnectNodeCategory = {
 };
 
 const displayNames: Record<string, string> = {
-  // Component types
   input: 'Inputs',
   output: 'Outputs',
   processor: 'Processors',
@@ -16,7 +15,6 @@ const displayNames: Record<string, string> = {
   scanner: 'Scanners',
   metrics: 'Metrics',
   tracer: 'Tracers',
-  // Semantic categories
   databases: 'Databases',
   messaging: 'Message Queues',
   storage: 'File Storage',
@@ -28,7 +26,6 @@ const displayNames: Record<string, string> = {
   export: 'Data Export',
   transformation: 'Data Transformation',
   monitoring: 'Monitoring & Observability',
-  // Additional categories
   windowing: 'Windowing',
   utility: 'Utility',
   local: 'Local',
@@ -43,16 +40,15 @@ const displayNames: Record<string, string> = {
   unstructured: 'Unstructured',
 };
 
-export const getCategoryDisplayName = (category: string): string =>
-  displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
+export const getCategoryDisplayName = (category: string) =>
+  displayNames[category] || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/gu, ' ');
 
 export const getAllCategories = (
   components: (ConnectComponentSpec | ExtendedConnectComponentSpec)[],
   componentType?: ConnectComponentType[]
-): ConnectNodeCategory[] => {
+) => {
   const categorySet = new Set<string>();
 
-  // Collect categories from built-in components
   for (const component of components) {
     if (
       component.categories &&
@@ -64,10 +60,9 @@ export const getAllCategories = (
     }
   }
 
-  // Convert to ConnectNodeCategory array with display names
   return Array.from(categorySet)
     .sort((a, b) => a.localeCompare(b))
-    .map((categoryId) => ({
+    .map<ConnectNodeCategory>((categoryId) => ({
       id: categoryId,
       name: getCategoryDisplayName(categoryId),
     }));
@@ -75,5 +70,5 @@ export const getAllCategories = (
 
 const PRIORITY_CATEGORIES = ['api', 'AWS'];
 
-export const getFilterableCategories = (categories: ConnectNodeCategory[]): ConnectNodeCategory[] =>
+export const getFilterableCategories = (categories: ConnectNodeCategory[]) =>
   categories.filter((category) => !PRIORITY_CATEGORIES.includes(category.id));

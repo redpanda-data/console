@@ -6,7 +6,8 @@ Oxlint category is off in `../.oxlintrc.json`, and each rule here is an error. T
 come from the Oxlint plugin in [pingdotgg/t3code](https://github.com/pingdotgg/t3code).
 
 ```bash
-bun run lint:policy        # read-only; `bun run lint` and `lint:fix` also run it
+bun run lint:policy        # Console rules
+bun run lint:landmines     # strict Ultracite 8.3 Landmines preset
 bun run test:file:unit tests/lint-policy.test.ts
 ```
 
@@ -14,6 +15,15 @@ The test drives `bun run lint:policy` in an OS-temp project whose config extends
 checked-in one, so the real script, config and plugin load. Diagnostics carry no fixes.
 React Doctor does not adopt this config (`adoptExistingLintConfig: false` in
 `../doctor.config.json`), so `bun run lint` is the one gate for these rules.
+
+Both read-only checks run from `bun run lint`, `lint:fix`, and `lint:check`. Landmines
+shares Console's file exclusions; all ten rules are errors. The root `tests/`
+harness still needs semantic filenames; first-party registry contract tests stay
+outside vendored source. The comment rule keeps functional directives, Redpanda
+license headers, TSDoc on exported APIs, and single-line `WARNING:` notes for
+recurring footguns. Preserve the whole rationale or remove it; a standalone
+block comment does not make prose exempt. Package exports are checked from
+linted source files.
 
 ## Rules
 

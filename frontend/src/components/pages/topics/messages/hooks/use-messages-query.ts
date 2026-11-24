@@ -26,7 +26,6 @@ export function useMessagesQuery(topicName: string, urlState: MessagesUrlState, 
   const topicPermissions = useApiStoreHook((s) => s.topicPermissions.get(topicName));
   const canUseJsFilters = (topicPermissions?.canUseSearchFilters ?? true) && !isServerless() && !continuousActive;
 
-  // Combine active JS filters into the base64 backend predicate (AND semantics)
   const filterInterpreterCode = useMemo(
     () => (canUseJsFilters ? buildFilterInterpreterCode(jsFilters) : ''),
     [jsFilters, canUseJsFilters]
@@ -78,12 +77,9 @@ export function useAutoSearch({ search, searchParams, refreshCounter, liveTail }
   useEffect(
     function startDebouncedSearch() {
       if (liveTail) {
-        return; // live tail owns the stream (P5)
+        // WARNING: Do not start a bounded fetch here; the live-tail loop already owns the stream.
+        return;
       }
-      // Timestamp mode starts at -1 (unset) for one render until the date picker's
-      // own mount effect corrects it to "now" — searching on that sentinel would
-      // send an invalid startTimestamp to the backend instead of waiting the one
-      // tick for the real value.
       if (searchParams.startOffset === PartitionOffsetOrigin.Timestamp && searchParams.startTimestamp < 0) {
         return;
       }
@@ -93,14 +89,9 @@ export function useAutoSearch({ search, searchParams, refreshCounter, liveTail }
       }
       const timer = setTimeout(() => {
         lastSignatureRef.current = signature;
-        search.start(searchParams).catch(() => {
-          // errors are surfaced through search.error
-        });
+        search.start(searchParams).catch(() => {});
       }, 100);
-      // Also stop() here (not just clear the timer): if the previous run's timer
-      // already fired and a stream is in flight, changing params again must abort
-      // it immediately rather than leaving it running until some later start()
-      // happens to supersede it.
+      // WARNING: Abort an in-flight search as soon as parameters change; clearing its already-fired debounce timer is not enough.
       return () => {
         clearTimeout(timer);
         search.stop();
@@ -109,8 +100,6 @@ export function useAutoSearch({ search, searchParams, refreshCounter, liveTail }
     [searchParams, refreshCounter, liveTail, search.start, search.stop]
   );
 
-  // Live tail owns the stream; clearing the signature when it activates lets the paged
-  // auto-search above re-run once live tail is turned back off.
   useEffect(
     function resetSignatureWhileLive() {
       if (liveTail) {
@@ -132,6 +121,8 @@ type SearchRunnerOptions = {
 /**
  * Keeps the stream running for the current params: the debounced paged search, or the live-tail
  * loop while live tail is on. `handleRefresh` re-runs the paged search, or re-arms the tail.
+ * In live mode, changing a committed JS filter or partition restarts the stream; a deserializer edit applies on its next start.
+ * Refresh restarts live tail with a fresh failure budget. Clean backend completions reopen the bounded stream.
  */
 export function useSearchRunner({
   search,
@@ -143,11 +134,6 @@ export function useSearchRunner({
   const [refreshCounter, setRefreshCounter] = useState(0);
   useAutoSearch({ search, searchParams, refreshCounter, liveTail });
 
-  // Every (re)start reads the params current at that moment, but only a committed JS filter or
-  // partition restarts a running tail: both stay editable while live, and the running stream must
-  // not leave the UI showing a change it never picks up. Scope edits (offset, timestamp, max
-  // results) are disabled in the UI while live, and a deserializer change takes effect on the
-  // next (re)start instead of resetting the streamed table.
   const latestSearchParamsRef = useRef(searchParams);
   useEffect(
     function trackLatestSearchParams() {
@@ -170,17 +156,8 @@ export function useSearchRunner({
     [search.start, filterInterpreterCode, partitionId]
   );
 
-  // Stream from the log's end for as long as live tail is on; restarts on every clean
-  // completion (the backend bounds a "from newest" consume to maxResults per partition and
-  // then completes — list_messages.go — it isn't an actually-endless stream), and backs off
-  // instead of hammering the backend when the stream keeps failing. `status` (not the URL
-  // toggle) drives the "streaming" UI, and `restart` is the recovery path once the loop's
-  // retry budget is exhausted.
   const liveTailLoop = useLiveTailLoop({ active: liveTail, start: startLiveTail, stop: search.stop });
 
-  // In live mode "refresh" (and the error state's Retry) restarts the tail loop with a fresh
-  // failure budget — the only way back once its retries are exhausted, since the paged
-  // auto-search is inert while the toggle is on.
   const handleRefresh = useCallback(() => {
     if (liveTail) {
       liveTailLoop.restart();
@@ -189,7 +166,6 @@ export function useSearchRunner({
     setRefreshCounter((c) => c + 1);
   }, [liveTail, liveTailLoop.restart]);
 
-  // DeleteRecordsModal (and other page-level actions) re-trigger the search through this global
   useEffect(function registerGlobalSearchTrigger() {
     appGlobal.searchMessagesFunc = () => setRefreshCounter((c) => c + 1);
     return () => {

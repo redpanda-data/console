@@ -18,8 +18,7 @@ import type { Payload } from '../../../../../state/rest-interfaces';
 import { KowlJsonView } from '../../../../misc/kowl-json-view';
 import { Button } from '../../../../redpanda-ui/components/button';
 
-// Regex for checking printable ASCII characters
-const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/;
+const PRINTABLE_CHAR_REGEX = /[\x20-\x7E]/u;
 
 type PayloadRenderData =
   | { type: 'null' }
@@ -30,11 +29,11 @@ type PayloadRenderData =
   | { type: 'json'; content: string | object | null | undefined }
   | { type: 'error'; content: string };
 
-function isPrimitivePayload(val: unknown): boolean {
+function isPrimitivePayload(val: unknown) {
   return typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean';
 }
 
-function formatHexBytes(payload: Payload): PayloadRenderData {
+function formatHexBytes(payload: Payload) {
   const rawBytes = payload.rawBytes;
   const normalizedPayload = payload.normalizedPayload;
   const bytesSource = rawBytes !== null && rawBytes !== undefined ? rawBytes : normalizedPayload;
@@ -46,12 +45,12 @@ function formatHexBytes(payload: Payload): PayloadRenderData {
     for (const rawByte of bytesSource as Uint8Array) {
       result += `${rawByte.toString(16).padStart(2, '0')} `;
     }
-    return { type: 'code', content: result };
+    return { type: 'code', content: result } satisfies PayloadRenderData;
   }
-  return { type: 'rawBytesUnavailable' };
+  return { type: 'rawBytesUnavailable' } satisfies PayloadRenderData;
 }
 
-function formatAsciiBytes(val: unknown): PayloadRenderData {
+function formatAsciiBytes(val: unknown) {
   const str = String(val);
   let result = '';
   for (let i = 0; i < str.length; i++) {
@@ -59,13 +58,13 @@ function formatAsciiBytes(val: unknown): PayloadRenderData {
     ch = PRINTABLE_CHAR_REGEX.test(ch) ? ch : '. ';
     result += `${ch} `;
   }
-  return { type: 'code', content: result };
+  return { type: 'code', content: result } satisfies PayloadRenderData;
 }
 
-function prepareBinaryPayload(payload: Payload, val: unknown): PayloadRenderData {
+function prepareBinaryPayload(payload: Payload, val: unknown) {
   const mode = 'hex' as 'ascii' | 'raw' | 'hex';
   if (mode === 'raw') {
-    return { type: 'code', content: val as React.ReactNode };
+    return { type: 'code', content: val as React.ReactNode } satisfies PayloadRenderData;
   }
   if (mode === 'hex') {
     return formatHexBytes(payload);
@@ -73,9 +72,9 @@ function prepareBinaryPayload(payload: Payload, val: unknown): PayloadRenderData
   return formatAsciiBytes(val);
 }
 
-function classifyPayload(payload: Payload): PayloadRenderData {
+function classifyPayload(payload: Payload) {
   if (payload === null || payload === undefined || payload.payload === null || payload.payload === undefined) {
-    return { type: 'null' };
+    return { type: 'null' } satisfies PayloadRenderData;
   }
 
   const val = payload.payload;
@@ -85,22 +84,22 @@ function classifyPayload(payload: Payload): PayloadRenderData {
   }
 
   if (payload.encoding === 'utf8WithControlChars') {
-    return { type: 'controlChars', content: val as string };
+    return { type: 'controlChars', content: val as string } satisfies PayloadRenderData;
   }
 
   if (isPrimitivePayload(val)) {
-    return { type: 'primitive', content: String(val) };
+    return { type: 'primitive', content: String(val) } satisfies PayloadRenderData;
   }
 
-  return { type: 'json', content: val };
+  return { type: 'json', content: val } satisfies PayloadRenderData;
 }
 
-function preparePayloadData(payload: Payload): PayloadRenderData {
+function preparePayloadData(payload: Payload) {
   try {
     return classifyPayload(payload);
   } catch (e) {
     const err = e as Error;
-    return { type: 'error', content: err.message === undefined ? String(e) : err.message };
+    return { type: 'error', content: err.message === undefined ? String(e) : err.message } satisfies PayloadRenderData;
   }
 }
 
@@ -151,9 +150,6 @@ function renderPayloadData(renderData: PayloadRenderData, payload: Payload, view
         </div>
       );
     case 'json':
-      // Avro JSON encodes bytes fields as \u00XX escape sequences. Re-escape
-      // Latin-1 code points in the viewer so copy-paste yields the original
-      // bytes rather than their UTF-8 encoding.
       return (
         <KowlJsonView escapeLatin1={payload.encoding === 'avro'} srcObj={renderData.content} style={viewerStyle} />
       );

@@ -28,7 +28,7 @@ type ResourceTypeInfo = {
   icon: ReactNode;
 };
 
-const getResourceTypeInfo = (type: ListResourcesResponse_Type): ResourceTypeInfo => {
+const getResourceTypeInfo: (type: ListResourcesResponse_Type) => ResourceTypeInfo = (type) => {
   switch (type) {
     case ListResourcesResponse_Type.PIPELINE:
       return {
@@ -58,9 +58,7 @@ const getResourceTypeInfo = (type: ListResourcesResponse_Type): ResourceTypeInfo
   }
 };
 
-const groupResourcesByType = (
-  resources: ListResourcesResponse_Resource[]
-): Map<ListResourcesResponse_Type, ListResourcesResponse_Resource[]> => {
+const groupResourcesByType = (resources: ListResourcesResponse_Resource[]) => {
   const grouped = new Map<ListResourcesResponse_Type, ListResourcesResponse_Resource[]>();
 
   for (const resource of resources) {

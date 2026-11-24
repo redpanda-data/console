@@ -71,7 +71,6 @@ const STRATEGY_LABELS: Record<EditOptions, string> = {
   otherGroup: 'Other Consumer Group',
 };
 
-/** Inline text with an explanatory tooltip on hover (replaces the legacy InfoText). */
 const InfoTooltip = ({ text, children }: { text: string; children: ReactNode }) => (
   <TooltipProvider>
     <Tooltip>
@@ -85,25 +84,15 @@ const InfoTooltip = ({ text, children }: { text: string; children: ReactNode }) 
 
 type EditOptions = 'startOffset' | 'endOffset' | 'time' | 'otherGroup' | 'shiftBy';
 
-// props:
-// - consumer group
-// - topics
-//      - partitionIds
-
+/**
+ * A partition copied from another group may not have a current offset. New values can be concrete offsets (or Kafka's earliest/latest markers), a Date placeholder while looking up a timestamp, or the resulting partition offset.
+ */
 export type GroupOffset = {
   topicName: string;
   partitionId: number;
 
-  // Current Offset
-  // Can be undefined when we extend our offsets using another group,
-  // in that case we don't have a "Current Offset"
   offset?: number;
 
-  // start/end/other:
-  // undefined  =>
-  // number     => concrete offset from other consumer group
-  // Date       => placeholder for 'specific time' until real offsets are loaded
-  // PartitionOffset => real offsets for Date
   newOffset?: number | Date | PartitionOffset;
 };
 
@@ -121,6 +110,9 @@ type EditOffsetsModalState = {
   isApplyingEdit: boolean;
 };
 
+/**
+ * Reads watermarks for all affected topics and supports selecting offsets from another group. If there is no record at or after the requested timestamp, the latest offset is used.
+ */
 export class EditOffsetsModal extends Component<{
   group: GroupDescription;
   offsets: GroupOffset[] | null;
@@ -130,7 +122,6 @@ export class EditOffsetsModal extends Component<{
 }> {
   lastOffsets!: GroupOffset[];
   lastVisible = false;
-  // Class component: generate the per-instance id prefix once instead of `useId()`.
   readonly fieldId = simpleUniqueId('edit-offsets');
   offsetsByTopic: {
     topicName: string;
@@ -193,7 +184,6 @@ export class EditOffsetsModal extends Component<{
               {offsets.length === 1 ? 'partition' : 'partitions'}.
             </p>
 
-            {/* Content */}
             <div className="mt-8">
               {this.state.page === 0 ? <div key="p1">{this.page1()}</div> : <div key="p2">{this.page2()}</div>}
             </div>
@@ -401,7 +391,6 @@ export class EditOffsetsModal extends Component<{
 
   setPage(page: 0 | 1) {
     if (page === 1) {
-      // compute and set newOffset
       if (this.props.offsets === null) {
         return;
       }
@@ -412,20 +401,16 @@ export class EditOffsetsModal extends Component<{
   }
 
   computeNewOffsets(offsets: GroupOffset[]) {
-    // reset all newOffset
     for (const x of offsets) {
       x.newOffset = undefined;
     }
 
-    // filter selected offsets to be edited
     const selectedOffsets = offsets.filter(
       (x) => this.state.selectedPartition === null || x.partitionId === this.state.selectedPartition
     );
 
     const strategies: Record<EditOptions, () => void> = {
-      // Earliest
       startOffset: () => assignNewOffset(selectedOffsets, -2),
-      // Latest
       endOffset: () => assignNewOffset(selectedOffsets, -1),
       shiftBy: () => shiftOffsets(selectedOffsets, this.state.offsetShiftByValue),
       time: () => this.computeOffsetsForTimestamp(selectedOffsets),
@@ -440,7 +425,6 @@ export class EditOffsetsModal extends Component<{
     }
     const requiredTopics = selectedOffsets.map((x) => x.topicName).distinct();
 
-    // Fetch offset for each partition
     setTimeout(() => this.loadOffsetsForTimestamp(requiredTopics, selectedOffsets));
   }
 
@@ -463,12 +447,10 @@ export class EditOffsetsModal extends Component<{
     }
 
     assignTimestampOffsets(selectedOffsets, offsetsForTimestamp);
-    // Trigger re-render so ColAfter sees updated newOffset values
     this.forceUpdate();
   }
 
   copyOffsetsFromOtherGroup(selectedOffsets: GroupOffset[], currentOffsets: GroupOffset[]) {
-    // Lookup offsets from the other group
     const other = api.consumerGroups.get(this.state.selectedGroup ?? '');
     if (!other) {
       showErrorModal(
@@ -482,14 +464,10 @@ export class EditOffsetsModal extends Component<{
       return;
     }
 
-    //
-    // Copy offsets that exist in the current group from the other group
     for (const x of selectedOffsets) {
       x.newOffset = groupOffsetOf(other, x.topicName, x.partitionId);
     }
 
-    //
-    // Extend our offsets with any offsets that our group currently doesn't have
     if (this.state.otherGroupCopyMode === 'all') {
       appendMissingOffsets(currentOffsets, other);
     }
@@ -548,19 +526,13 @@ export class EditOffsetsModal extends Component<{
 
     if (visible) {
       setTimeout(() => {
-        // modal became visible
-
-        // need all groups for "other groups" dropdown
         api.refreshConsumerGroups();
 
-        // need watermarks for all topics the group consumes
-        // in order to know earliest/latest offsets
         const topics = this.props.group.topicOffsets.map((x) => x.topic).distinct();
         api.refreshPartitions(topics, true).catch((error: unknown) => {
           toast.error('Failed to load partition offsets', { description: String(error) });
         });
 
-        // reset settings
         this.setState({ page: 0, selectedOption: 'startOffset' });
       });
     }
@@ -569,7 +541,7 @@ export class EditOffsetsModal extends Component<{
   }
 
   /** The offsets in the selected topic and partition (null selects all). */
-  offsetsToApply(): GroupOffset[] {
+  offsetsToApply() {
     // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
     return this.props.offsets!.filter(
       ({ topicName, partitionId }) =>
@@ -603,7 +575,6 @@ export class EditOffsetsModal extends Component<{
   }
 }
 
-/** A faded skip icon whose tooltip explains why there is no offset value. */
 const SkipIconTooltip = ({ text }: { text: string }) => (
   <TooltipProvider>
     <Tooltip>
@@ -621,7 +592,6 @@ const SkipIconTooltip = ({ text }: { text: string }) => (
 
 const unknownNewOffsetText = (val: unknown) => `Unknown type in 'newOffset' type='${typeof val}' value='{v}'`;
 
-/** An offset with a muted note on where it came from, such as "(Earliest)" or the message timestamp. */
 const OffsetWithNote = ({ offset, note }: { offset: ReactNode; note: ReactNode }) => (
   <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
     <span>{offset}</span>
@@ -638,7 +608,6 @@ const OffsetWithNote = ({ offset, note }: { offset: ReactNode; note: ReactNode }
   </div>
 );
 
-/** New offset set by timestamp: a Date placeholder while loading, then the fetched partition offset. */
 const TimestampNewOffset = ({
   record,
   val,
@@ -648,30 +617,24 @@ const TimestampNewOffset = ({
   val: Date | PartitionOffset;
   selectedTime?: number;
 }) => {
-  // placeholder while loading
   if (val instanceof Date) {
     return val.toLocaleString();
   }
 
-  // anything but a fetched partition offset
   if (!('offset' in val)) {
     return unknownNewOffsetText(val);
   }
 
-  // error
   if (val.error) {
     return <span style={{ color: 'orangered' }}>{val.error}</span>;
   }
 
-  // successful fetch
   if (val.timestamp > 0) {
     return (
       <OffsetWithNote note={new Date(val.timestamp).toLocaleString()} offset={numberToThousandsString(val.offset)} />
     );
   }
 
-  // not found - no message after given timestamp
-  // use 'latest'
   const partition = api.topicPartitions.get(record.topicName)?.first((p) => p.id === record.partitionId);
   return (
     <TooltipProvider>
@@ -694,14 +657,11 @@ const TimestampNewOffset = ({
   );
 };
 
-/** New offset copied from another group (a concrete offset), or Earliest (-2) / Latest (-1). */
 const NumericNewOffset = ({ record, val }: { record: GroupOffset; val: number }) => {
-  // copied from other group
   if (val >= 0) {
     return numberToThousandsString(val);
   }
 
-  // Get offset from current partition values
   const partition = api.topicPartitions.get(record.topicName)?.first((p) => p.id === record.partitionId);
 
   const content =
@@ -717,38 +677,28 @@ const NumericNewOffset = ({ record, val }: { record: GroupOffset; val: number })
   );
 };
 
-class ColAfter extends Component<{
-  selectedTime?: number;
-  record: GroupOffset;
-}> {
-  render() {
-    const val = this.props.record.newOffset;
+function ColAfter({ record, selectedTime }: { selectedTime?: number; record: GroupOffset }) {
+  const val = record.newOffset;
 
-    // No change
-    if (val === null) {
-      return <SkipIconTooltip text="Offset will not be changed" />;
-    }
-
-    // Set by timestamp
-    if (typeof val === 'object') {
-      return <TimestampNewOffset record={this.props.record} selectedTime={this.props.selectedTime} val={val} />;
-    }
-
-    // Earliest / Latest / OtherGroup
-    if (typeof val === 'number') {
-      return <NumericNewOffset record={this.props.record} val={val} />;
-    }
-
-    // Loading placeholder
-    if (typeof val === 'string') {
-      return <span style={{ opacity: 0.66, fontStyle: 'italic' }}>{val}</span>;
-    }
-
-    return unknownNewOffsetText(val);
+  if (val === null) {
+    return <SkipIconTooltip text="Offset will not be changed" />;
   }
+
+  if (typeof val === 'object') {
+    return <TimestampNewOffset record={record} selectedTime={selectedTime} val={val} />;
+  }
+
+  if (typeof val === 'number') {
+    return <NumericNewOffset record={record} val={val} />;
+  }
+
+  if (typeof val === 'string') {
+    return <span style={{ opacity: 0.66, fontStyle: 'italic' }}>{val}</span>;
+  }
+
+  return unknownNewOffsetText(val);
 }
 
-/** Page-2 preview of a single topic's partition offsets (Before/After). */
 const OffsetPreviewTable = ({ items, selectedTime }: { items: GroupOffset[]; selectedTime: number }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -820,22 +770,13 @@ const OffsetPreviewTable = ({ items, selectedTime }: { items: GroupOffset[]; sel
 };
 
 export type GroupDeletingMode = 'group' | 'topic' | 'partition';
-// Why do we pass 'mode'?
-//   It is the users "intent" (where he clicked).
-//   Without it, we'd have to infer it, which is possible, but will result in strange wording.
-//   For example:
-//     - user is viewing a group that has offsets for only one topic
-//     - user clicks 'delete' on the topic
-//     - dialog would show "you want to delete ALL offsets for this group"
-//       which is technically correct, but might give the impression of deleting more than he wanted
 const DELETE_LEAD_TEXT: Record<GroupDeletingMode, string> = {
   group: 'This action will delete the following consumer group:',
   topic: 'Group offsets will be deleted for topic:',
   partition: 'Group offsets will be deleted for partition:',
 };
 
-/** The latest non-null offsets, so the dialog content doesn't flash empty during the close animation. */
-const useLastOffsets = (offsets: GroupOffset[] | null): GroupOffset[] => {
+const useLastOffsets = (offsets: GroupOffset[] | null) => {
   const lastOffsetsRef = useRef<GroupOffset[]>([]);
   if (offsets) {
     lastOffsetsRef.current = offsets;
@@ -843,7 +784,6 @@ const useLastOffsets = (offsets: GroupOffset[] | null): GroupOffset[] => {
   return offsets ?? lastOffsetsRef.current;
 };
 
-/** Deletes the whole group in `group` mode, otherwise only the given offsets. Throws if the backend reports partition errors. */
 async function deleteGroupOrOffsets(group: GroupDescription, mode: GroupDeletingMode, offsets: GroupOffset[]) {
   if (mode === 'group') {
     await api.deleteConsumerGroup(group.groupId);
@@ -863,7 +803,6 @@ async function deleteGroupOrOffsets(group: GroupDescription, mode: GroupDeleting
   }
 }
 
-/** Whether deleting `offsets` leaves the group without any committed offsets. */
 const deletesAllOffsets = (group: GroupDescription, offsets: GroupOffset[]) =>
   group.topicOffsets.sum((t) => t.partitionOffsets.length) - offsets.length === 0;
 
@@ -892,7 +831,6 @@ const useDeleteOffsets = ({
 
       onClose();
       if (deletesAllOffsets(group, activeOffsets)) {
-        // Group is fully deleted, go back to list
         appGlobal.historyReplace('/groups');
       }
     } catch (err) {
@@ -900,18 +838,23 @@ const useDeleteOffsets = ({
       console.error(err);
     } finally {
       setIsDeleting(false);
-      // Returns nothing to await: its request failures land in the API error store.
+      // WARNING: The legacy refresh reports request failures through the API error store and does not return a promise.
       api.refreshConsumerGroups(true);
-      // Caught here so a failed refresh can't replace the delete's own outcome or escape the click.
-      await queryClient.invalidateQueries({ queryKey: ['consumer-groups'] }).catch((error: unknown) => {
-        toast.error('Failed to refresh consumer groups', { description: String(error) });
-      });
+      // WARNING: Report refresh failure separately; it must not replace the outcome of deleting offsets.
+      await queryClient
+        .invalidateQueries({ queryKey: ['consumer-groups'] }, { throwOnError: true })
+        .catch((error: unknown) => {
+          toast.error('Failed to refresh consumer groups', { description: String(error) });
+        });
     }
   };
 
   return { isDeleting, handleDelete };
 };
 
+/**
+ * Mode is the action the user chose, not inferred from the number of remaining topics. Group mode deletes the group; topic and partition modes delete only their selected offsets. Keep the last non-null offsets through the close animation.
+ */
 export const DeleteOffsetsModal = (props: {
   group: GroupDescription;
   mode: GroupDeletingMode;
@@ -990,7 +933,6 @@ export const DeleteOffsetsModal = (props: {
           </div>
         </AlertDialogBody>
 
-        {/* Following AlertDialogBody, the footer draws its own top border. */}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
           <UiButton
@@ -1007,21 +949,18 @@ export const DeleteOffsetsModal = (props: {
   );
 };
 
-// Utility functions
-
 type TopicPartitionResults = {
   topicName: string;
   partitions: { partitionID: number; error: string | undefined }[];
 };
 
-/** Keeps only the partitions that report an error, and only the topics that have any. */
-function topicsWithPartitionErrors(topics: TopicPartitionResults[]): TopicPartitionResults[] {
+function topicsWithPartitionErrors(topics: TopicPartitionResults[]) {
   return topics
     .map((t) => ({
       ...t,
       partitions: t.partitions.filter((x) => x.error),
     }))
-    .filter((t) => t.partitions.length > 0);
+    .filter((t) => t.partitions.length > 0) satisfies TopicPartitionResults[];
 }
 
 async function applyOffsetEdit(groupId: string, topics: EditConsumerGroupOffsetsTopic[]) {
@@ -1057,14 +996,13 @@ function assignTimestampOffsets(offsets: GroupOffset[], offsetsForTimestamp: Top
   }
 }
 
-function groupOffsetOf(group: GroupDescription, topicName: string, partitionId: number): number | undefined {
+function groupOffsetOf(group: GroupDescription, topicName: string, partitionId: number) {
   return (
     group.topicOffsets.first((t) => t.topic === topicName)?.partitionOffsets.first((p) => p.partitionId === partitionId)
       ?.groupOffset ?? undefined
   );
 }
 
-/** Appends every committed offset of `other` that `currentOffsets` doesn't have yet, as a new offset with no current one. */
 function appendMissingOffsets(currentOffsets: GroupOffset[], other: GroupDescription) {
   const otherFlat = other.topicOffsets.flatMap((x) =>
     x.partitionOffsets
@@ -1087,19 +1025,16 @@ function appendMissingOffsets(currentOffsets: GroupOffset[], other: GroupDescrip
     }
   }
 }
-function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopic[] {
-  const getOffset = (x: GroupOffset['newOffset']): number | undefined => {
-    // no offset set
+function createEditRequest(offsets: GroupOffset[]) {
+  const getOffset = (x: GroupOffset['newOffset']) => {
     if (x === null) {
       return;
     }
 
-    // from other group
     if (typeof x === 'number') {
       return x;
     }
 
-    // from timestamp
     if (x && typeof x === 'object' && 'offset' in x) {
       return x.offset;
     }
@@ -1115,13 +1050,10 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
       })),
     }));
 
-  // filter undefined partitions
   for (const t of topicOffsets) {
     t.partitions = t.partitions.filter((p) => p.offset != null);
   }
 
-  // assert type:
-  // we know that there can't be any undefined offsets anymore
   const cleanOffsets = topicOffsets as {
     topicName: string;
     partitions: {
@@ -1130,11 +1062,10 @@ function createEditRequest(offsets: GroupOffset[]): EditConsumerGroupOffsetsTopi
     }[];
   }[];
 
-  // filter topics with zero partitions
-  return cleanOffsets.filter((t) => t.partitions.length > 0);
+  return cleanOffsets.filter((t) => t.partitions.length > 0) satisfies EditConsumerGroupOffsetsTopic[];
 }
 
-function createDeleteRequest(offsets: GroupOffset[]): DeleteConsumerGroupOffsetsTopic[] {
+function createDeleteRequest(offsets: GroupOffset[]) {
   const topicOffsets = offsets
     .groupInto((x) => x.topicName)
     .map((t) => ({
@@ -1144,6 +1075,5 @@ function createDeleteRequest(offsets: GroupOffset[]): DeleteConsumerGroupOffsets
       })),
     }));
 
-  // filter topics with zero partitions
-  return topicOffsets.filter((t) => t.partitions.length > 0);
+  return topicOffsets.filter((t) => t.partitions.length > 0) satisfies DeleteConsumerGroupOffsetsTopic[];
 }

@@ -13,7 +13,6 @@ type ErrorResultProps = {
   message?: string;
 };
 
-// Type guard for ConnectError
 const isConnectError = (err: unknown): err is ConnectError =>
   err !== null &&
   typeof err === 'object' &&
@@ -21,14 +20,12 @@ const isConnectError = (err: unknown): err is ConnectError =>
   typeof (err as { code: unknown }).code === 'number' &&
   'details' in err;
 
-// Type guard for WrappedApiError
 const isWrappedApiError = (err: unknown): err is WrappedApiError =>
   err !== null &&
   typeof err === 'object' &&
   'statusCode' in err &&
   typeof (err as { statusCode: unknown }).statusCode === 'number';
 
-// HTTP status codes
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
@@ -38,8 +35,7 @@ const HTTP_BAD_REQUEST = 400;
 const HTTP_INTERNAL_ERROR = 500;
 const HTTP_SERVICE_UNAVAILABLE = 503;
 
-// Map gRPC error codes to HTTP status codes
-const getStatusCode = (code: Code): number => {
+const getStatusCode: (code: Code) => number = (code) => {
   switch (code) {
     case Code.Unauthenticated:
       return HTTP_UNAUTHORIZED;

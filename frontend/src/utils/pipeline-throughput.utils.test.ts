@@ -98,7 +98,7 @@ describe('mergeTimeSeries', () => {
 });
 
 describe('insertGapMarkers', () => {
-  const pt = (timestamp: number, ingress: number): MergedPoint => ({ timestamp, ingress, egress: ingress });
+  const pt = (timestamp: number, ingress: number) => ({ timestamp, ingress, egress: ingress }) satisfies MergedPoint;
 
   test('leaves evenly spaced points untouched', () => {
     const points = [pt(0, 1), pt(60, 2), pt(120, 3)];
@@ -106,7 +106,6 @@ describe('insertGapMarkers', () => {
   });
 
   test('inserts a null marker inside a larger-than-step gap', () => {
-    // Regular 60s step, then a jump of 600s (service was down).
     const points = [pt(0, 1), pt(60, 2), pt(660, 3)];
     const result = insertGapMarkers(points);
     expect(result).toEqual([pt(0, 1), pt(60, 2), { timestamp: 120, ingress: null, egress: null }, pt(660, 3)]);
@@ -135,7 +134,7 @@ describe('insertGapMarkers', () => {
 describe('formatChartTimestamp', () => {
   test('formats millisecond timestamp to time string', () => {
     const result = formatChartTimestamp(new Date('2026-01-15T14:30:00Z').getTime());
-    expect(result).toMatch(/\d{2}:\d{2}/);
+    expect(result).toMatch(/\d{2}:\d{2}/u);
   });
 });
 

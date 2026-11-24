@@ -14,7 +14,7 @@ import { MCPIcon } from 'components/redpanda-ui/components/icons';
 import { CircleUser, Link, Server, Waypoints } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 
-const getScopeConfig = (scope: Scope): { text: string; icon?: React.ReactNode } => {
+const getScopeConfig: (scope: Scope) => { text: string; icon?: React.ReactNode } = (scope) => {
   switch (scope) {
     case Scope.REDPANDA_CONNECT:
       return { text: 'Redpanda Connect', icon: <Link className="h-3 w-3" /> };

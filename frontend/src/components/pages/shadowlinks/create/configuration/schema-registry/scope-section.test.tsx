@@ -54,7 +54,6 @@ const TestWrapper = ({
   );
 };
 
-/** Renders the section and records the latest form values on every change. */
 const renderTrackingFormValues = () => {
   const user = userEvent.setup();
   const latest: { values?: FormValues } = {};
@@ -102,7 +101,6 @@ describe('the ScopeSection', () => {
       expect(latest.values?.schemaRegistry?.subjects).toEqual([':.prod:orders-value']);
     });
 
-    // Removing a chip updates form state
     const chip = screen.getByTestId('sr-contexts-input-chip-.prod');
     await user.click(within(chip).getByRole('button', { name: 'Remove tag' }));
     await waitFor(() => {
@@ -115,7 +113,6 @@ describe('the ScopeSection', () => {
 
     await user.click(screen.getByTestId('sr-dest-map-radio'));
 
-    // Switching to map seeds a first empty row
     await waitFor(() => {
       expect(screen.getByTestId('sr-mapping-0-source')).toBeInTheDocument();
     });
@@ -133,7 +130,6 @@ describe('the ScopeSection', () => {
       expect(latest.values?.schemaRegistry?.contextMappings).toMatchObject([{ source: '.prod', destination: '.dr' }]);
     });
 
-    // Switching back to preserve hides the rows but keeps them in form state
     await user.click(screen.getByTestId('sr-dest-preserve-radio'));
     await waitFor(() => {
       expect(screen.queryByTestId('sr-context-mappings')).not.toBeInTheDocument();

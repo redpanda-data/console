@@ -44,9 +44,7 @@ export const VersionInfo = () => {
   );
 };
 
-// Bottom placement is CSS: `.footer` has `margin-top: auto` inside #mainLayout's flex column.
 export const AppFooter = () => {
-  // Icon `<title>`s are emptied: the link carries the name, and a native tooltip would stack on the Registry one.
   const gitHub = (link: string, title: string) => (
     <ElementTooltip content={title}>
       <a aria-label={title} href={link} rel="noopener noreferrer" target="_blank">
@@ -57,7 +55,6 @@ export const AppFooter = () => {
 
   return (
     <footer className="footer">
-      {/* Social Media Links */}
       <div className="links">
         {isEmbedded()
           ? gitHub('https://github.com/redpanda-data/redpanda', "Visit Redpanda's GitHub repository")
@@ -74,7 +71,6 @@ export const AppFooter = () => {
         </ElementTooltip>
       </div>
 
-      {/* Version Info */}
       <div className="versionText">
         <VersionInfo />
       </div>

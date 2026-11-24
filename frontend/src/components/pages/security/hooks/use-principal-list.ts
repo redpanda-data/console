@@ -26,7 +26,7 @@ export function mergePrincipals(
   scramUsers: { name: string }[],
   aclPrincipalGroups: { principalType: string; principalName: string }[],
   roleMembersMap: Map<string, { name: string }[]>
-): PrincipalEntry[] {
+) {
   const scramUserNames = new Set(scramUsers.map((u) => u.name));
 
   const principals: PrincipalEntry[] = scramUsers.map((u) => ({
@@ -35,7 +35,6 @@ export function mergePrincipals(
     isScramUser: true,
   }));
 
-  // Add principals referenced by ACLs that are not already listed as SCRAM users
   for (const g of aclPrincipalGroups) {
     if (
       (g.principalType === 'User' || g.principalType === 'Group') &&
@@ -50,7 +49,6 @@ export function mergePrincipals(
     }
   }
 
-  // Add principals from role memberships
   for (const [_, roleMembers] of roleMembersMap) {
     for (const roleMember of roleMembers) {
       if (!principals.some((u) => u.name === roleMember.name)) {

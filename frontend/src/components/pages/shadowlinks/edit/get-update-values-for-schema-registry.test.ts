@@ -11,26 +11,20 @@
 
 import { getUpdateValuesForSchemaRegistry } from './shadowlink-edit-utils';
 import { describe, expect, test } from 'bun:test';
-import {
-  type FormValues,
-  initialValues,
-  SCHEMA_REGISTRY_MODE,
-  type SchemaRegistryFormValues,
-  SR_AUTH_METHOD,
-} from '../create/model';
+import { initialValues, SCHEMA_REGISTRY_MODE, type SchemaRegistryFormValues, SR_AUTH_METHOD } from '../create/model';
 
 const SR_MASK_PATH = 'configurations.schema_registry_sync_options';
 
-const noneValues = (): FormValues => structuredClone(initialValues);
+const noneValues = () => structuredClone(initialValues);
 
-const topicValues = (): FormValues => {
+const topicValues = () => {
   const values = structuredClone(initialValues);
   values.enableSchemaRegistrySync = true;
   values.schemaRegistry.mode = SCHEMA_REGISTRY_MODE.TOPIC;
   return values;
 };
 
-const apiValues = (overrides: Partial<SchemaRegistryFormValues> = {}): FormValues => {
+const apiValues = (overrides: Partial<SchemaRegistryFormValues> = {}) => {
   const values = structuredClone(initialValues);
   values.schemaRegistry = {
     ...values.schemaRegistry,
@@ -83,7 +77,6 @@ describe('getUpdateValuesForSchemaRegistry', () => {
       if (result.value?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryApi') {
         const api = result.value.schemaRegistryShadowingMode.value;
         expect(api.sourceUrl).toBe('https://sr.example.com');
-        // paused survives the rebuild instead of resetting to false
         expect(api.paused).toBe(true);
       }
     });
@@ -109,10 +102,8 @@ describe('getUpdateValuesForSchemaRegistry', () => {
     });
 
     test('an unrelated api edit round-trips TLS material stored with TLS disabled', () => {
-      // rpk/Admin API links can store file-path TLS with enabled: false; the
-      // mask replaces the whole parent message, so the material must survive
-      // edits to other fields.
-      const disabledTls = (): FormValues =>
+      // WARNING: Do not drop disabled file-path TLS on another edit: rpk/Admin API links can retain that material and the mask replaces the parent.
+      const disabledTls = () =>
         apiValues({
           useTls: false,
           mtls: {
@@ -142,7 +133,6 @@ describe('getUpdateValuesForSchemaRegistry', () => {
     });
 
     test('scratch values typed into a mode that is not submitted emit no mask', () => {
-      // The user toured the api tab on a topic link, typed, then switched back.
       const touredButTopic = topicValues();
       touredButTopic.schemaRegistry.sourceUrl = 'https://left-over.example.com';
       touredButTopic.schemaRegistry.contexts = ['.scratch'];

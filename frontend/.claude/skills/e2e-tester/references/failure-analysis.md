@@ -3,7 +3,7 @@
 ## CLI and artifacts
 
 Run `bun run e2e-test:variant console list --summary` to collect tests without services.
-Run `bun run e2e-test:variant console topics/topic-list.spec.ts` to reproduce against the
+Run `bun run e2e-test:variant console topics/topic-list.e2e.test.ts` to reproduce against the
 real stack. Inspect `.rstest/` screenshots, first-retry videos and Playwright traces.
 Enterprise screenshots/videos remain disabled. Use native locators/DOM inspection for
 selector diagnosis; do not replace real E2E coverage with mocked component tests.

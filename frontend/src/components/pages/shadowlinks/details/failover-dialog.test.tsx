@@ -16,16 +16,16 @@ import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb
 import type { ComponentProps } from 'react';
 
 import { FailoverDialog } from './failover-dialog';
-import { type CloudSource, getFailoverReadiness, getSourceFenceStep, type SourceFenceStep } from './failover-model';
+import { type CloudSource, getFailoverReadiness, getSourceFenceStep } from './failover-model';
 
-const source = (state: 'fenced' | 'unfenced', allowAllReads: boolean): CloudSource => ({
+const source: (state: 'fenced' | 'unfenced', allowAllReads: boolean) => CloudSource = (state, allowAllReads) => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',
   fence: { status: 'known', state, revision: 18n, exemptPrincipals: [], allowAllReads, brokers: [] },
 });
 
-const sourceStep = (state: 'fenced' | 'unfenced', allowAllReads: boolean): SourceFenceStep => {
+const sourceStep = (state: 'fenced' | 'unfenced', allowAllReads: boolean) => {
   const step = getSourceFenceStep({
     source: source(state, allowAllReads),
     link: { authentication: 'sasl', principal: 'shadow-orders' },
@@ -56,7 +56,7 @@ const renderDialog = (props: Partial<ComponentProps<typeof FailoverDialog>> = {}
 
 type ReadinessInput = Parameters<typeof getFailoverReadiness>[0];
 
-const EXACTLY_FAIL_OVER = /^Fail over$/;
+const EXACTLY_FAIL_OVER = /^Fail over$/u;
 
 describe('the FailoverDialog', () => {
   test('lists the safe order: stop writes and let lag drain first, repoint clients after', () => {

@@ -31,6 +31,9 @@ import type { FormValues } from '../../model';
 
 const Mono = ({ children }: { children: React.ReactNode }) => <span className="font-mono">{children}</span>;
 
+/**
+ * Preserves entered mappings when switching to preservation mode; only map mode sends them.
+ */
 export const ScopeSection = () => {
   const { control, setValue, trigger } = useFormContext<FormValues>();
   const scopeMode = useWatch({ control, name: 'schemaRegistry.scopeMode' });
@@ -44,17 +47,13 @@ export const ScopeSection = () => {
   const handleDestinationModeChange = (mode: string) => {
     setValue('schemaRegistry.destinationContextsMode', mode as 'preserve' | 'map', { shouldValidate: true });
 
-    // Keep any rows the user entered when toggling to preserve; the request
-    // builder ignores them unless mode is map.
     if (mode === 'map' && fields.length === 0) {
       append({ source: '', destination: '' });
     }
   };
 
-  // The "at least one context or subject" error is anchored to contexts, so
-  // revalidate it when either changes.
   const revalidateScope = () => {
-    // trigger() rejects only if the resolver itself throws; report that instead of dropping it.
+    // WARNING: Report a rejected trigger; validation errors resolve normally, so rejection means the resolver itself failed.
     trigger('schemaRegistry.contexts').catch((error: unknown) => {
       toast.error('Failed to validate the form', { description: String(error) });
     });

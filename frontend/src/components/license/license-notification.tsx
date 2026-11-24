@@ -19,6 +19,9 @@ import { api, useApiStoreHook } from '../../state/backend-api';
 import { capitalizeFirst } from '../../utils/utils';
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
+/**
+ * Keep the alert copy in a single block; the registry description lays out separate children as grid rows. Actions are navigation links.
+ */
 export const LicenseNotification = () => {
   const { licenses, licensesLoaded, licenseViolation, enterpriseFeaturesUsed } = useApiStoreHook(
     useShallow((state) => ({
@@ -31,9 +34,7 @@ export const LicenseNotification = () => {
   const location = useLocation();
 
   useEffect(() => {
-    api.listLicenses().catch(() => {
-      // Error handling managed by API layer
-    });
+    api.listLicenses().catch(() => {});
   }, []);
 
   const { showSomeLicenseExpirationInfo, visibleSoonToExpireLicenses, visibleExpiredLicenses, isWarning } =
@@ -53,15 +54,13 @@ export const LicenseNotification = () => {
   return (
     <div data-testid="license-notification">
       <Alert
-        // my-4, not on the wrapper: that div is a direct child of #mainLayout, whose
-        // `margin: 0 !important` (index-cloud-integration.scss) would drop it.
+        // WARNING: Keep the margin on Alert; the Cloud host resets margins on direct children of mainLayout.
         className="my-4"
         data-testid="license-alert"
         icon={isWarning ? <TriangleAlertIcon /> : <InfoIcon />}
         variant={isWarning ? 'warning' : 'informative'}
       >
         <AlertDescription>
-          {/* One block child: AlertDescription is a grid, so loose text runs each become a row. */}
           <p>
             {visibleSoonToExpireLicenses.length > 0 && (
               <>
@@ -101,7 +100,6 @@ export const LicenseNotification = () => {
             )}
           </p>
 
-          {/* Both CTAs navigate, preserving link semantics. */}
           <div className="my-2 flex gap-2">
             {Boolean(api.isAdminApiConfigured) && (
               <Link className={buttonVariants({ variant: 'outline', size: 'sm' })} to="/upload-license">
@@ -123,16 +121,13 @@ export const LicenseNotification = () => {
   );
 };
 
-function preferCoreLicenseForSharedExpiry(licenses: License[]): License[] {
+function preferCoreLicenseForSharedExpiry(licenses: License[]) {
   return licenses.length > 1 && new Set(licenses.map((license) => license.expiresAt)).size === 1
     ? licenses.filter((license) => license.source === License_Source.REDPANDA_CORE)
     : licenses;
 }
 
 function getLicenseExpirationInfo(licenses: License[], licenseViolation: boolean | undefined) {
-  // This Global License Notification banner is used only for Enterprise licenses
-  // Trial Licences are handled by OverviewLicenseNotification and FeatureLicenseNotification.
-  // Community Licenses can't expire at all.
   const enterpriseLicenses = licenses.filter((license) => license.type === License_Type.ENTERPRISE);
 
   const visibleExpiredEnterpriseLicenses = enterpriseLicenses.filter(licenseIsExpired) ?? [];

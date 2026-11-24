@@ -49,11 +49,7 @@ import { buildSchemaRegistrySyncOptions } from '../create/schema-registry-reques
 import { buildDefaultFormValuesFromControlplane } from '../mappers/controlplane';
 import { buildDefaultFormValues } from '../mappers/dataplane';
 
-/**
- * Regex to strip "configurations." prefix from field mask paths
- * Used when converting dataplane field masks to controlplane format
- */
-const CONFIGURATIONS_PREFIX_REGEX = /^configurations\./;
+const CONFIGURATIONS_PREFIX_REGEX = /^configurations\./u;
 
 /**
  * Wildcard filter meaning "sync everything" for the 'all' mode of a category.
@@ -77,15 +73,11 @@ export type UpdateResult<T> = {
   fieldMaskPaths: string[];
 };
 
-/**
- * Helper to compare arrays of strings (order-independent)
- */
-export const arraysEqual = (a: string[], b: string[]): boolean => {
+const arraysEqual = (a: string[], b: string[]) => {
   if (a.length !== b.length) {
     return false;
   }
 
-  // Sort both arrays and compare element by element
   const sortedA = [...a].sort();
   const sortedB = [...b].sort();
 
@@ -96,13 +88,12 @@ export const arraysEqual = (a: string[], b: string[]): boolean => {
  * Build TLS settings based on mTLS configuration
  * mTLS is determined by presence of certificates
  */
-export const buildTLSSettings = (
+export const buildTLSSettings: (
   values: FormValues
-):
+) =>
   | { case: 'tlsFileSettings'; value: ReturnType<typeof create<typeof TLSFileSettingsSchema>> }
   | { case: 'tlsPemSettings'; value: ReturnType<typeof create<typeof TLSPEMSettingsSchema>> }
-  | undefined => {
-  // Check if any certificates are provided
+  | undefined = (values) => {
   const hasCertificates =
     values.mtlsMode === TLS_MODE.FILE_PATH
       ? Boolean(values.mtls.ca?.filePath || values.mtls.clientCert?.filePath || values.mtls.clientKey?.filePath)
@@ -133,7 +124,7 @@ export const buildTLSSettings = (
   };
 };
 
-export const hasAuthChanged = (values: FormValues, originalValues: FormValues): boolean => {
+export const hasAuthChanged = (values: FormValues, originalValues: FormValues) => {
   if (values.authMethod !== originalValues.authMethod) {
     return true;
   }
@@ -201,8 +192,7 @@ export const buildClientOptions = (values: FormValues) =>
     fetchPartitionMaxBytes: values.advanceClientOptions.fetchPartitionMaxBytes,
   });
 
-// Compare TLS settings - include if TLS changed or certificates changed
-const hasTlsChanged = (values: FormValues, originalValues: FormValues): boolean => {
+const hasTlsChanged = (values: FormValues, originalValues: FormValues) => {
   const hasCertificates =
     values.mtlsMode === TLS_MODE.FILE_PATH
       ? Boolean(values.mtls.ca?.filePath || values.mtls.clientCert?.filePath || values.mtls.clientKey?.filePath)
@@ -228,25 +218,19 @@ const ADVANCED_CLIENT_OPTION_MASK_PATHS = [
   ['fetchPartitionMaxBytes', 'configurations.client_options.fetch_partition_max_bytes'],
 ] as const;
 
-const getConnectionFieldMaskPaths = (values: FormValues, originalValues: FormValues): string[] => {
+const getConnectionFieldMaskPaths = (values: FormValues, originalValues: FormValues) => {
   const bootstrapServersChanged = !arraysEqual(
     values.bootstrapServers.map((s) => s.value),
     originalValues.bootstrapServers.map((s) => s.value)
   );
 
-  // If bootstrap servers changed, use parent path which covers all client_options fields
   if (bootstrapServersChanged) {
     return ['configurations.client_options'];
   }
 
-  // If bootstrap servers didn't change, use specific paths for individual field changes
   return [
     ...(hasTlsChanged(values, originalValues) ? ['configurations.client_options.tls_settings'] : []),
-    // Compare authentication. Only the active branch's credentials count;
-    // the inactive branch may hold scratch values from a tab the user
-    // briefly opened, and those must not trigger a payload update.
     ...(hasAuthChanged(values, originalValues) ? ['configurations.client_options.authentication_configuration'] : []),
-    // Compare advanced client options
     ...ADVANCED_CLIENT_OPTION_MASK_PATHS.filter(
       ([option]) => values.advanceClientOptions[option] !== originalValues.advanceClientOptions[option]
     ).map(([, path]) => path),
@@ -257,10 +241,10 @@ const getConnectionFieldMaskPaths = (values: FormValues, originalValues: FormVal
  * Get update values for connection category (source/client options)
  * Compares form values with original values and returns schema + field mask paths
  */
-export const getUpdateValuesForConnection = (
+export const getUpdateValuesForConnection: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof ShadowLinkClientOptionsSchema>>> => ({
+) => UpdateResult<ReturnType<typeof create<typeof ShadowLinkClientOptionsSchema>>> = (values, originalValues) => ({
   value: buildClientOptions(values),
   fieldMaskPaths: getConnectionFieldMaskPaths(values, originalValues),
 });
@@ -269,13 +253,12 @@ export const getUpdateValuesForConnection = (
  * Get update values for topics category
  * Compares form values with original values and returns schema + field mask paths
  */
-export const getUpdateValuesForTopics = (
+export const getUpdateValuesForTopics: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof TopicMetadataSyncOptionsSchema>>> => {
+) => UpdateResult<ReturnType<typeof create<typeof TopicMetadataSyncOptionsSchema>>> = (values, originalValues) => {
   const fieldMaskPaths: string[] = [];
 
-  // Compare topic filters (mode and filters)
   const topicFiltersChanged =
     values.topicsMode !== originalValues.topicsMode ||
     values.topics.length !== originalValues.topics.length ||
@@ -286,24 +269,18 @@ export const getUpdateValuesForTopics = (
         topic.filterType !== originalValues.topics[idx]?.filterType
     );
 
-  // Compare topic properties
   const topicPropertiesChanged = !arraysEqual(values.topicProperties || [], originalValues.topicProperties || []);
 
-  // Compare excludeDefault
   const excludeDefaultChanged = values.excludeDefault !== originalValues.excludeDefault;
 
-  // If filters or properties changed, use parent path (covers all children including excludeDefault)
   const topicConfigChanged = topicFiltersChanged || topicPropertiesChanged;
 
   if (topicConfigChanged) {
-    // Parent path includes filters, properties, AND excludeDefault
     fieldMaskPaths.push('configurations.topic_metadata_sync_options');
   } else if (excludeDefaultChanged) {
-    // Only excludeDefault changed independently
     fieldMaskPaths.push('configurations.topic_metadata_sync_options.exclude_default');
   }
 
-  // Build topic metadata sync options
   const topicMetadataSyncOptions = create(TopicMetadataSyncOptionsSchema, {
     autoCreateShadowTopicFilters:
       values.topicsMode === 'all'
@@ -329,13 +306,12 @@ export const getUpdateValuesForTopics = (
  * Get update values for consumer groups category
  * Compares form values with original values and returns schema + field mask paths
  */
-export const getUpdateValuesForConsumerGroups = (
+export const getUpdateValuesForConsumerGroups: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof ConsumerOffsetSyncOptionsSchema>>> => {
+) => UpdateResult<ReturnType<typeof create<typeof ConsumerOffsetSyncOptionsSchema>>> = (values, originalValues) => {
   const fieldMaskPaths: string[] = [];
 
-  // Compare consumer groups mode and filters
   const consumerFiltersChanged =
     values.consumersMode !== originalValues.consumersMode ||
     values.consumers.length !== originalValues.consumers.length ||
@@ -350,7 +326,6 @@ export const getUpdateValuesForConsumerGroups = (
     fieldMaskPaths.push('configurations.consumer_offset_sync_options');
   }
 
-  // Build consumer offset sync options
   const consumerOffsetSyncOptions = create(ConsumerOffsetSyncOptionsSchema, {
     groupFilters:
       values.consumersMode === 'all'
@@ -374,13 +349,12 @@ export const getUpdateValuesForConsumerGroups = (
  * Get update values for roles category
  * Compares form values with original values and returns schema + field mask paths
  */
-export const getUpdateValuesForRoles = (
+export const getUpdateValuesForRoles: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof RoleSyncOptionsSchema>>> => {
+) => UpdateResult<ReturnType<typeof create<typeof RoleSyncOptionsSchema>>> = (values, originalValues) => {
   const fieldMaskPaths: string[] = [];
 
-  // Compare roles mode and filters
   const roleFiltersChanged =
     values.rolesMode !== originalValues.rolesMode ||
     values.roles.length !== originalValues.roles.length ||
@@ -395,7 +369,6 @@ export const getUpdateValuesForRoles = (
     fieldMaskPaths.push('configurations.role_sync_options');
   }
 
-  // Build role sync options
   const roleSyncOptions = create(RoleSyncOptionsSchema, {
     roleNameFilters:
       values.rolesMode === 'all'
@@ -419,13 +392,12 @@ export const getUpdateValuesForRoles = (
  * Get update values for ACLs category
  * Compares form values with original values and returns schema + field mask paths
  */
-export const getUpdateValuesForACLs = (
+export const getUpdateValuesForACLs: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<ReturnType<typeof create<typeof SecuritySettingsSyncOptionsSchema>>> => {
+) => UpdateResult<ReturnType<typeof create<typeof SecuritySettingsSyncOptionsSchema>>> = (values, originalValues) => {
   const fieldMaskPaths: string[] = [];
 
-  // Compare ACL mode and filters
   const currentACLFilters = values.aclFilters || [];
   const originalACLFilters = originalValues.aclFilters || [];
 
@@ -447,7 +419,6 @@ export const getUpdateValuesForACLs = (
     fieldMaskPaths.push('configurations.security_sync_options');
   }
 
-  // Build security sync options
   const allACLs = [
     create(ACLFilterSchema, {
       resourceFilter: {
@@ -494,7 +465,7 @@ export const getUpdateValuesForACLs = (
 const srSyncOptionsChanged = (
   next: SchemaRegistrySyncOptions | undefined,
   previous: SchemaRegistrySyncOptions | undefined
-): boolean => {
+) => {
   if (next === undefined || previous === undefined) {
     return next !== previous;
   }
@@ -508,10 +479,10 @@ const srSyncOptionsChanged = (
  * values typed into a mode that isn't submitted never produce a mask. The
  * mask replaces the whole message, hence the single parent path.
  */
-export const getUpdateValuesForSchemaRegistry = (
+export const getUpdateValuesForSchemaRegistry: (
   values: FormValues,
   originalValues: FormValues
-): UpdateResult<SchemaRegistrySyncOptions | undefined> => {
+) => UpdateResult<SchemaRegistrySyncOptions | undefined> = (values, originalValues) => {
   const value = buildSchemaRegistrySyncOptions(values);
   const original = buildSchemaRegistrySyncOptions(originalValues);
 
@@ -523,11 +494,6 @@ export const getUpdateValuesForSchemaRegistry = (
 
 type RoleSyncRoundTrip = Pick<NonNullable<ReturnType<typeof getUpdateValuesForRoles>>['value'], 'interval' | 'paused'>;
 
-/**
- * Get update values for every category, plus the combined field mask paths.
- * Roles are skipped entirely when the shadow cluster does not support role
- * sync (Redpanda < 26.2.0): no value, no mask path.
- */
 const getCategoryUpdates = (
   values: FormValues,
   originalValues: FormValues,
@@ -543,9 +509,6 @@ const getCategoryUpdates = (
   const acls = getUpdateValuesForACLs(values, originalValues);
   const schemaRegistry = getUpdateValuesForSchemaRegistry(values, originalValues);
 
-  // No UI exposes interval/paused: round-trip them from the fetched link so
-  // the whole-message mask path doesn't unpause a paused role sync task or
-  // reset a custom interval
   if (roles && originalRoleSyncOptions) {
     roles.value.interval = originalRoleSyncOptions.interval;
     roles.value.paused = originalRoleSyncOptions.paused;
@@ -575,6 +538,8 @@ const getCategoryUpdates = (
  *
  * Uses create() with buf core schemas to build properly typed Message instances
  * that are compatible with the controlplane API.
+ *
+ * Strip the configurations prefix from dataplane mask paths. For a cluster without role sync support, emit neither role options nor a role mask path.
  */
 export const buildControlplaneUpdateRequest = (
   shadowLinkId: string,
@@ -582,20 +547,14 @@ export const buildControlplaneUpdateRequest = (
   originalShadowLink: ControlplaneShadowLink,
   { roleSyncSupported }: { roleSyncSupported: boolean }
 ) => {
-  // Build original form values for comparison
   const originalValues = buildDefaultFormValuesFromControlplane(originalShadowLink);
 
-  // Get update values from existing category functions (reuse the logic).
-  // The controlplane rejects role_sync_options at admission on shadow clusters
-  // without role sync, so roles are skipped there.
   const updates = getCategoryUpdates(values, originalValues, {
     roleSyncSupported,
     originalRoleSyncOptions: originalShadowLink.roleSyncOptions,
   });
 
-  // Build flat shadow link update for controlplane (no nested configurations)
-  // Use local proto schemas with type assertions to work around proto version
-  // differences between local protos and buf packages. Wire format is compatible.
+  // WARNING: The local and Buf SDK proto types differ, but use the same wire format; keep the control-plane conversion at this boundary.
   const shadowLinkUpdate = create(CpShadowLinkUpdateSchema, {
     id: shadowLinkId,
     clientOptions: create(ShadowLinkClientOptionsSchema, updates.connection.value),
@@ -608,9 +567,6 @@ export const buildControlplaneUpdateRequest = (
       : undefined,
   } as unknown as Parameters<typeof create<typeof CpShadowLinkUpdateSchema>>[1]);
 
-  // Remove "configurations." prefix from field mask paths for controlplane
-  // Dataplane uses: "configurations.client_options.tls_settings"
-  // Controlplane uses: "client_options.tls_settings"
   const updateMask = create(FieldMaskSchema, {
     paths: updates.fieldMaskPaths.map((path) => path.replace(CONFIGURATIONS_PREFIX_REGEX, '')),
   });
@@ -624,6 +580,8 @@ export const buildControlplaneUpdateRequest = (
 /**
  * Transform form values to UpdateShadowLinkRequest protobuf message (dataplane)
  * Only includes fields that have changed from the original shadow link
+ *
+ * For a cluster without role sync support, emit neither role options nor a role mask path.
  */
 export const buildDataplaneUpdateRequest = (
   name: string,
@@ -631,16 +589,13 @@ export const buildDataplaneUpdateRequest = (
   originalShadowLink: ShadowLink,
   { roleSyncSupported }: { roleSyncSupported: boolean }
 ) => {
-  // Build original form values for comparison
   const originalValues = buildDefaultFormValues(originalShadowLink);
 
-  // Get update values for all categories
   const updates = getCategoryUpdates(values, originalValues, {
     roleSyncSupported,
     originalRoleSyncOptions: originalShadowLink.configurations?.roleSyncOptions,
   });
 
-  // Build configurations with all category values
   const configurations = create(ShadowLinkConfigurationsSchema, {
     clientOptions: updates.connection.value,
     topicMetadataSyncOptions: updates.topics.value,
@@ -650,16 +605,13 @@ export const buildDataplaneUpdateRequest = (
     schemaRegistrySyncOptions: updates.schemaRegistry.value,
   });
 
-  // Build shadow link
   const shadowLinkProto = create(ShadowLinkSchema, {
     name,
     configurations,
   });
 
-  // Build field mask with all changed field paths from all categories
   const updateMask = create(FieldMaskSchema, { paths: updates.fieldMaskPaths });
 
-  // Build final request
   return create(UpdateShadowLinkRequestSchema, {
     shadowLink: shadowLinkProto,
     updateMask,

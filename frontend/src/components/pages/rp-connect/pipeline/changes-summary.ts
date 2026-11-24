@@ -25,8 +25,7 @@ export type ComponentChange = {
   label: string;
 };
 
-// Section containers are excluded; only leaf components are listed.
-function componentNodesById(yaml: string): Map<string, PipelineFlowNode> {
+function componentNodesById(yaml: string) {
   const byId = new Map<string, PipelineFlowNode>();
   if (!yaml.trim()) {
     return byId;
@@ -37,42 +36,41 @@ function componentNodesById(yaml: string): Map<string, PipelineFlowNode> {
         byId.set(node.id, node);
       }
     }
-  } catch {
-    // Malformed YAML: the line diff still renders, the summary is empty.
-  }
+  } catch {}
   return byId;
 }
 
-const describe = (id: string, node: PipelineFlowNode | undefined, kind: ChangeKind): ComponentChange => ({
+const describeChange: (id: string, node: PipelineFlowNode | undefined, kind: ChangeKind) => ComponentChange = (
+  id,
+  node,
+  kind
+) => ({
   id,
   kind,
   section: sectionLabel(node?.section),
   label: node?.labelText ?? node?.label ?? '',
 });
 
-// Ids are positional, so presence alone can't tell an insertion from a change. `changedIds` are the edited
-// nodes with no counterpart in the saved config; the reverse pass finds the saved nodes with none in the
-// edited one. Unmatched on both sides is a change in place; on one side only, an addition or a removal.
-export function summarizeComponentChanges(
-  savedYaml: string,
-  editedYaml: string,
-  changedIds: string[]
-): ComponentChange[] {
+/**
+ * Node IDs are positional. Compare both directions: a node unmatched on both
+ * sides changed in place; a node unmatched on just one side was added or removed.
+ */
+export function summarizeComponentChanges(savedYaml: string, editedYaml: string, changedIds: string[]) {
   const saved = componentNodesById(savedYaml);
   const edited = componentNodesById(editedYaml);
   const unmatchedEdited = changedIds.filter((id) => edited.has(id));
   const unmatchedSaved = new Set(changedNodeIds(editedYaml, savedYaml).filter((id) => saved.has(id)));
   const editedChanges = unmatchedEdited.map((id) =>
-    describe(id, edited.get(id), unmatchedSaved.has(id) ? 'changed' : 'added')
+    describeChange(id, edited.get(id), unmatchedSaved.has(id) ? 'changed' : 'added')
   );
   const removedChanges = [...unmatchedSaved]
     .filter((id) => !unmatchedEdited.includes(id))
-    .map((id) => describe(id, saved.get(id), 'removed'));
+    .map((id) => describeChange(id, saved.get(id), 'removed'));
 
   return [...editedChanges, ...removedChanges].sort(compareBySectionThenId);
 }
 
-function compareBySectionThenId(a: ComponentChange, b: ComponentChange): number {
+function compareBySectionThenId(a: ComponentChange, b: ComponentChange) {
   return a.section.localeCompare(b.section) || a.id.localeCompare(b.id, undefined, { numeric: true });
 }
 
@@ -111,8 +109,7 @@ const NOT_SET = 'not set';
 /** Egress gateway names by ID, for the gateways the editor could look up. */
 export type EgressGatewayNames = ReadonlyMap<string, string>;
 
-// Untrimmed: trailing whitespace in a name is a real change.
-function formatSettingValue(key: SettingsFieldKey, values: SettingsValues, gatewayNames?: EgressGatewayNames): string {
+function formatSettingValue(key: SettingsFieldKey, values: SettingsValues, gatewayNames?: EgressGatewayNames) {
   if (key === 'computeUnits') {
     return values.computeUnits === undefined ? NOT_SET : String(values.computeUnits);
   }
@@ -129,12 +126,11 @@ function formatSettingValue(key: SettingsFieldKey, values: SettingsValues, gatew
   return values[key] || NOT_SET;
 }
 
-// `saved` is the form's default values, re-baselined on every save. Compared by value, not `dirtyFields`.
 export function summarizeSettingsChanges(
   saved: SettingsValues | undefined,
   current: SettingsValues,
   gatewayNames?: EgressGatewayNames
-): SettingsChange[] {
+) {
   const changes: SettingsChange[] = [];
   for (const { key, label } of SETTINGS_FIELDS) {
     const from = formatSettingValue(key, saved ?? {}, gatewayNames);
@@ -146,7 +142,7 @@ export function summarizeSettingsChanges(
   return changes;
 }
 
-export function changesImpactMessage(state: Pipeline_State | undefined): string {
+export function changesImpactMessage(state: Pipeline_State | undefined) {
   if (state === Pipeline_State.DRAFT) {
     return "These changes aren't saved to the draft yet.";
   }
@@ -156,7 +152,7 @@ export function changesImpactMessage(state: Pipeline_State | undefined): string 
   return 'These changes are not saved to the pipeline yet.';
 }
 
-export const changesImpactTone = (state: Pipeline_State | undefined): 'info' | 'warning' =>
+export const changesImpactTone = (state: Pipeline_State | undefined) =>
   state === Pipeline_State.RUNNING || state === Pipeline_State.STARTING ? 'warning' : 'info';
 
 export const NO_CHANGES_COPY = {

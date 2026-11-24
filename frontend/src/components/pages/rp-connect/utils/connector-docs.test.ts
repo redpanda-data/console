@@ -64,7 +64,6 @@ describe('getFieldDocsUrl', () => {
 
   it.each([
     ['a top-level field by its name', ['consumer_group'], `${REDPANDA_INPUT}#consumer_group`],
-    // Documented as `sasl[].aws.credentials.role`, anchored `#sasl-aws-credentials-role`.
     [
       'a nested path with hyphens, list nesting dropped',
       ['sasl', 'aws', 'credentials', 'role'],

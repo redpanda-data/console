@@ -36,11 +36,10 @@ export function ShortNum(p: { value: number; tooltip?: boolean; className?: stri
   );
 }
 
-function formatShortNumber(value: number): string {
+function formatShortNumber(value: number) {
   const million = 1_000_000;
   const unit = value >= million ? 'M' : value >= 1000 ? 'k' : '';
   const scaled = unit === 'M' ? value / million : unit === 'k' ? value / 1000 : value;
   const decimals = unit === 'M' ? 2 : 1;
-  // Round first, then drop trailing zeroes and apply locale separators.
   return Number(scaled.toFixed(decimals)).toLocaleString() + unit;
 }

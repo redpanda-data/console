@@ -31,12 +31,10 @@ import SearchBar from '../../misc/search-bar';
 import Section from '../../misc/section';
 import { PageComponent, type PageInitHelper, type PageProps } from '../page';
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
 };
-// Ten a page (the Registry default) is the legacy page size for this table.
 const CONNECTORS_TABLE_OPTIONS = { enableHiding: false };
 
 class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
@@ -46,7 +44,7 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
     super(p);
   }
 
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const clusterName = decodeURIComponent(this.props.clusterName);
     p.title = clusterName;
     p.addBreadcrumb('Connectors', '/connect-clusters');
@@ -82,12 +80,9 @@ class KafkaClusterDetails extends PageComponent<{ clusterName: string }> {
       <PageContent>
         <ClusterStatisticsCard clusterName={clusterName} />
 
-        {/* Main Card */}
         <Section>
-          {/* Connectors List */}
           <ConnectorsList clusterName={clusterName} connectors={connectors ?? []} />
 
-          {/* Plugin List */}
           <div style={{ marginTop: '2em', display: isEmbedded() ? 'none' : 'block' }}>
             <h3 className="ml-1 pb-2.5">Connector Types</h3>
 
@@ -130,9 +125,9 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
 
   const dataSource = useCallback(() => connectors, [connectors]);
 
-  const isFilterMatch = useCallback((filter: string, item: ClusterConnectorInfo): boolean => {
+  const isFilterMatch = useCallback((filter: string, item: ClusterConnectorInfo) => {
     try {
-      const quickSearchRegExp = new RegExp(filter, 'i');
+      const quickSearchRegExp = new RegExp(filter, 'iu');
       const nameMatch = item.name.match(quickSearchRegExp) !== null;
       const classMatch = item.class.match(quickSearchRegExp) !== null;
       if (nameMatch) {
@@ -151,8 +146,6 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
     uiSettings.connectorsList.quickSearch = filterText;
   }, []);
 
-  // Memoised on clusterName: DataTable memoises its column model on `columns` identity, and this
-  // component re-renders on every keystroke in the SearchBar.
   const connectorColumns = useMemo<DataTableColumnDef<ClusterConnectorInfo>[]>(
     () => [
       {
@@ -191,7 +184,6 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
       },
       {
         id: 'tasks',
-        // Derived from the task list, so there is nothing to sort on.
         enableSorting: false,
         header: 'Tasks',
         cell: ({ row: { original } }) => <TasksColumn observable={original} />,
@@ -203,8 +195,6 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
   return (
     <div>
       <div className="mb-2 flex">
-        {/* tests/shared/connector.utils.ts clicks this with getByRole('button'), which this
-            nesting produces — and the Registry Button takes no route `params`. */}
         <Link params={{ clusterName }} to="/connect-clusters/$clusterName/create-connector">
           <Button variant="primary">Create connector</Button>
         </Link>
@@ -224,7 +214,6 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
       <DataTable<ClusterConnectorInfo>
         columns={connectorColumns}
         data={filteredResults}
-        // Legacy parity: ten a page, pager only past that.
         pagination={filteredResults.length > 10}
         sorting
         tableOptions={CONNECTORS_TABLE_OPTIONS}
@@ -233,4 +222,7 @@ const ConnectorsList = ({ clusterName, connectors }: { clusterName: string; conn
   );
 };
 
+/**
+ * The create action has a button role; the route link supplies the typed route parameters.
+ */
 export default KafkaClusterDetails;

@@ -78,11 +78,10 @@ function coverageProject(include = ['example.ts', 'untested.ts']) {
 
 type CoverageRun = ReturnType<typeof coverageProject>['run'];
 
-function readCoverageSummary(directory: string, report: string): CoverageSummary {
+function readCoverageSummary(directory: string, report: string) {
   return JSON.parse(readFileSync(resolve(directory, `${report}/coverage-summary.json`), 'utf8'));
 }
 
-// Simulates a Bun lcov report in the project that must not leak into Rstest's denominators.
 function writeBunLcovReport(directory: string) {
   mkdirSync(resolve(directory, 'coverage'));
   writeFileSync(

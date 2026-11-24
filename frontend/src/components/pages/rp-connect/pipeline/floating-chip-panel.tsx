@@ -14,10 +14,6 @@ import { ChevronDown } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 
-/**
- * Popover-style dismissal for a floating chip's expanded list: close on outside click or Escape.
- * Returns the ref to attach to the chip's container.
- */
 function useChipDismissal(open: boolean, setOpen: (next: boolean) => void) {
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -31,8 +27,6 @@ function useChipDismissal(open: boolean, setOpen: (next: boolean) => void) {
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        // Claim the event: Escape dismisses only this topmost layer, not also the canvas
-        // selection (whose window-level handler checks defaultPrevented / stopped events).
         e.preventDefault();
         e.stopPropagation();
         setOpen(false);

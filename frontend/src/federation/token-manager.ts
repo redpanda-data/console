@@ -35,8 +35,7 @@ export class TokenManager {
    * @returns Promise resolving to the new access token
    * @throws Error if token refresh fails
    */
-  refresh(): Promise<string> {
-    // Return existing promise if refresh is in progress
+  refresh() {
     if (this.refreshPromise !== null) {
       return this.refreshPromise;
     }
@@ -69,7 +68,7 @@ export class TokenManager {
    * Use this for cleanup on component unmount.
    * Safe to call multiple times or when no refresh is in progress.
    */
-  reset(): void {
+  reset() {
     this.generation += 1;
     this.refreshPromise = null;
   }
@@ -78,14 +77,14 @@ export class TokenManager {
    * Updates the getAccessToken callback.
    * Useful when the callback reference changes (e.g., from a React prop).
    */
-  setGetAccessToken(fn: () => Promise<string>): void {
+  setGetAccessToken(fn: () => Promise<string>) {
     this.getAccessToken = fn;
   }
 
   /**
    * Returns whether a token refresh is currently in progress.
    */
-  get isRefreshing(): boolean {
+  get isRefreshing() {
     return this.refreshPromise !== null;
   }
 }

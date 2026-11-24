@@ -2,9 +2,7 @@
 
 'use strict';
 
-// `commonjs-module` exports the container itself (@module-federation >= 2.9), so only its
-// shape can be checked here. The remote name and filename Cloud UI loads are asserted in
-// src/federation/module-federation-config.test.ts.
+// WARNING: The legacy commonjs module exports the container directly; source config tests cover the public name and filename.
 const container = require('../../dist/federation-test/remoteEntry.cjs');
 
 if (typeof container.get !== 'function' || typeof container.init !== 'function') {

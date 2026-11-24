@@ -77,15 +77,11 @@ type TopicTabProps = {
   children: (topic: Topic) => React.ReactNode;
 };
 
-// Context controls whether TopicTab renders its trigger or its content panel.
-// The same <TopicTab> elements are rendered twice — once inside <TabsList> and
-// once outside — so each instance only renders the relevant part.
 const TopicTabModeCtx = React.createContext<'trigger' | 'content'>('content');
 
 type TabDisableHook = (topic: Topic) => React.ReactNode | undefined;
 
-// The first disable hook that returns a title wins; it replaces the tab title and disables the tab.
-function findCustomTitle(topic: Topic, disableHooks: TabDisableHook[] | undefined): React.ReactNode | undefined {
+function findCustomTitle(topic: Topic, disableHooks: TabDisableHook[] | undefined) {
   for (const h of disableHooks ?? []) {
     const result = h(topic);
     if (result) {
@@ -125,7 +121,7 @@ const TopicTabPermissionNotice = ({
   );
 };
 
-// A tab without permission stays selectable but renders a notice, so its content never starts requests.
+// WARNING: Render the denial notice before tab content; mounting unauthorized content would start requests even if its UI is hidden.
 const TopicTab: React.FC<TopicTabProps> = ({ topic, id, requiredPermission, titleText, disableHooks, children }) => {
   const mode = React.useContext(TopicTabModeCtx);
   const customTitle = findCustomTitle(topic, disableHooks);
@@ -172,54 +168,42 @@ const warnIcon = (
 );
 
 function refreshTopicData(topicName: string, force: boolean) {
-  // must know what distribution we're working with; redpanda has some differences
   api.refreshClusterOverview();
 
-  // there is no single endpoint to refresh a single topic
   api.refreshTopics(force);
 
   const activeTab = resolveActiveTab();
 
-  // consumers are lazy loaded because they're (relatively) expensive
   if (activeTab === 'consumers') {
     api.refreshTopicConsumers(topicName, force);
   }
 
-  // partitions are required for the Partitions tab
   api.refreshPartitionsForTopic(topicName, force);
 
-  // configuration is always required for the statistics bar
   api.refreshTopicConfig(topicName, force);
 
-  api.refreshClusterHealth().catch(() => {
-    // Error handling managed by API layer
-  });
+  api.refreshClusterHealth().catch(() => {});
 
   refreshLazyTabData(activeTab, topicName, force);
 }
 
-// Resolve the active tab: prefer the browser URL hash (window.location is always current,
-// unlike appGlobal.location which is synced asynchronously via RouterSync's useEffect),
-// fall back to stored setting.
-function resolveActiveTab(): TopicTabId | undefined {
+function resolveActiveTab() {
   const urlHash = window.location.hash.replace('#', '') as TopicTabId;
   return TopicTabIds.includes(urlHash) ? urlHash : uiSettings.topicDetailsActiveTabKey;
 }
 
 function refreshLazyTabData(activeTab: TopicTabId | undefined, topicName: string, force: boolean) {
-  // documentation can be lazy loaded
   if (activeTab === 'documentation') {
     api.refreshTopicDocumentation(topicName, force);
   }
 
-  // ACL can be lazy loaded
   if (activeTab === 'topicacl') {
     api.refreshTopicAcls(topicName, force);
   }
 }
 
 class TopicDetails extends PageComponent<{ topicName: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const topicName = this.props.topicName;
     uiState.currentTopicName = topicName;
 
@@ -236,8 +220,6 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
 
   render() {
     const { topicName } = this.props;
-    // Read api.topics in the class render so PageComponent's forceUpdate() re-evaluates
-    // the loading state when the Zustand store delivers topics data.
     if (!api.topics) {
       return DefaultSkeleton;
     }
@@ -249,8 +231,7 @@ class TopicDetails extends PageComponent<{ topicName: string }> {
   }
 }
 
-// Derived: topicConfig. Also seeds the favourite config entries for the topic's cleanup policy.
-function useModifiedConfigCount(topicName: string): number {
+function useModifiedConfigCount(topicName: string) {
   const config = useApiStoreHook((s) => s.topicConfig.get(topicName));
   const topicConfig: ConfigEntry[] | null | undefined =
     config === undefined ? undefined : config === null || config.error !== null ? null : config.configEntries;
@@ -262,7 +243,7 @@ function useModifiedConfigCount(topicName: string): number {
 
 type TopicPartitionIds = { topicName: string; partitionIds: number[] };
 
-function findTopicPartitionIds(entries: TopicPartitionIds[] | undefined, topicName: string): number[] | undefined {
+function findTopicPartitionIds(entries: TopicPartitionIds[] | undefined, topicName: string) {
   return (entries ?? []).find(({ topicName: tn }) => tn === topicName)?.partitionIds;
 }
 
@@ -298,7 +279,7 @@ const docuDisableHooks: TabDisableHook[] = [
       : null,
 ];
 
-function getEnabledTabIds(topic: Topic): Set<TopicTabId> {
+function getEnabledTabIds(topic: Topic) {
   return new Set<TopicTabId>(
     [
       'messages',
@@ -424,13 +405,11 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
     </>
   );
 
-  const setTabPage = (activeKey: string): void => {
+  const setTabPage = (activeKey: string) => {
     uiSettings.topicDetailsActiveTabKey = activeKey as TopicTabId;
 
     const loc = appGlobal.location;
     loc.hash = String(activeKey);
-    // Preserve the search string so URL-backed tab state (e.g. Configuration's
-    // configFilter/configScope) survives switching tabs and coming back.
     appGlobal.historyReplace(`${loc.pathname}${loc.searchStr}#${loc.hash}`);
 
     refreshTopicData(topicName, false);
@@ -489,8 +468,7 @@ const TopicDetailsContent = ({ topic, topicName }: { topic: Topic; topicName: st
   );
 };
 
-// depending on the cleanupPolicy we want to show specific config settings at the top
-function addBaseFavs(topicConfig: ConfigEntry[]): void {
+function addBaseFavs(topicConfig: ConfigEntry[]) {
   const cleanupPolicy = topicConfig.find((e) => e.name === 'cleanup.policy')?.value;
   const favs = uiState.topicSettings.favConfigEntries;
 
@@ -509,21 +487,19 @@ function addBaseFavs(topicConfig: ConfigEntry[]): void {
   }
 }
 
-function hasTopicPermission(topic: Topic, requiredPermission: TopicAction): boolean {
+function hasTopicPermission(topic: Topic, requiredPermission: TopicAction) {
   return (
     !topic.allowedActions || topic.allowedActions[0] === 'all' || topic.allowedActions.includes(requiredPermission)
   );
 }
 
-function getSelectedTabId(enabledTabIds: Set<TopicTabId>): TopicTabId {
+function getSelectedTabId(enabledTabIds: Set<TopicTabId>) {
   function computeTabId() {
-    // use url anchor if possible
     let key = appGlobal.location.hash.replace('#', '');
     if (TopicTabIds.includes(key as TopicTabId)) {
       return key as TopicTabId;
     }
 
-    // use settings (last visited tab)
     // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
     key = uiSettings.topicDetailsActiveTabKey!;
     if (TopicTabIds.includes(key as TopicTabId)) {

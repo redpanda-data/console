@@ -16,14 +16,14 @@ const envNames = [
   'NODE_ENV',
 
   'REACT_APP_CONSOLE_GIT_SHA',
-  'REACT_APP_CONSOLE_GIT_REF', // 'master' or 'v1.2.3'
+  'REACT_APP_CONSOLE_GIT_REF',
   'REACT_APP_BUILD_TIMESTAMP',
   'REACT_APP_CONSOLE_PLATFORM_VERSION',
 
-  'REACT_APP_BUILT_FROM_PUSH', // was built by 'image-on-push'?
+  'REACT_APP_BUILT_FROM_PUSH',
 
-  'REACT_APP_DEV_HINT', // for debugging, since we can't override NODE_ENV
-  'REACT_APP_ENABLED_FEATURES', // for debugging, used to set/override enabled feautures while developing
+  'REACT_APP_DEV_HINT',
+  'REACT_APP_ENABLED_FEATURES',
 ] as const;
 
 type Environment = { [key in (typeof envNames)[number]]: string };
@@ -35,8 +35,6 @@ for (const k of envNames) {
 
 export default env;
 
-//
-// Helpers
 const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development' || process.env.REACT_APP_DEV_HINT;
 export const IsProd = !isDev;
 export const IsDev = isDev;
@@ -68,7 +66,7 @@ export function getBasePath() {
   return basePathS;
 }
 
-export function getBuildDate(): Date | undefined {
+export function getBuildDate() {
   const timestamp = +env.REACT_APP_BUILD_TIMESTAMP;
   if (timestamp === 0) {
     return;
@@ -76,8 +74,6 @@ export function getBuildDate(): Date | undefined {
   return new Date(timestamp * 1000);
 }
 
-//
-// Print all env vars to console
 const envVarDebugObj = {} as Record<string, string>;
 const envVarDebugAr: { name: string; value: string }[] = [];
 
@@ -89,16 +85,12 @@ const addProp = (key: string, value: unknown) => {
   envVarDebugObj[cleanedKey] = String(value);
   envVarDebugAr.push({ name: cleanedKey, value: String(value) });
 };
-// - add env vars
 for (const k in env) {
   if (Object.hasOwn(env, k)) {
     addProp(k, (env as Record<string, string>)[k]);
   }
 }
 
-// - print
-// Skip the banner during tests so test output stays clean. The value is
-// still exported below for any code that wants to introspect env at runtime.
 if (process.env.NODE_ENV !== 'test') {
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.log(toJson(envVarDebugObj));

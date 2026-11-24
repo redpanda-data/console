@@ -86,10 +86,8 @@ import {
   setComponentAt,
 } from '../utils/yaml';
 
-// Types the insert (+) picker offers: pipeline steps plus the resources they reference.
 const INSERTABLE_TYPES = ['processor', 'cache', 'rate_limit'] satisfies ConnectComponentType[];
 
-// Stable empty set so the "no unsaved nodes" case doesn't churn the canvas layout memo.
 const EMPTY_NODE_IDS: ReadonlySet<string> = new Set();
 
 const INSERT_KIND_LABEL: Record<'input' | 'processor' | 'output', string> = {
@@ -98,13 +96,10 @@ const INSERT_KIND_LABEL: Record<'input' | 'processor' | 'output', string> = {
   processor: 'a processor',
 };
 
-// Where a chosen connector lands: a top-level spine slot or a nested container array.
 type PendingInsert =
   | { context: 'spine'; index: number }
   | { context: 'slot'; containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output'; index: number }
-  // Switch "add case": the picked step is wrapped as `{ check, output }` or `{ check, processors: [step] }`.
   | { context: 'switchCase'; containerPath: (string | number)[]; section: 'processor' | 'output' }
-  // "Create new resource": create the cache/rate_limit and link it to `target`'s `resource:` field.
   | { context: 'resourceForNode'; kind: ResourceKind; target: EditTarget };
 
 type InsertParams = {
@@ -115,9 +110,7 @@ type InsertParams = {
   components: ConnectComponentSpec[];
 };
 
-// Routing-condition target for a node: output switch — the node owns it; processor switch — the
-// case wrapper owns it and this node is the wrapper's first child.
-function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: PipelineFlowNode[]): EditTarget | undefined {
+function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: PipelineFlowNode[]) {
   if (node?.caseEditTarget) {
     return node.caseEditTarget;
   }
@@ -129,12 +122,7 @@ function caseTargetForNode(node: PipelineFlowNode | undefined, flowNodes: Pipeli
   return parent?.caseEditTarget && firstChild?.id === node.id ? parent.caseEditTarget : undefined;
 }
 
-// A processor-switch case has no rendered card, so jump to its first body step (carrying the
-// case's condition target); every other node jumps to itself. Null if unjumpable.
-function resolveJumpTarget(
-  node: PipelineFlowNode,
-  flowNodes: PipelineFlowNode[]
-): { id: string; target: EditTarget; caseTarget?: EditTarget } | null {
+function resolveJumpTarget(node: PipelineFlowNode, flowNodes: PipelineFlowNode[]) {
   if (node.editTarget?.kind === 'switchCase') {
     const entry = flowNodes.find((n) => n.parentId === node.id);
     if (entry?.editTarget) {
@@ -144,13 +132,7 @@ function resolveJumpTarget(
   return node.editTarget ? { id: node.id, target: node.editTarget, caseTarget: node.caseEditTarget } : null;
 }
 
-// Direct children (cases / steps) of a control-flow node as clickable inspector items; an
-// output-switch case is its own entry, a processor-switch case resolves to its first body step.
-function buildChildItems(
-  selectedId: string,
-  flowNodes: PipelineFlowNode[],
-  lintByNode: Map<string, LintHint[]>
-): InspectorChildItem[] {
+function buildChildItems(selectedId: string, flowNodes: PipelineFlowNode[], lintByNode: Map<string, LintHint[]>) {
   const items: InspectorChildItem[] = [];
   for (const child of flowNodes.filter((n) => n.parentId === selectedId)) {
     const isCaseWrapper = child.editTarget?.kind === 'switchCase';
@@ -174,36 +156,33 @@ function buildChildItems(
   return items;
 }
 
-// The component's name (its single top-level key) at a target, or undefined when unresolvable.
-function componentNameAt(yaml: string, target: EditTarget): string | undefined {
+function componentNameAt(yaml: string, target: EditTarget) {
   const comp = getComponentAt(yaml, target);
   return comp ? componentKeyAt(target, comp) : undefined;
 }
 
-// The next YAML plus the edit target of the node that was just added, so the caller can select it.
 type InsertResult = { yaml: string; selectTarget?: EditTarget };
 
 type SwitchCaseInsert = Extract<PendingInsert, { context: 'switchCase' }>;
 type ResourceForNodeInsert = Extract<PendingInsert, { context: 'resourceForNode' }>;
 type IndexedInsert = Extract<PendingInsert, { context: 'spine' | 'slot' }>;
 
-// A new case with an empty condition, wrapping the chosen step.
-function wrapAsCase(section: SwitchCaseInsert['section'], step: Record<string, unknown>): Record<string, unknown> {
-  return section === 'output' ? { check: '', output: step } : { check: '', processors: [step] };
+function wrapAsCase(section: SwitchCaseInsert['section'], step: Record<string, unknown>) {
+  const branch: Record<string, unknown> =
+    section === 'output' ? { check: '', output: step } : { check: '', processors: [step] };
+  return branch;
 }
 
-// Where the wrapped step sits inside the case at `caseIndex`.
-function caseStepPath(target: SwitchCaseInsert, caseIndex: number): (string | number)[] {
+function caseStepPath(target: SwitchCaseInsert, caseIndex: number) {
   return target.section === 'output'
     ? [...target.containerPath, caseIndex, 'output']
     : [...target.containerPath, caseIndex, 'processors', 0];
 }
 
-// Append a new case (empty condition) wrapping the chosen step; select the step for configuring.
 function insertSwitchCase(
   { yaml, connectionName, connectionType, components }: InsertParams,
   target: SwitchCaseInsert
-): InsertResult | null {
+) {
   if (connectionType !== target.section) {
     return null;
   }
@@ -219,11 +198,10 @@ function insertSwitchCase(
   return {
     yaml: next,
     selectTarget: { kind: 'path', path: caseStepPath(target, caseIndex), componentType: target.section },
-  };
+  } satisfies InsertResult;
 }
 
-// Point the node's `resource:` at `label`; the YAML is unchanged when the node has no object config.
-function linkResourceToNode(yaml: string, target: EditTarget, label: string): string {
+function linkResourceToNode(yaml: string, target: EditTarget, label: string) {
   const comp = getComponentAt(yaml, target);
   const name = comp ? firstKey(comp) : undefined;
   const inner = name ? comp?.[name] : undefined;
@@ -234,11 +212,10 @@ function linkResourceToNode(yaml: string, target: EditTarget, label: string): st
   return setComponentAt(yaml, target, comp) ?? yaml;
 }
 
-// Create the resource and link it to the node's `resource:` in one commit, so it's never left unlinked.
 function insertLinkedResource(
   { yaml, connectionName, connectionType, components }: InsertParams,
   target: ResourceForNodeInsert
-): InsertResult | null {
+) {
   if (connectionType !== target.kind) {
     return null;
   }
@@ -249,28 +226,25 @@ function insertLinkedResource(
   return { yaml: linkResourceToNode(created.yaml, target.target, created.label) };
 }
 
-// Caches/rate limits append to their top-level resource array.
-function insertResource(
-  { yaml, connectionName, components }: InsertParams,
-  connectionType: 'cache' | 'rate_limit'
-): InsertResult | null {
+function insertResource({ yaml, connectionName, components }: InsertParams, connectionType: 'cache' | 'rate_limit') {
   const resource = buildInsertableComponent(connectionName, connectionType, components);
   const resourceKey: ResourceArrayKey = resourceArrayKey(connectionType);
   if (!resource) {
     return null;
   }
   const next = appendResource(yaml, resourceKey, resource);
-  return next === null
-    ? null
-    : { yaml: next, selectTarget: { kind: 'resource', resourceKey, index: seqLengthAt(next, [resourceKey]) - 1 } };
+  return (
+    next === null
+      ? null
+      : { yaml: next, selectTarget: { kind: 'resource', resourceKey, index: seqLengthAt(next, [resourceKey]) - 1 } }
+  ) satisfies InsertResult | null;
 }
 
-// Spine or slot insert — both carry an index; the spine targets the top-level processors array.
 function insertStep(
   { yaml, connectionName, components }: InsertParams,
   target: IndexedInsert,
   connectionType: 'processor' | 'input' | 'output'
-): InsertResult | null {
+) {
   const component = buildInsertableComponent(connectionName, connectionType, components);
   if (!component) {
     return null;
@@ -280,18 +254,15 @@ function insertStep(
   if (next === null) {
     return null;
   }
-  // insertComponentAt clamps the index to the array length; mirror that to locate the new node.
   const insertedIndex = Math.min(target.index, seqLengthAt(next, containerPath) - 1);
   const selectTarget: EditTarget =
     target.context === 'slot'
       ? { kind: 'path', path: [...containerPath, insertedIndex], componentType: target.accepts }
       : { kind: 'processor', index: insertedIndex };
-  return { yaml: next, selectTarget };
+  return { yaml: next, selectTarget } satisfies InsertResult;
 }
 
-// Resolve the chosen connector + target to the next YAML (null on failure). Caches/rate limits
-// append to their top-level resource arrays; everything else splices into the target container.
-function buildInsertedYaml(params: InsertParams): InsertResult | null {
+function buildInsertedYaml(params: InsertParams) {
   const { target, connectionType } = params;
   if (target.context === 'switchCase') {
     return insertSwitchCase(params, target);
@@ -320,18 +291,13 @@ const ShortcutLabel = ({ label, keys }: { label: string; keys: string }) => (
   </span>
 );
 
-// Classify a canvas keydown; presses inside text fields / Monaco keep their own editing semantics.
 type CanvasKeyAction = 'undo' | 'redo' | 'deselect' | 'delete' | 'palette';
 
-// Focused controls own their keys: text fields / Monaco keep editing semantics, and buttons, selects,
-// switches, radios, menus and our popovers (not any role="dialog", which a host shell's own dialog would
-// match) must not have Delete open the confirm dialog or `/` open the palette.
+// WARNING: Keep editor hotkeys off focused controls; Delete and / must not remove a node or open the palette while typing.
 const FOCUS_GUARD_SELECTOR =
   'input, textarea, select, button, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="menu"], [role="switch"], [role="radio"], [role="checkbox"], [data-slot="popover-content"], .monaco-editor';
 
-// Unmodified canvas keys: `/` opens the palette, Escape deselects, Delete/Backspace deletes.
-function plainCanvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
-  // `/` opens the palette — ⌘K is taken by the outer app-shell search.
+function plainCanvasKeyAction(e: KeyboardEvent) {
   if (e.key === '/' && !(e.metaKey || e.ctrlKey || e.altKey)) {
     return 'palette';
   }
@@ -344,8 +310,7 @@ function plainCanvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   return null;
 }
 
-// History chords: ⌘Z undoes, ⌘⇧Z / ⌘Y redo.
-function historyKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
+function historyKeyAction(e: KeyboardEvent) {
   if (!(e.metaKey || e.ctrlKey)) {
     return null;
   }
@@ -359,8 +324,7 @@ function historyKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   return null;
 }
 
-function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
-  // Another layer (a chip popover, a dialog) already handled this key.
+function canvasKeyAction(e: KeyboardEvent) {
   if (e.defaultPrevented) {
     return null;
   }
@@ -371,14 +335,10 @@ function canvasKeyAction(e: KeyboardEvent): CanvasKeyAction | null {
   return plainCanvasKeyAction(e) ?? historyKeyAction(e);
 }
 
-// Undo/redo via YAML snapshots (⌘Z / ⌘⇧Z), stored to survive lane switches; `recordEdit` no-ops on
-// unchanged round-trips and folds an external (Monaco) edit into one step when seen on return.
 function useEditHistory(
   yaml: string,
   onChange: (next: string) => void,
   onNavigate?: (from: string, to: string) => void,
-  // Runs before a history step applies — discards the inspector's in-flight draft (positional node
-  // ids shift when a step is undone, so the draft can't safely re-commit).
   beforeApply?: () => void
 ) {
   const undoStack = usePipelineEditorStore((s) => s.editUndoStack);
@@ -387,7 +347,6 @@ function useEditHistory(
   const recordEdit = usePipelineEditorStore((s) => s.recordEdit);
   const commitEditHistory = usePipelineEditorStore((s) => s.commitEditHistory);
 
-  // Observe every document state; recordEdit pushes an undo step only on a real change.
   useEffect(() => {
     recordEdit(yaml);
   }, [yaml, recordEdit]);
@@ -440,19 +399,13 @@ type VisualEditorPanelProps = {
 };
 
 type NodeRef = { id: string; target: EditTarget; caseTarget?: EditTarget };
-// `name` snapshots the component's key at selection time: targets are positional, so a reorder can
-// leave a different component at the same target — the name mismatch lets us detect that.
 type SelectedNode = NodeRef & { name?: string };
 
-// Inspector edits auto-commit on leave / save (no per-node Apply): `commitRef` holds the selected
-// node's pending commit, flushed before selection changes and on save; a flush consumes the draft,
-// so flushing at multiple points never double-applies.
 function usePendingNodeCommit(yamlContent: string, onYamlChange: (yaml: string) => void) {
   const commitRef = useRef<PendingNodeCommit | null>(null);
   const yamlRef = useRef(yamlContent);
   yamlRef.current = yamlContent;
-  // Returns the YAML after the flush, for a caller that edits on top of it in the same tick.
-  const commitPending = useCallback((): string => {
+  const commitPending = useCallback(() => {
     const pending = commitRef.current;
     if (!pending) {
       return yamlRef.current;
@@ -465,7 +418,6 @@ function usePendingNodeCommit(yamlContent: string, onYamlChange: (yaml: string) 
     return next;
   }, [onYamlChange]);
 
-  // Expose the flush so the page's pipeline Save commits the still-selected node before saving.
   const setPendingEditCommit = usePipelineEditorStore((s) => s.setPendingEditCommit);
   useEffect(() => {
     setPendingEditCommit(commitPending);
@@ -475,16 +427,11 @@ function usePendingNodeCommit(yamlContent: string, onYamlChange: (yaml: string) 
   return { commitRef, yamlRef, commitPending };
 }
 
-// The node open in the inspector, how it changes (committing the previous node's draft first), and
-// the canvas recentre target for selections made away from the canvas.
 function useInspectorSelection(yamlContent: string, onYamlChange: (yaml: string) => void) {
   const { commitRef, yamlRef, commitPending } = usePendingNodeCommit(yamlContent, onYamlChange);
   const [selected, setSelected] = useState<SelectedNode | null>(null);
-  // Recenter the canvas on a node picked from the command palette (token re-pans on re-pick).
   const [focus, setFocus] = useState<{ id: string; token: number }>({ id: '', token: 0 });
 
-  // Select a different node (or none), committing the current node's pending edits first. The name
-  // is read pre-commit, which is safe: the commit rewrites a node in place and never reorders.
   const selectNode = useCallback(
     (next: NodeRef | null) => {
       commitPending();
@@ -492,7 +439,6 @@ function useInspectorSelection(yamlContent: string, onYamlChange: (yaml: string)
     },
     [commitPending, yamlRef]
   );
-  // Select AND recenter (palette jump, problems list, inspector child nav) — the node may be off-screen.
   const selectAndReveal = useCallback(
     (next: NodeRef) => {
       selectNode(next);
@@ -500,13 +446,11 @@ function useInspectorSelection(yamlContent: string, onYamlChange: (yaml: string)
     },
     [selectNode]
   );
-  // Close the inspector without committing its draft (the node is gone, or being removed).
   const dropSelection = useCallback(() => {
     commitRef.current?.discard();
     setSelected(null);
   }, [commitRef]);
 
-  // Mirror the selection into the shared store so the YAML lane (a separate tree) can reveal the node.
   const setSelectedNodeId = usePipelineEditorStore((s) => s.setSelectedNodeId);
   useEffect(() => {
     setSelectedNodeId(selected?.id ?? null);
@@ -527,14 +471,7 @@ function useInspectorSelection(yamlContent: string, onYamlChange: (yaml: string)
 
 type InspectorSelection = ReturnType<typeof useInspectorSelection>;
 
-// The selection against the current YAML: as is; followed to its new path when it moves but stays the
-// same node (a broker member, when the broker's own stop condition wraps or unwraps it); or null once
-// an undo/redo or external edit removes the node or puts a different component at its positional target.
-function liveSelectionOf(
-  selected: SelectedNode | null,
-  yamlContent: string,
-  flowNodes: PipelineFlowNode[]
-): SelectedNode | null {
+function liveSelectionOf(selected: SelectedNode | null, yamlContent: string, flowNodes: PipelineFlowNode[]) {
   if (!selected) {
     return null;
   }
@@ -542,20 +479,13 @@ function liveSelectionOf(
   if (comp !== undefined && (selected.name === undefined || componentKeyAt(selected.target, comp) === selected.name)) {
     return selected;
   }
-  // Followed only to a target that really holds the component, so this settles in one sync.
   const moved = flowNodes.find((n) => n.id === selected.id)?.editTarget;
   return moved && !editTargetsEqual(moved, selected.target) && componentNameAt(yamlContent, moved) === selected.name
     ? { ...selected, target: moved }
     : null;
 }
 
-// The selection the inspector shows (see liveSelectionOf), with the state kept in step with it and a
-// vanished node's stale draft dropped.
-function useLiveSelection(
-  selection: InspectorSelection,
-  yamlContent: string,
-  flowNodes: PipelineFlowNode[]
-): SelectedNode | null {
+function useLiveSelection(selection: InspectorSelection, yamlContent: string, flowNodes: PipelineFlowNode[]) {
   const { selected, setSelected, dropSelection } = selection;
   const liveSelected = useMemo(
     () => liveSelectionOf(selected, yamlContent, flowNodes),
@@ -571,11 +501,9 @@ function useLiveSelection(
       dropSelection();
     }
   }, [liveSelected, selected, setSelected, dropSelection]);
-  return liveSelected;
+  return liveSelected satisfies SelectedNode | null;
 }
 
-// Undo/redo plus its feedback: a brief pulse on the node(s) a step touched, so the change is easy to
-// spot, and an inspector-form remount onto the restored YAML.
 function useCanvasHistory(
   yamlContent: string,
   onYamlChange: (yaml: string) => void,
@@ -583,8 +511,6 @@ function useCanvasHistory(
 ) {
   const [flash, setFlash] = useState<{ ids: ReadonlySet<string>; token: number }>({ ids: new Set(), token: 0 });
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Bumped on undo/redo so the inspector form remounts to the restored YAML instead of keeping
-  // (now stale) in-place edit state. Same-node commits/resyncs deliberately do NOT bump it.
   const [formEpoch, setFormEpoch] = useState(0);
   const handleNavigate = useCallback((from: string, to: string) => {
     setFormEpoch((e) => e + 1);
@@ -609,9 +535,6 @@ function useCanvasHistory(
 
 type CanvasHistory = ReturnType<typeof useCanvasHistory>;
 
-// Nodes whose config differs from the last-saved pipeline (unsaved dot); view mode is never unsaved.
-// The baseline is signed once per save — re-signing the constant initialYaml on every keystroke
-// would double the diff's parse cost.
 function useUnsavedNodes(yamlContent: string, isEditing: boolean, flowNodes: PipelineFlowNode[]) {
   const initialYaml = usePipelineEditorStore((s) => s.initialYaml);
   const baselineSignatures = useMemo(
@@ -622,7 +545,6 @@ function useUnsavedNodes(yamlContent: string, isEditing: boolean, flowNodes: Pip
     () => (baselineSignatures ? new Set(changedNodeIdsFromBaseline(baselineSignatures, yamlContent)) : EMPTY_NODE_IDS),
     [baselineSignatures, yamlContent]
   );
-  // Jumpable list for the floating "unsaved" panel — only nodes with an edit target can be selected.
   const unsavedNodeList = useMemo(
     () =>
       flowNodes
@@ -633,11 +555,7 @@ function useUnsavedNodes(yamlContent: string, isEditing: boolean, flowNodes: Pip
   return { unsavedNodeIds, unsavedNodeList };
 }
 
-// Node-mapped lint hints, each clickable to select its node; `mapped` lets the rest be listed inert.
-function nodeProblems(
-  lintByNode: Map<string, LintHint[]>,
-  flowNodes: PipelineFlowNode[]
-): { list: PipelineProblem[]; mapped: Set<LintHint> } {
+function nodeProblems(lintByNode: Map<string, LintHint[]>, flowNodes: PipelineFlowNode[]) {
   const nodesById = new Map(flowNodes.map((n) => [n.id, n]));
   const mapped = new Set<LintHint>();
   const list: PipelineProblem[] = [];
@@ -660,12 +578,7 @@ function nodeProblems(
   return { list, mapped };
 }
 
-// Flat problems list for the floating overview: node-mapped hints are clickable, the rest inert.
-function buildProblems(
-  all: LintHint[],
-  lintByNode: Map<string, LintHint[]>,
-  flowNodes: PipelineFlowNode[]
-): PipelineProblem[] {
+function buildProblems(all: LintHint[], lintByNode: Map<string, LintHint[]>, flowNodes: PipelineFlowNode[]) {
   if (all.length === 0) {
     return [];
   }
@@ -680,12 +593,10 @@ function buildProblems(
   return [...list, ...unmapped];
 }
 
-// Each node's hint messages, for its canvas badge and inspector.
-function hintMessagesByNode(hintsByNode: Map<string, LintHint[]>): Map<string, string[]> {
+function hintMessagesByNode(hintsByNode: Map<string, LintHint[]>) {
   return new Map([...hintsByNode].map(([id, hints]) => [id, hints.map((h) => h.hint)]));
 }
 
-// Deprecated components in use, as located hints: they map to nodes and problems the way lint does.
 function useDeprecations(yamlContent: string, components: ConnectComponentSpec[], flowNodes: PipelineFlowNode[]) {
   const hints = useMemo(
     () =>
@@ -712,13 +623,10 @@ type FlowOverviewOptions = {
   selectedId?: string;
 };
 
-// What the canvas overlays show about the document: its nodes, lint, deprecations, unsaved changes,
-// and the selected node's children for the inspector.
 function useFlowOverview({ yamlContent, components, lintHints, isEditing, selectedId }: FlowOverviewOptions) {
   const flowNodes = useMemo(() => parsePipelineFlowTree(yamlContent).nodes, [yamlContent]);
   const offerTemplate = useMemo(() => shouldOfferTemplate(yamlContent, flowNodes), [yamlContent, flowNodes]);
 
-  // Map server lint hints to their nodes (badge on the node, full messages in the inspector).
   const lintByNode = useMemo(() => mapLintHintsToNodes(yamlContent, lintHints ?? []), [yamlContent, lintHints]);
   const lintMessagesByNode = useMemo(() => hintMessagesByNode(lintByNode), [lintByNode]);
   const { unsavedNodeIds, unsavedNodeList } = useUnsavedNodes(yamlContent, isEditing, flowNodes);
@@ -732,7 +640,6 @@ function useFlowOverview({ yamlContent, components, lintHints, isEditing, select
     [lintHints, lintByNode, flowNodes]
   );
   const { deprecationsByNode, deprecations } = useDeprecations(yamlContent, components, flowNodes);
-  // The pipeline ends when its top-level input does (a broker/sequence aggregates its members).
   const pipelineEnd = useMemo(() => {
     const top = flowNodes.find((n) => n.section === 'input' && n.parentId === 'section-input' && n.endBehavior);
     return { status: pipelineEndStatus(top?.endBehavior), behavior: top?.endBehavior, rows: inputEndRows(flowNodes) };
@@ -755,7 +662,6 @@ function useFlowOverview({ yamlContent, components, lintHints, isEditing, select
 
 type FlowOverview = ReturnType<typeof useFlowOverview>;
 
-// Secrets referenced as ${secrets.X} that don't exist yet — surfaced with a quick-add flow.
 function useMissingSecrets(yamlContent: string, isEditing: boolean, onYamlChange: (yaml: string) => void) {
   const { data: secretsResponse } = useListSecretsQuery({}, { enabled: isEditing });
   const [isSecretsDialogOpen, setIsSecretsDialogOpen] = useState(false);
@@ -764,7 +670,6 @@ function useMissingSecrets(yamlContent: string, isEditing: boolean, onYamlChange
     [secretsResponse]
   );
   const missingSecrets = useMemo(() => {
-    // Only warn once the secrets list has actually loaded.
     if (!(isEditing && secretsResponse)) {
       return [];
     }
@@ -773,7 +678,6 @@ function useMissingSecrets(yamlContent: string, isEditing: boolean, onYamlChange
     return referenced.filter((name) => !existingSet.has(name));
   }, [isEditing, secretsResponse, yamlContent, existingSecrets]);
 
-  // Rename a missing secret by rewriting references in the YAML (the visual lane has no text editor).
   const handleRenameSecretReferences = useCallback(
     (oldName: string, newName: string) => {
       const updated = yamlContent.replaceAll(`\${secrets.${oldName}}`, `\${secrets.${newName}}`);
@@ -787,7 +691,6 @@ function useMissingSecrets(yamlContent: string, isEditing: boolean, onYamlChange
   return { existingSecrets, missingSecrets, isSecretsDialogOpen, setIsSecretsDialogOpen, handleRenameSecretReferences };
 }
 
-// Deletes are confirmed: the trash action / Delete key stage the target, the dialog commits it.
 function usePendingDelete(
   yamlContent: string,
   onYamlChange: (yaml: string) => void,
@@ -807,14 +710,13 @@ function usePendingDelete(
       : undefined
   );
 
-  // Warn when other nodes still reference the resource by label — deleting would leave them dangling.
   const pendingDeleteRefCount = useMemo(() => {
     if (pendingDelete?.kind !== 'resource') {
       return 0;
     }
     const comp = getComponentAt(yamlContent, pendingDelete);
     const label = comp && typeof comp.label === 'string' ? comp.label : undefined;
-    // Kind-scoped: a same-labelled resource of the other kind must not inflate the warning.
+    // WARNING: Match resource references by kind; a same-labelled resource of a different kind must not trigger a deletion warning.
     return label ? countResourceReferences(yamlContent, label, resourceTargetKind(pendingDelete)) : 0;
   }, [pendingDelete, yamlContent]);
 
@@ -822,13 +724,11 @@ function usePendingDelete(
     if (pendingDelete) {
       const next = removeComponentAt(yamlContent, pendingDelete);
       if (next === null) {
-        // Removal can fail on YAML the surgical editor can't safely rewrite (e.g. a shared anchor) — say so.
         showToast({ status: 'error', title: 'Couldn’t remove this node — edit it in the YAML view instead.' });
       } else {
         onYamlChange(next);
       }
     }
-    // Deleting discards any pending edit for the node (don't commit it).
     dropSelection();
     setPendingDelete(null);
   }, [pendingDelete, yamlContent, onYamlChange, dropSelection]);
@@ -847,16 +747,10 @@ type PendingDelete = ReturnType<typeof usePendingDelete>;
 
 type StopConditionEdit = { yaml: string } | { error: string };
 
-// The YAML with a node's stop condition set (a null draft clears it), or null when nothing changes.
-function stopConditionEdit(
-  yaml: string,
-  nodes: PipelineFlowNode[],
-  nodeId: string,
-  draft: StopConditionDraft | null
-): StopConditionEdit | null {
+function stopConditionEdit(yaml: string, nodes: PipelineFlowNode[], nodeId: string, draft: StopConditionDraft | null) {
   const slot = nodes.find((n) => n.id === nodeId)?.stopSlot;
   if (!slot) {
-    return { error: 'Couldn’t find that input any more — it may have been removed.' };
+    return { error: 'Couldn’t find that input any more — it may have been removed.' } satisfies StopConditionEdit;
   }
   const stop = draft ? resolveStopCondition(slot.condition, draft) : null;
   if (isStopConditionSet(stop) ? sameStopCondition(stop, slot.condition) : !slot.condition) {
@@ -864,13 +758,14 @@ function stopConditionEdit(
   }
   const next = setStopCondition(yaml, slot.path, stop);
   if (next === null || next === yaml) {
-    return { error: 'Couldn’t update the stop condition — edit it in the YAML view instead.' };
+    return {
+      error: 'Couldn’t update the stop condition — edit it in the YAML view instead.',
+    } satisfies StopConditionEdit;
   }
-  return { yaml: next };
+  return { yaml: next } satisfies StopConditionEdit;
 }
 
-// Lands a stop condition edit in the YAML; false when it's refused, after a toast (one id, so retries don't stack).
-function applyStopEdit(edit: ReturnType<typeof stopConditionEdit>, onYamlChange: (yaml: string) => void): boolean {
+function applyStopEdit(edit: ReturnType<typeof stopConditionEdit>, onYamlChange: (yaml: string) => void) {
   if (edit && 'error' in edit) {
     showToast({ id: 'rpcn-stop-condition-edit', status: 'error', title: edit.error });
     return false;
@@ -881,9 +776,6 @@ function applyStopEdit(edit: ReturnType<typeof stopConditionEdit>, onYamlChange:
   return true;
 }
 
-// Set/clear an input's stop condition (a card's stop row, inspector section). Pending inspector
-// edits land first — wrapping moves the component, so a later flush would miss its path — and
-// stay their own undo step.
 function useSetStopCondition(
   yamlContent: string,
   flowNodes: PipelineFlowNode[],
@@ -893,13 +785,12 @@ function useSetStopCondition(
   const { yamlRef, commitPending } = selection;
   const recordEdit = usePipelineEditorStore((s) => s.recordEdit);
   return useCallback(
-    (nodeId: string, draft: StopConditionDraft | null): boolean => {
+    (nodeId: string, draft: StopConditionDraft | null) => {
       const before = yamlRef.current;
       const yaml = commitPending();
       if (yaml !== before) {
         recordEdit(yaml);
       }
-      // The canvas already parsed this YAML unless a pending edit just landed.
       const nodes = yaml === yamlContent ? flowNodes : parsePipelineFlowTree(yaml).nodes;
       return applyStopEdit(stopConditionEdit(yaml, nodes, nodeId, draft), onYamlChange);
     },
@@ -907,8 +798,7 @@ function useSetStopCondition(
   );
 }
 
-// The just-added node (matched by edit target in the reparse), to select so it can be configured.
-function insertedNodeSelection(result: InsertResult): SelectedNode | null {
+function insertedNodeSelection(result: InsertResult) {
   const { selectTarget } = result;
   if (!selectTarget) {
     return null;
@@ -922,16 +812,14 @@ function insertedNodeSelection(result: InsertResult): SelectedNode | null {
     target: added.editTarget,
     caseTarget: added.caseEditTarget,
     name: componentNameAt(result.yaml, added.editTarget),
-  };
+  } satisfies SelectedNode;
 }
 
-// Apply an insert and auto-select the node it added. A null result means the slot's container
-// vanished (e.g. an undo while the picker was open) — say so.
 function applyInsertResult(
   result: InsertResult | null,
   connectionName: string,
   { onYamlChange, select }: { onYamlChange: (yaml: string) => void; select: (next: SelectedNode) => void }
-): void {
+) {
   if (result === null) {
     showToast({ status: 'error', title: `Couldn’t add ${connectionName} — the insert position no longer exists.` });
     return;
@@ -950,9 +838,7 @@ type NodeInsertOptions = {
   selection: InspectorSelection;
 };
 
-// The connector picker's pending insert and the canvas/inspector entry points that open it. Each
-// commits any pending inspector edit first — the insert builds on the current YAML, so the draft
-// would otherwise be lost.
+// WARNING: Commit the active inspector draft before inserting; the insert otherwise starts from stale YAML and drops that edit.
 function useNodeInsert({ yamlContent, components, onYamlChange, selection }: NodeInsertOptions) {
   const { selected, setSelected, commitPending } = selection;
   const [pendingInsert, setPendingInsert] = useState<PendingInsert | null>(null);
@@ -969,7 +855,6 @@ function useNodeInsert({ yamlContent, components, onYamlChange, selection }: Nod
     [pendingInsert, components, yamlContent, onYamlChange, setSelected]
   );
 
-  // In-container "+": open the picker filtered to the slot's type.
   const handleSlotInsert = useCallback(
     (payload: FlowInsertPayload) => {
       commitPending();
@@ -998,11 +883,9 @@ function useNodeInsert({ yamlContent, components, onYamlChange, selection }: Nod
     [commitPending]
   );
 
-  // "Create new resource" from a node's resource field: the pick is created and linked in one step.
   const handleRequestCreateResource = useCallback(
     (kind: ResourceKind) => {
       if (selected) {
-        // Flush in-progress edits first — the insert re-links the node on the current YAML.
         commitPending();
         setPendingInsert({ context: 'resourceForNode', kind, target: selected.target });
       }
@@ -1027,11 +910,9 @@ type CanvasKeyboardOptions = {
   selection: InspectorSelection;
   history: CanvasHistory;
   stageDelete: (target: EditTarget) => void;
-  /** One of the editor's own dialogs is open. */
   dialogOpen: boolean;
 };
 
-// Canvas shortcuts (`/` palette, Escape, Delete, undo/redo), and the palette they open.
 function useCanvasKeyboard({ isEditing, selection, history, stageDelete, dialogOpen }: CanvasKeyboardOptions) {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const { selected, selectNode } = selection;
@@ -1064,8 +945,6 @@ function useCanvasKeyboard({ isEditing, selection, history, stageDelete, dialogO
       },
     };
     const onKeyDown = (e: KeyboardEvent) => {
-      // Shortcuts stay inert while one of the editor's own dialogs is open. Checked against component
-      // state, not a role="dialog" query, so a host-shell dialog can't disable us.
       if (dialogOpen || isPaletteOpen) {
         return;
       }
@@ -1081,23 +960,18 @@ function useCanvasKeyboard({ isEditing, selection, history, stageDelete, dialogO
   return { isPaletteOpen, setIsPaletteOpen };
 }
 
-// Selection entry points away from the inspector: the canvas itself, the command palette's
-// "go to", the floating unsaved list, and "View in YAML" for the open node.
 function useSelectionEntryPoints(
   flowNodes: PipelineFlowNode[],
   selection: InspectorSelection,
   onNavigateToYaml: VisualEditorPanelProps['onNavigateToYaml']
 ) {
   const { selected, selectNode, selectAndReveal } = selection;
-  // Stable canvas callbacks — inline arrows here would change identity every render and
-  // defeat the canvas's Dagre-layout memo (which keys on these props).
   const selectFromCanvas = useCallback(
     (id: string, target: EditTarget, caseTarget?: EditTarget) => selectNode({ id, target, caseTarget }),
     [selectNode]
   );
   const clearSelection = useCallback(() => selectNode(null), [selectNode]);
 
-  // Command-palette "go to": select + recenter (only nodes with an edit target are listed).
   const jumpToNode = useCallback(
     (node: PipelineFlowNode) => {
       const jump = resolveJumpTarget(node, flowNodes);
@@ -1117,7 +991,6 @@ function useSelectionEntryPoints(
     [flowNodes, jumpToNode]
   );
 
-  // Inspector and palette "View in YAML", when the page can reveal the node there.
   const openSelectedInYaml = selected && onNavigateToYaml ? () => onNavigateToYaml(selected.id) : undefined;
 
   return { selectFromCanvas, clearSelection, jumpToNode, jumpToNodeId, openSelectedInYaml };
@@ -1125,8 +998,7 @@ function useSelectionEntryPoints(
 
 type SelectionEntryPoints = ReturnType<typeof useSelectionEntryPoints>;
 
-// The slot dictates the picker's component types; the top-level spine also offers resources.
-function insertPickerTypes(pending: PendingInsert | null): ConnectComponentType[] {
+function insertPickerTypes(pending: PendingInsert | null) {
   if (pending?.context === 'slot') {
     return [pending.accepts];
   }
@@ -1139,8 +1011,7 @@ function insertPickerTypes(pending: PendingInsert | null): ConnectComponentType[
   return INSERTABLE_TYPES;
 }
 
-// The one component kind a slot or switch-case insert adds, if it's that narrow.
-function insertSlotKind(pending: PendingInsert | null): 'input' | 'processor' | 'output' | undefined {
+function insertSlotKind(pending: PendingInsert | null) {
   if (pending?.context === 'slot') {
     return pending.accepts;
   }
@@ -1149,8 +1020,7 @@ function insertSlotKind(pending: PendingInsert | null): 'input' | 'processor' | 
   }
 }
 
-// Title/placeholder name the exact kind being added, e.g. "Insert an output" inside a switch.
-function insertPickerCopy(pending: PendingInsert | null): { title: string; searchPlaceholder: string } {
+function insertPickerCopy(pending: PendingInsert | null) {
   if (pending?.context === 'resourceForNode') {
     return {
       title: `Add ${pending.kind === 'cache' ? 'cache' : 'rate limit'} resource`,
@@ -1224,7 +1094,6 @@ type CanvasStageProps = Pick<
   onAddSecrets: () => void;
 };
 
-// The canvas with its floating overlays: history toolbar, problems/unsaved panels, template entry point.
 function CanvasStage({
   yamlContent,
   onYamlChange,
@@ -1251,7 +1120,6 @@ function CanvasStage({
 
   return (
     <div className="relative min-w-0 flex-1">
-      {/* Don't mount the canvas pre-hydration — its parse debounce would briefly render a placeholder graph. */}
       {isLoading ? (
         <PipelineFlowSkeleton />
       ) : (
@@ -1327,8 +1195,6 @@ type InspectorRailProps = Pick<VisualEditorPanelProps, 'yamlContent' | 'onYamlCh
   stageDelete: (target: EditTarget) => void;
 };
 
-// Inspector rail. Animate its width (not a transform) so the canvas and its right-anchored
-// minimap/zoom controls glide in lockstep instead of snapping.
 function InspectorRail({
   yamlContent,
   onYamlChange,
@@ -1357,7 +1223,6 @@ function InspectorRail({
           key="node-inspector"
           transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
         >
-          {/* min-width clips the content instead of reflowing it while the rail width animates. */}
           <div className="absolute inset-0 flex min-w-[24rem] flex-col overflow-hidden border-l border-border bg-background">
             <NodeInspector
               caseTarget={selected.caseTarget}
@@ -1445,6 +1310,8 @@ const DeleteNodeDialog = ({ deletion }: { deletion: PendingDelete }) => {
 /**
  * The Visual lane: a pannable canvas laying the pipeline out as a left→right flow. In edit mode,
  * contextual actions (add input/output, insert steps, per-node edit/remove) mutate the canonical YAML.
+ *
+ * After hydration, opens the canvas without first parsing placeholder YAML. Keyboard shortcuts leave focused editing controls alone.
  */
 export function VisualEditorPanel({
   mode,
@@ -1483,7 +1350,6 @@ export function VisualEditorPanel({
   const entryPoints = useSelectionEntryPoints(overview.flowNodes, selection, onNavigateToYaml);
 
   return (
-    // reducedMotion="user": the global prefers-reduced-motion CSS can't reach JS-driven motion animations.
     <MotionConfig reducedMotion="user">
       <div className="flex h-full w-full">
         <CanvasStage

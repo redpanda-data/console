@@ -70,9 +70,11 @@ import PageContent from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
 import { TonedIcon } from '../shared/toned-icon';
 
+export { SchemaAddVersionPage } from './schema-add-version';
+
 type SetSchemaState = Dispatch<SetStateAction<SchemaEditorStateData>>;
 
-function createInitialSchemaState(): SchemaEditorStateData {
+function createInitialSchemaState() {
   return {
     strategy: 'TOPIC',
     userInput: '',
@@ -83,11 +85,14 @@ function createInitialSchemaState(): SchemaEditorStateData {
     normalize: false,
     metadataProperties: [{ id: crypto.randomUUID(), key: '', value: '' }],
     context: '',
-  };
+  } satisfies SchemaEditorStateData;
 }
 
+/**
+ * Supports the formats reported by the Registry, offering JSON only when supported. Required errors appear after interaction and registration opens the created subject.
+ */
 export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Create schema';
     p.addBreadcrumb('Schema Registry', '/schema-registry');
     const contextName = this.props.contextName ? decodeURIComponent(this.props.contextName) : undefined;
@@ -101,8 +106,8 @@ export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
   }
 
   refreshData(force?: boolean) {
-    api.refreshSchemaSubjects(force); // for references editor -> subject selector
-    api.refreshTopics(force); // for the topics selector
+    this.api.refreshSchemaSubjects(force);
+    this.api.refreshTopics(force);
   }
 
   render() {
@@ -111,35 +116,6 @@ export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
         contextName={this.props.contextName ? decodeURIComponent(this.props.contextName) : undefined}
       />
     );
-  }
-}
-
-export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }> {
-  initPage(p: PageInitHelper): void {
-    const subjectName = decodeURIComponent(this.props.subjectName);
-    const encodedSubjectName = encodeURIComponent(subjectName);
-    p.title = 'Add schema version';
-    p.addBreadcrumb('Schema Registry', '/schema-registry');
-    p.addBreadcrumb(subjectName, `/schema-registry/subjects/${encodedSubjectName}`, undefined, {
-      canBeTruncated: true,
-    });
-    p.addBreadcrumb('Create schema', `/schema-registry/subjects/${encodedSubjectName}/add-version`);
-    this.refreshData(true);
-    appGlobal.onRefresh = () => this.refreshData(true);
-  }
-
-  refreshData(force?: boolean) {
-    api.refreshSchemaCompatibilityConfig();
-    api.refreshSchemaMode();
-    api.refreshSchemaSubjects(force);
-    api.refreshSchemaTypes(force);
-
-    const subjectName = decodeURIComponent(this.props.subjectName);
-    api.refreshSchemaDetails(subjectName, force);
-  }
-
-  render() {
-    return <SchemaAddVersionPageContent subjectName={decodeURIComponent(this.props.subjectName)} />;
   }
 }
 
@@ -171,7 +147,7 @@ const SchemaCreatePageContent = ({ contextName }: { contextName?: string }) => {
   );
 };
 
-const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) => {
+export const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) => {
   const [stateData, setStateData] = useState<SchemaEditorStateData | null>(null);
   const subject = useApiStoreHook((s) => s.schemaDetails.get(subjectName));
   const srContextsEnabled = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
@@ -212,14 +188,7 @@ const SchemaAddVersionPageContent = ({ subjectName }: { subjectName: string }) =
   );
 };
 
-/*
-    This component is about the "Save", "Validate", and "Cancel" buttons at the bottom of the page.
-    Those buttons are shared across both page variants, thus it was extracted into its own component
- */
-const SchemaPageButtons = (p: {
-  parentSubjectName?: string; // cancel button needs to know where to navigate to; was the page reached though 'New schema' or 'Add version'?
-  editorState: SchemaEditorStateHelper;
-}) => {
+const SchemaPageButtons = (p: { parentSubjectName?: string; editorState: SchemaEditorStateHelper }) => {
   const queryClient = useQueryClient();
   const [isValidating, setValidating] = useState(false);
   const [isCreating, setCreating] = useState(false);
@@ -246,7 +215,7 @@ const SchemaPageButtons = (p: {
         >
           <AlertTitle>
             {persistentValidationError.compatibilityError?.errorType
-              ? persistentValidationError.compatibilityError.errorType.replace(/_/g, ' ')
+              ? persistentValidationError.compatibilityError.errorType.replace(/_/gu, ' ')
               : 'Schema Validation Error'}
           </AlertTitle>
           <AlertDescription>
@@ -271,21 +240,17 @@ const SchemaPageButtons = (p: {
           action="editSchemas"
           disabled={isCreating || isMissingName || isMissingContext || isValidating || editorState.isInvalidKeyOrValue}
           onClick={async () => {
-            // We must validate first, "create" does not properly check and just gives internal server error if anything is wrong with the schema
+            // WARNING: Validate before registering; create can answer with a generic server error for invalid schema text.
             setValidating(true);
             const validationResponse = await validateSchema(editorState).finally(() => setValidating(false));
 
             if (!validationResponse.isValid || validationResponse.isCompatible === false) {
-              // Something is wrong with the schema, abort
-              // Persist error only after user closes the modal
               setValidationDialogResult(validationResponse);
               return;
             }
 
-            // Clear any previous validation errors
             setPersistentValidationError(null);
 
-            // try to create the schema
             setCreating(true);
             await createSchemaAndOpen(editorState, queryClient, () => setCreating(false));
           }}
@@ -302,11 +267,9 @@ const SchemaPageButtons = (p: {
             const r = await validateSchema(editorState).finally(() => setValidating(false));
 
             if (r.isValid && r.isCompatible !== false) {
-              // Clear any previous validation errors on successful validation
               setPersistentValidationError(null);
               toast.success('Schema validated');
             } else {
-              // Persist error only after user closes the modal
               setValidationDialogResult(r);
             }
           }}
@@ -348,13 +311,11 @@ const SchemaPageButtons = (p: {
   );
 };
 
-// Registers the schema, refreshes its cached details, and opens the subject at
-// its latest version; `onSettled` runs once the create request settles.
 async function createSchemaAndOpen(
   editorState: SchemaEditorStateHelper,
   queryClient: QueryClient,
   onSettled: () => void
-): Promise<void> {
+) {
   try {
     const subjectName = editorState.qualifiedSubjectName;
     await api
@@ -371,25 +332,18 @@ async function createSchemaAndOpen(
 
     await Promise.all([
       api.refreshSchemaDetails(subjectName, true),
-      // Invalidate React Query cache so details page shows latest data
       queryClient.invalidateQueries({
         queryKey: ['schemaRegistry', 'subjects', subjectName, 'details'],
       }),
     ]);
 
-    // success: navigate to details with "latest" so it picks up the new version
     appGlobal.historyReplace(`/schema-registry/subjects/${encodeURIComponent(subjectName)}?version=latest`);
   } catch (err) {
     toast.error('Error creating schema', { description: String(err) });
   }
 }
 
-async function validateSchema(state: SchemaEditorStateHelper): Promise<{
-  isValid: boolean; // is the schema valid at all (can be parsed, no unknown types etc)
-  errorDetails?: string; // details about why the schema is not valid
-  isCompatible?: boolean; // is the new schema not compatible with older versions; only set when the schema is valid
-  compatibilityError?: { errorType: string; description: string }; // detailed compatibility error from schema registry
-}> {
+async function validateSchema(state: SchemaEditorStateHelper) {
   if (!state.computedSubjectName) {
     return { isValid: false, errorDetails: 'Missing subject name' };
   }
@@ -423,7 +377,6 @@ const BASE_FORMAT_OPTIONS = [
 ];
 const JSON_FORMAT_OPTION = { value: 'JSON', label: 'JSON' };
 
-// Schema formats the registry accepts; JSON only when it reports support for it.
 function useSchemaFormatOptions() {
   const { data: schemaTypes } = useSchemaTypesQuery();
 
@@ -435,8 +388,6 @@ function useSchemaFormatOptions() {
   return supportsJson ? [...BASE_FORMAT_OPTIONS, JSON_FORMAT_OPTION] : BASE_FORMAT_OPTIONS;
 }
 
-// Existing contexts (without the synthetic "All"), as options keyed by label
-// for the context combobox and by id for the reference context selects.
 function useSchemaEditorContexts(srContextsEnabled: boolean) {
   const { data: apiContexts } = useSchemaRegistryContextsQuery(srContextsEnabled);
   const { data: subjects } = useListSchemasQuery();
@@ -461,7 +412,7 @@ function useSchemaEditorContexts(srContextsEnabled: boolean) {
   return { contextOptions, contextSelectOptions };
 }
 
-// Switching format replaces the schema text, so a picked format waits for confirmation.
+// WARNING: Confirm a format switch before applying it; switching replaces the user's current schema text.
 function useFormatSwitch(currentFormat: string, onStateChange: SetSchemaState) {
   const [switchFormatOpen, setSwitchFormatOpen] = useState(false);
   const [pendingFormat, setPendingFormat] = useState<string | null>(null);
@@ -473,7 +424,6 @@ function useFormatSwitch(currentFormat: string, onStateChange: SetSchemaState) {
       if (!format || currentFormat === format) {
         return;
       }
-      // Let user confirm
       setPendingFormat(format);
       setSwitchFormatOpen(true);
     },
@@ -490,7 +440,6 @@ function useFormatSwitch(currentFormat: string, onStateChange: SetSchemaState) {
   };
 }
 
-// Context picker for a new subject: pick an existing context or create one.
 function ContextField({
   state,
   onStateChange,
@@ -511,7 +460,6 @@ function ContextField({
       <FieldLabel>Context</FieldLabel>
       <FieldDescription>Select an existing context or type a new name to create one.</FieldDescription>
       <Combobox
-        // index.scss's base `svg` rule offsets the icons.
         className="[&_svg]:block!"
         creatable
         createLabel="context"
@@ -558,7 +506,6 @@ const SchemaEditor = (p: {
     state.format,
     p.onStateChange
   );
-  // Only surface "required" errors after the user has interacted with a field, not on mount.
   const [touched, setTouched] = useState<{ context: boolean; topic: boolean }>({ context: false, topic: false });
 
   const showTopicNameInput = state.strategy === 'TOPIC' || state.strategy === 'TOPIC_RECORD_NAME';
@@ -805,7 +752,6 @@ const ReferencesEditor = (p: {
   contextSelectOptions: { value: string; label: string }[];
 }) => {
   const refs = p.state.references;
-  // Subscribed, so the subject options follow the list as it loads.
   const schemaSubjects = useApiStoreHook((s) => s.schemaSubjects);
 
   const subjectsByContext = useMemo(() => {
@@ -882,7 +828,6 @@ const ReferencesEditor = (p: {
                   references: prev.references.map((r, i) => (i === index ? { ...r, subject: e } : r)),
                 }));
 
-                // For fetching details, we need the qualified name
                 const qualifiedRefSubject = buildQualifiedSubjectName(ref.context, e);
                 let details = api.schemaDetails.get(qualifiedRefSubject);
                 if (!details) {
@@ -891,12 +836,12 @@ const ReferencesEditor = (p: {
                 }
 
                 if (!details) {
-                  return; // failed to get details
+                  return;
                 }
 
                 p.onStateChange((prev) => {
                   const r = prev.references[index];
-                  // Need to make sure that, after refreshing, the subject is still the same
+                  // WARNING: Check the subject after refresh; a late response must not overwrite a selection that has changed.
                   if (r?.subject !== e) {
                     return prev;
                   }

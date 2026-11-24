@@ -29,14 +29,14 @@ async function tryTranspile(
   tsWorkerClient: languages.typescript.TypeScriptWorker,
   formattedEditorUri: string,
   fallback: string
-): Promise<string> {
+) {
   try {
     const result = await tsWorkerClient.getEmitOutput(formattedEditorUri);
     if (result?.outputFiles?.[0]?.text) {
       return result.outputFiles[0].text;
     }
   } catch (_error) {
-    // Intentionally ignore transpilation errors and fall back to original code
+    // WARNING: Return the original editor text on transpile failure; dropping it would lose the user's code.
   }
   return fallback;
 }
@@ -101,13 +101,12 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
     const editorValue = (await getEditorValue()) ?? '';
     const formattedEditorUri = editorUri?.toString();
 
-    let transpiledCode = editorValue; // Fallback to original code if transpilation fails
+    let transpiledCode = editorValue;
 
     if (formattedEditorUri && tsWorkerClient) {
       transpiledCode = await tryTranspile(tsWorkerClient, formattedEditorUri, editorValue);
     }
 
-    // Always call onValueChange, even if transpilation failed
     onValueChange(editorValue, transpiledCode);
   };
 

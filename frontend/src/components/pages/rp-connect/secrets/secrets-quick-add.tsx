@@ -20,11 +20,9 @@ import { showToast } from '../../../../utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
 import { formatPipelineError } from '../errors';
 
-// Regex for validating secret ID format
-const SECRET_NAME_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/;
+const SECRET_NAME_REGEX = /^[A-Za-z][A-Za-z0-9_]*$/u;
 const SECRET_NAME_MAX_LENGTH = 255;
 
-// Returns the validation message for a secret name, or '' when it is empty or valid.
 const validateSecretName = (secretName: string) => {
   if (secretName === '') {
     return '';
@@ -38,7 +36,6 @@ const validateSecretName = (secretName: string) => {
   return '';
 };
 
-// Creates the secret and toasts the outcome; resolves to whether it was created.
 const createSecret = (secretId: string, secretValue: string) =>
   rpcnSecretManagerApi
     .create(
@@ -78,9 +75,6 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
   const [isCreating, setIsCreating] = useState(false);
   const [isNewSecret, setIsNewSecret] = useState(false);
 
-  // Read on every render: `secrets` is a MobX observable that refreshes underneath us. A pending
-  // new name is deliberately absent — an option matching the selection makes re-clicking it a
-  // deselect.
   const availableSecrets = (rpcnSecretManagerApi.secrets ?? []).map((s) => ({
     label: s.id,
     value: s.id,
@@ -124,13 +118,11 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
     >
       <DialogContent size="md">
         <DialogHeader>
-          {/* Room for DialogContent's close button: the header's own padding plus this margin clear its 2.5rem. */}
           <DialogTitle className="mr-6">Select or add secret</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <div className="flex w-[300px] flex-col gap-5">
             <Text>Select an existing secret or create a new one. Secrets are available across all pipelines.</Text>
-            {/* The Combobox exposes no `id`, so this label cannot be wired with `htmlFor`. */}
             <Field data-invalid={hasNameError}>
               <FieldLabel>Secret name</FieldLabel>
               <Combobox
@@ -138,7 +130,6 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
                 createLabel="secret"
                 inputTestId="secret-name"
                 onChange={(value) => {
-                  // Combobox emits '' when it clears; mirror that into our own state.
                   setIsNewSecret(false);
                   setSecret('');
                   setId(value);
@@ -183,9 +174,7 @@ const SecretsQuickAdd = ({ isOpen, onAdd, onCloseAddSecret }: SecretsQuickAddPro
           <Button
             isLoading={isCreating}
             onClick={() => {
-              addSecret(id).catch(() => {
-                // Error handling managed by API layer
-              });
+              addSecret(id).catch(() => {});
             }}
           >
             Select

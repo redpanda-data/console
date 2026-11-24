@@ -43,7 +43,6 @@ describe('the HostSelector', () => {
       const user = userEvent.setup();
       const { router } = renderWithFileRoutes(<HostSelector {...defaultProps} />);
 
-      // Click first host
       const firstRow = screen.getByTestId('host-selector-row-192.168.1.1');
       await user.click(firstRow);
 
@@ -52,7 +51,6 @@ describe('the HostSelector', () => {
         expect(router.state.location.search).toEqual({ host: '192.168.1.1' });
       });
 
-      // Click second host
       const secondRow = screen.getByTestId('host-selector-row-192.168.1.2');
       await user.click(secondRow);
 

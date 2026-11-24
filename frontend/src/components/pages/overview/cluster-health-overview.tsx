@@ -27,13 +27,11 @@ const ClusterHealthOverview = () => {
     <div>
       <ul className="flex flex-col gap-3">
         <li>
-          {/* Single column on mobile, two columns on larger screens */}
           <div className={ROW_GRID}>
             <div className="font-bold">Reason</div>
             <div>
               {titleCase(
                 api.clusterHealth?.unhealthyReasons
-                  // A reason a newer backend adds is not in the map; read it as unknown rather than throw.
                   ?.map((x) =>
                     (
                       HUMAN_READABLE_UNHEALTHY_REASONS[x] ??
@@ -95,8 +93,6 @@ const ClusterHealthOverview = () => {
             <div className={ROW_GRID}>
               <div className="font-bold">Debug bundle</div>
               <div className="flex gap-2">
-                {/* debug-bundle-page.ts looks this up with getByRole('link'), so it stays an anchor;
-                    `$jobId` needs a segment. */}
                 {api.isDebugBundleInProgress && api.debugBundleStatus?.jobId ? (
                   <Link
                     className={cn(buttonVariants({ variant: 'link' }), 'h-auto')}
@@ -123,4 +119,7 @@ const ClusterHealthOverview = () => {
   );
 };
 
+/**
+ * Show the active debug job as a progress link only when its job ID is available.
+ */
 export default ClusterHealthOverview;

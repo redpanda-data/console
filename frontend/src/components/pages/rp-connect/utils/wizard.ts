@@ -1,21 +1,21 @@
 /** Matches 'topic' (outputs/cache) or 'topics' (inputs). */
-export const isTopicField = (fieldName: string): boolean => {
+export const isTopicField = (fieldName: string) => {
   const normalizedName = fieldName.toLowerCase();
   return normalizedName === 'topic' || normalizedName === 'topics';
 };
 
 /** Matches 'user' (kafka sasl) or 'username' (redpanda sasl). */
-export const isUserField = (fieldName: string): boolean => {
+export const isUserField = (fieldName: string) => {
   const normalized = fieldName.toLowerCase();
   return normalized === 'user' || normalized === 'username';
 };
 
-export const isPasswordField = (fieldName: string): boolean => fieldName.toLowerCase() === 'password';
+export const isPasswordField = (fieldName: string) => fieldName.toLowerCase() === 'password';
 
-export const isConsumerGroupField = (fieldName: string): boolean => fieldName.toLowerCase() === 'consumer_group';
+export const isConsumerGroupField = (fieldName: string) => fieldName.toLowerCase() === 'consumer_group';
 
 /** True for schema_registry.url, which should use REDPANDA_SCHEMA_REGISTRY_URL. */
-export const isSchemaRegistryUrlField = (fieldName: string, parentName?: string): boolean => {
+export const isSchemaRegistryUrlField = (fieldName: string, parentName?: string) => {
   const isUrl = fieldName.toLowerCase() === 'url';
   const parentIsSchemaRegistry = parentName?.toLowerCase() === 'schema_registry';
   return isUrl && !!parentIsSchemaRegistry;

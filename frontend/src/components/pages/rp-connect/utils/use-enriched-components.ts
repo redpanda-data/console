@@ -17,17 +17,13 @@ import { parseSchema } from './schema';
 import { enrichComponentsWithConfigSchema } from './schema-enrichment';
 import type { ConnectComponentSpec } from '../types/schema';
 
-// Parsing + enrichment JSON.parses the multi-megabyte config schema and clones every component's
-// field tree. The query responses are shared cache objects, so memoize on their identities
-// module-wide: the pipeline editor, onboarding wizard, and template panel mount at different
-// times but must not each redo the work.
 let lastEnrichment: {
   componentList: ComponentList;
   configSchema: string | undefined;
   result: ConnectComponentSpec[];
 } | null = null;
 
-function getEnrichedComponents(componentList: ComponentList, configSchema: string | undefined): ConnectComponentSpec[] {
+function getEnrichedComponents(componentList: ComponentList, configSchema: string | undefined) {
   if (lastEnrichment?.componentList === componentList && lastEnrichment?.configSchema === configSchema) {
     return lastEnrichment.result;
   }
@@ -42,12 +38,9 @@ function getEnrichedComponents(componentList: ComponentList, configSchema: strin
  * keep working while the much larger config schema is still loading or hung — then re-emit with the
  * enrichment stamps once it settles; until then `checkRequired` runs in its degraded proto-flag mode.
  * Consumers needing full fidelity (template forms computing defaults once) can gate on `isLoading`.
+ * Shares enrichment by the identities of the cached list and schema to avoid reparsing them for each consumer.
  */
-export function useEnrichedComponents(): {
-  components: ConnectComponentSpec[];
-  componentList: ComponentList | undefined;
-  isLoading: boolean;
-} {
+export function useEnrichedComponents() {
   const { data: componentListResponse, isLoading: isComponentListLoading } = useListComponentsQuery();
   const { data: schemaResponse, isLoading: isSchemaLoading } = useGetPipelineServiceConfigSchemaQuery();
 

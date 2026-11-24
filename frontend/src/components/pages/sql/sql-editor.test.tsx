@@ -9,50 +9,27 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 import { SqlEditor } from './sql-editor';
 
-// CodeMirror's layout/measure loop doesn't run in Happy DOM; the editor surface is
-// exercised manually/e2e.
+// WARNING: Do not use this harness to prove CodeMirror layout; the measure loop requires a real browser.
 rs.mock('@uiw/react-codemirror', () => ({
   default: ({ value }: { value: string }) => <div data-testid="editor">{value}</div>,
 }));
 
-const QUERY_1_TAB = /Query 1/;
-const QUERY_2_TAB = /Query 2/;
-// Matches the Run button's accessible name including its platform Kbd hint.
-const RUN_BUTTON = /Run (Ctrl|⌘)/;
+const QUERY_1_TAB = /Query 1/u;
+const QUERY_2_TAB = /Query 2/u;
+const RUN_BUTTON = /Run (?:Ctrl|⌘)/u;
 
-const renderEditor = (onRun = rs.fn()) => {
-  render(<SqlEditor catalogs={[]} initialQuery="SELECT 1;" onRun={onRun} />);
-  return onRun;
+const renderEditor = () => {
+  const onRun = rs.fn();
+  const editor = render(<SqlEditor catalogs={[]} initialQuery="SELECT 1;" onRun={onRun} />);
+  return { ...editor, onRun };
 };
 
-function createMemoryStorage(): Storage {
-  const values = new Map<string, string>();
-  return {
-    get length() {
-      return values.size;
-    },
-    clear: () => values.clear(),
-    getItem: (key: string) => values.get(key) ?? null,
-    key: (index: number) => [...values.keys()][index] ?? null,
-    removeItem: (key: string) => values.delete(key),
-    setItem: (key: string, value: string) => values.set(key, value),
-  };
-}
-
 describe('the SqlEditor', () => {
-  beforeEach(() => {
-    rs.stubGlobal('localStorage', createMemoryStorage());
-  });
-
-  afterEach(() => {
-    rs.unstubAllGlobals();
-  });
-
   test('renders the first query tab as the active tab', () => {
     renderEditor();
     expect(screen.getByRole('tab', { name: QUERY_1_TAB })).toHaveAttribute('aria-selected', 'true');
@@ -85,11 +62,13 @@ describe('the SqlEditor', () => {
     expect(screen.getByRole('tab', { name: QUERY_1_TAB })).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('run sends the active tab SQL and records history', async () => {
-    const onRun = renderEditor();
+  test('run sends active SQL and history survives a remount', async () => {
+    const { onRun, unmount } = renderEditor();
     fireEvent.click(screen.getByRole('button', { name: RUN_BUTTON }));
     expect(onRun).toHaveBeenCalledWith('SELECT 1;');
+    unmount();
 
+    renderEditor();
     fireEvent.click(screen.getByRole('button', { name: 'History' }));
     expect(await screen.findByText('SELECT 1;', { selector: 'span' })).toBeInTheDocument();
   });

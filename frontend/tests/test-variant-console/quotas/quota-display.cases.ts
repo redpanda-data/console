@@ -11,8 +11,8 @@ test.describe('quotas - Display and Data Verification', () => {
     await step('Create quota with all rate types', async () => {
       await createClientIdQuota({
         clientId: quotaClientId,
-        producerByteRate: 10_485_760, // 10 MiB
-        consumerByteRate: 5_242_880, // 5 MiB
+        producerByteRate: 10_485_760,
+        consumerByteRate: 5_242_880,
         controllerMutationRate: 100,
       });
     });
@@ -25,11 +25,10 @@ test.describe('quotas - Display and Data Verification', () => {
       await quotaPage.verifyQuotaExists(quotaClientId);
       await quotaPage.verifyQuotaInTable(quotaClientId, 'client-id');
 
-      // Verify all three rate types are visible in the same row
       const row = page.locator('tr').filter({ hasText: quotaClientId });
       await expect(row.locator('td').filter({ hasText: '10 MiB' })).toBeVisible();
       await expect(row.locator('td').filter({ hasText: '5 MiB' })).toBeVisible();
-      await expect(row.locator('td').filter({ hasText: /^100$/ })).toBeVisible();
+      await expect(row.locator('td').filter({ hasText: /^100$/u })).toBeVisible();
     });
 
     await step('Cleanup', async () => {
@@ -45,7 +44,7 @@ test.describe('quotas - Display and Data Verification', () => {
     await step('Create quota with only producer rate', async () => {
       await createClientIdQuota({
         clientId: quotaClientId,
-        producerByteRate: 20_971_520, // 20 MiB
+        producerByteRate: 20_971_520,
       });
     });
 
@@ -54,9 +53,8 @@ test.describe('quotas - Display and Data Verification', () => {
       await quotaPage.verifyQuotaExists(quotaClientId);
       await quotaPage.verifyProducerRate('20 MiB', quotaClientId);
 
-      // Verify consumer and controller rates show skip icon (not configured)
       const row = page.locator('tr').filter({ hasText: quotaClientId });
-      await expect(row.getByRole('cell').nth(2)).toContainText('20 MiB'); // Producer rate column
+      await expect(row.getByRole('cell').nth(2)).toContainText('20 MiB');
     });
 
     await step('Cleanup', async () => {
@@ -72,7 +70,7 @@ test.describe('quotas - Display and Data Verification', () => {
     await step('Create quota with only consumer rate', async () => {
       await createClientIdQuota({
         clientId: quotaClientId,
-        consumerByteRate: 15_728_640, // 15 MiB
+        consumerByteRate: 15_728_640,
       });
     });
 
@@ -95,8 +93,8 @@ test.describe('quotas - Display and Data Verification', () => {
     await step('Create quota with large byte values', async () => {
       await createClientIdQuota({
         clientId: quotaClientId,
-        producerByteRate: 1_073_741_824, // 1 GiB
-        consumerByteRate: 2_147_483_648, // 2 GiB
+        producerByteRate: 1_073_741_824,
+        consumerByteRate: 2_147_483_648,
       });
     });
 
@@ -138,7 +136,7 @@ test.describe('quotas - Display and Data Verification', () => {
     await step('Create quota', async () => {
       await createClientIdQuota({
         clientId: quotaClientId,
-        producerByteRate: 8_388_608, // 8 MiB
+        producerByteRate: 8_388_608,
       });
     });
 
@@ -168,12 +166,12 @@ test.describe('quotas - Display and Data Verification', () => {
     await step('Create quotas with different entity types', async () => {
       await createClientIdQuota({
         clientId: clientQuota,
-        producerByteRate: 4_194_304, // 4 MiB
+        producerByteRate: 4_194_304,
       });
 
       await createUserQuota({
         user: userQuota,
-        consumerByteRate: 6_291_456, // 6 MiB
+        consumerByteRate: 6_291_456,
       });
     });
 
@@ -198,10 +196,8 @@ test.describe('quotas - Display and Data Verification', () => {
     });
 
     await step('Verify page loads without errors even if no quotas exist', async () => {
-      // Page should load successfully
       await expect(page.getByRole('heading', { name: 'Quotas' })).toBeVisible();
 
-      // Table headers should still be visible
       await expect(page.getByRole('columnheader', { name: 'Type' })).toBeVisible();
     });
   });

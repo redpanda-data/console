@@ -14,10 +14,9 @@ import { orderForContinuousNewest, visiblePageKeys } from './message-order';
 import { describe, expect, test } from 'bun:test';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 
-const msg = (partitionID: number, offset: number, timestamp: number): TopicMessage =>
+const msg = (partitionID: number, offset: number, timestamp: number) =>
   ({ partitionID, offset, timestamp }) as TopicMessage;
 
-// Arrives oldest-first (server order), as a continuous-mode stream would.
 const messages = [msg(0, 1, 100), msg(0, 2, 300), msg(0, 3, 200)];
 
 describe('visiblePageKeys', () => {
@@ -74,8 +73,6 @@ describe('visiblePageKeys', () => {
 });
 
 describe('orderForContinuousNewest', () => {
-  // Partition-grouped, as the backend emits it for the "Newest" origin (per-partition batches,
-  // not globally interleaved by timestamp).
   const partitionGrouped = [msg(0, 1, 100), msg(0, 2, 300), msg(1, 5, 200), msg(1, 6, 400)];
 
   test('sorts newest-first (timestamp desc, offset desc tiebreak) for continuous + newest', () => {
@@ -99,28 +96,16 @@ describe('orderForContinuousNewest', () => {
 });
 
 describe('orderForContinuousNewest composed with applyDisplayWindow (topic-messages-view order of operations)', () => {
-  // Regression for: continuous + "Newest" trimmed the newest rows instead of the oldest.
-  // For this scope each successive "Load more" page is *older* than the last (the backend
-  // resolves a descending page direction — list_messages.go — for every start offset except
-  // StartOffsetOldest), so the buffer's front holds the newest page and its back holds the
-  // oldest, the opposite of every other (oldest→newest) scope.
   const newestPageFirst = [
-    // Page 1 (arrives first): the newest page.
     ...Array.from({ length: 5 }, (_, i) => msg(0, i, 100 + i * 10)),
-    // Page 2 (arrives via "Load more"): an older page.
     ...Array.from({ length: 5 }, (_, i) => msg(1, i, i * 10)),
   ];
 
-  // Regression: keeping the head of the newest-first ordering pinned the window to the first
-  // `cap` rows forever — "Load more" fetched older pages that were then silently discarded, so
-  // continuous pagination was functionally stuck at the cap. The window keeps the tail (the
-  // loading frontier) instead: the page just fetched is what becomes visible.
   test('windowing after ordering reveals the freshly loaded older page once past the cap', () => {
     const ordered = orderForContinuousNewest(newestPageFirst, true, 'newest');
     const { rows, trimmed } = applyDisplayWindow(ordered, 4);
 
     expect(rows.map((m) => m.timestamp)).toEqual([30, 20, 10, 0]);
-    // What got trimmed is the newest side — the footer reports "newer trimmed" for this scope.
     expect(trimmed).toBe(6);
   });
 

@@ -9,671 +9,349 @@
  * by the Apache License, Version 2.0
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { afterAll, afterEach, beforeAll, expect, test } from '@rstest/core';
+import { QueryClient } from '@tanstack/react-query';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
-// Mock TanStack Router before any imports
-rs.mock('@tanstack/react-router', () => {
-  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
-  return {
-    ...actual,
-    createRouter: rs.fn(() => ({
-      subscribe: rs.fn(() => rs.fn()), // Returns unsubscribe function
-      history: { subscribe: rs.fn(() => rs.fn()) },
-      load: rs.fn().mockResolvedValue(undefined),
-      state: { location: { pathname: '/topics', searchStr: '' } },
-      navigate: rs.fn().mockResolvedValue(undefined),
-    })),
-    createMemoryHistory: rs.fn(() => ({
-      location: { pathname: '/topics' },
-      listen: rs.fn(),
-      push: rs.fn(),
-      replace: rs.fn(),
-    })),
-    RouterProvider: MockRouterProvider,
-  };
-});
-
-rs.mock('config', () => ({
-  config: {
-    jwt: undefined as string | undefined,
-  },
-  setup: rs.fn(),
-  getGrpcBasePath: rs.fn(() => 'http://localhost:9090'),
-  addBearerTokenInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
-  checkExpiredLicenseInterceptor: rs.fn((next) => async (request: unknown) => await next(request)),
-}));
-
-rs.mock('protobuf-registry', () => ({
-  protobufRegistry: {},
-}));
-
-rs.mock('../routeTree.gen', () => ({
-  routeTree: {},
-}));
-
-rs.mock('../components/misc/not-found-page', () => ({
-  NotFoundPage: MockNotFoundPage,
-}));
+import { HttpResponse, http } from 'msw';
+import { setupServer } from 'msw/node';
 
 import { ConsoleApp } from './console-app';
-import type { ConsoleAppProps } from './types';
-import { config, setup } from '../config';
+import type { Breadcrumb, ConsoleAppProps, SidebarItem } from './types';
+import { config } from '../config';
+import { appGlobal } from '../state/app-global';
+import { api, useApiStore } from '../state/backend-api';
+import type { Topic } from '../state/rest-interfaces';
+import { Feature, useSupportedFeaturesStore } from '../state/supported-features';
 
-let pendingTopic: Promise<string> | undefined;
-let reportBreadcrumbsDuringRender = false;
-
-const mockGetAccessToken = rs.fn();
-const mockOnRouteChange = rs.fn();
-const mockOnSidebarItemsChange = rs.fn();
-const mockOnBreadcrumbsChange = rs.fn();
-const mockOnError = rs.fn();
+const grpc = 'https://dataplane.example.test';
+const rest = 'https://rest.example.test/api';
+const hostConfig = { urlOverride: { grpc, rest } };
 const defaultProps: ConsoleAppProps = {
-  getAccessToken: mockGetAccessToken,
-  clusterId: 'test-cluster-id',
-  initialPath: '/topics',
-  onRouteChange: mockOnRouteChange,
-  onSidebarItemsChange: mockOnSidebarItemsChange,
-  onBreadcrumbsChange: mockOnBreadcrumbsChange,
-  onError: mockOnError,
-  config: {},
-  featureFlags: {},
+  getAccessToken: () => Promise.resolve('host-token'),
+  clusterId: 'host-cluster',
+  config: hostConfig,
 };
 
-type RouterEventCallback = (event: unknown) => void;
-type HistoryCallback = (event: { action: { type: string } }) => void;
-
-/** A router whose history and onResolved callbacks the test fires itself, in the order a navigation does. */
-const mockRouterEvents = async () => {
-  const { createRouter } = await import('@tanstack/react-router');
-  const events: { onResolved?: RouterEventCallback; onHistory?: HistoryCallback } = {};
-  rs.mocked(createRouter).mockReturnValueOnce({
-    subscribe: rs.fn((_event: string, cb: RouterEventCallback) => {
-      events.onResolved = cb;
-      return rs.fn();
-    }),
-    history: {
-      subscribe: rs.fn((cb: HistoryCallback) => {
-        events.onHistory = cb;
-        return rs.fn();
-      }),
-    },
-    load: rs.fn().mockResolvedValue(undefined),
-    state: { location: { pathname: '/topics', searchStr: '' } },
-    navigate: rs.fn().mockResolvedValue(undefined),
-  } as unknown as ReturnType<typeof createRouter>);
-  return {
-    get onResolved() {
-      return events.onResolved;
-    },
-    navigated: (type: string, pathname: string, searchStr: string) => {
-      events.onHistory?.({ action: { type } });
-      events.onResolved?.({ toLocation: { pathname, searchStr } });
-    },
-  };
+const topic: Topic = {
+  topicName: 'orders-from-broker',
+  isInternal: false,
+  partitionCount: 3,
+  replicationFactor: 1,
+  cleanupPolicy: 'delete',
+  documentation: 'NOT_CONFIGURED',
+  logDirSummary: { totalSizeBytes: 0, replicaErrors: null, hint: null },
+  allowedActions: undefined,
 };
 
-describe('the ConsoleApp', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    pendingTopic = undefined;
-    reportBreadcrumbsDuringRender = false;
-    mockGetAccessToken.mockResolvedValue('test-token-123');
-    // Reset config.jwt
-    config.jwt = undefined;
+const supportedEndpoints = Object.values({ ...Feature }).flatMap((feature) =>
+  'endpoint' in feature ? [{ ...feature, isSupported: feature.endpoint === '/api/consumer-groups' }] : []
+);
+
+function topicsResponse() {
+  return HttpResponse.json({ topics: [topic] });
+}
+
+const licenseService = `${grpc}/redpanda.api.console.v1alpha1.LicenseService`;
+const statusService = `${grpc}/redpanda.api.console.v1alpha1.ClusterStatusService`;
+const server = setupServer(
+  http.get(`${rest}/console/endpoints`, () =>
+    HttpResponse.json({ endpointCompatibility: { kafkaVersion: '3.8.0', endpoints: supportedEndpoints } })
+  ),
+  http.get(`${rest}/topics`, topicsResponse),
+  http.get(`${rest}/consumer-groups`, () => HttpResponse.json({ consumerGroups: [] })),
+  http.get(`${rest}/cluster`, () => HttpResponse.json({ clusterInfo: { brokers: [] } })),
+  http.post(`${licenseService}/ListLicenses`, () => HttpResponse.json({ licenses: [] })),
+  http.post(`${licenseService}/ListEnterpriseFeatures`, () => HttpResponse.json({ features: [] })),
+  http.post(`${statusService}/GetKafkaAuthorizerInfo`, () => HttpResponse.json({})),
+  http.post(`${statusService}/GetConsoleInfo`, () => HttpResponse.json({})),
+  http.post(`${statusService}/GetKafkaInfo`, () => HttpResponse.json({ brokers: [] })),
+  http.post(`${statusService}/GetRedpandaInfo`, () => HttpResponse.json({})),
+  http.post(`${statusService}/GetKafkaConnectInfo`, () => HttpResponse.json({}))
+);
+const requests: Request[] = [];
+const unhandledRequests: string[] = [];
+const initialConfig = { ...config };
+
+beforeAll(() => {
+  server.events.on('request:start', ({ request }) => requests.push(request));
+  server.events.on('request:unhandled', ({ request }) => unhandledRequests.push(`${request.method} ${request.url}`));
+  server.listen({ onUnhandledFrame: 'error' });
+});
+
+afterEach(() => {
+  cleanup();
+  server.resetHandlers();
+  requests.length = 0;
+  Object.assign(config, initialConfig, { jwt: initialConfig.jwt });
+  useApiStore.setState(useApiStore.getInitialState());
+  useSupportedFeaturesStore.setState(useSupportedFeaturesStore.getInitialState());
+  expect(unhandledRequests.splice(0)).toEqual([]);
+});
+
+afterAll(() => {
+  server.close();
+});
+
+function requestsFor(url: string) {
+  return requests.filter((request) => request.url === url);
+}
+
+async function deliverToken(token: PromiseWithResolvers<string>, value: string) {
+  await act(async () => {
+    token.resolve(value);
+    await token.promise;
   });
-
-  describe('initialization', () => {
-    test('updates the host error callback without restarting initialization', async () => {
-      const { rerender } = render(<ConsoleApp {...defaultProps} />);
-      await waitFor(() => expect(setup).toHaveBeenCalledTimes(1));
-      await act(() => {
-        rerender(<ConsoleApp {...defaultProps} onError={rs.fn()} />);
-      });
-      expect(mockGetAccessToken).toHaveBeenCalledTimes(1);
-    });
-
-    test('retries a failed initialization without reloading the host', async () => {
-      const user = userEvent.setup();
-      mockGetAccessToken.mockRejectedValueOnce(new Error('Token service unavailable'));
-      render(<ConsoleApp {...defaultProps} />);
-
-      await user.click(await screen.findByRole('button', { name: 'Try again' }));
-
-      await waitFor(() => expect(setup).toHaveBeenCalledTimes(1));
-      expect(mockGetAccessToken).toHaveBeenCalledTimes(2);
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
-    test('keeps the mounted app while updated configuration waits for a token', async () => {
-      const { rerender } = render(<ConsoleApp {...defaultProps} />);
-      await waitFor(() => expect(setup).toHaveBeenCalledTimes(1));
-      const mounted = screen.getByTestId('router-provider');
-      const token = Promise.withResolvers<string>();
-      mockGetAccessToken.mockReturnValueOnce(token.promise);
-      rerender(<ConsoleApp {...defaultProps} config={{ urlOverride: { grpc: 'https://updated.example.com' } }} />);
-      expect(mounted.isConnected).toBe(true);
-      await act(async () => {
-        token.resolve('updated-token');
-        await token.promise;
-      });
-      expect(screen.getByTestId('router-provider')).toBe(mounted);
-    });
-  });
-
-  describe('initialization ownership', () => {
-    test('does not let an unmounted cluster overwrite the active token', async () => {
-      const staleToken = Promise.withResolvers<string>();
-      const oldApp = render(<ConsoleApp {...defaultProps} getAccessToken={() => staleToken.promise} />);
-      oldApp.unmount();
-      render(<ConsoleApp {...defaultProps} clusterId="current-cluster" />);
-      await waitFor(() => expect(config.jwt).toBe('test-token-123'));
-
-      await act(async () => {
-        staleToken.resolve('stale-cluster-token');
-        await staleToken.promise;
-      });
-
-      expect(config.jwt).toBe('test-token-123');
-      expect(setup).toHaveBeenCalledTimes(1);
-      expect(setup).toHaveBeenCalledWith(expect.objectContaining({ clusterId: 'current-cluster' }));
-    });
-
-    test('keeps an active query subscribed when a host callback changes', async () => {
-      const topic = Promise.withResolvers<string>();
-      pendingTopic = topic.promise;
-      const { rerender } = render(<ConsoleApp {...defaultProps} />);
-      await screen.findByText('Loading topic fixture');
-
-      rerender(<ConsoleApp {...defaultProps} onSidebarItemsChange={rs.fn()} />);
-      await act(async () => {
-        topic.resolve('Loaded topic fixture');
-        await topic.promise;
-      });
-
-      expect(await screen.findByText('Loaded topic fixture')).toBeInTheDocument();
-      expect(mockGetAccessToken).toHaveBeenCalledTimes(1);
-    });
-
-    test('forwards subscription events to the latest host callbacks without reconnecting', async () => {
-      const { rerender } = render(<ConsoleApp {...defaultProps} />);
-      await waitFor(() => expect(setup).toHaveBeenCalledTimes(1));
-      const callbacks = { sidebar: rs.fn(), breadcrumbs: rs.fn() };
-      rerender(
-        <ConsoleApp
-          {...defaultProps}
-          onBreadcrumbsChange={callbacks.breadcrumbs}
-          onSidebarItemsChange={callbacks.sidebar}
-        />
-      );
-      const settings = rs.mocked(setup).mock.calls[0]?.[0];
-      settings?.setSidebarItems?.([]);
-      settings?.setBreadcrumbs?.([]);
-      expect(callbacks.sidebar).toHaveBeenCalledWith([]);
-      expect(callbacks.breadcrumbs).toHaveBeenCalledWith([]);
-      expect(setup).toHaveBeenCalledTimes(1);
-    });
-
-    test('accepts breadcrumb notifications from a route rendering', async () => {
-      reportBreadcrumbsDuringRender = true;
-      render(<ConsoleApp {...defaultProps} />);
-      expect(await screen.findByTestId('router-provider')).toBeInTheDocument();
-      expect(mockOnBreadcrumbsChange).toHaveBeenCalledWith([]);
-      expect(mockOnError).not.toHaveBeenCalled();
-    });
-
-    test('hides the previous cluster while a new cluster initializes', async () => {
-      const { rerender } = render(<ConsoleApp {...defaultProps} />);
-      await screen.findByTestId('router-provider');
-      const token = Promise.withResolvers<string>();
-      rerender(<ConsoleApp {...defaultProps} clusterId="next-cluster" getAccessToken={() => token.promise} />);
-      expect(screen.queryByTestId('router-provider')).not.toBeInTheDocument();
-      await act(async () => {
-        token.resolve('next-cluster-token');
-        await token.promise;
-      });
-      expect(await screen.findByTestId('router-provider')).toBeInTheDocument();
-      expect(setup).toHaveBeenLastCalledWith(expect.objectContaining({ clusterId: 'next-cluster' }));
-    });
-  });
-
-  describe('initialization lifecycle', () => {
-    test('reports token initialization failures to the host and the user', async () => {
-      const error = new Error('Token service unavailable');
-      mockGetAccessToken.mockRejectedValueOnce(error);
-      render(<ConsoleApp {...defaultProps} />);
-
-      expect(await screen.findByRole('alert')).toHaveTextContent('Token service unavailable');
-      expect(mockOnError).toHaveBeenCalledWith(error, expect.any(Object));
-      expect(setup).not.toHaveBeenCalled();
-    });
-
-    test('does not initialize after unmount while token refresh is pending', async () => {
-      const token = Promise.withResolvers<string>();
-      mockGetAccessToken.mockReturnValueOnce(token.promise);
-      const { unmount } = render(<ConsoleApp {...defaultProps} />);
-      unmount();
-
-      await act(async () => {
-        token.resolve('late-token');
-        await token.promise;
-      });
-      expect(setup).not.toHaveBeenCalled();
-    });
-
-    test('shows nothing while loading', async () => {
-      // Use a deferred promise so the component stays in its loading branch
-      // for the duration of the assertion. This prevents the async
-      // initialize() useEffect from flushing a second state update (which
-      // would trigger "update was not wrapped in act(...)" since the render()
-      // call wasn't awaited).
-      const tokenPromise = new Promise<string>(() => {
-        // never resolves
-      });
-      mockGetAccessToken.mockReturnValueOnce(tokenPromise);
-
-      const { container } = render(<ConsoleApp {...defaultProps} />);
-
-      // Component returns null while initializing
-      expect(container.firstChild).toBeNull();
-
-      // Let any queued microtasks settle inside act() so React's scheduler
-      // doesn't log a deferred-update warning after the test completes.
-      await act(async () => {
-        await Promise.resolve();
-      });
-      expect(container.firstChild).toBeNull();
-    });
-
-    test('calls getAccessToken on mount', async () => {
-      render(<ConsoleApp {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalledTimes(1);
-      });
-    });
-
-    test('stores token in config.jwt after getAccessToken', async () => {
-      render(<ConsoleApp {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(config.jwt).toBe('test-token-123');
-      });
-    });
-
-    test('calls setup with correct arguments', async () => {
-      const customConfig = {
-        jwt: 'stale-host-token',
-        urlOverride: {
-          grpc: 'http://custom-grpc:9090',
-        },
-      };
-
-      render(<ConsoleApp {...defaultProps} config={customConfig} featureFlags={{ enablePipelineDiagrams: true }} />);
-
-      await waitFor(() => {
-        expect(setup).toHaveBeenCalledWith(
-          expect.objectContaining({
-            jwt: 'test-token-123',
-            clusterId: 'test-cluster-id',
-            setSidebarItems: expect.any(Function),
-            setBreadcrumbs: expect.any(Function),
-            featureFlags: { enablePipelineDiagrams: true },
-            urlOverride: { grpc: 'http://custom-grpc:9090' },
-          })
-        );
-      });
-    });
-
-    test('stays in loading state while token refresh is pending', async () => {
-      const token = Promise.withResolvers<string>();
-      mockGetAccessToken.mockReturnValueOnce(token.promise);
-      const { container } = render(<ConsoleApp {...defaultProps} />);
-      await waitFor(() => expect(mockGetAccessToken).toHaveBeenCalledTimes(1));
-
-      // Initialization is parked on the token: no setup, nothing rendered.
-      await act(async () => {
-        await Promise.resolve();
-      });
-      expect(setup).not.toHaveBeenCalled();
-      expect(container.firstChild).toBeNull();
-
-      // Control: the same app initializes as soon as the token arrives.
-      await act(async () => {
-        token.resolve('late-token');
-        await token.promise;
-      });
-      await waitFor(() => expect(container.firstChild).not.toBeNull());
-    });
-
-    test('uses default initialPath when not provided', async () => {
-      const propsWithoutInitialPath = {
-        ...defaultProps,
-        initialPath: undefined,
-      };
-
-      // Should not throw
-      render(<ConsoleApp {...propsWithoutInitialPath} />);
-
-      await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
-      });
-    });
-
-    test('passes clusterId to setup', async () => {
-      render(<ConsoleApp {...defaultProps} clusterId="custom-cluster-xyz" />);
-
-      await waitFor(() => {
-        expect(setup).toHaveBeenCalledWith(
-          expect.objectContaining({
-            clusterId: 'custom-cluster-xyz',
-          })
-        );
-      });
-    });
-
-    test('clears QueryClient cache on unmount', async () => {
-      const { unmount } = render(<ConsoleApp {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
-      });
-
-      // Unmount should not throw
-      unmount();
-    });
-  });
-
-  test('accepts navigateTo prop', async () => {
-    // Should not throw when navigateTo is provided
-    render(<ConsoleApp {...defaultProps} navigateTo="/groups" />);
-
-    await waitFor(() => {
-      expect(mockGetAccessToken).toHaveBeenCalled();
-    });
-  });
-
-  test('unsubscribes from router on unmount', async () => {
-    const { unmount } = render(<ConsoleApp {...defaultProps} />);
-
-    await waitFor(() => {
-      expect(mockGetAccessToken).toHaveBeenCalled();
-    });
-
-    // Should not throw on unmount (unsubscribe should be called)
-    unmount();
-  });
-
-  describe('feature Flags', () => {
-    test('passes feature flags to setup()', async () => {
-      const flags = { enableRpcnTemplateGallery: false, enablePipelineDiagrams: true };
-      render(<ConsoleApp {...defaultProps} featureFlags={flags} />);
-
-      await waitFor(() => {
-        expect(setup).toHaveBeenCalledWith(expect.objectContaining({ featureFlags: flags }));
-      });
-    });
-
-    test('initializes without throwing when featureFlags is undefined', async () => {
-      const propsWithoutFlags = {
-        ...defaultProps,
-        featureFlags: undefined,
-      };
-
-      // Should not throw
-      render(<ConsoleApp {...propsWithoutFlags} />);
-
-      await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
-      });
-
-      // setup should still be called
-      await waitFor(() => {
-        expect(setup).toHaveBeenCalled();
-      });
-    });
-
-    test('handles empty feature flags object', async () => {
-      render(<ConsoleApp {...defaultProps} featureFlags={{}} />);
-
-      await waitFor(() => {
-        expect(setup).toHaveBeenCalledWith(expect.objectContaining({ featureFlags: {} }));
-      });
-    });
-  });
-
-  describe('router Stability', () => {
-    test('does not recreate router when initialPath prop changes', async () => {
-      const { createRouter, createMemoryHistory } = await import('@tanstack/react-router');
-
-      const { rerender } = render(<ConsoleApp {...defaultProps} initialPath="/topics" />);
-
-      await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
-      });
-
-      const createRouterCallCount = rs.mocked(createRouter).mock.calls.length;
-      const createMemoryHistoryCallCount = rs.mocked(createMemoryHistory).mock.calls.length;
-
-      // Rerender with a different initialPath (simulates cloud-ui navigation)
-      rerender(<ConsoleApp {...defaultProps} initialPath="/groups" />);
-
-      // Router should NOT have been recreated
-      expect(rs.mocked(createRouter).mock.calls.length).toBe(createRouterCallCount);
-      expect(rs.mocked(createMemoryHistory).mock.calls.length).toBe(createMemoryHistoryCallCount);
-    });
-
-    test('uses first initialPath for memory history, ignores subsequent changes', async () => {
-      const { createMemoryHistory } = await import('@tanstack/react-router');
-
-      const { rerender } = render(<ConsoleApp {...defaultProps} initialPath="/topics" />);
-
-      await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
-      });
-
-      // Verify initial path was used
-      expect(rs.mocked(createMemoryHistory)).toHaveBeenCalledWith(
-        expect.objectContaining({ initialEntries: ['/topics'] })
-      );
-
-      const callCount = rs.mocked(createMemoryHistory).mock.calls.length;
-
-      // Changing initialPath should not create a new memory history
-      rerender(<ConsoleApp {...defaultProps} initialPath="/schema-registry" />);
-      expect(rs.mocked(createMemoryHistory).mock.calls.length).toBe(callCount);
-    });
-  });
-
-  describe('search Params Handling', () => {
-    test('onRouteChange includes searchStr when route resolves with search params', async () => {
-      // Get a reference to the subscribe callback so we can invoke it manually
-      const { createRouter } = await import('@tanstack/react-router');
-      let subscribedCallback: ((event: unknown) => void) | undefined;
-
-      rs.mocked(createRouter).mockReturnValueOnce({
-        subscribe: rs.fn((event: string, cb: (event: unknown) => void) => {
-          subscribedCallback = cb;
-          return rs.fn(); // unsubscribe
-        }),
-        history: { subscribe: rs.fn(() => rs.fn()) },
-        load: rs.fn().mockResolvedValue(undefined),
-        state: { location: { pathname: '/topics', searchStr: '' } },
-        navigate: rs.fn().mockResolvedValue(undefined),
-      } as unknown as ReturnType<typeof createRouter>);
-
-      render(<ConsoleApp {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
-      });
-
-      // Simulate a route resolution with search params (e.g., ?tab=messages)
-      expect(subscribedCallback).toBeDefined();
-      subscribedCallback!({
-        toLocation: { pathname: '/topics/my-topic', searchStr: '?tab=messages' },
-      });
-
-      expect(mockOnRouteChange).toHaveBeenCalledWith('/topics/my-topic?tab=messages', { replace: false });
-    });
-
-    test('onRouteChange tells the host when Console replaced its history entry', async () => {
-      const router = await mockRouterEvents();
-      render(<ConsoleApp {...defaultProps} />);
-      await waitFor(() => {
-        expect(router.onResolved).toBeDefined();
-      });
-
-      router.navigated('PUSH', '/shadowlinks', '');
-      router.navigated('REPLACE', '/shadowlinks', '?tab=source');
-
-      expect(mockOnRouteChange).toHaveBeenNthCalledWith(1, '/shadowlinks', { replace: false });
-      expect(mockOnRouteChange).toHaveBeenNthCalledWith(2, '/shadowlinks?tab=source', { replace: true });
-    });
-
-    test('navigateTo with search params triggers router navigation', async () => {
-      const { createRouter } = await import('@tanstack/react-router');
-      const mockNavigate = rs.fn().mockResolvedValue(undefined);
-
-      rs.mocked(createRouter).mockReturnValueOnce({
-        subscribe: rs.fn(() => rs.fn()),
-        history: { subscribe: rs.fn(() => rs.fn()) },
-        load: rs.fn().mockResolvedValue(undefined),
-        state: { location: { pathname: '/topics', searchStr: '' } },
-        navigate: mockNavigate,
-      } as unknown as ReturnType<typeof createRouter>);
-
-      const { rerender } = render(<ConsoleApp {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
-      });
-
-      // Rerender with navigateTo containing search params
-      rerender(<ConsoleApp {...defaultProps} navigateTo="/groups?search=my-group" />);
-
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith({ href: '/groups?search=my-group' });
-      });
-    });
-
-    test('navigateTo without search params still works (backwards compat)', async () => {
-      const { createRouter } = await import('@tanstack/react-router');
-      const mockNavigate = rs.fn().mockResolvedValue(undefined);
-
-      rs.mocked(createRouter).mockReturnValueOnce({
-        subscribe: rs.fn(() => rs.fn()),
-        history: { subscribe: rs.fn(() => rs.fn()) },
-        load: rs.fn().mockResolvedValue(undefined),
-        state: { location: { pathname: '/topics', searchStr: '' } },
-        navigate: mockNavigate,
-      } as unknown as ReturnType<typeof createRouter>);
-
-      const { rerender } = render(<ConsoleApp {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
-      });
-
-      // Rerender with navigateTo without search params
-      rerender(<ConsoleApp {...defaultProps} navigateTo="/groups" />);
-
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith({ href: '/groups' });
-      });
-    });
-
-    test('navigateTo matching current path + searchStr is a no-op', async () => {
-      const { createRouter } = await import('@tanstack/react-router');
-      const mockNavigate = rs.fn().mockResolvedValue(undefined);
-
-      rs.mocked(createRouter).mockReturnValueOnce({
-        subscribe: rs.fn(() => rs.fn()),
-        history: { subscribe: rs.fn(() => rs.fn()) },
-        load: rs.fn().mockResolvedValue(undefined),
-        state: { location: { pathname: '/topics', searchStr: '?tab=messages' } },
-        navigate: mockNavigate,
-      } as unknown as ReturnType<typeof createRouter>);
-
-      const { container, rerender } = render(<ConsoleApp {...defaultProps} />);
-
-      // Host navigation only runs once the app is initialized, which is when it first renders.
-      await waitFor(() => {
-        expect(container.firstChild).not.toBeNull();
-      });
-
-      // navigateTo equals currentPath + currentSearchStr, so navigate should NOT be called
-      rerender(<ConsoleApp {...defaultProps} navigateTo="/topics?tab=messages" />);
-
-      expect(mockNavigate).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('config Overrides', () => {
-    test('applies URL overrides from config', async () => {
-      const customConfig = {
-        urlOverride: { grpc: 'https://custom.api.com' },
-      };
-      render(<ConsoleApp {...defaultProps} config={customConfig} />);
-
-      await waitFor(() => {
-        expect(setup).toHaveBeenCalledWith(
-          expect.objectContaining({
-            urlOverride: { grpc: 'https://custom.api.com' },
-          })
-        );
-      });
-    });
-
-    test('handles config with multiple URL overrides', async () => {
-      const customConfig = {
-        urlOverride: {
-          grpc: 'https://grpc.example.com',
-          rest: 'https://rest.example.com',
-        },
-      };
-      render(<ConsoleApp {...defaultProps} config={customConfig} />);
-
-      await waitFor(() => {
-        expect(setup).toHaveBeenCalledWith(
-          expect.objectContaining({
-            urlOverride: customConfig.urlOverride,
-          })
-        );
-      });
-    });
-
-    test('initializes without throwing when config is undefined', async () => {
-      const propsWithoutConfig = {
-        ...defaultProps,
-        config: undefined,
-      };
-
-      // Should not throw
-      render(<ConsoleApp {...propsWithoutConfig} />);
-
-      await waitFor(() => {
-        expect(mockGetAccessToken).toHaveBeenCalled();
-      });
-    });
+}
+
+test('waits for the host token and opens Topics using the configured endpoints', async () => {
+  const token = Promise.withResolvers<string>();
+  const { container } = render(
+    <ConsoleApp
+      {...defaultProps}
+      config={{ ...hostConfig, jwt: 'stale-host-token' }}
+      featureFlags={{ enablePipelineDiagrams: true }}
+      getAccessToken={() => token.promise}
+    />
+  );
+
+  expect(container).toBeEmptyDOMElement();
+  expect(requests).toEqual([]);
+  await deliverToken(token, 'fresh-host-token');
+
+  await waitFor(() => expect(screen.getByText(topic.topicName)).toBeInTheDocument());
+  expect(
+    [`${rest}/topics`, `${licenseService}/ListLicenses`].map((url) => requestsFor(url)[0]?.headers.get('authorization'))
+  ).toEqual(['Bearer fresh-host-token', 'Bearer fresh-host-token']);
+  expect(config).toMatchObject({
+    jwt: 'fresh-host-token',
+    clusterId: 'host-cluster',
+    featureFlags: { enablePipelineDiagrams: true },
   });
 });
 
-function MockRouterProvider({ children }: { children?: React.ReactNode }) {
-  if (reportBreadcrumbsDuringRender) {
-    rs.mocked(setup).mock.calls[0]?.[0]?.setBreadcrumbs?.([]);
-  }
-  return <div data-testid="router-provider">{pendingTopic ? <MockTopicQuery /> : children}</div>;
+function mountWithTokenFailure() {
+  const first = Promise.withResolvers<string>();
+  const errors: Error[] = [];
+  const previousErrors: Error[] = [];
+  const host = { calls: 0 };
+  const props = {
+    ...defaultProps,
+    getAccessToken: () => {
+      host.calls += 1;
+      return host.calls === 1 ? first.promise : Promise.resolve('retry-token');
+    },
+  };
+  const { rerender } = render(<ConsoleApp {...props} onError={(cause) => previousErrors.push(cause)} />);
+  rerender(<ConsoleApp {...props} onError={(cause) => errors.push(cause)} />);
+  return { first, errors, previousErrors, host };
 }
 
-function MockNotFoundPage() {
-  return <div>Not Found</div>;
+test('reports a failed initialization to the latest host callback and retries in place', async () => {
+  const { first, errors, previousErrors, host } = mountWithTokenFailure();
+  const error = new Error('Token service unavailable');
+  await act(() => first.reject(error));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(error.message);
+  expect({ previousErrors, errors, calls: host.calls }).toEqual({ previousErrors: [], errors: [error], calls: 1 });
+
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Try again' }));
+  await waitFor(() => expect(screen.getByText(topic.topicName)).toBeInTheDocument());
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(host.calls).toBe(2);
+});
+
+test('does not initialize after being unmounted with a pending token', async () => {
+  const token = Promise.withResolvers<string>();
+  const { unmount } = render(<ConsoleApp {...defaultProps} getAccessToken={() => token.promise} />);
+  unmount();
+
+  await deliverToken(token, 'retired-token');
+  expect(config.jwt).toBeUndefined();
+  expect(requests).toEqual([]);
+});
+
+test('only commits the active cluster and hides its predecessor while connecting', async () => {
+  const tokens = {
+    retired: Promise.withResolvers<string>(),
+    current: Promise.withResolvers<string>(),
+  };
+  const { rerender } = render(<ConsoleApp {...defaultProps} />);
+  await waitFor(() => expect(screen.getByText(topic.topicName)).toBeInTheDocument());
+
+  rerender(<ConsoleApp {...defaultProps} clusterId="retired-cluster" getAccessToken={() => tokens.retired.promise} />);
+  expect(screen.queryByText(topic.topicName)).not.toBeInTheDocument();
+  rerender(<ConsoleApp {...defaultProps} clusterId="current-cluster" getAccessToken={() => tokens.current.promise} />);
+  await deliverToken(tokens.current, 'current-token');
+  await waitFor(() => expect(screen.getByTestId('topics-table')).toBeInTheDocument());
+
+  await deliverToken(tokens.retired, 'retired-token');
+  expect(config).toMatchObject({ jwt: 'current-token', clusterId: 'current-cluster' });
+});
+
+test('keeps the existing page mounted while new configuration waits for a token', async () => {
+  const { rerender } = render(<ConsoleApp {...defaultProps} />);
+  const page = await screen.findByTestId('topics-table');
+  const token = Promise.withResolvers<string>();
+
+  rerender(
+    <ConsoleApp
+      {...defaultProps}
+      config={{ ...hostConfig, urlOverride: { ...hostConfig.urlOverride, assets: '/new-assets' } }}
+      getAccessToken={() => token.promise}
+    />
+  );
+
+  expect(page).toBeInTheDocument();
+  await deliverToken(token, 'new-config-token');
+  expect(screen.getByTestId('topics-table')).toBe(page);
+  expect(config.assetsPath).toBe('/new-assets');
+});
+
+test('keeps a pending Topics request when a host callback changes', async () => {
+  const topicResponse = Promise.withResolvers<Response>();
+  server.use(http.get(`${rest}/topics`, () => topicResponse.promise));
+  const props = {
+    ...defaultProps,
+    getAccessToken: () => {
+      host.calls += 1;
+      return Promise.resolve('host-token');
+    },
+  };
+  const host = { calls: 0, ...collectHostEvents() };
+  const { rerender } = render(<ConsoleApp {...props} />);
+
+  await waitFor(() => expect(requestsFor(`${rest}/topics`)).toHaveLength(1));
+  rerender(<ConsoleApp {...props} {...host.callbacks} />);
+  await act(() => topicResponse.resolve(topicsResponse()));
+  await waitFor(() => expect(screen.getByText(topic.topicName)).toBeInTheDocument());
+  expect({
+    tokenRequests: host.calls,
+    topicRequests: requestsFor(`${rest}/topics`).length,
+  }).toEqual({ tokenRequests: 1, topicRequests: 1 });
+});
+
+function collectHostEvents() {
+  const sidebar: SidebarItem[][] = [];
+  const breadcrumbs: Breadcrumb[][] = [];
+  return {
+    sidebar,
+    breadcrumbs,
+    callbacks: {
+      onSidebarItemsChange: (items: SidebarItem[]) => sidebar.push(items),
+      onBreadcrumbsChange: (crumbs: Breadcrumb[]) => breadcrumbs.push(crumbs),
+    },
+  };
 }
 
-function MockTopicQuery() {
-  const { data } = useQuery({
-    queryKey: ['federated-lifecycle-probe'],
-    queryFn: () => pendingTopic ?? Promise.resolve('Loaded topic fixture'),
+test('delivers sidebar and render-time breadcrumbs to the latest host callbacks', async () => {
+  const previous = collectHostEvents();
+  const latest = collectHostEvents();
+  const { rerender } = render(<ConsoleApp {...defaultProps} {...previous.callbacks} />);
+  await waitFor(() =>
+    expect(previous.sidebar[0]).toEqual(expect.arrayContaining([expect.objectContaining({ to: '/topics' })]))
+  );
+
+  rerender(<ConsoleApp {...defaultProps} {...latest.callbacks} navigateTo="/upload-license" />);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Upload' })).toBeInTheDocument());
+  await act(async () => {
+    await api.refreshSupportedEndpoints();
   });
-  return <p>{data ?? 'Loading topic fixture'}</p>;
+  expect(latest.breadcrumbs).toContainEqual([{ title: 'Upload License', to: '/upload-license' }]);
+  expect(latest.sidebar).toEqual(previous.sidebar);
+  expect(previous.sidebar).toHaveLength(1);
+});
+
+test('uses the initial path only on mount and accepts host navigation with or without search', async () => {
+  const { rerender } = render(<ConsoleApp {...defaultProps} initialPath="/groups?q=initial" />);
+  await waitFor(() => expect(screen.getByDisplayValue('initial')).toBeInTheDocument());
+  const { router } = appGlobal;
+
+  rerender(<ConsoleApp {...defaultProps} initialPath="/topics" />);
+  expect(screen.getByDisplayValue('initial')).toBeInTheDocument();
+  expect(appGlobal.router).toBe(router);
+
+  rerender(<ConsoleApp {...defaultProps} navigateTo="/topics" />);
+  await waitFor(() => expect(screen.getByText(topic.topicName)).toBeInTheDocument());
+
+  rerender(<ConsoleApp {...defaultProps} navigateTo="/groups?q=host-filter" />);
+  await waitFor(() => expect(screen.getByDisplayValue('host-filter')).toBeInTheDocument());
+});
+
+test('reports Console pushes and replaces, preserving the search string', async () => {
+  const changes: { path: string; replace?: boolean }[] = [];
+  render(
+    <ConsoleApp
+      {...defaultProps}
+      initialPath="/groups?q=before"
+      onRouteChange={(path, options) => changes.push({ path, replace: options?.replace })}
+    />
+  );
+  await waitFor(() => expect(screen.getByDisplayValue('before')).toBeInTheDocument());
+  const { router } = appGlobal;
+
+  await act(async () => {
+    await router.navigate({ href: '/groups?q=changed' });
+  });
+  await waitFor(() => expect(screen.getByDisplayValue('changed')).toBeInTheDocument());
+  await act(async () => {
+    await router.navigate({ href: '/groups?q=replaced', replace: true });
+  });
+  await waitFor(() => expect(screen.getByDisplayValue('replaced')).toBeInTheDocument());
+  expect(changes).toEqual([
+    { path: '/groups?q=changed', replace: false },
+    { path: '/groups?q=replaced', replace: true },
+  ]);
+});
+
+test('ignores a host echo of the current path and search', async () => {
+  const props = { ...defaultProps, initialPath: '/groups?q=current' };
+  const { rerender } = render(<ConsoleApp {...props} />);
+  await waitFor(() => expect(screen.getByDisplayValue('current')).toBeInTheDocument());
+  const { router } = appGlobal;
+  const locations: string[] = [];
+  const unsubscribe = router.history.subscribe(({ location }) => locations.push(location.href));
+  try {
+    await act(() => rerender(<ConsoleApp {...props} navigateTo="/groups?q=current" />));
+    expect(locations).toEqual([]);
+  } finally {
+    unsubscribe();
+  }
+});
+
+function reportResolvedRoute(router: typeof appGlobal.router, to: '/groups' | '/topics') {
+  router.emit({
+    type: 'onResolved',
+    fromLocation: router.state.location,
+    toLocation: router.buildLocation({ to }),
+    pathChanged: true,
+    hrefChanged: true,
+    hashChanged: false,
+  });
 }
+
+test('stops notifying the host about routes after Console unmounts', async () => {
+  const routes: string[] = [];
+  const { unmount } = render(<ConsoleApp {...defaultProps} onRouteChange={(path) => routes.push(path)} />);
+  await waitFor(() => expect(screen.getByText(topic.topicName)).toBeInTheDocument());
+  const { router } = appGlobal;
+  routes.length = 0;
+
+  reportResolvedRoute(router, '/groups');
+  expect(routes).toEqual(['/groups']);
+
+  unmount();
+  reportResolvedRoute(router, '/topics');
+  expect(routes).toEqual(['/groups']);
+});
+
+test('clears the federated query cache on unmount', async () => {
+  const { unmount } = render(<ConsoleApp {...defaultProps} />);
+  await waitFor(() => expect(screen.getByText(topic.topicName)).toBeInTheDocument());
+  const { queryClient } = appGlobal.router.options.context;
+  expect(queryClient).toBeInstanceOf(QueryClient);
+  expect(queryClient.getQueryCache().getAll().length).toBeGreaterThan(0);
+
+  unmount();
+  expect(queryClient.getQueryCache().getAll()).toEqual([]);
+});

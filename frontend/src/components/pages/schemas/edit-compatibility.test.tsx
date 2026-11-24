@@ -9,420 +9,294 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { cleanup } from '@testing-library/react';
+import { afterAll, afterEach, beforeAll, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { renderWithFileRoutes, screen } from 'test-utils';
-
-// Real navigate() resolves once the route commits.
-const mockNavigate = rs.fn(() => Promise.resolve());
-const mockMutateGlobal = rs.fn();
-const mockMutateSubject = rs.fn();
-const mockMutateContext = rs.fn();
-
-rs.mock('@tanstack/react-router', () => {
-  const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
-
-rs.mock('react-query/api/schema-registry', () => ({
-  ...rs.requireActual<typeof import('react-query/api/schema-registry')>('react-query/api/schema-registry'),
-  useSchemaModeQuery: rs.fn(() => ({
-    data: 'READWRITE',
-    isLoading: false,
-  })),
-  useSchemaCompatibilityQuery: rs.fn(() => ({
-    data: 'BACKWARD',
-    isLoading: false,
-  })),
-  useSchemaDetailsQuery: rs.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
-    data: undefined,
-    isLoading: false,
-  })),
-  useUpdateGlobalCompatibilityMutation: rs.fn(() => ({
-    mutate: mockMutateGlobal,
-    isPending: false,
-  })),
-  useUpdateSubjectCompatibilityMutation: rs.fn(() => ({
-    mutate: mockMutateSubject,
-    isPending: false,
-  })),
-  useSchemaRegistryContextsQuery: rs.fn(() => ({
-    data: [],
-    isLoading: false,
-  })),
-  useUpdateContextCompatibilityMutation: rs.fn(() => ({
-    mutate: mockMutateContext,
-    isPending: false,
-  })),
-}));
-
-rs.mock('state/backend-api', () => {
-  const actual = rs.requireActual<typeof import('state/backend-api')>('state/backend-api');
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
-      userData: { canManageSchemaRegistry: true },
-    },
-  };
-});
-
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
-
-import {
-  useSchemaCompatibilityQuery,
-  useSchemaDetailsQuery,
-  useSchemaModeQuery,
-  useSchemaRegistryContextsQuery,
-} from 'react-query/api/schema-registry';
-import { api } from 'state/backend-api';
+import { config } from 'config';
+import { type HttpHandler, HttpResponse, http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
+import { AuthenticationMethod } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
+import type { SchemaRegistryContextResponse } from 'react-query/api/schema-registry';
+import { Toaster } from 'sonner';
+import { useApiStore } from 'state/backend-api';
+import type {
+  SchemaRegistryConfigResponse,
+  SchemaRegistryModeResponse,
+  SchemaRegistrySetCompatibilityModeRequest,
+  SchemaRegistrySubjectDetails,
+  UserData,
+} from 'state/rest-interfaces';
 import { useSupportedFeaturesStore } from 'state/supported-features';
+import { cleanup, renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import EditSchemaCompatibilityPage from './edit-compatibility';
+import type { SchemaEditTarget } from './schema-edit-page';
 
-describe('the EditSchemaCompatibilityPage', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
+const SUBJECT = 'team/orders-value';
+const CONTEXT = '.staging';
+const SUBJECT_PATH = '/subjects/team%2Forders-value/versions/all';
+const CONTEXT_CONFIG_PATH = '/config/%3A.staging%3A';
+const GLOBAL_CONFIG = { compatibility: 'BACKWARD' } satisfies SchemaRegistryConfigResponse;
+const GLOBAL_MODE = { mode: 'READWRITE' } satisfies SchemaRegistryModeResponse;
+const SUBJECT_DETAILS = {
+  name: SUBJECT,
+  type: 'AVRO',
+  compatibility: 'FORWARD',
+  mode: 'READWRITE',
+  versions: [{ version: 1, isSoftDeleted: false }],
+  latestActiveVersion: 1,
+  schemas: [
+    {
+      id: 1,
+      version: 1,
+      type: 'AVRO',
+      schema: '{"type":"record","name":"Order","fields":[]}',
+      isSoftDeleted: false,
+      references: [],
+    },
+  ],
+} satisfies SchemaRegistrySubjectDetails;
+const CONTEXT_DETAILS = [
+  { name: CONTEXT, mode: 'READWRITE', compatibility: 'FULL' },
+] satisfies SchemaRegistryContextResponse[];
+const DEFAULT_RADIO = /^Default /u;
+
+const schemaApi = new URL(`${config.restBasePath}/schema-registry`, window.location.href).href;
+const server = setupServer(
+  http.get(`${schemaApi}/mode`, () => HttpResponse.json(GLOBAL_MODE)),
+  http.get(`${schemaApi}/config`, () => HttpResponse.json(GLOBAL_CONFIG)),
+  http.get(`${schemaApi}${SUBJECT_PATH}`, () => HttpResponse.json(SUBJECT_DETAILS)),
+  http.get(`${schemaApi}/contexts`, () => HttpResponse.json(CONTEXT_DETAILS))
+);
+
+const guardedFetch = globalThis.fetch;
+const initialUserData = useApiStore.getState().userData;
+const initialContexts = useSupportedFeaturesStore.getState().schemaRegistryContexts;
+
+beforeAll(() => {
+  server.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in the schema editor');
+    },
   });
+});
 
-  afterEach(() => {
-    rs.restoreAllMocks();
-  });
+afterEach(() => {
+  cleanup();
+  server.resetHandlers();
+  useApiStore.setState({ userData: initialUserData });
+  useSupportedFeaturesStore.setState({ schemaRegistryContexts: initialContexts });
+});
 
-  describe('global compatibility (no subjectName)', () => {
-    test('calls global mutation on save', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
+afterAll(() => {
+  server.close();
+});
 
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
+function renderEditor(target: SchemaEditTarget = {}, handlers: HttpHandler[] = [], contextsSupported = true) {
+  useSupportedFeaturesStore.setState({ schemaRegistryContexts: contextsSupported });
+  server.use(...handlers);
 
-      expect(mockMutateGlobal).toHaveBeenCalledWith(
-        'BACKWARD',
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
+  let editPath = '';
+  if (target.subjectName) {
+    editPath = `/subjects/${target.subjectName}`;
+  } else if (target.contextName) {
+    editPath = `/contexts/${target.contextName}`;
+  }
+  return renderWithFileRoutes(
+    <>
+      <Toaster />
+      <EditSchemaCompatibilityPage {...target} />
+    </>,
+    { initialLocation: `/schema-registry${editPath}/edit-compatibility` }
+  );
+}
+
+const scenarios = [
+  {
+    label: 'global',
+    target: {},
+    initial: /^Backward /u,
+    endpoint: '/config',
+    nextChoice: null,
+    nextMode: 'BACKWARD',
+    destination: '/schema-registry',
+    subject: undefined,
+    context: undefined,
+  },
+  {
+    label: 'subject',
+    target: { subjectName: 'team%2Forders-value' },
+    initial: /^Forward /u,
+    endpoint: '/config/team%2Forders-value',
+    nextChoice: /^Transitive Full /u,
+    nextMode: 'FULL_TRANSITIVE',
+    destination: '/schema-registry/subjects/team%2Forders-value',
+    subject: SUBJECT,
+    context: undefined,
+  },
+  {
+    label: 'context',
+    target: { contextName: CONTEXT },
+    initial: /^Full /u,
+    endpoint: CONTEXT_CONFIG_PATH,
+    nextChoice: /^Transitive Forward /u,
+    nextMode: 'FORWARD_TRANSITIVE',
+    destination: '/schema-registry?context=.staging',
+    subject: undefined,
+    context: `Editing compatibility for context: ${CONTEXT}`,
+  },
+] as const;
+
+test.each(scenarios)('shows the current $label compatibility and its scope', async (scenario) => {
+  renderEditor(scenario.target);
+
+  expect(await screen.findByRole('radio', { name: scenario.initial })).toBeChecked();
+  expect(screen.queryByTestId('edit-compatibility-subject-name')?.textContent).toBe(scenario.subject);
+  expect(screen.queryByTestId('edit-compatibility-context-name')?.textContent).toBe(scenario.context);
+});
+
+test.each(scenarios)('saves $label compatibility and returns to its page', async (scenario) => {
+  const user = userEvent.setup();
+  const writes: unknown[] = [];
+  const { router } = renderEditor(scenario.target, [
+    http.put(`${schemaApi}${scenario.endpoint}`, async ({ request }) => {
+      writes.push(await request.json());
+      return HttpResponse.json({
+        compatibility: scenario.nextMode,
+      } satisfies SchemaRegistrySetCompatibilityModeRequest);
+    }),
+  ]);
+
+  const save = await screen.findByRole('button', { name: 'Save' });
+  if (scenario.nextChoice) {
+    await user.click(screen.getByRole('radio', { name: scenario.nextChoice }));
+  }
+  await user.click(save);
+
+  expect(await screen.findByText(`Compatibility mode updated to ${scenario.nextMode}`)).toBeInTheDocument();
+  expect(writes).toEqual([{ compatibility: scenario.nextMode }]);
+  await waitFor(() => expect(router.state.location.href).toBe(scenario.destination));
+});
+
+test.each(scenarios)('cancels the $label edit without saving', async (scenario) => {
+  const user = userEvent.setup();
+  const { router } = renderEditor(scenario.target);
+
+  await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+  await waitFor(() => expect(router.state.location.href).toBe(scenario.destination));
+});
+
+test('resets a context to the global default when its compatibility is unset', async () => {
+  const user = userEvent.setup();
+  const writes: (ReadableStream | null)[] = [];
+  renderEditor({ contextName: CONTEXT }, [
+    http.get(`${schemaApi}/contexts`, () => HttpResponse.json([{ name: CONTEXT, mode: 'READWRITE' }])),
+    http.delete(`${schemaApi}${CONTEXT_CONFIG_PATH}`, ({ request }) => {
+      writes.push(request.body);
+      return HttpResponse.json(null);
+    }),
+  ]);
+
+  expect(await screen.findByRole('radio', { name: DEFAULT_RADIO })).toBeChecked();
+  await user.click(screen.getByRole('button', { name: 'Save' }));
+
+  expect(await screen.findByText('Compatibility mode updated to DEFAULT')).toBeInTheDocument();
+  expect(writes).toEqual([null]);
+});
+
+test('shows the server error and stays on the edit page if a context update fails', async () => {
+  const user = userEvent.setup();
+  const { router } = renderEditor({ contextName: CONTEXT }, [
+    http.put(`${schemaApi}${CONTEXT_CONFIG_PATH}`, () =>
+      HttpResponse.text('Registry refused this update', { status: 502 })
+    ),
+  ]);
+  const editPage = router.state.location.href;
+
+  await user.click(await screen.findByRole('button', { name: 'Save' }));
+
+  expect(await screen.findByText('Failed to update compatibility mode')).toBeInTheDocument();
+  expect(screen.getByText('Error: Registry refused this update')).toBeInTheDocument();
+  expect(router.state.location.href).toBe(editPage);
+  expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+});
+
+test('shows the unsupported page when contexts are disabled', async () => {
+  renderEditor({ contextName: CONTEXT }, [], false);
+
+  expect(await screen.findByTestId('contexts-not-supported')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+});
+
+test('shows the not-configured page when the registry is disabled', async () => {
+  renderEditor({}, [http.get(`${schemaApi}/mode`, () => HttpResponse.json({ isConfigured: false }))]);
+
+  expect(await screen.findByTestId('schema-not-configured')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+});
+
+test.each([
+  { label: 'mode', target: {}, endpoint: '/mode', data: GLOBAL_MODE },
+  { label: 'compatibility', target: {}, endpoint: '/config', data: GLOBAL_CONFIG },
+  {
+    label: 'subject details',
+    target: { subjectName: 'team%2Forders-value' },
+    endpoint: SUBJECT_PATH,
+    data: SUBJECT_DETAILS,
+  },
+  { label: 'contexts', target: { contextName: CONTEXT }, endpoint: '/contexts', data: CONTEXT_DETAILS },
+] as const)('holds the form behind a skeleton while $label is loading', async ({ target, endpoint, data }) => {
+  let requestStarted = false;
+  const response = Promise.withResolvers<Response>();
+  const { container, router } = renderEditor(target, [
+    http.get(`${schemaApi}${endpoint}`, () => {
+      requestStarted = true;
+      return response.promise;
+    }),
+  ]);
+
+  try {
+    await waitFor(() => {
+      expect(requestStarted).toBe(true);
+      expect(router.options.context?.queryClient.isFetching()).toBe(1);
     });
-
-    test('calls navigate on cancel', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      await user.click(screen.getByTestId('edit-compatibility-cancel-btn'));
-
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/schema-registry' });
-    });
-
-    test('does not show schema preview panel', async () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-      // Await the Radio group settling before assertions on absence.
-      await screen.findByTestId('edit-compatibility-description');
-
-      expect(screen.queryByTestId('edit-compatibility-subject-name')).not.toBeInTheDocument();
-    });
-
-    test('does not show context name header', async () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-      await screen.findByTestId('edit-compatibility-description');
-
-      expect(screen.queryByTestId('edit-compatibility-context-name')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('per-subject compatibility (with subjectName)', () => {
-    const subjectName = 'my-test-subject';
-
-    beforeEach(() => {
-      rs.mocked(useSchemaDetailsQuery).mockReturnValue({
-        data: {
-          name: subjectName,
-          mode: 'READWRITE',
-          compatibility: 'BACKWARD',
-          latestActiveVersion: 1,
-          schemas: {
-            first: () => ({
-              version: 1,
-              id: 1,
-              type: 'AVRO',
-              schema: '{"type":"record","name":"Test","fields":[]}',
-              isSoftDeleted: false,
-            }),
-            count: () => 1,
-          },
-        } as never,
-        isLoading: false,
-      } as never);
-    });
-
-    test('calls subject mutation on save', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaCompatibilityPage subjectName={subjectName} />);
-
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
-
-      expect(mockMutateSubject).toHaveBeenCalledWith(
-        { subjectName, mode: 'BACKWARD' },
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
-      expect(mockMutateGlobal).not.toHaveBeenCalled();
-    });
-
-    test('shows subject name in schema preview panel', async () => {
-      renderWithFileRoutes(<EditSchemaCompatibilityPage subjectName={subjectName} />);
-
-      expect(await screen.findByTestId('edit-compatibility-subject-name')).toHaveTextContent(subjectName);
-    });
-
-    test('navigates back to subject page on cancel', async () => {
-      const user = userEvent.setup();
-      renderWithFileRoutes(<EditSchemaCompatibilityPage subjectName={subjectName} />);
-
-      await user.click(screen.getByTestId('edit-compatibility-cancel-btn'));
-
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}`,
-      });
-    });
-  });
-
-  describe('per-context compatibility (with contextName)', () => {
-    beforeEach(() => {
-      useSupportedFeaturesStore.setState({ schemaRegistryContexts: true });
-    });
-
-    afterEach(() => {
-      // Unmount the React tree BEFORE mutating the supported-features store.
-      // Otherwise the setState notifies still-mounted Radix Radio / Tooltip
-      // subscribers outside any act boundary and emits "update inside a test
-      // was not wrapped in act(...)" warnings attributed to the just-finished
-      // test. The global afterEach also calls cleanup() but runs after this
-      // block, so we have to unmount eagerly here.
-      cleanup();
-      useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
-    });
-
-    test('shows not-supported page when contexts feature is disabled', async () => {
-      useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
-      renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
-
-      expect(await screen.findByTestId('contexts-not-supported')).toBeInTheDocument();
-      expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
-    });
-
-    test('shows context name in header when editing context compatibility', async () => {
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }],
-        isLoading: false,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
-
-      expect(await screen.findByTestId('edit-compatibility-context-name')).toHaveTextContent('.test');
-    });
-
-    test('calls context mutation on save', async () => {
-      const user = userEvent.setup();
-
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }],
-        isLoading: false,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
-
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
-
-      expect(mockMutateContext).toHaveBeenCalledWith(
-        { contextName: '.test', mode: 'FULL' },
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
-      expect(mockMutateGlobal).not.toHaveBeenCalled();
-      expect(mockMutateSubject).not.toHaveBeenCalled();
-    });
-
-    test('defaults to DEFAULT when context compatibility is undefined', async () => {
-      const user = userEvent.setup();
-
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.new-ctx', mode: 'READWRITE', compatibility: undefined }],
-        isLoading: false,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".new-ctx" />);
-
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
-
-      expect(mockMutateContext).toHaveBeenCalledWith(
-        { contextName: '.new-ctx', mode: 'DEFAULT' },
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
-    });
-
-    test('navigates to schema-registry with context search param on cancel', async () => {
-      const user = userEvent.setup();
-
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }],
-        isLoading: false,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
-
-      await user.click(screen.getByTestId('edit-compatibility-cancel-btn'));
-
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/schema-registry',
-        search: { context: '.test' },
-      });
-    });
-
-    test('calls onSuccess callback which shows toast and navigates', async () => {
-      const user = userEvent.setup();
-
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }],
-        isLoading: false,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
-
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
-
-      const mutateCall = mockMutateContext.mock.calls[0];
-      const callbacks = mutateCall[1];
-      callbacks.onSuccess();
-
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/schema-registry',
-        search: { context: '.test' },
-      });
-    });
-
-    test('calls onError callback which shows error toast', async () => {
-      const user = userEvent.setup();
-
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }],
-        isLoading: false,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
-
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
-
-      const mutateCall = mockMutateContext.mock.calls[0];
-      const callbacks = mutateCall[1];
-      // Should not throw
-      callbacks.onError(new Error('Server error'));
-    });
-  });
-
-  describe('loading and edge cases', () => {
-    test('shows skeleton while loading mode', () => {
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      // No Radio group renders during skeleton — no async state update to wait for.
-      expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
-    });
-
-    test('shows skeleton while loading compatibility', () => {
-      rs.mocked(useSchemaCompatibilityQuery).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
-    });
-
-    test('shows skeleton while loading subject details', () => {
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: 'READWRITE',
-        isLoading: false,
-      } as never);
-      rs.mocked(useSchemaDetailsQuery).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage subjectName="test-subject" />);
-
-      expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
-    });
-
-    test('shows skeleton while loading contexts', () => {
-      useSupportedFeaturesStore.setState({ schemaRegistryContexts: true });
-
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
-
-      expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
-
-      // Unmount before mutating supported-features; otherwise the store
-      // update notifies still-mounted subscribers outside any act boundary.
-      cleanup();
-      useSupportedFeaturesStore.setState({ schemaRegistryContexts: false });
-    });
-
-    test('disables save button when user lacks permission', async () => {
-      // Ensure mocks are in correct state
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: 'READWRITE',
-        isLoading: false,
-      } as never);
-      rs.mocked(useSchemaCompatibilityQuery).mockReturnValue({
-        data: 'BACKWARD',
-        isLoading: false,
-      } as never);
-
-      (api as Record<string, unknown>).userData = { canManageSchemaRegistry: false };
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      const saveBtn = await screen.findByTestId('edit-compatibility-save-btn');
-      expect(saveBtn).toHaveAttribute('disabled');
-
-      (api as Record<string, unknown>).userData = { canManageSchemaRegistry: true };
-    });
-
-    test('shows not configured page when schema registry is not configured', () => {
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: null,
-        isLoading: false,
-      } as never);
-
-      renderWithFileRoutes(<EditSchemaCompatibilityPage />);
-
-      expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
-    });
-  });
+    expect(container.querySelector('[data-slot="skeleton"]')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+  } finally {
+    response.resolve(HttpResponse.json(data));
+  }
+  expect(await screen.findByRole('button', { name: 'Save' })).toBeEnabled();
+});
+
+test('disables Save for a user without registry management permission', async () => {
+  const user: UserData = {
+    displayName: 'Read-only operator',
+    avatarUrl: '',
+    authenticationMethod: AuthenticationMethod.UNSPECIFIED,
+    canViewConsoleUsers: false,
+    canListAcls: false,
+    canListQuotas: false,
+    canReassignPartitions: false,
+    canPatchConfigs: false,
+    canCreateRoles: false,
+    canManageUsers: false,
+    canViewPermissionsList: false,
+    canManageLicense: false,
+    canViewSchemas: true,
+    canCreateSchemas: false,
+    canDeleteSchemas: false,
+    canManageSchemaRegistry: false,
+    canViewDebugBundle: false,
+    canListTransforms: false,
+    canCreateTransforms: false,
+    canDeleteTransforms: false,
+  };
+  useApiStore.setState({ userData: user });
+  renderEditor();
+
+  expect(await screen.findByRole('button', { name: 'Save' })).toBeDisabled();
 });

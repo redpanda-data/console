@@ -12,6 +12,12 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
+import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
+import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { render } from 'test-utils';
+
+import { ShadowLinkDetailsPage } from './shadowlink-details-page';
 
 const flags = rs.hoisted(() => ({ enableClusterFencing: false }));
 const host = rs.hoisted(() => ({ embedded: true }));
@@ -75,13 +81,6 @@ rs.mock('./config/shadow-link-configuration', () => ({ ShadowLinkConfiguration: 
 rs.mock('./failover-tab', () => ({ FailoverTab: MockFailoverTab }));
 rs.mock('state/ui-state', () => ({ uiState: { pageTitle: '', pageBreadcrumbs: [] } }));
 
-import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
-import { useListShadowTopicQuery } from 'react-query/api/shadowlink';
-import { useClusterFenceStore } from 'stores/cluster-fence-store';
-import { render } from 'test-utils';
-
-import { ShadowLinkDetailsPage } from './shadowlink-details-page';
-
 const FENCED_SOURCE: ShadowLinkSource = {
   kind: 'cloud',
   clusterId: 'prod',
@@ -89,7 +88,7 @@ const FENCED_SOURCE: ShadowLinkSource = {
   fence: { status: 'known', state: 'fenced', revision: 3n, exemptPrincipals: [], allowAllReads: true, brokers: [] },
 };
 
-const unavailable = (reason: 'error' | 'unsupported' | 'no-leader'): ShadowLinkSource => ({
+const unavailable: (reason: 'error' | 'unsupported' | 'no-leader') => ShadowLinkSource = (reason) => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod',
@@ -107,7 +106,6 @@ const hostWith = (source: ShadowLinkSource | undefined, resolving = false) =>
     },
   });
 
-/** Opens the page at ?tab=failover, which only means something with the Failover tab. */
 const renderAtFailoverTab = (clusterFencing: boolean) => {
   const user = userEvent.setup();
   flags.enableClusterFencing = clusterFencing;
@@ -116,7 +114,6 @@ const renderAtFailoverTab = (clusterFencing: boolean) => {
   return user;
 };
 
-/** As before cluster fencing: no Failover tab, no lag polling, and the original confirmation. */
 const expectPageAsBefore = async (user: ReturnType<typeof userEvent.setup>) => {
   expect(screen.queryByTestId('failover-tab-trigger')).not.toBeInTheDocument();
   expect(screen.getByTestId('overview-stub')).toBeInTheDocument();

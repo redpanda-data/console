@@ -32,10 +32,8 @@ import { navigatorClipboardErrorHandler, numberToThousandsString, TimestampDispl
 import { prettyBytes } from '../../../../utils/utils';
 import { PAYLOAD_ENCODING_LABELS } from '../messages/constants';
 
-// Define the column order as a constant
 const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
 
-// A copied payload drops its normalized form, and its raw bytes become a plain array for JSON.
 function preparePayloadForCopy(payload: Payload) {
   payload.normalizedPayload = undefined;
   if (payload.rawBytes) {
@@ -43,7 +41,7 @@ function preparePayloadForCopy(payload: Payload) {
   }
 }
 
-function getMessageAsString(value: string | TopicMessage): string {
+function getMessageAsString(value: string | TopicMessage) {
   if (typeof value === 'string') {
     return value;
   }
@@ -65,7 +63,7 @@ function getMessageAsString(value: string | TopicMessage): string {
   return JSON.stringify(obj, null, 4);
 }
 
-function getPayloadAsString(value: string | Uint8Array | object): string {
+function getPayloadAsString(value: string | Uint8Array | object) {
   if (value === null) {
     return '';
   }
@@ -99,7 +97,7 @@ export function onCopyKey(original: TopicMessage) {
     .catch(navigatorClipboardErrorHandler);
 }
 
-function isDeserializerActive(deserializer: PayloadEncoding): boolean {
+function isDeserializerActive(deserializer: PayloadEncoding) {
   return deserializer !== null && deserializer !== undefined && deserializer !== PayloadEncoding.UNSPECIFIED;
 }
 
@@ -117,9 +115,9 @@ export type MessageColumnOptions = {
   onSaveMessage: (message: TopicMessage) => void;
 };
 
-function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, DataTableColumnDef<TopicMessage>> {
+function buildDataColumns(options: MessageColumnOptions) {
   const { continuousPaginationEnabled, tsFormat, keyDeserializer, valueDeserializer, onShowDeserializers } = options;
-  return {
+  const topicColumns: Record<DataColumnKey, DataTableColumnDef<TopicMessage>> = {
     offset: {
       header: 'Offset',
       accessorKey: 'offset',
@@ -136,7 +134,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
     timestamp: {
       header: 'Timestamp',
       accessorKey: 'timestamp',
-      enableSorting: !continuousPaginationEnabled, // Disable sorting in continuous pagination mode
+      enableSorting: !continuousPaginationEnabled,
       cell: ({
         row: {
           original: { timestamp },
@@ -151,7 +149,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
             <button
               onClick={(e) => {
                 onShowDeserializers();
-                e.stopPropagation(); // don't sort
+                e.stopPropagation();
               }}
               type="button"
             >
@@ -163,7 +161,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
         ),
       size: options.hasKeyTags ? 300 : 1,
       accessorKey: 'key',
-      enableSorting: !continuousPaginationEnabled, // Disable sorting in continuous pagination mode
+      enableSorting: !continuousPaginationEnabled,
       cell: ({ row: { original } }) => (
         <MessageKeyPreview
           msg={original}
@@ -180,7 +178,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
             <button
               onClick={(e) => {
                 onShowDeserializers();
-                e.stopPropagation(); // don't sort
+                e.stopPropagation();
               }}
               type="button"
             >
@@ -191,7 +189,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
           'Value'
         ),
       accessorKey: 'value',
-      enableSorting: !continuousPaginationEnabled, // Disable sorting in continuous pagination mode
+      enableSorting: !continuousPaginationEnabled,
       cell: ({ row: { original } }) => (
         <MessagePreview
           isCompactTopic={options.isCompactTopic}
@@ -224,20 +222,20 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
       }) => <span>{prettyBytes(size)}</span>,
     },
   };
+  return topicColumns;
 }
 
-// The columns the user picked, in the fixed column order; without a pick, the default ones.
-function selectColumnKeys(previewColumnFields: ColumnList[]): DataColumnKey[] {
+function selectColumnKeys(previewColumnFields: ColumnList[]) {
   if (previewColumnFields.length === 0) {
-    return ['timestamp', 'key', 'value'];
+    const defaultKeys: DataColumnKey[] = ['timestamp', 'key', 'value'];
+    return defaultKeys;
   }
-  // let's be defensive and remove any duplicates before showing in the table
   const selectedColumns = new Set(previewColumnFields.map((field) => field.dataIndex));
   return COLUMN_ORDER.filter((column) => selectedColumns.has(column));
 }
 
-function buildActionColumn(onSaveMessage: (message: TopicMessage) => void): DataTableColumnDef<TopicMessage> {
-  return {
+function buildActionColumn(onSaveMessage: (message: TopicMessage) => void) {
+  const actionColumn: DataTableColumnDef<TopicMessage> = {
     id: 'action',
     size: 0,
     cell: ({ row: { original } }) => (
@@ -291,10 +289,11 @@ function buildActionColumn(onSaveMessage: (message: TopicMessage) => void): Data
       </DropdownMenu>
     ),
   };
+  return actionColumn;
 }
 
 /** The message table's columns: the visible data columns, the last one taking the free width, then actions. */
-export function buildMessageColumns(options: MessageColumnOptions): DataTableColumnDef<TopicMessage>[] {
+export function buildMessageColumns(options: MessageColumnOptions) {
   const dataTableColumns = buildDataColumns(options);
   const newColumns = selectColumnKeys(options.previewColumnFields).map((key) => dataTableColumns[key]);
 
@@ -303,7 +302,8 @@ export function buildMessageColumns(options: MessageColumnOptions): DataTableCol
     lastColumn.size = Number.POSITIVE_INFINITY;
   }
 
-  return [...newColumns, buildActionColumn(options.onSaveMessage)];
+  const visibleColumns: DataTableColumnDef<TopicMessage>[] = [...newColumns, buildActionColumn(options.onSaveMessage)];
+  return visibleColumns;
 }
 
 export const expanderColumn: DataTableColumnDef<TopicMessage> = {

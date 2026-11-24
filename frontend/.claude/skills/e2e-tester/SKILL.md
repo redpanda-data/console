@@ -41,7 +41,7 @@ bun run build                # Build frontend (REQUIRED first!)
 bun run e2e-test:variant console  # OSS E2E
 bun run e2e-test:variant console-enterprise  # Requires ENTERPRISE_BACKEND_DIR
 bun run e2e-test:variant console --watch  # Rstest watcher
-bun run e2e-test:variant console topics/topic-creation.spec.ts
+bun run e2e-test:variant console topics/topic-creation.e2e.test.ts
 bun run e2e-test  # All four variants, including enterprise
 ```
 
@@ -50,7 +50,7 @@ bun run e2e-test  # All four variants, including enterprise
 **OSS Mode (`bun run e2e-test:variant console`):** Redpanda + Backend + OwlShop containers
 **Enterprise Mode (`bun run e2e-test:variant console-enterprise`):** Same + RBAC, SSO (requires `console-enterprise` repo)
 
-File location: `tests/test-variant-<variant>/<feature>/*.spec.ts`.
+File location: `tests/test-variant-<variant>/<feature>/*.e2e.test.ts`.
 Import `test`/`expect` from `tests/shared/e2e.ts` or the variant fixtures.
 See [runner contracts](../../../tests/README.md).
 

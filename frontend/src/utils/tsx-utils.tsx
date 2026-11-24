@@ -14,7 +14,7 @@ import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
-import React, { Component, type CSSProperties, type JSX, useEffect, useId, useState } from 'react';
+import React, { type CSSProperties, type JSX, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
@@ -24,11 +24,10 @@ import type { TimestampDisplayFormat } from '../state/ui';
 
 const defaultLocale = 'en';
 const thousandsSeperator = (1234).toLocaleString(defaultLocale)[1];
-// const decimalSeperator = (0.123).toLocaleString(defaultLocale)[1];
 
-const nbsp = '\xA0'; // non breaking space
+const nbsp = '\xA0';
 
-export function numberToThousandsString(n: number): JSX.Element {
+export function numberToThousandsString(n: number) {
   if (typeof n !== 'number') {
     return <>{n}</>;
   }
@@ -39,10 +38,8 @@ export function numberToThousandsString(n: number): JSX.Element {
   for (let i = 0; i < parts.length; i++) {
     const last = i === parts.length - 1;
 
-    // Add the number block itself; React.Fragment is used explicitly to avoid missing key warning
     result.push(<React.Fragment key={i}>{parts[i]}</React.Fragment>);
 
-    // Add a dot
     if (!last) {
       result.push(
         <span className="noSelect nbspSeparator" key={`${i}.`}>
@@ -83,7 +80,6 @@ export function TimestampDisplay({
     case 'relative':
       return `${prettyMilliseconds(Date.now() - ts, { compact: true })} ago`;
     default:
-      // format 'default' -> locale datetime
       return new Date(ts).toLocaleString();
   }
 }
@@ -100,9 +96,11 @@ const DefaultQuickTableOptions = {
 };
 type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>;
 
-// [ { key: 'a', value: 'b' } ]
-// { 'key1': 'value1', 'key2': 'value2' }
-// [ ['a', 'b'] ]
+/**
+ * [ { key: 'a', value: 'b' } ]
+ * { 'key1': 'value1', 'key2': 'value2' }
+ * [ ['a', 'b'] ]
+ */
 export function quickTable(
   data:
     | [React.ReactNode, React.ReactNode][]
@@ -117,22 +115,14 @@ export function quickTable(
     | { [key: string]: React.ReactNode }
     | [React.ReactNode, React.ReactNode][],
   options?: QuickTableOptions
-): JSX.Element {
+) {
   let entries: { key: React.ReactNode; value: React.ReactNode }[];
 
-  // plain object?
   if (typeof data === 'object' && !Array.isArray(data)) {
-    // Convert to array of key value objects
     entries = Object.entries(data).map(([key, value]) => ({ key, value }));
-  }
-  // array of [any, any] ?
-  else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
-    // Convert to array of key-value objects
+  } else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
     entries = (data as [React.ReactNode, React.ReactNode][]).map((ar) => ({ key: ar[0], value: ar[1] }));
-  }
-  // already correct? array of { key:any, value:any }
-  else {
-    // Cast to correct type directly
+  } else {
     entries = data as { key: React.ReactNode; value: React.ReactNode }[];
   }
 
@@ -168,7 +158,7 @@ export function quickTable(
   );
 }
 
-export function toSafeString(x: unknown): string {
+export function toSafeString(x: unknown) {
   if (typeof x === 'undefined' || x === null) {
     return '';
   }
@@ -181,7 +171,7 @@ export function toSafeString(x: unknown): string {
   return toJson(x);
 }
 
-export function objToKv(obj: Record<string, unknown>): { key: string; value: unknown }[] {
+export function objToKv(obj: Record<string, unknown>) {
   const ar = [] as { key: string; value: unknown }[];
   for (const k in obj) {
     if (Object.hasOwn(obj, k)) {
@@ -191,7 +181,7 @@ export function objToKv(obj: Record<string, unknown>): { key: string; value: unk
   return ar;
 }
 
-function withChildId(child: React.ReactNode, id: string): React.ReactElement {
+function withChildId(child: React.ReactNode, id: string) {
   // biome-ignore lint/style/useObjectSpread: ReactNode cannot be spread safely
   const newChild = Object.assign({}, child) as { props?: Record<string, unknown> };
   newChild.props = {};
@@ -297,6 +287,9 @@ export const InfoText = (p: {
   );
 };
 
+/**
+ * A single selection cannot be cleared by clicking the active option again.
+ */
 export function OptionGroup<T extends string>(p: {
   label: string;
   options: { [key: string]: string };
@@ -316,7 +309,6 @@ export function OptionGroup<T extends string>(p: {
         <ToggleGroup
           aria-labelledby={captionId}
           onValueChange={([next]) => {
-            // Single-select: ignore the deselect that toggling the active segment reports.
             if (next !== undefined && next !== p.value) {
               p.onChange(next as T);
             }
@@ -344,163 +336,118 @@ type StatusIndicatorProps = {
   progressText: string;
 };
 
-export class StatusIndicator extends Component<StatusIndicatorProps, { showWaitingText: boolean }> {
-  toastRef: string | null = null;
-  dismissed = false;
-
-  timerHandle: NodeJS.Timeout;
+type SearchToast = {
+  toastRef: string | null;
+  dismissed: boolean;
+  lastPropsJson: string | null;
   lastUpdateTimestamp: number;
+};
 
-  state = { showWaitingText: false };
+/**
+ * Dismissing the progress toast keeps it closed for the rest of the current search.
+ */
+export function StatusIndicator(props: StatusIndicatorProps) {
+  const [showWaitingText, setShowWaitingText] = useState(false);
+  const search = useRef<SearchToast>({
+    toastRef: null,
+    dismissed: false,
+    lastPropsJson: null,
+    lastUpdateTimestamp: 0,
+  });
 
-  constructor(p: StatusIndicatorProps) {
-    super(p);
-
-    // Periodically check if we got any new messages. If not, show a different text after some time
-    this.lastUpdateTimestamp = Date.now();
-    const waitMessageDelay = 3000;
-    this.timerHandle = setInterval(() => {
-      const age = Date.now() - this.lastUpdateTimestamp;
-      if (age > waitMessageDelay) {
-        this.setState({ showWaitingText: true });
+  useLayoutEffect(() => {
+    const status = search.current;
+    status.lastUpdateTimestamp = Date.now();
+    const timer = setInterval(() => {
+      if (Date.now() - status.lastUpdateTimestamp > 3000) {
+        setShowWaitingText(true);
       }
     }, 300);
-  }
+    return () => {
+      clearInterval(timer);
+      if (status.toastRef) {
+        closeToast(status.toastRef);
+      }
+      status.toastRef = null;
+    };
+  }, []);
 
-  componentDidMount() {
-    this.lastUpdateTimestamp = Date.now();
-    this.customRender();
-  }
-
-  lastPropsJson = '';
-  lastProps = {};
-  componentDidUpdate() {
-    const curJson = toJson(this.props);
-    if (curJson === this.lastPropsJson) {
-      // changes to observables
-      this.customRender();
-      return;
+  useLayoutEffect(() => {
+    const status = search.current;
+    const propsJson = toJson(props);
+    if (propsJson !== status.lastPropsJson) {
+      status.lastPropsJson = propsJson;
+      status.lastUpdateTimestamp = Date.now();
+      if (showWaitingText) {
+        setShowWaitingText(false);
+      }
     }
+    updateSearchToast(status, props, showWaitingText);
+  });
 
-    this.lastPropsJson = curJson;
+  return null;
+}
 
-    this.lastUpdateTimestamp = Date.now();
-    if (this.state.showWaitingText) {
-      this.setState({ showWaitingText: false });
-    }
-
-    this.customRender();
+function updateSearchToast(status: SearchToast, props: StatusIndicatorProps, showWaitingText: boolean) {
+  if (status.dismissed) {
+    return;
   }
+  const indeterminate = props.statusText === 'Connecting';
+  const percent = Math.round(props.fillFactor * 100);
+  const showCounters = Boolean(props.bytesConsumed && props.messagesConsumed);
 
-  componentWillUnmount() {
-    clearInterval(this.timerHandle);
-    if (this.toastRef) {
-      closeToast(this.toastRef);
-    }
-    this.toastRef = null;
-  }
-
-  customRender() {
-    if (this.dismissed) {
-      return;
-    }
-    const indeterminate = this.props.statusText === 'Connecting';
-    const percent = Math.round(this.props.fillFactor * 100);
-    const showCounters = Boolean(this.props.bytesConsumed && this.props.messagesConsumed);
-
-    // The toast description is a <p>, so this stays phrasing content (spans, no Progress).
-    const content = (
-      <span className="flex flex-col gap-1 text-body text-foreground">
+  // WARNING: The toast description already renders a paragraph; use phrasing content here to avoid invalid nesting.
+  const content = (
+    <span className="flex flex-col gap-1 text-body text-foreground">
+      <span
+        aria-valuemax={100}
+        aria-valuemin={0}
+        aria-valuenow={indeterminate ? undefined : percent}
+        className="block h-2 w-full overflow-hidden rounded-full bg-surface-subtle"
+        role="progressbar"
+      >
         <span
-          aria-valuemax={100}
-          aria-valuemin={0}
-          aria-valuenow={indeterminate ? undefined : percent}
-          className="block h-2 w-full overflow-hidden rounded-full bg-surface-subtle"
-          role="progressbar"
-        >
-          <span
-            className={
-              indeterminate
-                ? 'block h-full w-full animate-pulse rounded-full bg-primary'
-                : 'block h-full rounded-full bg-primary transition-[width] motion-reduce:transition-none'
-            }
-            style={indeterminate ? undefined : { width: `${percent}%` }}
-          />
-        </span>
-        <span className="flex font-semibold">
-          <span>
-            {this.state.showWaitingText ? 'Redpanda Console is waiting for new messages...' : this.props.statusText}
-          </span>
-          <span className="ml-auto pl-8">{this.props.progressText}</span>
-        </span>
-        {showCounters ? (
-          <span className="flex justify-between font-semibold">
-            <span className="inline-flex items-center gap-2">
-              <DownloadIcon color="var(--color-brand)" size={14} /> {this.props.bytesConsumed}
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <CopyIcon color="var(--color-brand)" size={14} /> {this.props.messagesConsumed} messages
-            </span>
-          </span>
-        ) : null}
+          className={
+            indeterminate
+              ? 'block h-full w-full animate-pulse rounded-full bg-primary'
+              : 'block h-full rounded-full bg-primary transition-[width] motion-reduce:transition-none'
+          }
+          style={indeterminate ? undefined : { width: `${percent}%` }}
+        />
       </span>
-    );
+      <span className="flex font-semibold">
+        <span>{showWaitingText ? 'Redpanda Console is waiting for new messages...' : props.statusText}</span>
+        <span className="ml-auto pl-8">{props.progressText}</span>
+      </span>
+      {showCounters ? (
+        <span className="flex justify-between font-semibold">
+          <span className="inline-flex items-center gap-2">
+            <DownloadIcon color="var(--color-brand)" size={14} /> {props.bytesConsumed}
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <CopyIcon color="var(--color-brand)" size={14} /> {props.messagesConsumed} messages
+          </span>
+        </span>
+      ) : null}
+    </span>
+  );
 
-    if (this.toastRef === null) {
-      this.toastRef = showToast({
-        status: 'info',
-        description: content,
-        duration: null,
-        // A closed progress toast stays closed for this search.
-        onClose: () => {
-          this.toastRef = null;
-          this.dismissed = true;
-        },
-      });
-    } else {
-      updateToast(this.toastRef, { description: content });
-    }
-  }
-
-  render() {
-    return null;
+  if (status.toastRef === null) {
+    status.toastRef = showToast({
+      status: 'info',
+      description: content,
+      duration: null,
+      onClose: () => {
+        status.toastRef = null;
+        status.dismissed = true;
+      },
+    });
+  } else {
+    updateToast(status.toastRef, { description: content });
   }
 }
 
-export class ZeroSizeWrapper extends Component<{
-  width?: string;
-  height?: string;
-  justifyContent?: string;
-  alignItems?: string;
-  positionContentAbsolute?: boolean;
-  transform?: string;
-  wrapperStyle?: CSSProperties;
-  children?: React.ReactNode;
-}> {
-  static readonly style: CSSProperties = {
-    display: 'inline-flex',
-    width: '0px',
-    height: '0px',
-    transform: 'translateY(-0.5px)',
-    // zIndex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  };
-
-  render() {
-    const p = this.props;
-    let style = ZeroSizeWrapper.style;
-    if (p.width || p.height || p.justifyContent || p.alignItems || p.transform || p.wrapperStyle) {
-      style = { ...style, ...p, ...p.wrapperStyle };
-    }
-
-    return (
-      <span className="verticalCenter" style={style}>
-        <span style={p.positionContentAbsolute ? { position: 'absolute' } : undefined}>{this.props.children}</span>
-      </span>
-    );
-  }
-}
+export { ZeroSizeWrapper } from './zero-size-wrapper';
 
 const defaultSkeletonStyle = { margin: '2rem' };
 export const DefaultSkeleton = (
@@ -509,7 +456,6 @@ export const DefaultSkeleton = (
   </motion.div>
 );
 
-// Single line, no wrapping; overflow shows an ellipsis.
 const ellipsisSpanStyle: CSSProperties = {
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',

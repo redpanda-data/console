@@ -13,7 +13,7 @@ import { CircleUser, Link, Server, Waypoints } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { z } from 'zod';
 
-export const SECRET_ID_REGEX = /^[a-zA-Z0-9/_-]+$/;
+export const SECRET_ID_REGEX = /^[a-zA-Z0-9/_-]+$/u;
 
 export const SCOPE_OPTIONS = [
   {
@@ -61,7 +61,7 @@ export const createLabelsSchema = () =>
 export type LabelRow = { key: string; value: string };
 
 /** Turns the form's label rows into the request's label map, skipping rows with an empty key or value. */
-export const labelsToMap = (labels: LabelRow[]): Record<string, string> => {
+export const labelsToMap = (labels: LabelRow[]) => {
   const labelsMap: Record<string, string> = {};
   for (const label of labels) {
     if (label.key && label.value) {

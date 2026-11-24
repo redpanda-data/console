@@ -10,7 +10,11 @@
  */
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { screen } from 'test-utils';
+import { useApiStore } from 'state/backend-api';
+import type { TopicAction } from 'state/rest-interfaces';
+import { renderWithFileRoutes, screen } from 'test-utils';
+
+import TopicDetails from './topic-details';
 
 rs.mock('state/app-global', () => ({
   appGlobal: {
@@ -21,7 +25,6 @@ rs.mock('state/app-global', () => ({
   },
 }));
 
-// Delegates to the real store-backed proxy so `api.topics` reads the test state; refreshes are no-ops.
 rs.mock('state/backend-api', () => {
   const actual = rs.requireActual<typeof import('state/backend-api')>('state/backend-api');
   const refresh = rs.fn(() => Promise.resolve());
@@ -34,22 +37,15 @@ rs.mock('state/backend-api', () => {
   };
 });
 
-// Mounting the messages tab is what starts a message search.
 function MockTopicMessagesTab() {
   return <div data-testid="topic-messages-tab" />;
 }
 
 rs.mock('./messages', () => ({ TopicMessagesTab: MockTopicMessagesTab }));
 
-import { useApiStore } from 'state/backend-api';
-import type { Topic, TopicAction } from 'state/rest-interfaces';
-import { renderWithFileRoutes } from 'test-utils';
-
-import TopicDetails from './topic-details';
-
 const TOPIC_NAME = 'orders';
 
-const makeTopic = (allowedActions: TopicAction[] | undefined): Topic => ({
+const makeTopic = (allowedActions: TopicAction[] | undefined) => ({
   topicName: TOPIC_NAME,
   isInternal: false,
   partitionCount: 1,

@@ -16,7 +16,7 @@ import {
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/serverless_egress_gateway_pb';
 import { create } from '@bufbuild/protobuf';
 import { isEmbedded, isFeatureFlagEnabled, isServerless } from 'config';
-import { type Egress, EgressSchema, type Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { EgressSchema, type Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
 /** Gateways come from the controlplane API, which the Console reaches only embedded in Cloud UI. */
 export const isEgressGatewayPickerEnabled = () =>
@@ -37,17 +37,14 @@ const isUsable = ({ state, status }: ServerlessEgressGateway) =>
  * so saving other settings doesn't silently drop them. Until the gateways load (`undefined`), a
  * selected gateway is labelled by its ID alone.
  */
-export function egressGatewayOptions(
-  gateways: ServerlessEgressGateway[] | undefined,
-  selectedIds: string[]
-): EgressGatewayOption[] {
+export function egressGatewayOptions(gateways: ServerlessEgressGateway[] | undefined, selectedIds: string[]) {
   if (!gateways) {
-    return selectedIds.map((id) => ({ id, label: id, available: false }));
+    return selectedIds.map<EgressGatewayOption>((id) => ({ id, label: id, available: false }));
   }
   const byId = new Map(gateways.map((gateway) => [gateway.id, gateway]));
   const usable = gateways
     .filter(isUsable)
-    .map((gateway) => ({ id: gateway.id, label: gateway.displayName, available: true }))
+    .map<EgressGatewayOption>((gateway) => ({ id: gateway.id, label: gateway.displayName, available: true }))
     .sort((a, b) => a.label.localeCompare(b.label));
   const unusable = selectedIds
     .filter((id) => !usable.some((option) => option.id === id))
@@ -71,7 +68,7 @@ const sameIds = (a: string[], b: string[]) => a.length === b.length && a.every((
  * The egress a save sends: unset when the selection matches what is stored, which leaves the stored
  * gateways alone; otherwise the whole selection, empty to remove them.
  */
-export const egressWrite = (selectedIds: string[], storedIds: string[]): Egress | undefined =>
+export const egressWrite = (selectedIds: string[], storedIds: string[]) =>
   sameIds(selectedIds, storedIds)
     ? undefined
     : create(EgressSchema, { gatewayRefs: selectedIds.map((id) => ({ id })) });

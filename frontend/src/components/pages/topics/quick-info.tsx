@@ -15,7 +15,6 @@ import '../../../utils/array-extensions';
 import { Stat } from 'components/redpanda-ui/components/stat';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { InfoIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
 
 import type { CleanupPolicyType } from './types';
 import { formatConfigValue } from '../../../utils/formatters/config-value-formatter';
@@ -32,12 +31,12 @@ const CLEANUP_POLICY_LABELS: Record<CleanupPolicyType, string> = {
 const ESTIMATE_HINT =
   'The number of messages shown is an estimate. This is calculated by summing the differences between the highest and lowest offsets in each partition. The actual number of messages may vary due to factors such as message deletions, log compaction, and uncommitted or transactional messages.';
 
-function formatMessageSum(partitions: Partition[] | null | undefined): ReactNode {
+function formatMessageSum(partitions: Partition[] | null | undefined) {
   if (partitions === undefined) {
-    return '...'; // no response yet
+    return '...';
   }
   if (partitions === null) {
-    return 'N/A'; // explicit null -> not allowed
+    return 'N/A';
   }
   const totalMessages = partitions.sum((partition) => partition.waterMarkHigh - partition.waterMarkLow);
   return numberToThousandsString(totalMessages);
@@ -53,15 +52,15 @@ function findQuickInfoEntries(entries: ConfigEntry[] | null | undefined) {
   };
 }
 
-// todo: rename QuickInfo
+/**
+ * Missing responses show loading and explicit unavailable values show N/A. Time and byte retention limits are hidden when the topic is compacted.
+ */
 export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   const topic = p.topic;
 
-  // Messages
   const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
   const messageSum = formatMessageSum(partitions);
 
-  // Config Entries / Separator
   const configEntries = useApiStoreHook((s) => s.topicConfig.get(topic.topicName))?.configEntries;
   const filteredConfigEntries = filterTopicConfig(configEntries);
   const cleanupPolicy = configEntries?.find((x) => x.name === 'cleanup.policy')?.value;
@@ -128,7 +127,7 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   );
 };
 
-function filterTopicConfig(config: ConfigEntry[] | null | undefined): ConfigEntry[] | null | undefined {
+function filterTopicConfig(config: ConfigEntry[] | null | undefined) {
   if (!config) {
     return config;
   }
@@ -138,8 +137,7 @@ function filterTopicConfig(config: ConfigEntry[] | null | undefined): ConfigEntr
     newConfig.push(e);
   }
 
-  if (config.find((e) => e.name === 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
-    // this is a compacted topic, 'retention.bytes', 'retention.ms' don't apply, so hide them
+  if (config.some((e) => e.name === 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
     newConfig.removeAll((e) => e.name === 'retention.bytes' || e.name === 'retention.ms');
   }
 

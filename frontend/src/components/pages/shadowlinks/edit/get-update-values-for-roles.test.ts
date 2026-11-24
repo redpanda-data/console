@@ -16,7 +16,6 @@ import { describe, expect, test } from 'bun:test';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, TLS_MODE } from '../create/model';
 
-// Base form values for testing
 const baseFormValues: FormValues = {
   name: 'test-shadow-link',
   bootstrapServers: [{ value: 'localhost:9092' }],
@@ -321,7 +320,6 @@ describe('getUpdateValuesForRoles', () => {
       expect(result.fieldMaskPaths).toContain('configurations.role_sync_options');
       expect(result.fieldMaskPaths).toHaveLength(1);
 
-      // Validate schema values
       expect(result.value.roleNameFilters).toHaveLength(2);
       expect(result.value.roleNameFilters[0]).toMatchObject({
         name: 'role-1',

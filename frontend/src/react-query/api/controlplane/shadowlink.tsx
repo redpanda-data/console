@@ -18,9 +18,6 @@ import {
   type UpdateShadowLinkRequestSchema as CpUpdateShadowLinkRequestSchema,
   type DeleteShadowLinkOperation,
   type DeleteShadowLinkRequest,
-  type GetShadowLinkResponse,
-  type ListShadowLinksResponse,
-  type ShadowLink,
   type UpdateShadowLinkOperation,
   type UpdateShadowLinkRequest,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
@@ -33,7 +30,7 @@ import {
 import { create } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { createConnectQueryKey, type UseMutationOptions, useMutation, useQuery } from '@connectrpc/connect-query';
-import { type UseMutationResult, type UseQueryResult, useQueryClient } from '@tanstack/react-query';
+import { type UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import { config, isEmbedded } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { MAX_PAGE_SIZE, type MessageInit } from 'react-query/react-query.utils';
@@ -43,17 +40,13 @@ const listShadowLinksKeys = () => [
   createConnectQueryKey({ schema: cpListShadowLinks, cardinality: 'infinite' }),
 ];
 
-/* ==================== CONTROLPLANE HOOKS ==================== */
-/* These hooks are used when running in embedded mode (cloud UI) */
-/* They create their own controlplane transport internally */
-
 /**
  * Hook to list shadow links using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
+ *
+ * Uses its own control-plane transport and runs only embedded with a valid, non-default cluster ID.
  */
-export const useControlplaneListShadowLinksQuery = (opts?: {
-  enabled?: boolean;
-}): UseQueryResult<ListShadowLinksResponse, ConnectError> => {
+export const useControlplaneListShadowLinksQuery = (opts?: { enabled?: boolean }) => {
   const transport = useControlplaneTransport();
   const embedded = isEmbedded();
   const clusterId = config.clusterId;
@@ -67,7 +60,6 @@ export const useControlplaneListShadowLinksQuery = (opts?: {
     pageToken: '',
   });
 
-  // Only make request in embedded mode with a valid (non-default) clusterId
   const isEnabled = embedded && hasValidClusterId && (opts?.enabled ?? true);
 
   return useQuery(cpListShadowLinks, request, { enabled: isEnabled, transport });
@@ -77,10 +69,7 @@ export const useControlplaneListShadowLinksQuery = (opts?: {
  * Hook to get a shadow link by ID using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneGetShadowLinkQuery = (
-  request: { id: string },
-  opts?: { enabled?: boolean }
-): UseQueryResult<GetShadowLinkResponse, ConnectError> => {
+export const useControlplaneGetShadowLinkQuery = (request: { id: string }, opts?: { enabled?: boolean }) => {
   const transport = useControlplaneTransport();
   const getShadowLinkRequest = create(CpGetShadowLinkRequestSchema, {
     id: request.id,
@@ -94,21 +83,11 @@ export const useControlplaneGetShadowLinkQuery = (
  * First lists shadow links to find ID by name, then fetches full details
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneGetShadowLinkByNameQuery = (
-  request: { name: string },
-  opts?: { enabled?: boolean }
-): {
-  data: ShadowLink | undefined;
-  isLoading: boolean;
-  error: ConnectError | null;
-  refetch: () => Promise<void>;
-} => {
-  // First, list to find ID by name
+export const useControlplaneGetShadowLinkByNameQuery = (request: { name: string }, opts?: { enabled?: boolean }) => {
   const listQuery = useControlplaneListShadowLinksQuery({ enabled: opts?.enabled });
 
   const shadowLinkId = listQuery.data?.shadowLinks?.find((sl) => sl.name === request.name)?.id;
 
-  // Then fetch full details by ID
   const getQuery = useControlplaneGetShadowLinkQuery({ id: shadowLinkId ?? '' }, { enabled: !!shadowLinkId });
 
   return {
@@ -126,20 +105,18 @@ export const useControlplaneGetShadowLinkByNameQuery = (
  * Hook to update a shadow link using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneUpdateShadowLinkMutation = (
+export const useControlplaneUpdateShadowLinkMutation: (
   options?: UseMutationOptions<typeof CpUpdateShadowLinkRequestSchema, typeof CpUpdateShadowLinkOperationSchema>
-): UseMutationResult<UpdateShadowLinkOperation, ConnectError, MessageInit<UpdateShadowLinkRequest>> => {
+) => UseMutationResult<UpdateShadowLinkOperation, ConnectError, MessageInit<UpdateShadowLinkRequest>> = (options) => {
   const transport = useControlplaneTransport();
   const queryClient = useQueryClient();
 
   return useMutation(cpUpdateShadowLink, {
     transport,
     onSuccess: async () => {
-      // Invalidate controlplane list queries, including the paged one the shadow link topology reads
       await Promise.all(
         listShadowLinksKeys().map((queryKey) => queryClient.invalidateQueries({ queryKey, exact: false }))
       );
-      // Invalidate controlplane get query
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: cpGetShadowLink,
@@ -156,20 +133,18 @@ export const useControlplaneUpdateShadowLinkMutation = (
  * Hook to delete a shadow link using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneDeleteShadowLinkMutation = (
+export const useControlplaneDeleteShadowLinkMutation: (
   options?: UseMutationOptions<typeof CpDeleteShadowLinkRequestSchema, typeof CpDeleteShadowLinkOperationSchema>
-): UseMutationResult<DeleteShadowLinkOperation, ConnectError, MessageInit<DeleteShadowLinkRequest>> => {
+) => UseMutationResult<DeleteShadowLinkOperation, ConnectError, MessageInit<DeleteShadowLinkRequest>> = (options) => {
   const transport = useControlplaneTransport();
   const queryClient = useQueryClient();
 
   return useMutation(cpDeleteShadowLink, {
     transport,
     onSuccess: async () => {
-      // Invalidate controlplane list queries, including the paged one the shadow link topology reads
       await Promise.all(
         listShadowLinksKeys().map((queryKey) => queryClient.invalidateQueries({ queryKey, exact: false }))
       );
-      // Invalidate controlplane get query
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: cpGetShadowLink,

@@ -9,150 +9,93 @@
  * by the Apache License, Version 2.0
  */
 
-import {
-  ListShadowLinksResponseSchema,
-  ShadowLinkListItemSchema,
-} from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
+import type { ListShadowLinksRequest } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { listShadowLinks } from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/controlplane/v1/shadow_link-ShadowLinkService_connectquery';
-import { create } from '@bufbuild/protobuf';
-import { createRouterTransport } from '@connectrpc/connect';
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { renderHook, waitFor } from '@testing-library/react';
+import { createConnectRouter } from '@connectrpc/connect';
+import { createFetchHandler } from '@connectrpc/connect/protocol';
+import { afterAll, afterEach, beforeAll, expect, onTestFinished, test } from '@rstest/core';
+import { cleanup, renderHook, waitFor } from '@testing-library/react';
+import { config } from 'config';
+import { http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
 import { connectQueryWrapper } from 'test-utils';
-
-// Mock config module
-rs.mock('config', () => ({
-  isEmbedded: rs.fn(),
-  config: {
-    clusterId: 'default',
-    jwt: undefined,
-  },
-}));
-
-// Mock controlplane transport hook
-rs.mock('hooks/use-controlplane-transport', () => ({
-  useControlplaneTransport: rs.fn(),
-}));
-
-import { config, isEmbedded } from 'config';
-import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 
 import { useControlplaneListShadowLinksQuery } from './shadowlink';
 
-const mockIsEmbedded = rs.mocked(isEmbedded);
-const mockConfig = rs.mocked(config);
-const mockUseControlplaneTransport = rs.mocked(useControlplaneTransport);
+const CONTROLPLANE = 'https://controlplane.test';
+const HOST_JWT = 'embedded-test-token';
+const server = setupServer();
+const guardedFetch = globalThis.fetch;
 
-type ListTestCase = {
-  name: string;
-  clusterId: string;
-  isEmbedded: boolean;
-  optsEnabled: boolean | undefined;
-  shouldMakeRequest: boolean;
-};
-
-const listShadowLinksTransport = (clusterId: string, mockListShadowLinks: ReturnType<typeof rs.fn>) => {
-  const mockShadowLinks = [
-    create(ShadowLinkListItemSchema, {
-      id: 'sl-1',
-      name: 'shadow-link-1',
-      shadowRedpandaId: clusterId,
-    }),
-  ];
-
-  return createRouterTransport(({ rpc }) => {
-    rpc(listShadowLinks, (request) => {
-      mockListShadowLinks(request);
-      return create(ListShadowLinksResponseSchema, {
-        shadowLinks: mockShadowLinks,
-      });
-    });
+beforeAll(() => {
+  server.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in the controlplane list tests');
+    },
   });
-};
+});
 
-const renderListShadowLinksHook = (testCase: ListTestCase) => {
-  const mockListShadowLinks = rs.fn();
-  const transport = listShadowLinksTransport(testCase.clusterId, mockListShadowLinks);
-  mockUseControlplaneTransport.mockReturnValue(transport);
+afterEach(() => {
+  cleanup();
+  server.resetHandlers();
+});
 
-  const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } }, transport);
+afterAll(() => {
+  server.close();
+});
 
-  const opts = testCase.optsEnabled === undefined ? undefined : { enabled: testCase.optsEnabled };
-  const { result } = renderHook(() => useControlplaneListShadowLinksQuery(opts), { wrapper });
-  return { result, mockListShadowLinks };
-};
-
-type ListHookRender = ReturnType<typeof renderListShadowLinksHook>;
-
-const expectListRequestMade = async ({ result, mockListShadowLinks }: ListHookRender, clusterId: string) => {
-  // Wait for data to load
-  await waitFor(() => {
-    expect(result.current.isSuccess).toBe(true);
+function configureHost(jwt: string | undefined, clusterId: string) {
+  const initial = { jwt: config.jwt, clusterId: config.clusterId, controlplaneUrl: config.controlplaneUrl };
+  Object.assign(config, { jwt, clusterId, controlplaneUrl: CONTROLPLANE });
+  onTestFinished(() => {
+    Object.assign(config, initial);
   });
+}
 
-  // Verify request was made with correct filter
-  expect(mockListShadowLinks).toHaveBeenCalledTimes(1);
-  expect(mockListShadowLinks).toHaveBeenCalledWith(
-    expect.objectContaining({
-      filter: expect.objectContaining({
-        shadowRedpandaId: clusterId,
-      }),
-    })
-  );
-  expect(result.current.data?.shadowLinks).toHaveLength(1);
-};
-
-const expectNoListRequest = async ({ result, mockListShadowLinks }: ListHookRender) => {
-  // Wait a tick to ensure query would have been made if enabled
-  await waitFor(() => {
-    expect(result.current.fetchStatus).toBe('idle');
+function serveShadowLinks() {
+  const requests: Array<{ cluster: ListShadowLinksRequest['filter']; authorization: string | null }> = [];
+  const { handlers } = createConnectRouter().rpc(listShadowLinks, ({ filter }, { requestHeader }) => {
+    requests.push({ cluster: filter, authorization: requestHeader.get('Authorization') });
+    return {
+      shadowLinks: [{ id: 'sl-1', name: 'shadow-link-1', shadowRedpandaId: filter?.shadowRedpandaId }],
+    };
   });
+  for (const handler of handlers) {
+    const handle = createFetchHandler(handler);
+    server.use(http.post(CONTROLPLANE + handler.requestPath, ({ request }) => handle(request)));
+  }
+  return requests;
+}
 
-  // Verify request was NOT made
-  expect(mockListShadowLinks).not.toHaveBeenCalled();
+function renderList({ enabled, jwt, clusterId }: { enabled?: boolean; jwt?: string; clusterId: string }) {
+  configureHost(jwt, clusterId);
+  const requests = serveShadowLinks();
+  const { wrapper } = connectQueryWrapper({ defaultOptions: { queries: { retry: false } } });
+  const options = enabled === undefined ? undefined : { enabled };
+  const { result } = renderHook(() => useControlplaneListShadowLinksQuery(options), { wrapper });
+  return { result, requests };
+}
+
+test('lists only the embedded cluster’s links using the host token', async () => {
+  const { result, requests } = renderList({ jwt: HOST_JWT, clusterId: 'cluster-abc-123' });
+
+  await waitFor(() => expect(result.current.data?.shadowLinks).toHaveLength(1));
+  expect(result.current.data?.shadowLinks[0]).toMatchObject({ id: 'sl-1', shadowRedpandaId: 'cluster-abc-123' });
+  expect(requests).toMatchObject([
+    { cluster: { shadowRedpandaId: 'cluster-abc-123' }, authorization: 'Bearer embedded-test-token' },
+  ]);
+});
+
+test.each([
+  { mode: 'standalone', clusterId: 'default' },
+  { mode: 'embedded with the query disabled', clusterId: 'cluster-abc-123', jwt: HOST_JWT, enabled: false },
+])('does not request controlplane links: $mode', ({ mode: _mode, ...options }) => {
+  const { result, requests } = renderList(options);
+  expect(result.current.fetchStatus).toBe('idle');
   expect(result.current.data).toBeUndefined();
-};
-
-describe('useControlplaneListShadowLinksQuery', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-  });
-
-  const testCases: ListTestCase[] = [
-    {
-      name: 'Standalone mode (clusterId=default, isEmbedded=false)',
-      clusterId: 'default',
-      isEmbedded: false,
-      optsEnabled: undefined,
-      shouldMakeRequest: false,
-    },
-    {
-      name: 'Embedded after setup (real clusterId, isEmbedded=true)',
-      clusterId: 'cluster-abc-123',
-      isEmbedded: true,
-      optsEnabled: undefined,
-      shouldMakeRequest: true,
-    },
-    {
-      name: 'Embedded with opts.enabled=false',
-      clusterId: 'cluster-abc-123',
-      isEmbedded: true,
-      optsEnabled: false,
-      shouldMakeRequest: false,
-    },
-  ];
-
-  test.each(testCases)('$name → shouldMakeRequest=$shouldMakeRequest', async (testCase) => {
-    // Setup mocks
-    mockIsEmbedded.mockReturnValue(testCase.isEmbedded);
-    mockConfig.clusterId = testCase.clusterId;
-
-    const rendered = renderListShadowLinksHook(testCase);
-
-    if (testCase.shouldMakeRequest) {
-      await expectListRequestMade(rendered, testCase.clusterId);
-    } else {
-      await expectNoListRequest(rendered);
-    }
-  });
+  expect(requests).toEqual([]);
 });

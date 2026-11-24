@@ -23,35 +23,25 @@ type ConnectorSection = 'input' | 'output';
 export type ViewLane = 'monitor' | 'configuration' | 'visual';
 export type EditLane = 'yaml' | 'visual' | 'changes';
 
-// Canonical config YAML (plus baseline) that all views read/mutate through these actions.
 type DocumentSlice = {
   yamlContent: string;
   initialYaml: string | null;
   hydratedPipelineId: string | null;
-  // The server `update_time` (epoch ms) of the baseline; null while creating.
   baselineUpdateTime: number | null;
-  // Lets a successful save navigate away without tripping the unsaved-changes guard.
   allowNavigation: boolean;
   setYamlContent: (yamlContent: string) => void;
-  // Patch one redpanda component; returns false if the YAML couldn't be parsed/patched.
   patchComponent: (section: ConnectorSection, componentName: string, patch: RedpandaSetupResultLike) => boolean;
-  // Hydrate from a freshly-loaded server pipeline (content + baseline + id).
   hydrateFromServer: (pipelineId: string, configYaml: string, updateTime?: number | null) => void;
-  // Resolve the create-mode starting YAML; seeds the baseline only once.
   resolveInitialYaml: (yaml: string) => void;
-  // Re-baseline after a save; unlike hydrateFromServer this keeps the edit history.
   markSavedBaseline: (yaml: string, updateTime?: number | null) => void;
   setAllowNavigation: (allowNavigation: boolean) => void;
 };
 
-// Transient editor-page UI: Monaco handle, active lane, dialog/menu flags.
 type UiSlice = {
   editorInstance: editor.IStandaloneCodeEditor | null;
   activeViewLane: ViewLane;
   activeEditLane: EditLane;
-  // Node selected in the Visual lane, mirrored here so the YAML lane can reveal it on tab switch.
   selectedNodeId: string | null;
-  // One-shot request to reveal + select a node's lines in Monaco; set on Visual→YAML, cleared by the editor.
   revealNodeId: string | null;
   commandMenuFilter: CommandMenuFilter;
   addConnectorType: AddConnectorType;
@@ -59,17 +49,11 @@ type UiSlice = {
   isViewConfigDialogOpen: boolean;
   isDeleteAlertOpen: boolean;
   isTemplateDialogOpen: boolean;
-  // Visual-edit undo/redo history (YAML snapshots). Lives in the store — not VisualEditorPanel —
-  // so it survives lane switches. `editBaseline` is the last document state the history has seen.
   editUndoStack: string[];
   editRedoStack: string[];
   editBaseline: string | null;
-  // Record a (non-undo/redo) document change; no-ops when it matches the baseline.
   recordEdit: (next: string) => void;
-  // Commit the stacks + baseline after an undo/redo step.
   commitEditHistory: (next: { undo: string[]; redo: string[]; baseline: string }) => void;
-  // Flushes the selected node's pending edits to the YAML; registered by the Visual lane, called by
-  // Save so an in-progress node edit is included.
   pendingEditCommit: (() => void) | null;
   setPendingEditCommit: (fn: (() => void) | null) => void;
   setEditorInstance: (editorInstance: editor.IStandaloneCodeEditor | null) => void;
@@ -103,7 +87,6 @@ const createDocumentSlice: StateCreator<PipelineEditorStore, [], [], DocumentSli
     return true;
   },
   hydrateFromServer: (pipelineId, configYaml, updateTime = null) =>
-    // Reset the edit history so the server load isn't recorded as an undoable step.
     set({
       hydratedPipelineId: pipelineId,
       yamlContent: configYaml,
@@ -115,7 +98,6 @@ const createDocumentSlice: StateCreator<PipelineEditorStore, [], [], DocumentSli
     }),
   resolveInitialYaml: (yaml) =>
     set((state) =>
-      // First resolution sets the baseline; reset the edit history so the template load isn't an undoable step.
       state.initialYaml === null
         ? { yamlContent: yaml, initialYaml: yaml, editUndoStack: [], editRedoStack: [], editBaseline: null }
         : { yamlContent: yaml }
@@ -142,13 +124,11 @@ const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) 
   recordEdit: (next) =>
     set((s) => {
       if (s.editBaseline === null) {
-        // First document the history sees becomes the baseline (no undo step).
         return { editBaseline: next };
       }
       if (next === s.editBaseline) {
         return {};
       }
-      // Real change (visual edit, or external YAML edit seen on lane return): push the old baseline, clear redo.
       return { editUndoStack: [...s.editUndoStack, s.editBaseline], editRedoStack: [], editBaseline: next };
     }),
   commitEditHistory: ({ undo, redo, baseline }) =>
@@ -168,7 +148,7 @@ const createUiSlice: StateCreator<PipelineEditorStore, [], [], UiSlice> = (set) 
   setIsTemplateDialogOpen: (open) => set({ isTemplateDialogOpen: open }),
 });
 
-export function createPipelineEditorStore(overrides?: Partial<PipelineEditorStore>): StoreApi<PipelineEditorStore> {
+export function createPipelineEditorStore(overrides?: Partial<PipelineEditorStore>) {
   return createStore<PipelineEditorStore>()((...args) => ({
     ...createDocumentSlice(...args),
     ...createUiSlice(...args),
@@ -178,13 +158,11 @@ export function createPipelineEditorStore(overrides?: Partial<PipelineEditorStor
 
 const PipelineEditorContext = createContext<StoreApi<PipelineEditorStore> | null>(null);
 
-// Context-scoped: each mount gets its own store (key the provider by pipeline id for clean nav).
 export function PipelineEditorProvider({
   children,
   initialEditLane = 'yaml',
 }: {
   children: ReactNode;
-  // Edit-mode lane to open on first mount (e.g. 'visual' when the visual editor is enabled).
   initialEditLane?: EditLane;
 }) {
   const storeRef = useRef<StoreApi<PipelineEditorStore>>(undefined);
@@ -196,7 +174,7 @@ export function PipelineEditorProvider({
   return createElement(PipelineEditorContext.Provider, { value: storeRef.current }, children);
 }
 
-function usePipelineEditorStoreContext(): StoreApi<PipelineEditorStore> {
+function usePipelineEditorStoreContext() {
   const store = useContext(PipelineEditorContext);
   if (!store) {
     throw new Error('usePipelineEditorStore must be used within a PipelineEditorProvider');
@@ -204,11 +182,10 @@ function usePipelineEditorStoreContext(): StoreApi<PipelineEditorStore> {
   return store;
 }
 
-export function usePipelineEditorStore<T>(selector: (state: PipelineEditorStore) => T): T {
+export function usePipelineEditorStore<T>(selector: (state: PipelineEditorStore) => T) {
   return useStore(usePipelineEditorStoreContext(), selector);
 }
 
-// Imperative handle for reading/writing without subscribing (callbacks, guards).
-export function usePipelineEditorStoreApi(): StoreApi<PipelineEditorStore> {
+export function usePipelineEditorStoreApi() {
   return usePipelineEditorStoreContext();
 }

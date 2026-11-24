@@ -31,25 +31,14 @@ import { appendWithSlackCap } from '../../../../../utils/bounded-array';
 import { convertListMessageData } from '../../../../../utils/message-converters';
 import { messageKey } from '../utils/message-key';
 
-/** Memory bound for live-tail / filtered streams (mirrors the legacy engine's cap). */
 const LIVE_BUFFER_MAX = 50_000;
 const LIVE_BUFFER_SLACK = 1024;
 
-/**
- * Memory bound for the paged (continuous "Load more") buffer. The display window renders at
- * most DISPLAY_WINDOW_CAP rows, but the backing buffer feeds client filters and path hints,
- * so it keeps a healthy multiple — bounded, though: every appended page retains decoded AND
- * raw payloads, and an unbounded buffer grows past browser memory on a large topic while the
- * UI claims a bounded window. Trimming drops the front, which in both continuous scopes is
- * the end the display window has already trimmed away.
- */
 const PAGED_BUFFER_MAX = 5000;
 const PAGED_BUFFER_SLACK = 256;
 
-/** How often buffered stream data is flushed into React state. */
 const FLUSH_INTERVAL_MS = 200;
 
-/** How long a freshly arrived row keeps its "new" marker (drives the flash animation). */
 const NEW_KEY_TTL_MS = 3000;
 
 const DEFAULT_TIMEOUT_MS = 30 * 1000;
@@ -121,7 +110,6 @@ type ControlMessage = ListMessagesResponse['controlMessage'];
 type Timer = ReturnType<typeof setTimeout>;
 type RunOptions = { live?: boolean; append?: boolean; pageToken?: string };
 
-/** Mutable bookkeeping shared by every run of one hook instance; lives in a single ref. */
 type SearchSession = {
   buffer: TopicMessage[];
   pendingNewKeys: Set<string>;
@@ -129,11 +117,10 @@ type SearchSession = {
   newKeysClearTimer: Timer | null;
   abortController: AbortController | null;
   lastParams: MessageSearchParams | null;
-  /** Live tail flashes every arriving row; loadMore appends without flashing. */
   trackNew: boolean;
 };
 
-const createSearchSession = (): SearchSession => ({
+const createSearchSession: () => SearchSession = () => ({
   buffer: [],
   pendingNewKeys: new Set(),
   flushTimer: null,
@@ -153,24 +140,17 @@ type SearchSetters = {
   setIsLoadingMore: Dispatch<SetStateAction<boolean>>;
 };
 
-/** One `listMessages` stream: the session it writes into plus its own frame bookkeeping. */
 type StreamRun = {
   session: SearchSession;
   setters: SearchSetters;
   abortController: AbortController;
-  /** Live tail and push-down filters keep the stream open (backend semantics). */
   isLongLived: boolean;
   startTime: number;
-  /**
-   * A backend `error` control frame (e.g. "N partitions offline") doesn't necessarily mean the
-   * whole request failed — same rule the legacy engine applies. Only promoted to a real failure
-   * if the stream ends without a `done` frame following it.
-   */
   pendingBackendError: Error | null;
   sawDone: boolean;
 };
 
-const requireConsoleClient = (): ConsoleClient => {
+const requireConsoleClient = () => {
   const client = appConfig.consoleClient;
   if (!client) {
     throw new Error('No console client configured');
@@ -178,7 +158,6 @@ const requireConsoleClient = (): ConsoleClient => {
   return client;
 };
 
-/** Live tail and push-down filters keep the stream open, so those runs get the long timeout — same rule as the legacy engine. */
 const isLongLivedSearch = (params: MessageSearchParams, live: boolean) =>
   live || params.startOffset === PartitionOffsetOrigin.End || params.filterInterpreterCode !== '';
 
@@ -198,7 +177,6 @@ const clearSessionTimers = (session: SearchSession) => {
   }
 };
 
-/** Marks the keys collected since the last flush as new, and clears every marker NEW_KEY_TTL_MS later. */
 const publishNewKeys = (session: SearchSession, setters: SearchSetters) => {
   const fresh = session.pendingNewKeys;
   session.pendingNewKeys = new Set();
@@ -250,13 +228,12 @@ const resetRunState = (session: SearchSession, setters: SearchSetters, append: b
   }));
 };
 
-/** Aborts any in-flight stream, claims the session for a new run and resets the visible state. */
-const beginRun = (
+const beginRun: (
   session: SearchSession,
   setters: SearchSetters,
   params: MessageSearchParams,
   options: RunOptions
-): StreamRun => {
+) => StreamRun = (session, setters, params, options) => {
   abortSession(session, 'stopped by user');
   const abortController = new AbortController();
   session.abortController = abortController;
@@ -294,8 +271,6 @@ const onDoneFrame = (done: ListMessagesResponse_StreamCompletedMessage, run: Str
 };
 
 const onErrorFrame = (value: ListMessagesResponse_ErrorMessage, run: StreamRun) => {
-  // Doesn't necessarily mean the whole request failed (e.g. "N partitions
-  // offline") — the stream can still reach `done` normally afterwards.
   toast.error('Backend error', { description: value.message });
   run.pendingBackendError = new Error(value.message);
 };
@@ -331,12 +306,7 @@ const applyControlMessage = (controlMessage: ControlMessage, run: StreamRun) => 
   }
 };
 
-/**
- * The stream ended without ever reaching `done` after a backend error frame — that's the fatal
- * case (e.g. every partition failed); promote it so callers that auto-restart (live tail) can
- * tell it apart from a clean finish.
- */
-const promoteUnfinishedBackendError = (run: StreamRun): Error | null => {
+const promoteUnfinishedBackendError = (run: StreamRun) => {
   const backendError = run.pendingBackendError;
   if (backendError === null || run.sawDone) {
     return null;
@@ -345,7 +315,7 @@ const promoteUnfinishedBackendError = (run: StreamRun): Error | null => {
   return backendError;
 };
 
-const failRun = (run: StreamRun, err: unknown): Error => {
+const failRun = (run: StreamRun, err: unknown) => {
   const streamError = err instanceof Error ? err : new Error(String(err));
   run.setters.setError(streamError);
   return streamError;
@@ -362,13 +332,7 @@ const settleRun = (session: SearchSession, setters: SearchSetters) => {
 };
 
 const finalizeRun = ({ session, setters, abortController }: StreamRun) => {
-  // An abort's rejection surfaces on a later microtask than the synchronous setup of
-  // whichever newer run replaced us (stop() + a fresh AbortController, both synchronous).
-  // If someone else now owns the session's abortController, this run's completion is stale —
-  // finalizing here (the shared buffer flush, phase, backendPhase, isLoadingMore) would clobber
-  // the newer run's in-progress state with our own "done". Only finalize when no one else has
-  // taken over (still us, or genuinely idle — e.g. an explicit stop with nothing queued to
-  // replace it).
+  // WARNING: Old aborts settle on a later microtask; do not let them clear in-progress state for the replacement stream.
   const supersededByNewerRun = session.abortController !== null && session.abortController !== abortController;
   if (session.abortController === abortController) {
     session.abortController = null;
@@ -378,10 +342,6 @@ const finalizeRun = ({ session, setters, abortController }: StreamRun) => {
   }
 };
 
-/**
- * Consumes the stream into the session. Resolves with the run's failure — `null` for a clean
- * completion or an abort — so callers that auto-restart (live tail) can tell them apart.
- */
 const consumeStream = async (client: ConsoleClient, req: ListMessagesRequest, run: StreamRun) => {
   const { signal } = run.abortController;
   const timeoutMs = run.isLongLived ? LIVE_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
@@ -400,8 +360,7 @@ const consumeStream = async (client: ConsoleClient, req: ListMessagesRequest, ru
   }
 };
 
-/** Re-fetches one message with the size limit lifted; the last data frame wins. */
-const fetchLargeMessage = async (client: ConsoleClient, req: ListMessagesRequest): Promise<TopicMessage> => {
+const fetchLargeMessage = async (client: ConsoleClient, req: ListMessagesRequest) => {
   let loaded: TopicMessage | null = null;
   for await (const res of client.listMessages(req, { timeoutMs: DEFAULT_TIMEOUT_MS })) {
     if (res.controlMessage.case === 'data') {
@@ -435,7 +394,6 @@ const EMPTY_STATS: StreamStats = {
   nextPageToken: null,
 };
 
-/** The React state the stream writes into, with its setters bundled for the stream helpers. */
 function useSearchState() {
   const [messages, setMessages] = useState<TopicMessage[]>([]);
   const [phase, setPhase] = useState<MessageSearchPhase>('idle');
@@ -444,8 +402,6 @@ function useSearchState() {
   const [stats, setStats] = useState<StreamStats>(EMPTY_STATS);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [newKeys, setNewKeys] = useState<ReadonlySet<string>>(new Set());
-  // setState functions never change identity, so the bundle is captured once and stays a
-  // stable dependency for the callbacks below.
   const [setters] = useState<SearchSetters>(() => ({
     setMessages,
     setNewKeys,
@@ -464,10 +420,15 @@ function useSearchState() {
  * Unlike the legacy `createMessageSearch` engine this surfaces every data frame
  * incrementally (throttled to ~5 flushes/s), which the live-tail UX needs to
  * insert rows and drive the flash animation while the stream is open.
+ *
+ * Live tail and push-down filters use long-lived requests. An error frame becomes a failed run only if no done frame follows it; a clean end or cancellation does not spend the retry budget.
+ *
+ * Both live and paged backing buffers are bounded: raw and decoded payloads remain in memory even beyond the on-screen window. Paged trimming discards the end already outside the display window.
+ *
+ * Re-fetches oversized messages with the limit lifted and replaces the existing row. The last data frame wins.
  */
-export function useMessageSearch(topicName: string): MessageSearchResult {
+export function useMessageSearch(topicName: string) {
   const { state, setters } = useSearchState();
-  // Lazy, so the session is built once rather than on every render; its identity never changes.
   const [session] = useState(createSearchSession);
 
   const stop = useCallback(() => abortSession(session, 'stopped by user'), [session]);
@@ -478,8 +439,6 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
       const run = beginRun(session, setters, params, options);
       const req = buildListMessagesRequest(topicName, params, options.pageToken);
       const streamError = await consumeStream(client, req, run);
-      // Surfaced via `error` above; reject so a caller that auto-restarts on completion
-      // (live tail) can tell a real failure apart from a clean finish and stop looping.
       if (streamError && !run.abortController.signal.aborted) {
         throw streamError;
       }
@@ -505,10 +464,6 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
     [runStream, state.stats.nextPageToken, session]
   );
 
-  /**
-   * Re-fetch a single "payload too large" message with the size limit lifted and
-   * swap it into the current result set in place.
-   */
   const loadLargeMessage = useCallback(
     async (partitionId: number, offset: number) => {
       const client = requireConsoleClient();
@@ -531,7 +486,6 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
     [topicName, setters, session]
   );
 
-  // Abort the stream and cancel timers on unmount
   useEffect(
     () => () => {
       abortSession(session, 'component unmounted');
@@ -540,7 +494,7 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
     [session]
   );
 
-  return {
+  const messageSearchResult: MessageSearchResult = {
     messages: state.messages,
     phase: state.phase,
     backendPhase: state.backendPhase,
@@ -556,4 +510,5 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
     loadMore,
     loadLargeMessage,
   };
+  return messageSearchResult;
 }

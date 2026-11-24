@@ -39,7 +39,11 @@ const formSchema = z.object({ settings: readPolicySchema });
 
 type FormValues = z.infer<typeof formSchema>;
 
-/** The form mounts with the dialog's content, so every opening starts from the saved settings. */
+/**
+ * The form mounts with the dialog's content, so every opening starts from the saved settings.
+ *
+ * An incoming principal is an edit, not a default. Saving while the fence is active reapplies the new settings across the brokers.
+ */
 export const ClusterFenceSettingsDialog = ({
   open,
   onOpenChange,
@@ -57,13 +61,11 @@ export const ClusterFenceSettingsDialog = ({
   </Dialog>
 );
 
-/** Added as an edit, not a default, so the dialog opens ready to save it. */
 const useAddedPrincipal = (form: UseFormReturn<FormValues>, addPrincipal: string | undefined) => {
   useEffect(() => {
     const name = addPrincipal === undefined ? '' : toExemptName(addPrincipal);
     const settings = form.getValues('settings');
     if (name && !settings.exemptPrincipals.includes(name)) {
-      // The whole object, not the nested path: the fields render from the `settings` Controller.
       form.setValue(
         'settings',
         { ...settings, exemptPrincipals: [...settings.exemptPrincipals, name] },
@@ -73,7 +75,7 @@ const useAddedPrincipal = (form: UseFormReturn<FormValues>, addPrincipal: string
   }, [addPrincipal, form]);
 };
 
-const toFormValues = (summary: FenceSummary): FormValues => ({
+const toFormValues = (summary: FenceSummary) => ({
   settings: { exemptPrincipals: summary.exemptPrincipals, allowAllReads: summary.allowAllReads },
 });
 
@@ -82,7 +84,6 @@ const ClusterFenceSettingsForm = ({ onClose, addPrincipal }: { onClose: () => vo
   const updateSettings = useUpdateClusterFenceSettingsMutation();
   const { opened, changed, refresh } = useOpenedFence(summary, updateSettings.isPending || updateSettings.isSuccess);
 
-  /** Saving while a fence is requested makes every broker apply the new settings, back through Fencing. */
   const refences = isBlockingPhase(opened.phase);
   const suggestions = useReaderSuggestions();
 

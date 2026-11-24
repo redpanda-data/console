@@ -20,28 +20,28 @@ import {
   getLagStep,
   getLinkIdentity,
   getSourceFenceStep,
-  type SourceFenceStep,
 } from './failover-model';
 import { describe, expect, test } from 'bun:test';
 import type { UnifiedShadowLink } from '../model';
 
-const cloudSource = (state: FencePhase, exemptPrincipals = ['shadow-orders']): ShadowLinkSource => ({
-  kind: 'cloud',
-  clusterId: 'prod',
-  clusterName: 'prod-us-east-1',
-  fence: {
-    status: 'known',
-    state,
-    revision: 18n,
-    exemptPrincipals,
-    allowAllReads: false,
-    brokers: [],
-  },
-});
+const cloudSource = (state: FencePhase, exemptPrincipals = ['shadow-orders']) =>
+  ({
+    kind: 'cloud',
+    clusterId: 'prod',
+    clusterName: 'prod-us-east-1',
+    fence: {
+      status: 'known',
+      state,
+      revision: 18n,
+      exemptPrincipals,
+      allowAllReads: false,
+      brokers: [],
+    },
+  }) satisfies ShadowLinkSource;
 
 const sasl: LinkIdentity = { authentication: 'sasl', principal: 'shadow-orders' };
 
-const step = (source: ShadowLinkSource, link: LinkIdentity = sasl): SourceFenceStep => {
+const step = (source: ShadowLinkSource, link: LinkIdentity = sasl) => {
   const result = getSourceFenceStep({ source, link, resolving: false });
   if (!result) {
     throw new Error('No guided failover for this source');
@@ -49,11 +49,12 @@ const step = (source: ShadowLinkSource, link: LinkIdentity = sasl): SourceFenceS
   return result;
 };
 
-const topic = (topicName: string, totalLag: number, state = ShadowTopicState.ACTIVE): FailoverTopic => ({
-  topicName,
-  state,
-  totalLag: BigInt(totalLag),
-});
+const topic = (topicName: string, totalLag: number, state = ShadowTopicState.ACTIVE) =>
+  ({
+    topicName,
+    state,
+    totalLag: BigInt(totalLag),
+  }) satisfies FailoverTopic;
 
 const caughtUp = [topic('orders-events', 0), topic('orders-audit', 0)];
 

@@ -77,7 +77,6 @@ export const SecretCreatePage = () => {
     try {
       await createSecret({ request });
       toast.success('Secret created');
-      // Handled here so a navigation failure is not reported as a failed create.
       navigate({ to: '/secrets' }).catch((navigationError: unknown) => {
         toast.error('Failed to navigate', { description: String(navigationError) });
       });
@@ -89,7 +88,6 @@ export const SecretCreatePage = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
       <header className="flex flex-col gap-2">
         <div className="text-body text-muted-foreground">
           Create a new secret that can be securely accessed by your services.

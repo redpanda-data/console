@@ -9,10 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// Helper class
-// - manages timers for refreshing current reassignments
-// - tracks progress history for each reassignment to estimate speed and ETA
-
 import { api } from '../../../../state/backend-api';
 import type { Partition, PartitionReassignments } from '../../../../state/rest-interfaces';
 import { IsDev } from '../../../../utils/env';
@@ -21,11 +17,11 @@ import { clone, toJson } from '../../../../utils/json-utils';
 const refreshIntervals = {
   cluster: 6000,
   reassignments: 3000,
-  // partitions = automatic, same as reassignment
 } as const;
 
 export type ReassignmentState = {
-  id: string; // used to match instances of 'ReassignmentState' and 'PartitionReassignments'
+  /** Stable ID matching the same reassignment across backend refreshes. */
+  id: string;
 
   topicName: string;
   partitions: {
@@ -34,35 +30,31 @@ export type ReassignmentState = {
     addingReplicas: number[];
     removingReplicas: number[];
 
-    // computed
-    maxReplicaSize: number; // max size of one replica
-    currentSize: { brokerId: number; replicaSize: number }[]; // size as reported by each *new* broker
+    /** Largest reported replica size, or -1 before metadata arrives. */
+    maxReplicaSize: number;
+    /** Bytes reported by each broker receiving a new replica. */
+    currentSize: { brokerId: number; replicaSize: number }[];
   }[];
 
-  // computed
-
-  // sum of total network traffic:
-  // meaning that partitions that are being added to multiple new brokers,
-  // will also be counted multiple times.
-  // This value can actually increase while the reassignment is in progress (because data is being written to the leader),
-  // which in turn can cause the progress to actually go backwards!
+  /** Bytes to copy, counting each new replica separately. Writes to the leader can increase this and reduce progress. */
   totalTransferSize: number;
 
-  // total remaining bytes that have to be transferred
-  // we use this to calculate estimated speed and ETA since it also includes the (potentially changing) totalTransferSize
+  /** Previous sample used with `remaining` to estimate speed and ETA. */
   remainingPrev: { value: number; timestamp: Date } | null;
+  /** Latest sample of bytes still to copy. */
   remaining: { value: number; timestamp: Date } | null;
 
-  // 1 - (remaining / totalTransferSize)
+  /** Percentage transferred, or null before the first sample. */
   progressPercent: number | null;
 
-  estimateSpeed: number | null; // in bytes per second
+  /** Estimated bytes transferred per second. */
+  estimateSpeed: number | null;
   estimateCompletionTime: Date | null;
 
-  // set when a reassignment has completed
   actualTimeCompleted: Date | null;
 };
 
+/** Refreshes active reassignments and broker data, tracking transfer speed and ETA per reassignment. */
 export class ReassignmentTracker {
   clusterTimer: number | null = null;
   reassignTimer: number | null = null;
@@ -72,8 +64,6 @@ export class ReassignmentTracker {
   constructor() {
     this.refreshReassignments = this.refreshReassignments.bind(this);
     this.createReassignmentState = this.createReassignmentState.bind(this);
-    this.updateReassignmentState = this.updateReassignmentState.bind(this);
-    this.computeId = this.computeId.bind(this);
     this.stop = this.stop.bind(this);
     this.start = this.start.bind(this);
   }
@@ -84,17 +74,14 @@ export class ReassignmentTracker {
       return;
     }
 
-    // Active reassignments
     this.reassignTimer = window.setInterval(
       // biome-ignore lint/suspicious/noConsole: existing console error logging
       () => this.refreshReassignments().catch(console.error),
       refreshIntervals.reassignments
     );
 
-    // Broker status
     this.clusterTimer = window.setInterval(() => api.refreshCluster(true), refreshIntervals.cluster);
 
-    // Immediately refresh as well
     setTimeout(async () => {
       await this.refreshReassignments();
       api.refreshCluster(true);
@@ -102,16 +89,12 @@ export class ReassignmentTracker {
   }
 
   async refreshReassignments() {
-    // timer
-
-    // Save current state, refresh, save new state
     await api.refreshPartitionReassignments(true);
     const liveReassignments = (clone(api.partitionReassignments) ?? []).map((r) => ({
       id: this.computeId(r),
       ...r,
     }));
 
-    // Update relevant topic-partitions
     const topics = liveReassignments.map((r) => r.topicName);
     if (topics.length > 0) {
       await api.refreshPartitions(topics, true);
@@ -120,7 +103,6 @@ export class ReassignmentTracker {
     this.addNewReassignments(liveReassignments);
     this.markRemovedReassignmentsCompleted(liveReassignments);
 
-    // Update running reassignments
     for (const r of this.trackingReassignments.slice()) {
       this.updateReassignmentState(r);
     }
@@ -128,28 +110,24 @@ export class ReassignmentTracker {
     this.removeExpiredReassignments();
   }
 
-  // Add new reassignments
   addNewReassignments(liveReassignments: (PartitionReassignments & { id: string })[]) {
     for (const r of liveReassignments) {
       const existingState = this.trackingReassignments.first((x) => x.id === r.id);
       if (existingState === null) {
-        // console.log('adding new state', { id: r.id, reassignment: r });
         const state = this.createReassignmentState(r);
         this.trackingReassignments.push(state);
       }
     }
   }
 
-  // Mark removed reassignments as completed
   markRemovedReassignmentsCompleted(liveReassignments: { id: string }[]) {
     for (const r of this.trackingReassignments) {
       if (r.actualTimeCompleted !== null) {
-        continue; // no need to the ones already marked as completed
+        continue;
       }
 
       const live = liveReassignments.first((x) => x.id === r.id);
       if (!live) {
-        // this tracked reassignment does not exist in the live assignments anymore
         r.actualTimeCompleted = new Date();
         r.progressPercent = 100;
         r.remaining = { value: 0, timestamp: new Date() };
@@ -157,19 +135,18 @@ export class ReassignmentTracker {
     }
   }
 
-  // Remove reassignments that are in completed state for some time
   removeExpiredReassignments() {
     this.trackingReassignments = this.trackingReassignments.filter((x) => {
       if (x.actualTimeCompleted === null) {
-        return true; // not yet complete, keep it
+        return true;
       }
       const age = (Date.now() - x.actualTimeCompleted.getTime()) / 1000;
       return !(age > 8 && IsDev);
     });
   }
 
-  createReassignmentState(r: PartitionReassignments): ReassignmentState {
-    return {
+  createReassignmentState(r: PartitionReassignments) {
+    const state: ReassignmentState = {
       id: this.computeId(r),
 
       topicName: r.topicName,
@@ -192,23 +169,12 @@ export class ReassignmentTracker {
       estimateCompletionTime: null,
       actualTimeCompleted: null,
     };
-  }
-
-  updateReassignmentState(state: ReassignmentState) {
-    updatePartitionSizes(state);
-    updateRemaining(state);
-    updateEstimates(state);
-
     return state;
   }
 
-  // compute a stable ID for a PartitionReassignment
-  computeId(r: PartitionReassignments): string {
-    const id: unknown[] = [];
-    id.push(r.topicName);
+  updateReassignmentState = updateReassignmentState;
 
-    return toJson(id);
-  }
+  computeId = computeId;
 
   stop() {
     if (this.clusterTimer !== null) {
@@ -223,7 +189,6 @@ export class ReassignmentTracker {
   }
 }
 
-// partition stats
 function updatePartitionSizes(state: ReassignmentState) {
   const topicPartitions = api.topicPartitions.get(state.topicName);
   for (const p of state.partitions) {
@@ -232,19 +197,13 @@ function updatePartitionSizes(state: ReassignmentState) {
       continue;
     }
 
-    // current size (on new brokers)
     p.currentSize = sizesOnAddingBrokers(p.addingReplicas, logDirs);
 
-    // max size (on any broker)
     p.maxReplicaSize = logDirs.max((e) => e.size);
   }
 }
 
-/** The replica size each adding broker reports so far, 0 for a broker without a log dir for the partition. */
-function sizesOnAddingBrokers(
-  addingReplicas: number[],
-  logDirs: Partition['partitionLogDirs']
-): { brokerId: number; replicaSize: number }[] {
+function sizesOnAddingBrokers(addingReplicas: number[], logDirs: Partition['partitionLogDirs']) {
   return addingReplicas.map((b) => {
     const logDir = logDirs.first((l) => l.brokerId === b);
     return { brokerId: b, replicaSize: logDir && !logDir.error ? logDir.size : 0 };
@@ -252,15 +211,12 @@ function sizesOnAddingBrokers(
 }
 
 function updateRemaining(state: ReassignmentState) {
-  // total transfer size (size of each partition multiplied by how many brokers need to receive that partition)
   state.totalTransferSize = state.partitions.sum((p) => p.maxReplicaSize * p.addingReplicas.length);
 
   const newTransferred = state.partitions.sum((p) => p.currentSize.sum((x) => x.replicaSize));
   const newRemaining = state.totalTransferSize - newTransferred;
 
   if (state.remainingPrev === null || state.remainingPrev.value !== newRemaining) {
-    // only set a new transferred statistic when the new value is different from the previous one
-    // otherwise we'd end up with the same value for prev and cur with different timestamps
     state.remainingPrev = state.remaining;
     state.remaining = { value: newRemaining, timestamp: new Date() };
     state.progressPercent = (1 - state.remaining.value / state.totalTransferSize) * 100;
@@ -268,16 +224,29 @@ function updateRemaining(state: ReassignmentState) {
 }
 
 function updateEstimates(state: ReassignmentState) {
-  // estimate speed (only if we have cur and prev)
   if (state.remaining && state.remainingPrev && state.remaining.value !== state.remainingPrev.value) {
     const intervalSec = (state.remaining.timestamp.getTime() - state.remainingPrev.timestamp.getTime()) / 1000;
     const deltaRemaining = state.remaining.value - state.remainingPrev.value;
     state.estimateSpeed = -deltaRemaining / intervalSec;
   }
 
-  // estimate completion time
   if (state.estimateSpeed !== null && state.remaining !== null) {
     const remainingTimeSec = state.remaining.value / state.estimateSpeed;
     state.estimateCompletionTime = new Date(Date.now() + remainingTimeSec * 1000);
   }
+}
+
+function updateReassignmentState(state: ReassignmentState) {
+  updatePartitionSizes(state);
+  updateRemaining(state);
+  updateEstimates(state);
+
+  return state;
+}
+
+function computeId(r: PartitionReassignments) {
+  const id: unknown[] = [];
+  id.push(r.topicName);
+
+  return toJson(id);
 }

@@ -133,8 +133,8 @@ describe('summarizeFence', () => {
   });
 });
 
-const progress = (...entries: [number, BrokerProgress['status'], boolean | undefined][]): BrokerProgress[] =>
-  entries.map(([nodeId, status, blocks]) => ({ nodeId, status, blocks }));
+const progress = (...entries: [number, BrokerProgress['status'], boolean | undefined][]) =>
+  entries.map(([nodeId, status, blocks]) => ({ nodeId, status, blocks })) satisfies BrokerProgress[];
 
 describe('describeFencePhase', () => {
   test('says each broker blocks writes and reads as soon as the fence reaches it, without naming the phase', () => {
@@ -291,7 +291,6 @@ describe('getClientEffects', () => {
       schema: 'rejected',
       transaction: 'ended',
     });
-    /** The error codes clients get are cluster settings, so the details don't name them. */
     expect(effects.find((effect) => effect.id === 'produce')?.detail).toBe('Rejected.');
     expect(effects.find((effect) => effect.id === 'schema')?.detail).toBe('Rejected.');
   });
@@ -321,9 +320,8 @@ describe('getClientEffects', () => {
   });
 
   describe('while new read settings reach the brokers, each broker reads by the settings it has', () => {
-    /** Broker 1 has the new settings; broker 2 is still fenced on the earlier ones. */
     const settingsChange = (earlier: Partial<typeof settings>, now: Partial<typeof settings>) => {
-      const fenced = (nodeId: number, readPolicy: typeof settings): BrokerProgress => ({
+      const fenced: (nodeId: number, readPolicy: typeof settings) => BrokerProgress = (nodeId, readPolicy) => ({
         nodeId,
         status: nodeId === 1 ? 'confirmed' : 'behind',
         copy: { phase: nodeId === 1 ? 'fencing' : 'fenced', revision: nodeId === 1 ? 19n : 18n, readPolicy },

@@ -19,7 +19,7 @@ export type ConfigListFacts = ParsedConfigComponents & { end: PipelineEndStatus 
 
 const NO_FACTS: ConfigListFacts = { inputs: [], processors: [], outputs: [], end: 'none' };
 
-const orElse = <T>(read: () => T, fallback: T): T => {
+const orElse = <T>(read: () => T, fallback: T) => {
   try {
     return read();
   } catch {
@@ -27,16 +27,16 @@ const orElse = <T>(read: () => T, fallback: T): T => {
   }
 };
 
-// One parse serves both, and each fails on its own.
-function readConfigFacts(configYaml: string): ConfigListFacts {
+function readConfigFacts(configYaml: string) {
   const config = configYaml
     ? orElse(() => parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null, undefined)
     : undefined;
   if (config === undefined) {
     return NO_FACTS;
   }
-  const end = orElse((): PipelineEndStatus => summarizePipelineEnd(config).status, 'none');
-  return { ...orElse(() => configComponentsOf(config), NO_FACTS), end };
+  const end = orElse(() => summarizePipelineEnd(config).status, 'none');
+  const facts: ConfigListFacts = { ...orElse(() => configComponentsOf(config), NO_FACTS), end };
+  return facts;
 }
 
 const configComponentsCache = new Map<string, ConfigListFacts>();
@@ -50,7 +50,7 @@ const CONFIG_COMPONENTS_CACHE_LIMIT = 10_000;
  * the keys, not the parsed values. Past that ceiling the oldest half is evicted and re-parses on the
  * next poll, so a cluster steadily above 10k pays the parse this avoids.
  */
-export function parseConfigComponentsCached(configYaml: string): ConfigListFacts {
+export function parseConfigComponentsCached(configYaml: string) {
   const cached = configComponentsCache.get(configYaml);
   if (cached) {
     return cached;
@@ -63,7 +63,7 @@ export function parseConfigComponentsCached(configYaml: string): ConfigListFacts
   return parsed;
 }
 
-/** Drops the oldest half (Map preserves insertion order) — clearing all would reparse everything next refresh. */
+// WARNING: Evict only the oldest entries; clearing the entire cache forces all pipelines to be reparsed on the next refresh.
 function evictOldestHalf() {
   let surplus = CONFIG_COMPONENTS_CACHE_LIMIT / 2;
   for (const key of configComponentsCache.keys()) {

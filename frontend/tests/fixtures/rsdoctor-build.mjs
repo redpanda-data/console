@@ -18,7 +18,6 @@ const plugins = (bundlerConfig.plugins ?? []).filter((plugin) => plugin instance
 if (plugins.length !== Number(Boolean(process.env.RSDOCTOR))) {
   throw new Error('Unexpected RsdoctorRspackPlugin count in Console web production configuration');
 }
-// Preserve configured analysis options, but isolate fixture output from the real report.
 for (const plugin of plugins) {
   if (!isAbsolute(plugin.options.output.reportDir)) {
     throw new Error('Console analysis report directory must not depend on the working directory');

@@ -19,7 +19,7 @@ export async function withProgressToast<T>(
   label: string,
   task: () => Promise<T>,
   failureMessage: (err: unknown) => string = () => `${label} - failed`
-): Promise<T> {
+) {
   const toastId = toast.loading(`${label}...`);
   try {
     const result = await task();

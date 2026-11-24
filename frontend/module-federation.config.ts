@@ -13,30 +13,26 @@ import type { ModuleFederationOptions as ModuleFederationPluginOptions } from '@
 import { version as reactVersion } from 'react/package.json';
 import { version as reactDomVersion } from 'react-dom/package.json';
 
+/**
+ * Keep embedded.js and legacy entries for existing Cloud hosts. Both compatibility mounts use a private React 19 root even when the host uses React 18.
+ */
 export const moduleFederationConfig: ModuleFederationPluginOptions = {
   name: 'rp_console',
-  // IMPORTANT: Keep as 'embedded.js' for backward compatibility with existing Cloud UI
   filename: 'embedded.js',
   manifest: {
     fileName: 'mf-manifest.json',
   },
 
   exposes: {
-    // React 18 hosts need the compatibility shim's private React 19 root.
     './App': './src/federation/console-legacy-app.tsx',
-    // React bridge entry consumed by Cloud UI. Mounts the app with Console's own
-    // React 19 createRoot into a host-provided DOM node, decoupling it from the
-    // host's React 18. See src/federation/console-federated-bridge.tsx.
     './BridgeApp': './src/federation/console-federated-bridge.tsx',
     './types': './src/federation/types.ts',
 
-    // Legacy: Keep for backward compat with old Cloud UI
     './EmbeddedApp': './src/embedded-app.tsx',
     './injectApp': './src/inject-app.tsx',
     './config': './src/config.ts',
   },
 
-  // These compatibility entries must never consume the host's React singleton.
   shared: {},
 };
 
@@ -49,7 +45,7 @@ const sharedReact19 = {
   requiredVersion: REACT19_REQUIRED_VERSION,
 };
 
-// A separate container keeps the existing entries' private React untouched.
+/** A separate container keeps the existing entries' private React untouched. */
 export const react19ModuleFederationConfig: ModuleFederationPluginOptions = {
   name: 'rp_console_react19',
   filename: 'embedded.js',

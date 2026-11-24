@@ -19,7 +19,6 @@ import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 
 const CLAMP_OVER_CHARS = 200;
 
-// Field prose sits under its control: headings get no more weight than the body.
 const MarkdownHeading = ({ children }: { children?: React.ReactNode }) => (
   <div className="mt-1 text-body-sm font-medium text-foreground">{children}</div>
 );
@@ -32,8 +31,6 @@ const MARKDOWN_COMPONENTS: Components = {
   h5: MarkdownHeading,
   h6: MarkdownHeading,
   p: ({ children }) => <div className="text-body-sm text-muted-foreground">{children}</div>,
-  // Markdown can produce an anchor with no destination, which is text rather than a link. Every block an
-  // anchor lands in already sets `text-body-sm`, so the link takes its size from the prose around it.
   a: ({ href, children }) =>
     href ? (
       <Link href={href} rel="noopener noreferrer" target="_blank">
@@ -43,7 +40,6 @@ const MARKDOWN_COMPONENTS: Components = {
       <>{children}</>
     ),
   code: ({ children }) => (
-    // break-words, not break-all: only unbreakable strings (DSNs, URLs) wrap mid-token.
     <code className="rounded bg-muted px-1 py-0.5 font-mono text-body-sm wrap-break-word text-foreground">
       {children}
     </code>
@@ -56,7 +52,6 @@ const MARKDOWN_COMPONENTS: Components = {
   strong: ({ children }) => <strong className="font-medium text-foreground">{children}</strong>,
 };
 
-// Paragraphs unwrapped, so a one-paragraph description can flow inline with its trailing docs link.
 const INLINE_MARKDOWN_COMPONENTS: Components = {
   ...MARKDOWN_COMPONENTS,
   p: ({ children }) => <>{children}</>,
@@ -68,11 +63,6 @@ const MarkdownBody = ({ markdown }: { markdown: string }) => (
   </div>
 );
 
-/**
- * Link to the field's own heading on the connector's docs page. Inline, not inline-flex: a flex box
- * baselines on the icon's bottom edge, which drops the word below the prose it follows. `tone="current"`
- * takes the muted help-text ink of whichever block it sits in.
- */
 const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }) => (
   <Link
     aria-label={fieldName ? `${fieldName} documentation` : 'Field documentation'}
@@ -81,20 +71,17 @@ const FieldDocsLink = ({ href, fieldName }: { href: string; fieldName?: string }
     target="_blank"
     tone="current"
   >
-    {/* size-3 is the text's own rung; -0.15em centres it on the cap height. */}
     <BookOpenIcon className="mr-1 inline size-3 align-[-0.15em]" />
     Docs
   </Link>
 );
 
-// Help text and its trailing link share one line box, so the link reads as part of the sentence.
 const InlineHelp = ({ children, docsLink }: { children: React.ReactNode; docsLink: React.ReactNode }) => (
   <div className="text-body-sm text-muted-foreground">
     {children} {docsLink}
   </div>
 );
 
-/** AsciiDoc `description`, rendered as Markdown and collapsed to two lines when it runs long. */
 const LongDescription = ({ source, docsLink }: { source: string; docsLink: React.ReactNode }) => {
   const [expanded, setExpanded] = useState(false);
   const bodyId = useId();
@@ -108,7 +95,6 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
     };
   }, [source]);
 
-  // One paragraph, no block content: it can carry the link on its own line.
   if (!clampable) {
     return (
       <InlineHelp docsLink={docsLink}>
@@ -123,7 +109,6 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
         {expanded ? (
           <MarkdownBody markdown={markdown} />
         ) : (
-          // Plain text collapsed: one text node, so line-clamp applies cleanly.
           <div className="line-clamp-2 text-body-sm text-muted-foreground">{preview}</div>
         )}
       </div>

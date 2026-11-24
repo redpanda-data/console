@@ -8,7 +8,6 @@ export const useLicenseSignupMutation = () => {
 
   return useMutation(licenseSignup, {
     onSuccess: async () => {
-      // Invalidate license-related queries to refresh the license data
       await queryClient.invalidateQueries({
         queryKey: createConnectQueryKey({
           schema: SignupService.method.licenseSignup,
@@ -18,7 +17,6 @@ export const useLicenseSignupMutation = () => {
       });
     },
     onError: (error) => {
-      // Don't show toast for registration errors as they're handled in the modal
       // biome-ignore lint/suspicious/noConsole: intentional console usage
       console.error('License signup failed:', error);
       return error;

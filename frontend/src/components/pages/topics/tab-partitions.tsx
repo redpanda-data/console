@@ -37,17 +37,14 @@ type TopicPartitionsProps = { topic: Topic };
 
 const EMPTY_PARTITIONS: Partition[] = [];
 
-function findPartitionIds(
-  entries: { topicName: string; partitionIds: number[] }[] | undefined,
-  topicName: string
-): number[] | undefined {
+function findPartitionIds(entries: { topicName: string; partitionIds: number[] }[] | undefined, topicName: string) {
   return (entries ?? []).find((entry) => entry.topicName === topicName)?.partitionIds;
 }
 
 function buildPartitionColumns(
   leaderlessPartitions: number[] | undefined,
   underReplicatedPartitions: number[] | undefined
-): DataTableColumnDef<Partition>[] {
+) {
   return [
     {
       accessorKey: 'id',
@@ -92,7 +89,7 @@ function buildPartitionColumns(
       enableSorting: false,
       cell: ({ row: { original: partition } }) => <BrokerList partition={partition} />,
     },
-  ];
+  ] satisfies DataTableColumnDef<Partition>[];
 }
 
 function usePartitionsTable(topicName: string, partitions: Partition[] | null | undefined) {
@@ -127,7 +124,6 @@ function usePartitionsTable(topicName: string, partitions: Partition[] | null | 
 export const TopicPartitions: FC<TopicPartitionsProps> = ({ topic }) => {
   const partitions = useApiStoreHook((s) => s.topicPartitions.get(topic.topicName));
 
-  // All hooks stay above the early returns so the hook order is stable while partitions load.
   const { table, columnCount } = usePartitionsTable(topic.topicName, partitions);
 
   if (partitions === undefined) {

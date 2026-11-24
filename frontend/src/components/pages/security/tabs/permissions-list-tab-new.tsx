@@ -171,7 +171,6 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
       </Dialog>
       <Collapsible data-testid={`row-${group.principalName}`} onOpenChange={onToggle} open={isExpanded}>
         <div className="overflow-hidden rounded-lg border">
-          {/* Card header — distinct background makes each principal easy to scan */}
           <CollapsibleTrigger
             render={
               <div
@@ -276,7 +275,6 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
             }
           />
 
-          {/* Expanded ACL table */}
           <CollapsibleContent>
             {hasAcls ? (
               <div className="border-t">
@@ -324,7 +322,7 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
 
 const includesIgnoringCase = (value: string, lowerCaseQuery: string) => value.toLowerCase().includes(lowerCaseQuery);
 
-const principalMatchesSearch = (group: PrincipalPermissionGroup, query: string): boolean => {
+const principalMatchesSearch = (group: PrincipalPermissionGroup, query: string) => {
   if (!query) {
     return true;
   }
@@ -420,7 +418,6 @@ export const PermissionsListTabNew: FC = () => {
   useSecurityPageHeader('permissions');
   const [searchQuery, setSearchQuery] = useQueryState('search', parseAsString.withDefault(''));
   const [createAclOpen, setCreateAclOpen] = useState(false);
-  // Held above the error returns so a failed refetch does not collapse expanded principals.
   const rows = useExpandedRows();
   const { principalGroups, isAclsLoading, isAclsError, aclsError, isUsersError, usersError } =
     usePrincipalPermissions();

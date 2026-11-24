@@ -14,10 +14,12 @@ import React from 'react';
 
 import styles from './Wizard.module.scss';
 
+/**
+ * Provides one content root so the surrounding page column does not insert gaps within a step.
+ */
 export function Wizard<State extends WizardState>({ state }: { state: State }) {
   const [, currentStep] = state.getCurrentStep();
   return (
-    // One element: PageContent is `flex flex-col gap-3`, so separate children would gain a gap.
     <div>
       <div className={styles.content}>{currentStep.content}</div>
       <div className={styles.footer}>

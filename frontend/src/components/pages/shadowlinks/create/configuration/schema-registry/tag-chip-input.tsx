@@ -61,8 +61,6 @@ export const TagChipInput = ({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    // Enter/Backspace during an IME composition belong to the composer, not
-    // the chip list.
     if (event.nativeEvent.isComposing) {
       return;
     }

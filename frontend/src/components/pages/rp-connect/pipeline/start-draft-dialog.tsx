@@ -41,7 +41,6 @@ function StartDraftDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
 }) {
-  // Parsed only while open: a list page holds one of these per draft row.
   const topics = useMemo(() => (open ? extractAllTopics(configYaml) : []), [open, configYaml]);
 
   return (

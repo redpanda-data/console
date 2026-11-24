@@ -14,15 +14,12 @@ import type { editor } from 'monaco-editor';
 import { detectSlashTrigger, SLASH_TRIGGER_PATTERN } from './use-slash-command';
 import { describe, expect, it } from 'bun:test';
 
-/** Minimal mock satisfying detectSlashTrigger's editor API usage. */
 function mockEditor(lineContent: string, cursorColumn: number, lineNumber = 1) {
   return {
     getPosition: () => ({ lineNumber, column: cursorColumn }),
     getModel: () => ({ getLineContent: () => lineContent }),
   } as unknown as editor.IStandaloneCodeEditor;
 }
-
-// ─── SLASH_TRIGGER_PATTERN ───────────────────────────────────────────
 
 describe('the SLASH_TRIGGER_PATTERN', () => {
   it('matches space', () => {
@@ -50,8 +47,6 @@ describe('the SLASH_TRIGGER_PATTERN', () => {
     expect(SLASH_TRIGGER_PATTERN.test('-')).toBe(false);
   });
 });
-
-// ─── detectSlashTrigger ──────────────────────────────────────────────
 
 describe('detectSlashTrigger', () => {
   describe('returns position when slash is at a valid trigger point', () => {

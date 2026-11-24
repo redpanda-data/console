@@ -19,10 +19,7 @@ import type {
 } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-// Stale time constants for consistent cache behavior
-// const STALE_TIME_SHORT = 10_000; // 10 seconds
-const STALE_TIME_MEDIUM = 30_000; // 30 seconds
-// const STALE_TIME_LONG = 60_000; // 60 seconds
+const STALE_TIME_MEDIUM = 30_000;
 
 export type SchemaRegistryContextResponse = {
   name: string;
@@ -52,8 +49,8 @@ export const useSchemaRegistryContextsQuery = (enabled = true) =>
     staleTime: STALE_TIME_MEDIUM,
   });
 
-export const useListSchemasQuery = () => {
-  return useTanstackQuery<SchemaRegistrySubject[]>({
+export const useListSchemasQuery = () =>
+  useTanstackQuery<SchemaRegistrySubject[]>({
     queryKey: ['schemaRegistry', 'subjects'],
     queryFn: async () => {
       const response = await fetch(`${config.restBasePath}/schema-registry/subjects`, {
@@ -68,7 +65,6 @@ export const useListSchemasQuery = () => {
       }
 
       const data = await response.json();
-      // could also be a "not configured" response
       if (!Array.isArray(data)) {
         return [];
       }
@@ -77,7 +73,6 @@ export const useListSchemasQuery = () => {
     },
     refetchOnMount: true,
   });
-};
 
 export const useSchemaModeQuery = () =>
   useTanstackQuery<string | null>({
@@ -131,7 +126,7 @@ export const useSchemaCompatibilityQuery = () =>
     refetchOnMount: true,
   });
 
-const fetchSchemaDetails = async (subjectName: string): Promise<SchemaRegistrySubjectDetails> => {
+const fetchSchemaDetails: (subjectName: string) => Promise<SchemaRegistrySubjectDetails> = async (subjectName) => {
   const response = await fetch(
     `${config.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/all`,
     {
@@ -262,17 +257,17 @@ export const useUpdateGlobalCompatibilityMutation = () => {
   });
 };
 
-async function readSchemaRegistryResponse<T>(response: Response, failureMessage: string): Promise<T> {
+async function readSchemaRegistryResponse<T>(response: Response, failureMessage: string) {
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(errorText || failureMessage);
   }
 
-  return response.json();
+  const payload: Promise<T> = response.json();
+  return payload;
 }
 
-// Deleting a subject's or context's own setting makes it inherit the global one again (`DEFAULT`).
-async function resetSchemaRegistrySetting<T>(path: string, failureMessage: string): Promise<T> {
+async function resetSchemaRegistrySetting<T>(path: string, failureMessage: string) {
   const response = await fetch(`${config.restBasePath}/schema-registry/${path}`, {
     method: 'DELETE',
     headers: {
@@ -282,7 +277,7 @@ async function resetSchemaRegistrySetting<T>(path: string, failureMessage: strin
   return readSchemaRegistryResponse<T>(response, failureMessage);
 }
 
-async function putSchemaRegistrySetting<T>(path: string, body: object, failureMessage: string): Promise<T> {
+async function putSchemaRegistrySetting<T>(path: string, body: object, failureMessage: string) {
   const response = await fetch(`${config.restBasePath}/schema-registry/${path}`, {
     method: 'PUT',
     headers: {
@@ -414,7 +409,6 @@ export const useDeleteSchemaSubjectMutation = () => {
       await api.deleteSchemaSubject(subjectName, permanent);
     },
     onSuccess: async () => {
-      // Only invalidate subjects list, not mode/compatibility
       await queryClient.invalidateQueries({ queryKey: ['schemaRegistry', 'subjects'], exact: false });
     },
     onError: (error) => {
@@ -562,8 +556,8 @@ export const useValidateSchemaMutation = () =>
     },
   });
 
-export const useSchemaReferencedByQuery = (subjectName: string, version: number, options?: { enabled?: boolean }) => {
-  return useTanstackQuery<{ schemaId: number; error?: string; usages: { subject: string; version: number }[] }[]>({
+export const useSchemaReferencedByQuery = (subjectName: string, version: number, options?: { enabled?: boolean }) =>
+  useTanstackQuery<{ schemaId: number; error?: string; usages: { subject: string; version: number }[] }[]>({
     queryKey: ['schemaRegistry', 'subjects', subjectName, 'versions', version, 'referencedby'],
     queryFn: async () => {
       const response = await fetch(
@@ -582,14 +576,12 @@ export const useSchemaReferencedByQuery = (subjectName: string, version: number,
 
       const data = await response.json();
 
-      // Filter out entries with errors
       return data.filter((ref: { error?: string }) => !ref.error);
     },
     staleTime: STALE_TIME_MEDIUM,
     refetchOnMount: true,
     enabled: options?.enabled !== false,
   });
-};
 
 export const useDeleteSchemaVersionMutation = () => {
   const queryClient = useQueryClient();
@@ -630,7 +622,7 @@ export const useDeleteSchemaVersionMutation = () => {
   });
 };
 
-async function fetchSchemaUsagesById(schemaId: number): Promise<SchemaVersion[]> {
+async function fetchSchemaUsagesById(schemaId: number) {
   const response = await config.fetch(`${config.restBasePath}/schema-registry/schemas/ids/${schemaId}/versions`, {
     method: 'GET',
     headers: {
@@ -639,7 +631,6 @@ async function fetchSchemaUsagesById(schemaId: number): Promise<SchemaVersion[]>
   });
 
   if (!response.ok) {
-    // 404 means the schema ID doesn't exist, return empty array
     if (response.status === 404) {
       return [];
     }
@@ -648,12 +639,12 @@ async function fetchSchemaUsagesById(schemaId: number): Promise<SchemaVersion[]>
 
   const data = await response.json();
 
-  // Handle "not configured" response
   if (!Array.isArray(data)) {
     return [];
   }
 
-  return data;
+  const versions: SchemaVersion[] = data;
+  return versions;
 }
 
 export const useSchemaUsagesByIdQuery = (schemaId: number | null) =>

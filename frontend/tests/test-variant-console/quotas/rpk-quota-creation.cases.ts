@@ -3,8 +3,6 @@ import { step, test } from '../../shared/e2e';
 import { createClientIdQuota, createUserQuota, deleteClientIdQuota, deleteUserQuota } from '../../shared/quota.utils';
 import { QuotaPage } from '../utils/quota-page';
 
-// E2E tests for quota management via RPK
-
 test.describe('quotas - RPK Integration', () => {
   test('should create quota via RPK and verify it appears in Console UI', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
@@ -14,7 +12,7 @@ test.describe('quotas - RPK Integration', () => {
     await step('Create quota using RPK', async () => {
       await createClientIdQuota({
         clientId: quotaClientId,
-        producerByteRate: 5_242_880, // 5MB
+        producerByteRate: 5_242_880,
       });
     });
 
@@ -46,7 +44,7 @@ test.describe('quotas - RPK Integration', () => {
     await step('Create initial quota using RPK', async () => {
       await createClientIdQuota({
         clientId: quotaClientId,
-        producerByteRate: 3_145_728, // 3MB
+        producerByteRate: 3_145_728,
       });
     });
 
@@ -59,8 +57,8 @@ test.describe('quotas - RPK Integration', () => {
     await step('Update quota using RPK', async () => {
       await createClientIdQuota({
         clientId: quotaClientId,
-        producerByteRate: 8_388_608, // 8MB
-        consumerByteRate: 12_582_912, // 12MB
+        producerByteRate: 8_388_608,
+        consumerByteRate: 12_582_912,
       });
     });
 
@@ -86,7 +84,7 @@ test.describe('quotas - RPK Integration', () => {
     await step('Create multiple quotas using RPK', async () => {
       await createClientIdQuota({
         clientId: quotaClient1,
-        producerByteRate: 2_097_152, // 2MB
+        producerByteRate: 2_097_152,
       });
 
       await createClientIdQuota({
@@ -108,11 +106,10 @@ test.describe('quotas - RPK Integration', () => {
     await step('Verify client-id quotas are visible', async () => {
       await quotaPage.verifyQuotaExists(quotaClient1);
       await quotaPage.verifyQuotaExists(quotaClient2);
-      // Note: User quotas (quotaUser1) are not displayed in Console OSS, only client-id quotas
+      // WARNING: Console OSS lists client-ID quotas, not per-user quotas; their absence is not evidence of failed creation.
 
       await quotaPage.verifyProducerRate('2 MiB', quotaClient1);
       await quotaPage.verifyConsumerRate('4 MiB', quotaClient2);
-      // Skipping user quota verification as they're not displayed
     });
 
     await step('Cleanup: Delete all test quotas', async () => {
@@ -125,7 +122,6 @@ test.describe('quotas - RPK Integration', () => {
       await quotaPage.reloadPage();
       await quotaPage.verifyQuotaNotExists(quotaClient1);
       await quotaPage.verifyQuotaNotExists(quotaClient2);
-      // User quota was never visible, so no need to verify it's not there
     });
   });
 });

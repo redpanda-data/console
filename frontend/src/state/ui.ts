@@ -32,12 +32,15 @@ export type PreviewTag = {
   customName?: string;
 };
 
+/**
+ * The pattern field replaces the old text property.
+ */
 export type PreviewTagV2 = {
   id: string;
 
   isActive: boolean;
 
-  pattern: string; // pattern, upgrade from old "text" prop
+  pattern: string;
   customName?: string;
 
   searchInMessageHeaders: boolean;
@@ -56,19 +59,17 @@ export type FilterType = 'code';
 
 export type FilterEntry = {
   isNew: boolean;
-  id: string; // used as react key
+  id: string;
   filterType: FilterType;
   isActive: boolean;
 
-  // Code
-  name: string; // name of the filter, shown instead of the code when set
+  name: string;
   transpiledCode: string;
-  code: string; // js code the user entered
+  code: string;
 };
 
-// Factory function to create FilterEntry instances
-export function createFilterEntry(overrides?: Partial<FilterEntry>): FilterEntry {
-  return {
+export function createFilterEntry(overrides?: Partial<FilterEntry>) {
+  const filterEntry: FilterEntry = {
     isNew: false,
     id: randomId() + randomId(),
     filterType: 'code',
@@ -78,13 +79,14 @@ export function createFilterEntry(overrides?: Partial<FilterEntry>): FilterEntry
     code: 'return true\n//allow all messages',
     ...overrides,
   };
+  return filterEntry;
 }
 
 export type TimestampDisplayFormat = 'default' | 'unixTimestamp' | 'onlyDate' | 'onlyTime' | 'unixMillis' | 'relative';
 export function IsLocalTimestampFormat(timestampType: TimestampDisplayFormat) {
   switch (timestampType) {
     case 'default':
-      return true; // 'localDateTime'
+      return true;
     case 'onlyDate':
       return true;
     case 'onlyTime':
@@ -112,11 +114,14 @@ export type PartitionOffsetOriginType = (typeof PartitionOffsetOrigin)[keyof typ
 
 export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';
 
+/**
+ * Explicit timestamps remain fixed; only an unset timestamp may initialize to now on page load.
+ */
 export const DEFAULT_SEARCH_PARAMS = {
-  offsetOrigin: -1 as PartitionOffsetOriginType, // start, end, custom
-  startOffset: -1, // used when offsetOrigin is custom
-  startTimestamp: -1, // used when offsetOrigin is timestamp
-  startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
+  offsetOrigin: -1 as PartitionOffsetOriginType,
+  startOffset: -1,
+  startTimestamp: -1,
+  startTimestampWasSetByUser: false,
   partitionID: -1,
   maxResults: 50,
   page: 0,
@@ -134,7 +139,6 @@ export const DEFAULT_SEARCH_PARAMS = {
 
 export type TopicMessageSearchSettings = TopicDetailsSettings['searchParams'];
 
-// Settings for an individual topic
 export type TopicDetailsSettings = {
   topicName: string;
 
@@ -148,11 +152,10 @@ export type TopicDetailsSettings = {
   previewTags: PreviewTagV2[];
   previewTagsCaseSensitive: 'caseSensitive' | 'ignoreCase';
 
-  previewMultiResultMode: 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
-  previewDisplayMode: 'single' | 'wrap' | 'rows'; // only one line / wrap / seperate line for each result
+  previewMultiResultMode: 'showOnlyFirst' | 'showAll';
+  previewDisplayMode: 'single' | 'wrap' | 'rows';
 
-  // previewResultLimit: 3; // todo
-  previewShowEmptyMessages: boolean; // todo: filter out messages that don't match
+  previewShowEmptyMessages: boolean;
   showMessageMetadata: boolean;
   showMessageHeaders: boolean;
 
@@ -170,12 +173,8 @@ export type TopicDetailsSettings = {
   quickSearch: string;
 };
 
-// Factory function to create TopicDetailsSettings instances
-export function createTopicDetailsSettings(
-  topicName: string,
-  overrides?: Partial<TopicDetailsSettings>
-): TopicDetailsSettings {
-  return {
+export function createTopicDetailsSettings(topicName: string, overrides?: Partial<TopicDetailsSettings>) {
+  const topicDetailsSettings: TopicDetailsSettings = {
     topicName,
     searchParams: { ...DEFAULT_SEARCH_PARAMS },
     dynamicFilters: [],
@@ -199,15 +198,15 @@ export function createTopicDetailsSettings(
     quickSearch: '',
     ...overrides,
   };
+  return topicDetailsSettings;
 }
 
 type UISettings = {
   sideBarOpen: boolean;
   selectedClusterIndex: number;
-  perTopicSettings: TopicDetailsSettings[]; // don't use directly, instead use uiState.topicDetails
+  perTopicSettings: TopicDetailsSettings[];
   topicDetailsActiveTabKey: TopicTabId | undefined;
 
-  // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
   brokerList: {
     hideEmptyColumns: boolean;
     pageSize: number;
@@ -224,19 +223,15 @@ type UISettings = {
   };
 
   reassignment: {
-    // partition reassignment
-    // Active
     activeReassignments: {
       quickSearch: string;
       pageSize: number;
     };
 
-    // Brokers
     pageSizeBrokers: number;
 
-    // Review
     pageSizeReview: number;
-    maxReplicationTraffic: number | null; // bytes per second, or "no change"
+    maxReplicationTraffic: number | null;
   };
 
   topicList: {
@@ -246,7 +241,6 @@ type UISettings = {
     sortId: string;
     sortDesc: boolean;
 
-    // Topic Configuration
     valueDisplay: ValueDisplay;
     propsOrder: 'changedFirst' | 'default' | 'alphabetical';
 
@@ -379,10 +373,9 @@ type UISettings = {
 const defaultUiSettings: UISettings = {
   sideBarOpen: true,
   selectedClusterIndex: 0,
-  perTopicSettings: [] as TopicDetailsSettings[], // don't use directly, instead use uiState.topicDetails
+  perTopicSettings: [] as TopicDetailsSettings[],
   topicDetailsActiveTabKey: undefined as TopicTabId | undefined,
 
-  // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
   brokerList: {
     hideEmptyColumns: false,
     pageSize: DEFAULT_TABLE_PAGE_SIZE,
@@ -399,19 +392,15 @@ const defaultUiSettings: UISettings = {
   },
 
   reassignment: {
-    // partition reassignment
-    // Active
     activeReassignments: {
       quickSearch: '',
       pageSize: 5,
     },
 
-    // Brokers
     pageSizeBrokers: 10,
 
-    // Review
     pageSizeReview: 20,
-    maxReplicationTraffic: 0 as number | null, // bytes per second, or "no change"
+    maxReplicationTraffic: 0 as number | null,
   },
 
   topicList: {
@@ -421,7 +410,6 @@ const defaultUiSettings: UISettings = {
     sortId: '',
     sortDesc: false,
 
-    // Topic Configuration
     valueDisplay: 'friendly' as ValueDisplay,
     propsOrder: 'changedFirst' as 'changedFirst' | 'default' | 'alphabetical',
 
@@ -552,7 +540,6 @@ const defaultUiSettings: UISettings = {
 };
 
 type UISettingsStore = UISettings & {
-  // Actions
   updateSettings: (settings: Partial<UISettings>) => void;
   clearSettings: () => void;
 };
@@ -563,12 +550,9 @@ function isPreviewTagV1(tag: PreviewTag | PreviewTagV2): tag is PreviewTag {
 
 type NewTopicSettingsField = 'previewColumnFields' | 'previewTimestamps' | 'dynamicFilters';
 
-// Topic settings as an older version saved them: without the fields added since.
 type StoredTopicDetailsSettings = Omit<TopicDetailsSettings, NewTopicSettingsField> &
   Partial<Pick<TopicDetailsSettings, NewTopicSettingsField>>;
 
-// when loading a previous version, we'll have "undefined" for all the new properties,
-// which is ok for 'number', but not for any other type.
 function fillNewTopicSettingsDefaults(ts: StoredTopicDetailsSettings) {
   ts.previewColumnFields = ts.previewColumnFields ?? [];
   ts.previewTimestamps = ts.previewTimestamps ?? 'default';
@@ -578,8 +562,7 @@ function fillNewTopicSettingsDefaults(ts: StoredTopicDetailsSettings) {
   }
 }
 
-// upgrade by constructing a new tag from the old data
-function previewTagV2From(tag: PreviewTag): PreviewTagV2 {
+function previewTagV2From(tag: PreviewTag) {
   return {
     id: tag.id,
     isActive: tag.isActive,
@@ -588,23 +571,19 @@ function previewTagV2From(tag: PreviewTag): PreviewTagV2 {
     searchInMessageHeaders: false,
     searchInMessageKey: false,
     searchInMessageValue: true,
-  };
+  } satisfies PreviewTagV2;
 }
 
-// Upgrade: PreviewTag to PreviewTagV2
 function upgradePreviewTags(ts: TopicDetailsSettings) {
   for (let i = 0; i < ts.previewTags.length; i++) {
     const tag = ts.previewTags[i];
     if (isPreviewTagV1(tag)) {
-      // replace old tag
       ts.previewTags[i] = previewTagV2From(tag);
     }
   }
 }
 
-// Upgrade function for loading old data
-function upgradeSettings(loadedSettings: Partial<UISettings>): Partial<UISettings> {
-  // Upgrade: new props in 'TopicDetailsSettings'
+function upgradeSettings(loadedSettings: Partial<UISettings>) {
   if (loadedSettings.perTopicSettings) {
     for (const ts of loadedSettings.perTopicSettings) {
       fillNewTopicSettingsDefaults(ts);
@@ -618,7 +597,6 @@ function upgradeSettings(loadedSettings: Partial<UISettings>): Partial<UISetting
   return loadedSettings;
 }
 
-// Parsed and upgraded settings, or null when the stored text holds nothing usable.
 function loadStoredSettings(str: string) {
   try {
     const loadedSettings = JSON.parse(str);
@@ -626,7 +604,6 @@ function loadStoredSettings(str: string) {
       return null;
     }
 
-    // Apply upgrades
     const upgradedSettings = upgradeSettings(loadedSettings);
 
     return {
@@ -640,7 +617,6 @@ function loadStoredSettings(str: string) {
   }
 }
 
-// Debounced save function
 let saveTimeoutId: NodeJS.Timeout | null = null;
 const SAVE_DELAY = 2000;
 
@@ -655,7 +631,6 @@ function scheduleSave(state: UISettings) {
   }, SAVE_DELAY);
 }
 
-// Immediate save function (for visibility change)
 function saveImmediately(state: UISettings) {
   if (saveTimeoutId) {
     clearTimeout(saveTimeoutId);
@@ -665,7 +640,6 @@ function saveImmediately(state: UISettings) {
   localStorage.setItem(settingsName, json);
 }
 
-// Create the store
 export const useUISettingsStore = create<UISettingsStore>()(
   subscribeWithSelector(
     persist(
@@ -701,7 +675,6 @@ export const useUISettingsStore = create<UISettingsStore>()(
             return loadStoredSettings(str);
           },
           setItem: (name, value) => {
-            // Extract only the state, not the action functions
             const { updateSettings: _, clearSettings: __, ...state } = value.state as UISettingsStore;
             const json = JSON.stringify(state);
             localStorage.setItem(name, json);
@@ -719,7 +692,7 @@ export const useUISettingsStore = create<UISettingsStore>()(
  * Installs side-effects for the UI-settings store:
  *   - debounced auto-save on store change
  *   - immediate auto-save on visibility change
- *   - cross-tab settings sync via the `storage` event
+ *   - reload settings via the `storage` event so edits in another tab are not overwritten
  *
  * Returns a teardown function that removes all listeners / subscribers and
  * clears any pending save timer.
@@ -727,12 +700,12 @@ export const useUISettingsStore = create<UISettingsStore>()(
  * Installed from `app.tsx` / `embedded-app.tsx` inside a `useEffect` so
  * React owns the lifecycle. No-op when `window` is undefined (SSR and tests
  * isolate resets before happy-dom installs globals).
+ *
+ * Persists on lifecycle transitions such as closing, minimizing, or switching tabs.
  */
-export function installUISettingsSideEffects(): () => void {
+export function installUISettingsSideEffects() {
   if (typeof window === 'undefined') {
-    return () => {
-      // no-op
-    };
+    return () => {};
   }
 
   const unsubStore = useUISettingsStore.subscribe((state) => {
@@ -742,7 +715,7 @@ export function installUISettingsSideEffects(): () => void {
 
   const onVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
-      return; // only save on close, minimize, tab-switch
+      return;
     }
 
     const state = useUISettingsStore.getState();
@@ -751,8 +724,6 @@ export function installUISettingsSideEffects(): () => void {
   };
   window.addEventListener('visibilitychange', onVisibilityChange);
 
-  // When there are multiple tabs open, they are unaware of each other and overwriting each others changes.
-  // So we must listen to changes made by other tabs, and when a change is saved we load the updated settings.
   const onStorage = (e: StorageEvent) => {
     if (e.key !== settingsName || e.newValue === null) {
       return;
@@ -762,8 +733,6 @@ export function installUISettingsSideEffects(): () => void {
       if (!newSettings) {
         return;
       }
-      // Applying changes here will of course trigger the auto-save, but that's fine.
-      // The settings will be serialized to the exact same json again, so no storage events will be triggered by `.setItem()`
       useUISettingsStore.getState().updateSettings(upgradeSettings(newSettings) as UISettings);
     } catch (err) {
       // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -783,7 +752,9 @@ export function installUISettingsSideEffects(): () => void {
   };
 }
 
-// Legacy exports for backward compatibility
+/**
+ * Use the per-topic accessor rather than mutating the backing settings array. Replication traffic is in bytes per second, or null to leave it unchanged.
+ */
 export const uiSettings = new Proxy({} as UISettings, {
   get(_target, prop: string) {
     return useUISettingsStore.getState()[prop as keyof UISettings];

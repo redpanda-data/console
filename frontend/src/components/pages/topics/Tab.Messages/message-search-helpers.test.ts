@@ -22,7 +22,7 @@ import { describe, expect, test } from 'bun:test';
 import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../state/ui';
 
-function filter(overrides: Partial<FilterEntry>): FilterEntry {
+function filter(overrides: Partial<FilterEntry>) {
   return {
     isNew: false,
     id: '1',
@@ -32,10 +32,10 @@ function filter(overrides: Partial<FilterEntry>): FilterEntry {
     code: 'value.ok',
     transpiledCode: 'value.ok',
     ...overrides,
-  };
+  } satisfies FilterEntry;
 }
 
-function message(offset: number, timestamp: number, valueJson = ''): TopicMessage {
+function message(offset: number, timestamp: number, valueJson = '') {
   return { offset, timestamp, keyJson: '', valueJson } as TopicMessage;
 }
 

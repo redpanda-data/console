@@ -19,7 +19,7 @@ const STORAGE_KEY = '__debug_feature_flag_overrides';
 
 export type FeatureFlagOverrides = Partial<Record<FeatureFlagKey, boolean>>;
 
-export function getOverrides(): FeatureFlagOverrides {
+export function getOverrides() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
@@ -35,7 +35,7 @@ export function getOverrides(): FeatureFlagOverrides {
   }
 }
 
-function writeOverrides(next: FeatureFlagOverrides): void {
+function writeOverrides(next: FeatureFlagOverrides) {
   if (Object.keys(next).length === 0) {
     window.localStorage.removeItem(STORAGE_KEY);
   } else {
@@ -43,7 +43,7 @@ function writeOverrides(next: FeatureFlagOverrides): void {
   }
 }
 
-export function setOverride(key: FeatureFlagKey, value: boolean | null): void {
+export function setOverride(key: FeatureFlagKey, value: boolean | null) {
   const current = getOverrides();
   if (value === null) {
     delete current[key];
@@ -54,12 +54,12 @@ export function setOverride(key: FeatureFlagKey, value: boolean | null): void {
   installFeatureFlagAccessor();
 }
 
-export function clearOverrides(): void {
+export function clearOverrides() {
   writeOverrides({});
   installFeatureFlagAccessor();
 }
 
-export function getEffectiveFlags(): Record<FeatureFlagKey, boolean> {
+export function getEffectiveFlags() {
   const overrides = getOverrides();
   const result = { ...baseFlags } as Record<FeatureFlagKey, boolean>;
   for (const k of Object.keys(overrides) as FeatureFlagKey[]) {
@@ -71,17 +71,14 @@ export function getEffectiveFlags(): Record<FeatureFlagKey, boolean> {
   return result;
 }
 
-export function getAllFlagKeys(): FeatureFlagKey[] {
+export function getAllFlagKeys() {
   return (Object.keys(FEATURE_FLAGS) as FeatureFlagKey[]).sort((a, b) => a.localeCompare(b));
 }
 
 let baseFlags: Record<FeatureFlagKey, boolean> = { ...FEATURE_FLAGS };
 let accessorInstalled = false;
 
-// Replaces `config.featureFlags` with a getter/setter so reads always overlay
-// localStorage overrides. Survives `setConfig()` reassigning the property
-// (otherwise overrides get wiped on each App mount / federated host reconfig).
-function installFeatureFlagAccessor(): void {
+function installFeatureFlagAccessor() {
   if (accessorInstalled) {
     return;
   }
@@ -90,7 +87,7 @@ function installFeatureFlagAccessor(): void {
   Object.defineProperty(config, 'featureFlags', {
     configurable: true,
     enumerable: true,
-    get(): Record<FeatureFlagKey, boolean> {
+    get() {
       const overrides = getOverrides();
       if (Object.keys(overrides).length === 0) {
         return baseFlags;
@@ -104,23 +101,22 @@ function installFeatureFlagAccessor(): void {
       }
       return merged;
     },
-    set(next: Record<FeatureFlagKey, boolean> | undefined): void {
+    set(next: Record<FeatureFlagKey, boolean> | undefined) {
       baseFlags = { ...(next ?? FEATURE_FLAGS) } as Record<FeatureFlagKey, boolean>;
     },
   });
   accessorInstalled = true;
 }
 
-export function applyOverrides(): void {
+/**
+ * Installs the debug override accessor before reads and preserves overrides when the host reassigns the configured flags.
+ */
+export function applyOverrides() {
   installFeatureFlagAccessor();
 }
 
-// Install at module load so the first `config.featureFlags[key]` read already
-// overlays overrides — well before any React render.
 if (IsDev && typeof window !== 'undefined') {
   try {
     installFeatureFlagAccessor();
-  } catch {
-    // localStorage / defineProperty unavailable.
-  }
+  } catch {}
 }

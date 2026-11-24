@@ -55,9 +55,11 @@ export type ShadowLinkPeerFence =
       brokers: ShadowLinkPeerFenceBroker[];
     });
 
+/**
+ * External means the source is not managed by Redpanda Cloud, for example a self-hosted cluster.
+ */
 export type ShadowLinkSource =
   | { kind: 'cloud'; clusterId: string; clusterName: string; fence: ShadowLinkPeerFence }
-  /** A source Redpanda Cloud doesn't manage, such as a link to a self-hosted cluster. */
   | { kind: 'external'; bootstrapServers: string[] };
 
 export type ShadowLinkReader = Required<Pick<LinkIdentity, 'authentication'>> &
@@ -88,7 +90,7 @@ export type ShadowLinkTopology = {
 };
 
 /** An active or paused link reads from its source: one still being created, or failed or being deleted, doesn't. */
-export const isReadingLinkState = (state: ShadowLink_State): boolean =>
+export const isReadingLinkState = (state: ShadowLink_State) =>
   state === ShadowLink_State.ACTIVE || state === ShadowLink_State.PAUSED;
 
 const LINK_SOURCE_STATES = new Set([Cluster_State.READY, Cluster_State.UPGRADING, Cluster_State.SUSPENDED]);
@@ -97,14 +99,14 @@ const LINK_SOURCE_STATES = new Set([Cluster_State.READY, Cluster_State.UPGRADING
  * A cluster that may be a link's source and that GetCluster can read. One being created, deleted or
  * failed to create may carry a UUID GetCluster rejects, which would leave the topology resolving for good.
  */
-export const canBeLinkSource = (cluster: Pick<Cluster, 'id' | 'state'>): boolean =>
+export const canBeLinkSource = (cluster: Pick<Cluster, 'id' | 'state'>) =>
   LINK_SOURCE_STATES.has(cluster.state) && cluster.id !== '' && !isUuid(cluster.id);
 
 /** Only a running cluster answers for its fence. */
-export const canReadFence = (cluster: Pick<Cluster, 'state'>): boolean =>
+export const canReadFence = (cluster: Pick<Cluster, 'state'>) =>
   cluster.state === Cluster_State.READY || cluster.state === Cluster_State.UPGRADING;
 
-const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//;
+const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:\/\//u;
 
 const normalizeEndpoint = (endpoint: string) => endpoint.trim().toLowerCase().replace(SCHEME_PREFIX, '');
 
@@ -116,7 +118,7 @@ const hostOf = (endpoint: string) => {
 
 type Endpoints = { exact: ReadonlySet<string>; hosts: ReadonlySet<string> };
 
-const endpointsOf = (bootstrapServers: readonly string[]): Endpoints => ({
+const endpointsOf: (bootstrapServers: readonly string[]) => Endpoints = (bootstrapServers) => ({
   exact: new Set(bootstrapServers.map(normalizeEndpoint)),
   hosts: new Set(bootstrapServers.map(hostOf)),
 });
@@ -140,7 +142,7 @@ export const findSourceCluster = (
   clusters: readonly Cluster[],
   shadowClusterId: string,
   allowHostMatch = true
-): Cluster | undefined => {
+) => {
   const candidates = clusters.filter((cluster) => cluster.id !== shadowClusterId);
   const endpoints = endpointsOf(bootstrapServers);
   const exact = candidates.find((cluster) => matchesExactly(endpoints, cluster));
@@ -160,17 +162,13 @@ const hasPotentialCloudSource = (
   return candidates.clusters.some((candidate) => candidate.id !== clusterId && matchesHost(endpoints, candidate));
 };
 
-/**
- * Whether a link reads from `self`, or what that waits on. Exact host:port matches never clash. A
- * host-only match only counts once no other cluster matches those servers too: clusters can share a
- * host on different ports, as local ones do.
- */
+// WARNING: Only count a host-only match once it is unique; clusters can share a host on different ports.
 const readsFrom = (
   link: Pick<ShadowLinkListItem, 'shadowRedpandaId'>,
   bootstrapServers: readonly string[],
   self: Cluster,
   others: SourceCandidates
-): boolean | 'pending' | 'failed' => {
+) => {
   const endpoints = endpointsOf(bootstrapServers);
   if (matchesExactly(endpoints, self)) {
     return true;
@@ -201,35 +199,31 @@ type LinkResolution = { kind: 'source'; source: ShadowLinkSource } | { kind: 'pe
 
 const LOADING_FENCE: ShadowLinkPeerFence = { status: 'loading' };
 
-const resolveOwnLink = (
-  details: Loaded<ShadowLink>,
-  candidates: SourceCandidates,
-  clusterId: string
-): LinkResolution => {
-  if (details.status !== 'ready') {
-    return details.status === 'failed' ? { kind: 'unresolved' } : { kind: 'pending' };
-  }
-  const bootstrapServers = details.value.clientOptions?.bootstrapServers ?? [];
-  const cluster = findSourceCluster(
-    bootstrapServers,
-    candidates.clusters,
-    clusterId,
-    candidates.complete && !candidates.failed
-  );
-  if (cluster) {
-    return {
-      kind: 'source',
-      source: { kind: 'cloud', clusterId: cluster.id, clusterName: cluster.name, fence: LOADING_FENCE },
-    };
-  }
-  // Until every candidate is in, no match means "not yet", not "outside Cloud".
-  if (candidates.complete && !candidates.failed) {
-    return hasPotentialCloudSource(bootstrapServers, candidates, clusterId)
-      ? { kind: 'unresolved' }
-      : { kind: 'source', source: { kind: 'external', bootstrapServers } };
-  }
-  return candidates.failed ? { kind: 'unresolved' } : { kind: 'pending' };
-};
+const resolveOwnLink: (details: Loaded<ShadowLink>, candidates: SourceCandidates, clusterId: string) => LinkResolution =
+  (details, candidates, clusterId) => {
+    if (details.status !== 'ready') {
+      return details.status === 'failed' ? { kind: 'unresolved' } : { kind: 'pending' };
+    }
+    const bootstrapServers = details.value.clientOptions?.bootstrapServers ?? [];
+    const cluster = findSourceCluster(
+      bootstrapServers,
+      candidates.clusters,
+      clusterId,
+      candidates.complete && !candidates.failed
+    );
+    if (cluster) {
+      return {
+        kind: 'source',
+        source: { kind: 'cloud', clusterId: cluster.id, clusterName: cluster.name, fence: LOADING_FENCE },
+      };
+    }
+    if (candidates.complete && !candidates.failed) {
+      return hasPotentialCloudSource(bootstrapServers, candidates, clusterId)
+        ? { kind: 'unresolved' }
+        : { kind: 'source', source: { kind: 'external', bootstrapServers } };
+    }
+    return candidates.failed ? { kind: 'unresolved' } : { kind: 'pending' };
+  };
 
 const readerOf = (link: ShadowLinkListItem, details: ShadowLink, clusterNames: ReadonlyMap<string, string>) => {
   const { authentication = 'none', principal } = getLinkIdentity(fromControlplaneShadowLink(details));
@@ -284,12 +278,11 @@ const resolveSources = (
 
 type ReaderLookup = Pick<TopologyInputs, 'self' | 'clusterNames' | 'candidates'>;
 
-/** The link as a reader of this cluster, undefined when it reads from elsewhere, or why that isn't known. */
-const readerFrom = (
+const readerFrom: (
   link: ShadowLinkListItem,
   details: Loaded<ShadowLink>,
-  { self, clusterNames, candidates }: ReaderLookup
-): ShadowLinkReader | 'pending' | 'failed' | undefined => {
+  selection: ReaderLookup
+) => ShadowLinkReader | 'pending' | 'failed' | undefined = (link, details, { self, clusterNames, candidates }) => {
   if (details.status === 'failed' || self.status === 'failed') {
     return 'failed';
   }
@@ -326,7 +319,7 @@ export const needsOtherClusters = ({
   links,
   details,
   self,
-}: Pick<TopologyInputs, 'clusterId' | 'links' | 'details' | 'self'>): boolean => {
+}: Pick<TopologyInputs, 'clusterId' | 'links' | 'details' | 'self'>) => {
   if (self.status !== 'ready') {
     return false;
   }
@@ -344,6 +337,8 @@ export const needsOtherClusters = ({
  * Who reads from this cluster and, for each link on it, where that link reads from, with every Cloud
  * source's fence still loading (see `withPeerFences`). A link reads from this cluster when its
  * bootstrap servers match this cluster's seed brokers and no other cluster's.
+ *
+ * A link known to read elsewhere is not a reader. Unresolved source details are tracked separately from a confirmed non-match.
  */
 export const buildShadowLinkTopology = ({
   clusterId,
@@ -353,7 +348,7 @@ export const buildShadowLinkTopology = ({
   clusterNames,
   clusterNamesSettled,
   candidates,
-}: TopologyInputs): ShadowLinkTopology => {
+}: TopologyInputs) => {
   const needed = linksNeedingDetails(links.items, clusterId);
   const own = resolveSources(
     needed.filter((link) => link.shadowRedpandaId === clusterId),
@@ -366,27 +361,27 @@ export const buildShadowLinkTopology = ({
     details,
     { self, clusterNames, candidates }
   );
-  // A reader's shadow cluster shows by id until the cluster list gives its name.
   const namesPending = others.readers.length > 0 && !clusterNamesSettled;
-  return {
+  const shadowLinkTopology: ShadowLinkTopology = {
     clusterName: self.status === 'ready' ? self.value.name : clusterNames.get(clusterId),
     readers: others.readers,
     sources: own.sources,
     resolving: links.loading || own.pending || others.pending || namesPending,
     readersIncomplete: !links.complete || others.failed,
   };
+  return shadowLinkTopology;
 };
 
 /** The Cloud clusters this cluster's links read from, each once. */
-export const sourceClusterIds = (topology: ShadowLinkTopology): string[] => [
+export const sourceClusterIds = (topology: ShadowLinkTopology) => [
   ...new Set(Object.values(topology.sources).flatMap((source) => (source.kind === 'cloud' ? [source.clusterId] : []))),
 ];
 
 /** Fills in each Cloud source's fence; one with no reading yet stays loading. */
-export const withPeerFences = (
+export const withPeerFences: (
   topology: ShadowLinkTopology,
   fences: ReadonlyMap<string, ShadowLinkPeerFence>
-): ShadowLinkTopology => ({
+) => ShadowLinkTopology = (topology, fences) => ({
   ...topology,
   sources: Object.fromEntries(
     Object.entries(topology.sources).map(([linkName, source]) => [

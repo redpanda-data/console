@@ -23,13 +23,10 @@ import { getTopicFilters, setTopicFilters } from '../../../../../utils/topic-fil
 
 /** The topic's stored view settings: preview options and the dynamic filters shown in the toolbar. */
 export function useTopicViewSettings(topicName: string) {
-  // Zustand store for topic settings
   const { setTopicSettings, perTopicSettings } = useTopicSettingsStore();
 
-  // Access perTopicSettings directly to trigger re-renders when Zustand state changes
   const topicSettings = perTopicSettings.find((t) => t.topicName === topicName);
 
-  // Helper functions for managing dynamic filters
   const addDynamicFilter = useCallback(
     (filter: 'partition') => {
       const currentFilters = topicSettings?.dynamicFilters ?? [];
@@ -52,7 +49,6 @@ export function useTopicViewSettings(topicName: string) {
     [topicName, topicSettings?.dynamicFilters, setTopicSettings]
   );
 
-  // Convert @computed activePreviewTags to useMemo
   const activePreviewTags = useMemo(
     () => (topicSettings?.previewTags ?? []).filter((t) => t.isActive),
     [topicSettings?.previewTags]
@@ -72,7 +68,6 @@ export function useTopicViewSettings(topicName: string) {
 export function useMessageQueryParams(topicName: string) {
   const { setSearchParams, getSearchParams } = useTopicSettingsStore();
 
-  // URL query state management with localStorage sync
   const [partitionID, setPartitionID] = useQueryStateWithCallback<number>(
     {
       onUpdate: (val) => {
@@ -117,7 +112,6 @@ export function useMessageQueryParams(topicName: string) {
     parseAsInteger.withDefault(DEFAULT_SEARCH_PARAMS.startTimestamp)
   );
 
-  // Deserializer settings with URL state management
   const [keyDeserializer, setKeyDeserializer] = useQueryStateWithCallback<PayloadEncoding>(
     {
       onUpdate: (val) => {
@@ -175,12 +169,9 @@ export type MessageQueryParams = ReturnType<typeof useMessageQueryParams>;
 export function useMessagePagingParams(topicName: string, maxResults: number) {
   const { setSorting, getSorting, setSearchParams, getSearchParams } = useTopicSettingsStore();
 
-  // Pagination state managed by nuqs
   const [pageIndex, setPageIndex] = useQueryStateWithCallback<number>(
     {
-      onUpdate: () => {
-        // Page index is just for URL state, no need to sync to uiState
-      },
+      onUpdate: () => {},
       getDefaultValue: () => 0,
     },
     'page',
@@ -198,7 +189,6 @@ export function useMessagePagingParams(topicName: string, maxResults: number) {
     parseAsInteger.withDefault(50)
   );
 
-  // Sorting state managed by nuqs with Zustand store sync
   const [sorting, setSortingState] = useQueryStateWithCallback<SortingState>(
     {
       onUpdate: (val) => {
@@ -210,7 +200,6 @@ export function useMessagePagingParams(topicName: string, maxResults: number) {
     sortingParser.withDefault(DEFAULT_SORTING)
   );
 
-  // Continuous pagination toggle state
   const [continuousPaginationEnabled, setContinuousPaginationEnabled] = useQueryStateWithCallback<boolean>(
     {
       onUpdate: (val) => {
@@ -222,14 +211,12 @@ export function useMessagePagingParams(topicName: string, maxResults: number) {
     parseAsBoolean.withDefault(false)
   );
 
-  // Clear sorting when enabling continuous pagination mode
   useEffect(() => {
     if (continuousPaginationEnabled && sorting.length > 0) {
       setSortingState([]);
     }
   }, [continuousPaginationEnabled, sorting.length, setSortingState]);
 
-  // Auto-cap page size to maxResults when continuous pagination is enabled
   useEffect(() => {
     if (continuousPaginationEnabled && maxResults < pageSize) {
       setPageSize(maxResults);
@@ -252,10 +239,8 @@ export type MessagePagingParams = ReturnType<typeof useMessagePagingParams>;
 
 /** JavaScript filters, kept in session storage rather than the URL. */
 export function useTopicFilters(topicName: string) {
-  // Filters with session storage (NOT in URL)
   const [filters, setFilters] = useState<FilterEntry[]>(() => getTopicFilters(topicName));
 
-  // Sync filters to session storage whenever they change
   useEffect(() => {
     setTopicFilters(topicName, filters);
   }, [filters, topicName]);
@@ -265,7 +250,6 @@ export function useTopicFilters(topicName: string) {
 
 /** Which of the view's dialogs is open; `downloadMessages` opens the save dialog for those messages. */
 export function useMessageViewDialogs() {
-  // Modal states
   const [showColumnSettingsModal, setShowColumnSettingsModal] = useState(false);
   const [showPreviewFieldsModal, setShowPreviewFieldsModal] = useState(false);
   const [showDeserializersModal, setShowDeserializersModal] = useState(false);

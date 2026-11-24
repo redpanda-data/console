@@ -37,7 +37,7 @@ export type PipelineRow = {
   end: PipelineEndStatus;
 };
 
-export const toPipelineRow = (apiPipeline: APIPipeline): PipelineRow => {
+export const toPipelineRow: (apiPipeline: APIPipeline) => PipelineRow = (apiPipeline) => {
   const { inputs, outputs, end } = parseConfigComponentsCached(apiPipeline.configYaml);
   const tags = getUserTagEntries(apiPipeline.tags);
   const draft = isDraft(apiPipeline);
@@ -57,5 +57,4 @@ export const toPipelineRow = (apiPipeline: APIPipeline): PipelineRow => {
   };
 };
 
-// One string per tag pair, so `arrIncludesSome` and the facet counts agree on the value.
 export const tagFilterValue = (tag: TagPair) => `${tag.key}:${tag.value}`;

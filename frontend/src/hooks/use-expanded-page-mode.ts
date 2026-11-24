@@ -11,21 +11,15 @@
 
 import { useCallback, useLayoutEffect, useState } from 'react';
 
-/**
- * Set on `<html>` while an expanded page is on screen. Each shell releases its horizontal
- * constraints off it in CSS: Console's gutter and width cap (`page-expanded-*` in
- * globals.css), Cloud UI's embedded wrapper (`expandableWidth` in cloud-ui layout.tsx).
- * Must not outlive the page — a stale attribute bleeds full width onto the next one.
- */
 const PAGE_EXPANDED_ATTR = 'data-page-expanded';
 
 const clearPageExpanded = () => document.documentElement.removeAttribute(PAGE_EXPANDED_ATTR);
 
-const readStoredExpanded = (storageKey: string): boolean => {
+const readStoredExpanded = (storageKey: string) => {
   try {
     return localStorage.getItem(storageKey) === 'full';
   } catch {
-    return false; // storage blocked (private mode / cookie settings)
+    return false;
   }
 };
 
@@ -35,24 +29,20 @@ const readStoredExpanded = (storageKey: string): boolean => {
  *
  * Attach `ref` to the page root: the attribute is held only while that root is on
  * screen, because embedded Cloud UI keeps Console mounted but hidden on host routes.
+ * Applies the attribute in the same frame as the page resize; cleanup also handles the element detaching.
+ *
+ * The `data-page-expanded` attribute releases width constraints in both shells.
+ * If storage is blocked, expansion still works but doesn't survive a reload.
  */
-export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
-  expanded: boolean;
-  toggleExpanded: () => void;
-  ref: (el: HTMLElement | null) => void;
-} {
+export function useExpandedPageMode({ storageKey }: { storageKey: string }) {
   const [expanded, setExpanded] = useState(() => readStoredExpanded(storageKey));
-  // State rather than a ref, so attaching the node re-runs the effect below.
   const [pageRoot, setPageRoot] = useState<HTMLElement | null>(null);
 
-  // Layout effect so the attribute lands in the same frame as the page's own geometry change,
-  // and its cleanup is the only unset: it covers unmount, `ref` detaching and `expanded` off.
   useLayoutEffect(() => {
     if (!pageRoot) {
       return clearPageExpanded;
     }
 
-    // display:none collapses the root to 0x0, which fires the observer — the on-screen signal.
     const sync = () => {
       const onScreen = pageRoot.getClientRects().length > 0;
       document.documentElement.toggleAttribute(PAGE_EXPANDED_ATTR, expanded && onScreen);
@@ -72,12 +62,15 @@ export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
       const next = !current;
       try {
         localStorage.setItem(storageKey, next ? 'full' : 'boxed');
-      } catch {
-        // ignore storage failures (private mode / quota)
-      }
+      } catch {}
       return next;
     });
   }, [storageKey]);
 
-  return { expanded, toggleExpanded, ref: setPageRoot };
+  const pageMode: {
+    expanded: boolean;
+    toggleExpanded: () => void;
+    ref: (el: HTMLElement | null) => void;
+  } = { expanded, toggleExpanded, ref: setPageRoot };
+  return pageMode;
 }

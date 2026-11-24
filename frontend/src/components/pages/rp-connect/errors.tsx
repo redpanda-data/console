@@ -16,18 +16,16 @@ import { ConnectError } from '@connectrpc/connect';
  * - err.rawMessage: Raw error from server
  * - err.details: Array of error details (LintHint, BadRequest, etc.)
  */
-export function extractLintHintsFromError(err: unknown): Record<string, LintHint> {
+export function extractLintHintsFromError(err: unknown) {
   if (!(err instanceof ConnectError)) {
     return toHintRecord([errorHint(err instanceof Error ? err.message : String(err))]);
   }
 
-  // Specific hints (validation errors with line/column info, field violations) win; otherwise fall
-  // back to a generic error hint with additional context.
   const hints = lintHintsFromDetails(err.details);
   return toHintRecord(hints.length > 0 ? hints : [errorHint(connectErrorHintText(err))]);
 }
 
-export function formatPipelineError(err: unknown): React.ReactNode {
+export function formatPipelineError(err: unknown) {
   const message = err instanceof ConnectError ? err.message : String(err);
   const details = err instanceof ConnectError ? lintHintsFromDetails(err.details).map(lintHintText) : [];
   if (details.length === 0) {
@@ -47,16 +45,18 @@ export function formatPipelineError(err: unknown): React.ReactNode {
   );
 }
 
-function errorHint(hint: string): LintHint {
+function errorHint(hint: string) {
   return create(LintHintSchema, { line: 0, column: 0, hint, lintType: 'error' });
 }
 
-function toHintRecord(hints: LintHint[]): Record<string, LintHint> {
-  return Object.fromEntries(hints.map((hint, index) => [`hint_${index}`, hint]));
+function toHintRecord(hints: LintHint[]) {
+  const byKey: Record<string, LintHint> = Object.fromEntries<LintHint>(
+    hints.map((hint, index) => [`hint_${index}`, hint])
+  );
+  return byKey;
 }
 
-/** Lint hints carried by the error details, with each field violation converted to a hint. */
-function lintHintsFromDetails(details: ConnectError['details']): LintHint[] {
+function lintHintsFromDetails(details: ConnectError['details']) {
   const hints: LintHint[] = [];
   for (const detail of details) {
     if (isLintHint(detail)) {
@@ -68,8 +68,7 @@ function lintHintsFromDetails(details: ConnectError['details']): LintHint[] {
   return hints;
 }
 
-/** The error message, prefixed with the error code when the message doesn't already mention it. */
-function connectErrorHintText(err: ConnectError): string {
+function connectErrorHintText(err: ConnectError) {
   const code = String(err.code);
   if (err.code && !err.message.toLowerCase().includes(code.toLowerCase())) {
     return `[${code}] ${err.message}`;
@@ -77,7 +76,7 @@ function connectErrorHintText(err: ConnectError): string {
   return err.message || err.rawMessage || String(err);
 }
 
-function lintHintText(hint: LintHint): string {
+function lintHintText(hint: LintHint) {
   return hint.line > 0 ? `Line ${hint.line}, Col ${hint.column}: ${hint.hint}` : hint.hint;
 }
 

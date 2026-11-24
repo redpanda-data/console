@@ -57,7 +57,6 @@ const getRestBasePath = (overrideUrl?: string) => overrideUrl ?? DEFAULT_API_BAS
 export const getGrpcBasePath = (overrideUrl?: string) => overrideUrl ?? getBasePath();
 
 const getControlplanePath = () => {
-  // TODO: Make this part of config from Cloud UI
   if (window.location.hostname.includes('main')) {
     return 'https://api.ign.cloud.redpanda.com';
   }
@@ -70,6 +69,9 @@ const getControlplanePath = () => {
   return 'https://api.ign.cloud.redpanda.com';
 };
 
+/**
+ * The explicit host override takes precedence over the standalone hostname fallback.
+ */
 export const getControlplaneBasePath = (overrideUrl?: string) => overrideUrl ?? getControlplanePath();
 
 export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
@@ -87,25 +89,16 @@ export const addBearerTokenInterceptor: ConnectRpcInterceptor = (next) => async 
  * Read lazily, since the host may refresh `config.jwt` in place; an existing `Authorization` header
  * from a legacy V1 authenticatedFetch is never overwritten.
  */
-export const createAuthInjectingFetch =
-  (baseFetch: WindowOrWorkerGlobalScope['fetch']): WindowOrWorkerGlobalScope['fetch'] =>
-  (input, init) => {
-    const headers = new Headers(init?.headers);
-    if (config.jwt && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${config.jwt}`);
-    }
-    return baseFetch(input, { ...init, headers });
-  };
+export const createAuthInjectingFetch: (
+  baseFetch: WindowOrWorkerGlobalScope['fetch']
+) => WindowOrWorkerGlobalScope['fetch'] = (baseFetch) => (input, init) => {
+  const headers = new Headers(init?.headers);
+  if (config.jwt && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${config.jwt}`);
+  }
+  return baseFetch(input, { ...init, headers });
+};
 
-/**
- * Interceptor to handle license expiration errors in gRPC responses.
- *
- * This interceptor checks if the error is of type `ConnectError` with the
- * code `FailedPrecondition` and inspects the `details` array for an entry
- * with type `google.rpc.ErrorInfo` and a reason of `REASON_ENTERPRISE_LICENSE_EXPIRED`.
- * If such an error is detected, it redirects the user to the `/trial-expired` page.
- *
- */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
 export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => async (request) => {
   try {
@@ -113,7 +106,6 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
   } catch (error) {
     if (error instanceof ConnectError && error.code === Code.FailedPrecondition) {
       for (const detail of error.details) {
-        // TODO fix type checks for IncomingDetail, BE should provide types for debug field
         const detailWithDebug = detail as { type?: string; debug?: { reason?: string } };
         if (
           detailWithDebug?.type &&
@@ -125,7 +117,6 @@ export const checkExpiredLicenseInterceptor: ConnectRpcInterceptor = (next) => a
         }
       }
     }
-    // Re-throw the error to ensure it's handled by other interceptors or the calling code
     throw error;
   }
 };
@@ -147,16 +138,16 @@ export type SetConfigArguments = {
 };
 
 export type SidebarItem = {
-  title: string; // "Topics"
-  to: string; // '/topics'
+  title: string;
+  to: string;
   icon?: JSX.Element;
   order: number;
   group?: string;
 };
 
 export type Breadcrumb = {
-  title: string; // "Topics"
-  to: string; // '/topics'
+  title: string;
+  to: string;
 };
 
 type Config = {
@@ -187,7 +178,6 @@ type Config = {
   featureFlags: Record<keyof typeof FEATURE_FLAGS, boolean>;
 };
 
-// Config object - plain JavaScript object, no longer using MobX observable
 export const config: Config = {
   restBasePath: getRestBasePath(),
   grpcBasePath: getGrpcBasePath(),
@@ -195,12 +185,8 @@ export const config: Config = {
   fetch: window.fetch,
   assetsPath: getBasePath(),
   clusterId: 'default',
-  setSidebarItems: () => {
-    // no op - set by parent application
-  },
-  setBreadcrumbs: () => {
-    // no op - set by parent application
-  },
+  setSidebarItems: () => {},
+  setBreadcrumbs: () => {},
   isServerless: false,
   featureFlags: { ...FEATURE_FLAGS, ...(window.__E2E_FEATURE_FLAGS__ ?? {}) },
 };
@@ -216,7 +202,6 @@ const setConfig = ({
   const assetsUrl =
     urlOverride?.assets === 'WEBPACK' ? String(__webpack_public_path__).removeSuffix('/') : urlOverride?.assets;
 
-  // instantiate the client once, if we need to add more clients you can add them in here, ideally only one transport is necessary
   const dataplaneTransport = createConnectTransport({
     baseUrl: getGrpcBasePath(urlOverride?.grpc),
     interceptors: [addBearerTokenInterceptor, checkExpiredLicenseInterceptor],
@@ -255,21 +240,16 @@ const setConfig = ({
     serviceAccountClient: createClient(ServiceAccountService, controlplaneTransport),
     roleBindingClient: createClient(RoleBindingService, controlplaneTransport),
     shadowLinkClient: createClient(ShadowLinkService, controlplaneTransport),
-    featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...(window.__E2E_FEATURE_FLAGS__ ?? {}) }, // Needed for legacy UI purposes where we don't use functional components.
+    featureFlags: { ...(featureFlags ?? FEATURE_FLAGS), ...(window.__E2E_FEATURE_FLAGS__ ?? {}) },
     ...args,
   });
   return config;
 };
 
-// Subscribe to UI state changes for breadcrumbs and sidebar items.
-// Installed from `setup()` so it is tied to the app's lifecycle and can be
-// torn down by the returned teardown function — not at module-top-level,
-// which previously pinned store subscribers across test-runner module resets.
-function installUiStateSubscriptions(): () => void {
+function installUiStateSubscriptions() {
   const unsubs: Array<() => void> = [];
 
   try {
-    // Subscribe to breadcrumbs changes
     let previousBreadcrumbs = useUIStateStore.getState().pageBreadcrumbs;
 
     const unsubUi = useUIStateStore.subscribe((state) => {
@@ -278,7 +258,6 @@ function installUiStateSubscriptions(): () => void {
         return;
       }
 
-      // Only update if breadcrumbs changed
       if (state.pageBreadcrumbs === previousBreadcrumbs) {
         return;
       }
@@ -300,8 +279,7 @@ function installUiStateSubscriptions(): () => void {
         return;
       }
 
-      // Don't emit sidebar items until endpoint compatibility is known,
-      // otherwise items gated by feature support will flicker.
+      // WARNING: Wait for endpoint compatibility before publishing links; otherwise unsupported links flash in the host sidebar.
       if (!api.endpointCompatibility) {
         return;
       }
@@ -320,8 +298,6 @@ function installUiStateSubscriptions(): () => void {
       setSidebarItems(sidebarItems);
     };
 
-    // Call once on initialization; also re-call whenever endpointCompatibility
-    // becomes available (it starts null and is populated after the first API fetch).
     updateSidebarItems();
     const unsubApi = useApiStore.subscribe((state, prev) => {
       if (state.endpointCompatibility !== prev.endpointCompatibility) {
@@ -329,17 +305,13 @@ function installUiStateSubscriptions(): () => void {
       }
     });
     unsubs.push(unsubApi);
-  } catch {
-    // Ignore errors in test environments where stores might not be properly initialized
-  }
+  } catch {}
 
   return () => {
     for (const unsub of unsubs) {
       try {
         unsub();
-      } catch {
-        // ignore — teardown is best-effort
-      }
+      } catch {}
     }
   };
 }
@@ -375,10 +347,6 @@ export const embeddedAvailableRoutesObservable = {
   },
 };
 
-// Module-level state for cancelling `setup()`'s recursive user-data poll and
-// for holding the current setup teardown. `setup` is memoized with
-// memoize-one, so repeated calls with the same args no-op; these refs let the
-// harness (and app lifecycle) cancel the pending work explicitly.
 let checkUserDataCancelled = false;
 let currentSetupTeardown: (() => void) | null = null;
 let subscriptionInstallTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -387,7 +355,7 @@ let subscriptionInstallTimeoutId: ReturnType<typeof setTimeout> | null = null;
  * Cancels the recursive `checkUserData` polling timer started by `setup()`.
  * Exposed for test cleanup + explicit app teardown.
  */
-export function cancelCheckUserData(): void {
+export function cancelCheckUserData() {
   checkUserDataCancelled = true;
 }
 
@@ -395,7 +363,7 @@ export function cancelCheckUserData(): void {
  * Tear down anything `setup()` installed (store subscriptions + polling timer).
  * Safe to call multiple times.
  */
-export function teardownSetup(): void {
+export function teardownSetup() {
   if (subscriptionInstallTimeoutId !== null) {
     clearTimeout(subscriptionInstallTimeoutId);
     subscriptionInstallTimeoutId = null;
@@ -408,30 +376,25 @@ export function teardownSetup(): void {
   }
 }
 
+/**
+ * Reuses setup for identical arguments and replaces the current poll and teardown when the host arguments change.
+ *
+ * Installs one transport per endpoint and resets ownership for fresh login and sidebar state. Legacy UI shares the same clients.
+ */
 export const setup = memoizeOne((setupArgs: SetConfigArguments) => {
-  // If setup() is re-invoked (memoize-one only caches the latest args), tear
-  // down any state installed by the previous invocation first to avoid
-  // stacking subscribers / pending timeouts.
+  // WARNING: Tear down previous setup state before replacing it or the old poll and subscribers can continue running.
   teardownSetup();
 
   setConfig(setupArgs);
 
-  // Reset the cancel flag now that we're installing fresh state.
   checkUserDataCancelled = false;
 
-  // Install UI / API store subscriptions on a short delay (matches historical
-  // behavior that waited for stores to initialize). Tracked so teardown can
-  // unsubscribe and clear the pending timeout.
   subscriptionInstallTimeoutId = setTimeout(() => {
     subscriptionInstallTimeoutId = null;
     currentSetupTeardown = installUiStateSubscriptions();
   }, 50);
 
-  // Get supported endpoints / kafka cluster version
-  // In the business version, that endpoint (like any other api endpoint) is
-  // protected, so we need to delay the call until the user is logged in.
   if (AppFeatures.SINGLE_SIGN_ON) {
-    // Poll for user data instead of using MobX when
     const checkUserData = () => {
       if (checkUserDataCancelled) {
         return;

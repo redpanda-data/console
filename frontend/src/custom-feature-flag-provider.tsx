@@ -13,9 +13,7 @@ type FeatureFlagContextType = {
 
 const FeatureFlagContext = createContext<FeatureFlagContextType>({
   flags: {},
-  setFlag: () => {
-    // no op - default context value
-  },
+  setFlag: () => {},
   getBooleanFlagValue: () => false,
 });
 
@@ -24,11 +22,13 @@ type CustomFeatureFlagProviderProps = {
   initialFlags?: FeatureFlags;
 };
 
+/**
+ * Initial flags only seed local state. Later prop changes do not replace flags updated through setFlag.
+ */
 export const CustomFeatureFlagProvider = ({
   children,
   initialFlags = FEATURE_FLAGS,
 }: CustomFeatureFlagProviderProps) => {
-  // Intentionally seeded from prop: flags are mutated locally via setFlag and should not re-sync
   const [flags, setFlags] = useState<FeatureFlags>(() => initialFlags);
 
   const setFlag = useCallback((key: string, value: boolean) => {
@@ -55,24 +55,22 @@ export const CustomFeatureFlagProvider = ({
   return <FeatureFlagContext.Provider value={contextValue}>{children}</FeatureFlagContext.Provider>;
 };
 
-export const useBooleanFlagValue = (key: keyof typeof FEATURE_FLAGS, defaultValue = false): boolean => {
+export const useBooleanFlagValue = (key: keyof typeof FEATURE_FLAGS, defaultValue = false) => {
   const context = useContext(FeatureFlagContext);
 
   if (!context) {
-    // throw new Error('useBooleanFlagValue must be used within a CustomFeatureFlagProvider');
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('useBooleanFlagValue must be used within a CustomFeatureFlagProvider');
-    return defaultValue; // Fall back to false if the flag is not set.
+    return defaultValue;
   }
 
   return context.getBooleanFlagValue(key, defaultValue);
 };
 
-export const useFeatureFlags = (): FeatureFlagContextType => {
+export const useFeatureFlags = () => {
   const context = useContext(FeatureFlagContext);
 
   if (!context) {
-    // throw new Error('useFeatureFlags must be used within a CustomFeatureFlagProvider');
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('useFeatureFlags must be used within a CustomFeatureFlagProvider');
   }

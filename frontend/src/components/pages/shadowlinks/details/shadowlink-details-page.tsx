@@ -43,7 +43,6 @@ import type { UnifiedShadowLink } from '../model';
 
 type DetailsTab = 'overview' | 'tasks' | 'configuration' | 'failover';
 
-/** Lag is the thing to watch on the Failover tab, so it polls quickly there. */
 const FAILOVER_POLL_MS = 3000;
 const BACKGROUND_POLL_MS = 60_000;
 
@@ -53,7 +52,6 @@ type ShadowLinkDetailsTabsProps = {
   onTabChange: (tab: DetailsTab) => void;
   shadowLink: UnifiedShadowLink;
   hasPartialData: boolean;
-  /** Set only while the Failover tab shows; otherwise the tabs are as they were before it. */
   readiness: FailoverReadiness | undefined;
   linkIdentity: LinkIdentity;
   onRefresh: () => void;
@@ -118,11 +116,6 @@ const ShadowLinkDetailsTabs = ({
   </Tabs>
 );
 
-/**
- * The open tab: a link that names one opens it, and the user's pick stays put while the Failover tab
- * comes and goes, instead of the tabs resetting to Overview. `pick` writes the tab to the URL only
- * with Failover, which other clusters' pages link to directly.
- */
 const useDetailsTab = (name: string, requested: DetailsTab | undefined) => {
   const navigate = useNavigate();
   const [picked, setPicked] = useState<DetailsTab>(requested ?? 'overview');
@@ -146,18 +139,12 @@ const useDetailsTab = (name: string, requested: DetailsTab | undefined) => {
   return { picked, pick };
 };
 
-/**
- * The Failover tab shows once Console has read the source's fence in this visit. While it's still
- * finding out, the tab shows only if the URL asks for it, so a link to it doesn't fall back to
- * Overview early.
- */
 const guidedReadiness = (
   { readiness, available }: ReturnType<typeof useFailoverReadiness>,
   requested: DetailsTab | undefined
 ) => (readiness && (available || requested === 'failover') ? readiness : undefined);
 
-/** A link to the Failover tab falls back to Overview while there's no Failover tab. */
-const resolveDetailsTab = (requested: DetailsTab | undefined, guided: boolean): DetailsTab => {
+const resolveDetailsTab = (requested: DetailsTab | undefined, guided: boolean) => {
   if (requested === 'failover' && !guided) {
     return 'overview';
   }
@@ -176,7 +163,6 @@ const useShadowLinkBreadcrumbs = (name: string) => {
   }, [name]);
 };
 
-// Use unified delete hook (works in both embedded and non-embedded modes)
 const useShadowLinkDelete = (name: string) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -206,7 +192,6 @@ const useShadowLinkDelete = (name: string) => {
   return { showDeleteDialog, setShowDeleteDialog, isDeleting, handleDelete };
 };
 
-/** Failover for the whole link, or for one topic when the dialog is opened with its name. */
 const useShadowLinkFailover = (
   name: string,
   refetch: UnifiedShadowLinkQuery['refetch'],
@@ -239,7 +224,6 @@ const useShadowLinkFailover = (
     }
   };
 
-  /** The dialog vouches for lag only from a read taken as it opens: the last poll can be a minute old. */
   const [checkingLag, setCheckingLag] = useState(false);
   const stopCheckingLag = () => setCheckingLag(false);
   const openFailoverDialog = (topicName?: string) => {
@@ -247,7 +231,6 @@ const useShadowLinkFailover = (
     setShowFailoverDialog(true);
     if (guided) {
       setCheckingLag(true);
-      // A failed read ends the check too: the dialog then reports the lag as unreadable or out of date.
       refetchTopics().then(stopCheckingLag, stopCheckingLag);
     }
   };
@@ -276,7 +259,6 @@ type ShadowLinkDetailsFallbackProps = {
   error: UnifiedShadowLinkQuery['error'];
 };
 
-// Loading, load-error, and not-found states
 const ShadowLinkDetailsFallback = ({ name, isLoading, error }: ShadowLinkDetailsFallbackProps) => {
   const navigate = useNavigate();
 
@@ -321,7 +303,6 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Action Buttons */}
       <div className="flex justify-end gap-3">
         <Button onClick={() => failover.openFailoverDialog()} size="sm" variant="outline">
           {guided ? 'Fail over all topics' : 'Failover all topics'}
@@ -347,7 +328,6 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
         </Button>
       </div>
 
-      {/* Partial Data Warning Banner */}
       {Boolean(hasPartialData) && (
         <Alert testId="partial-data-warning" variant="warning">
           <AlertTriangle className="h-4 w-4" />
@@ -358,7 +338,6 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
         </Alert>
       )}
 
-      {/* Tabs */}
       <ShadowLinkDetailsTabs
         hasPartialData={hasPartialData}
         linkIdentity={linkIdentity}
@@ -372,7 +351,6 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
         tab={tab}
       />
 
-      {/* Delete Dialog */}
       <DeleteShadowLinkDialog
         isLoading={isDeleting}
         onConfirm={handleDelete}
@@ -381,7 +359,6 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
         shadowLinkName={shadowLink.name}
       />
 
-      {/* Failover Dialog */}
       <FailoverDialog
         checkingLag={failover.checkingLag}
         isLoading={failover.isFailingOver}
@@ -395,11 +372,13 @@ const ShadowLinkDetailsView = ({ name, shadowLink, hasPartialData, refetch }: Sh
   );
 };
 
+/**
+ * Retains the selected tab as fence readiness changes. Honor a Failover deep link while its source is still loading instead of resetting to Overview. Poll lag faster on Failover, but read it again when the dialog opens: a recent-looking result can be a minute old.
+ */
 export const ShadowLinkDetailsPage = () => {
   const { name } = useParams({ from: '/shadowlinks/$name/' });
   useShadowLinkBreadcrumbs(name);
 
-  // Fetch shadow link data using unified hook (works in both embedded and non-embedded modes)
   const {
     data: shadowLink,
     isLoading,
@@ -414,7 +393,6 @@ export const ShadowLinkDetailsPage = () => {
 
   return (
     <ShadowLinkDetailsView
-      // When dataplane fails but we have controlplane data (fallback scenario)
       hasPartialData={Boolean(dataplaneError)}
       name={name}
       refetch={refetch}

@@ -40,7 +40,7 @@ import { appGlobal } from '../../state/app-global';
 import { useUIStateStore } from '../../state/ui-state';
 
 const authenticationApiClient = {
-  async refreshAuthenticationMethods(): Promise<{ methods: AuthenticationMethod[]; error: ConnectError | null }> {
+  async refreshAuthenticationMethods() {
     const client = appConfig.authenticationClient;
     if (!client) {
       throw new Error('security client is not initialized');
@@ -62,7 +62,7 @@ const authenticationApiClient = {
     username: string;
     password: string;
     mechanism: SASLMechanism;
-  }): Promise<void> {
+  }) {
     const client = appConfig.authenticationClient;
 
     if (!client) {
@@ -185,8 +185,6 @@ const BasicAuthComponent = () => {
 
 const OidcAuthComponent = () => (
   <div>
-    {/* An anchor, not a Button: this navigates to the backend's OIDC entry point. `rounded-md`
-        because the radius lives on the Button component, not in `buttonVariants`. */}
     <a
       className={cn(buttonVariants({ variant: 'brand' }), 'w-full rounded-md')}
       href={`${appConfig.grpcBasePath}/auth/login/oidc`}
@@ -245,7 +243,6 @@ const LoginPage = () => {
       </Dialog>
       <div className="min-w-[400px] flex-[8]">
         <div className="mx-auto mt-[50px] w-full max-w-[350px] px-4">
-          {/* The wordmark is currentColor; the mark keeps its brand red. */}
           <RedpandaLogo className="h-8 w-auto" color="var(--color-foreground)" />
           <div className="h-10" />
           <h1 className="text-heading-xl">Log in</h1>
@@ -270,7 +267,7 @@ const LoginPage = () => {
                 <AlertDescription>Failed to fetch authentication methods: {methodsError.message}</AlertDescription>
               </Alert>
             ) : null}
-            {methods.reduce((acc, method, index) => {
+            {methods.reduce<React.ReactNode[]>((acc, method, index) => {
               let authComponent: React.ReactNode = null;
               if (method === AuthenticationMethod.NONE) {
                 authComponent = <NoneAuthComponent hasMethodsError={methodsError !== null} />;
@@ -290,11 +287,10 @@ const LoginPage = () => {
                 acc.push(<div key={method}>{authComponent}</div>);
               }
               return acc;
-            }, [] as React.ReactNode[])}
+            }, [])}
           </div>
         </div>
       </div>
-      {/* Brand panel. The gradient is fixed art, like the logo — it does not follow the theme. */}
       <div
         className="hidden flex-[5] items-center justify-center pt-[10%] md:flex"
         style={{
@@ -307,4 +303,7 @@ const LoginPage = () => {
   );
 };
 
+/**
+ * OIDC starts by navigating to the backend entry point, not by a client-side form action.
+ */
 export default LoginPage;

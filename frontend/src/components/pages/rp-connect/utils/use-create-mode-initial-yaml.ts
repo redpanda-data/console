@@ -30,9 +30,7 @@ export function useCreateModeInitialYaml(opts: {
   isPipelineDiagramsEnabled: boolean;
   onResolved: (yaml: string) => void;
   timeoutMs?: number;
-}): {
-  isInitializing: boolean;
-} {
+}) {
   const { enabled, isServerlessMode, components, isPipelineDiagramsEnabled, timeoutMs = DEFAULT_TIMEOUT_MS } = opts;
   const persistedYamlContent = useRpcnWizardStore((s) => s.yamlContent);
   const onResolvedRef = useRef(opts.onResolved);
@@ -41,7 +39,6 @@ export function useCreateModeInitialYaml(opts: {
   const [resolved, setResolved] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
 
-  // Timeout: only applies to serverless mode where we wait for async prerequisites
   useEffect(() => {
     if (!(enabled && isServerlessMode) || resolved) {
       return;
@@ -50,9 +47,6 @@ export function useCreateModeInitialYaml(opts: {
     return () => clearTimeout(timer);
   }, [enabled, isServerlessMode, resolved, timeoutMs]);
 
-  // Serverless path: generate YAML from wizard data once components are loaded.
-  // After the timeout has already surfaced the editor, never resolve late: the user may have
-  // started typing, and resolveInitialYaml would replace the buffer with the generated YAML.
   useEffect(() => {
     if (!(enabled && isServerlessMode) || resolved || timedOut || components.length === 0) {
       return;
@@ -71,7 +65,6 @@ export function useCreateModeInitialYaml(opts: {
     setResolved(true);
   }, [enabled, isServerlessMode, components, isPipelineDiagramsEnabled, resolved, timedOut]);
 
-  // Non-serverless path: restore persisted YAML from in-memory store
   useEffect(() => {
     if (!enabled || isServerlessMode || isPipelineDiagramsEnabled || resolved || !persistedYamlContent) {
       return;

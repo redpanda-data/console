@@ -27,20 +27,22 @@ type TabsProps = {
   defaultSelectedTabKey?: string;
   onChange?: (selectedTabKey: string) => void;
 
-  isFitted?: boolean; // whether or not to fit tab buttons to max width
+  isFitted?: boolean;
 };
 
 const renderSlot = (slot: Slot) => (typeof slot === 'function' ? slot() : slot);
 
-// Only the active panel renders its children, so function content runs for one tab.
 const TabSlot = ({ slot }: { slot: Slot }) => <>{renderSlot(slot)}</>;
 
+/**
+ * Only the active panel evaluates its content.
+ */
 export default function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onChange, isFitted }: TabsProps) {
   return (
     <RegistryTabs
       defaultValue={selectedTabKey || defaultSelectedTabKey || tabs[0]?.key}
       onValueChange={(next, details) => {
-        // Only user activation; Base UI also reports its own initial/fallback selection.
+        // WARNING: Do not call onChange for fallback selection reported by Base UI; only user selection should notify the caller.
         if (details.reason === 'none' && next !== null) {
           onChange?.(String(next));
         }
@@ -54,7 +56,6 @@ export default function Tabs({ tabs, selectedTabKey, defaultSelectedTabKey, onCh
         ))}
       </TabsList>
       {tabs.map((t) => (
-        // The body owns its spacing; the registry controls the panel.
         <TabsContent key={t.key} value={t.key}>
           <div className="pt-2 pb-4">
             <TabSlot slot={t.content} />

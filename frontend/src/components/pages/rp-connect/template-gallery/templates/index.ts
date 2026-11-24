@@ -27,7 +27,6 @@ import { sqlserverCdcTemplate } from './sqlserver-cdc';
 import { sqsTemplate } from './sqs';
 import type { PipelineTemplate } from '../pipeline-template-types';
 
-// Registry order; the gallery regroups by category for display.
 export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
   postgresCdcTemplate,
   mysqlCdcTemplate,
@@ -47,5 +46,4 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
   redpandaMirrorTemplate,
 ];
 
-export const getTemplateById = (id: string): PipelineTemplate | undefined =>
-  PIPELINE_TEMPLATES.find((t) => t.id === id);
+export const getTemplateById = (id: string) => PIPELINE_TEMPLATES.find((t) => t.id === id);

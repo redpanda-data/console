@@ -1,51 +1,27 @@
-import type { Transport } from '@connectrpc/connect';
-import { TransportProvider } from '@connectrpc/connect-query';
 // Copyright 2026 Redpanda Data, Inc.
 
+import type { Transport } from '@connectrpc/connect';
+import { TransportProvider } from '@connectrpc/connect-query';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterContextProvider } from '@tanstack/react-router';
 import { type RenderOptions, render } from '@testing-library/react';
-import React, {
-  type JSX,
-  type JSXElementConstructor,
-  type PropsWithChildren,
-  type ReactElement,
-  useState,
-} from 'react';
+import React, { type JSXElementConstructor, type PropsWithChildren, type ReactElement, useState } from 'react';
 
 import { TooltipProvider } from './components/redpanda-ui/components/tooltip';
 import type { RouterContext } from './routes/__root';
 import { routeTree } from './routeTree.gen';
+import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
 
-// This type interface extends the default options for render from RTL, as well
-// as allows the user to specify other things such as initialState, store.
 interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
   transport?: Transport;
 }
-
-// Track every QueryClient and router created by the test harness so the
-// side-effect-free `cleanupTestHarness` (in `tests/harness-cleanup.ts`) can
-// tear them down after each test. A plain render + RTL cleanup only unmounts
-// the React tree — the QueryClient and the TanStack router are still held
-// alive by closures inside the test file, so every test's fetched data,
-// route matches, and history entries accumulate in the worker heap
-// otherwise. That retention is the primary cause of the +100–240 MB
-// intra-file heap growth measured during the TDD audit.
-//
-// `cleanupTestHarness` is kept in a separate module so that
-// `rstest.setup.ts` does not transitively import `routeTree.gen`
-// (and therefore `config`), which would pin `isEmbedded` live
-// bindings before test files' `rs.mock('config', ...)` hoists can take
-// effect.
-import { trackedQueryClients, trackedRouters } from '../tests/harness-cleanup';
 
 export { cleanupTestHarness } from '../tests/harness-cleanup';
 
 const customRender = (ui: React.ReactElement, { ...renderOptions }: ExtendedRenderOptions = {}) =>
   render(ui, { wrapper: renderTransportQueryProviders.bind(null, renderOptions), ...renderOptions });
 
-// File-based routing test utilities
 interface RenderWithFileRoutesOptions extends ExtendedRenderOptions {
   initialLocation?: string;
   routerContext?: Partial<RouterContext>;
@@ -59,10 +35,6 @@ export function renderWithFileRoutes(
     defaultOptions: {
       queries: {
         retry: false,
-        // gcTime + staleTime: 0 guarantees Connect Query caches are dropped
-        // the moment their observers unmount (end of test), so tests that
-        // render lists of fixtures don't retain those fixtures for the
-        // duration of the file.
         gcTime: 0,
         staleTime: 0,
       },
@@ -116,7 +88,6 @@ export async function waitForRouter(router: ReturnType<typeof createRouter>) {
   await router.load();
 }
 
-// Create test router with generated route tree
 export function createTestRouterFromFiles(initialLocation = '/') {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -145,7 +116,6 @@ export function createTestRouterFromFiles(initialLocation = '/') {
   return router;
 }
 
-// Legacy router support - now uses file-based routing
 interface RenderWithRouterOptions extends ExtendedRenderOptions {
   initialLocation?: string;
   route?: string;
@@ -157,17 +127,20 @@ const renderWithRouter = (ui: ReactElement, renderOptions: RenderWithRouterOptio
     ...renderOptions,
   });
 
-const connectQueryWrapper = (
+const connectQueryWrapper: (
   config?: QueryClientConfig,
-  transport = createConnectTransport({
-    baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
-  })
-): {
+  transport?: Transport
+) => {
   wrapper: JSXElementConstructor<PropsWithChildren>;
   queryClient: QueryClient;
   transport: Transport;
   queryClientWrapper: JSXElementConstructor<PropsWithChildren>;
-} => {
+} = (
+  config,
+  transport = createConnectTransport({
+    baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
+  })
+) => {
   const queryClient = new QueryClient(config);
   trackedQueryClients.add(queryClient);
   const router = createRouter({
@@ -191,32 +164,28 @@ const connectQueryWrapper = (
   };
 };
 
-// re-export everything
 // biome-ignore lint/performance/noBarrelFile: Test utilities intentionally re-export for convenience
 export * from '@testing-library/react';
 
-// override render method
 export { connectQueryWrapper, customRender as render, renderWithRouter };
 
 function TransportQueryProviders({
   renderOptions,
   children,
-}: PropsWithChildren<{ renderOptions: ExtendedRenderOptions }>): JSX.Element {
+}: PropsWithChildren<{ renderOptions: ExtendedRenderOptions }>) {
   const finalTransport =
     renderOptions.transport ??
     createConnectTransport({
       baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
     });
 
-  // Use useState to lazily initialize the QueryClient once and keep it stable across re-renders
-  // This prevents the client from being recreated when the Wrapper re-renders
   const [queryClient] = useState(() => {
     const client = new QueryClient({
       defaultOptions: {
         queries: {
           retry: false,
-          gcTime: 0, // Immediately garbage collect query caches (prevents memory accumulation across tests)
-          staleTime: 0, // Mark data stale immediately (ensures fresh data per test)
+          gcTime: 0,
+          staleTime: 0,
         },
         mutations: {
           retry: false,
@@ -234,10 +203,7 @@ function TransportQueryProviders({
   );
 }
 
-function renderTransportQueryProviders(
-  renderOptions: ExtendedRenderOptions,
-  { children }: PropsWithChildren
-): JSX.Element {
+function renderTransportQueryProviders(renderOptions: ExtendedRenderOptions, { children }: PropsWithChildren) {
   return <TransportQueryProviders renderOptions={renderOptions}>{children}</TransportQueryProviders>;
 }
 
@@ -248,7 +214,7 @@ function FileRouteProviders(
     router,
   }: { transport: Transport; queryClient: QueryClient; router: ReturnType<typeof createTestRouterFromFiles> },
   { children }: PropsWithChildren
-): JSX.Element {
+) {
   return (
     <TransportProvider transport={finalTransport}>
       <QueryClientProvider client={queryClient}>

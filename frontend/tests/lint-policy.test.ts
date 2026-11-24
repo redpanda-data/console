@@ -6,8 +6,6 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Each fixture is linted through `bun run lint:policy` in an OS-temp project whose
-// config extends the checked-in one, so the real script, config and plugin run.
 type Fixture = { file: string; source: string; reports: string[] };
 type Diagnostic = { code?: string; message: string; severity: string; filename: string };
 type PolicyRun = { exitCode: number; stderr: string; files: number; diagnostics: Diagnostic[] };
@@ -20,8 +18,8 @@ const C = 'no-wall-clock-in-tests';
 const T = 'no-test-timeout-or-unreasoned-skip';
 const S = 'require-suppression-reason';
 const N = 'no-native-title-tooltip';
-const CONSOLE_CODE = /^console\((.+)\)$/;
-const CRASH_OUTPUT = /panic|failed to (load|parse)|error running/i;
+const CONSOLE_CODE = /^console\((?<ruleName>.+)\)$/u;
+const CRASH_OUTPUT = /panic|failed to (?:load|parse)|error running/iu;
 const times = (rule: string, count: number) => Array.from({ length: count }, () => rule);
 
 const suppressions: Fixture[] = [
@@ -244,7 +242,6 @@ test('waits a frame after faking only timeouts', async () => {
 `,
   },
   {
-    // One test's fake timers, or an after hook's, do not cover module code or other tests.
     file: 'wait-mixed.test.tsx',
     reports: times(W, 3),
     source: `
@@ -405,7 +402,6 @@ test('reads before pinning', () => {
 `,
   },
   {
-    // A pinned clock covers the rest of its own test only, through aliased or namespaced Bun APIs.
     file: 'clock-mixed.test.ts',
     reports: times(C, 2),
     source: `
@@ -558,7 +554,6 @@ test.fixme(({ browserName }) => browserName === 'webkit', 'webkit drops focus af
   },
 ];
 
-// Test helpers share the test-code scope, so moving a wait out of a spec does not hide it.
 const helpers: Fixture[] = [
   {
     file: 'tests/shared/connector.utils.ts',
@@ -615,7 +610,6 @@ export const quotaDisplayCases = () => {
   },
 ];
 
-// The same patterns outside tests and test helpers are product code.
 const scopeControl: Fixture = {
   file: 'scope-control.ts',
   reports: [],
@@ -651,7 +645,7 @@ function createProject() {
   return directory;
 }
 
-function runPolicy(files: string[]): PolicyRun {
+function runPolicy(files: string[]) {
   const result = spawnSync([process.execPath, 'run', 'lint:policy', '--', '--format', 'json', ...files], {
     cwd: project,
     stdout: 'pipe',
@@ -660,7 +654,13 @@ function runPolicy(files: string[]): PolicyRun {
   const stderr = result.stderr.toString();
   const output = result.stdout.toString();
   const report = JSON.parse(output.slice(output.indexOf('{')));
-  return { exitCode: result.exitCode, stderr, files: report.number_of_files, diagnostics: report.diagnostics };
+  const run: PolicyRun = {
+    exitCode: result.exitCode,
+    stderr,
+    files: report.number_of_files,
+    diagnostics: report.diagnostics,
+  };
+  return run;
 }
 
 function reportsFor(run: PolicyRun, file: string) {

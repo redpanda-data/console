@@ -52,7 +52,8 @@ export const downloadRecord = (msg: TopicMessage) => {
   const link = document.createElement('a');
   link.href = url;
   link.download = `record-p${msg.partitionID}-o${msg.offset}.json`;
-  document.body.appendChild(link); // required in firefox
+  // WARNING: Attach the download link before clicking it; Firefox requires it to be in the document.
+  document.body.appendChild(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 0);
@@ -72,7 +73,6 @@ function ExpandedMessageActions({
       const previous = document.activeElement;
       actionsRef.current?.focus({ preventScroll: true });
       return () => {
-        // The docked Expand button is a new DOM node after the presentation swap.
         const target =
           expandButtonRef?.current ??
           (previous instanceof HTMLElement && previous !== document.body && previous.isConnected
@@ -117,7 +117,6 @@ const DetailBody = ({
 }: {
   msg: TopicMessage;
   loadLargeMessage: () => Promise<void>;
-  /** Expanded sheet: the value section stretches to use the full remaining height. */
   fillValue?: boolean;
   sections: Record<DetailSectionKey, boolean>;
   onOpenSectionsChange: (openSections: DetailSectionKey[]) => void;
@@ -157,13 +156,9 @@ export const MessageDetailPanel = ({
   expanded,
   onExpandedChange,
 }: MessageDetailPanelProps) => {
-  // Initial width for the expanded surface; live width is owned by the
-  // resizable group and persisted from onResize.
   const [initialSheetWidth] = useState(() => readDetailViewState().sheetWidth);
   const handleSheetResize = (size: PanelSize) => patchDetailViewState({ sheetWidth: size.inPixels });
 
-  // Section expansion is shared across messages and both presentations; every
-  // toggle persists into the consolidated detail view state.
   const [sections, setSections] = useState(() => readDetailViewState().sections);
   const handleOpenSectionsChange = (openSections: DetailSectionKey[]) => {
     const next = {
@@ -176,7 +171,6 @@ export const MessageDetailPanel = ({
     setSections(next);
   };
 
-  // Esc: expanded collapses back to the docked panel, docked closes (unless typing in an input)
   useHotKey({
     key: 'Escape',
     ignoreWhenTyping: true,
@@ -185,10 +179,6 @@ export const MessageDetailPanel = ({
 
   if (expanded) {
     return (
-      // Full-viewport overlay hosting a resizable split. The left panel is a
-      // click-through spacer so the table underneath stays interactive
-      // (clicking another row swaps the record shown in place); the right
-      // panel is the detail surface, resized via the registry handle.
       <div className="pointer-events-none fixed inset-0 z-50">
         <ResizablePanelGroup>
           <ResizablePanel />

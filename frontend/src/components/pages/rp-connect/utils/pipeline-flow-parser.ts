@@ -47,52 +47,28 @@ export type PipelineFlowNode = {
   collapsible?: boolean;
   missingTopic?: boolean;
   missingSasl?: boolean;
-  // How this node is edited/deleted; nested components carry path-based targets.
   editTarget?: EditTarget;
-  // Key config values surfaced on the canvas card.
   meta?: NodeMetaEntry[];
-  // Group child data flow: `sequential` chains them (sub-pipeline, e.g. branch/catch);
-  // `parallel` fans out (alternatives, e.g. switch cases, broker inputs). Default sequential.
   childFlow?: 'sequential' | 'parallel';
-  // Routing condition selecting this branch (switch `check`, fallback "on failure"),
-  // shown as a label on the fan-out edge entering this node.
+  /** Condition that selects this branch when the flow reaches its parent. */
   condition?: string;
-  // Catch-all / else branch (a switch case with no `check`).
   isDefault?: boolean;
-  // Error / dead-letter path (catch handler, `errored()` route, fallback).
+  /** Marks a catch or fallback path, rather than a normal branch. */
   isErrorPath?: boolean;
-  // A `branch` processor: request_map copy-out / result_map merge-back. Rendered inline as a marker.
   branch?: { request: boolean; result: boolean };
-  // Label of a resource this component references (cache/rate_limit `resource`).
   resourceRef?: string;
-  // Kind of a candidate-promoted `resourceRef` (from its field name), so resolution stays
-  // kind-aware — a `checkpoint_cache` ref never links to a same-labelled rate_limit.
   resourceRefKind?: ResourceKind;
-  // Name-referencing field values that MIGHT be resource labels (`cache:`, `checkpoint_cache:`, …).
-  // The post-pass promotes whichever matches a real resource label to `resourceRef`.
   resourceRefCandidates?: ResourceRefCandidate[];
-  // A `switch` case wrapper — structural sub-node (not editable); selecting it picks the parent.
   isCase?: boolean;
-  // Edit target for the case's routing condition (`{ check, … }`), forwarded to the case's entry card.
   caseEditTarget?: EditTarget;
-  // Id of the (non-rendered) case-wrapper node a processor-switch case entry stands in for, so a
-  // condition edit (which changes the wrapper's config) marks THIS entry card as unsaved.
   caseOwnerId?: string;
-  // Container accepting new children (array YAML path + kind it holds); drives the in-container "+".
   insertSlot?: { containerPath: (string | number)[]; accepts: 'input' | 'processor' | 'output' };
-  // For a `switch`: path of its `cases`/value array + section, so we can append a fresh case.
   addChildSlot?: { containerPath: (string | number)[]; section: 'processor' | 'output' };
-  // A `resource:` ref whose label has no matching `*_resources` entry (dangling); drives an error badge + quick-fix.
   danglingRef?: boolean;
-  // For a resource node: how many components reference its label (for "Used by N").
   usedByCount?: number;
-  // For an array-resource node: the `*_resources` key it was defined under, so references
-  // resolve kind-aware (a cache ref never links to a same-labelled rate_limit).
   resourceKey?: string;
-  // An input's stop-condition slot: the YAML path of the object holding the input, where a
-  // `read_until` wraps it, plus the condition already set there.
   stopSlot?: StopSlot;
-  // How the input ends — a stop condition, once its data runs out, or never (inputs only).
+  /** End-of-stream behavior for inputs; other sections do not set this. */
   endBehavior?: InputEndBehavior;
 };
 
@@ -125,7 +101,7 @@ export type InputEndRow = {
 };
 
 /** The pipeline's inputs that can take a stop condition, in canvas order. */
-export function inputEndRows(nodes: PipelineFlowNode[]): InputEndRow[] {
+export function inputEndRows(nodes: PipelineFlowNode[]) {
   const rows: InputEndRow[] = [];
   for (const node of nodes) {
     if (hasStopSlot(node)) {
@@ -145,7 +121,6 @@ export function inputEndRows(nodes: PipelineFlowNode[]): InputEndRow[] {
 /** The lock on a `read_until` with no input yet. */
 export const CHILDLESS_WRAPPER = 'Its `read_until` has no input to read from yet. Add one in the YAML first.';
 
-// The stop slot of the input held by `slot`; `component` is that input with any `read_until` peeled off.
 function stopSlotFor(
   {
     path,
@@ -154,19 +129,17 @@ function stopSlotFor(
     condition,
   }: { path: (string | number)[]; slot: unknown; component: unknown; condition?: StopCondition },
   config: ParsedYamlConfig
-): { stopSlot: StopSlot; endBehavior: InputEndBehavior } {
+) {
   const ownEnd = classifyInputSlot(component, config);
   const base: StopSlot = condition ? { path, condition, ownEnd } : { path, ownEnd };
-  // A `read_until` left over after peeling is childless, unless it wraps an input of its own (nested).
   const childless =
     slotComponentKey(component) === READ_UNTIL && !unwrapReadUntil(component as Record<string, unknown>).stop;
   return {
     stopSlot: childless ? { ...base, locked: CHILDLESS_WRAPPER } : base,
     endBehavior: condition ? classifyInputSlot(slot, config) : ownEnd,
-  };
+  } satisfies { stopSlot: StopSlot; endBehavior: InputEndBehavior };
 }
 
-// Human label for a node's section (canvas card kind chips, command-palette rows).
 export const SECTION_LABEL: Record<NonNullable<PipelineFlowNode['section']>, string> = {
   input: 'Input',
   processor: 'Processor',
@@ -174,8 +147,7 @@ export const SECTION_LABEL: Record<NonNullable<PipelineFlowNode['section']>, str
   resource: 'Resource',
 };
 
-// SECTION_LABEL lookup tolerant of untyped values — card data carries `section` as a bare string.
-export function sectionLabel(section?: string): string {
+export function sectionLabel(section?: string) {
   return SECTION_LABEL[section as NonNullable<PipelineFlowNode['section']>] ?? '';
 }
 
@@ -184,20 +156,17 @@ type BranchContext = {
   parentId: string;
   idPrefix: string;
   depth: number;
-  // YAML path to this context's component object (e.g. ['pipeline','processors',1]).
-  // Gives nested components a path-based editTarget so they're editable in the same dialog.
   path: (string | number)[];
 };
 
-// A nested component's schema type follows the section it lives in.
 const SECTION_COMPONENT_TYPE = {
   input: 'input',
   processor: 'processor',
   output: 'output',
 } as const;
 
-function pathEditTarget(section: 'input' | 'processor' | 'output', path: (string | number)[]): EditTarget {
-  return { kind: 'path', path, componentType: SECTION_COMPONENT_TYPE[section] };
+function pathEditTarget(section: 'input' | 'processor' | 'output', path: (string | number)[]) {
+  return { kind: 'path', path, componentType: SECTION_COMPONENT_TYPE[section] } satisfies EditTarget;
 }
 
 type GroupSpec = {
@@ -205,20 +174,16 @@ type GroupSpec = {
   groupLabel: string;
   section: 'input' | 'output';
   sectionId: string;
-  /** YAML path of the object holding the group component (`['input']`, or inside a `read_until`). */
   componentPath: (string | number)[];
 };
 
 type GroupChildSpec = {
   name: string;
-  /** Original index in the source array — drives the child id + edit path. */
   index?: number;
   meta?: NodeMetaEntry[];
   stop?: { stopSlot: StopSlot; endBehavior: InputEndBehavior };
 };
 
-// A container member may itself be a container (e.g. a `fallback` output). Summarize what
-// it wraps, routing-aware, so the collapsed leaf shows where data goes — not just "fallback".
 const NESTED_MEMBER_SUMMARY: Record<string, { label: string; sep: string }> = {
   fallback: { label: 'tries', sep: ' → ' },
   sequence: { label: 'then', sep: ' → ' },
@@ -226,8 +191,7 @@ const NESTED_MEMBER_SUMMARY: Record<string, { label: string; sep: string }> = {
   switch: { label: 'routes', sep: ' | ' },
 };
 
-// Display summary (config preview, or wrapped-member chain) for one container member.
-function memberMeta(key: string, value: unknown): NodeMetaEntry[] | undefined {
+function memberMeta(key: string, value: unknown) {
   const summary = NESTED_MEMBER_SUMMARY[key];
   if (summary) {
     const names = parseMultiInputs(key, value);
@@ -239,17 +203,14 @@ function memberMeta(key: string, value: unknown): NodeMetaEntry[] | undefined {
   return meta.length > 0 ? meta : undefined;
 }
 
-// Resolve a container member object (e.g. `{ aws_s3: {…} }`) to its display name + summary.
-function memberNameAndMeta(key: string, obj: unknown): { name: string; meta?: NodeMetaEntry[] } {
-  return { name: key, meta: memberMeta(key, (obj as Record<string, unknown>)[key]) };
+function memberNameAndMeta(key: string, obj: unknown) {
+  return { name: key, meta: memberMeta(key, (obj as Record<string, unknown>)[key]) } satisfies {
+    name: string;
+    meta?: NodeMetaEntry[];
+  };
 }
 
-// Member specs (name + summary) for a `broker`/`sequence` input, from its `inputs` array.
-function multiMemberSpecs(
-  value: unknown,
-  membersPath: (string | number)[],
-  config: ParsedYamlConfig
-): GroupChildSpec[] | undefined {
+function multiMemberSpecs(value: unknown, membersPath: (string | number)[], config: ParsedYamlConfig) {
   if (!value || typeof value !== 'object') {
     return;
   }
@@ -257,14 +218,7 @@ function multiMemberSpecs(
   return Array.isArray(items) ? memberSpecsWithIndices(items, membersPath, config) : undefined;
 }
 
-// Skip entries with no component key (null/scalar, or reserved-only stubs like `- label: x`) —
-// matching parseMultiInputs — but keep original indices so edit paths never land on a neighbour.
-// A `read_until` member is shown as the input it wraps.
-function memberSpecsWithIndices(
-  items: unknown[],
-  membersPath: (string | number)[],
-  config: ParsedYamlConfig
-): GroupChildSpec[] {
+function memberSpecsWithIndices(items: unknown[], membersPath: (string | number)[], config: ParsedYamlConfig) {
   const specs: GroupChildSpec[] = [];
   for (const [i, item] of items.entries()) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
@@ -283,7 +237,7 @@ function memberSpecsWithIndices(
   return specs;
 }
 
-function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): PipelineFlowNode[] {
+function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]) {
   return [
     {
       id: spec.groupId,
@@ -292,11 +246,9 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
       section: spec.section,
       parentId: spec.sectionId,
       collapsible: true,
-      // A `sequence` input runs children in order; broker/switch/fallback fan out.
       childFlow: spec.groupLabel === 'sequence' ? 'sequential' : 'parallel',
     },
-    ...children.map((child, i): PipelineFlowNode => {
-      // Original array index (falls back to render position) so ids/paths survive skipped entries.
+    ...children.map((child, i) => {
       const idx = child.index ?? i;
       const slotPath = [...spec.componentPath, spec.groupLabel, 'inputs', idx];
       return {
@@ -308,22 +260,17 @@ function buildGroupWithChildren(spec: GroupSpec, children: GroupChildSpec[]): Pi
         meta: child.meta,
         editTarget: pathEditTarget(spec.section, slotPath),
         ...child.stop,
-      };
+      } satisfies PipelineFlowNode;
     }),
-  ];
+  ] satisfies PipelineFlowNode[];
 }
 
-// ── Empty container affordances ──────────────────────────────────────────
-// Containers normally derive their insert "+" from a child's path; an empty array has none,
-// so emit an explicit slot — else a freshly-added broker is a dead-end leaf.
 type ContainerSlot =
   | { insertSlot: NonNullable<PipelineFlowNode['insertSlot']> }
   | { addChildSlot: NonNullable<PipelineFlowNode['addChildSlot']> };
 
 const MULTI_INPUT_CONTAINERS: ReadonlySet<string> = new Set(['broker', 'sequence']);
 
-// The top-level input as rendered: its component (looking through a `read_until`), how it's edited,
-// and the slot its stop condition attaches to.
 type TopLevelInput = {
   key: string;
   value: unknown;
@@ -334,9 +281,7 @@ type TopLevelInput = {
   labelText?: string;
 };
 
-// Empty-container group for a top-level input, or null if not a recognised container. Empty output
-// containers don't need this — buildOutputNodes always returns a (possibly empty) member list.
-function emptyInputContainerGroup(input: TopLevelInput, sectionId: string): PipelineFlowNode[] | null {
+function emptyInputContainerGroup(input: TopLevelInput, sectionId: string) {
   if (!MULTI_INPUT_CONTAINERS.has(input.key)) {
     return null;
   }
@@ -358,11 +303,9 @@ function emptyInputContainerGroup(input: TopLevelInput, sectionId: string): Pipe
       ...(input.labelText ? { labelText: input.labelText } : {}),
       ...slot,
     },
-  ];
+  ] satisfies PipelineFlowNode[];
 }
 
-// One member of an output container, with the YAML path to its component object and the
-// routing that selects it, so `buildOutputNodes` can recurse into it.
 type OutputMemberSpec = {
   obj: unknown;
   path: (string | number)[];
@@ -370,13 +313,10 @@ type OutputMemberSpec = {
   isDefault?: boolean;
   isErrorPath?: boolean;
   caseEditTarget?: EditTarget;
-  // Display ordinal from enumerateSwitchCases — NOT the raw YAML index.
   caseNumber?: number;
 };
 
-// Switch cases enumerated for display: null/scalar entries are skipped without leaving ordinal
-// gaps ("case 1", "case 3"), while `index` keeps the raw YAML position so edit paths never shift.
-function enumerateSwitchCases(cases: unknown[]): { index: number; ordinal: number; record: Record<string, unknown> }[] {
+function enumerateSwitchCases(cases: unknown[]) {
   const entries: { index: number; ordinal: number; record: Record<string, unknown> }[] = [];
   for (const [i, c] of cases.entries()) {
     if (c && typeof c === 'object') {
@@ -386,17 +326,8 @@ function enumerateSwitchCases(cases: unknown[]): { index: number; ordinal: numbe
   return entries;
 }
 
-// Members of an output container (broker/switch/fallback), or undefined if `key` isn't one. Member
-// paths derive from `path` (the container object) so nesting composes into deep, editable paths.
-function outputContainerMembers(
-  key: string,
-  value: unknown,
-  path: (string | number)[]
-): OutputMemberSpec[] | undefined {
-  // A recognised container always returns a (possibly empty) member list, so a malformed or
-  // empty one still renders as a fan-out container with its "Add …" affordance, never a leaf.
+function outputContainerMembers(key: string, value: unknown, path: (string | number)[]) {
   if (key === 'fallback') {
-    // Tier 0 is primary; each later tier runs only "on failure" of the prior.
     return (Array.isArray(value) ? value : []).map((obj, i) => ({
       obj,
       path: [...path, key, i],
@@ -411,10 +342,10 @@ function outputContainerMembers(
     const outputs = (value as { outputs?: unknown[] } | undefined)?.outputs;
     return (Array.isArray(outputs) ? outputs : []).map((obj, i) => ({ obj, path: [...path, key, 'outputs', i] }));
   }
+  return null;
 }
 
-// An output switch's cases, each routing to its `output` (switchPath is the `switch` object's path).
-function switchOutputMembers(value: unknown, switchPath: (string | number)[]): OutputMemberSpec[] {
+function switchOutputMembers(value: unknown, switchPath: (string | number)[]) {
   const cases = (value as { cases?: unknown[] } | undefined)?.cases;
   if (!Array.isArray(cases)) {
     return [];
@@ -428,25 +359,23 @@ function switchOutputMembers(value: unknown, switchPath: (string | number)[]): O
   }));
 }
 
-// The in-place "grow" affordance for an output container: switch appends a `{ check, output }`
-// case; broker/fallback append a bare output.
-function outputContainerSlot(key: string, path: (string | number)[]): ContainerSlot | undefined {
+function outputContainerSlot(key: string, path: (string | number)[]) {
   if (key === 'switch') {
-    return { addChildSlot: { containerPath: [...path, 'switch', 'cases'], section: 'output' } };
+    return { addChildSlot: { containerPath: [...path, 'switch', 'cases'], section: 'output' } } satisfies ContainerSlot;
   }
   if (key === 'fallback') {
-    return { insertSlot: { containerPath: [...path, 'fallback'], accepts: 'output' } };
+    return { insertSlot: { containerPath: [...path, 'fallback'], accepts: 'output' } } satisfies ContainerSlot;
   }
   if (key === 'broker') {
-    return { insertSlot: { containerPath: [...path, 'broker', 'outputs'], accepts: 'output' } };
+    return { insertSlot: { containerPath: [...path, 'broker', 'outputs'], accepts: 'output' } } satisfies ContainerSlot;
   }
 }
 
-function extractLabel(obj: Record<string, unknown>): string | undefined {
+function extractLabel(obj: Record<string, unknown>) {
   return typeof obj.label === 'string' && obj.label !== '' ? obj.label : undefined;
 }
 
-function extractTopics(componentConfig: unknown): string[] | undefined {
+function extractTopics(componentConfig: unknown) {
   if (!componentConfig || typeof componentConfig !== 'object') {
     return;
   }
@@ -460,7 +389,7 @@ function extractTopics(componentConfig: unknown): string[] | undefined {
   }
 }
 
-function hasNonEmptySasl(obj: unknown): boolean {
+function hasNonEmptySasl(obj: unknown) {
   if (!obj || typeof obj !== 'object') {
     return false;
   }
@@ -477,16 +406,14 @@ function hasNonEmptySasl(obj: unknown): boolean {
   return false;
 }
 
-function hasSaslConfig(componentName: string, componentConfig: unknown, rootConfig: ParsedYamlConfig): boolean {
+function hasSaslConfig(componentName: string, componentConfig: unknown, rootConfig: ParsedYamlConfig) {
   const ownSaslIsUsed =
     hasNonEmptySasl(componentConfig) &&
     (!SHARED_CLIENT_FALLBACK_COMPONENTS.has(componentName) || hasSeedBrokers(componentConfig));
   return ownSaslIsUsed || hasNonEmptySasl(rootConfig.redpanda);
 }
 
-// A `read_until` input renders as the input it wraps; the wrapper's settings ride the node as its stop
-// condition.
-function resolveTopLevelInput(inputObj: Record<string, unknown>, config: ParsedYamlConfig): TopLevelInput | undefined {
+function resolveTopLevelInput(inputObj: Record<string, unknown>, config: ParsedYamlConfig) {
   const { component, innerPath, stop } = unwrapReadUntil(inputObj);
   const key = slotComponentKey(component);
   if (!key) {
@@ -499,16 +426,11 @@ function resolveTopLevelInput(inputObj: Record<string, unknown>, config: ParsedY
     componentPath,
     editTarget: { kind: 'input' },
     ...stopSlotFor({ path: ['input'], slot: inputObj, component, condition: stop }, config),
-    // The input's own label is the one the inspector edits; a label on the wrapper is a fallback.
     labelText: extractLabel(component) ?? extractLabel(inputObj),
-  };
+  } satisfies TopLevelInput;
 }
 
-function parseInputNodes(
-  inputObj: Record<string, unknown>,
-  sectionId: string,
-  config: ParsedYamlConfig
-): PipelineFlowNode[] {
+function parseInputNodes(inputObj: Record<string, unknown>, sectionId: string, config: ParsedYamlConfig) {
   const input = resolveTopLevelInput(inputObj, config);
   if (!input) {
     return [];
@@ -522,16 +444,10 @@ function parseInputNodes(
   return emptyInputContainerGroup(input, sectionId) ?? [inputLeafNode(input, sectionId, config)];
 }
 
-// A broker/sequence input: the group (edited as the whole input) followed by its member leaves.
-function multiInputNodes(
-  input: TopLevelInput,
-  childNames: string[],
-  sectionId: string,
-  config: ParsedYamlConfig
-): PipelineFlowNode[] {
+function multiInputNodes(input: TopLevelInput, childNames: string[], sectionId: string, config: ParsedYamlConfig) {
   const { key: inputKey, componentPath } = input;
   const membersPath = [...componentPath, inputKey, 'inputs'];
-  const groupNodes = buildGroupWithChildren(
+  const groupNodes: PipelineFlowNode[] = buildGroupWithChildren(
     { groupId: `input-${inputKey}`, groupLabel: inputKey, section: 'input', sectionId, componentPath },
     multiMemberSpecs(input.value, membersPath, config) ?? childNames.map((name) => ({ name }))
   );
@@ -545,7 +461,7 @@ function multiInputNodes(
   return groupNodes;
 }
 
-function inputLeafNode(input: TopLevelInput, sectionId: string, config: ParsedYamlConfig): PipelineFlowNode {
+function inputLeafNode(input: TopLevelInput, sectionId: string, config: ParsedYamlConfig) {
   const { key: inputKey, value } = input;
   const topics = extractTopics(value);
   const isRedpanda = REDPANDA_COMPONENTS.has(inputKey);
@@ -565,7 +481,7 @@ function inputLeafNode(input: TopLevelInput, sectionId: string, config: ParsedYa
     meta: summarizeComponent(inputKey, value),
     resourceRef: indirectionResourceRef(inputKey, value),
     resourceRefCandidates: extractRefCandidates(value),
-  };
+  } satisfies PipelineFlowNode;
 }
 
 const BRANCHING_FIELDS = new Set([
@@ -583,20 +499,13 @@ const BRANCHING_FIELDS = new Set([
 
 const MAX_BRANCH_DEPTH = 3;
 
-// Processor containers whose value IS a flat processor array — inserting appends to it.
-// (`switch`/`group_by` are arrays too but of structural case objects, handled separately.)
 const DIRECT_ARRAY_PROC_CONTAINERS: ReadonlySet<string> = new Set(['try', 'catch', 'for_each']);
 
-// Processor containers that nest children under a `processors:` field — an empty one
-// accepts a processor into `<name>.processors`.
 const NESTED_PROC_CONTAINERS: ReadonlySet<string> = new Set(['branch', 'while', 'parallel']);
 
-// A parseable processor entry paired with its ORIGINAL YAML index.
 type ProcessorEntry = [number, Record<string, unknown>];
 
-// A processor array's parseable entries with their ORIGINAL YAML indices: unparseable entries
-// (`- null`, mid-edit scalars) are skipped, but edit paths must never land on a neighbouring entry.
-function extractProcessorEntries(value: unknown): ProcessorEntry[] | undefined {
+function extractProcessorEntries(value: unknown) {
   if (!Array.isArray(value)) {
     return;
   }
@@ -609,9 +518,7 @@ function extractProcessorEntries(value: unknown): ProcessorEntry[] | undefined {
   return entries;
 }
 
-// A resource reference is a string `resource:` field (cache/rate_limit processors);
-// surfaced so the canvas draws a dashed edge to the matching resource node.
-function extractResourceRef(componentValue: unknown): string | undefined {
+function extractResourceRef(componentValue: unknown) {
   if (!componentValue || typeof componentValue !== 'object' || Array.isArray(componentValue)) {
     return;
   }
@@ -619,22 +526,15 @@ function extractResourceRef(componentValue: unknown): string | undefined {
   return typeof ref === 'string' && ref !== '' ? ref : undefined;
 }
 
-// A `resource:` indirection component (e.g. `input: { resource: foo }`) runs a named
-// *_resources entry. Capture that label so the canvas links to its definition.
-function indirectionResourceRef(componentName: string | undefined, componentValue: unknown): string | undefined {
+function indirectionResourceRef(componentName: string | undefined, componentValue: unknown) {
   return componentName === 'resource' && typeof componentValue === 'string' && componentValue !== ''
     ? componentValue
     : undefined;
 }
 
-// A possible resource reference held in a name-referencing field, with the kind that name implies.
 export type ResourceRefCandidate = { label: string; kind: ResourceKind };
 
-// A resource ref may live in a non-`resource` field (e.g. `checkpoint_cache`). Only fields whose
-// NAME marks them as a reference are collected — a coincidental value match on an unrelated field
-// (e.g. `client_id` equal to a resource label) must not draw a dependency edge. The post-pass
-// promotes candidates that resolve to a real resource of the field's kind.
-function extractRefCandidates(componentValue: unknown): ResourceRefCandidate[] | undefined {
+function extractRefCandidates(componentValue: unknown) {
   if (!componentValue || typeof componentValue !== 'object' || Array.isArray(componentValue)) {
     return;
   }
@@ -648,24 +548,21 @@ function extractRefCandidates(componentValue: unknown): ResourceRefCandidate[] |
   return candidates.length > 0 ? candidates : undefined;
 }
 
-// A Bloblang check referencing `errored()` — this branch handles failed messages (dead-letter).
-const ERRORED_CHECK_RE = /errored\s*\(/;
-function isErroredCheck(check: unknown): boolean {
+const ERRORED_CHECK_RE = /errored\s*\(/u;
+function isErroredCheck(check: unknown) {
   return typeof check === 'string' && ERRORED_CHECK_RE.test(check);
 }
 
-// Routing that a switch/case entry's `check` selects: a non-empty check is the branch condition,
-// its absence marks the default (else) case, and an `errored()` check is the error path.
-function caseRouting(check: unknown): Pick<PipelineFlowNode, 'condition' | 'isDefault' | 'isErrorPath'> {
+function caseRouting(check: unknown) {
   const hasCheck = typeof check === 'string' && check !== '';
   return {
     condition: hasCheck ? (check as string) : undefined,
     isDefault: hasCheck ? undefined : true,
     isErrorPath: isErroredCheck(check) ? true : undefined,
-  };
+  } satisfies Pick<PipelineFlowNode, 'condition' | 'isDefault' | 'isErrorPath'>;
 }
 
-function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): PipelineFlowNode {
+function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown) {
   const meta = summarizeComponent(name, componentValue);
   const topics = extractTopics(componentValue);
   return {
@@ -676,21 +573,17 @@ function makeLeaf(name: string, ctx: BranchContext, componentValue?: unknown): P
     parentId: ctx.parentId,
     resourceRef: extractResourceRef(componentValue) ?? indirectionResourceRef(name, componentValue),
     resourceRefCandidates: extractRefCandidates(componentValue),
-    // Surface key config on nested leaves too, like top-level processors.
     ...(meta.length > 0 ? { meta } : {}),
     ...(topics ? { topics } : {}),
     editTarget: pathEditTarget(ctx.section, ctx.path),
-  };
+  } satisfies PipelineFlowNode;
 }
 
-// Components whose children are alternatives/parallel branches, not a sequential sub-pipeline.
 const PARALLEL_GROUP_COMPONENTS: ReadonlySet<string> = new Set(['switch', 'parallel', 'group_by']);
 
-// Processors that are arrays of `{ check, processors }` cases (routing vs grouping) — rendered as
-// a fan of condition-labelled case lanes with an "Add case" affordance.
 export const CASE_CONTAINER_LABELS: ReadonlySet<string> = new Set(['switch', 'group_by']);
 
-function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
+function makeGroup(name: string, ctx: BranchContext) {
   return {
     id: ctx.idPrefix,
     kind: 'group',
@@ -699,16 +592,14 @@ function makeGroup(name: string, ctx: BranchContext): PipelineFlowNode {
     parentId: ctx.parentId,
     collapsible: true,
     childFlow: PARALLEL_GROUP_COMPONENTS.has(name) ? 'parallel' : 'sequential',
-    // `catch` runs only on upstream error — a dead-letter handler.
     isErrorPath: name === 'catch' ? true : undefined,
     editTarget: pathEditTarget(ctx.section, ctx.path),
-  };
+  } satisfies PipelineFlowNode;
 }
 
-function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNode[] {
+function parseSwitchCases(cases: unknown[], ctx: BranchContext) {
   const nodes: PipelineFlowNode[] = [];
   for (const { index: ci, ordinal, record: caseRecord } of enumerateSwitchCases(cases)) {
-    // A check-only case (no `processors` array) still renders as an empty case — never silently vanishes.
     const caseProcs = extractProcessorEntries(caseRecord.processors) ?? [];
     const caseId = `${ctx.idPrefix}-case-${ci + 1}`;
     nodes.push({
@@ -721,10 +612,8 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
       childFlow: 'sequential',
       ...caseRouting(caseRecord.check),
       isCase: true,
-      // The case object is editable for its `check` condition; its processors are their own nodes.
       editTarget: { kind: 'switchCase', path: [...ctx.path, ci] },
       caseEditTarget: { kind: 'switchCase', path: [...ctx.path, ci] },
-      // Explicit so even an empty case (no children to derive from) is fillable.
       insertSlot: { containerPath: [...ctx.path, ci, 'processors'], accepts: 'processor' },
     });
     pushProcessorChildren(nodes, caseProcs, {
@@ -737,9 +626,7 @@ function parseSwitchCases(cases: unknown[], ctx: BranchContext): PipelineFlowNod
   return nodes;
 }
 
-function pushProcessorChildren(nodes: PipelineFlowNode[], procs: ProcessorEntry[], ctx: BranchContext): void {
-  // ctx.path is the processors array; each child component sits at [...path, index], where
-  // `pi` is the entry's ORIGINAL YAML index (unparseable siblings don't shift it).
+function pushProcessorChildren(nodes: PipelineFlowNode[], procs: ProcessorEntry[], ctx: BranchContext) {
   for (const [pi, proc] of procs) {
     const procName = firstKey(proc);
     if (procName) {
@@ -750,7 +637,6 @@ function pushProcessorChildren(nodes: PipelineFlowNode[], procs: ProcessorEntry[
         depth: ctx.depth + 1,
         path: [...ctx.path, pi],
       });
-      // Surface a nested component's `label:` on its node, like top-level processors.
       const labelText = extractLabel(proc);
       if (childNodes.length > 0 && labelText) {
         childNodes[0] = { ...childNodes[0], labelText };
@@ -760,8 +646,7 @@ function pushProcessorChildren(nodes: PipelineFlowNode[], procs: ProcessorEntry[
   }
 }
 
-// The nodes for a processor array's entries, parented and pathed by `ctx`.
-function processorChildNodes(procs: ProcessorEntry[], ctx: BranchContext): PipelineFlowNode[] {
+function processorChildNodes(procs: ProcessorEntry[], ctx: BranchContext) {
   const nodes: PipelineFlowNode[] = [];
   pushProcessorChildren(nodes, procs, ctx);
   return nodes;
@@ -769,8 +654,7 @@ function processorChildNodes(procs: ProcessorEntry[], ctx: BranchContext): Pipel
 
 const PROCESSORS_FIELD_KEYS = new Set(['while', 'branch', 'group_by', 'group_by_value']);
 
-function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContext): PipelineFlowNode[] {
-  // ctx.path is the inner config; the field value lives at [...ctx.path, key].
+function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContext) {
   if (key === 'switch' && Array.isArray(fieldValue)) {
     return parseSwitchCases(fieldValue, { ...ctx, path: [...ctx.path, key] });
   }
@@ -790,26 +674,16 @@ function parseBranchingField(key: string, fieldValue: unknown, ctx: BranchContex
     : [];
 }
 
-function parseBranchingKeys(
-  config: Record<string, unknown>,
-  ctx: BranchContext,
-  componentName: string
-): PipelineFlowNode[] {
+function parseBranchingKeys(config: Record<string, unknown>, ctx: BranchContext, componentName: string) {
   const branchingKeys = Object.keys(config).filter((k) => BRANCHING_FIELDS.has(k));
   if (branchingKeys.length === 0) {
     return [];
   }
-  // Children parent off the group node; descend the path into the named config.
   const childCtx: BranchContext = { ...ctx, parentId: ctx.idPrefix, path: [...ctx.path, componentName] };
   return branchingKeys.flatMap((key) => parseBranchingField(key, config[key], childCtx));
 }
 
-function parseDirectArrayBranching(
-  componentName: string,
-  componentValue: unknown[],
-  ctx: BranchContext
-): PipelineFlowNode[] {
-  // The component's value array lives at [...ctx.path, componentName].
+function parseDirectArrayBranching(componentName: string, componentValue: unknown[], ctx: BranchContext) {
   const valuePath = [...ctx.path, componentName];
   if (CASE_CONTAINER_LABELS.has(componentName)) {
     return caseContainerNodes(componentName, componentValue, ctx, valuePath);
@@ -817,12 +691,11 @@ function parseDirectArrayBranching(
 
   const procArray = extractProcessorEntries(componentValue);
   const childCtx: BranchContext = { ...ctx, parentId: ctx.idPrefix, path: valuePath };
-  // try/catch/for_each: keep the group (with insert slot) even when empty so a first processor can be added.
   if (procArray && DIRECT_ARRAY_PROC_CONTAINERS.has(componentName)) {
     return [
       { ...makeGroup(componentName, ctx), insertSlot: { containerPath: valuePath, accepts: 'processor' } },
       ...processorChildNodes(procArray, childCtx),
-    ];
+    ] satisfies PipelineFlowNode[];
   }
   if (procArray && procArray.length > 0) {
     return [makeGroup(componentName, ctx), ...processorChildNodes(procArray, childCtx)];
@@ -830,25 +703,19 @@ function parseDirectArrayBranching(
   return [makeLeaf(componentName, ctx)];
 }
 
-// A switch/group_by processor: its group, then each case wrapper with its body.
 function caseContainerNodes(
   componentName: string,
   cases: unknown[],
   ctx: BranchContext,
   valuePath: (string | number)[]
-): PipelineFlowNode[] {
+) {
   const caseNodes = parseSwitchCases(cases, { ...ctx, path: valuePath });
-  const group = makeGroup(componentName, ctx);
-  // Can grow a new case appended to its value array, even with no cases yet.
+  const group: PipelineFlowNode = makeGroup(componentName, ctx);
   group.addChildSlot = { containerPath: valuePath, section: 'processor' };
   return [group, ...caseNodes];
 }
 
-function parseComponentWithBranching(
-  componentName: string,
-  componentValue: unknown,
-  ctx: BranchContext
-): PipelineFlowNode[] {
+function parseComponentWithBranching(componentName: string, componentValue: unknown, ctx: BranchContext) {
   if (ctx.depth >= MAX_BRANCH_DEPTH || !componentValue || typeof componentValue !== 'object') {
     return [makeLeaf(componentName, ctx, componentValue)];
   }
@@ -863,16 +730,13 @@ function parseComponentWithBranching(
     return childlessComponentNodes(componentName, config, ctx);
   }
 
-  return [withBranchMeta(makeGroup(componentName, ctx), componentName, config), ...childNodes];
+  return [
+    withBranchMeta(makeGroup(componentName, ctx), componentName, config),
+    ...childNodes,
+  ] satisfies PipelineFlowNode[];
 }
 
-// A component with no branching children. An empty branch/while/parallel still accepts children —
-// render a fillable group, not a dead-end leaf; anything else is a plain leaf.
-function childlessComponentNodes(
-  componentName: string,
-  config: Record<string, unknown>,
-  ctx: BranchContext
-): PipelineFlowNode[] {
+function childlessComponentNodes(componentName: string, config: Record<string, unknown>, ctx: BranchContext) {
   if (!NESTED_PROC_CONTAINERS.has(componentName)) {
     return [makeLeaf(componentName, ctx, config)];
   }
@@ -881,13 +745,7 @@ function childlessComponentNodes(
   return [group];
 }
 
-// A `branch` copies part of the message out (request_map), runs the sub-pipeline, then
-// merges back (result_map). Mark it so the canvas draws copy/merge edges, not a plain chain.
-function withBranchMeta(
-  group: PipelineFlowNode,
-  componentName: string,
-  config: Record<string, unknown>
-): PipelineFlowNode {
+function withBranchMeta(group: PipelineFlowNode, componentName: string, config: Record<string, unknown>) {
   if (componentName !== 'branch') {
     return group;
   }
@@ -900,8 +758,8 @@ function withBranchMeta(
   };
 }
 
-function parseProcessorNodes(processors: Record<string, unknown>[], sectionId: string): PipelineFlowNode[] {
-  return processors.flatMap((proc, i): PipelineFlowNode[] => {
+function parseProcessorNodes(processors: Record<string, unknown>[], sectionId: string) {
+  return processors.flatMap<PipelineFlowNode>((proc, i) => {
     const name = firstKey(proc);
     if (!name) {
       return [];
@@ -915,7 +773,6 @@ function parseProcessorNodes(processors: Record<string, unknown>[], sectionId: s
       path: ['pipeline', 'processors', i],
     };
     const nodes = parseComponentWithBranching(name, proc[name], ctx);
-    // The first node is the top-level processor; editable by array index.
     if (nodes.length > 0) {
       nodes[0] = {
         ...nodes[0],
@@ -941,36 +798,31 @@ const RESOURCE_YAML_KEYS = [
   'redpanda',
 ] as const;
 
-// Array resources addressed by the dedicated `resource` target (cache/rate-limit). Other resources
-// are editable via path targets (RESOURCE_KEY_COMPONENT_TYPE / SINGLETON_RESOURCE_COMPONENT_TYPE).
 const EDITABLE_RESOURCE_KEYS: ReadonlySet<string> = new Set(['cache_resources', 'rate_limit_resources']);
 
-// input/output/processor resources hold a real component, inspectable via a path edit
-// target whose schema follows the matching component type.
 const RESOURCE_KEY_COMPONENT_TYPE: Record<string, 'input' | 'processor' | 'output'> = {
   input_resources: 'input',
   processor_resources: 'processor',
   output_resources: 'output',
 };
 
-// Singleton root resources that ARE components (e.g. `buffer: { memory: … }`) get a path edit target;
-// `logger`/`redpanda` are plain config, not components, so they stay display-only.
 const SINGLETON_RESOURCE_COMPONENT_TYPE: Record<string, 'buffer' | 'metrics' | 'tracer'> = {
   buffer: 'buffer',
   metrics: 'metrics',
   tracer: 'tracer',
 };
 
-// Edit target for the i-th resource-array item (dedicated `resource` target or path target, per above).
-function resourceItemEditTarget(key: string, index: number): EditTarget | undefined {
+function resourceItemEditTarget(key: string, index: number) {
   if (EDITABLE_RESOURCE_KEYS.has(key)) {
-    return { kind: 'resource', resourceKey: key as ResourceArrayKey, index };
+    return { kind: 'resource', resourceKey: key as ResourceArrayKey, index } satisfies EditTarget;
   }
   const componentType = RESOURCE_KEY_COMPONENT_TYPE[key];
-  return componentType ? { kind: 'path', path: [key, index], componentType } : undefined;
+  return (componentType ? { kind: 'path', path: [key, index], componentType } : undefined) satisfies
+    | EditTarget
+    | undefined;
 }
 
-function parseArrayResource(value: unknown[], key: string, sectionId: string): PipelineFlowNode[] {
+function parseArrayResource(value: unknown[], key: string, sectionId: string) {
   const nodes: PipelineFlowNode[] = [];
   for (const [i, item] of value.entries()) {
     if (item && typeof item === 'object') {
@@ -993,7 +845,7 @@ function parseArrayResource(value: unknown[], key: string, sectionId: string): P
   return nodes;
 }
 
-function parseResourceNodes(config: ParsedYamlConfig, sectionId: string): PipelineFlowNode[] {
+function parseResourceNodes(config: ParsedYamlConfig, sectionId: string) {
   const nodes: PipelineFlowNode[] = [];
   for (const key of RESOURCE_YAML_KEYS) {
     const value = config[key];
@@ -1009,7 +861,7 @@ function parseResourceNodes(config: ParsedYamlConfig, sectionId: string): Pipeli
   return nodes;
 }
 
-function singletonResourceNode(key: string, value: unknown, sectionId: string): PipelineFlowNode {
+function singletonResourceNode(key: string, value: unknown, sectionId: string) {
   const componentType = SINGLETON_RESOURCE_COMPONENT_TYPE[key];
   const valueObj = value as Record<string, unknown>;
   const implName = componentType ? firstKey(valueObj) : undefined;
@@ -1021,39 +873,35 @@ function singletonResourceNode(key: string, value: unknown, sectionId: string): 
     parentId: sectionId,
     editTarget: componentType ? { kind: 'path', path: [key], componentType } : undefined,
     meta: implName ? summarizeComponent(implName, valueObj[implName]) : undefined,
-  };
+  } satisfies PipelineFlowNode;
 }
 
 type OutputNodeArgs = {
   obj: unknown;
   id: string;
   parentId: string;
-  // YAML path to `obj` (the component object being built).
   path: (string | number)[];
-  // How to edit this node: `{ kind: 'output' }` at the top level, a path when nested.
   editTarget: EditTarget;
-  // Routing that selects this node (a switch case's check, a fallback tier's "on failure").
   routing?: Pick<OutputMemberSpec, 'condition' | 'isDefault' | 'isErrorPath' | 'caseEditTarget'>;
   caseNumber?: OutputMemberSpec['caseNumber'];
   labelText?: string;
   config: ParsedYamlConfig;
 };
 
-// Node subtree for an output component: broker/switch/fallback become a fan-out GROUP whose members
-// recurse (nested containers keep editable members + grow affordances); anything else is a leaf.
-function buildOutputNodes(args: OutputNodeArgs): PipelineFlowNode[] {
+function buildOutputNodes(args: OutputNodeArgs) {
   const key = firstKey(args.obj);
   if (!key) {
     return checkOnlyOutputCaseNodes(args);
   }
   const value = (args.obj as Record<string, unknown>)[key];
   const members = outputContainerMembers(key, value, args.path);
-  return members ? outputContainerNodes(args, key, members) : [outputLeafNode(args, key, value)];
+  if (members === null) {
+    return [outputLeafNode(args, key, value)];
+  }
+  return outputContainerNodes(args, key, members);
 }
 
-// A check-only switch case (no `output:` body yet) still renders as an empty, condition-editable
-// case — mirroring processor switches, so a case never silently vanishes from the canvas.
-function checkOnlyOutputCaseNodes({ id, parentId, routing, caseNumber }: OutputNodeArgs): PipelineFlowNode[] {
+function checkOnlyOutputCaseNodes({ id, parentId, routing, caseNumber }: OutputNodeArgs) {
   if (!routing?.caseEditTarget) {
     return [];
   }
@@ -1070,11 +918,10 @@ function checkOnlyOutputCaseNodes({ id, parentId, routing, caseNumber }: OutputN
       isCase: true,
       editTarget: routing.caseEditTarget,
     },
-  ];
+  ] satisfies PipelineFlowNode[];
 }
 
-// A broker/switch/fallback output: a fan-out group whose members recurse into their own subtrees.
-function outputContainerNodes(args: OutputNodeArgs, key: string, members: OutputMemberSpec[]): PipelineFlowNode[] {
+function outputContainerNodes(args: OutputNodeArgs, key: string, members: OutputMemberSpec[]) {
   const { id, parentId, path, editTarget, routing, labelText, config } = args;
   const group: PipelineFlowNode = {
     id,
@@ -1089,7 +936,7 @@ function outputContainerNodes(args: OutputNodeArgs, key: string, members: Output
     ...routing,
     ...outputContainerSlot(key, path),
   };
-  const children = members.flatMap((member, i) =>
+  const children: PipelineFlowNode[] = members.flatMap((member, i) =>
     buildOutputNodes({
       obj: member.obj,
       id: `${id}-${i}`,
@@ -1109,7 +956,7 @@ function outputContainerNodes(args: OutputNodeArgs, key: string, members: Output
   return [group, ...children];
 }
 
-function outputLeafNode(args: OutputNodeArgs, key: string, value: unknown): PipelineFlowNode {
+function outputLeafNode(args: OutputNodeArgs, key: string, value: unknown) {
   const { id, parentId, editTarget, routing, labelText, config } = args;
   const topics = extractTopics(value);
   const isRedpanda = REDPANDA_COMPONENTS.has(key);
@@ -1128,20 +975,14 @@ function outputLeafNode(args: OutputNodeArgs, key: string, value: unknown): Pipe
     resourceRef: indirectionResourceRef(key, value),
     resourceRefCandidates: extractRefCandidates(value),
     ...routing,
-  };
+  } satisfies PipelineFlowNode;
 }
 
-function parseOutputNodes(
-  outputObj: Record<string, unknown>,
-  sectionId: string,
-  config: ParsedYamlConfig
-): PipelineFlowNode[] {
+function parseOutputNodes(outputObj: Record<string, unknown>, sectionId: string, config: ParsedYamlConfig) {
   const outputKey = firstKey(outputObj);
   if (!outputKey) {
     return [];
   }
-  // A container's top-level id keeps its `output-<key>` form (children `output-<key>-<i>`);
-  // a plain output stays `output-0`. Tests and selection depend on these ids.
   const isContainer = Boolean(outputContainerMembers(outputKey, outputObj[outputKey], ['output']));
   return buildOutputNodes({
     obj: outputObj,
@@ -1154,7 +995,7 @@ function parseOutputNodes(
   });
 }
 
-function buildInputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
+function buildInputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig) {
   const sectionId = 'section-input';
   nodes.push({ id: sectionId, kind: 'section', label: 'input', section: 'input' });
   const parsed =
@@ -1164,12 +1005,11 @@ function buildInputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig):
   if (parsed.length > 0) {
     nodes.push(...parsed);
   } else {
-    // No parseable component (absent or `input: []`) — keep the placeholder so "Add input" exists.
     nodes.push({ id: 'input-placeholder', kind: 'leaf', label: 'none', section: 'input', parentId: sectionId });
   }
 }
 
-function buildProcessorSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
+function buildProcessorSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig) {
   if (!(config.pipeline && Array.isArray(config.pipeline.processors))) {
     return;
   }
@@ -1178,7 +1018,7 @@ function buildProcessorSection(nodes: PipelineFlowNode[], config: ParsedYamlConf
   nodes.push(...parseProcessorNodes(config.pipeline.processors as Record<string, unknown>[], sectionId));
 }
 
-function buildResourceSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
+function buildResourceSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig) {
   const sectionId = 'section-resources';
   const resourceNodes = parseResourceNodes(config, sectionId);
   if (resourceNodes.length === 0) {
@@ -1188,7 +1028,7 @@ function buildResourceSection(nodes: PipelineFlowNode[], config: ParsedYamlConfi
   nodes.push(...resourceNodes);
 }
 
-function buildOutputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig): void {
+function buildOutputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig) {
   const sectionId = 'section-output';
   nodes.push({ id: sectionId, kind: 'section', label: 'output', section: 'output' });
   const parsed =
@@ -1204,16 +1044,17 @@ function buildOutputSection(nodes: PipelineFlowNode[], config: ParsedYamlConfig)
 
 type ParsePipelineFlowTreeResult = { nodes: PipelineFlowNode[]; error?: string };
 
-// Fresh placeholder graph per call, so a downstream mutation can't leak across parses.
-const emptyConfigNodes = (): PipelineFlowNode[] => [
-  { id: 'section-input', kind: 'section', label: 'input', section: 'input' },
-  { id: 'input-placeholder', kind: 'leaf', label: 'none', section: 'input', parentId: 'section-input' },
-  { id: 'section-output', kind: 'section', label: 'output', section: 'output' },
-  { id: 'output-placeholder', kind: 'leaf', label: 'none', section: 'output', parentId: 'section-output' },
-];
+function emptyConfigNodes() {
+  const nodes: PipelineFlowNode[] = [
+    { id: 'section-input', kind: 'section', label: 'input', section: 'input' },
+    { id: 'input-placeholder', kind: 'leaf', label: 'none', section: 'input', parentId: 'section-input' },
+    { id: 'section-output', kind: 'section', label: 'output', section: 'output' },
+    { id: 'output-placeholder', kind: 'leaf', label: 'none', section: 'output', parentId: 'section-output' },
+  ];
+  return nodes;
+}
 
-// Lock the stop conditions the YAML can't take a rewrite of (an aliased or merged input, say).
-function lockStopSlots(nodes: PipelineFlowNode[], doc: Document): void {
+function lockStopSlots(nodes: PipelineFlowNode[], doc: Document) {
   for (const node of nodes) {
     const slot = node.stopSlot;
     if (!slot || slot.locked) {
@@ -1227,8 +1068,7 @@ function lockStopSlots(nodes: PipelineFlowNode[], doc: Document): void {
   }
 }
 
-// Build the flow-node tree from `doc`'s merge-resolved config object.
-function buildFlowTree(config: ParsedYamlConfig, doc: Document): PipelineFlowNode[] {
+function buildFlowTree(config: ParsedYamlConfig, doc: Document) {
   const nodes: PipelineFlowNode[] = [];
   buildInputSection(nodes, config);
   buildProcessorSection(nodes, config);
@@ -1239,23 +1079,28 @@ function buildFlowTree(config: ParsedYamlConfig, doc: Document): PipelineFlowNod
   return nodes;
 }
 
-export function parsePipelineFlowTree(configYaml: string): ParsePipelineFlowTreeResult {
+/**
+ * Build the graph without losing YAML source indices when unparseable entries
+ * are omitted. Check-only branches still get edit targets. Resolve YAML merges
+ * at parse time so alias-derived fields participate in the same graph.
+ */
+export function parsePipelineFlowTree(configYaml: string) {
   if (!configYaml) {
-    return { nodes: emptyConfigNodes() };
+    return { nodes: emptyConfigNodes() } satisfies ParsePipelineFlowTreeResult;
   }
 
   try {
-    // `merge: true` resolves `<<: *anchor` keys so merged fields (topics, sasl, …) render
-    // as part of the component instead of a literal `<<` node with false missing-* badges.
     const doc = parseDocument(configYaml, { merge: true });
-    // As `parse` does: the first error throws.
     if (doc.errors.length > 0) {
       throw doc.errors[0];
     }
     const config = (doc.toJS() as ParsedYamlConfig | null) ?? {};
-    return { nodes: buildFlowTree(config, doc) };
+    return { nodes: buildFlowTree(config, doc) } satisfies ParsePipelineFlowTreeResult;
   } catch (err) {
-    return { nodes: [], error: err instanceof Error ? err.message : 'Invalid YAML' };
+    return {
+      nodes: [],
+      error: err instanceof Error ? err.message : 'Invalid YAML',
+    } satisfies ParsePipelineFlowTreeResult;
   }
 }
 
@@ -1263,31 +1108,26 @@ export function parsePipelineFlowTree(configYaml: string): ParsePipelineFlowTree
  * Parse YAML once into both the editable node tree AND the `yaml` Document whose `getIn` resolves an
  * `editTargetPath` (with ranges when a LineCounter is supplied), so diff/lint don't parse twice.
  */
-export function parseEditableNodes(
-  configYaml: string,
-  lineCounter?: LineCounter
-): { doc: Document; nodes: PipelineFlowNode[] } {
-  // `merge` must be enabled at PARSE time — as a toJS option it is silently ignored and
-  // `<<: *anchor` keys would survive unresolved, hiding anchored fields from this tree.
+export function parseEditableNodes(configYaml: string, lineCounter?: LineCounter) {
   const doc = parseDocument(configYaml, { merge: true, ...(lineCounter ? { lineCounter } : {}) });
   if (!configYaml) {
-    return { doc, nodes: emptyConfigNodes() };
+    return { doc, nodes: emptyConfigNodes() } satisfies { doc: Document; nodes: PipelineFlowNode[] };
   }
   try {
     const config = (doc.toJS() as ParsedYamlConfig | null) ?? {};
-    return { doc, nodes: buildFlowTree(config, doc) };
+    return { doc, nodes: buildFlowTree(config, doc) } satisfies { doc: Document; nodes: PipelineFlowNode[] };
   } catch {
-    return { doc, nodes: [] };
+    return { doc, nodes: [] } satisfies { doc: Document; nodes: PipelineFlowNode[] };
   }
 }
 
 /** True when the pipeline has no real components — only section labels / `none` placeholders. */
-export function isPipelineEmpty(nodes: PipelineFlowNode[]): boolean {
+export function isPipelineEmpty(nodes: PipelineFlowNode[]) {
   return !nodes.some((n) => n.kind === 'group' || (n.kind === 'leaf' && n.label !== 'none'));
 }
 
 /** True when the config text is only whitespace, `#` comments, or an empty `{}` document — i.e. genuinely blank. */
-export function isConfigTextEmpty(configYaml: string): boolean {
+export function isConfigTextEmpty(configYaml: string) {
   return configYaml.split('\n').every((line) => {
     const trimmed = line.trim();
     return trimmed === '' || trimmed.startsWith('#') || trimmed === '{}';
@@ -1298,17 +1138,13 @@ export function isConfigTextEmpty(configYaml: string): boolean {
  * Offer "Start from a template" ONLY for a genuinely blank config: text that parses to no components
  * (invalid YAML, or lost sections) is NOT empty — a template there would clobber the user's work.
  */
-export function shouldOfferTemplate(configYaml: string, nodes: PipelineFlowNode[]): boolean {
+export function shouldOfferTemplate(configYaml: string, nodes: PipelineFlowNode[]) {
   return isPipelineEmpty(nodes) && isConfigTextEmpty(configYaml);
 }
 
-// Post-parse pass deriving cross-node metadata the per-node parsers can't see in isolation:
-// which containers accept inserts, which resource refs dangle, and per-resource usage counts.
-function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
+function annotateFlowMeta(nodes: PipelineFlowNode[]) {
   const childrenByParent = buildChildrenMap(nodes);
 
-  // Insert slots: a container whose children sit at numeric YAML-array indices can accept a
-  // new child into that array. Derived from any one child's path; parse-site slots untouched.
   for (const node of nodes) {
     if (node.kind !== 'group' || node.insertSlot) {
       continue;
@@ -1327,10 +1163,7 @@ function annotateFlowMeta(nodes: PipelineFlowNode[]): void {
   annotateResourceRefs(nodes);
 }
 
-// The `*_resources` array a node's ref must resolve into: a candidate-promoted ref carries the
-// kind its field name implies; `cache`/`rate_limit` name their kind; a `resource:` indirection
-// uses its own section.
-function expectedResourceKey(node: PipelineFlowNode): string | undefined {
+function expectedResourceKey(node: PipelineFlowNode) {
   if (node.resourceRefKind) {
     return resourceArrayKey(node.resourceRefKind);
   }
@@ -1345,9 +1178,11 @@ function expectedResourceKey(node: PipelineFlowNode): string | undefined {
 
 type ResourceRefResolver = (node: PipelineFlowNode, label: string) => PipelineFlowNode | undefined;
 
-// Kind-aware lookup from a referencing node + label to the resource card it plugs into,
-// so a cache processor's dependency can't land on a same-labelled rate_limit resource.
-export function buildResourceRefResolver(resources: PipelineFlowNode[]): ResourceRefResolver {
+/**
+ * Resolve known component kinds only within their resource array, even when a
+ * resource of a different kind shares the same label.
+ */
+export function buildResourceRefResolver(resources: PipelineFlowNode[]) {
   const byKeyAndLabel = new Map<string, PipelineFlowNode>();
   const byLabel = new Map<string, PipelineFlowNode>();
   for (const resource of resources) {
@@ -1361,16 +1196,13 @@ export function buildResourceRefResolver(resources: PipelineFlowNode[]): Resourc
       byLabel.set(resource.labelText, resource);
     }
   }
-  return (node, label) => {
+  return ((node, label) => {
     const key = expectedResourceKey(node);
     return key ? byKeyAndLabel.get(`${key}\u0000${label}`) : byLabel.get(label);
-  };
+  }) satisfies ResourceRefResolver;
 }
 
-// Promote the first candidate that resolves to a real resource label — catches refs in non-`resource`
-// fields. `resourceRefKind` is set BEFORE probing so `resolve` matches kind-aware, and it stays
-// set on success so later resolutions (usage counting, layout edges) agree on the target.
-function promoteRefCandidate(node: PipelineFlowNode, resolve: ResourceRefResolver): void {
+function promoteRefCandidate(node: PipelineFlowNode, resolve: ResourceRefResolver) {
   for (const candidate of node.resourceRefCandidates ?? []) {
     node.resourceRefKind = candidate.kind;
     if (resolve(node, candidate.label)) {
@@ -1381,8 +1213,7 @@ function promoteRefCandidate(node: PipelineFlowNode, resolve: ResourceRefResolve
   }
 }
 
-// Flags each non-resource node whose ref dangles; returns how many references each resource has.
-function linkResourceRefs(nodes: PipelineFlowNode[], resolve: ResourceRefResolver): Map<string, number> {
+function linkResourceRefs(nodes: PipelineFlowNode[], resolve: ResourceRefResolver) {
   const usedBy = new Map<string, number>();
   for (const node of nodes) {
     if (!node.resourceRef || node.section === 'resource') {
@@ -1398,8 +1229,7 @@ function linkResourceRefs(nodes: PipelineFlowNode[], resolve: ResourceRefResolve
   return usedBy;
 }
 
-// Resource references: promote field candidates, flag dangling links, and count usages via the kind-aware resolver.
-function annotateResourceRefs(nodes: PipelineFlowNode[]): void {
+function annotateResourceRefs(nodes: PipelineFlowNode[]) {
   const resolve = buildResourceRefResolver(nodes.filter((n) => n.section === 'resource'));
   for (const node of nodes) {
     if (!node.resourceRef) {
@@ -1414,13 +1244,7 @@ function annotateResourceRefs(nodes: PipelineFlowNode[]): void {
   }
 }
 
-// ============================================================================
-// Shared data-flow model
-// ----------------------------------------------------------------------------
-// Helpers supplying the flow connections (input → processors → output), separate from layout.
-// ============================================================================
-
-export function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefined, PipelineFlowNode[]> {
+export function buildChildrenMap(nodes: PipelineFlowNode[]) {
   const map = new Map<string | undefined, PipelineFlowNode[]>();
   for (const node of nodes) {
     const siblings = map.get(node.parentId);
@@ -1433,18 +1257,17 @@ export function buildChildrenMap(nodes: PipelineFlowNode[]): Map<string | undefi
   return map;
 }
 
-// Children of a section, found by kind + section.
 export function sectionChildren(
   nodes: PipelineFlowNode[],
   map: Map<string | undefined, PipelineFlowNode[]>,
   section: NonNullable<PipelineFlowNode['section']>
-): PipelineFlowNode[] {
+) {
   const sectionNode = nodes.find((n) => n.kind === 'section' && n.section === section);
   return sectionNode ? (map.get(sectionNode.id) ?? []) : [];
 }
 
 /** The linear data path: input component(s) → top-level processors → output(s). */
-export function mainFlowSequence(nodes: PipelineFlowNode[]): PipelineFlowNode[] {
+export function mainFlowSequence(nodes: PipelineFlowNode[]) {
   const map = buildChildrenMap(nodes);
   return [
     ...sectionChildren(nodes, map, 'input'),

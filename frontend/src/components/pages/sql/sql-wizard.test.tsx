@@ -27,12 +27,12 @@ const TOPICS: WizardTopic[] = [
   { name: 'orders', partitions: 12, format: 'AVRO' },
   { name: 'cars-telemetry.v1', partitions: 3, iceberg: true },
 ];
-const ORDERS_RE = /orders/;
-const CARS_TELEMETRY_RE = /cars-telemetry/;
-const CREATE_TABLE_RE = /Create table/;
-const TABLE_NAME_ERROR_RE = /Use lowercase letters, numbers and underscores/;
-const QUERIES_ARE_RE = /Queries are/;
-const BRIDGED_RE = /bridged/;
+const ORDERS_RE = /orders/u;
+const CARS_TELEMETRY_RE = /cars-telemetry/u;
+const CREATE_TABLE_RE = /Create table/u;
+const TABLE_NAME_ERROR_RE = /Use lowercase letters, numbers and underscores/u;
+const QUERIES_ARE_RE = /Queries are/u;
+const BRIDGED_RE = /bridged/u;
 
 const renderWizard = (overrides: Partial<SqlWizardProps> = {}) => {
   const props: SqlWizardProps = {
@@ -46,7 +46,7 @@ const renderWizard = (overrides: Partial<SqlWizardProps> = {}) => {
 };
 
 const pickTopicAndContinue = async (topicName: string) => {
-  await userEvent.click(screen.getByRole('radio', { name: new RegExp(topicName) }));
+  await userEvent.click(screen.getByRole('radio', { name: new RegExp(topicName, 'u') }));
   await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
 };
 

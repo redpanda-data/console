@@ -30,11 +30,10 @@ export class LazyMap<K, V> extends Map<K, V> {
    * @param key Key of the value
    * @param create An optional `create` method to use instead of `defaultCreate` to create missing values
    */
-  get(key: K, createFn?: (k: K) => V): V {
+  get(key: K, createFn?: (k: K) => V) {
     const existing = super.get(key);
     if (existing !== undefined) {
       if (this.maxSize !== undefined) {
-        // Mark as most-recently-used so it survives eviction.
         super.delete(key);
         super.set(key, existing);
       }
@@ -47,7 +46,7 @@ export class LazyMap<K, V> extends Map<K, V> {
     return created;
   }
 
-  private evictOldest(): void {
+  private evictOldest() {
     if (this.maxSize === undefined) {
       return;
     }
@@ -60,7 +59,7 @@ export class LazyMap<K, V> extends Map<K, V> {
     }
   }
 
-  private handleMiss(key: K, createFn?: (k: K) => V): V {
+  private handleMiss(key: K, createFn?: (k: K) => V) {
     if (createFn) {
       return createFn(key);
     }

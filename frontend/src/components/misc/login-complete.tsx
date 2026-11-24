@@ -11,7 +11,7 @@
 
 import { useParams } from '@tanstack/react-router';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
-import { Component } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 import { appGlobal } from '../../state/app-global';
 import { api } from '../../state/backend-api';
@@ -20,7 +20,7 @@ import { uiState } from '../../state/ui-state';
 import { getBasePath } from '../../utils/env';
 import fetchWithTimeout from '../../utils/fetch-with-timeout';
 
-function readOAuthError(searchParams: URLSearchParams): string {
+function readOAuthError(searchParams: URLSearchParams) {
   const error = searchParams.get('error');
   const description = searchParams.get('error_description');
   return [error ? `Error: ${error}` : '', description ? `Description: ${description}` : '']
@@ -29,7 +29,7 @@ function readOAuthError(searchParams: URLSearchParams): string {
     .trim();
 }
 
-async function fetchLoginCallback(provider: string, query: string): Promise<void> {
+async function fetchLoginCallback(provider: string, query: string) {
   const url = `./auth/callbacks/${provider}${query}`;
 
   const response = await fetchWithTimeout(url, 10 * 1000, {
@@ -39,50 +39,47 @@ async function fetchLoginCallback(provider: string, query: string): Promise<void
   });
   const text = await response.text();
   const obj = JSON.parse(text);
-  // console.log('complete login response: ' + text);
   if (response.ok) {
     api.userData = obj as UserData;
   } else {
-    // try to read as error object
     const err = obj as ApiError;
     throw err.message;
   }
 }
 
-class LoginCompletePage extends Component<{ provider: string }> {
-  componentDidMount() {
+async function completeLogin(provider: string, location: Location) {
+  const errorString = readOAuthError(new URLSearchParams(location.search));
+  if (errorString) {
+    uiState.loginError = errorString;
+    appGlobal.historyReplace(`${getBasePath()}/login`);
+    return;
+  }
+
+  try {
+    await fetchLoginCallback(provider, location.search);
+    window.location.assign(getBasePath() || '/');
+  } catch (err) {
+    uiState.loginError = String(err);
+    appGlobal.historyPush(`${getBasePath()}/login`);
+  }
+}
+
+function LoginCompletePage({ provider }: { provider: string }) {
+  const [initialProvider] = useState(provider);
+  useLayoutEffect(() => {
     // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
-    this.completeLogin(this.props.provider, window.location).catch(console.error);
-  }
+    completeLogin(initialProvider, window.location).catch(console.error);
+  }, [initialProvider]);
 
-  async completeLogin(provider: string, location: Location) {
-    const errorString = readOAuthError(new URLSearchParams(location.search));
-    if (errorString) {
-      uiState.loginError = errorString;
-      appGlobal.historyReplace(`${getBasePath()}/login`);
-      return;
-    }
-
-    try {
-      await fetchLoginCallback(provider, location.search);
-      window.location.assign(getBasePath() || '/');
-    } catch (err) {
-      uiState.loginError = String(err);
-      appGlobal.historyPush(`${getBasePath()}/login`);
-    }
-  }
-
-  render() {
-    return (
-      <div className="flex h-screen place-content-center bg-page">
-        <div className="flex flex-col place-content-center place-items-center">
-          <span className="text-heading-xl text-foreground">Completing login...</span>
-          <br />
-          <Spinner className="size-8" />
-        </div>
+  return (
+    <div className="flex h-screen place-content-center bg-page">
+      <div className="flex flex-col place-content-center place-items-center">
+        <span className="text-heading-xl text-foreground">Completing login...</span>
+        <br />
+        <Spinner className="size-8" />
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 export default () => {

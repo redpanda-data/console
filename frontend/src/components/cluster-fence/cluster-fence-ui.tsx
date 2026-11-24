@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 import { FENCE_PHASE_LABEL, type FencePhase } from './cluster-fence-model';
 
 /** The current time, refreshed on an interval so time-in-state labels keep counting. */
-export const useNow = (intervalMs = 30_000): number => {
+export const useNow = (intervalMs = 30_000) => {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), intervalMs);
@@ -25,7 +25,6 @@ export const useNow = (intervalMs = 30_000): number => {
   return now;
 };
 
-/** Amber, not red, while it blocks: the fence is intentional, but it stops traffic from the moment fencing begins. */
 const PHASE_VARIANT: Record<FencePhase, StatusBadgeVariant> = {
   unfenced: 'disabled',
   fencing: 'warning',
@@ -33,6 +32,9 @@ const PHASE_VARIANT: Record<FencePhase, StatusBadgeVariant> = {
   unfencing: 'informative',
 };
 
+/**
+ * Amber indicates an intentional fence, even while the fence is still propagating and already rejecting traffic.
+ */
 export const ClusterFenceStateBadge = ({ phase, testId }: { phase: FencePhase; testId?: string }) => (
   <StatusBadge
     pulsing={phase === 'fencing' || phase === 'unfencing'}

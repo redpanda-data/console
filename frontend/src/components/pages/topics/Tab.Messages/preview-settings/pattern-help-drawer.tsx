@@ -18,7 +18,6 @@ const GLOB_EXAMPLE_DATA = JSON.stringify(
 
 const globHelp = (
   <div>
-    {/* Examples + Image */}
     <div className="flex gap-2">
       <div className="flex grow">
         <div className="globHelpGrid">
@@ -28,7 +27,6 @@ const globHelp = (
 
           <div className="titleRowSeparator" />
 
-          {/* Example */}
           <div className="c1">
             <Code>id</Code>
           </div>
@@ -36,7 +34,6 @@ const globHelp = (
           <div className="c3">There is only one 'id' property at the root of the object</div>
           <div className="rowSeparator" />
 
-          {/* Example */}
           <div className="c1">
             <Code>*.id</Code>
           </div>
@@ -47,7 +44,6 @@ const globHelp = (
           <div className="c3">Star only seraches in direct children. Here, only 2 children contain an 'id' prop</div>
           <div className="rowSeparator" />
 
-          {/* Example */}
           <div className="c1">
             <Code>**.id</Code>
           </div>
@@ -55,7 +51,6 @@ const globHelp = (
           <div className="c3">Double-star searches everywhere</div>
           <div className="rowSeparator" />
 
-          {/* Example */}
           <div className="c1">
             <Code>customer.*Na*</Code>
           </div>
@@ -66,7 +61,6 @@ const globHelp = (
           <div className="c3">In the direct child named 'customer', find all properties that contain 'Na'</div>
           <div className="rowSeparator" />
 
-          {/* Example */}
           <div className="c1">
             <Code>key.with.dots.id</Code>
           </div>
@@ -74,7 +68,6 @@ const globHelp = (
           <div className="c3">There is no property named 'key'!</div>
           <div className="rowSeparator" />
 
-          {/* Example */}
           <div className="c1">
             <Code>"key.with.dots".id</Code>
           </div>
@@ -100,7 +93,6 @@ const globHelp = (
       </div>
     </div>
 
-    {/* Details */}
     <div>
       <h3>Details</h3>
       <div>
@@ -126,6 +118,9 @@ const globHelp = (
   </div>
 );
 
+/**
+ * Portal outside the transformed and clipped preview dialog; keep the sheet header/footer pinned around the scrollable examples.
+ */
 export const PatternHelpDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const onOpen = () => setIsOpen(true);
@@ -146,10 +141,6 @@ export const PatternHelpDrawer = () => {
         &nbsp;glob patterns
       </button>
       <Sheet onOpenChange={setIsOpen} open={isOpen}>
-        {/* SheetContent is not a flex column, so the header and footer only stay pinned once it is.
-            `container` opts out of the dialog's PortalContainerProvider — DialogContent is
-            transformed and `overflow-hidden`, so it would clip this fixed panel.
-            `size="full"` drops the variant's 36rem cap, which is too narrow for this content. */}
         <SheetContent
           className="flex flex-col overflow-hidden sm:max-w-4xl"
           container={document.body}
@@ -162,7 +153,6 @@ export const PatternHelpDrawer = () => {
 
           <div className="min-h-0 flex-1 overflow-y-auto">{globHelp}</div>
 
-          {/* SheetFooter is a flex column, which would stretch a lone button across the panel. */}
           <SheetFooter className="flex-row justify-end">
             <Button onClick={onClose} variant="outline">
               Close

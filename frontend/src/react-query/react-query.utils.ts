@@ -4,7 +4,7 @@ import { ConnectError } from '@connectrpc/connect';
 import type { ConnectQueryKey, UseQueryOptions } from '@connectrpc/connect-query';
 import type { Query } from '@tanstack/react-query';
 
-export const ONE_SECOND = 1000; // ms
+export const ONE_SECOND = 1000;
 export const ONE_MINUTE = 60 * ONE_SECOND;
 
 export const LONG_LIVED_CACHE_STALE_TIME = 5 * ONE_MINUTE;
@@ -20,8 +20,7 @@ export const SHORT_POLLING_INTERVAL = 2 * ONE_SECOND;
  * `retry` for queries that should surface errors immediately: one retry for transient network
  * failures, none for ConnectErrors, which are deterministic and would fail the same way again.
  */
-export const fastFailRetry = (failureCount: number, error: Error): boolean => {
-  // Max 1 retry attempt (initial + 1 retry = 2 total attempts)
+export const fastFailRetry = (failureCount: number, error: Error) => {
   if (failureCount >= 1) {
     return false;
   }
@@ -30,7 +29,6 @@ export const fastFailRetry = (failureCount: number, error: Error): boolean => {
     return false;
   }
 
-  // Retry once for unknown errors (network issues, timeouts, etc.)
   return true;
 };
 
@@ -95,13 +93,3 @@ export interface QueryOptions<O extends DescMessage, SelectOutData = MessageShap
       ) => number | false | undefined);
   refetchIntervalInBackground?: boolean;
 }
-
-// export interface QueryObserverOptions<O extends DescMessage, SelectOutData = MessageShape<O>>
-//   extends Omit<UseQueryOptions<O, SelectOutData>, 'transport'> {
-//   enabled?: boolean;
-//   refetchInterval?:
-//     | number
-//     | false
-//     | ((query: Query<MessageShape<O>, ConnectError, MessageShape<O>, ConnectQueryKey>) => number | false | undefined);
-//   refetchIntervalInBackground?: boolean;
-// }

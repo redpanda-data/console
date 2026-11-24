@@ -8,8 +8,6 @@ import { PipelineEditorProvider, usePipelineEditorStore } from './use-pipeline-e
 import { VisualEditorPanel } from './visual-editor-panel';
 import { mockComponents } from '../utils/__fixtures__/component-schemas';
 
-// Surface the visual-editor callbacks as buttons so we can drive the panel
-// without React Flow's DOM measurement (which doesn't run under Happy DOM).
 function MockPipelineFlowCanvas(props: {
   configYaml: string;
   deprecationsByNode?: Map<string, string[]>;
@@ -55,7 +53,7 @@ function MockPipelineFlowCanvas(props: {
       >
         select-input
       </button>
-      {/* Deselecting (clicking the empty canvas) also commits the selected node's edits. */}
+      {}
       <button onClick={() => props.onClearSelection?.()} type="button">
         deselect
       </button>
@@ -126,7 +124,6 @@ rs.mock('components/ui/yaml/yaml-editor', () => ({
   YamlEditor: MockYamlEditor,
 }));
 
-// Controllable secrets-store contents for the missing-secrets banner tests.
 let mockSecretsData: { secrets: { id: string }[] } | undefined;
 rs.mock('react-query/api/secret', () => ({
   useListSecretsQuery: () => ({ data: mockSecretsData }),
@@ -150,7 +147,7 @@ pipeline:
 output:
   drop: {}`;
 
-const EMPTY_STATE_TEXT = /select a node/i;
+const EMPTY_STATE_TEXT = /select a node/iu;
 
 const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]> = {}) => {
   const onYamlChange = rs.fn();
@@ -173,8 +170,6 @@ type User = ReturnType<typeof userEvent.setup>;
 
 const CACHE_YAML = 'cache_resources:\n  - label: c\n    memory:\n      ttl: 5m\n';
 
-// Stateful host so a committed edit or an insert flows back into the panel (re-keying the form).
-// `externalYaml` adds a button that replaces the YAML from outside the panel.
 function StatefulPanel({
   initialYaml,
   externalYaml,
@@ -204,8 +199,6 @@ function StatefulPanel({
   );
 }
 
-// The pipeline Save flushes the pending inspector edit via the store's `pendingEditCommit`
-// without changing the selection — a regression here silently dropped every edit made after it.
 function SaveFlushButton() {
   const flush = usePipelineEditorStore((s) => s.pendingEditCommit);
   return (
@@ -215,11 +208,8 @@ function SaveFlushButton() {
   );
 }
 
-// The canvas mock reflects the live YAML on its container — assert against that (rather than
-// reselecting the inspector, which accumulates exiting rails under Happy DOM's AnimatePresence).
 const yamlOnCanvas = () => screen.getByTestId('flow-canvas').getAttribute('data-configyaml') ?? '';
 
-// The live YAML holds `text` — and, when given, no longer holds `without`.
 function expectCanvasYaml(text: string, without?: string) {
   expect(yamlOnCanvas()).toContain(text);
   if (without !== undefined) {
@@ -232,26 +222,21 @@ async function retype(user: User, field: HTMLElement, value: string) {
   await user.type(field, value);
 }
 
-// Selects the cache resource and retypes its TTL field, leaving the edit pending (not committed).
 async function retypeCacheTtl(user: User, value: string) {
   await user.click(screen.getByText('select-cache-resource'));
   await retype(user, await screen.findByDisplayValue('5m'), value);
 }
 
-// Retypes the cache TTL, then leaves the node to commit it.
 async function commitCacheTtl(user: User, value: string) {
   await retypeCacheTtl(user, value);
   await user.click(screen.getByRole('button', { name: 'deselect' }));
 }
 
-// Selects a node through its mock canvas button and waits for its inspector to open.
 async function openNodeInspector(user: User, buttonText: string) {
   await user.click(screen.getByText(buttonText));
   await screen.findByTestId('node-yaml');
 }
 
-// The mock select button keeps focus after the click, and canvas shortcuts are suppressed while a
-// control is focused — so blur it before pressing a shortcut.
 async function openNodeInspectorAndBlur(user: User, buttonText: string) {
   await openNodeInspector(user, buttonText);
   screen.getByText(buttonText).blur();
@@ -310,8 +295,6 @@ describe('the VisualEditorPanel', () => {
     });
   });
 
-  // `generate` has no spec in these tests, so its inspector is the raw-YAML editor (as for `mapping`).
-  // StatefulPanel so each commit flows back: the editor must survive it, not remount.
   describe('the raw-YAML inspector', () => {
     async function editRawYaml(user: User, yaml: string, panel = <StatefulPanel initialYaml={sampleYaml} />) {
       render(panel);
@@ -348,8 +331,6 @@ describe('the VisualEditorPanel', () => {
       expectCanvasYaml('root = 2');
     });
 
-    // Commits a draft whose comment doesn't survive, so the kept draft no longer matches the node's
-    // YAML verbatim; `external-edit` then sets the input's mapping to `root = 3`.
     async function commitCommentedDraft(user: User) {
       const panel = (
         <StatefulPanel externalYaml={sampleYaml.replace("'root = {}'", 'root = 3')} initialYaml={sampleYaml} />
@@ -381,7 +362,6 @@ describe('the VisualEditorPanel', () => {
 
     test('the inspector is closed until a node is selected', () => {
       renderPanel();
-      // The rail is unmounted (no empty-state placeholder) until something is selected.
       expect(screen.queryByText(EMPTY_STATE_TEXT)).not.toBeInTheDocument();
       expect(screen.queryByTestId('node-yaml')).not.toBeInTheDocument();
     });
@@ -397,7 +377,6 @@ describe('the VisualEditorPanel', () => {
 
       await user.clear(editor);
       await user.type(editor, 'generate:\n  mapping: root = 1');
-      // No Apply button — leaving the node (deselect) commits the edit.
       await user.click(screen.getByRole('button', { name: 'deselect' }));
 
       expect(onYamlChange).toHaveBeenCalledTimes(1);
@@ -409,13 +388,11 @@ describe('the VisualEditorPanel', () => {
       const { onYamlChange } = renderPanel();
 
       await user.click(screen.getByText('select-proc0'));
-      // Delete lives in the header's 3-dot menu, behind a confirm dialog.
       await user.click(await screen.findByRole('button', { name: 'More actions' }));
       await user.click(await screen.findByRole('menuitem', { name: 'Delete' }));
       await user.click(await screen.findByRole('button', { name: 'Remove' }));
 
       expect(onYamlChange).toHaveBeenCalledTimes(1);
-      // The only processor (`log`) is gone, so `pipeline` is pruned entirely.
       expect(onYamlChange.mock.calls[0][0]).not.toContain('message: hi');
       expect(onYamlChange.mock.calls[0][0]).not.toContain('pipeline:');
     });
@@ -433,16 +410,13 @@ describe('the VisualEditorPanel', () => {
 
     test('auto-selects the newly added node so its inspector opens', async () => {
       const user = userEvent.setup();
-      // Stateful host so the inserted YAML flows back and the new node can be found + selected.
       render(<StatefulPanel initialYaml={sampleYaml} />);
 
-      // Nothing selected yet — no inspector.
       expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument();
 
       await user.click(screen.getByText('insert-end'));
       await user.click(await screen.findByTestId('select-cache'));
 
-      // The new resource is selected automatically → its inspector opens.
       expect(await screen.findByRole('button', { name: 'Close' })).toBeInTheDocument();
     });
   });
@@ -452,10 +426,8 @@ describe('the VisualEditorPanel', () => {
       const user = userEvent.setup();
       render(<StatefulPanel initialYaml={CACHE_YAML} />);
 
-      // No Apply button — leaving the node commits the edit.
       await commitCacheTtl(user, '10m');
 
-      // Reselecting reads from the YAML: the committed value is now 10m.
       await user.click(screen.getByText('select-cache-resource'));
       expect(await screen.findByDisplayValue('10m')).toBeInTheDocument();
     });
@@ -466,11 +438,8 @@ describe('the VisualEditorPanel', () => {
 
       await retypeCacheTtl(user, '10m');
 
-      // Tab out of the FIELD (the node stays selected): the edit lands in the YAML immediately,
-      // so the canvas card and lint can react while the inspector is still open.
       await user.tab();
       expect(yamlOnCanvas()).toContain('10m');
-      // The form is still mounted with the committed value — no remount, no lost state.
       expect(screen.getByDisplayValue('10m')).toBeInTheDocument();
     });
 
@@ -478,14 +447,12 @@ describe('the VisualEditorPanel', () => {
       const user = userEvent.setup();
       render(<StatefulPanel initialYaml={CACHE_YAML} />);
 
-      // Nothing to undo yet.
       expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
 
       await commitCacheTtl(user, '10m');
       expectCanvasYaml('10m');
       expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled();
 
-      // Undo restores the previous value; redo re-applies the edit.
       await user.click(screen.getByRole('button', { name: 'Undo' }));
       expectCanvasYaml('5m', '10m');
 
@@ -502,11 +469,9 @@ describe('the VisualEditorPanel', () => {
       );
 
       await retypeCacheTtl(user, '10m');
-      // Simulate the pipeline Save flushing the pending edit (selection unchanged).
       await user.click(screen.getByRole('button', { name: 'save-flush' }));
       expect(yamlOnCanvas()).toContain('10m');
 
-      // Edit the (still-selected, re-keyed) node again; leaving it must commit this edit too.
       await retype(user, await screen.findByDisplayValue('10m'), '15m');
       await user.click(screen.getByRole('button', { name: 'deselect' }));
       expect(yamlOnCanvas()).toContain('15m');
@@ -520,14 +485,11 @@ describe('the VisualEditorPanel', () => {
 
       await user.click(screen.getByText('select-output-fallback'));
 
-      // The container shows its members as a navigable list (each opens its own config) rather
-      // than a raw YAML editor.
       expect(await screen.findByText('Outputs')).toBeInTheDocument();
       expect(screen.getByText('gcp_pubsub')).toBeInTheDocument();
       expect(screen.getByText('redpanda')).toBeInTheDocument();
       expect(screen.queryByTestId('node-yaml')).not.toBeInTheDocument();
 
-      // Clicking a member navigates the inspector to that output's own config editor.
       await user.click(screen.getByText('gcp_pubsub'));
       const editor = (await screen.findByTestId('node-yaml')) as HTMLTextAreaElement;
       expect(editor.value).toContain('project: my-project');
@@ -535,20 +497,16 @@ describe('the VisualEditorPanel', () => {
 
     test('surfaces a lint problem for the selected node in the inspector', async () => {
       const user = userEvent.setup();
-      // Line 2 (`generate:`) is inside the input node's YAML range.
       renderPanel({ lintHints: [{ line: 2, column: 1, hint: 'invalid input config', lintType: 'config' }] as never });
 
       await user.click(screen.getByText('select-input'));
 
       expect(await screen.findByText('invalid input config')).toBeInTheDocument();
-      // Shown in the inspector's error panel (and counted in the floating problems chip).
       expect(screen.getAllByText('1 problem').length).toBeGreaterThan(0);
     });
 
     test('view mode keeps field-mappable lint hints in the banner (no form renders them)', async () => {
       const user = userEvent.setup();
-      // "field mapping is required" would anchor to the mapping input in edit mode — but the
-      // read-only inspector renders no form fields, so the banner must keep it.
       render(
         <PipelineEditorProvider>
           <VisualEditorPanel
@@ -568,14 +526,12 @@ describe('the VisualEditorPanel', () => {
 
     test('the problems chip lists lint hints and clicking one selects the offending node', async () => {
       const user = userEvent.setup();
-      // Line 2 (`generate:`) maps to the input node.
       renderPanel({ lintHints: [{ line: 2, column: 1, hint: 'invalid input config', lintType: 'config' }] as never });
 
       await user.click(screen.getByTestId('pipeline-problems-chip'));
       const list = screen.getByTestId('pipeline-problems-list');
       expect(list).toHaveTextContent('invalid input config');
 
-      // Clicking the problem selects the node — its config opens in the inspector.
       await user.click(screen.getByText('invalid input config'));
       expect(((await screen.findByTestId('node-yaml')) as HTMLTextAreaElement).value).toContain('generate');
       expect(screen.queryByTestId('pipeline-problems-list')).not.toBeInTheDocument();
@@ -595,7 +551,6 @@ pipeline:
                 message: hi
 output:
   drop: {}`;
-      // Line 7 is the case's malformed `check` condition.
       renderPanel({
         yamlContent: switchYaml,
         lintHints: [{ line: 7, column: 1, hint: 'expected end quote', lintType: 'config' }] as never,
@@ -604,8 +559,6 @@ output:
       await user.click(screen.getByTestId('pipeline-problems-chip'));
       await user.click(screen.getByText('expected end quote'));
 
-      // The whole entry node opens in the inspector — not the condition-only editor ("Condition (check)"
-      // is unique to it). The condition stays editable via the embedded "Routing condition" section.
       const editor = (await screen.findByTestId('node-yaml')) as HTMLTextAreaElement;
       expect(editor.value).toContain('message: hi');
       expect(screen.queryByText('Condition (check)')).not.toBeInTheDocument();
@@ -622,7 +575,6 @@ output:
       mockSecretsData = { secrets: [{ id: 'EXISTS' }] };
       renderPanel({ yamlContent: yamlWithSecretRef });
 
-      // The missing secret is folded into the unified problems chip (no separate banner).
       const chip = await screen.findByTestId('pipeline-problems-chip');
       expect(chip).toHaveTextContent('1 missing secret');
 
@@ -639,7 +591,6 @@ output:
       expect(screen.queryByTestId('pipeline-problems-chip')).not.toBeInTheDocument();
       unmount();
 
-      // View mode never runs the missing-secrets check, so nothing surfaces.
       mockSecretsData = { secrets: [{ id: 'EXISTS' }] };
       renderPanel({ yamlContent: yamlWithSecretRef, mode: 'view' });
       expect(screen.queryByTestId('pipeline-problems-chip')).not.toBeInTheDocument();
@@ -651,12 +602,10 @@ output:
       const user = userEvent.setup();
       const { onYamlChange } = renderPanel();
 
-      // Escape → the rail slides out and unmounts.
       await openNodeInspectorAndBlur(user, 'select-input');
       await user.keyboard('{Escape}');
       await waitForElementToBeRemoved(() => screen.queryByTestId('node-yaml'));
 
-      // Delete → asks to confirm, then removes the selected processor from the YAML.
       await openNodeInspectorAndBlur(user, 'select-proc0');
       await user.keyboard('{Delete}');
       await user.click(await screen.findByRole('button', { name: 'Remove' }));
@@ -668,16 +617,13 @@ output:
       const user = userEvent.setup();
       renderPanel();
 
-      // The clicked mock button keeps focus, standing in for a toolbar button / Radix trigger.
       await openNodeInspector(user, 'select-proc0');
 
-      // Delete must not stage the node for removal, and `/` must not open the command palette.
       await user.keyboard('{Delete}');
       expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument();
       await user.keyboard('/');
       expect(screen.queryByPlaceholderText('Search nodes and actions…')).not.toBeInTheDocument();
 
-      // Once focus leaves the control, the same keys work again.
       screen.getByText('select-proc0').blur();
       await user.keyboard('/');
       expect(await screen.findByPlaceholderText('Search nodes and actions…')).toBeInTheDocument();
@@ -685,8 +631,7 @@ output:
 
     test('deselects when an external edit leaves a different component at the selected position', async () => {
       const user = userEvent.setup();
-      // Edit targets are positional, so after a reorder `proc-0` resolves to a different component —
-      // the inspector must close rather than silently show (and edit) the wrong node.
+      // WARNING: Close the inspector on positional reuse; the old target can point at a different component after a reorder.
       const panelProps = {
         componentList: {} as ComponentList,
         components: [],
@@ -702,7 +647,6 @@ output:
       await user.click(screen.getByText('select-proc0'));
       expect(((await screen.findByTestId('node-yaml')) as HTMLTextAreaElement).value).toContain('message: hi');
 
-      // An in-place edit keeps proc-0 a `log`, so the selection survives.
       rerender(
         <PipelineEditorProvider>
           <VisualEditorPanel {...panelProps} yamlContent={twoProcs('log:\n        message: bye', mappingProc)} />
@@ -710,7 +654,6 @@ output:
       );
       expect(screen.getByTestId('node-yaml')).toBeInTheDocument();
 
-      // A reorder (e.g. undo of a head insert, YAML-lane edit) puts `mapping` at proc-0 → deselect.
       rerender(
         <PipelineEditorProvider>
           <VisualEditorPanel {...panelProps} yamlContent={twoProcs(mappingProc, logProc)} />
@@ -726,7 +669,6 @@ output:
       const { onYamlChange } = renderPanel({ mode: 'view' });
 
       await user.click(screen.getByText('select-input'));
-      // The component is shown (read-only), but there's no way to apply or remove it.
       await screen.findByTestId('node-yaml');
       expect(screen.queryByRole('button', { name: 'Apply changes' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
@@ -739,15 +681,12 @@ output:
     });
 
     test('does not offer a template when the config has content but parses to no pipeline', () => {
-      // Valid YAML that lost its input/output/pipeline sections (e.g. from one bad edit): full of text,
-      // so the template offer would clobber it. Guard on raw content, not just the empty parse.
       renderPanel({ onBrowseTemplates: rs.fn(), yamlContent: 'not-a-pipeline: true\nother: value' });
       expect(screen.queryByTestId('browse-templates-cta')).not.toBeInTheDocument();
     });
   });
 });
 
-// `swapTo` adds a button that swaps the YAML out from under the panel.
 function StopHarness({ initialYaml = sampleYaml, swapTo }: { initialYaml?: string; swapTo?: string }) {
   const [yaml, setYaml] = useState(initialYaml);
   return (
@@ -791,7 +730,6 @@ describe('the VisualEditorPanel stop conditions', () => {
     await user.click(screen.getByText('set-input-stop'));
 
     expect(canvasYaml()).toContain('read_until:\n    idle_timeout: 30s\n    input:\n      generate:');
-    // Wrapping moved the component's path; the selection followed it instead of closing.
     expect(screen.getByTestId('stop-condition-section')).toHaveTextContent(
       'Stops after 30 seconds without new messages.'
     );
@@ -862,7 +800,6 @@ describe('the VisualEditorPanel stop conditions and pending inspector edits', ()
     await user.click(screen.getByText('set-input-stop'));
 
     expect(canvasYaml()).toContain('read_until:');
-    // Same node, so the same editor: the half-typed text is still there to finish.
     expect(editor).toBeInTheDocument();
     expect(screen.getByTestId('node-yaml')).toHaveValue('generate:\n  mapping: [');
   });

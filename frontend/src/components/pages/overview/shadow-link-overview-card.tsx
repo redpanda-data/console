@@ -28,10 +28,8 @@ type ShadowLinkOverviewCardProps = {
 export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ shadowLink }) => {
   const navigate = useNavigate();
 
-  // Fetch full shadow link data for metrics component
   const { data: fullShadowLinkData } = useGetShadowLinkQuery({ name: shadowLink.name });
 
-  // Convert to unified model for child components
   const unifiedShadowLink = fullShadowLinkData?.shadowLink
     ? fromDataplaneShadowLink(fullShadowLinkData.shadowLink)
     : undefined;
@@ -53,9 +51,7 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
-          {/* Metrics */}
           {unifiedShadowLink ? <ShadowLinkMetrics shadowLink={unifiedShadowLink} /> : null}
-          {/* Diagram */}
           {unifiedShadowLink ? <ShadowLinkDiagram shadowLink={unifiedShadowLink} /> : null}
         </div>
       </CardContent>
@@ -63,18 +59,16 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
   );
 };
 
-// Functional component to fetch and display shadow link data
 export const ShadowLinkSection: FC = () => {
   const shadowLinkEnabled = useSupportedFeaturesStore((s) => s.shadowLinkService);
   const { data: shadowLinksData, isLoading, error } = useListShadowLinksQuery({}, { enabled: shadowLinkEnabled });
 
-  // Don't render if error, loading, or no shadow link exists
   const shadowLinks = shadowLinksData?.shadowLinks || [];
   if (error || isLoading || shadowLinks.length === 0) {
     return null;
   }
 
-  const shadowLink = shadowLinks[0]; // Only one shadow link is allowed
+  const shadowLink = shadowLinks[0];
 
   return <ShadowLinkOverviewCard shadowLink={shadowLink} />;
 };

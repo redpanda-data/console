@@ -17,11 +17,9 @@ import { ArrowRight, type LucideIcon, SignalHigh, SignalLow, SignalMedium, Waypo
 import type { PipelineTemplate } from './pipeline-template-types';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 
-// Bucket the rough `setupTimeMinutes` estimate into a coarse effort tier, since
-// showing precise minutes would overstate its accuracy.
 type SetupTier = { label: string; Icon: LucideIcon };
 
-const setupTierFor = (minutes: number): SetupTier => {
+const setupTierFor: (minutes: number) => SetupTier = (minutes) => {
   if (minutes <= 5) {
     return { label: 'Quick', Icon: SignalLow };
   }

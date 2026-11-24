@@ -19,12 +19,13 @@ import {
 } from './schema-registry-request';
 import { describe, expect, test } from 'bun:test';
 
-const createApiFormValues = (overrides: Partial<SchemaRegistryFormValues> = {}): SchemaRegistryFormValues => ({
-  ...initialValues.schemaRegistry,
-  mode: SCHEMA_REGISTRY_MODE.API,
-  sourceUrl: 'https://schema-registry.example.com:8081',
-  ...overrides,
-});
+const createApiFormValues = (overrides: Partial<SchemaRegistryFormValues> = {}) =>
+  ({
+    ...initialValues.schemaRegistry,
+    mode: SCHEMA_REGISTRY_MODE.API,
+    sourceUrl: 'https://schema-registry.example.com:8081',
+    ...overrides,
+  }) satisfies SchemaRegistryFormValues;
 
 describe('durationFromString', () => {
   test('parses supported units', () => {
@@ -107,8 +108,6 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
 
       expect(options.authOptions?.authOptions?.case).toBe('basic');
       if (options.authOptions?.authOptions?.case === 'basic') {
-        // The SecretSelector already stores the reference; the builder must not
-        // re-wrap or unwrap it.
         expect(options.authOptions.authOptions.value.password).toBe('${secrets.SR_PASSWORD}');
       }
     });
@@ -193,7 +192,6 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
           useTls: false,
           mtls: {
             ...initialValues.schemaRegistry.mtls,
-            // Hydrated material carries no fileName.
             ca: { pemContent: 'CA_PEM', fileName: '' },
             clientCert: { pemContent: 'CERT_PEM', fileName: '' },
             existingKeyConfigured: true,
@@ -207,7 +205,6 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
       if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
         expect(options.tlsSettings.tlsSettings.value.ca).toBe('CA_PEM');
         expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
-        // Empty key = keep the stored key, same as the enabled path.
         expect(options.tlsSettings.tlsSettings.value.key).toBe('');
       }
     });
@@ -329,8 +326,7 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
       expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
       if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
         expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
-        // Empty key = keep the stored key (verified server behavior); the
-        // fingerprint marker never reaches the wire.
+        // WARNING: Do not send the TLS fingerprint marker as a private key; an empty key leaves the stored one in place.
         expect(options.tlsSettings.tlsSettings.value.key).toBe('');
         expect(options.tlsSettings.tlsSettings.value.keyFingerprint).toBe('');
       }

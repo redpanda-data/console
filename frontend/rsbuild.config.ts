@@ -12,23 +12,23 @@ import { RsdoctorRspackPlugin } from '@rsdoctor/core';
 import { tanstackRouter } from '@tanstack/router-plugin/rspack';
 
 import { moduleFederationConfig } from './module-federation.config';
-import { HEAP_APP_ID } from './src/heap/heap.helper';
-import { HUBSPOT_PORTAL_ID } from './src/hubspot/hubspot.helper';
+import { HEAP_APP_ID } from './src/heap/heap-tracking';
+import { HUBSPOT_PORTAL_ID } from './src/hubspot/hubspot-tracking';
 import { TANSTACK_CHUNK_PATTERN, tanstackRouterConfig } from './tanstack-router.config';
 import { fileURLToPath } from 'node:url';
 
 const { publicVars, rawPublicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
 
-// Matches the `?raw` import query (load files as raw source strings).
-const RAW_QUERY = /raw/;
+const RAW_QUERY = /raw/u;
 
+/**
+ * Use Rspack's React Compiler transform with annotation mode so source opt-in stays unchanged.
+ */
 export const consolePlugins = (federationConfig = moduleFederationConfig) => [
   pluginReact({
     reactRefreshOptions: {
       forceEnable: true,
     },
-    // Rspack's Rust implementation avoids the extra Babel transform while
-    // preserving the existing opt-in React Compiler behavior.
     reactCompiler: {
       target: '19',
       compilationMode: 'annotation',
@@ -75,7 +75,6 @@ export default defineConfig({
       credentials: true,
     },
     proxy: {
-      // All other APIs - proxy to Console backend
       '/api': {
         target: process.env.PROXY_TARGET || 'http://localhost:9090',
         changeOrigin: !!process.env.PROXY_TARGET,
@@ -109,22 +108,16 @@ export default defineConfig({
   },
   performance: {
     buildCache: process.env.NODE_ENV === 'development',
-    // Drop debug logging from production bundles; keep console.error for
-    // production diagnostics.
     removeConsole: ['log', 'warn'],
   },
   splitChunks: {
     preset: 'default',
     chunks: 'all',
-    // A 4 MiB cap cut the largest async chunk from 10.06 MB to 5.65 MB
-    // while adding 13 requests; 512 KiB added 127 with no further reduction.
     maxAsyncSize: 4 * 1024 * 1024,
     cacheGroups: {
-      // Core editor only. A named group merges everything it matches into one chunk set,
-      // so monaco's lazily imported language services and tokenizers (the worker-only
-      // TypeScript compiler included) stay out and split on demand instead.
+      // WARNING: Keep Monaco language services and worker tokenizers out of the core editor chunk so they still load on demand.
       monaco: {
-        test: /[\\/]node_modules[\\/]monaco-editor[\\/](?!esm[\\/]vs[\\/](?:language|basic-languages)[\\/])/,
+        test: /[\\/]node_modules[\\/]monaco-editor[\\/](?!esm[\\/]vs[\\/](?:language|basic-languages)[\\/])/u,
         name: 'lib-monaco-editor',
         priority: 30,
         enforce: true,
@@ -147,7 +140,10 @@ export default defineConfig({
   tools: consoleTools(),
 });
 
-export function consoleTools({ federationOnly = false } = {}): NonNullable<RsbuildConfig['tools']> {
+/**
+ * The async chunk cap bounds the largest request without splitting the editor's lazy language services into the core bundle.
+ */
+export function consoleTools({ federationOnly = false } = {}) {
   return {
     htmlPlugin: federationOnly ? false : undefined,
     rspack: (config, { appendPlugins, isProd }) => {
@@ -164,15 +160,11 @@ export function consoleTools({ federationOnly = false } = {}): NonNullable<Rsbui
       };
       config.resolve ||= {};
       config.output ||= {};
-      /* resolve symlinks so the proto generate code can be built. */
       config.resolve.symlinks = false;
 
       config.output.publicPath = 'auto';
 
-      // Prevent rebuild loop by ignoring generated route tree file and Playwright MCP's
-      // scratch output (screenshots/console logs it writes into the project root while
-      // driving the dev server) — rspack's incremental build panics on rapid rebuilds
-      // triggered by files that never touch the actual module graph.
+      // WARNING: Ignore generated routes and dev-tool scratch files; their writes can otherwise retrigger the incremental build.
       config.watchOptions = {
         ignored: ['**/routeTree.gen.ts', '**/.playwright-mcp/**'],
       };
@@ -180,14 +172,13 @@ export function consoleTools({ federationOnly = false } = {}): NonNullable<Rsbui
       appendPlugins(createConsolePlugins(federationOnly));
     },
     bundlerChain: (chain) => {
-      // pluginYaml parses `.yaml` into a JS object; exclude `?raw` imports and load
-      // them as source strings so templates keep comments and ${...} tokens verbatim.
+      // WARNING: Exclude raw YAML from the parser so templates keep comments and interpolation tokens verbatim.
       if (chain.module.rules.has('yaml')) {
         chain.module.rule('yaml').resourceQuery({ not: [RAW_QUERY] });
       }
       chain.module.rule('raw-source').resourceQuery(RAW_QUERY).type('asset/source');
     },
-  };
+  } satisfies NonNullable<RsbuildConfig['tools']>;
 }
 
 function createConsolePlugins(federationOnly: boolean) {

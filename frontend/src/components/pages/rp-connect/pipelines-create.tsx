@@ -47,7 +47,7 @@ const exampleContent = `
 
 // biome-ignore lint/complexity/noBannedTypes: empty object represents pages with no route params
 class RpConnectPipelinesCreate extends PageComponent<{}> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Create Pipeline';
     p.addBreadcrumb('Redpanda Connect', '/connect-clusters');
     p.addBreadcrumb('Create Pipeline', '');
@@ -58,11 +58,11 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   }
 
   refreshData(_force: boolean) {
-    pipelinesApi.refreshPipelines(_force);
+    this.pipelinesApi.refreshPipelines(_force);
   }
 
   render() {
-    if (!pipelinesApi.pipelines) {
+    if (!this.pipelinesApi.pipelines) {
       return DefaultSkeleton;
     }
     return <RpConnectPipelinesCreateContent />;
@@ -78,7 +78,6 @@ type PipelineCreateInput = {
   tasks: number;
 };
 
-/** Creates the pipeline, reports the outcome in a toast, and returns to the pipeline list on success. */
 const useCreatePipeline = () => {
   const [isCreating, setIsCreating] = useState(false);
 
@@ -93,7 +92,8 @@ const useCreatePipeline = () => {
           displayName,
           resources: {
             cpuShares: tasksToCPU(tasks) || '0',
-            memoryShares: '0', // still required by API but unused
+            // WARNING: The API still requires memoryShares; send the zero sentinel even though it is unused.
+            memoryShares: '0',
           },
           tags: {
             __redpanda_cloud_pipeline_type: 'pipeline',
@@ -225,7 +225,6 @@ const RpConnectPipelinesCreateContent = () => {
   );
 };
 
-/** The compute-units field. It holds what was typed; `onChange` only ever receives a clamped value. */
 const ComputeUnitsField = ({ onChange }: { onChange: (tasks: number) => void }) => {
   const [tasksDraft, setTasksDraft] = useState(String(MIN_TASKS));
 
@@ -241,7 +240,7 @@ const ComputeUnitsField = ({ onChange }: { onChange: (tasks: number) => void }) 
           setTasksDraft(String(clampTasks(tasksDraft)));
         }}
         onChange={(e) => {
-          // Clamp on blur, not here: clamping per keystroke makes the field unclearable.
+          // WARNING: Clamp unit inputs on blur; clamping every keystroke prevents clearing the field to replace the value.
           setTasksDraft(e.target.value);
           onChange(clampTasks(e.target.value));
         }}
@@ -263,7 +262,6 @@ type TemplateGalleryStartProps = {
   onRestoreYaml: (yaml: string) => void;
 };
 
-/** The "Start from a template" call to action, shown while the editor is empty, and the gallery it opens. */
 const TemplateGalleryStart = ({ editorContent, onApplyTemplate, onRestoreYaml }: TemplateGalleryStartProps) => {
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
 
@@ -426,6 +424,9 @@ const registerContextualVariablesAutocomplete = (
   setContextualVarsAutocomplete(autocomplete);
 };
 
+/**
+ * Accepts external YAML edits such as applying a template or restoring a buffer. An empty model is still reported, allowing the template entry point to reappear.
+ */
 export const PipelineEditor = (p: {
   yaml: string;
   onChange?: (newYaml: string) => void;
@@ -439,21 +440,18 @@ export const PipelineEditor = (p: {
   const [monaco, setMonaco] = useState<Monaco | undefined>(undefined);
 
   useEffect(() => {
+    // WARNING: Dispose both autocomplete providers; stale registrations can return duplicate suggestions.
     return () => {
       if (secretAutocomplete) {
-        // avoid duplicate secret autocomplete registration
         secretAutocomplete.dispose();
       }
       if (contextualVarsAutocomplete) {
-        // avoid duplicate contextual variables autocomplete registration
         contextualVarsAutocomplete.dispose();
       }
     };
   }, [secretAutocomplete, contextualVarsAutocomplete]);
 
-  // Monaco reads `defaultValue` only at mount, so external updates (applying a
-  // template, restoring stashed YAML) must be pushed in imperatively. The guard
-  // skips normal typing, where `p.yaml` already equals the editor's content.
+  // WARNING: Push external YAML into Monaco; defaultValue is mount-only, and normal typing already matches the model.
   useEffect(() => {
     if (editorInstance && editorInstance.getValue() !== p.yaml) {
       editorInstance.setValue(p.yaml);
@@ -474,8 +472,6 @@ export const PipelineEditor = (p: {
                   defaultValue={p.yaml}
                   language="yaml"
                   onChange={(e) => {
-                    // Propagate empty content too — clearing the editor must
-                    // flip `isEditorPristine` so the template CTA can re-appear.
                     p.onChange?.(e ?? '');
                   }}
                   onMount={async (editorRef, monacoInst) => {
@@ -503,7 +499,6 @@ export const PipelineEditor = (p: {
                 )}
               </div>
 
-              {/* The Registry Alert renders its own icon; an icon child would paint two. */}
               {isKafkaConnectPipeline(p.yaml) && (
                 <Alert icon={<AlertCircle size={16} />} variant="destructive">
                   <AlertDescription>
@@ -531,8 +526,7 @@ export const PipelineEditor = (p: {
   );
 };
 
-/** True when `value` parses as JSON carrying Kafka Connect config keys (`connector.class`, the converters, …). */
-const isKafkaConnectPipeline = (value: string | undefined): boolean => {
+const isKafkaConnectPipeline = (value: string | undefined) => {
   if (value === undefined) {
     return false;
   }

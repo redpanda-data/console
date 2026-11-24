@@ -22,7 +22,7 @@ import { CompressionType, type Payload, type TopicMessage } from '../state/rest-
 const JSONBigInt = jsonBigIntFactory({ storeAsString: true });
 const textDecoder = new TextDecoder();
 
-function mapPayloadEncoding(encoding: PayloadEncoding | undefined): Payload['encoding'] | undefined {
+function mapPayloadEncoding(encoding: PayloadEncoding | undefined) {
   switch (encoding) {
     case PayloadEncoding.NULL:
       return 'null';
@@ -64,11 +64,12 @@ function mapPayloadEncoding(encoding: PayloadEncoding | undefined): Payload['enc
 /**
  * Converts a proto `ListMessagesResponse.DataMessage` to a legacy `TopicMessage`.
  * Pure function — shared by `createMessageSearch` (MobX) and `useLogSearch` (React).
+ *
+ * Preserves non-JSON payloads as text. Hex previews are populated by the viewer, not by the conversion.
  */
-export function convertListMessageData(data: ListMessagesResponse_DataMessage): TopicMessage {
+export function convertListMessageData(data: ListMessagesResponse_DataMessage) {
   const keyJson = textDecoder.decode(data.key?.normalizedPayload);
   const valueJson = textDecoder.decode(data.value?.normalizedPayload);
-  // Hex previews are populated by the message viewer, as in the legacy search adapter.
   return {
     partitionID: data.partitionId,
     compression: mapCompression(data.compression),
@@ -92,7 +93,7 @@ export function convertListMessageData(data: ListMessagesResponse_DataMessage): 
   } as TopicMessage;
 }
 
-function mapCompression(compression: ProtoCompressionType): TopicMessage['compression'] {
+function mapCompression(compression: ProtoCompressionType) {
   switch (compression) {
     case ProtoCompressionType.UNCOMPRESSED:
       return CompressionType.Uncompressed;
@@ -109,11 +110,11 @@ function mapCompression(compression: ProtoCompressionType): TopicMessage['compre
   }
 }
 
-function parseNormalizedPayload(payload: string): unknown {
+function parseNormalizedPayload(payload: string) {
   try {
-    return JSONBigInt.parse(payload);
+    const decoded: unknown = JSONBigInt.parse(payload);
+    return decoded;
   } catch {
-    // Non-JSON payloads intentionally remain readable text.
     return payload;
   }
 }
@@ -122,7 +123,7 @@ function convertPayload(
   source: ListMessagesResponse_DataMessage['key'],
   normalizedText: string,
   kind: 'key' | 'value'
-): Payload {
+) {
   const encoding = mapPayloadEncoding(source?.encoding);
   if (!encoding && source?.encoding !== undefined && source?.encoding !== null) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -131,7 +132,6 @@ function convertPayload(
       encodingName: PayloadEncodingSchema.values.find((value) => value.number === source.encoding)?.localName,
     });
   }
-  // Preserve an absent encoding for unknown proto values rather than claiming a successful decode.
   return {
     payload: parseNormalizedPayload(normalizedText),
     normalizedPayload: source?.normalizedPayload,

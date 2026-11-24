@@ -17,7 +17,7 @@ const MAX_RETRY_DELAY_MS = 30_000;
 export const DEFAULT_LIVE_TAIL_MAX_RETRIES = 5;
 
 /** Exponential backoff (capped) for the `failureCount`-th (1-indexed) consecutive failure. */
-export function liveTailRetryDelayMs(failureCount: number): number {
+export function liveTailRetryDelayMs(failureCount: number) {
   return Math.min(BASE_RETRY_DELAY_MS * 2 ** (failureCount - 1), MAX_RETRY_DELAY_MS);
 }
 
@@ -46,11 +46,7 @@ type LiveTailSession = Pick<LiveTailLoopOptions, 'start'> & {
   setStatus: (status: LiveTailStatus) => void;
 };
 
-/**
- * Runs one tail session until the returned cancel is called: a clean completion restarts at once
- * (appending), a failure backs off, and `maxRetries` consecutive failures end the session.
- */
-function runLiveTailSession({ start, maxRetries, setStatus }: LiveTailSession): () => void {
+function runLiveTailSession({ start, maxRetries, setStatus }: LiveTailSession) {
   let cancelled = false;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let failureCount = 0;
@@ -103,15 +99,16 @@ function runLiveTailSession({ start, maxRetries, setStatus }: LiveTailSession): 
  * instead, and give up after `maxRetries` consecutive failures (the failure itself stays visible
  * through whatever error state `start` already populates). After giving up, `status` reports
  * `'exhausted'` and only `restart()` re-arms the loop.
+ *
+ * Appends after a clean stream end; consecutive failures back off and exhaust a bounded retry budget. Cancelling retires whichever session is currently active.
  */
 export function useLiveTailLoop({
   active,
   start,
   stop,
   maxRetries = DEFAULT_LIVE_TAIL_MAX_RETRIES,
-}: LiveTailLoopOptions): LiveTailLoop {
+}: LiveTailLoopOptions) {
   const [status, setStatus] = useState<LiveTailStatus>('idle');
-  // Cancels the running session; null while the loop is inactive.
   const cancelSessionRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -121,22 +118,22 @@ export function useLiveTailLoop({
     }
     cancelSessionRef.current = runLiveTailSession({ start, maxRetries, setStatus });
     return () => {
-      // `restart` may have replaced the session this run began, so cancel whichever is current.
+      // WARNING: Cancel the current session, not the captured one; restart may have replaced it before cleanup.
       cancelSessionRef.current?.();
       cancelSessionRef.current = null;
       stop();
     };
   }, [active, start, stop, maxRetries]);
 
-  // Tears the running session down and starts over in its place, with a fresh failure budget.
   const restart = useCallback(() => {
     if (!cancelSessionRef.current) {
-      return; // inactive: nothing to restart
+      return;
     }
     cancelSessionRef.current();
     stop();
     cancelSessionRef.current = runLiveTailSession({ start, maxRetries, setStatus });
   }, [start, stop, maxRetries]);
 
-  return { status, restart };
+  const liveTailLoop: LiveTailLoop = { status, restart };
+  return liveTailLoop;
 }

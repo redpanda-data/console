@@ -38,12 +38,7 @@ type UseUrlTableStateResult = {
 
 type SetPageIndex = (pageIndex: number) => unknown;
 
-/** Sorting in `?{prefix}SortId=` / `?{prefix}SortDesc=`, mirrored to the settings slice; a re-sort returns to the first page. */
-function useUrlSorting(
-  keyPrefix: string,
-  settings: TableSettings,
-  setPageIndex: SetPageIndex
-): Pick<UseUrlTableStateResult, 'sorting' | 'onSortingChange'> {
+function useUrlSorting(keyPrefix: string, settings: TableSettings, setPageIndex: SetPageIndex) {
   const [sortId, setSortId] = useQueryStateWithCallback<string>(
     {
       onUpdate: (val) => {
@@ -80,11 +75,9 @@ function useUrlSorting(
     setPageIndex(0);
   };
 
-  return { sorting, onSortingChange };
+  return { sorting, onSortingChange } satisfies Pick<UseUrlTableStateResult, 'sorting' | 'onSortingChange'>;
 }
 
-// Clamp a stale/out-of-range page index into a valid range. Effective value is
-// used for rendering immediately; the effect below repairs the URL.
 function useClampedPageIndex({
   pageIndex,
   setPageIndex,
@@ -97,7 +90,7 @@ function useClampedPageIndex({
   pageSize: number;
   rowCount: number;
   enabled: boolean;
-}): number {
+}) {
   const lastPageIndex = enabled && rowCount > 0 ? Math.ceil(rowCount / pageSize) - 1 : 0;
   const clampedPageIndex = enabled ? Math.max(0, Math.min(pageIndex, lastPageIndex)) : pageIndex;
 
@@ -116,13 +109,10 @@ function useClampedPageIndex({
  * Since tables set `autoResetPageIndex: false`, a stale `?{prefix}Page=` from a shared link can
  * point past the last page and render empty — so the index is clamped and the URL repaired once
  * data arrives.
+ *
+ * Changing the sort returns to the first page.
  */
-export function useUrlTableState({
-  keyPrefix,
-  settings,
-  rowCount,
-  enabled = true,
-}: UseUrlTableStateParams): UseUrlTableStateResult {
+export function useUrlTableState({ keyPrefix, settings, rowCount, enabled = true }: UseUrlTableStateParams) {
   const [pageIndex, setPageIndex] = useQueryState(`${keyPrefix}Page`, parseAsInteger.withDefault(0));
 
   const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
@@ -147,5 +137,6 @@ export function useUrlTableState({
     setPageSize(next.pageSize);
   };
 
-  return { sorting, pagination, onSortingChange, onPaginationChange };
+  const tableState: UseUrlTableStateResult = { sorting, pagination, onSortingChange, onPaginationChange };
+  return tableState;
 }

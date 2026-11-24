@@ -37,11 +37,22 @@ import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core'
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ShadowLinkSource } from 'components/cluster-fence/shadow-link-topology';
 import {
+  type CloudSource,
+  getFailoverReadiness,
+  getSourceFenceStep,
+} from 'components/pages/shadowlinks/details/failover-model';
+import { config } from 'config';
+import {
   ClusterFenceState,
   GetClusterFenceStatusResponseSchema,
 } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
 import { getClusterFenceStatus } from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
+import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { connectQueryWrapper } from 'test-utils';
+
+import { PeerFenceReadError, readPeerClusterFence } from './peer-cluster-fence';
+import { createPeerConsoleTransport } from './peer-console-transport';
+import { useShadowLinkTopology } from './shadow-link-topology';
 
 const flags = rs.hoisted(() => ({ enableClusterFencing: true }));
 const host = rs.hoisted(() => ({ embedded: true }));
@@ -77,21 +88,9 @@ rs.mock('./peer-console-transport', () => ({
   },
 }));
 
-import {
-  type CloudSource,
-  getFailoverReadiness,
-  getSourceFenceStep,
-} from 'components/pages/shadowlinks/details/failover-model';
-import { config } from 'config';
-import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-
-import { PeerFenceReadError, readPeerClusterFence } from './peer-cluster-fence';
-import { createPeerConsoleTransport } from './peer-console-transport';
-import { useShadowLinkTopology } from './shadow-link-topology';
-
 const PROD_CONSOLE = 'https://console-prod.example.com';
 
-const cluster = (id: string, name: string, seed: string, state = Cluster_State.READY): Cluster =>
+const cluster = (id: string, name: string, seed: string, state = Cluster_State.READY) =>
   create(ClusterSchema, {
     id,
     name,
@@ -108,7 +107,7 @@ const CLUSTERS = [
 
 type LinkInit = MessageInitShape<typeof ShadowLinkSchema>;
 
-const link = (id: string, shadowRedpandaId: string, clientOptions: LinkInit['clientOptions']): ShadowLink =>
+const link = (id: string, shadowRedpandaId: string, clientOptions: LinkInit['clientOptions']) =>
   create(ShadowLinkSchema, { id, name: id, shadowRedpandaId, state: ShadowLink_State.ACTIVE, clientOptions });
 
 const LINKS = [
@@ -201,7 +200,7 @@ const renderTopology = (clusterId: string) => {
 const settled = (result: { current: ReturnType<typeof useShadowLinkTopology> }) =>
   waitFor(() => expect(result.current?.resolving).toBe(false));
 
-function requireCloudSource(source: ShadowLinkSource | undefined): CloudSource {
+function requireCloudSource(source: ShadowLinkSource | undefined) {
   if (source?.kind !== 'cloud') {
     throw new Error('Expected a Cloud source');
   }
@@ -447,7 +446,6 @@ describe('readPeerClusterFence', () => {
     expect((failure as PeerFenceReadError).reason).toBe(reason);
   });
 
-  /** The transport the read really uses, answered by a stand-in for the network. */
   const answeringWith = (status: number, contentType: string, body: string) =>
     transports.peers.set(
       PROD_CONSOLE,

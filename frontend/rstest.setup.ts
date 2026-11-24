@@ -1,35 +1,23 @@
 // Copyright 2026 Redpanda Data, Inc.
 
-// React 19 under Rstest's prebundled happy-dom no longer needs the former MessageChannel deletion workaround.
-import { afterEach, beforeEach, expect, rs } from '@rstest/core';
+import { afterAll, afterEach, expect, rs } from '@rstest/core';
 import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
 import './src/utils/array-extensions';
-import './tests/mock-document';
 
 import { cleanupTestHarness } from './tests/harness-cleanup';
-import { createMemoryStorage } from './tests/memory-storage';
 
 expect.extend(jestDomMatchers);
 
-// Node 24 exposes an opt-in global localStorage getter that returns undefined
-// unless --localstorage-file is provided. Install a deterministic per-worker
-// Storage implementation instead of letting that host getter shadow
-// happy-dom's storage.
-const testLocalStorage = createMemoryStorage();
-Object.defineProperty(globalThis, 'localStorage', {
-  configurable: true,
-  value: testLocalStorage,
-});
-Object.defineProperty(window, 'localStorage', {
-  configurable: true,
-  value: testLocalStorage,
-});
+const unexpectedRequests: Error[] = [];
 
-// ── happy-dom network / resource isolation ───────────────────────────
-// Unlike jsdom, happy-dom attempts real network requests for scripts,
-// images, and fetch calls. Disable external loading + same-origin policy
-// to suppress AbortError / ECONNREFUSED noise from unmocked endpoints.
+function rejectUnexpectedRequest({ request }: { request: { method: string; url: string } }): never {
+  const error = new Error(`Unexpected test request: ${request.method} ${request.url}`);
+  unexpectedRequests.push(error);
+  throw error;
+}
+
+// WARNING: Keep Happy DOM resource loading disabled; implicit script and CSS loads can reach the network outside the fetch guard.
 if (typeof window !== 'undefined' && 'happyDOM' in window) {
   const happyDOM = Reflect.get(window, 'happyDOM');
   if (typeof happyDOM === 'object' && happyDOM !== null) {
@@ -44,6 +32,12 @@ if (typeof window !== 'undefined' && 'happyDOM' in window) {
       Reflect.set(settings, 'fetch', {
         ...(typeof fetchSettings === 'object' && fetchSettings !== null ? fetchSettings : {}),
         disableSameOriginPolicy: true,
+        interceptor: {
+          // WARNING: Only network traffic that escaped MSW reaches Happy DOM. Record failures even if the app catches them.
+          beforeAsyncRequest: async ({ request }: { request: { method: string; url: string } }) =>
+            rejectUnexpectedRequest({ request }),
+          beforeSyncRequest: rejectUnexpectedRequest,
+        },
       });
       Reflect.set(settings, 'disableJavaScriptFileLoading', true);
       Reflect.set(settings, 'disableCSSFileLoading', true);
@@ -52,27 +46,32 @@ if (typeof window !== 'undefined' && 'happyDOM' in window) {
   }
 }
 
-const unexpectedRequests: Error[] = [];
-
-// Record before rejecting: application error handling must not hide a missing fixture.
-// Like the real fetch, failures reach the caller as a rejected promise, never as a synchronous throw.
-if (typeof window !== 'undefined') {
-  globalThis.fetch = Object.assign(
-    (input: RequestInfo | URL, init?: RequestInit) =>
-      new Promise<Response>((_, reject) => {
-        const isRequest = typeof input !== 'string' && !(input instanceof URL);
-        const url = isRequest ? input.url : input.toString();
-        const method = init?.method ?? (isRequest ? input.method : 'GET');
-        const error = new Error(`Unexpected test request: ${method} ${new URL(url, window.location.href).href}`);
-        unexpectedRequests.push(error);
-        reject(error);
-      }),
-    globalThis.fetch
-  );
+function alignFetchHeaders() {
+  const browserHeaders = new Request(window.location.href).headers.constructor;
+  if (browserHeaders === Headers) {
+    return;
+  }
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'Headers');
+  Object.defineProperty(globalThis, 'Headers', {
+    configurable: true,
+    writable: true,
+    value: browserHeaders,
+  });
+  afterAll(() => {
+    if (original) {
+      Object.defineProperty(globalThis, 'Headers', original);
+    } else {
+      Reflect.deleteProperty(globalThis, 'Headers');
+    }
+  });
 }
 
-// Polyfill Element/Document.getAnimations — happy-dom doesn't implement them
-// but Base UI's ScrollAreaViewport calls them from a setTimeout.
+// WARNING: Rstest installs Happy DOM Request and Response but leaves Node Headers; mixed constructors silently drop HTTP headers.
+if (typeof window !== 'undefined') {
+  alignFetchHeaders();
+}
+
+// WARNING: Keep getAnimations available; Base UI calls it asynchronously even where Happy DOM does not implement it.
 if (typeof Element !== 'undefined' && typeof Element.prototype.getAnimations !== 'function') {
   Element.prototype.getAnimations = () => [];
 }
@@ -80,10 +79,7 @@ if (typeof Document !== 'undefined' && typeof Document.prototype.getAnimations !
   Document.prototype.getAnimations = () => [];
 }
 
-// happy-dom >=20.12 implements Web Animations, but Animation.cancel() rejects
-// `finished` without marking it handled as the spec requires, so every
-// unmount mid-animation surfaces an unhandled AbortError
-// (capricorn86/happy-dom#2412). Mark it handled before cancelling.
+// WARNING: Handle finished before cancelling; Happy DOM cancellation can otherwise reject with an unhandled AbortError (#2412).
 if (typeof Animation !== 'undefined') {
   const originalCancel = Animation.prototype.cancel;
   Animation.prototype.cancel = function cancel(this: Animation) {
@@ -92,66 +88,12 @@ if (typeof Animation !== 'undefined') {
   };
 }
 
-// ── Mocks ────────────────────────────────────────────────────────────
-// happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively, but
-// matchMedia must be an rs.fn so media-query reads (the theme provider's
-// prefers-color-scheme, responsive hooks) return a deterministic `matches: false`.
-beforeEach(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: rs.fn().mockImplementation((query) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: rs.fn(), // Deprecated
-      removeListener: rs.fn(), // Deprecated
-      addEventListener: rs.fn(),
-      removeEventListener: rs.fn(),
-      dispatchEvent: rs.fn(),
-    })),
-  });
-});
-
-// Mock lottie-react — lottie-web schedules animation frames that leak
-// across tests even when canvas access is stubbed by the environment.
-rs.mock('lottie-react', () => ({
-  useLottie: () => ({
-    View: null,
-    play: rs.fn(),
-    stop: rs.fn(),
-    pause: rs.fn(),
-    setSpeed: rs.fn(),
-    goToAndStop: rs.fn(),
-    goToAndPlay: rs.fn(),
-    setDirection: rs.fn(),
-    playSegments: rs.fn(),
-    setSubframe: rs.fn(),
-    destroy: rs.fn(),
-    getDuration: rs.fn(),
-    animationItem: null,
-    animationContainerRef: { current: null },
-    animationLoaded: false,
-  }),
-}));
-
-// Explicit cleanup after each test to prevent memory leaks.
-//
-// Order matters:
-//   1. cleanup() unmounts RTL-rendered React trees so stores/queries are no
-//      longer observed by subscribers before teardown.
-//   2. cleanupTestHarness() drops tracked QueryClients + routers held alive
-//      by test-file closures (primary source of +100–240 MB intra-file heap
-//      growth measured during the TDD audit).
-//   3. clearAllMocks / clearAllTimers is standard test hygiene.
-//
-// Zustand store resets are intentionally not mounted here: importing any
-// store pins `isEmbedded` live bindings before test files'
-// `rs.mock('config', ...)` hoists can take effect. Tests that accumulate
-// store state should reset it explicitly in their own setup.
+// WARNING: Unmount rendered trees before clearing query and router resources; otherwise live subscribers can restart work.
+// WARNING: Do not import stores for global resets; it pins config bindings before per-file module fixtures are applied.
 afterEach(async () => {
   cleanup();
   await cleanupTestHarness();
-  testLocalStorage.clear();
+  window.localStorage.clear();
   rs.clearAllMocks();
   rs.clearAllTimers();
 });
@@ -163,25 +105,15 @@ afterEach(() => {
   }
 });
 
-// ── Console suppression ──────────────────────────────────────────────
-// Suppress library warnings that are not actionable from tests and
-// pollute CI logs. Each pattern maps to a specific upstream issue or
-// migration-in-progress; removing a pattern requires fixing the source
-// component, not silencing here.
-// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
 const originalWarn = console.warn;
-// biome-ignore lint/suspicious/noConsole: test setup needs to intercept console for warning suppression
 const originalError = console.error;
 
 const SUPPRESSED_PATTERNS = [
-  // group-details.tsx nests its per-topic actions in the Accordion trigger's own <button>.
-  // Matches phrase and tag separately: React logs it as a `%s ... <%s>` template.
-  /cannot appear as a descendant of[\s\S]*<button>/,
+  // WARNING: Keep the warning filter narrow: group-details has nested buttons, and React supplies the tag in a later format argument.
+  /cannot appear as a descendant of[\s\S]*<button>/u,
 ];
 
-function isSuppressed(args: unknown[]): boolean {
-  // Join every argument so patterns also catch cases like
-  // console.warn('prefix:', errorObject) where the signal lives in args[1].
+function isSuppressed(args: unknown[]) {
   const msg = args.map((a) => (typeof a === 'string' ? a : String(a))).join(' ');
   return SUPPRESSED_PATTERNS.some((pattern) => pattern.test(msg));
 }

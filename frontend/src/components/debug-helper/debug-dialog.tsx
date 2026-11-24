@@ -59,7 +59,7 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { pluralizeWithNumber } from 'utils/string';
 
-import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
+import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config.fixture';
 import { DebugPanda } from './debug-panda';
 import {
   clearOverrides as clearFlagOverrides,
@@ -102,16 +102,16 @@ function copyToClipboard(text: string, successMsg = 'Copied to clipboard') {
     .catch(() => toast.error('Failed to copy to clipboard'));
 }
 
-function emitConsole(level: 'log' | 'info' | 'warn' | 'error', message: string): void {
+function emitConsole(level: 'log' | 'info' | 'warn' | 'error', message: string) {
   // biome-ignore lint/suspicious/noConsole: intentional debug helper for the Simulate panel
   console[level](message);
 }
 
-function formatBytes(bytes: number): string {
+function formatBytes(bytes: number) {
   return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-function readStorageEntries(storage: Storage): { key: string; value: string }[] {
+function readStorageEntries(storage: Storage) {
   const entries: { key: string; value: string }[] = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
@@ -122,13 +122,11 @@ function readStorageEntries(storage: Storage): { key: string; value: string }[] 
   return entries;
 }
 
-function useForceUpdate(): () => void {
+function useForceUpdate() {
   const [, setTick] = useState(0);
   return useCallback(() => setTick((n) => n + 1), []);
 }
 
-// Scale/fade pop for small elements that mount and unmount (badges, count dots).
-// Render inside an <AnimatePresence> so the exit animation can play.
 function PopIn({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <motion.span
@@ -179,7 +177,6 @@ function DebugSection({
 
 type FixtureTag = ConnectConfigFixture['tags'][number];
 
-// The Configs panel's sections, in the order they read.
 const FIXTURE_GROUPS: { tag: FixtureTag; label: string; chip: string; description: string }[] = [
   { tag: 'simple', label: 'Simple', chip: 'Simple', description: 'Small pipelines to start from.' },
   { tag: 'medium', label: 'Medium', chip: 'Medium', description: 'One source, a few processors, one sink.' },
@@ -204,17 +201,15 @@ const FIXTURE_GROUPS: { tag: FixtureTag; label: string; chip: string; descriptio
   { tag: 'invalid', label: 'Invalid', chip: 'Invalid', description: 'Configs the editor or Connect should reject.' },
 ];
 
-// A stop-condition fixture lists under Stop conditions; any other under its first tag.
-const groupOf = (f: ConnectConfigFixture): FixtureTag => (f.tags.includes('stops') ? 'stops' : f.tags[0]);
+const groupOf = (f: ConnectConfigFixture) => (f.tags.includes('stops') ? 'stops' : f.tags[0]);
 
-const SECRET_REF_RE = /\$\{secrets\.([A-Za-z0-9_]+)\}/g;
+const SECRET_REF_RE = /\$\{secrets\.(?<secretName>[A-Za-z0-9_]+)\}/gu;
 
 type FixtureEntry = {
   fixture: ConnectConfigFixture;
   group: FixtureTag;
   end: PipelineEndStatus;
   lineCount: number;
-  /** Console secrets that must exist before Cloud saves it. */
   secrets: string[];
 };
 
@@ -279,7 +274,6 @@ function ConfigFixtureRow({ entry }: { entry: FixtureEntry }) {
                 <>
                   {' '}
                   needs {secrets.length === 1 ? 'the secret' : 'the secrets'}
-                  {/* InlineCode's chip at the row's text size and line height */}
                   {secrets.map((name) => (
                     <code
                       className="relative rounded bg-surface-subtle px-[0.3rem] font-mono text-body-sm leading-normal font-medium"
@@ -312,12 +306,11 @@ function ConfigFixtureRow({ entry }: { entry: FixtureEntry }) {
 function ConnectConfigsPanel() {
   const [filter, setFilter] = useState('');
   const [shown, setShown] = useState<'all' | FixtureTag>('all');
-  const entries = useMemo(
-    (): FixtureEntry[] =>
+  const entries = useMemo<FixtureEntry[]>(
+    () =>
       CONNECT_CONFIG_FIXTURES.map((fixture) => ({
         fixture,
         group: groupOf(fixture),
-        // How it ends, as the pipelines list's Runs column reads it.
         end: summarizePipelineEndYaml(fixture.yaml).status,
         lineCount: fixture.yaml.split('\n').length,
         secrets: [...new Set(Array.from(fixture.yaml.matchAll(SECRET_REF_RE), (m) => m[1]))],
@@ -338,8 +331,6 @@ function ConnectConfigsPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Stays in view while the list scrolls. Sticky offsets count from inside the scroller's padding,
-          so the negative top and margins cancel it. */}
       <div className="sticky -top-4 z-10 -mx-5 -mt-4 flex flex-wrap items-center gap-2 border-b bg-background px-5 py-2">
         <Input
           aria-label="Filter configs by name, tag, secret or how they run"
@@ -454,7 +445,7 @@ function SimulatePanel({ onClose }: { onClose: () => void }) {
           <Button
             onClick={() => {
               onClose();
-              // Defer the throw so the dialog finishes unmounting before the boundary trips.
+              // WARNING: Let the dialog unmount before throwing into the error boundary.
               setTimeout(() => setRenderThrow(true), 50);
             }}
             size="sm"
@@ -541,11 +532,14 @@ function VisualPanel({ onMutate }: { onMutate: () => void }) {
   );
 }
 
-function dumpStorage(storage: Storage): Record<string, string> {
-  return Object.fromEntries(readStorageEntries(storage).map(({ key, value }) => [key, value]));
+function dumpStorage(storage: Storage) {
+  return Object.fromEntries(readStorageEntries(storage).map(({ key, value }) => [key, value])) satisfies Record<
+    string,
+    string
+  >;
 }
 
-function tryFormatValue(raw: string): string {
+function tryFormatValue(raw: string) {
   try {
     return JSON.stringify(JSON.parse(raw), null, 2);
   } catch {
@@ -628,8 +622,7 @@ function StorageSection({
   onConfirmClear: () => void;
   filter: string;
 }) {
-  // Computed on every render (no memo): the Storage object is a stable reference,
-  // so memoizing on it would keep serving deleted entries after a Clear.
+  // WARNING: Do not memoize reads by the Storage object; its identity survives Clear and would keep deleted rows visible.
   const q = filter.trim().toLowerCase();
   const entries = readStorageEntries(storage)
     .sort((a, b) => a.key.localeCompare(b.key))
@@ -757,7 +750,6 @@ function EnvironmentPanel() {
   );
 }
 
-// Control + status in one pill, mirroring the RPCN pipeline run toggle.
 function FlagToggle({
   id,
   checked,
@@ -838,7 +830,6 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
             const effectiveValue = effective[key];
             return (
               <Item className="flex-col items-stretch" key={key} size="xs" variant="outline">
-                {/* h-5 matches the badge so the row doesn't grow when it appears */}
                 <div className="flex h-5 min-w-0 items-center gap-1.5">
                   <ElementTooltip content={key}>
                     <code
@@ -1002,7 +993,6 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
     <ItemGroup className="overflow-hidden">
       {rows.map(({ panel, icon, label, value, active }, index) => (
         <Fragment key={panel}>
-          {/* Bare border-b (not the divider token) so it matches the container's border color in both themes */}
           {index > 0 ? <ItemSeparator /> : null}
           <Item
             className="cursor-pointer text-left"
@@ -1031,6 +1021,9 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
   );
 }
 
+/**
+ * Small transient badges use AnimatePresence so their exit animations can finish. Storage inspection reflects mutations even when the Storage object is unchanged.
+ */
 export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [panel, setPanel] = useState<PanelId>('overview');
   const forceUpdate = useForceUpdate();
@@ -1155,8 +1148,6 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   );
 }
 
-// Floating launcher, portaled to document.body: in embedded mode this component
-// mounts inside a hidden host container (the dialog escapes via its own portal).
 function DebugLauncher({ onClick }: { onClick: () => void }) {
   const activeCount = getEnabledVisualDebuggers().length + Object.keys(getFlagOverrides()).length;
 
@@ -1182,6 +1173,9 @@ function DebugLauncher({ onClick }: { onClick: () => void }) {
   );
 }
 
+/**
+ * Portals the launcher to document.body because embedded Console can mount inside a hidden host container.
+ */
 export function DebugHelperRoot() {
   const [open, setOpen] = useState(false);
 

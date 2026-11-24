@@ -172,8 +172,8 @@ describe('deriveContexts', () => {
       ]
     );
 
-    expect(result[0].subjectCount).toBe(1); // Default
-    expect(result[1].subjectCount).toBe(1); // All
+    expect(result[0].subjectCount).toBe(1);
+    expect(result[1].subjectCount).toBe(1);
   });
 
   test('named context .staging has correct id and count', () => {
@@ -190,9 +190,7 @@ describe('deriveContexts', () => {
     );
 
     const staging = result.find((c) => c.id === '.staging');
-    expect(staging).toBeDefined();
-    expect(staging!.subjectCount).toBe(2);
-    expect(staging!.label).toBe('.staging');
+    expect(staging).toMatchObject({ subjectCount: 2, label: '.staging' });
   });
 
   test('missing default in API response: All falls back to empty mode/compat', () => {
@@ -201,9 +199,8 @@ describe('deriveContexts', () => {
       [{ name: ':.staging:topic-a', isSoftDeleted: false }]
     );
 
-    const all = result.find((c) => c.id === ALL_CONTEXT_ID)!;
-    expect(all.mode).toBe('');
-    expect(all.compatibility).toBe('');
+    const all = result.find((c) => c.id === ALL_CONTEXT_ID);
+    expect(all).toMatchObject({ mode: '', compatibility: '' });
   });
 });
 

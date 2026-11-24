@@ -14,7 +14,7 @@
  * char codes, below 32), in order. `maxLength` caps how many characters are read; at least one
  * character is always read.
  */
-export function splitControlChars(str: string, maxLength?: number): (string | number)[] {
+export function splitControlChars(str: string, maxLength?: number) {
   const chars = Array.from(str);
   const parts: (string | number)[] = [];
   for (const char of maxLength === undefined ? chars : chars.slice(0, Math.max(1, maxLength))) {

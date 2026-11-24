@@ -9,13 +9,13 @@ export type ColumnFiltersBinding = {
   onColumnFiltersChange: (updater: Updater<ColumnFiltersState>) => void;
 };
 
-const resolveUpdater = <T>(updater: Updater<T>, current: T): T =>
+const resolveUpdater = <T>(updater: Updater<T>, current: T) =>
   typeof updater === 'function' ? (updater as (old: T) => T)(current) : updater;
 
 const findFilterValue = (filters: ColumnFiltersState, id: string) => filters.find((f) => f.id === id)?.value;
 
 /** Name filter of a Security list, kept in the `name` search param. */
-export function useNameColumnFilter(): ColumnFiltersBinding {
+export function useNameColumnFilter() {
   const [urlFilterParams, setUrlFilterParams] = useQueryStates({ name: parseAsString });
   const columnFilters: ColumnFiltersState = urlFilterParams.name ? [{ id: 'name', value: urlFilterParams.name }] : [];
 
@@ -24,11 +24,12 @@ export function useNameColumnFilter(): ColumnFiltersBinding {
     setUrlFilterParams({ name: (findFilterValue(next, 'name') as string) || null });
   };
 
-  return { columnFilters, onColumnFiltersChange };
+  const columnFiltersBinding: ColumnFiltersBinding = { columnFilters, onColumnFiltersChange };
+  return columnFiltersBinding;
 }
 
 /** Name and SASL mechanism filters of the users list, kept in the `name` and `mechanism` search params. */
-export function useUserColumnFilters(): ColumnFiltersBinding {
+export function useUserColumnFilters() {
   const [urlFilterParams, setUrlFilterParams] = useQueryStates({
     name: parseAsString,
     mechanism: parseAsArrayOf(parseAsString),
@@ -47,7 +48,8 @@ export function useUserColumnFilters(): ColumnFiltersBinding {
     });
   };
 
-  return { columnFilters, onColumnFiltersChange };
+  const columnFiltersBinding: ColumnFiltersBinding = { columnFilters, onColumnFiltersChange };
+  return columnFiltersBinding;
 }
 
 /** Sortable, paginated table of a Security list whose column filters live elsewhere (such as the URL). */

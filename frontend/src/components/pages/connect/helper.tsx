@@ -83,11 +83,11 @@ import PageContent from '../../misc/page-content';
 import Section from '../../misc/section';
 
 export type ConnectorMetadata = {
-  readonly className?: string; // match by exact match
-  readonly classNamePrefix?: string; // match by prefix
+  readonly className?: string;
+  readonly classNamePrefix?: string;
 
   readonly logo?: JSX.Element;
-  readonly friendlyName?: string; // override display name (instead of just 'className without namespace')
+  readonly friendlyName?: string;
   readonly description?: string;
   readonly learnMoreLink?: string;
   readonly author?: string;
@@ -97,11 +97,7 @@ const fallbackConnector: ConnectorMetadata = {
   logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
 };
 
-// Order of entries matters:
-// - first step is checking if there is any exact match for 'className'
-// - second step is going through the list and taking the first entry where 'classNamePrefix' matches
 const connectorMetadata: ConnectorMetadata[] = [
-  // Apache Connectors
   {
     classNamePrefix: 'org.apache.kafka.connect.mirror.MirrorSourceConnector',
     logo: <img alt="Apache Software Foundation logo" className="connectorLogo" src={ApacheLogo} />,
@@ -126,7 +122,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     description: 'Generates heartbeat messages to local heartbeat topic',
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-mmaker-heartbeat-connector'),
   } as const,
-  // Confluent Connectors
   {
     classNamePrefix: 'io.confluent.connect.hdfs.',
     logo: <img alt="HDFS logo" className="connectorLogo" src={HdfsLogo} />,
@@ -173,7 +168,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Confluent',
   } as const,
 
-  // Debezium Connectors
   {
     classNamePrefix: 'io.debezium.connector.mysql.',
     logo: <img alt="MySQL logo" className="connectorLogo" src={MySqlLogo} />,
@@ -214,7 +208,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     author: 'Debezium',
   } as const,
 
-  // Redpanda Connectors
   {
     classNamePrefix: 'com.redpanda.kafka.connect.s3.',
     logo: <img alt="Amazon S3 logo" className="connectorLogo" src={AmazonS3} />,
@@ -248,14 +241,12 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-jdbc-sink-connector'),
   } as const,
 
-  // Stream Reactor / Lenses
   {
     classNamePrefix: 'com.datamountaineer.streamreactor.connect.cassandra.',
     logo: <img alt="Cassandra logo" className="connectorLogo" src={CassandraLogo} />,
     author: 'Lenses',
   } as const,
 
-  // WePay Connectors
   {
     classNamePrefix: 'com.wepay.kafka.connect.bigquery.',
     logo: <img alt="Google BigQuery logo" className="connectorLogo" src={BigQueryLogo} />,
@@ -265,7 +256,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-gcp-bigquery-connector'),
   } as const,
 
-  // Snowflake Connectors
   {
     classNamePrefix: 'com.snowflake.kafka.connector',
     logo: <img alt="Snowflake logo" className="connectorLogo" src={SnowflakeLogo} />,
@@ -275,7 +265,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-snowflake-connector'),
   } as const,
 
-  // MongoDB Connectors
   {
     classNamePrefix: 'com.mongodb.kafka.connect.MongoSourceConnector',
     logo: <img alt="MongoDB logo" className="connectorLogo" src={MongoDBLogo} />,
@@ -293,7 +282,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-mongodb-sink-connector'),
   } as const,
 
-  // Iceberg Connectors
   {
     classNamePrefix: 'org.apache.iceberg.connect.IcebergSinkConnector',
     logo: <img alt="Iceberg logo" className="connectorLogo" src={IcebergLogo} />,
@@ -303,7 +291,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectorGuide('create-iceberg-sink-connector'),
   } as const,
 
-  // JMS Connectors
   {
     classNamePrefix: 'io.macronova.kafka.connect.jms.JmsSinkConnector',
     logo: <RedpandaLogo className="connectorLogo" variant="mark" />,
@@ -321,7 +308,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
 
-  // IBM MQ Connectors
   {
     classNamePrefix: 'com.ibm.eventstreams.connect.mqsink.MQSinkConnector',
     logo: <img alt="IBM MQ Logo" className="connectorLogo" src={IbmMqLogo} />,
@@ -339,7 +325,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
 
-  // Community Connector
   {
     classNamePrefix: 'com.github.jcustenborder.kafka.connect.twitter',
     logo: <img alt="Twitter logo" className="connectorLogo" src={TwitterLogo} />,
@@ -359,7 +344,6 @@ const connectorMetadata: ConnectorMetadata[] = [
     learnMoreLink: docsLinks.cloud.managedConnectors,
   } as const,
 
-  // Fallbacks with a very generous classname prefix (usually just the maintainers' logo)
   {
     classNamePrefix: 'io.debezium.',
     logo: <img alt="Debezium logo" className="connectorLogo" src={DebeziumLogo} />,
@@ -386,7 +370,6 @@ const connectorMetadataMatchCache: {
   [className: string]: ConnectorMetadata;
 } = {};
 
-// Quick and dirty cache: if it has too many entries, remove some
 function trimConnectorMetadataCache() {
   const cacheKeys = Object.keys(connectorMetadataMatchCache);
   if (cacheKeys.length > 200) {
@@ -396,8 +379,7 @@ function trimConnectorMetadataCache() {
   }
 }
 
-// An exact match wins over a prefix match; anything else gets the fallback icon.
-function matchConnectorMetadata(className: string): ConnectorMetadata {
+function matchConnectorMetadata(className: string) {
   return (
     connectorMetadata.find((e) => e.className && e.className === className) ??
     connectorMetadata.find((e) => e.classNamePrefix && className.startsWith(e.classNamePrefix)) ??
@@ -405,7 +387,7 @@ function matchConnectorMetadata(className: string): ConnectorMetadata {
   );
 }
 
-export function findConnectorMetadata(className: string): ConnectorMetadata | null {
+export function findConnectorMetadata(className: string) {
   trimConnectorMetadataCache();
 
   const cached = connectorMetadataMatchCache[className];
@@ -436,7 +418,6 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
       ) : null}
 
       <Popover>
-        {/* Hover-to-open; Base UI defaults to click. */}
         <PopoverTrigger
           openOnHover
           render={
@@ -445,7 +426,6 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
             </button>
           }
         />
-        {/* PopoverContent is a fixed `w-72`, so the width is set here to fit the content. */}
         <PopoverContent className="w-auto max-w-[500px]" side="right">
           <div className="whitespace-pre-wrap">{c}</div>
         </PopoverContent>
@@ -454,7 +434,7 @@ export const ConnectorClass = (props: { observable: { class: string } }) => {
   );
 };
 
-export function removeNamespace(className: string): string {
+export function removeNamespace(className: string) {
   if (!className) {
     return className;
   }
@@ -527,7 +507,6 @@ export function NotConfigured() {
   return (
     <PageContent key="b">
       <Section>
-        {/* Same shape as the already-migrated SchemaNotConfiguredPage. */}
         <Empty>
           <EmptyHeader>
             <EmptyTitle>Not configured</EmptyTitle>
@@ -553,30 +532,28 @@ export function NotConfigured() {
 }
 
 type ConfirmModalProps<T> = {
-  target: () => T | null; // when set, dialog is shown
-  clearTarget: () => void; // called when the dialog is done
+  target: () => T | null;
+  clearTarget: () => void;
 
-  content: (target: T) => JSX.Element; // "are you sure you want to ..."
-  successMessage: (target: T) => JSX.Element; // "x done successfully"
+  content: (target: T) => JSX.Element;
+  successMessage: (target: T) => JSX.Element;
 
   onOk: (target: T) => Promise<void>;
-  onSuccess?: (target: T) => void; // called after the success toast; use for navigation
+  onSuccess?: (target: T) => void;
 };
 
-function parseApiError(text: string): ApiError | undefined {
+function parseApiError(text: string) {
   try {
     const apiErr = JSON.parse(text) as ApiError;
     return apiErr?.message && apiErr.statusCode ? apiErr : undefined;
   } catch {}
 }
 
-function describeConfirmError(error: string | Error): { title: string; content: string } {
+function describeConfirmError(error: string | Error) {
   const txt = typeof error === 'string' ? error : error.message;
 
-  // try parsing as json
   const apiErr = parseApiError(txt);
 
-  // return text only
   if (!apiErr) {
     return {
       title: 'Error',
@@ -584,13 +561,15 @@ function describeConfirmError(error: string | Error): { title: string; content: 
     };
   }
 
-  // render error object
   return {
     title: `${apiErr.statusCode}`,
     content: apiErr.message,
   };
 }
 
+/**
+ * Use the presence of a target to open, and clear it when the action finishes. Invoke onSuccess after queuing the toast. Keep cancellation as the first focusable action and long errors scrollable inside the dialog.
+ */
 export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | Error | null>(null);
@@ -644,8 +623,6 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm</AlertDialogTitle>
         </AlertDialogHeader>
-        {/* min-h-0 + overflow-y-auto: AlertDialogContent is `overflow-hidden max-h-[85vh]`, so a
-            long API error would otherwise be clipped with no way to scroll to the footer. */}
         <AlertDialogDescription className="min-h-0 overflow-y-auto">
           <div className="text-foreground">
             {content}
@@ -660,7 +637,6 @@ export const ConfirmModal = <T,>(props: ConfirmModalProps<T>) => {
           </div>
         </AlertDialogDescription>
         <AlertDialogFooter>
-          {/* Cancel first: Base UI focuses the first tabbable. */}
           <Button onClick={cancel} variant="outline">
             No
           </Button>
@@ -684,13 +660,12 @@ const RunningOfTotal = ({ running, total }: RunningCount) => (
   </>
 );
 
-function countTasks(obs: ClusterConnectors | ClusterConnectorInfo): RunningCount | null {
+function countTasks(obs: ClusterConnectors | ClusterConnectorInfo) {
   if ('error' in obs && obs.error !== null) {
     return null;
   }
 
   if ('clusterName' in obs) {
-    // ClusterConnectors
     if (obs.error) {
       return null;
     }
@@ -698,15 +673,11 @@ function countTasks(obs: ClusterConnectors | ClusterConnectorInfo): RunningCount
   }
 
   if ('name' in obs) {
-    // ClusterConnectorInfo
     return { running: obs.runningTasks, total: obs.totalTasks };
   }
 
   return { running: 0, total: 0 };
 }
-
-// Takes an observable object that is either a single connector (runningTasks and totalTasks properties)
-// or an array of connectors (in which case it will show the sum)
 
 export const TasksColumn = (props: { observable: ClusterConnectors | ClusterConnectorInfo }) => {
   const tasks = countTasks(props.observable);
@@ -719,7 +690,7 @@ export const TasksColumn = (props: { observable: ClusterConnectors | ClusterConn
 
 type ConnectorInfo = { runningConnectors: number; totalConnectors: number; error?: string };
 
-function countConnectors(observable: ConnectorInfo | ConnectorInfo[]): (RunningCount & { error?: string }) | null {
+function countConnectors(observable: ConnectorInfo | ConnectorInfo[]) {
   if ('runningConnectors' in observable) {
     return { running: observable.runningConnectors, total: observable.totalConnectors, error: observable.error };
   }
@@ -746,7 +717,7 @@ export const ConnectorsColumn = (props: { observable: ConnectorInfo | ConnectorI
 
 type TaskStateValue = ClusterConnectorTaskInfo['state'];
 
-function taskStateIcon(state: TaskStateValue): JSX.Element | null {
+function taskStateIcon(state: TaskStateValue) {
   switch (state) {
     case ConnectorState.Running:
       return okIcon;

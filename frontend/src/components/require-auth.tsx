@@ -18,7 +18,7 @@ import { useSupportedFeaturesStore } from '../state/supported-features';
 import { uiState } from '../state/ui-state';
 import { AppFeatures, getBasePath, IsDev } from '../utils/env';
 
-function loginHandling(): JSX.Element | null {
+function loginHandling() {
   if (!AppFeatures.SINGLE_SIGN_ON) {
     return null;
   }
@@ -26,15 +26,10 @@ function loginHandling(): JSX.Element | null {
   const path = window.location.pathname.removePrefix(getBasePath() ?? '');
 
   if (path.startsWith('/login')) {
-    return null; // already in login process, don't interrupt!
+    return null;
   }
 
-  // These pages handle license state themselves and must render even if the
-  // triggering license-expired error left `userData` stuck at `undefined`
-  // (e.g. the very first request, such as getIdentity, fails with
-  // FailedPrecondition/REASON_ENTERPRISE_LICENSE_EXPIRED). Without this bypass
-  // the user gets redirected here but sees a blank preLogin screen forever,
-  // since userData never changes to trigger a re-render.
+  // WARNING: Let license recovery routes render before identity resolves; expired licenses can make the identity request fail.
   if (path.startsWith('/trial-expired') || path.startsWith('/upload-license')) {
     return null;
   }
@@ -42,11 +37,11 @@ function loginHandling(): JSX.Element | null {
   return renderAuthenticatedState(path);
 }
 
-function renderAuthenticatedState(path: string): JSX.Element | null {
+function renderAuthenticatedState(path: string) {
   const preLogin = <div style={{ background: 'var(--color-page)', height: '100vh' }} />;
   if (api.userData === null && !path.startsWith('/login')) {
     logLoginState(path, 'known not logged in, hard redirect');
-    window.location.pathname = `${getBasePath()}/login`; // definitely not logged in, and in wrong url: hard redirect!
+    window.location.pathname = `${getBasePath()}/login`;
     return preLogin;
   }
 
@@ -60,15 +55,10 @@ function renderAuthenticatedState(path: string): JSX.Element | null {
 }
 
 const RequireAuth = ({ children }: { children: ReactNode }) => {
-  // Subscribe to the API store so this component re-renders when userData changes
-  // (e.g. from undefined -> null when not authenticated, triggering the login redirect)
-  useApiStoreHook((s) => s.userData); // re-render when userData changes
-  // userDataError can change while userData stays undefined (transient error branch
-  // in refreshUserData's catch); without this, loginHandling never re-runs and the
-  // preLogin placeholder is shown forever instead of ConnectionErrorUI.
+  useApiStoreHook((s) => s.userData);
   useApiStoreHook((s) => s.userDataError);
 
-  const r = loginHandling(); // Complete login, or fetch user if needed
+  const r = loginHandling();
   if (r) {
     return r;
   }
@@ -90,6 +80,9 @@ const FeatureErrorCheck = () => {
   return null;
 };
 
+/**
+ * Don't interrupt login already in progress. Once signed-out status is known, redirect to the login URL and preserve the requested path.
+ */
 export default RequireAuth;
 
 function logLoginState(path: string, message: string) {
@@ -105,19 +98,17 @@ function requestInitialUserData() {
     throw new Error('security client is not initialized');
   }
 
-  // Only fetch if not already fetching to prevent redirect loops
+  // WARNING: Do not start a second profile request; duplicate requests can cause a redirect loop.
   if (!api.isUserDataFetchInProgress) {
     api.refreshUserData().catch(() => {
-      // Intentionally ignore errors during initial load
+      // WARNING: The initial-login UI reads the API error state so it can offer Retry.
     });
   }
 }
 
-function renderInitialLoginState(path: string, preLogin: JSX.Element): JSX.Element {
+function renderInitialLoginState(path: string, preLogin: JSX.Element) {
   logLoginState(path, 'user is undefined (probably a fresh page load)');
 
-  // Check if there was a transient server error (5xx)
-  // Show error UI instead of loading or redirecting to prevent infinite loops
   if (api.userDataError) {
     logLoginState(path, `user data error: ${api.userDataError.message}`);
     return <ConnectionErrorUI error={api.userDataError} onRetry={() => api.refreshUserData()} />;

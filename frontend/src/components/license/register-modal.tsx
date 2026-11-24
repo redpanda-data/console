@@ -22,7 +22,7 @@ import { useLicenseSignupMutation } from '../../react-query/api/signup';
 import { api } from '../../state/backend-api';
 
 const NAME_VALIDATION_REGEX = /^[\p{L}\p{M}\p{N} '_-]+$/u;
-const EMAIL_VALIDATION_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+const EMAIL_VALIDATION_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/iu;
 
 type FieldViolation = {
   field: string;
@@ -55,6 +55,9 @@ type RegisterModalProps = {
   onClose: () => void;
 };
 
+/**
+ * Keeps Register accessibly named while the registry button hides its label during submission.
+ */
 export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -78,7 +81,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
   const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
     setIsSubmitting(true);
-    setFieldErrors({}); // Clear previous field errors
+    setFieldErrors({});
 
     try {
       await signupMutation.mutateAsync({
@@ -88,10 +91,8 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
         companyName: data.companyName || 'unknown',
       });
 
-      // Refresh licenses after successful registration
       api.listLicenses();
 
-      // Show success state
       setIsSuccess(true);
     } catch (error) {
       if (error instanceof ConnectError) {
@@ -113,7 +114,6 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
     onClose();
 
     if (isSuccess) {
-      // Refetch license data and enterprise features after successful registration
       api.listLicenses();
     }
   };
@@ -271,8 +271,6 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
               <Button onClick={handleClose} variant="ghost">
                 Close
               </Button>
-              {/* isLoading hides the label with `visibility: hidden`, which also removes it from the
-                  accessibility tree — so the name is set explicitly and stays "Register" while busy. */}
               <Button
                 aria-label="Register"
                 isLoading={isSubmitting || signupMutation.isPending}
@@ -288,7 +286,7 @@ export const RegisterModal = ({ isOpen, onClose }: RegisterModalProps) => {
   );
 };
 
-function getRegistrationFieldErrors(error: ConnectError): Record<string, string> {
+function getRegistrationFieldErrors(error: ConnectError) {
   const fieldErrors: Record<string, string> = {};
   for (const detail of error.details ?? []) {
     if (isBadRequest(detail)) {

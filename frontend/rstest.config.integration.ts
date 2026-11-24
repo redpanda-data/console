@@ -10,7 +10,7 @@ import coverageConfig from './coverage.config.json' with { type: 'json' };
 import { fromHere, sharedAliases, sharedCoverage } from './test.shared';
 
 const { publicVars } = loadEnv({ prefixes: ['REACT_APP_'] });
-const RAW_QUERY = /raw/;
+const RAW_QUERY = /raw/u;
 
 export default defineConfig({
   name: 'integration',
@@ -25,7 +25,7 @@ export default defineConfig({
     maxWorkers: '50%',
   },
   include: ['src/**/*.test.tsx', 'src/**/*.integration.test.ts', 'tests/**/*.integration.test.ts'],
-  exclude: ['src/**/*.federation.test.tsx'],
+  exclude: ['src/**/*.federation.test.tsx', 'src/**/*.browser.test.tsx'],
   setupFiles: './rstest.setup.ts',
   testTimeout: 30_000,
   reporters: [['md', { preset: 'compact' }], ...(process.env.CI ? ['github-actions' as const] : [])],

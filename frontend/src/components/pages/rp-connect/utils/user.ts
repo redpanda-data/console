@@ -44,7 +44,7 @@ type TopicPermissionCheck = {
   missingPermissions: ACL_Operation[];
 };
 
-export const getACLOperationName = (operation: ACL_Operation): string => {
+export const getACLOperationName = (operation: ACL_Operation) => {
   switch (operation) {
     case ACL_Operation.READ:
       return 'READ';
@@ -73,14 +73,7 @@ export const getACLOperationName = (operation: ACL_Operation): string => {
   }
 };
 
-/**
- * Helper function to check if an ACL resource pattern matches a given topic name
- */
-const doesPatternMatchTopic = (
-  resourceName: string,
-  patternType: ACL_ResourcePatternType,
-  topicName: string
-): boolean => {
+const doesPatternMatchTopic = (resourceName: string, patternType: ACL_ResourcePatternType, topicName: string) => {
   switch (patternType) {
     case ACL_ResourcePatternType.LITERAL:
       return resourceName === topicName || resourceName === '*';
@@ -93,12 +86,7 @@ const doesPatternMatchTopic = (
   }
 };
 
-/** Operations `username` holds an ALLOW for across `resources`; ALL/ANY stand for `impliedByAll`. */
-const allowedOperations = (
-  resources: ListACLsResponse_Resource[],
-  username: string,
-  impliedByAll: ACL_Operation[]
-): Set<ACL_Operation> => {
+const allowedOperations = (resources: ListACLsResponse_Resource[], username: string, impliedByAll: ACL_Operation[]) => {
   const allowed = new Set<ACL_Operation>();
   const principal = `User:${username}`;
 
@@ -115,8 +103,10 @@ const allowedOperations = (
   return allowed;
 };
 
-// Determine which permissions the user has and which are missing
-const splitByGranted = (requiredOps: ACL_Operation[], allowed: Set<ACL_Operation>): TopicPermissionCheck => ({
+const splitByGranted: (requiredOps: ACL_Operation[], allowed: Set<ACL_Operation>) => TopicPermissionCheck = (
+  requiredOps,
+  allowed
+) => ({
   hasPermissions: requiredOps.filter((op) => allowed.has(op)),
   missingPermissions: requiredOps.filter((op) => !allowed.has(op)),
 });
@@ -130,54 +120,54 @@ const TOPIC_ACCESS_OPERATIONS: Record<TopicAccess, ACL_Operation[]> = {
   'read-write': [ACL_Operation.READ, ACL_Operation.WRITE],
 };
 
-export const checkUserHasTopicPermissions = (
+/**
+ * An ALLOW for ALL or ANY implies the requested operations after matching the resource pattern.
+ */
+export const checkUserHasTopicPermissions: (
   aclResources: ListACLsResponse_Resource[],
   topicName: string,
   username: string,
   access: TopicAccess
-): TopicPermissionCheck => {
+) => TopicPermissionCheck = (aclResources, topicName, username, access) => {
   const requiredOps = TOPIC_ACCESS_OPERATIONS[access];
 
-  // Filter ACLs for this specific topic (including LITERAL, PREFIXED, and ANY patterns)
   const topicACLs = aclResources.filter(
     (resource) =>
       resource.resourceType === ACL_ResourceType.TOPIC &&
       doesPatternMatchTopic(resource.resourceName, resource.resourcePatternType, topicName)
   );
 
-  // Get all operations that the user has ALLOW permissions for. If user has ALL or ANY operation,
-  // they have all permissions including READ and WRITE.
   const userAllowedOps = allowedOperations(topicACLs, username, [ACL_Operation.READ, ACL_Operation.WRITE]);
 
   return splitByGranted(requiredOps, userAllowedOps);
 };
 
-export const checkUserHasConsumerGroupPermissions = (
+/**
+ * An ALLOW for ALL or ANY implies the requested operations after matching the resource pattern.
+ */
+export const checkUserHasConsumerGroupPermissions: (
   aclResources: ListACLsResponse_Resource[],
   consumerGroupName: string,
   username: string
-): TopicPermissionCheck => {
+) => TopicPermissionCheck = (aclResources, consumerGroupName, username) => {
   const requiredOps = [ACL_Operation.READ, ACL_Operation.DESCRIBE];
 
-  // Filter ACLs for this specific consumer group (including LITERAL, PREFIXED, and ANY patterns)
   const groupACLs = aclResources.filter(
     (resource) =>
       resource.resourceType === ACL_ResourceType.GROUP &&
       doesPatternMatchTopic(resource.resourceName, resource.resourcePatternType, consumerGroupName)
   );
 
-  // Get all operations that the user has ALLOW permissions for. If user has ALL or ANY operation,
-  // they have all permissions.
   const userAllowedOps = allowedOperations(groupACLs, username, [ACL_Operation.READ, ACL_Operation.DESCRIBE]);
 
   return splitByGranted(requiredOps, userAllowedOps);
 };
 
-const configureUserPermissions = async (
+const configureUserPermissions: (
   topicName: string,
   username: string,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
-): Promise<OperationResult> => {
+) => Promise<OperationResult> = async (topicName, username, createACLMutation) => {
   try {
     const aclConfigs = {
       resourceType: ACL_ResourceType.TOPIC,
@@ -211,11 +201,10 @@ const configureUserPermissions = async (
   }
 };
 
-// One grant at a time: they share a single mutation observer, and a failed grant stops the rest.
 const createACLsInOrder = async (
   [config, ...rest]: ReturnType<typeof createConsumerGroupACLs>,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
-): Promise<void> => {
+) => {
   if (!config) {
     return;
   }
@@ -223,11 +212,11 @@ const createACLsInOrder = async (
   await createACLsInOrder(rest, createACLMutation);
 };
 
-const configureConsumerGroupPermissions = async (
+const configureConsumerGroupPermissions: (
   consumerGroupName: string,
   username: string,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
-): Promise<OperationResult> => {
+) => Promise<OperationResult> = async (consumerGroupName, username, createACLMutation) => {
   try {
     await createACLsInOrder(createConsumerGroupACLs(consumerGroupName, username), createACLMutation);
 
@@ -250,10 +239,10 @@ const configureConsumerGroupPermissions = async (
   }
 };
 
-const createUsernameSecret = async (
+const createUsernameSecret: (
   username: string,
   createSecretMutation: ReturnType<typeof useCreateSecretMutation>
-): Promise<OperationResult> => {
+) => Promise<OperationResult> = async (username, createSecretMutation) => {
   try {
     const usernameSecretRequest = create(CreateSecretRequestSchemaConsole, {
       request: create(CreateSecretRequestSchema, {
@@ -287,11 +276,11 @@ const createUsernameSecret = async (
   }
 };
 
-const createPasswordSecret = async (
+const createPasswordSecret: (
   username: string,
   password: string,
   createSecretMutation: ReturnType<typeof useCreateSecretMutation>
-): Promise<OperationResult> => {
+) => Promise<OperationResult> = async (username, password, createSecretMutation) => {
   try {
     const passwordSecretRequest = create(CreateSecretRequestSchemaConsole, {
       request: create(CreateSecretRequestSchema, {
@@ -331,15 +320,15 @@ const saslMechanismToProtoMapping: Record<SaslMechanism, SASLMechanism> = {
 };
 
 /** The SCRAM mechanism a user was created with, if it is one. */
-export const saslMechanismFromProto = (mechanism: SASLMechanism | undefined): SaslMechanism | undefined =>
+export const saslMechanismFromProto = (mechanism: SASLMechanism | undefined) =>
   (Object.keys(saslMechanismToProtoMapping) as SaslMechanism[]).find(
     (name) => saslMechanismToProtoMapping[name] === mechanism
   );
 
-const createKafkaUser = async (
+const createKafkaUser: (
   userData: AddUserFormData,
   createUserMutation: ReturnType<typeof useCreateUserMutation>
-): Promise<OperationResult> => {
+) => Promise<OperationResult> = async (userData, createUserMutation) => {
   try {
     const createUserRequest = create(CreateUserRequestSchema, {
       user: {
@@ -384,8 +373,7 @@ const handleOperationResult = (result: OperationResult) => {
   }
 };
 
-// Toasts a required step's outcome; false when it failed, so the flow stops there.
-const reportRequiredStep = (result: OperationResult, failureMessage: string, successMessage: string): boolean => {
+const reportRequiredStep = (result: OperationResult, failureMessage: string, successMessage: string) => {
   if (!result.success) {
     toast.error(result.error || failureMessage);
     return false;
@@ -394,12 +382,11 @@ const reportRequiredStep = (result: OperationResult, failureMessage: string, suc
   return true;
 };
 
-// Step 1: Create user, unless it exists
 const ensureUser = async (
   userData: AddUserFormData,
   existingUserSelected: boolean,
   createUserMutation: ReturnType<typeof useCreateUserMutation>
-): Promise<boolean> => {
+) => {
   if (existingUserSelected) {
     toast.success(`Using existing user "${userData.username}"`);
     return true;
@@ -408,12 +395,11 @@ const ensureUser = async (
   return reportRequiredStep(userResult, 'Failed to create user', `User "${userData.username}" created`);
 };
 
-// Step 2: Configure topic ACL if needed
 const grantTopicAccess = async (
   userData: AddUserFormData,
   topicName: string | undefined,
   createACLMutation: ReturnType<typeof useCreateACLMutation>
-): Promise<boolean> => {
+) => {
   if (!(topicName && userData.grantTopicPermissions)) {
     return true;
   }
@@ -421,13 +407,12 @@ const grantTopicAccess = async (
   return reportRequiredStep(aclResult, 'Failed to configure topic permissions', 'Topic permissions configured');
 };
 
-// Step 3: Configure consumer group ACL if needed
 const grantConsumerGroupAccess = async (
   userData: AddUserFormData,
   consumerGroup: string | undefined,
   createACLMutation: ReturnType<typeof useCreateACLMutation>,
   queryClient: QueryClient
-): Promise<boolean> => {
+) => {
   if (!consumerGroup) {
     return true;
   }
@@ -455,11 +440,9 @@ const grantConsumerGroupAccess = async (
 const storeUserSecrets = async (
   userData: AddUserFormData,
   createSecretMutation: ReturnType<typeof useCreateSecretMutation>
-): Promise<void> => {
-  // Step 4: Create username secret
+) => {
   handleOperationResult(await createUsernameSecret(userData.username, createSecretMutation));
 
-  // Step 5: Create password secret
   handleOperationResult(await createPasswordSecret(userData.username, userData.password, createSecretMutation));
 };
 
@@ -469,7 +452,6 @@ export const useCreateUserWithSecretsMutation = () => {
   const createSecretMutation = useCreateSecretMutation();
   const queryClient = useQueryClient();
 
-  // Aggregate isPending from all mutations
   const isPending = createUserMutation.isPending || createACLMutation.isPending || createSecretMutation.isPending;
 
   const createUserWithSecrets = async ({
@@ -488,7 +470,6 @@ export const useCreateUserWithSecretsMutation = () => {
       return { success: false, data: userData };
     }
 
-    // Only a user created here has a password to store.
     if (!existingUserSelected) {
       await storeUserSecrets(userData, createSecretMutation);
     }

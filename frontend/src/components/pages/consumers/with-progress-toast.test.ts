@@ -12,55 +12,60 @@
 import { toast } from 'sonner';
 
 import { withProgressToast } from './with-progress-toast';
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, expect, test } from 'bun:test';
 
-const TOAST_ID = 'progress-toast';
+let priorToastIds: Set<string | number>;
+const operationToasts = () => toast.getToasts().filter(({ id }) => !priorToastIds.has(id));
 
-describe('withProgressToast', () => {
-  let loading: ReturnType<typeof spyOn>;
-  let success: ReturnType<typeof spyOn>;
-  let error: ReturnType<typeof spyOn>;
+beforeEach(() => {
+  priorToastIds = new Set(toast.getToasts().map(({ id }) => id));
+});
 
-  beforeEach(() => {
-    loading = spyOn(toast, 'loading').mockReturnValue(TOAST_ID);
-    success = spyOn(toast, 'success').mockReturnValue(TOAST_ID);
-    error = spyOn(toast, 'error').mockReturnValue(TOAST_ID);
-  });
+afterEach(() => {
+  for (const { id } of operationToasts()) {
+    toast.dismiss(id);
+  }
+});
 
-  afterEach(() => {
-    loading.mockRestore();
-    success.mockRestore();
-    error.mockRestore();
-  });
+function loadingToastId(title: string) {
+  const loading = operationToasts().find((entry) => 'title' in entry && entry.title === title);
+  if (!loading) {
+    throw new Error(`No toast with title: ${title}`);
+  }
+  expect(loading).toMatchObject({ type: 'loading' });
+  return loading.id;
+}
 
-  test('settles the loading toast to done and returns the task result', async () => {
-    const result = await withProgressToast('Applying offsets', () => Promise.resolve(42));
+function expectSettledToast(id: number | string, title: string, type: 'success' | 'error') {
+  expect(operationToasts()).toEqual([expect.objectContaining({ id, title, type })]);
+}
 
-    expect(result).toBe(42);
-    expect(loading).toHaveBeenCalledWith('Applying offsets...');
-    expect(success).toHaveBeenCalledWith('Applying offsets - done', { id: TOAST_ID });
-    expect(error).not.toHaveBeenCalled();
-  });
+test('updates a single loading notification in place and returns the operation result', async () => {
+  const task = Promise.withResolvers<number>();
+  const progress = withProgressToast('Applying offsets', () => task.promise);
+  const id = loadingToastId('Applying offsets...');
 
-  test('settles the loading toast to failed and rethrows', async () => {
-    const failure = new Error('boom');
+  task.resolve(42);
 
-    await expect(withProgressToast('Applying offsets', () => Promise.reject(failure))).rejects.toBe(failure);
+  await expect(progress).resolves.toBe(42);
+  expectSettledToast(id, 'Applying offsets - done', 'success');
+});
 
-    expect(error).toHaveBeenCalledWith('Applying offsets - failed', { id: TOAST_ID });
-    expect(success).not.toHaveBeenCalled();
-  });
+test.each([
+  { label: 'Resetting offsets', title: 'Resetting offsets - failed' },
+  {
+    label: 'Deleting offsets',
+    title: 'Could not delete - denied',
+    message: (failure: unknown) => `Could not delete - ${failure instanceof Error ? failure.message : String(failure)}`,
+  },
+])('settles the $label notification in place and preserves the rejection', async ({ label, title, message }) => {
+  const failure = new Error('denied');
+  const task = Promise.withResolvers<never>();
+  const progress = withProgressToast(label, () => task.promise, message);
+  const id = loadingToastId(`${label}...`);
 
-  test('uses the custom failure message when one is given', async () => {
-    await expect(
-      withProgressToast(
-        'Deleting offsets',
-        () => Promise.reject(new Error('denied')),
-        (err) => `Could not delete - ${(err as Error).message}`
-      )
-    ).rejects.toThrow('denied');
+  task.reject(failure);
 
-    expect(loading).toHaveBeenCalledWith('Deleting offsets...');
-    expect(error).toHaveBeenCalledWith('Could not delete - denied', { id: TOAST_ID });
-  });
+  await expect(progress).rejects.toBe(failure);
+  expectSettledToast(id, title, 'error');
 });

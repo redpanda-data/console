@@ -23,12 +23,12 @@ import { parseFilterInput, sameFieldTokens, tokenQueryText } from '../utils/filt
 
 const DEFAULT_MAX_RESULTS = 50;
 
-// Comma-separated `field op value` texts (`key:abc,offset>5`). Commas inside
-// values are escaped so splitting stays unambiguous. JS filters are
-// intentionally NOT persisted in the URL — code doesn't belong in share links.
-const escapeToken = (text: string) => text.replace(/%/g, '%25').replace(/,/g, '%2C');
-const unescapeToken = (text: string) => text.replace(/%2C/g, ',').replace(/%25/g, '%');
+const escapeToken = (text: string) => text.replace(/%/gu, '%25').replace(/,/gu, '%2C');
+const unescapeToken = (text: string) => text.replace(/%2C/gu, ',').replace(/%25/gu, '%');
 
+/**
+ * Escapes delimiters in shared field-token links. JavaScript filters are not encoded in the URL.
+ */
 export const fieldTokensParser = createParser<FieldFilterToken[]>({
   parse: (value) => {
     const tokens: FieldFilterToken[] = [];
@@ -45,20 +45,20 @@ export const fieldTokensParser = createParser<FieldFilterToken[]>({
 });
 
 /** Maps the persisted/URL start offset sentinel to the read-scope mode shown in the toolbar. */
-export function readScopeModeFromOffset(startOffset: number): ReadScopeMode {
+export function readScopeModeFromOffset(startOffset: number) {
   switch (startOffset) {
     case PartitionOffsetOrigin.Start:
-      return 'oldest';
+      return 'oldest' as const;
     case PartitionOffsetOrigin.Timestamp:
-      return 'timestamp';
+      return 'timestamp' as const;
     case PartitionOffsetOrigin.EndMinusResults:
-      return 'newest';
+      return 'newest' as const;
     default:
-      return startOffset >= 0 ? 'offset' : 'newest';
+      return startOffset >= 0 ? ('offset' as const) : ('newest' as const);
   }
 }
 
-export function offsetForReadScopeMode(mode: ReadScopeMode, customOffset: number): number {
+export function offsetForReadScopeMode(mode: ReadScopeMode, customOffset: number) {
   switch (mode) {
     case 'oldest':
       return PartitionOffsetOrigin.Start;
@@ -71,7 +71,6 @@ export function offsetForReadScopeMode(mode: ReadScopeMode, customOffset: number
   }
 }
 
-/** Read scope and limits (`p`, `s`, `o`, `t`), mirrored into the per-topic search params. */
 function useReadScopeParams(topicName: string) {
   const { setSearchParams, getSearchParams } = useTopicSettingsStore();
 
@@ -98,7 +97,6 @@ function useReadScopeParams(topicName: string) {
       onUpdate: (val) => setSearchParams(topicName, { startOffset: val }),
       getDefaultValue: () => {
         const stored = getSearchParams(topicName)?.startOffset ?? PartitionOffsetOrigin.EndMinusResults;
-        // Live tail is no longer a start-offset mode; stored End means "was live"
         return stored === PartitionOffsetOrigin.End ? PartitionOffsetOrigin.EndMinusResults : stored;
       },
     },
@@ -127,17 +125,14 @@ function useReadScopeParams(topicName: string) {
   };
 }
 
-/** Client-side filters (`q`, `f`); URL only, never mirrored into the store. */
 function useFilterParams() {
   const [quickSearch, setQuickSearch] = useQueryState('q', parseAsString.withDefault(''));
 
-  // Committed filter chips (`key:abc`, `offset>5`, …). JS filter chips are excluded.
   const [fieldTokens, setFieldTokens] = useQueryState('f', fieldTokensParser.withDefault([]));
 
   return { quickSearch, setQuickSearch, fieldTokens, setFieldTokens };
 }
 
-/** Decoding (`kd`, `vd`, `sc`), mirrored into the per-topic search params. */
 function useDecodingParams(topicName: string) {
   const { setSearchParams, getSearchParams } = useTopicSettingsStore();
 
@@ -178,7 +173,6 @@ function useDecodingParams(topicName: string) {
   };
 }
 
-/** Table paging and sorting (`page`, `pageSize`, `sort`). */
 function usePagingParams(topicName: string) {
   const { setSearchParams, getSearchParams, setSorting, getSorting } = useTopicSettingsStore();
 
@@ -205,7 +199,6 @@ function usePagingParams(topicName: string) {
   return { pageIndex, setPageIndex, pageSize, setPageSize, sorting, setSortingState };
 }
 
-/** How rows arrive and which one is open (`inf`, `live`, `selected`). */
 function useStreamModeParams(topicName: string) {
   const { setSearchParams, getSearchParams } = useTopicSettingsStore();
 
@@ -220,7 +213,6 @@ function useStreamModeParams(topicName: string) {
 
   const [liveTail, setLiveTail] = useQueryState('live', parseAsBoolean.withDefault(false));
 
-  // Selected message (`partition-offset`), so a reload or shared link reopens the detail
   const [selectedKey, setSelectedKey] = useQueryState('selected', parseAsString);
 
   return { continuousMode, setContinuousMode, liveTail, setLiveTail, selectedKey, setSelectedKey };
@@ -228,16 +220,11 @@ function useStreamModeParams(topicName: string) {
 
 type ReadScopeParams = ReturnType<typeof useReadScopeParams>;
 
-/**
- * The toolbar's read-scope mode over the start offset, plus the URL repairs that keep the two
- * consistent.
- */
 function useReadScopeMode(
   { startOffset, setStartOffset, startTimestamp, setStartTimestamp }: ReadScopeParams,
   setLiveTail: ReturnType<typeof useStreamModeParams>['setLiveTail'],
   setPageIndex: ReturnType<typeof usePagingParams>['setPageIndex']
 ) {
-  // Migrate legacy live-tail URLs (`o=-3`) to the orthogonal `live` param
   useEffect(() => {
     if (startOffset === PartitionOffsetOrigin.End) {
       setStartOffset(PartitionOffsetOrigin.EndMinusResults);
@@ -247,11 +234,6 @@ function useReadScopeMode(
 
   const readScopeMode = readScopeModeFromOffset(startOffset);
 
-  // A deep link (`?o=-4` with no `t`) or a topic left over from the legacy tab (which clears
-  // startTimestamp when switching away) can land here already in timestamp mode with no
-  // timestamp set. The picker itself only seeds Date.now() once mounted, which requires the
-  // read-scope popover to be open — so cover the gap here too, same default as legacy's
-  // mode-change handler used.
   useEffect(() => {
     if (readScopeMode === 'timestamp' && startTimestamp < 0) {
       setStartTimestamp(Date.now());
@@ -262,9 +244,6 @@ function useReadScopeMode(
     (mode: ReadScopeMode, customOffset = 0) => {
       setStartOffset(offsetForReadScopeMode(mode, customOffset));
       setPageIndex(0);
-      // Mirrors legacy's offset-origin select handler: seed "now" switching into timestamp
-      // mode (unless a real value is already set), and drop it switching away so a later
-      // return to timestamp mode starts fresh instead of an ancient sticky value.
       if (mode === 'timestamp') {
         if (startTimestamp < 0) {
           setStartTimestamp(Date.now());
@@ -285,9 +264,12 @@ function useReadScopeMode(
  *
  * `live` is new: live tail is orthogonal to the read scope. Legacy URLs with
  * `o=-3` (PartitionOffsetOrigin.End) are migrated to `live=true` + newest scope.
+ * Timestamp scope defaults to now when a deep link omits the timestamp, and switching away clears the saved timestamp.
+ *
+ * Scope, limits, and decoders also mirror into per-topic settings; text and field-token filters stay in the URL. Legacy live-tail offsets migrate to the separate live flag.
  */
 export function useMessagesUrlState(topicName: string) {
-  // Grouped in the original query-key order, so the params' first-render URL syncs keep their order.
+  // WARNING: Keep the original query-key order; independent first-render URL synchronizations run in that order.
   const readScope = useReadScopeParams(topicName);
   const filters = useFilterParams();
   const decoding = useDecodingParams(topicName);

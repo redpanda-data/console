@@ -25,9 +25,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'c
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
-
-const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
-
 import React, { useEffect, useId, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -54,17 +51,16 @@ import PageContent from '../../misc/page-content';
 import { SingleSelect } from '../../misc/select';
 import { SmallStat } from '../../misc/small-stat';
 
-// These navigations run detached from effects and mutation callbacks, so report a failure instead of dropping it.
+const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
+
 function reportNavigationError(error: unknown) {
   toast.error('Failed to navigate', { description: String(error) });
 }
 
-// A `version` search param that names a specific version, else null ("latest" or missing).
-function requestedVersionNumber(versionParam: string | undefined): number | null {
+function requestedVersionNumber(versionParam: string | undefined) {
   return versionParam && versionParam !== 'latest' && !Number.isNaN(Number(versionParam)) ? Number(versionParam) : null;
 }
 
-// Schema Registry capabilities of the signed-in user, from their identity.
 function useSchemaRegistryPermissions() {
   const { data: userData } = useGetIdentityQuery();
   const capabilities = userData?.permissions?.schemaRegistry;
@@ -75,18 +71,14 @@ function useSchemaRegistryPermissions() {
   };
 }
 
-// The subject named by the route (or the prop), with the page header and a
-// default `version=latest` search param kept in sync.
 function useSchemaDetailsRoute(subjectNameProp: string) {
   const { subjectName: subjectNameParam } = routeApi.useParams();
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   const search = routeApi.useSearch();
 
-  // Use prop if provided (for routing), otherwise use URL param
   const subjectNameRaw = decodeURIComponentPercents(subjectNameProp || subjectNameParam || '');
   const version = requestedVersionNumber(search.version) ?? 'latest';
 
-  // Update page title and breadcrumbs
   useEffect(() => {
     const parsed = parseSubjectContext(subjectNameRaw);
     uiState.pageTitle = subjectNameRaw;
@@ -110,7 +102,6 @@ function useSchemaDetailsRoute(subjectNameProp: string) {
     ];
   }, [subjectNameRaw, version]);
 
-  // Set version in query params if not present
   useEffect(() => {
     if (!search.version) {
       navigate({ search: { version: 'latest' }, replace: true }).catch(reportNavigationError);
@@ -120,14 +111,12 @@ function useSchemaDetailsRoute(subjectNameProp: string) {
   return { subjectNameRaw, subjectNameEncoded: encodeURIComponent(subjectNameRaw), navigate };
 }
 
-// The subject's details and soft-deleted state; also warms the registry-wide
-// config other components on the page read.
 function useSubjectDetailsData(subjectNameRaw: string) {
   const { data: schemaSubjects } = useListSchemasQuery();
   const { data: subject, isLoading: isLoadingSubject } = useSchemaDetailsQuery(subjectNameRaw);
-  useSchemaCompatibilityQuery(); // Fetch for other components
-  useSchemaModeQuery(); // Fetch for other components
-  useSchemaTypesQuery(); // Fetch for other components
+  useSchemaCompatibilityQuery();
+  useSchemaModeQuery();
+  useSchemaTypesQuery();
   return {
     subject,
     isLoadingSubject,
@@ -135,7 +124,6 @@ function useSubjectDetailsData(subjectNameRaw: string) {
   };
 }
 
-// Soft or permanent deletion of the whole subject, confirmed through a dialog.
 function useSubjectDeletion(subjectNameRaw: string) {
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   const deleteSubjectMutation = useDeleteSchemaSubjectMutation();
@@ -168,7 +156,7 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
   const { subject, isLoadingSubject, isSoftDeleted } = useSubjectDetailsData(subjectNameRaw);
   const { canManageSchemaRegistry, canCreateSchemas, canDeleteSchemas } = useSchemaRegistryPermissions();
   const { subjectDeleteKind, setSubjectDeleteKind, executeDeleteSubject } = useSubjectDeletion(subjectNameRaw);
-  // A missing permission keeps its own tooltip, so the fence's reason shows only where it's the cause.
+  // WARNING: Keep the permission explanation when access is already denied; show the fence reason only when the fence is the blocker.
   const editSchemasReason = useClusterFenceGuard().reasonFor('editSchemas');
   const addVersionFencedReason = canCreateSchemas === false ? undefined : editSchemasReason;
   const deleteSubjectFencedReason = canDeleteSchemas === false ? undefined : editSchemasReason;
@@ -187,7 +175,6 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
 
   return (
     <PageContent key="b">
-      {/* Statistics Bar */}
       <div className="flex items-center gap-4">
         <SmallStat title="Format">{subject.type}</SmallStat>
         <Separator className="h-[2ch]" orientation="vertical" />
@@ -242,7 +229,6 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           {subject.schemas.count((x: { isSoftDeleted?: boolean }) => !x.isSoftDeleted)}
         </SmallStat>
       </div>
-      {/* Buttons */}
       <div className="flex gap-2">
         <Tooltip>
           <TooltipTrigger
@@ -288,7 +274,6 @@ const SchemaDetailsView: React.FC<{ subjectName: string }> = ({ subjectName: sub
           {deleteSubjectFencedReason ? <TooltipContent side="top">{deleteSubjectFencedReason}</TooltipContent> : null}
         </Tooltip>
       </div>
-      {/* Definition / Diff */}
       <Tabs data-testid="schema-details-tabs" defaultValue="definition">
         <TabsList variant="underline">
           <TabsTrigger value="definition">Definition</TabsTrigger>
@@ -344,19 +329,14 @@ export function getFormattedSchemaText(schema: SchemaRegistryVersionedSchema) {
   return schema.schema;
 }
 
-// Version shown when the URL doesn't pick one that exists: the latest active
-// version, or the newest one when every version is soft-deleted.
 function schemaVersionDefaults(subjectData: SchemaRegistrySubjectDetails, queryVersion: string | undefined) {
   const versionNumber = requestedVersionNumber(queryVersion);
 
-  // Determine fallback version when no specific version is requested
   const fallbackVersion =
     subjectData.latestActiveVersion === -1 ? subjectData.schemas.last()?.version : subjectData.latestActiveVersion;
 
-  // Check if requested version exists in available schemas
   const requestedVersionExists = versionNumber ? subjectData.schemas.some((s) => s.version === versionNumber) : true;
 
-  // Use URL parameter if provided and exists, otherwise fall back to latest active version
   const defaultVersion =
     versionNumber && requestedVersionExists
       ? versionNumber
@@ -364,26 +344,22 @@ function schemaVersionDefaults(subjectData: SchemaRegistrySubjectDetails, queryV
   return { versionNumber, fallbackVersion, requestedVersionExists, defaultVersion };
 }
 
-// The version the selection has to move to during render, or null to keep it.
 function correctedSelectedVersion(p: {
   queryVersion: string | undefined;
   selectedVersion: number;
   hasSchema: boolean;
   fallbackVersion: number | undefined;
   defaultVersion: number;
-}): number | null {
-  // A selection without a schema (for example, after a delete) resets to the default.
+}) {
   if (!p.hasSchema && p.selectedVersion !== p.defaultVersion) {
     return p.defaultVersion;
   }
-  // When URL is "latest", sync selectedVersion with the actual latest version from data
   if (p.queryVersion === 'latest' && p.fallbackVersion && p.selectedVersion !== p.fallbackVersion) {
     return p.fallbackVersion;
   }
   return null;
 }
 
-// Show notification and update URL if requested version doesn't exist
 function useMissingVersionRedirect({
   versionNumber,
   requestedVersionExists,
@@ -400,7 +376,6 @@ function useMissingVersionRedirect({
   }, [versionNumber, requestedVersionExists, fallbackVersion, navigate]);
 }
 
-// The selected schema version, kept in step with the `version` search param.
 function useSelectedSchemaVersion(subjectData: SchemaRegistrySubjectDetails) {
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   const queryVersion = routeApi.useSearch().version;
@@ -425,7 +400,6 @@ function useSelectedSchemaVersion(subjectData: SchemaRegistrySubjectDetails) {
   };
 }
 
-// Delete (soft or permanent) and recover actions for one schema version.
 function useSchemaVersionActions(
   subjectData: SchemaRegistrySubjectDetails,
   schema: SchemaRegistryVersionedSchema,
@@ -444,7 +418,6 @@ function useSchemaVersionActions(
         onSuccess: async () => {
           toast.success('Schema version permanently deleted');
 
-          // Invalidate and refetch to get updated details
           await queryClient.invalidateQueries({
             queryKey: ['schemaRegistry', 'subjects', subjectData.name, 'details'],
           });
@@ -482,7 +455,6 @@ function useSchemaVersionActions(
             description: `Schema ID: ${result.id}`,
           });
 
-          // Navigate to the latest active version after recovery
           navigate({
             to: '/schema-registry/subjects/$subjectName',
             params: { subjectName: encodeURIComponent(subjectData.name) },
@@ -556,9 +528,7 @@ const SubjectVersionDefinition = ({
 
   return (
     <div className="flex gap-10">
-      {/* Left Side */}
       <div className="flex min-w-0 grow flex-col gap-4">
-        {/* Version Select / Delete / Recover */}
         <div className="flex items-end gap-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={versionSelectId}>Version</Label>
@@ -656,7 +626,6 @@ const SubjectVersionDefinition = ({
           )}
         </div>
 
-        {/* Deleted Hint */}
         {Boolean(schema.isSoftDeleted) && (
           <Alert data-testid="schema-definition-soft-deleted-alert" variant="warning">
             <AlertTitle>Soft-deleted schema</AlertTitle>
@@ -666,14 +635,12 @@ const SubjectVersionDefinition = ({
           </Alert>
         )}
 
-        {/* Code Block */}
         <DynamicCodeBlock
           code={getFormattedSchemaText(schema)}
           lang={schemaTypeToCodeBlockLanguage(schema.type)}
           testId="schema-definition-code-block"
         />
       </div>
-      {/* References Box */}
       <div>
         <SchemaReferences schema={schema} subject={subjectData} />
       </div>
@@ -701,8 +668,6 @@ const SubjectVersionDefinition = ({
   );
 };
 
-// One side of the version diff: its selected version and schema, reset to the
-// first version when the selection has no schema.
 function useDiffSide(subject: SchemaRegistrySubjectDetails, initialVersion: number) {
   const [selectedVersion, setSelectedVersion] = useState(initialVersion);
   const schema = subject.schemas.first((x) => x.version === selectedVersion);
@@ -739,7 +704,6 @@ const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
 
   return (
     <div className="flex flex-col gap-10">
-      {/* Two version selectors */}
       <div className="grid min-w-0 grid-cols-2 gap-4">
         <div className="w-full">
           <div className="flex items-end gap-2">
@@ -800,7 +764,6 @@ const VersionDiff = (p: { subject: SchemaRegistrySubjectDetails }) => {
         </div>
       </div>
 
-      {/* Diff View */}
       <KowlDiffEditor
         data-testid="schema-diff-editor"
         height="800px"
@@ -862,7 +825,6 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
   const { subject, schema } = p;
   const version = schema.version;
 
-  // Fetch referenced by data using React Query
   const { data: referencedByData } = useSchemaReferencedByQuery(subject.name, version);
 
   return (
@@ -930,4 +892,7 @@ const SchemaReferences = (p: { subject: SchemaRegistrySubjectDetails; schema: Sc
   );
 };
 
+/**
+ * Reads the shared compatibility, mode, and schema-type caches. Selects a valid linked version or falls back to the latest active version.
+ */
 export default SchemaDetailsView;

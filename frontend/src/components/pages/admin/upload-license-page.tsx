@@ -14,7 +14,8 @@ import { appGlobal } from '../../../state/app-global';
 import { api } from '../../../state/backend-api';
 import { ENTERPRISE_FEATURES_DOCS_LINK } from '../../license/license-utils';
 import PageContent from '../../misc/page-content';
-import { PageComponent, type PageInitHelper } from '../page';
+import type { PageInitHelper } from '../page';
+import { pageWithContent } from '../page-with-content';
 import { TonedIcon } from '../shared/toned-icon';
 
 const UploadLicenseForm: FC<{
@@ -33,7 +34,7 @@ const UploadLicenseForm: FC<{
     await onUploadLicense(content)
       .then(() => {
         onSuccess();
-        api.listLicenses(); // refetch licenses
+        api.listLicenses();
       })
       .catch((err) => {
         setErrorMessage(err.message);
@@ -46,7 +47,6 @@ const UploadLicenseForm: FC<{
         {Boolean(showFileUpload) && (
           <div>
             <Dropzone
-              // Rejections arrive only via onError (maxFiles is 1); onDrop is skipped for them.
               onDrop={(acceptedFiles) => {
                 const file = acceptedFiles.at(0);
                 if (!file) {
@@ -56,15 +56,14 @@ const UploadLicenseForm: FC<{
                 file
                   .text()
                   .then((text) => {
-                    // Only mark the drop accepted once the read succeeded, or the dropzone would
-                    // show the filename while `licenseFile` stayed undefined.
+                    // WARNING: Wait for the file read before marking the drop accepted; the filename alone does not mean a license can be submitted.
                     setLicenseFile(text);
                     setDroppedFiles(acceptedFiles);
                   })
                   .catch((err: Error) => setErrorMessage(err.message));
               }}
               onError={(err) => {
-                // A rejected drop replaces nothing; drop the previous file so the error is about what is shown.
+                // WARNING: Clear the previous selection after a rejected drop so the displayed failure cannot leave a stale license ready to submit.
                 setErrorMessage(err.message);
                 setLicenseFile(undefined);
                 setDroppedFiles(undefined);
@@ -90,7 +89,6 @@ const UploadLicenseForm: FC<{
                 autoComplete="off"
                 id="license"
                 onChange={(e) => setLicense(e.target.value)}
-                // `rows` only applies without content sizing.
                 resize="vertical"
                 rows={10}
                 spellCheck={false}
@@ -128,15 +126,9 @@ const UploadLicenseForm: FC<{
   );
 };
 
-export default class UploadLicensePage extends PageComponent {
-  initPage(p: PageInitHelper): void {
-    p.title = 'Upload Enterprise License';
-    p.addBreadcrumb('Upload License', '/upload-license');
-  }
-
-  render() {
-    return <UploadLicensePageContent />;
-  }
+function configurePage(p: PageInitHelper) {
+  p.title = 'Upload Enterprise License';
+  p.addBreadcrumb('Upload License', '/upload-license');
 }
 
 const UploadLicensePageContent: FC = () => {
@@ -147,7 +139,6 @@ const UploadLicensePageContent: FC = () => {
       {success ? (
         <div className="mb-20 flex flex-col items-center gap-4 text-center">
           <TonedIcon className="size-[72px]" icon={CheckCircle2Icon} tone="success" />
-          {/* license.spec.ts asserts on `h1:has-text("License uploaded")`. */}
           <h1 className="text-heading-lg">License uploaded</h1>
           <div className="flex flex-col gap-4">
             <div>
@@ -206,3 +197,5 @@ const UploadLicensePageContent: FC = () => {
     </PageContent>
   );
 };
+
+export default class UploadLicensePage extends pageWithContent(UploadLicensePageContent, configurePage) {}

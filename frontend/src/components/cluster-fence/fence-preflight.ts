@@ -39,8 +39,7 @@ type PreflightInput = {
   readersIncomplete: boolean;
 };
 
-/** Only says something when Fence might fail: a pass would only restate that this isn't a shadow cluster. */
-const ownLinksCheck = (links: PreflightInput['linksThatStopFence']): PreflightCheck | undefined => {
+const ownLinksCheck: (links: PreflightInput['linksThatStopFence']) => PreflightCheck | undefined = (links) => {
   if (links === 'loading') {
     return { id: 'own-links', status: 'pending', message: 'Checking whether this cluster is a shadow cluster…' };
   }
@@ -56,7 +55,7 @@ const ownLinksCheck = (links: PreflightInput['linksThatStopFence']): PreflightCh
   }
 };
 
-const brokersCheck = (brokers: BrokerProgress[]): PreflightCheck | undefined => {
+const brokersCheck: (brokers: BrokerProgress[]) => PreflightCheck | undefined = (brokers) => {
   const down = brokers.filter((broker) => broker.status === 'not-answering').map((broker) => broker.nodeId);
   if (down.length === 0) {
     return;
@@ -91,8 +90,10 @@ const FINDING_READERS_CHECK: PreflightCheck = {
   message: 'Finding the shadow links that read from this cluster…',
 };
 
-/** Before any reader is found, says whether Console is still looking, gave up early, or found none. */
-const noReadersCheck = ({ resolving, incomplete }: { resolving: boolean; incomplete: boolean }): PreflightCheck => {
+const noReadersCheck: (options: { resolving: boolean; incomplete: boolean }) => PreflightCheck = ({
+  resolving,
+  incomplete,
+}) => {
   if (resolving) {
     return FINDING_READERS_CHECK;
   }
@@ -106,7 +107,10 @@ const noReadersCheck = ({ resolving, incomplete }: { resolving: boolean; incompl
   };
 };
 
-const readerProblems = (reader: ShadowLinkReader, canRead: boolean | undefined): PreflightCheck[] => {
+const readerProblems: (reader: ShadowLinkReader, canRead: boolean | undefined) => PreflightCheck[] = (
+  reader,
+  canRead
+) => {
   if (canRead === false) {
     return [{ id: `reader-${reader.linkName}`, status: 'warn', message: blockedReaderMessage(reader) }];
   }
@@ -125,16 +129,15 @@ const readerProblems = (reader: ShadowLinkReader, canRead: boolean | undefined):
   return [];
 };
 
-const readerChecks = (
+const readerChecks: (
   readers: ShadowLinkReader[],
   policy: { exemptPrincipals: string[]; allowAllReads: boolean },
-  { resolving, incomplete }: { resolving: boolean; incomplete: boolean }
-): PreflightCheck[] => {
+  selection: { resolving: boolean; incomplete: boolean }
+) => PreflightCheck[] = (readers, policy, { resolving, incomplete }) => {
   if (readers.length === 0) {
     return [noReadersCheck({ resolving, incomplete })];
   }
   const problems = readers.flatMap((reader) => readerProblems(reader, linkCanRead(policy, reader)));
-  /** Until every link is resolved, a reader still to come may be blocked, so nothing passes yet. */
   if (resolving) {
     return [...problems, FINDING_READERS_CHECK];
   }
@@ -154,6 +157,8 @@ const readerChecks = (
  * knows; anything else, such as an unfinished data migration, comes back from Fence itself. Warnings
  * about the exempt names themselves show in the settings fields, not here. The links that read from
  * this cluster are only checked when Console knows them; the other checks only appear for a problem.
+ *
+ * Only reports an own-links check when it could block Fence. Do not show a final pass while an unresolved reader might still be blocked.
  */
 export const getFencePreflightChecks = ({
   linksThatStopFence,
@@ -163,7 +168,7 @@ export const getFencePreflightChecks = ({
   readers,
   readersResolving,
   readersIncomplete,
-}: PreflightInput): PreflightCheck[] => {
+}: PreflightInput) => {
   const checks = [ownLinksCheck(linksThatStopFence), brokersCheck(brokers)].filter(
     (check): check is PreflightCheck => check !== undefined
   );

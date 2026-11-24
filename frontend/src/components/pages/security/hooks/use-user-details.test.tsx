@@ -39,7 +39,6 @@ test('loads ACLs and roles, then role members, on mount and on every app refresh
   expect(refreshAcls).toHaveBeenCalledTimes(2);
 });
 
-/** A signed-in user with no permissions at all, so no ACL listing either. */
 const userWithoutAclAccess: UserData = {
   displayName: 'viewer',
   avatarUrl: '',
@@ -63,7 +62,6 @@ const userWithoutAclAccess: UserData = {
   canDeleteTransforms: false,
 };
 
-// The permission check runs before the first await, so any load would already have started.
 test('loads nothing for a user who cannot list ACLs', () => {
   useApiStore.setState({ userData: userWithoutAclAccess });
 

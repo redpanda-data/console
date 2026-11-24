@@ -40,16 +40,11 @@ import type { AddTopicFormData, BaseStepRef, StepSubmissionResult } from '../typ
 
 export type TemplateGalleryDialogProps = {
   open: boolean;
-  // Closed via X, ESC, or backdrop. If the user entered any form values,
-  // `stashedYaml` carries the partial config so the host editor can keep it.
   onClose: (stashedYaml: string | null) => void;
-  // Parent owns the deploy mutation.
   onSubmit: (payload: TemplateFormSubmitPayload) => void;
 };
 
-// `selectedTemplate` is tracked outside `view` so `TemplateFormPanel` stays
-// mounted across `form ↔ addSecret ↔ createTopic` transitions and the user's
-// in-progress form values survive the round-trip.
+// WARNING: Keep the selected template separate from the current step so opening a nested form cannot discard unsaved inputs.
 type DialogView =
   | { kind: 'gallery' }
   | { kind: 'form' }
@@ -90,9 +85,6 @@ const StepBackHeader = ({
   </DialogHeader>
 );
 
-// The sub-steps hold a single small form; xl dimensions would leave them floating in dead
-// space, so the dialog steps down to a compact content-hugging size (auto height animates
-// via DialogContent's useAnimatedAutoHeight) and back up on return.
 const viewFlagsFor = (view: DialogView, selectedTemplate: PipelineTemplate | null) => {
   const isFormViewActive = view.kind === 'form';
   const isAddSecretViewActive = view.kind === 'addSecret';
@@ -106,13 +98,9 @@ const viewFlagsFor = (view: DialogView, selectedTemplate: PipelineTemplate | nul
   };
 };
 
-/** The dialog's current step, the template being filled in, and what the steps hand to each other. */
 const useTemplateDialogSteps = (open: boolean) => {
   const [view, setView] = useState<DialogView>({ kind: 'gallery' });
   const [selectedTemplate, setSelectedTemplate] = useState<PipelineTemplate | null>(null);
-  // Slot write requested by an in-dialog step; the form panel consumes it via
-  // an effect and clears it. Props rather than a ref since React 18 function
-  // components don't receive `ref`.
   const [applySlotValue, setApplySlotValue] = useState<ApplySlotValueRequest | null>(null);
   const [isCreatingTopic, setIsCreatingTopic] = useState(false);
   const formHandleRef = useRef<TemplateFormPanelHandle | null>(null);
@@ -127,8 +115,6 @@ const useTemplateDialogSteps = (open: boolean) => {
     addTopicStepRef.current = null;
   };
 
-  // Reset to the gallery when the parent closes the dialog directly (e.g. after
-  // `onSubmit`) without routing through `onClose`, so it reopens clean.
   useEffect(() => {
     if (!open) {
       setView({ kind: 'gallery' });
@@ -160,6 +146,9 @@ const useExistingSecretIds = (open: boolean) => {
   return useMemo(() => (secretsResponse?.secrets ?? []).map((s) => s?.id ?? '').filter(Boolean), [secretsResponse]);
 };
 
+/**
+ * Keep the form mounted during the add-secret and create-topic subflows; hiding the wrapper preserves slot values.
+ */
 export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalleryDialogProps) => {
   const {
     view,
@@ -203,8 +192,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
       return;
     }
     if (!result.success && result.error) {
-      // AddTopicStep shows field-level validation in its own form; only toast
-      // the higher-level failure.
       toast.error(result.message ?? result.error);
     }
   };
@@ -223,8 +210,7 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
 
   return (
     <Dialog
-      // Block backdrop dismissal past the gallery so a stray click can't wipe
-      // in-progress form values. ESC and X / Cancel still close.
+      // WARNING: Do not allow backdrop clicks to dismiss a draft form; keep the explicit close actions that save its values.
       disablePointerDismissal={view.kind !== 'gallery'}
       onOpenChange={(nextOpen) => (nextOpen ? undefined : closeWithStash())}
       open={open}
@@ -279,8 +265,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
           />
         ) : null}
 
-        {/* Stays mounted across addSecret/createTopic to preserve form state; */}
-        {/* hidden via inline style (className targets the inner element). */}
         {isFormMounted && selectedTemplate ? (
           <DialogBody style={isFormViewActive ? undefined : { display: 'none' }}>
             <TemplateFormPanel
@@ -341,7 +325,6 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
         ) : null}
 
         {isCreateTopicViewActive ? (
-          // Single action: back navigation is the header's arrow, same as the addSecret view.
           <DialogFooter>
             <Button
               data-testid="template-create-topic-submit"

@@ -45,17 +45,17 @@ import { PageComponent, type PageInitHelper } from '../page';
 type PluginTabFilter = 'all' | 'export' | 'import';
 type ConnectorPluginEntry = { class: string; type: 'sink' | 'source'; version?: string | undefined };
 
-function matchesTabFilter(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilter): boolean {
+function matchesTabFilter(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilter) {
   if (tabFilter === 'export') {
-    return plugin.type !== 'source'; // not an "export" type
+    return plugin.type !== 'source';
   }
   if (tabFilter === 'import') {
-    return plugin.type !== 'sink'; // not an "import" type
+    return plugin.type !== 'sink';
   }
   return true;
 }
 
-function matchesTextFilter(plugin: ConnectorPluginEntry, meta: ConnectorMetadata, textFilter: string): boolean {
+function matchesTextFilter(plugin: ConnectorPluginEntry, meta: ConnectorMetadata, textFilter: string) {
   if (!textFilter) {
     return true;
   }
@@ -66,14 +66,14 @@ function matchesTextFilter(plugin: ConnectorPluginEntry, meta: ConnectorMetadata
   );
 }
 
-function matchesPluginFilters(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilter, textFilter: string): boolean {
+function matchesPluginFilters(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilter, textFilter: string) {
   if (!matchesTabFilter(plugin, tabFilter)) {
     return false;
   }
 
   const meta = findConnectorMetadata(plugin.class);
   if (!meta) {
-    return true; // no metadata, show it always
+    return true;
   }
 
   return matchesTextFilter(plugin, meta, textFilter);
@@ -143,7 +143,6 @@ const ConnectorType = (p: {
             </div>
           </div>
 
-          {/* Filter-only tabs: the panels are empty and the card grid below reacts to the key. */}
           <Tabs
             onChange={(key) => {
               setTabFilter(key as (typeof tabFilterModes)[number]);
@@ -185,8 +184,8 @@ class CreateConnector extends PageComponent<{ clusterName: string }> {
   }
 
   refreshData() {
-    api.refreshConnectClusters().catch(() => {
-      // Error handling managed by API layer
+    this.api.refreshConnectClusters().catch(() => {
+      // WARNING: Refresh failures are reported by the API layer, not repeated in the connector page.
     });
   }
 
@@ -251,11 +250,12 @@ function useConnectorWizardState() {
 
 type WizardControls = ReturnType<typeof useConnectorWizardState>;
 
-function parseConfigText(text: string): ConfigObject | null {
+function parseConfigText(text: string) {
   try {
-    return JSON.parse(text);
+    const config: ConfigObject | null = JSON.parse(text);
+    return config;
   } catch {
-    return null; // keep null
+    return null;
   }
 }
 
@@ -275,7 +275,7 @@ function useInitializedConnectClusterStore(activeCluster: string) {
   const [isStoreInitialized, setIsStoreInitialized] = useState(false);
 
   useEffect(() => {
-    // A store swapped in for another cluster must not be marked ready by the previous store's setup.
+    // WARNING: Do not let setup for the previous cluster mark its replacement store ready.
     let cancelled = false;
     const init = async () => {
       await connectClusterStore.setup();
@@ -297,11 +297,10 @@ function useInitializedConnectClusterStore(activeCluster: string) {
   return { connectClusterStore, isStoreInitialized };
 }
 
-function isShallowEqualConfig(a: ConfigObject, b: ConfigObject): boolean {
+function isShallowEqualConfig(a: ConfigObject, b: ConfigObject) {
   return Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k]);
 }
 
-// The review step's JSON editor may have changed the config; push those edits back into the form store.
 function applyEditedConfig(
   connectorRef: ConnectorPropertiesStore | undefined,
   parsedUpdatedConfig: ConfigObject | null
@@ -326,11 +325,8 @@ function syncSecretsFromJson(
   for (const p of connectorRef.propsByName.values()) {
     if (p.entry.definition.type === DataType.Password) {
       const secret = secrets.getSecret(p.name);
-      // secret.extractSecretId(property.value);
       secret.extractSecretId(p.value as string);
 
-      // In case the secret has not been populated (because the user only used the JSON view to modify the connector),
-      // we need to copy the values from the json into the secrets
       const valueFromJson = parsedUpdatedConfig?.[p.name];
       if (!secret.value && valueFromJson) {
         secret.value = String(valueFromJson);
@@ -343,19 +339,18 @@ function prepareConnectorConfig(
   connectClusterStore: ConnectClusterStore,
   pluginClass: string,
   parsedUpdatedConfig: ConfigObject | null
-): ConfigObject | undefined {
+) {
   const connectorRef = connectClusterStore.getConnector(pluginClass, null, undefined);
   applyEditedConfig(connectorRef, parsedUpdatedConfig);
   syncSecretsFromJson(connectorRef, parsedUpdatedConfig);
   return connectorRef?.getConfigObject() as ConfigObject | undefined;
 }
 
-// The validation result when the config has errors to show, otherwise null.
 async function findValidationErrors(
   activeCluster: string,
   pluginClass: string,
   propertiesObject: ConfigObject | undefined
-): Promise<ConnectorValidationResult | null> {
+) {
   try {
     const validationResult = await api.validateConnectorConfig(activeCluster, pluginClass, propertiesObject ?? {});
     const errorCount = validationResult.configs.sum((x) => x.value.errors.length);
@@ -368,15 +363,14 @@ async function findValidationErrors(
 const CONNECTOR_SCAN_MAX_TIME = 10_000;
 const CONNECTOR_SCAN_INTERVAL = 100;
 
-// Polls until the new connector appears; false when it did not show up in time. Each poll waits for
-// the previous refresh to land, so the scans recurse one after another rather than overlap.
+// WARNING: Wait for each refresh before checking the connector list; overlapping polls can read stale data.
 async function waitForConnector(
   connectClusterStore: ConnectClusterStore,
   connectorName: string,
   timer = new TimeSince()
-): Promise<boolean> {
+) {
   if (timer.value > CONNECTOR_SCAN_MAX_TIME) {
-    return false; // Abort, tried to wait for too long
+    return false;
   }
 
   await connectClusterStore.refreshData(true);
@@ -397,7 +391,6 @@ type ReviewSubmission = {
   setCreatingModalOpen: (open: boolean) => void;
 };
 
-// Creates the connector, then waits a bit for it to appear and navigates to it.
 async function createAndOpenConnector(submission: ReviewSubmission, connectorName: string) {
   const { activeCluster, connectClusterStore } = submission;
   await connectClusterStore.createConnector(submission.pluginClass, submission.parsedUpdatedConfig ?? undefined);
@@ -426,7 +419,7 @@ function reportCreationFailure(e: unknown, wizard: WizardControls) {
   }
 }
 
-async function createConnectorWithProgress(submission: ReviewSubmission, connectorName: string): Promise<boolean> {
+async function createConnectorWithProgress(submission: ReviewSubmission, connectorName: string) {
   try {
     submission.setCreatingModalOpen(true);
     await createAndOpenConnector(submission, connectorName);
@@ -439,7 +432,7 @@ async function createConnectorWithProgress(submission: ReviewSubmission, connect
   }
 }
 
-async function validateAndCreateConnector(submission: ReviewSubmission): Promise<boolean> {
+async function validateAndCreateConnector(submission: ReviewSubmission) {
   const { activeCluster, connectClusterStore, pluginClass } = submission;
   const propertiesObject = prepareConnectorConfig(connectClusterStore, pluginClass, submission.parsedUpdatedConfig);
 
@@ -452,7 +445,7 @@ async function validateAndCreateConnector(submission: ReviewSubmission): Promise
   return await createConnectorWithProgress(submission, propertiesObject?.name as string);
 }
 
-async function submitReview(submission: ReviewSubmission): Promise<{ conditionMet: boolean }> {
+async function submitReview(submission: ReviewSubmission) {
   submission.wizard.clearErrors();
   submission.wizard.setLoading(true);
   const conditionMet = await validateAndCreateConnector(submission);
@@ -606,8 +599,6 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
         }}
       />
 
-      {/* Not closeable while the connector is being created: no onOpenChange handler, and the
-          close X has to be suppressed or it would render and do nothing. */}
       <Dialog open={isCreatingModalOpen}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
@@ -773,4 +764,7 @@ function ValidationDisplay({ validationResult }: { validationResult: ConnectorVa
   );
 }
 
+/**
+ * Apply review-step JSON edits back to the form, including secret values that never went through a property wrapper. Do not expose dialog close controls while creation is in flight.
+ */
 export default CreateConnector;

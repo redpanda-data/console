@@ -48,9 +48,7 @@ import type { EditTarget } from '../utils/yaml';
 
 const PARSE_DEBOUNCE_MS = 300;
 
-// The first change after a quiet spell applies at once, so a visual edit shows on the canvas as it
-// lands; during a burst the latest value applies at most once per `delay`, and always last.
-function useLeadingDebouncedValue<T>(value: T, delay: number): T {
+function useLeadingDebouncedValue<T>(value: T, delay: number) {
   const [settled, setSettled] = useState(value);
   const lastAppliedAt = useRef(0);
   useEffect(() => {
@@ -71,62 +69,49 @@ function useLeadingDebouncedValue<T>(value: T, delay: number): T {
   }, [value, delay, settled]);
   return settled;
 }
-// How far past the diagram the canvas may be panned, so an edge node can be brought to the middle.
 const PAN_PADDING = 240;
 
-// RF's pan/zoom eases are d3-driven (JS), beyond the CSS reduced-motion rule — collapse them to instant.
-const animMs = (ms: number): number =>
+const animMs = (ms: number) =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : ms;
 
-// Viewport moves resolve once their animation ends; surface a move that fails rather than dropping it.
 const reportViewportMoveFailure = (error: unknown) => {
   toast.error('Failed to move the pipeline view', { description: String(error) });
 };
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.25;
-// Floor for graphs too big to fit even at MIN_ZOOM — never below this, so it can't zoom out to a dot.
 const ABSOLUTE_MIN_ZOOM = 0.05;
 
-// Zoom-out floor: MIN_ZOOM normally, down to ABSOLUTE_MIN_ZOOM when the graph is too big to fit.
-function fitMinZoom(graphW: number, graphH: number, paneW: number, paneH: number): number {
+function fitMinZoom(graphW: number, graphH: number, paneW: number, paneH: number) {
   if (graphW <= 0 || graphH <= 0 || paneW <= 0 || paneH <= 0) {
     return MIN_ZOOM;
   }
-  // 0.9 leaves a little margin around the fully-zoomed-out graph.
   const fit = 0.9 * Math.min(paneW / graphW, paneH / graphH);
   return Math.min(MIN_ZOOM, Math.max(ABSOLUTE_MIN_ZOOM, fit));
 }
 
-// Bounding box of top-level nodes at their layout size; measured (not assumed from origin) since
-// resource cards can sit at negative x.
-function contentBounds(nodes: Node[]): ScopeBounds {
+// WARNING: Measure all bounds instead of assuming the origin; resource cards can sit at negative coordinates.
+function contentBounds(nodes: Node[]) {
   const layoutSizeOnly: MeasuredById = new Map();
   const box = nodes
     .filter((node) => !node.parentId)
     .reduce<ScopeBounds | null>((acc, node) => growBounds(acc, nodeRect(node, layoutSizeOnly)), null);
   return box ?? { minX: 0, minY: 0, maxX: 0, maxY: 0 };
 }
-// Fixed width; height tracks the diagram's aspect (clamped) so there's no unreachable letterbox space.
 const MINIMAP_WIDTH = 132;
 const MINIMAP_MIN_INNER_H = 32;
 const MINIMAP_MAX_INNER_H = 168;
-// Inset between drawing and frame so the viewport rect's border stays visible at the pan limits.
 const MINIMAP_PAD = 2;
-// The frame's 1px border (border-box) shrinks the svg's drawing area on each side.
 const MINIMAP_BORDER = 1;
 
-const clampValue = (value: number, lo: number, hi: number): number => Math.min(Math.max(value, lo), hi);
+const clampValue = (value: number, lo: number, hi: number) => Math.min(Math.max(value, lo), hi);
 
-// Tint each blip with its node's role accent; structural marks (section labels) drop out.
-function miniMapNodeColor(node: Node): string {
+function miniMapNodeColor(node: Node) {
   return sectionAccent((node.data as FlowCardData | undefined)?.section) ?? 'transparent';
 }
 
 type FlowExtent = [[number, number], [number, number]];
-// The live viewport in flow coordinates.
 type FlowViewport = { left: number; top: number; width: number; height: number; zoom: number };
-// Flow → minimap pixels, per axis.
 type MiniMapProjection = {
   mapW: number;
   mapH: number;
@@ -141,20 +126,22 @@ type MiniMapLayout = {
   canPanX: boolean;
   canPanY: boolean;
   projection: MiniMapProjection;
-  /** The viewport rect, in minimap pixels. */
   view: { x: number; y: number; w: number; h: number };
 };
 
-function flowViewport([tx, ty, zoom]: [number, number, number], paneWidth: number, paneHeight: number): FlowViewport {
-  return { left: -tx / zoom, top: -ty / zoom, width: paneWidth / zoom, height: paneHeight / zoom, zoom };
+function flowViewport([tx, ty, zoom]: [number, number, number], paneWidth: number, paneHeight: number) {
+  const visibleViewport: FlowViewport = {
+    left: -tx / zoom,
+    top: -ty / zoom,
+    width: paneWidth / zoom,
+    height: paneHeight / zoom,
+    zoom,
+  };
+  return visibleViewport;
 }
 
-// Per axis: viewport smaller than extent → whole extent is reachable, show it; else the axis is
-// locked, so show the live visible window (RF pins an oversized viewport to an edge).
-// The extent is unioned with the viewport because RF doesn't re-clamp the transform when
-// `translateExtent` moves (an insert re-runs Dagre), so the viewport can sit partly outside the
-// extent until the next pan — without the union its rect would draw past the svg edge and clip.
-function miniMapWorld(ext: ScopeBounds, vp: FlowViewport): { world: ScopeBounds; canPanX: boolean; canPanY: boolean } {
+// WARNING: Keep the live viewport in the minimap bounds; React Flow does not re-clamp the transform when its extent changes.
+function miniMapWorld(ext: ScopeBounds, vp: FlowViewport) {
   const canPanX = vp.width < ext.maxX - ext.minX;
   const canPanY = vp.height < ext.maxY - ext.minY;
   const world = {
@@ -163,20 +150,19 @@ function miniMapWorld(ext: ScopeBounds, vp: FlowViewport): { world: ScopeBounds;
     minY: canPanY ? Math.min(ext.minY, vp.top) : vp.top,
     maxY: canPanY ? Math.max(ext.maxY, vp.top + vp.height) : vp.top + vp.height,
   };
-  return { world, canPanX, canPanY };
+  const mapWorld: { world: ScopeBounds; canPanX: boolean; canPanY: boolean } = { world, canPanX, canPanY };
+  return mapWorld;
 }
 
-function miniMapProjection(world: ScopeBounds): MiniMapProjection {
-  // Fill the frame's content box (frame minus its 1px border each side) so nothing is clipped.
+function miniMapProjection(world: ScopeBounds) {
   const mapW = MINIMAP_WIDTH - 2 * MINIMAP_BORDER;
   const worldW = Math.max(world.maxX - world.minX, 1);
   const worldH = Math.max(world.maxY - world.minY, 1);
-  // Each axis scales independently so a clamp-forced aspect mismatch can't leave dead bands.
   const innerW = mapW - 2 * MINIMAP_PAD;
   const innerH = clampValue(innerW * (worldH / worldW), MINIMAP_MIN_INNER_H, MINIMAP_MAX_INNER_H);
   const scaleX = innerW / worldW;
   const scaleY = innerH / worldH;
-  return {
+  const mapProjection: MiniMapProjection = {
     mapW,
     mapH: innerH + 2 * MINIMAP_PAD,
     scaleX,
@@ -184,6 +170,7 @@ function miniMapProjection(world: ScopeBounds): MiniMapProjection {
     offsetX: MINIMAP_PAD - world.minX * scaleX,
     offsetY: MINIMAP_PAD - world.minY * scaleY,
   };
+  return mapProjection;
 }
 
 function miniMapLayout(
@@ -191,28 +178,24 @@ function miniMapLayout(
   paneWidth: number,
   paneHeight: number,
   translateExtent: FlowExtent
-): MiniMapLayout {
+) {
   const viewport = flowViewport(transform, paneWidth, paneHeight);
-  // The SAME `translateExtent` passed to <ReactFlow>, so the minimap agrees with the canvas on reach.
   const [[minX, minY], [maxX, maxY]] = translateExtent;
   const ext = { minX, minY, maxX, maxY };
   const { world, canPanX, canPanY } = miniMapWorld(ext, viewport);
   const projection = miniMapProjection(world);
   const { scaleX, scaleY, offsetX, offsetY } = projection;
-  // The world is built to contain the viewport (union above), so the rect needs no clamping; on a
-  // locked axis it fills edge-to-edge.
   const view = {
     x: viewport.left * scaleX + offsetX,
     y: viewport.top * scaleY + offsetY,
     w: viewport.width * scaleX,
     h: viewport.height * scaleY,
   };
-  return { viewport, ext, canPanX, canPanY, projection, view };
+  const viewportLayout: MiniMapLayout = { viewport, ext, canPanX, canPanY, projection, view };
+  return viewportLayout;
 }
 
-// The flow point to centre on for a pointer at minimap pixel (`px`, `py`): clamped to the drag
-// extent, and locked to the extent centre on an axis too small to pan.
-function miniMapPanCentre(layout: MiniMapLayout, px: number, py: number): { cx: number; cy: number } {
+function miniMapPanCentre(layout: MiniMapLayout, px: number, py: number) {
   const { ext, viewport: vp, projection, canPanX, canPanY } = layout;
   const fx = (px - projection.offsetX) / projection.scaleX;
   const fy = (py - projection.offsetY) / projection.scaleY;
@@ -222,8 +205,7 @@ function miniMapPanCentre(layout: MiniMapLayout, px: number, py: number): { cx: 
   };
 }
 
-// Overview minimap; draws only the pan-reachable world (see `miniMapWorld`). Click/drag re-centres.
-// Exported for tests.
+/** Overview minimap; draws only the pan-reachable world (see `miniMapWorld`). Click/drag re-centres. */
 export function PipelineMiniMap({ nodes, translateExtent }: { nodes: Node[]; translateExtent: FlowExtent }) {
   const transform = useStore((s) => s.transform);
   const paneWidth = useStore((s) => s.width);
@@ -252,7 +234,6 @@ export function PipelineMiniMap({ nodes, translateExtent }: { nodes: Node[]; tra
         className="block cursor-pointer"
         height={mapH}
         onPointerCancel={() => {
-          // An interrupted drag never fires pointerup — clear the flag so moves stop re-centering.
           draggingRef.current = false;
         }}
         onPointerDown={(e) => {
@@ -306,21 +287,18 @@ export function PipelineMiniMap({ nodes, translateExtent }: { nodes: Node[]; tra
   );
 }
 
-// Reveal margin (px), and how long to wait for the inspector rail's open animation before measuring.
 const SELECTION_REVEAL_MARGIN = 32;
 const RAIL_SETTLE_MS = 240;
 
-// In scope if it's a member by id, or carries the construct's id as `ownerId` (marks outside the parser tree).
-function nodeInScope(node: Node, scope: ReadonlySet<string>): boolean {
+function nodeInScope(node: Node, scope: ReadonlySet<string>) {
   return scope.has(node.id) || scope.has((node.data as FlowCardData).ownerId ?? ' ');
 }
 
-// Selecting a control-flow construct focuses its branch: nodes outside its scope fade back so its members read clearly.
 function focusDimNodes(
   rfNodes: Node[],
   selectedNodeId: string | undefined,
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined
-): Node[] {
+) {
   const selectedNode = selectedNodeId ? rfNodes.find((n) => n.id === selectedNodeId) : undefined;
   const focus = selectedNode?.type === 'flowSplit' ? scopeOf(selectedNodeId) : undefined;
   if (!focus) {
@@ -336,13 +314,10 @@ function focusDimNodes(
   );
 }
 
-// The graph fades back while it's showing the stale (last-good) layout, cueing that it's not live.
-const staleFlowClass = (stale: boolean): string => `transition-opacity duration-200 ${stale ? 'opacity-60' : ''}`;
+const staleFlowClass = (stale: boolean) => `transition-opacity duration-200 ${stale ? 'opacity-60' : ''}`;
 
-// Centred over the top of the canvas, above the graph; the `floating` variant owns its look.
 const CANVAS_NOTICE_POSITION = 'absolute top-3 left-1/2 z-20 -translate-x-1/2';
 
-// Banner shown while rendering the last-good graph for invalid YAML (see useResilientParse).
 function StaleParseBanner({ show }: { show: boolean }) {
   if (!show) {
     return null;
@@ -354,16 +329,14 @@ function StaleParseBanner({ show }: { show: boolean }) {
   );
 }
 
-// The zoom tool's armed state: a magnifier-`+` (zoom in) or `-` (zoom out) cursor, or off.
 type ZoomMode = 'in' | 'out' | null;
 const ZOOM_STEP = 1.5;
 
-function cursorForMode(mode: ZoomMode): string {
-  return mode === 'in' ? 'zoom-in' : mode === 'out' ? 'zoom-out' : '';
+function cursorForMode(mode: ZoomMode) {
+  const cursor: string = mode === 'in' ? 'zoom-in' : mode === 'out' ? 'zoom-out' : '';
+  return cursor;
 }
 
-// Paint the magnifier cursor while the zoom tool is armed. Set inline on the container AND its pane:
-// RF styles the pane cursor itself, so a Tailwind class loses but an inline style wins.
 function useZoomCursor(mode: ZoomMode, ref: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const root = ref.current;
@@ -385,29 +358,23 @@ function useZoomCursor(mode: ZoomMode, ref: RefObject<HTMLDivElement | null>) {
   }, [mode, ref]);
 }
 
-// Free-pan is suppressed while the zoom tool is armed — else a pan-drag ends in a click that zooms.
-const canPanCanvas = (mode: ZoomMode): boolean => mode === null;
+const canPanCanvas = (mode: ZoomMode) => mode === null;
 
-// Spring-loaded: held Z → zoom-in, held Z + Option/Alt → zoom-out, nothing held → off.
-function heldZoomMode(zDown: boolean, alt: boolean): ZoomMode {
-  return zDown ? (alt ? 'out' : 'in') : null;
+function heldZoomMode(zDown: boolean, alt: boolean) {
+  const mode: ZoomMode = zDown ? (alt ? 'out' : 'in') : null;
+  return mode;
 }
 
-// Typing, or anything inside our popovers (e.g. a stop-condition editor's radios), keeps its own keys.
-// Not any role="dialog": a host shell's dialog around the canvas would match.
-const isTypingTarget = (target: EventTarget | null): boolean =>
+const isTypingTarget = (target: EventTarget | null) =>
   Boolean(
     (target as HTMLElement | null)?.closest(
       'input, textarea, [contenteditable="true"], [data-slot="popover-content"], .monaco-editor'
     )
   );
 
-// Figma-style hold-to-activate zoom: while Z is held a click zooms toward the pointer (Option/Alt to
-// zoom out); releasing returns to pan/select. The wheel is left to the page. Ignored while typing.
 function ZoomTool({ mode, setMode, minZoom }: { mode: ZoomMode; setMode: (next: ZoomMode) => void; minZoom: number }) {
   const { screenToFlowPosition, getZoom, setCenter } = useReactFlow();
 
-  // Track key-hold state via keydown/keyup, plus blur so a release missed while unfocused can't leave the tool stuck on.
   useEffect(() => {
     let zDown = false;
     let altHeld = false;
@@ -418,8 +385,6 @@ function ZoomTool({ mode, setMode, minZoom }: { mode: ZoomMode; setMode: (next: 
         sync();
         return;
       }
-      // Match on `code` (not `key`) so Option+Z on macOS — which emits a special character — still
-      // registers as Z. Meta/Ctrl are reserved for the app shell, so ignore those combos.
       if (e.code !== 'KeyZ' || e.metaKey || e.ctrlKey || isTypingTarget(e.target)) {
         return;
       }
@@ -461,7 +426,6 @@ function ZoomTool({ mode, setMode, minZoom }: { mode: ZoomMode; setMode: (next: 
       if (!(e.target as HTMLElement | null)?.closest('.react-flow__pane, .react-flow__node')) {
         return;
       }
-      // Take the click before React Flow's select/deselect runs, and zoom toward the pointer.
       e.preventDefault();
       e.stopPropagation();
       const point = screenToFlowPosition({ x: e.clientX, y: e.clientY });
@@ -475,8 +439,6 @@ function ZoomTool({ mode, setMode, minZoom }: { mode: ZoomMode; setMode: (next: 
   return null;
 }
 
-// Frame the graph on first load: centered and zoomed to fit. Retries each frame until pane size and
-// node bounds are real, so it fires ASAP rather than waiting for a later resize (a visible "snap").
 function FitOnInit() {
   const nodeCount = useStore((s) => s.nodes.length);
   const storeApi = useStoreApi();
@@ -493,7 +455,6 @@ function FitOnInit() {
       const bounds = getNodesBounds(getNodes());
       if (width > 0 && height > 0 && bounds.width > 0 && bounds.height > 0) {
         doneRef.current = true;
-        // Big graphs may fit below MIN_ZOOM; small graphs stay capped so a few nodes aren't blown up.
         fitView({ padding: 0.2, minZoom: fitMinZoom(bounds.width, bounds.height, width, height), maxZoom: 1 }).catch(
           reportViewportMoveFailure
         );
@@ -510,7 +471,6 @@ function FitOnInit() {
   return null;
 }
 
-// Keeps the zoom-out floor in sync with graph size (see fitMinZoom); inside the provider for pane size.
 function MinZoomController({
   graphWidth,
   graphHeight,
@@ -530,7 +490,6 @@ function MinZoomController({
   return null;
 }
 
-// Recenters the viewport on a node (command-palette "go to"). Keyed by a token so re-picking the same node pans again.
 function FocusNode({ nodeId, token }: { nodeId?: string; token?: number }) {
   const { getNodesBounds, setCenter, getZoom } = useReactFlow();
   // biome-ignore lint/correctness/useExhaustiveDependencies: token is the intentional re-trigger so re-picking the same node pans again.
@@ -542,9 +501,7 @@ function FocusNode({ nodeId, token }: { nodeId?: string; token?: number }) {
     if (!bounds || bounds.width === 0) {
       return;
     }
-    // Keep the current zoom (clamped to a readable band) so jumping doesn't lurch the scale.
     const zoom = Math.min(Math.max(getZoom(), 0.8), 1);
-    // Long ease so the pan reads as a glide, not a jump.
     setCenter(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, { duration: animMs(600), zoom }).catch(
       reportViewportMoveFailure
     );
@@ -552,16 +509,10 @@ function FocusNode({ nodeId, token }: { nodeId?: string; token?: number }) {
   return null;
 }
 
-// Horizontal pan (screen px) that brings a node's box inside the reveal margins; 0 when it's in view.
-function revealPanDx(
-  bounds: { x: number; width: number },
-  viewport: { x: number; zoom: number },
-  paneWidth: number
-): number {
+function revealPanDx(bounds: { x: number; width: number }, viewport: { x: number; zoom: number }, paneWidth: number) {
   const screenLeft = bounds.x * viewport.zoom + viewport.x;
   const screenRight = (bounds.x + bounds.width) * viewport.zoom + viewport.x;
   if (screenRight > paneWidth - SELECTION_REVEAL_MARGIN) {
-    // Off the right edge / behind the rail — pan content left to reveal it.
     return paneWidth - SELECTION_REVEAL_MARGIN - screenRight;
   }
   if (screenLeft < SELECTION_REVEAL_MARGIN) {
@@ -570,13 +521,9 @@ function revealPanDx(
   return 0;
 }
 
-// Keeps the selected node visible when the inspector rail opens (a flex sibling stealing ~384px on
-// the right). Once its open animation settles, nudge the viewport just enough to reveal a clipped node.
 function KeepSelectionInView({ selectedNodeId, focusToken }: { selectedNodeId?: string; focusToken?: number }) {
   const { getNodesBounds, getViewport, setViewport } = useReactFlow();
-  // Pane-width changes reset the settle timer, so the nudge fires once the rail stops resizing the canvas.
   const paneWidth = useStore((s) => s.width);
-  // A palette "go to" centers via FocusNode; skip this nudge that cycle so the two don't compete.
   const lastFocusToken = useRef(focusToken);
 
   useEffect(() => {
@@ -604,13 +551,11 @@ function KeepSelectionInView({ selectedNodeId, focusToken }: { selectedNodeId?: 
   return null;
 }
 
-// Padding (px) between a construct's members and the region edge; extra per nesting level so outer regions stand off.
 const SCOPE_REGION_PAD = 6;
 const SCOPE_REGION_TOP_PAD = 6;
 const SCOPE_REGION_NEST_STEP = 4;
 
-// The accent for a construct node; error/dead-letter paths (catch) get a distinct tone.
-function constructAccent(node?: Node): string {
+function constructAccent(node?: Node) {
   const d = node?.data as FlowCardData | undefined;
   return d?.isErrorPath ? 'var(--color-destructive)' : (sectionAccent(d?.section) ?? 'var(--color-primary)');
 }
@@ -618,17 +563,22 @@ function constructAccent(node?: Node): string {
 type ScopeBounds = { minX: number; minY: number; maxX: number; maxY: number };
 type Point = { x: number; y: number };
 type MeasuredById = Map<string, { measured?: { width?: number; height?: number } }>;
-// One rectangle over the `body` members; the `entry` marker sits outside, reached by an arm (see regionGeometry).
 type ScopeGeometry = { body: ScopeBounds; entry: ScopeBounds | null };
 
-function nodeRect(n: Node, measuredById: MeasuredById): ScopeBounds {
+function nodeRect(n: Node, measuredById: MeasuredById) {
   const m = measuredById.get(n.id)?.measured;
   const w = (m?.width ?? n.initialWidth ?? n.width ?? 0) as number;
   const h = (m?.height ?? n.initialHeight ?? n.height ?? 0) as number;
-  return { minX: n.position.x, minY: n.position.y, maxX: n.position.x + w, maxY: n.position.y + h };
+  const measuredBounds: ScopeBounds = {
+    minX: n.position.x,
+    minY: n.position.y,
+    maxX: n.position.x + w,
+    maxY: n.position.y + h,
+  };
+  return measuredBounds;
 }
 
-const growBounds = (box: ScopeBounds | null, r: ScopeBounds): ScopeBounds =>
+const growBounds = (box: ScopeBounds | null, r: ScopeBounds) =>
   box
     ? {
         minX: Math.min(box.minX, r.minX),
@@ -638,14 +588,12 @@ const growBounds = (box: ScopeBounds | null, r: ScopeBounds): ScopeBounds =>
       }
     : r;
 
-// Split a construct's scoped members into the body (everything but the entry marker) and the entry
-// marker's own rect. Prefers measured size, falling back to layout size. Null when there's no body.
 export function scopeBounds(
   nodes: Node[],
   scope: ReadonlySet<string>,
   measuredById: MeasuredById,
   isEntry?: (n: Node) => boolean
-): ScopeGeometry | null {
+) {
   let body: ScopeBounds | null = null;
   let entry: ScopeBounds | null = null;
   for (const n of nodes) {
@@ -659,7 +607,7 @@ export function scopeBounds(
       body = growBounds(body, r);
     }
   }
-  return body ? { body, entry } : null;
+  return body ? ({ body, entry } satisfies ScopeGeometry) : null;
 }
 
 type ScopeRegion = {
@@ -669,36 +617,26 @@ type ScopeRegion = {
   entry: ScopeBounds | null;
   accent: string;
   label: string;
-  /** Side / top padding — larger for outer regions so nested ones don't touch. */
   pad: number;
   topPad: number;
 };
 
-// Browsers silently drop a filled div's background past ~8k–16k device px, so tall region fills are
-// painted as stacked pieces capped at this. Exported so the render test can assert the cap.
 export const MAX_REGION_PIECE_PX = 3000;
 
 type RegionGeometry = {
-  /** Padded body rect + optional arm rect, painted as the fill (sliced by MAX_REGION_PIECE_PX). */
   rects: ScopeBounds[];
-  /** Dashed outline path in bbox-local coords: the body rectangle with an arm out to the entry. */
   path: string;
   bbox: { x: number; y: number; w: number; h: number };
-  /** Body's top-left corner, where the label sits. */
   anchor: Point;
 };
 
-// A thin arm from the body edge out to the entry marker, at the marker's row.
 type ScopeArm = { side: 'left' | 'right'; outerX: number; top: number; bottom: number };
 
-// Which side of the body the entry marker sits on (undefined if it overlaps the body horizontally).
-function entrySide(entry: ScopeBounds, body: ScopeBounds): 'left' | 'right' | undefined {
+function entrySide(entry: ScopeBounds, body: ScopeBounds) {
   return entry.maxX <= body.minX ? 'left' : entry.minX >= body.maxX ? 'right' : undefined;
 }
 
-// The arm's span at the entry marker's own row: stretched to meet the padded body `pb` when the marker
-// sits clear above/below it; otherwise clamped to the body so it stays thin and can't reach into a sibling.
-function armSpan(entry: ScopeBounds, pb: ScopeBounds, pad: number): { top: number; bottom: number } {
+function armSpan(entry: ScopeBounds, pb: ScopeBounds, pad: number) {
   const top = entry.minY - pad;
   const bottom = entry.maxY + pad;
   if (bottom < pb.minY) {
@@ -710,27 +648,26 @@ function armSpan(entry: ScopeBounds, pb: ScopeBounds, pad: number): { top: numbe
   return { top: Math.max(top, pb.minY), bottom: Math.min(bottom, pb.maxY) };
 }
 
-// The arm out to the entry marker, on whichever side of the body it sits (see armSpan).
-function entryArm(entry: ScopeBounds, body: ScopeBounds, pb: ScopeBounds, pad: number): ScopeArm | undefined {
+function entryArm(entry: ScopeBounds, body: ScopeBounds, pb: ScopeBounds, pad: number) {
   const side = entrySide(entry, body);
   if (!side) {
     return;
   }
   const { top, bottom } = armSpan(entry, pb, pad);
-  return bottom > top
-    ? { side, outerX: side === 'left' ? entry.minX - pad : entry.maxX + pad, top, bottom }
-    : undefined;
+  return (
+    bottom > top ? { side, outerX: side === 'left' ? entry.minX - pad : entry.maxX + pad, top, bottom } : undefined
+  ) satisfies ScopeArm | undefined;
 }
 
-// The arm's own fill rect, between the padded body's edge and the arm's outer end.
-function armRect(arm: ScopeArm, pb: ScopeBounds): ScopeBounds {
-  return arm.side === 'left'
-    ? { minX: arm.outerX, minY: arm.top, maxX: pb.minX, maxY: arm.bottom }
-    : { minX: pb.maxX, minY: arm.top, maxX: arm.outerX, maxY: arm.bottom };
+function armRect(arm: ScopeArm, pb: ScopeBounds) {
+  const bounds: ScopeBounds =
+    arm.side === 'left'
+      ? { minX: arm.outerX, minY: arm.top, maxX: pb.minX, maxY: arm.bottom }
+      : { minX: pb.maxX, minY: arm.top, maxX: arm.outerX, maxY: arm.bottom };
+  return bounds;
 }
 
-// The body rectangle traced clockwise, poking the arm out at the entry marker's row.
-function regionPath(pb: ScopeBounds, arm?: ScopeArm): Point[] {
+function regionPath(pb: ScopeBounds, arm?: ScopeArm) {
   const pts: Point[] = [
     { x: pb.minX, y: pb.minY },
     { x: pb.maxX, y: pb.minY },
@@ -755,14 +692,13 @@ function regionPath(pb: ScopeBounds, arm?: ScopeArm): Point[] {
   return pts;
 }
 
-// A padded body rectangle plus a thin arm out to the entry marker, so it reads as part of the area
-// while the box stays clear of whatever shares the marker's column.
-export function regionGeometry(
-  body: ScopeBounds,
-  entry: ScopeBounds | null,
-  pad: number,
-  topPad: number
-): RegionGeometry {
+/**
+ * The arm joins a separate entry to its padded body and stays narrow enough not to cross sibling regions.
+ *
+ * The padded body and optional arm provide the fill rectangles. The dashed
+ * outline is in bounding-box coordinates; the label anchors at the body's top left.
+ */
+export function regionGeometry(body: ScopeBounds, entry: ScopeBounds | null, pad: number, topPad: number) {
   const pb = { minX: body.minX - pad, minY: body.minY - topPad, maxX: body.maxX + pad, maxY: body.maxY + pad };
   const arm = entry ? entryArm(entry, body, pb, pad) : undefined;
   const rects: ScopeBounds[] = arm ? [pb, armRect(arm, pb)] : [pb];
@@ -770,21 +706,19 @@ export function regionGeometry(
   const path = `M${regionPath(pb, arm)
     .map((p) => `${p.x - outer.minX} ${p.y - outer.minY}`)
     .join('L')}Z`;
-  return {
+  const geometry: RegionGeometry = {
     rects,
     path,
     bbox: { x: outer.minX, y: outer.minY, w: outer.maxX - outer.minX, h: outer.maxY - outer.minY },
     anchor: { x: pb.minX, y: pb.minY },
   };
+  return geometry;
 }
 
-// One construct's enclosure: a faint dashed rect + arm to the entry marker; strengthens when the
-// construct (or anything inside) is active. Non-interactive, behind the nodes, in flow coordinates.
 const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boolean }) => {
   const { body, entry, accent, label, pad, topPad } = region;
   const borderColor = `color-mix(in srgb, ${accent} ${active ? 70 : 32}%, transparent)`;
   const backgroundColor = `color-mix(in srgb, ${accent} ${active ? 10 : 5}%, transparent)`;
-  // Geometry is `active`-independent, so hover (colour only) doesn't recompute it.
   const { rects, path, bbox, anchor } = useMemo(
     () => regionGeometry(body, entry, pad, topPad),
     [body, entry, pad, topPad]
@@ -792,7 +726,6 @@ const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boole
 
   return (
     <>
-      {/* Fill in height-capped pieces so a tall area never exceeds the browser paint limit (see MAX_REGION_PIECE_PX). */}
       {rects.flatMap((r) => {
         const width = r.maxX - r.minX;
         const height = r.maxY - r.minY;
@@ -816,7 +749,6 @@ const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boole
           );
         });
       })}
-      {/* Dashed border as one path — no per-piece seams. */}
       <svg
         aria-hidden="true"
         className="pointer-events-none absolute"
@@ -856,13 +788,10 @@ type RegionContext = {
   rfNodes: Node[];
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
   nodeLookup: MeasuredById;
-  /** try marker id → its fused catch marker id, so a try's area also covers its error handling. */
   tryCatchPairs: ReadonlyMap<string, string>;
 };
 
-// One construct's region (before nesting padding). Only the entry marker is held outside (reached by
-// an arm); everything else — branches, the merge/join, and a try's fused catch — is in the body.
-function scopeRegionDraft(node: Node, ctx: RegionContext): ScopeRegionDraft | null {
+function scopeRegionDraft(node: Node, ctx: RegionContext) {
   const { rfNodes, scopeOf, nodeLookup, tryCatchPairs } = ctx;
   const own = scopeOf(node.id);
   if (!own || own.size < 2) {
@@ -881,11 +810,9 @@ function scopeRegionDraft(node: Node, ctx: RegionContext): ScopeRegionDraft | nu
     entry: geom.entry,
     accent: constructAccent(node),
     label: (node.data as FlowCardData).label,
-  };
+  } satisfies ScopeRegionDraft;
 }
 
-// Faint enclosure boxes around each construct's sub-graph, emphasized when it (or anything inside) is
-// active. Drawn via `ViewportPortal` (hover stays cheap); a box may span a scattered non-member card.
 function ScopeRegions({
   hoveredId,
   selectedId,
@@ -899,10 +826,7 @@ function ScopeRegions({
   scopeOf: (id: string | undefined) => ReadonlySet<string> | undefined;
   tryCatchPairs: ReadonlyMap<string, string>;
 }) {
-  // The store's nodeLookup is stably mutated, so subscribing to it alone won't re-render;
-  // `measuredKey` is a primitive digest that changes when cards measure, so boxes tighten to rendered sizes.
   const nodeLookup = useStore((s) => s.nodeLookup);
-  // Only scoped cards affect region geometry, so the digest below covers just those — selector stays cheap.
   const scopedIds = useMemo(() => {
     const ids = new Set<string>();
     for (const node of rfNodes) {
@@ -919,7 +843,6 @@ function ScopeRegions({
     return ids;
   }, [rfNodes, scopeOf]);
   const measuredKey = useStore((s) => {
-    // Integer digest of measured sizes (no per-frame string alloc); folds width+height so any reflow retriggers.
     let h = 0;
     for (const id of scopedIds) {
       const m = s.nodeLookup.get(id)?.measured;
@@ -928,20 +851,16 @@ function ScopeRegions({
     }
     return h;
   });
-  // Geometry depends only on the layout + measurements, so cache it across hover/selection changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: measuredKey re-triggers bounds when cards measure.
   const regions = useMemo<ScopeRegion[]>(() => {
-    // A catch fused into a try is drawn as part of the try's area, not its own region.
     const absorbed = new Set(tryCatchPairs.values());
     const ctx: RegionContext = { rfNodes, scopeOf, nodeLookup, tryCatchPairs };
     const drafts = rfNodes
       .filter((n) => n.type === 'flowSplit' && !absorbed.has(n.id))
       .map((n) => scopeRegionDraft(n, ctx))
       .filter((d): d is ScopeRegionDraft => d !== null);
-    // How many OTHER regions enclose each (its construct id is in their scope).
     const depthOf = (r: ScopeRegionDraft) => drafts.filter((o) => o.id !== r.id && o.scope.has(r.id)).length;
     const depths = drafts.map(depthOf);
-    // Standoff scales with inner nesting depth (0 if none), so each enclosing box stands one step off the inner ones.
     const innerDepth = (i: number) =>
       drafts.reduce((h, o, j) => (j !== i && drafts[i].scope.has(o.id) ? Math.max(h, depths[j] - depths[i]) : h), 0);
     return drafts.map((r, i) => {
@@ -953,7 +872,6 @@ function ScopeRegions({
   if (regions.length === 0) {
     return null;
   }
-  // Emphasized when the active node is the construct or anywhere in its sub-graph (merge dots match via owner id).
   const activeId = hoveredId ?? selectedId;
   const activeOwner = activeId
     ? (rfNodes.find((n) => n.id === activeId)?.data as FlowCardData | undefined)?.ownerId
@@ -992,8 +910,7 @@ type CanvasCallbacks = {
   previousIds: ReadonlySet<string>;
 };
 
-// Edit-mode fixes for a card's missing pieces: an empty section, a missing topic or SASL user.
-function wireConnectorActions(data: FlowCardData, cb: CanvasCallbacks): void {
+function wireConnectorActions(data: FlowCardData, cb: CanvasCallbacks) {
   if (data.label === 'none' && cb.onAddConnector) {
     data.onAddConnector = cb.onAddConnector;
   }
@@ -1005,8 +922,7 @@ function wireConnectorActions(data: FlowCardData, cb: CanvasCallbacks): void {
   }
 }
 
-// Edit-mode inserts: a container's "add child" action and an insert slot's (+).
-function wireInsertActions(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
+function wireInsertActions(data: FlowCardData, node: Node, cb: CanvasCallbacks) {
   if (data.addAction && cb.onSlotInsert) {
     const payload = data.addAction.payload;
     data.onAddChild = () => cb.onSlotInsert?.(payload);
@@ -1020,14 +936,12 @@ function wireInsertActions(data: FlowCardData, node: Node, cb: CanvasCallbacks):
   }
 }
 
-// Collapse toggle and the selection ring.
-function applyInteractionState(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
+function applyInteractionState(data: FlowCardData, node: Node, cb: CanvasCallbacks) {
   if (data.collapsible) {
     data.collapsed = cb.collapsedIds.has(node.id);
     data.onToggle = () => cb.toggleCollapse(node.id);
   }
   if (cb.selectedNodeId && node.id === cb.selectedNodeId) {
-    // The target kind picks whether to ring the condition row (case) or the whole card (component).
     if (data.caseEditTarget && cb.selectedTargetKind === 'switchCase') {
       data.conditionSelected = true;
     } else {
@@ -1036,8 +950,7 @@ function applyInteractionState(data: FlowCardData, node: Node, cb: CanvasCallbac
   }
 }
 
-// Lint and deprecation badges.
-function applyIssueBadges(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
+function applyIssueBadges(data: FlowCardData, node: Node, cb: CanvasCallbacks) {
   const lintErrors = cb.lintErrorsByNode?.get(node.id);
   if (lintErrors?.length) {
     data.lintErrors = lintErrors;
@@ -1048,10 +961,8 @@ function applyIssueBadges(data: FlowCardData, node: Node, cb: CanvasCallbacks): 
   }
 }
 
-// Issue badges, the unsaved dot, and the undo/redo pulse.
-function applyStatusMarks(data: FlowCardData, node: Node, cb: CanvasCallbacks): void {
+function applyStatusMarks(data: FlowCardData, node: Node, cb: CanvasCallbacks) {
   applyIssueBadges(data, node, cb);
-  // A condition edit is attributed to the non-rendered case-wrapper node — also mark its stand-in entry card.
   if (cb.unsavedNodeIds?.has(node.id) || (data.caseOwnerId && cb.unsavedNodeIds?.has(data.caseOwnerId))) {
     data.unsaved = true;
   }
@@ -1061,27 +972,25 @@ function applyStatusMarks(data: FlowCardData, node: Node, cb: CanvasCallbacks): 
   }
 }
 
-export function injectNodeData(node: Node, cb: CanvasCallbacks): Node {
+export function injectNodeData(node: Node, cb: CanvasCallbacks) {
   const data = { ...node.data } as FlowCardData;
   applyInteractionState(data, node, cb);
   applyStatusMarks(data, node, cb);
   wireConnectorActions(data, cb);
   wireInsertActions(data, node, cb);
-  // New nodes appear in place: drop the transform transition so they snap, then fade + grow in (`appeared`).
   if (!cb.previousIds.has(node.id)) {
     data.appeared = true;
     return {
       ...node,
       data,
       style: { ...(node.style as Record<string, unknown>), transition: undefined },
-    };
+    } satisfies Node;
   }
-  return { ...node, data };
+  return { ...node, data } satisfies Node;
 }
 
 type LegendFlags = { condition: boolean; error: boolean; reference: boolean };
 
-// A line swatch matching the edge styles drawn on the canvas.
 function LegendSwatch({ color, dashed }: { color: string; dashed?: boolean }) {
   return (
     <span
@@ -1091,7 +1000,6 @@ function LegendSwatch({ color, dashed }: { color: string; dashed?: boolean }) {
   );
 }
 
-// A filled chip swatch for node-borne vocabulary (routing condition), vs. edge line swatches.
 function LegendChipSwatch({ color }: { color: string }) {
   return (
     <span
@@ -1101,7 +1009,6 @@ function LegendChipSwatch({ color }: { color: string }) {
   );
 }
 
-// Explains the diagram vocabulary; only the kinds present in the current diagram are listed.
 function FlowLegend({ flags }: { flags: LegendFlags }) {
   if (!(flags.condition || flags.error || flags.reference)) {
     return null;
@@ -1147,10 +1054,10 @@ type DecorateEdgeOptions = {
   onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
 };
 
-// Reference edges are context lines: never below the "faint" tier, highlighted when an endpoint is active.
-function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | undefined): Edge {
+function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | undefined) {
   const touchesActive = activeScope !== undefined && (activeScope.has(edge.source) || activeScope.has(edge.target));
-  return { ...edge, data: { ...edge.data, emphasized: touchesActive, faint: !touchesActive } };
+  const decoratedEdge: Edge = { ...edge, data: { ...edge.data, emphasized: touchesActive, faint: !touchesActive } };
+  return decoratedEdge;
 }
 
 type EdgeActionData = {
@@ -1160,8 +1067,7 @@ type EdgeActionData = {
   selectTarget?: EditTarget;
 };
 
-// A graph edge's insert (+) handler: a top-level processor index, or a nested slot payload.
-function withInsertHandler(edge: Edge, { onInsert, onSlotInsert }: DecorateEdgeOptions): Edge {
+function withInsertHandler(edge: Edge, { onInsert, onSlotInsert }: DecorateEdgeOptions) {
   const edgeData = edge.data as EdgeActionData | undefined;
   const insertIndex = edgeData?.insertIndex;
   const slotPayload = edgeData?.slotPayload;
@@ -1174,8 +1080,7 @@ function withInsertHandler(edge: Edge, { onInsert, onSlotInsert }: DecorateEdgeO
   return edge;
 }
 
-// A routing-condition label that selects its case to edit the condition.
-function withLabelClick(edge: Edge, onSelectNode: DecorateEdgeOptions['onSelectNode']): Edge {
+function withLabelClick(edge: Edge, onSelectNode: DecorateEdgeOptions['onSelectNode']) {
   const edgeData = edge.data as EdgeActionData | undefined;
   if (!(onSelectNode && edgeData?.selectId && edgeData.selectTarget)) {
     return edge;
@@ -1184,12 +1089,10 @@ function withLabelClick(edge: Edge, onSelectNode: DecorateEdgeOptions['onSelectN
   return { ...edge, data: { ...edge.data, onLabelClick: () => onSelectNode(selectId, selectTarget) } };
 }
 
-// Per-render edge styling: reference edges stay faint until an endpoint is active; a selection
-// emphasizes its own edges and dims the rest; graph edges get their insert (+) handler.
-export function decorateEdges(edges: Edge[], options: DecorateEdgeOptions): Edge[] {
+export function decorateEdges(edges: Edge[], options: DecorateEdgeOptions) {
   const { selectedScope, hoveredScope } = options;
   const activeScope = selectedScope ?? hoveredScope;
-  return edges.map((edge) => {
+  return edges.map<Edge>((edge) => {
     const next = withLabelClick(withInsertHandler(edge, options), options.onSelectNode);
     if (next.id.startsWith('ref-')) {
       return decorateReferenceEdge(next, activeScope);
@@ -1202,15 +1105,9 @@ export function decorateEdges(edges: Edge[], options: DecorateEdgeOptions): Edge
   });
 }
 
-// What a click selects: the node itself if editable, else the nearest selectable ancestor
-// (structural sub-nodes like switch cases have no `editTarget`).
-export function selectionTargetForNode(
-  node: Node,
-  nodes: Node[]
-): { id: string; target: EditTarget; caseTarget?: EditTarget } | null {
+export function selectionTargetForNode(node: Node, nodes: Node[]) {
   let current: Node | undefined = node;
   while (current && !(current.data as FlowCardData).editTarget) {
-    // Nodes are positioned absolutely (no RF parentId), so walk the logical owner in `data.ownerId`.
     const ownerId: string | undefined = current.parentId ?? (current.data as FlowCardData).ownerId;
     current = ownerId ? nodes.find((n) => n.id === ownerId) : undefined;
   }
@@ -1218,7 +1115,6 @@ export function selectionTargetForNode(
   if (!(current && target)) {
     return null;
   }
-  // A case-entry node also carries its routing-condition target so the inspector can edit the condition too.
   const caseTarget = (current.data as FlowCardData).caseEditTarget;
   return caseTarget ? { id: current.id, target, caseTarget } : { id: current.id, target };
 }
@@ -1246,7 +1142,6 @@ type PipelineFlowCanvasProps = {
   onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
   /** Clear the selection (clicking empty canvas). */
   onClearSelection?: () => void;
-  // Edit-mode callbacks. When omitted the canvas is a read-only viewer.
   onInsert?: (processorIndex: number) => void;
   onSlotInsert?: (payload: FlowInsertPayload) => void;
   onAddConnector?: (section: string) => void;
@@ -1256,7 +1151,6 @@ type PipelineFlowCanvasProps = {
   onSetStopCondition?: (nodeId: string, draft: StopConditionDraft | null) => boolean;
 };
 
-// Layout-derived canvas geometry: the Dagre pass plus its pan extent, size and legend vocabulary.
 function layoutCanvasGraph(nodes: PipelineFlowNode[], editable: boolean) {
   const layout = computeGraphLayout(nodes, editable);
 
@@ -1267,7 +1161,6 @@ function layoutCanvasGraph(nodes: PipelineFlowNode[], editable: boolean) {
     [bounds.maxX + margin, bounds.maxY + margin],
   ];
 
-  // Which vocabularies appear — drives the adaptive legend (trivial pipelines stay legend-free).
   const legendFlags = {
     condition: layout.rfNodes.some((n: Node) => Boolean((n.data as FlowCardData | undefined)?.caseEditTarget)),
     error: layout.rfEdges.some((e: Edge) => (e.data as { tone?: string } | undefined)?.tone === 'error'),
@@ -1284,8 +1177,7 @@ function layoutCanvasGraph(nodes: PipelineFlowNode[], editable: boolean) {
   };
 }
 
-// try marker → its fused catch marker (from the `error-<try>-<catch>` edge) so a try's region folds in its catch.
-function tryCatchPairsOf(layoutEdges: Edge[]): Map<string, string> {
+function tryCatchPairsOf(layoutEdges: Edge[]) {
   const pairs = new Map<string, string>();
   for (const edge of layoutEdges) {
     if (edge.id.startsWith('error-')) {
@@ -1295,15 +1187,13 @@ function tryCatchPairsOf(layoutEdges: Edge[]): Map<string, string> {
   return pairs;
 }
 
-// Parses (debounced, holding the last good graph) and lays out the YAML, plus each node's scope.
 function useCanvasGraph(configYaml: string, editable: boolean) {
   const debouncedYaml = useLeadingDebouncedValue(configYaml, PARSE_DEBOUNCE_MS);
   const { nodes, error, showingStale } = useResilientParse(debouncedYaml);
 
-  // A node's "scope" — itself plus all descendants — so selecting/hovering a container lights its whole branch.
   const childrenByParent = useMemo(() => buildChildrenMap(nodes), [nodes]);
-  const scopeOf = useCallback(
-    (id: string | undefined): ReadonlySet<string> | undefined => {
+  const scopeOf = useCallback<(id: string | undefined) => ReadonlySet<string> | undefined>(
+    (id: string | undefined) => {
       if (id === undefined) {
         return;
       }
@@ -1320,19 +1210,13 @@ function useCanvasGraph(configYaml: string, editable: boolean) {
     [childrenByParent]
   );
 
-  // Expensive layout memo: the full Dagre pass plus everything derived from its geometry (pan
-  // extent, legend). Keyed only on parsed nodes + edit mode, so decoration changes never re-run layout.
   const layout = useMemo(() => layoutCanvasGraph(nodes, editable), [nodes, editable]);
   const tryCatchPairs = useMemo(() => tryCatchPairsOf(layout.layoutEdges), [layout.layoutEdges]);
   return { ...layout, error, showingStale, scopeOf, tryCatchPairs };
 }
 
-// The zoom tool's armed mode and the interactive zoom-out floor, with the magnifier cursor painted
-// on the returned wrapper.
 function useCanvasZoom() {
-  // The armed zoom tool (Z / Option+Z) — drives the magnifier cursor and click-to-zoom.
   const [zoomMode, setZoomMode] = useState<ZoomMode>(null);
-  // Interactive zoom-out floor — lowered for graphs too big to fit at MIN_ZOOM (MinZoomController).
   const [minZoom, setMinZoom] = useState(MIN_ZOOM);
   const wrapperRef = useRef<HTMLDivElement>(null);
   useZoomCursor(zoomMode, wrapperRef);
@@ -1345,9 +1229,6 @@ type DecoratedNodesOptions = Omit<CanvasCallbacks, 'collapsedIds' | 'toggleColla
   showingStale: boolean;
 };
 
-// A new node object without `measured` makes React Flow drop its handle bounds, and edges skip the
-// node until it re-measures, which a node that never resizes may never do. So every rebuilt node
-// carries the size React Flow last measured for it.
 function useMeasuredNodes(nodes: Node[]) {
   const measuredRef = useRef(new Map<string, NonNullable<Node['measured']>>());
   const onNodesChange = useCallback((changes: NodeChange[]) => {
@@ -1368,8 +1249,6 @@ function useMeasuredNodes(nodes: Node[]) {
   return { measuredNodes, onNodesChange };
 }
 
-// Per-render node decoration (selection, lint, unsaved, collapse, edit actions) over the laid-out
-// nodes, owning the collapse state and which nodes are new since the last commit.
 function useDecoratedNodes({
   layoutNodes,
   scopeOf,
@@ -1386,7 +1265,7 @@ function useDecoratedNodes({
   unsavedNodeIds,
   flashNodeIds,
   flashToken,
-}: DecoratedNodesOptions): Node[] {
+}: DecoratedNodesOptions) {
   const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(new Set());
   const toggleCollapse = useCallback((nodeId: string) => {
     setCollapsedIds((prev) => {
@@ -1399,18 +1278,16 @@ function useDecoratedNodes({
       return next;
     });
   }, []);
-  // Node ids committed last render — anything new this render "appears" in place (see injectNodeData).
   const previousIdsRef = useRef<ReadonlySet<string>>(new Set());
 
-  // Cheap decoration memo, keyed on decoration inputs only — a click re-runs this, not the Dagre
-  // layout. Hover is excluded to stay on the cheap edges-only path.
+  // WARNING: Keep hover and selection out of the layout cache key; repeated Dagre runs can churn the graph and drop pointer events.
   const rfNodes = useMemo(() => {
     const callbacks: CanvasCallbacks = {
       onAddConnector,
       onAddTopic,
       onAddSasl,
       onSlotInsert,
-      // A stale layout's paths may no longer match the YAML, so its stop conditions are read-only.
+      // WARNING: Do not edit stop conditions through a stale layout; its paths can now select a different YAML node.
       onSetStopCondition: showingStale ? undefined : onSetStopCondition,
       collapsedIds,
       toggleCollapse,
@@ -1448,7 +1325,6 @@ function useDecoratedNodes({
     scopeOf,
   ]);
 
-  // Record the committed node ids so the next render can tell which nodes are new.
   useEffect(() => {
     previousIdsRef.current = new Set(rfNodes.map((node) => node.id));
   }, [rfNodes]);
@@ -1456,6 +1332,9 @@ function useDecoratedNodes({
   return rfNodes;
 }
 
+/**
+ * Uses the last good graph while edited YAML cannot parse, without allowing edits through that stale layout. Region fills are split so tall graphs stay below the paintable height limit; their dashed outline remains one path.
+ */
 export function PipelineFlowCanvas({
   configYaml,
   selectedNodeId,
@@ -1476,14 +1355,10 @@ export function PipelineFlowCanvas({
   onAddSasl,
   onSetStopCondition,
 }: PipelineFlowCanvasProps) {
-  // Hovering a node lights up its (otherwise faint) resource-reference edges.
   const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
   const { wrapperRef, zoomMode, setZoomMode, minZoom, setMinZoom } = useCanvasZoom();
-  // Must be told: react-flow stamps a bare `light`/`dark` class, and its `light` default re-declares
-  // the light palette over the whole subtree.
+  // WARNING: Pass the active theme to React Flow; its default light class otherwise overrides the canvas palette.
   const appearance = useThemeAppearance();
-  // Layout keys on this stable boolean, not the callback identity — else an ancestor re-creating
-  // onSlotInsert would re-run the Dagre pass.
   const {
     error,
     showingStale,
@@ -1515,8 +1390,7 @@ export function PipelineFlowCanvas({
   });
   const { measuredNodes, onNodesChange } = useMeasuredNodes(rfNodes);
 
-  // Hover only restyles edges so node objects stay referentially stable — rebuilding the DOM under
-  // the cursor looped mouseleave/mouseenter, flickering the cursor and eating clicks.
+  // WARNING: Hover must leave node identities stable; rebuilding the hovered node causes enter/leave loops and can eat clicks.
   const rfEdges = useMemo(
     () =>
       decorateEdges(layoutEdges, {
@@ -1532,13 +1406,11 @@ export function PipelineFlowCanvas({
   if (rfNodes.length === 0) {
     return (
       <div className="relative h-full w-full">
-        {/* Parse error with no last-good graph: keep the notice up (no dismiss) and point at the fix. */}
         {error ? (
           <InvalidConfigNotice className={CANVAS_NOTICE_POSITION} variant="floating">
             Unable to visualize this pipeline — fix the YAML in the YAML tab.
           </InvalidConfigNotice>
         ) : null}
-        {/* Freeze the skeleton under an error (it's a backdrop, not a loading state). */}
         <div className={error ? 'opacity-40 **:animate-none!' : undefined}>
           <PipelineFlowSkeleton />
         </div>
@@ -1570,14 +1442,12 @@ export function PipelineFlowCanvas({
             }
           }}
           onNodeMouseEnter={(_, node) => setHoveredNodeId(node.id)}
-          // Only clear when leaving the tracked node: crossing into a nested child fires
-          // enter(child) then leave(parent), which must not wipe the child's hover.
+          // WARNING: Clear only the tracked node; enter(child) followed by leave(parent) must not clear the child's hover.
           onNodeMouseLeave={(_, node) => setHoveredNodeId((prev) => (prev === node.id ? undefined : prev))}
           onNodesChange={onNodesChange}
           onPaneClick={() => onClearSelection?.()}
           panOnDrag={canPanCanvas(zoomMode)}
           panOnScroll={false}
-          // The wheel scrolls the embedded page; zoom is via Z / Option+Z (ZoomTool), the Controls, and pinch.
           preventScrolling={false}
           proOptions={{ hideAttribution: true }}
           translateExtent={translateExtent}
@@ -1585,7 +1455,6 @@ export function PipelineFlowCanvas({
           zoomOnPinch
           zoomOnScroll={false}
         >
-          {/* Faint plus-mark texture so the canvas doesn't read as blank — a background hint, not a grid. */}
           <Background
             color="color-mix(in srgb, var(--color-border) 30%, transparent)"
             gap={28}
@@ -1594,7 +1463,6 @@ export function PipelineFlowCanvas({
           />
           <Controls position="bottom-right" showInteractive={false} />
           <PipelineMiniMap nodes={rfNodes} translateExtent={translateExtent} />
-          {/* Renders only for control-flow markers (flowSplit/flowMerge). */}
           <ScopeRegions
             hoveredId={hoveredNodeId}
             rfNodes={rfNodes}

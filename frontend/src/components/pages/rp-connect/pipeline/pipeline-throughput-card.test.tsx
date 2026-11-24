@@ -11,10 +11,11 @@
 
 import { create } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
-import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { Code, ConnectError, createRouterTransport, type MethodImpl } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
 import {
   DataPointSchema,
+  type ExecuteRangeQueryRequest,
   ExecuteRangeQueryResponseSchema,
   ListQueriesResponseSchema,
   QueryMetadataSchema,
@@ -24,7 +25,10 @@ import {
   executeRangeQuery,
   listQueries,
 } from 'protogen/redpanda/api/dataplane/v1alpha3/observability-ObservabilityService_connectquery';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import React from 'react';
+import { renderWithFileRoutes, screen } from 'test-utils';
+
+import { PipelineThroughputCard } from './pipeline-throughput-card';
 
 rs.mock('config', () => {
   const actual = rs.requireActual<typeof import('config')>('config');
@@ -44,7 +48,7 @@ rs.mock('state/ui-state', () => ({
   },
 }));
 
-// recharts ResponsiveContainer requires measured dimensions; stub to a simple div
+// WARNING: Do not use the Happy DOM chart fixture as a layout check; ResponsiveContainer requires measured dimensions.
 function ResponsiveContainerStub({ children }: { children: React.ReactNode }) {
   return <div data-testid="responsive-container">{children}</div>;
 }
@@ -56,14 +60,6 @@ rs.mock('recharts', () => {
     ResponsiveContainer: ResponsiveContainerStub,
   };
 });
-
-import React from 'react';
-
-import { PipelineThroughputCard } from './pipeline-throughput-card';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 const PIPELINE_ID = 'test-pipeline-123';
 
@@ -97,219 +93,138 @@ function createRangeQueryResponse(values: { timestamp: number; value: number }[]
   });
 }
 
+const INPUT_QUERY = 'connect_input_received';
+const OUTPUT_QUERY = 'connect_output_sent';
+const METRICS_UNAVAILABLE = "Throughput metrics aren't available right now";
+const EMPTY_METRICS = 'No throughput data yet';
+
 function buildTransport({
-  listQueriesMock,
-  executeRangeQueryMock,
+  catalog = () => createListQueriesResponse([INPUT_QUERY, OUTPUT_QUERY]),
+  range = () => createRangeQueryResponse([]),
 }: {
-  listQueriesMock: ReturnType<typeof rs.fn>;
-  executeRangeQueryMock: ReturnType<typeof rs.fn>;
-}) {
+  catalog?: MethodImpl<typeof listQueries>;
+  range?: MethodImpl<typeof executeRangeQuery>;
+} = {}) {
   return createRouterTransport(({ rpc }) => {
-    rpc(listQueries, listQueriesMock);
-    rpc(executeRangeQuery, executeRangeQueryMock);
+    rpc(listQueries, catalog);
+    rpc(executeRangeQuery, range);
   });
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe('the PipelineThroughputCard', () => {
-  it('shows calm unavailable state with retry when range queries error', async () => {
-    const listQueriesMock = rs
-      .fn()
-      .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
-
-    const executeRangeQueryMock = rs.fn().mockImplementation(() => {
-      throw new ConnectError('metrics backend unavailable', Code.Internal);
+  it('shows the unavailable state with retry when range queries error', async () => {
+    const transport = buildTransport({
+      range: () => {
+        throw new ConnectError('metrics backend unavailable', Code.Internal);
+      },
     });
 
-    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
-
     renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
 
-    await waitFor(
-      () => {
-        expect(screen.getByText("Throughput metrics aren't available right now")).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
+    expect(await screen.findByText(METRICS_UNAVAILABLE)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
-  it('shows the unavailable state, not the empty state, when the query catalog fails', async () => {
-    const listQueriesMock = rs.fn().mockImplementation(() => {
-      throw new ConnectError('metrics service unreachable', Code.Internal);
+  it('shows the unavailable state and does not request ranges if the catalog fails', async () => {
+    const requests: ExecuteRangeQueryRequest[] = [];
+    const transport = buildTransport({
+      catalog: () => {
+        throw new ConnectError('metrics service unreachable', Code.Internal);
+      },
+      range: (request) => {
+        requests.push(request);
+        return createRangeQueryResponse([]);
+      },
     });
-    const executeRangeQueryMock = rs.fn();
-
-    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
     renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
 
-    await waitFor(
-      () => {
-        expect(screen.getByText("Throughput metrics aren't available right now")).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
-    expect(screen.queryByText('No throughput data yet')).not.toBeInTheDocument();
-    expect(executeRangeQueryMock).not.toHaveBeenCalled();
+    expect(await screen.findByText(METRICS_UNAVAILABLE)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_METRICS)).not.toBeInTheDocument();
+    expect(requests).toHaveLength(0);
   });
 
-  it('shows empty state when queries return empty results', async () => {
-    const listQueriesMock = rs
-      .fn()
-      .mockImplementation(() => createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
-
-    const executeRangeQueryMock = rs.fn().mockImplementation(() =>
-      create(ExecuteRangeQueryResponseSchema, {
-        results: [],
-      })
-    );
-
-    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
-
-    renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('No throughput data yet')).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
-  });
-
-  it('renders refresh button that is clickable without crashing', async () => {
+  it('shows empty results and requests fresh metrics when refreshed', async () => {
     const user = userEvent.setup();
-
-    const listQueriesMock = rs
-      .fn()
-      .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
-
-    const executeRangeQueryMock = rs.fn().mockReturnValue(
-      create(ExecuteRangeQueryResponseSchema, {
-        results: [],
-      })
-    );
-
-    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
+    const refreshed = Promise.withResolvers<ExecuteRangeQueryRequest>();
+    let initialLoadComplete = false;
+    const transport = buildTransport({
+      range: (request) => {
+        if (initialLoadComplete) {
+          refreshed.resolve(request);
+        }
+        return createRangeQueryResponse([]);
+      },
+    });
 
     renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
 
-    // Wait for the component to settle (empty state)
-    await waitFor(() => {
-      expect(screen.getByText('No throughput data yet')).toBeInTheDocument();
-    });
+    expect(await screen.findByText(EMPTY_METRICS)).toBeInTheDocument();
+    initialLoadComplete = true;
 
     await user.click(screen.getByRole('button', { name: 'Refresh' }));
 
-    // After clicking, the component should still render without errors
-    expect(screen.getByText('Throughput')).toBeInTheDocument();
+    expect((await refreshed.promise).params?.filters).toEqual({ pipeline_id: PIPELINE_ID });
   });
 
-  it('shows empty state when listQueries returns no matching queries', async () => {
-    // When listQueries has no connect queries, range queries are disabled (enabled: false),
-    // so they never load and never error -- resulting in empty chart data.
-    const listQueriesMock = rs.fn().mockReturnValue(createListQueriesResponse([]));
-
-    const executeRangeQueryMock = rs.fn();
-
-    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
+  it('shows empty results without requesting ranges when no metrics match', async () => {
+    const requests: ExecuteRangeQueryRequest[] = [];
+    const transport = buildTransport({
+      catalog: () => createListQueriesResponse([]),
+      range: (request) => {
+        requests.push(request);
+        return createRangeQueryResponse([]);
+      },
+    });
 
     renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
 
-    await waitFor(() => {
-      expect(screen.getByText('No throughput data yet')).toBeInTheDocument();
-    });
-
-    // Range queries should never have been called since they're disabled
-    expect(executeRangeQueryMock).not.toHaveBeenCalled();
+    expect(await screen.findByText(EMPTY_METRICS)).toBeInTheDocument();
+    expect(requests).toHaveLength(0);
   });
 
-  it('renders chart area when data is returned successfully', async () => {
+  it('renders the chart area when data is returned successfully', async () => {
     const now = Date.UTC(2026, 0, 15, 12);
     const fiveMinAgo = now - 5 * 60 * 1000;
 
-    const listQueriesMock = rs
-      .fn()
-      .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
-
-    const executeRangeQueryMock = rs.fn().mockImplementation((request) => {
-      if (request.queryName === 'connect_input_received') {
+    const transport = buildTransport({
+      range: (request) => {
+        const [first, latest] = request.queryName === INPUT_QUERY ? [100, 200] : [80, 150];
         return createRangeQueryResponse([
-          { timestamp: fiveMinAgo, value: 100 },
-          { timestamp: now, value: 200 },
+          { timestamp: fiveMinAgo, value: first },
+          { timestamp: now, value: latest },
         ]);
-      }
-      return createRangeQueryResponse([
-        { timestamp: fiveMinAgo, value: 80 },
-        { timestamp: now, value: 150 },
-      ]);
+      },
     });
-
-    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
 
     renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
 
-    // The ChartContainer renders a div with data-slot="chart"
-    await waitFor(() => {
-      expect(screen.getByTestId('responsive-container')).toBeInTheDocument();
-    });
-
-    // Verify the warning alert is NOT present
-    expect(screen.queryByText("Throughput metrics aren't available right now")).not.toBeInTheDocument();
-    // Verify the empty state is NOT present
-    expect(screen.queryByText('No throughput data yet')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('responsive-container')).toBeInTheDocument();
+    expect(screen.queryByText(METRICS_UNAVAILABLE)).not.toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_METRICS)).not.toBeInTheDocument();
   });
 
-  it('passes pipeline_id filter in range query params', async () => {
-    const listQueriesMock = rs
-      .fn()
-      .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
-
-    const executeRangeQueryMock = rs.fn().mockReturnValue(
-      create(ExecuteRangeQueryResponseSchema, {
-        results: [],
-      })
-    );
-
-    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
+  it('requests ingress and egress for the selected pipeline', async () => {
+    const requests: ExecuteRangeQueryRequest[] = [];
+    const bothRequested = Promise.withResolvers();
+    const transport = buildTransport({
+      range: (request) => {
+        requests.push(request);
+        if (requests.length === 2) {
+          bothRequested.resolve(undefined);
+        }
+        return createRangeQueryResponse([]);
+      },
+    });
 
     renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
 
-    await waitFor(() => {
-      expect(executeRangeQueryMock).toHaveBeenCalled();
-    });
+    await bothRequested.promise;
 
-    // Every range query call must include the pipeline_id filter
-    for (const call of executeRangeQueryMock.mock.calls) {
-      expect(call[0].params?.filters).toEqual({ pipeline_id: PIPELINE_ID });
+    expect(requests.map((request) => request.queryName).sort()).toEqual([INPUT_QUERY, OUTPUT_QUERY]);
+    for (const request of requests) {
+      expect(request.params?.filters).toEqual({ pipeline_id: PIPELINE_ID });
     }
-  });
-
-  it('calls both ingress and egress range queries', async () => {
-    const listQueriesMock = rs
-      .fn()
-      .mockReturnValue(createListQueriesResponse(['connect_input_received', 'connect_output_sent']));
-
-    const executeRangeQueryMock = rs.fn().mockReturnValue(
-      create(ExecuteRangeQueryResponseSchema, {
-        results: [],
-      })
-    );
-
-    const transport = buildTransport({ listQueriesMock, executeRangeQueryMock });
-
-    renderWithFileRoutes(<PipelineThroughputCard pipelineId={PIPELINE_ID} />, { transport });
-
-    await waitFor(() => {
-      expect(executeRangeQueryMock).toHaveBeenCalledTimes(2);
-    });
-
-    const queryNames = executeRangeQueryMock.mock.calls.map((call) => call[0].queryName);
-    expect(queryNames).toContain('connect_input_received');
-    expect(queryNames).toContain('connect_output_sent');
   });
 });

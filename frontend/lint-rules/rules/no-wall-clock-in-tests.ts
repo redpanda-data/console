@@ -34,7 +34,6 @@ const BUN_MOCKS = ['mock', 'setSystemTime', 'spyOn'];
 const MESSAGE =
   'Wall-clock reading in test code: values and elapsed-time assertions change with the run. Pin the clock (`rs.setSystemTime`/`rs.useFakeTimers` in the test or a `beforeEach`, Bun `setSystemTime`), use a fixed date, or `crypto.randomUUID()` for unique names. A full-stack check that needs real broker time can suppress this line with a reason.';
 
-/** Calls whose arguments seed a mock or a fake clock rather than measure the run. */
 function isMockSetup(sourceCode: SourceCode, call: ESTree.CallExpression) {
   const callee = unwrap(call.callee);
   if (BUN_MOCKS.some((name) => isBunExport(sourceCode, callee, name))) {
@@ -66,7 +65,6 @@ function feedsMock(sourceCode: SourceCode, node: Node) {
   return false;
 }
 
-/** `Date()` without `new` also returns the current time, as a string. */
 function readingKind(sourceCode: SourceCode, node: ESTree.CallExpression | ESTree.NewExpression) {
   const callee = unwrap(node.callee);
   if (callee?.type === 'Identifier' && callee.name === 'Date' && isGlobal(sourceCode, callee)) {
@@ -76,6 +74,9 @@ function readingKind(sourceCode: SourceCode, node: ESTree.CallExpression | ESTre
   return path === undefined ? undefined : READINGS[path];
 }
 
+/**
+ * Date() without new also reads the clock. Arguments that seed a test double do not measure the run.
+ */
 export default defineRule({
   meta: {
     type: 'problem',

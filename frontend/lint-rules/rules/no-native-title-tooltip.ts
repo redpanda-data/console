@@ -2,9 +2,6 @@ import { defineRule, type ESTree, type SourceCode } from '@oxlint/plugins';
 
 import { importOf } from '../ast.ts';
 
-// `title` names embedded content (iframe, embed, object), carries spec-defined meaning (abbr
-// expansion, dfn term, alternate stylesheet names) or labels SVG/MathML graphics, so the
-// Registry Tooltip is not a replacement there.
 const TITLE_HAS_MEANING = new Set(['abbr', 'dfn', 'embed', 'frame', 'iframe', 'link', 'math', 'object', 'style']);
 const SVG_ELEMENTS = new Set([
   'circle',
@@ -33,10 +30,9 @@ const SVG_ELEMENTS = new Set([
   'tspan',
   'use',
 ]);
-// Registry components that forward `title` to the DOM element they render.
 const INTRINSIC_ELEMENT = /^[a-z][a-z0-9]*$/u;
 const REGISTRY_EXPORTS: Record<string, string> = { button: 'Button', input: 'Input' };
-const REGISTRY_MODULE = /(?:^|\/)redpanda-ui\/components\/(button|input)(?:\.tsx?|\/index\.tsx?)?$/u;
+const REGISTRY_MODULE = /(?:^|\/)redpanda-ui\/components\/(?<component>button|input)(?:\.tsx?|\/index\.tsx?)?$/u;
 const MESSAGE =
   'Native `title` tooltips are unstyled and unreachable by keyboard and touch. Use the Registry Tooltip (`components/redpanda-ui/components/tooltip`) and keep `aria-label` for the accessible name.';
 
@@ -62,7 +58,6 @@ function isNativeTooltipHost(element: ESTree.JSXOpeningElement, name: string) {
   return !(SVG_ELEMENTS.has(name) || insideSvg(element));
 }
 
-/** `<Button>` imported (under any alias) from a Registry module, or `<Ui.Button>` from its namespace. */
 function isRegistryComponent(sourceCode: SourceCode, identifier: ESTree.JSXIdentifier, member?: string) {
   const binding = importOf(sourceCode, identifier);
   const module = binding && REGISTRY_MODULE.exec(binding.source)?.[1];
@@ -85,6 +80,9 @@ function forwardsTitle(sourceCode: SourceCode, element: ESTree.JSXOpeningElement
   return false;
 }
 
+/**
+ * Leaves title alone when it names embedded content, labels graphics, or has meaning defined by HTML. Checks registry components through named and namespace imports.
+ */
 export default defineRule({
   meta: {
     type: 'problem',

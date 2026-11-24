@@ -50,11 +50,6 @@ export class SecurityPage {
   }
 
   /**
-   * High-level convenience methods
-   * These combine multiple operations for common workflows
-   */
-
-  /**
    * Creates a user with the given username through the UI
    */
   async createUser(username: string) {

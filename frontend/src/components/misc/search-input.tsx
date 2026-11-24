@@ -32,7 +32,6 @@ type SearchInputProps = {
   'aria-label'?: string;
 };
 
-// Where `/` is a character the user is typing, not a shortcut.
 const TYPING_TARGET = 'input, textarea, select, [contenteditable], [role="textbox"], [role="combobox"]';
 const DIALOG = '[role="dialog"], [role="alertdialog"]';
 
@@ -70,7 +69,6 @@ export function SearchInput({
       if (target?.isContentEditable || target?.closest(TYPING_TARGET)) {
         return;
       }
-      // Focus inside an open dialog stays there unless the field is in the same dialog.
       const dialog = target?.closest(DIALOG);
       if (dialog && !dialog.contains(inputRef.current)) {
         return;
@@ -82,7 +80,6 @@ export function SearchInput({
     return () => document.removeEventListener('keydown', focusOnSlash);
   }, [slashToFocus]);
 
-  // Refocus before the re-render disables the button, or focus lands on <body>.
   const clear = () => {
     onChange('');
     inputRef.current?.focus();
@@ -117,7 +114,9 @@ export function SearchInput({
           {icon ?? <SearchIcon className="size-4" />}
         </span>
       </InputStart>
-      {/* Always mounted: InputEnd never resets the padding it measured. Click-through while empty. */}
+      {
+        // WARNING: Keep InputEnd mounted; removing it leaves its measured padding behind.
+      }
       <InputEnd className={cn(!isEmpty && 'pointer-events-auto')}>
         <ElementTooltip content="Clear (Esc)">
           <Button

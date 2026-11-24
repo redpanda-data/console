@@ -3,10 +3,6 @@ import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { getInitialSharedConfig } from '../acls/acl-rule-editing';
 import { parsePrincipal, type SharedConfig } from '../shared/acl-model';
 
-/**
- * Adopts the principal and host props whenever they change after the first render, since route search
- * params can arrive late. Runs during render, so the form never paints with stale values.
- */
 function useAdoptChangedSharedConfigProps(
   propSharedConfig: Partial<SharedConfig> | undefined,
   setSharedConfig: Dispatch<SetStateAction<SharedConfig>>
@@ -24,7 +20,11 @@ function useAdoptChangedSharedConfigProps(
   }
 }
 
-/** Principal and host shared by every rule of the ACL form, plus the principal validation error. */
+/**
+ * Principal and host shared by every rule of the ACL form, plus the principal validation error.
+ *
+ * Adopts incoming principal and host props during render so late route parameters cannot paint stale form values.
+ */
 export function useAclSharedConfig(propSharedConfig: Partial<SharedConfig> | undefined, principalType?: string) {
   const [principalError, setPrincipalError] = useState<string>('');
   const [sharedConfig, setSharedConfig] = useState<SharedConfig>(() =>

@@ -22,7 +22,6 @@ import type {
 
 export const CONNECT_WIZARD_CONNECTOR_KEY = 'connect-wizard-connections';
 
-// Single store for the RPCN creation wizard (connection/topic/user/yaml slices).
 type RpcnWizardData = Partial<OnboardingWizardFormData> &
   Partial<MinimalTopicData> &
   Partial<MinimalUserData> & { yamlContent: string | undefined };
@@ -39,6 +38,9 @@ type RpcnWizardStore = RpcnWizardData & {
 
 const initialData: RpcnWizardData = { yamlContent: undefined };
 
+/**
+ * Persists only the input/output connection choices; topic, account and YAML choices are transient.
+ */
 export const useRpcnWizardStore = create<RpcnWizardStore>()(
   persist(
     (set, get) => ({
@@ -51,7 +53,6 @@ export const useRpcnWizardStore = create<RpcnWizardStore>()(
       setHasHydrated: (state) => set({ hasHydrated: state }),
       reset: () => {
         sessionStorage.removeItem(CONNECT_WIZARD_CONNECTOR_KEY);
-        // replace: true clears data; re-supply the action methods.
         return set(
           {
             ...initialData,
@@ -70,7 +71,6 @@ export const useRpcnWizardStore = create<RpcnWizardStore>()(
     {
       name: CONNECT_WIZARD_CONNECTOR_KEY,
       storage: createFlatStorage<Pick<OnboardingWizardFormData, 'input' | 'output'>>(),
-      // Only input/output connections persist; topic/user/yaml are transient.
       partialize: (state) => ({
         input: state.input,
         output: state.output,
@@ -84,8 +84,7 @@ export const useRpcnWizardStore = create<RpcnWizardStore>()(
 
 export const useResetRpcnWizardStore = () => useCallback(() => useRpcnWizardStore.getState().reset(), []);
 
-// Strip store metadata, leaving only the data fields.
-function rpcnWizardData(state: RpcnWizardStore): RpcnWizardData {
+function rpcnWizardData(state: RpcnWizardStore) {
   const {
     setWizardData: _setWizardData,
     setTopicData: _setTopicData,
@@ -96,14 +95,14 @@ function rpcnWizardData(state: RpcnWizardStore): RpcnWizardData {
     hasHydrated: _hasHydrated,
     ...data
   } = state;
-  return data;
+  return data satisfies RpcnWizardData;
 }
 
 /**
  * Read connection data, falling back to session storage for the race where the
  * store hydrated before CloudV2 wrote it (client-side nav, no full reload).
  */
-export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input' | 'output'> {
+export function getWizardConnectionData() {
   const { input, output } = useRpcnWizardStore.getState();
   if (input || output) {
     return { input, output };
@@ -114,27 +113,27 @@ export function getWizardConnectionData(): Pick<OnboardingWizardFormData, 'input
     const stored = readStoredConnectionData();
     if (stored) {
       connectionData = { input: stored.input, output: stored.output };
-      // Sync the store so other consumers see the data.
       useRpcnWizardStore.getState().setWizardData(connectionData);
     }
-  } catch {
-    // Ignore malformed session storage.
-  }
+  } catch {}
 
   return connectionData;
 }
 
-// What CloudV2 wrote to session storage, or null when it wrote nothing; throws on malformed JSON.
-function readStoredConnectionData(): Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>> | null {
+function readStoredConnectionData() {
   const raw = sessionStorage.getItem(CONNECT_WIZARD_CONNECTOR_KEY);
   return raw ? (JSON.parse(raw) as Partial<Pick<OnboardingWizardFormData, 'input' | 'output'>>) : null;
 }
 
+const getWizardData: () => Partial<OnboardingWizardFormData> = () => rpcnWizardData(useRpcnWizardStore.getState());
+const getTopicData: () => Partial<MinimalTopicData> = () => rpcnWizardData(useRpcnWizardStore.getState());
+const getUserData: () => Partial<MinimalUserData> = () => rpcnWizardData(useRpcnWizardStore.getState());
+
 /** Imperative API for non-hook contexts (class components, utility functions). */
 export const rpcnWizardStore = {
-  getWizardData: (): Partial<OnboardingWizardFormData> => rpcnWizardData(useRpcnWizardStore.getState()),
-  getTopicData: (): Partial<MinimalTopicData> => rpcnWizardData(useRpcnWizardStore.getState()),
-  getUserData: (): Partial<MinimalUserData> => rpcnWizardData(useRpcnWizardStore.getState()),
+  getWizardData,
+  getTopicData,
+  getUserData,
   hasHydrated: () => useRpcnWizardStore.getState().hasHydrated,
   setWizardData: (data: Partial<OnboardingWizardFormData>) => useRpcnWizardStore.getState().setWizardData(data),
   setTopicData: (data: Partial<MinimalTopicData>) => useRpcnWizardStore.getState().setTopicData(data),

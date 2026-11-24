@@ -70,7 +70,11 @@ const PREFLIGHT_ICON: Record<PreflightStatus, React.ReactNode> = {
   fail: <TonedIcon aria-label="Blocks fencing" className="size-4 shrink-0" icon={CircleXIcon} tone="destructive" />,
 };
 
-/** The form mounts with the dialog's content, so every opening starts from the fence as it is then. */
+/**
+ * The form mounts with the dialog's content, so every opening starts from the fence as it is then.
+ *
+ * The preflight waits for links that would prevent fencing. If applying the fence fails after saving settings, those settings stay saved.
+ */
 export const FenceClusterDialog = ({
   open,
   onOpenChange,
@@ -92,7 +96,6 @@ const fenceErrorTitle = (error: unknown, settingsSaved: boolean) => {
   return settingsSaved ? 'Settings saved, but the cluster isn’t fenced' : 'Couldn’t fence the cluster';
 };
 
-/** This cluster's own links that haven't failed over: while any remain, it's a shadow and Fence fails. */
 const ownLinksState = (query: ReturnType<typeof useListShadowLinksQuery>) => {
   if (query.data) {
     return linksThatStopFence(query.data.shadowLinks).map((link) => link.name);
@@ -103,7 +106,10 @@ const ownLinksState = (query: ReturnType<typeof useListShadowLinksQuery>) => {
   return query.isError ? 'error' : 'loading';
 };
 
-const seedSettings = (summary: FenceSummary, suggestions: PrincipalSuggestion[]): ReadPolicy => ({
+const seedSettings: (summary: FenceSummary, suggestions: PrincipalSuggestion[]) => ReadPolicy = (
+  summary,
+  suggestions
+) => ({
   exemptPrincipals: Array.from(
     new Set([...summary.exemptPrincipals, ...suggestions.map(({ principal }) => principal)])
   ),
@@ -134,7 +140,6 @@ const useFenceSettingsForm = (opened: FenceSummary, suggestions: PrincipalSugges
     defaultValues: { settings: seedSettings(opened, suggestions), confirmation: '' },
   });
 
-  // Readers can resolve after the dialog opens; pre-add their users until the user edits.
   // biome-ignore lint/correctness/useExhaustiveDependencies: only a new set of suggestions reseeds
   useEffect(() => {
     if (!form.getFieldState('settings').isDirty) {
@@ -158,7 +163,7 @@ const useFencePreflight = (topology: ShadowLinkTopology | null, brokers: BrokerP
     readersResolving: topology?.resolving ?? false,
     readersIncomplete: topology?.readersIncomplete ?? false,
   });
-  /** A shadow cluster can't be fenced, so Fence waits until the own-links check has an answer. */
+  // WARNING: Wait for the own-links check to answer; fencing a shadow cluster fails.
   const blocked = checks.some(
     (check) => check.status === 'fail' || (check.id === 'own-links' && check.status === 'pending')
   );
@@ -195,7 +200,6 @@ const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
     checks,
     blocked,
   } = useFenceClusterForm();
-  // Fixed once the dialog opens: the name can still be loading, and the word to type mustn't change mid-way.
   const [clusterName] = useState(topology?.clusterName);
   const confirmationTarget = clusterName ?? FALLBACK_CONFIRMATION;
   const confirmed = confirmation.trim() === confirmationTarget;
@@ -288,7 +292,6 @@ const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
             testId="fence-cluster-error"
             title={fenceErrorTitle(fenceCluster.error, fenceCluster.savedFence !== undefined)}
           >
-            {/* After this dialog's own save went through, a failed Fence leaves the new settings in place. */}
             {fenceCluster.savedFence ? (
               <p>
                 The settings above are saved. Fence again to retry, or cancel to leave the cluster unfenced with them.

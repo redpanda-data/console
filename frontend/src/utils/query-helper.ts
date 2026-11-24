@@ -32,7 +32,6 @@ export const queryToObj = (str: string) => {
  * @deprecated Prefer `navigate({ search: { … } })` for type-safe search params.
  */
 export const objToQuery = (obj: { [key: string]: unknown }) => {
-  // '?' + queryString.stringify(obj, stringifyOptions)
   const query = new URLSearchParams();
   for (const [k, v] of Object.entries(obj)) {
     if (v === null || v === undefined || v === '') {
@@ -59,7 +58,6 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
       return;
     }
 
-    // TanStack Router uses searchStr for the raw search string
     const currentObj = queryToObj(location.searchStr ?? '');
     editFunction(currentObj);
 
@@ -70,7 +68,7 @@ export function editQuery(editFunction: (queryObject: Record<string, string | nu
   }
 }
 
-function replaceChangedQuery(pathname: string, currentQuery: string, nextQuery: string): void {
+function replaceChangedQuery(pathname: string, currentQuery: string, nextQuery: string) {
   if (currentQuery !== nextQuery) {
     appGlobal.historyReplace(`${pathname}${nextQuery}`);
   }

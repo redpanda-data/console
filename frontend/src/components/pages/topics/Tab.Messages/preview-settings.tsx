@@ -38,15 +38,15 @@ import { Label, OptionGroup, toSafeString } from '../../../../utils/tsx-utils';
 import { type CollectedProperty, collectElements2, getAllMessageKeys, randomId } from '../../../../utils/utils';
 import { SingleSelect } from '../../../misc/select';
 
-function getFreeId(tags: PreviewTagV2[]): string {
+function getFreeId(tags: PreviewTagV2[]) {
+  const ids = new Set(tags.map((tag) => tag.id));
   let i = 1;
-  while (tags.any((t) => t.id === String(i))) {
+  while (ids.has(String(i))) {
     i += 1;
   }
   return String(i);
 }
 
-// add ids to elements that don't have any
 function assignFreeIds(tags: PreviewTagV2[]) {
   const filteredTags = tags.filter((t) => t.id);
   for (const tag of filteredTags) {
@@ -54,6 +54,9 @@ function assignFreeIds(tags: PreviewTagV2[]) {
   }
 }
 
+/**
+ * The editor does not currently highlight invalid patterns or scope autocomplete to the current path segment. Its checkbox labels are wired independently of the registry indicator.
+ */
 export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessage[]; topicName: string }) => {
   const [caseSensitive, setCaseSensitive] = usePreviewTagsCaseSensitive(topicName);
   const [multiResultMode, setMultiResultMode] = usePreviewMultiResultMode(topicName);
@@ -64,7 +67,7 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
     .map((p) => p.propertyName)
     .distinct();
 
-  // Access perTopicSettings to trigger re-render when it changes
+  // WARNING: Keep the subscription to per-topic settings; removing it leaves the preview fields stale after an edit.
   const tags = perTopicSettings.find((t) => t.topicName === topicName)?.previewTags ?? [];
 
   assignFreeIds(tags);
@@ -165,12 +168,6 @@ export const PreviewSettings = ({ messages, topicName }: { messages: TopicMessag
   return <div>{content}</div>;
 };
 
-/*
-todo:
-- mark patterns red when they are invalid
-- better auto-complete: get suggestions from current pattern (except for last segment)
--
- */
 const PreviewTagSettings = ({
   tag,
   onRemove,
@@ -195,19 +192,16 @@ const PreviewTagSettings = ({
 
   return (
     <div className="mb-1.5 flex place-items-center gap-1 rounded-sm p-1">
-      {/* Move Handle */}
       <span className="moveHandle" {...draggableProvided.dragHandleProps}>
         <MenuIcon />
       </span>
 
-      {/* Enabled */}
       <Checkbox
         aria-label={`Enable pattern ${tag.pattern || tag.id}`}
         checked={tag.isActive}
         onCheckedChange={(checked) => updateTag({ isActive: checked === true })}
       />
 
-      {/* Settings */}
       <Popover>
         <PopoverTrigger
           render={
@@ -216,7 +210,6 @@ const PreviewTagSettings = ({
             </span>
           }
         />
-        {/* PopoverContent is a fixed w-72, so the width is set here to fit the content. */}
         <PopoverContent align="start" className="w-auto" side="bottom">
           <div className="flex flex-col gap-1">
             <Label style={{ marginBottom: '.5em' }} text="Display Name">
@@ -230,7 +223,6 @@ const PreviewTagSettings = ({
               />
             </Label>
 
-            {/* The Registry Checkbox does not wire a child label. */}
             <span className="flex items-center gap-2">
               <Checkbox
                 checked={tag.searchInMessageKey}
@@ -265,7 +257,6 @@ const PreviewTagSettings = ({
         />
       </div>
 
-      {/* Remove */}
       <button className="inlineButton" onClick={onRemove} type="button">
         <CloseIcon />
       </button>
@@ -273,36 +264,26 @@ const PreviewTagSettings = ({
   );
 };
 
-/*
-todo:
-- support regex patterns as path elements
-    - `data./pattern/.email`
-    - in order to match `/pattern/` our 'parseJsonPath' must support escaping forward slashes: "\/"
-
-*/
 type TagMatch = { prop: CollectedProperty; tag: PreviewTagV2; fullPath: string };
 
-function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2, caseSensitive: boolean): TagMatch[] {
+function findTagMatches(targetObject: Record<string, unknown>, tag: PreviewTagV2, caseSensitive: boolean) {
   if (tag.pattern.length === 0) {
     return [];
   }
 
   const searchPath = parseJsonPath(tag.pattern.trim());
   if (searchPath === null || typeof searchPath === 'string') {
-    return []; // todo: show error to user
+    return [];
   }
 
   const foundProperties = collectElements2(targetObject, searchPath, (pathElement, propertyName) => {
-    // We'll never get called for '*' or '**' patterns
-    // So we can be sure that the pattern is not just '*'
-    const segmentRegex = caseSensitive ? wildcardToRegex(pathElement) : new RegExp(wildcardToRegex(pathElement), 'i');
+    const segmentRegex = caseSensitive ? wildcardToRegex(pathElement) : new RegExp(wildcardToRegex(pathElement), 'iu');
     return segmentRegex.test(propertyName);
   });
 
   return foundProperties.map((p) => ({ tag, prop: p, fullPath: p.path.join('.') }));
 }
 
-// order results by the tag they were created from, and then their path
 function compareTagMatches(tags: PreviewTagV2[]) {
   return (a: TagMatch, b: TagMatch) => {
     if (a.tag !== b.tag) {
@@ -311,35 +292,27 @@ function compareTagMatches(tags: PreviewTagV2[]) {
       return indexA - indexB;
     }
 
-    // first sort by path length
     const pathLengthDiff = a.prop.path.length - b.prop.path.length;
     if (pathLengthDiff !== 0) {
       return pathLengthDiff;
     }
 
-    // then alphabetically
-    return a.fullPath.localeCompare(
-      b.fullPath,
-      undefined, // no locales
-      {
-        numeric: true,
-        ignorePunctuation: false,
-        sensitivity: 'base',
-      }
-    );
+    return a.fullPath.localeCompare(b.fullPath, undefined, {
+      numeric: true,
+      ignorePunctuation: false,
+      sensitivity: 'base',
+    });
   };
 }
 
-export function getPreviewTags(
-  targetObject: Record<string, unknown>,
-  tags: PreviewTagV2[],
-  caseSensitive: boolean
-): React.ReactNode[] {
+/**
+ * Dots split path segments except inside a quoted segment. Invalid patterns produce no tags; regular expressions in slash-delimited segments are unsupported.
+ */
+export function getPreviewTags(targetObject: Record<string, unknown>, tags: PreviewTagV2[], caseSensitive: boolean) {
   const results = tags.flatMap((t) => findTagMatches(targetObject, t, caseSensitive));
   results.sort(compareTagMatches(tags));
 
-  // found some properties, create JSX for them
-  return results.map((r, index) => {
+  return results.map<React.ReactNode>((r, index) => {
     const tag = r.tag;
     const displayName = tag.customName && tag.customName.length > 0 ? tag.customName : r.fullPath;
     return (
@@ -352,20 +325,13 @@ export function getPreviewTags(
 }
 
 const splitChars = ["'", '"', '.'];
-// Splits a given path into its path segments.
-// Path segments are seperated by the dot-character.
-// This function also supports quotes, so that the dot can still be used (the path segment just needs to be wrapped in quotes then).
-// Returns:
-// - String array when the path was parsed correctly
-// - Single string as error reason why the path couldn't be parsed
-function parseJsonPath(str: string): string[] | string {
+function parseJsonPath(str: string) {
   const segments = splitPathSegments(str);
   if (typeof segments === 'string') {
     return segments;
   }
 
-  // '**' is supported anywhere in a path but must be a whole segment: `a.b.**.c` is valid,
-  // `a.b**` and `a.**b` are not.
+  // WARNING: Accept a recursive wildcard only as its own segment; embedded double stars must not match unrelated fields.
 
   for (const segment of segments) {
     if (segment !== '**' && segment.includes('**')) {
@@ -378,8 +344,7 @@ function parseJsonPath(str: string): string[] | string {
 
 type PathStep = { next: number; segment?: string } | { error: string };
 
-// Collect symbols until we find a dot, single-quote, or double-quote
-function splitPathSegments(str: string): string[] | string {
+function splitPathSegments(str: string) {
   const result: string[] = [];
 
   let pos = 0;
@@ -397,7 +362,7 @@ function splitPathSegments(str: string): string[] | string {
   return result;
 }
 
-function readPathStep(str: string, pos: number): PathStep {
+const readPathStep: (str: string, pos: number) => PathStep = (str, pos) => {
   switch (str[pos]) {
     case "'":
     case '"':
@@ -407,24 +372,20 @@ function readPathStep(str: string, pos: number): PathStep {
     default:
       return readPlainSegment(str, pos);
   }
-}
+};
 
-// A quote is opened
-// Find the closing quote and collect everything in-between
-function readQuotedSegment(str: string, pos: number): PathStep {
-  const start = pos + 1; // start just after the quote
-  const end = str.indexOf(str[pos], start); // and collect until the closing quote
+function readQuotedSegment(str: string, pos: number) {
+  const start = pos + 1;
+  const end = str.indexOf(str[pos], start);
 
   if (end === -1) {
     return { error: `missing closing quote, quote was opened at index ${start - 1}` };
   }
 
-  // continue after the end of our string and the closing quote
   return { next: end + 1, segment: str.slice(start, end) };
 }
 
-// A dot, skip over it
-function skipDot(str: string, pos: number): PathStep {
+function skipDot(str: string, pos: number) {
   if (pos === 0) {
     return { error: 'pattern cannot start with a dot' };
   }
@@ -438,24 +399,20 @@ function skipDot(str: string, pos: number): PathStep {
   return { next };
 }
 
-// We're at a simple character, just collect everything until the next dot or quote
-function readPlainSegment(str: string, pos: number): PathStep {
-  const end = indexOfMany(str, splitChars, pos); // collect until dot or quote
+function readPlainSegment(str: string, pos: number) {
+  const end = indexOfMany(str, splitChars, pos);
 
   const segment = end >= 0 ? str.slice(pos, end) : str.slice(pos, str.length);
 
-  return { next: end === -1 ? str.length : end, segment }; // continue after the end
+  return { next: end === -1 ? str.length : end, segment } satisfies PathStep;
 }
 
-function indexOfMany(str: string, matches: string[], position: number): number {
+function indexOfMany(str: string, matches: string[], position: number) {
   const indices: number[] = matches.map((_) => -1);
-  // for every string we want to find, record the index of its first occurance
   for (let i = 0; i < matches.length; i++) {
     indices[i] = str.indexOf(matches[i], position);
   }
 
-  // find the first match (smallest value in our results)
-  // but skip over -1, because that means the string didn't contain that match
   let smallest = -1;
   for (const i of indices) {
     if (smallest === -1 || i < smallest) {
@@ -468,15 +425,12 @@ function indexOfMany(str: string, matches: string[], position: number): number {
 
 if (IsDev) {
   const tests = [
-    // simple case
     { input: 'abc', output: ['abc'] },
 
-    // single quotes, double quotes
     { input: '"xx"."yy"', output: ['xx', 'yy'] },
     { input: "'xx'.'yy'", output: ['xx', 'yy'] },
     { input: '".".\'.\'', output: ['.', '.'] },
 
-    // keys with split-characters inside them
     { input: '"\'a.\'b".asdf', output: ["'a.'b", 'asdf'] },
     { input: '"x.y.z".firstName', output: ['x.y.z', 'firstName'] },
     { input: 'a.".b"', output: ['a', '.b'] },
@@ -484,13 +438,10 @@ if (IsDev) {
     { input: 'a.\'""".b"\'', output: ['a', '""".b"'] },
     { input: 'a.\'""".b\'', output: ['a', '""".b'] },
 
-    // empty
     { input: '', output: [] },
     { input: "''", output: [] },
     { input: '""', output: [] },
 
-    // invalid inputs
-    // missing closing quotes
     { input: '"', output: null },
     { input: '."', output: null },
     { input: '".', output: null },
@@ -498,7 +449,6 @@ if (IsDev) {
     { input: ".'", output: null },
     { input: "'.", output: null },
 
-    // dots at the wrong location
     { input: '.', output: null },
     { input: "'a'.", output: null },
     { input: '.a', output: null },
@@ -511,7 +461,7 @@ if (IsDev) {
     let result = parseJsonPath(test.input);
 
     if (typeof result === 'string') {
-      result = null as unknown as string[]; // string means error message
+      result = null as unknown as string[];
     }
 
     if (result === null && expected === null) {
@@ -520,20 +470,20 @@ if (IsDev) {
 
     let hasError = false;
     if (result === null && expected !== null) {
-      hasError = true; // didn't match when it should have
+      hasError = true;
     }
     if (result !== null && expected === null) {
-      hasError = true; // matched something we don't want
+      hasError = true;
     }
 
     if (!hasError && result && expected) {
       if (result.length !== expected.length) {
-        hasError = true; // wrong length
+        hasError = true;
       }
 
       for (let i = 0; i < result.length && !hasError; i++) {
         if (result[i] !== expected[i]) {
-          hasError = true; // wrong array entry
+          hasError = true;
         }
       }
     }
@@ -546,13 +496,13 @@ if (IsDev) {
   }
 }
 
-function wildcardToRegex(pattern: string): RegExp {
-  const components = pattern.split('*'); // split by '*' symbol
-  const escapedComponents = components.map(regexEscape); // ensure the components don't contain regex special characters
-  const joined = escapedComponents.join('.*'); // join components, adding back the wildcard
-  return new RegExp(`^${joined}$`);
+function wildcardToRegex(pattern: string) {
+  const components = pattern.split('*');
+  const escapedComponents = components.map(regexEscape);
+  const joined = escapedComponents.join('.*');
+  return new RegExp(`^${joined}$`, 'u');
 }
 
-function regexEscape(regexPattern: string): string {
-  return regexPattern.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+function regexEscape(regexPattern: string) {
+  return regexPattern.replace(/[/\\^$*+?.()|[\]{}]/gu, '\\$&');
 }

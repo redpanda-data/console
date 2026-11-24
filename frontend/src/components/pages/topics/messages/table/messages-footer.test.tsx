@@ -95,7 +95,6 @@ describe('the MessagesFooter — scroll-triggered pagination', () => {
   test('a parent passing a fresh onLoadMore closure every render does not rebuild the observer', () => {
     const { rerender } = render(<MessagesFooter {...baseProps} onLoadMore={() => undefined} />);
     expect(MockIntersectionObserver.instances).toHaveLength(1);
-    // Simulate the real call site: a new inline arrow (and a flipping isLoadingMore) on every render.
     rerender(<MessagesFooter {...baseProps} isLoadingMore onLoadMore={() => undefined} />);
     rerender(<MessagesFooter {...baseProps} onLoadMore={() => undefined} />);
     rerender(<MessagesFooter {...baseProps} onLoadMore={() => undefined} />);

@@ -71,19 +71,14 @@ export const LegacySchemaRegistrySection = ({ readOnlyApiMode = false }: { readO
   );
 };
 
+/**
+ * The redesigned form requires a reported Schema Registry API sync capability; absent or unknown support keeps the legacy switch.
+ */
 export const SchemaRegistryStep = () => {
   const { getValues, setValue } = useFormContext<FormValues>();
-  // Show the redesigned section only when the connected cluster reports SR sync
-  // over the Schema Registry API (Redpanda >= 26.2.0). Fails closed: a null
-  // store (compatibility not loaded or the fetch failed) and older backends
-  // that omit the endpoint both leave this false, falling back to the legacy
-  // switch, which works on every cluster.
   const showRedesigned = useSupportedFeaturesStore((s) => s.shadowLinkSchemaRegistrySync);
 
-  // When we fall back to the legacy UI, reset the hidden redesigned fields so
-  // stale values can't block validation or leak into the request. Only fires
-  // if the redesigned section had been shown and set a non-'none' mode, so on
-  // an initial legacy render (mode already 'none') it's a no-op.
+  // WARNING: Clear hidden schema registry values when falling back; they can otherwise leak into the request or block validation.
   useEffect(() => {
     if (showRedesigned) {
       return;
@@ -91,8 +86,6 @@ export const SchemaRegistryStep = () => {
     const priorMode = getValues('schemaRegistry.mode');
     if (priorMode !== SCHEMA_REGISTRY_MODE.NONE) {
       setValue('schemaRegistry', structuredClone(initialValues.schemaRegistry));
-      // Topic sync also exists on older clusters, so keep it as the legacy
-      // switch being on.
       setValue('enableSchemaRegistrySync', priorMode === SCHEMA_REGISTRY_MODE.TOPIC);
     }
   }, [showRedesigned, getValues, setValue]);

@@ -21,7 +21,7 @@ the build. Stop the watcher with Ctrl+C; global teardown stops its containers/ne
 For one file or a collection without starting services:
 
 ```sh
-bun run e2e-test:variant console topics/topic-list.spec.ts
+bun run e2e-test:variant console topics/topic-list.e2e.test.ts
 bun run e2e-test:variant console list --summary
 ```
 

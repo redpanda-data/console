@@ -19,7 +19,6 @@ import {
 } from '../../shadowlink-helpers';
 import type { FormValues } from '../model';
 
-// ACL Filter Resume Component - shows compact summary
 export const ACLFilterResume = ({ index }: { index: number }) => {
   const { control } = useFormContext<FormValues>();
 

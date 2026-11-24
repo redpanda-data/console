@@ -33,7 +33,7 @@ function makePayload(text: string, encoding: PayloadEncoding, overrides: Record<
   };
 }
 
-function makeMessage(overrides: Partial<Record<string, unknown>> = {}): ListMessagesResponse_DataMessage {
+function makeMessage(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     partitionId: 0,
     offset: 0n,

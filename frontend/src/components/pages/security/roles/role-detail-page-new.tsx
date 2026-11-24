@@ -142,9 +142,7 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
         })
       );
       toast.success(`User "${userName}" added to role successfully`);
-    } catch {
-      // Error handled by onError in mutation
-    }
+    } catch {}
   };
 
   const handleRemoveMember = async (memberPrincipal: string) => {
@@ -160,7 +158,6 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
       );
       toast.success(`User "${parsePrincipal(memberPrincipal).name}" removed from role`);
     } catch {
-      // Error handled by onError in mutation
     } finally {
       setDeletingPrincipal(null);
     }
@@ -229,7 +226,6 @@ export const RoleDetailPageNew = () => {
   return (
     <div className="flex flex-col gap-6 pt-4">
       <AclsCard acls={aclData} isLoading={isAclsLoading} principal={`RedpandaRole:${roleName}`} />
-      {/* Principals */}
       <RolePrincipalsSection roleName={roleName} />
     </div>
   );

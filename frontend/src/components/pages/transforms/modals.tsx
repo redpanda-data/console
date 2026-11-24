@@ -41,7 +41,6 @@ const ExplicitConfirmModal = (p: {
     >
       <DialogContent size="lg">
         <DialogHeader>
-          {/* Room for DialogContent's absolute close button: the header's p-4 plus pr-6 clears its 40px. */}
           <div className="pr-6">
             <DialogTitle>{p.title}</DialogTitle>
           </div>

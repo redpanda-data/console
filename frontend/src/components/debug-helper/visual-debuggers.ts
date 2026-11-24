@@ -56,8 +56,7 @@ export const VISUAL_DEBUGGERS: VisualDebugger[] = [
 const STORAGE_KEY = '__debug_visual_debuggers';
 const STYLE_ELEMENT_ID = '__debug-visual-styles';
 
-// Root-element filters don't create a containing block for fixed-position
-// descendants, so grayscale/blur on <html> won't break dialogs or toasts.
+// WARNING: Keep visual filters on the root; applying them to a wrapper can trap fixed-position dialogs and toasts.
 const DEBUG_CSS = `
 html.__debug-grayscale { filter: grayscale(1); }
 html.__debug-blur { filter: blur(3px); }
@@ -94,11 +93,11 @@ html.__debug-a11y [tabindex]:not([tabindex='0']):not([tabindex='-1']) {
 
 const KNOWN_IDS: ReadonlySet<string> = new Set(VISUAL_DEBUGGERS.map((d) => d.id));
 
-function classFor(id: VisualDebuggerId): string {
+function classFor(id: VisualDebuggerId) {
   return `__debug-${id}`;
 }
 
-function readEnabled(): VisualDebuggerId[] {
+function readEnabled() {
   try {
     const raw = window.sessionStorage.getItem(STORAGE_KEY);
     if (!raw) {
@@ -114,7 +113,7 @@ function readEnabled(): VisualDebuggerId[] {
   }
 }
 
-function writeEnabled(ids: VisualDebuggerId[]): void {
+function writeEnabled(ids: VisualDebuggerId[]) {
   if (ids.length === 0) {
     window.sessionStorage.removeItem(STORAGE_KEY);
   } else {
@@ -122,8 +121,8 @@ function writeEnabled(ids: VisualDebuggerId[]): void {
   }
 }
 
-function ensureStyles(): void {
-  if (document.getElementById(STYLE_ELEMENT_ID)) {
+function ensureStyles() {
+  if (document.querySelector(`#${STYLE_ELEMENT_ID}`)) {
     return;
   }
   const el = document.createElement('style');
@@ -132,18 +131,21 @@ function ensureStyles(): void {
   document.head.appendChild(el);
 }
 
-function applyDomState(enabled: VisualDebuggerId[]): void {
+function applyDomState(enabled: VisualDebuggerId[]) {
   ensureStyles();
   for (const { id } of VISUAL_DEBUGGERS) {
     document.documentElement.classList.toggle(classFor(id), enabled.includes(id));
   }
 }
 
-export function getEnabledVisualDebuggers(): VisualDebuggerId[] {
+/**
+ * Dev-only overlays restore the tab's persisted selections at module load.
+ */
+export function getEnabledVisualDebuggers() {
   return readEnabled();
 }
 
-export function setVisualDebugger(id: VisualDebuggerId, enabled: boolean): void {
+export function setVisualDebugger(id: VisualDebuggerId, enabled: boolean) {
   const current = new Set(readEnabled());
   if (enabled) {
     current.add(id);
@@ -155,12 +157,11 @@ export function setVisualDebugger(id: VisualDebuggerId, enabled: boolean): void 
   applyDomState(next);
 }
 
-export function clearVisualDebuggers(): void {
+export function clearVisualDebuggers() {
   writeEnabled([]);
   applyDomState([]);
 }
 
-// Re-apply persisted debuggers at module load so overlays survive a reload.
 if (IsDev && typeof window !== 'undefined') {
   try {
     const enabled = readEnabled();
@@ -168,6 +169,6 @@ if (IsDev && typeof window !== 'undefined') {
       applyDomState(enabled);
     }
   } catch {
-    // sessionStorage / DOM unavailable.
+    // WARNING: Browser storage or the DOM can be unavailable; dev overlays must not prevent startup.
   }
 }

@@ -9,13 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/*
- For local debugging after `npm run build`
-
- > node --inspect ./scripts/serve.mjs
-
- */
-
 import express from 'express';
 import fetch from 'node-fetch';
 
@@ -33,12 +26,10 @@ app.use(express.static(rootDir));
 
 app.use('/api/*', async (req, res) => {
   const url = apiServer + req.baseUrl;
-  // console.log('api request will be proxied', { targetUrl: url });
 
   const proxied = await fetch(url, {
     method: req.method,
     body: req.body,
-    // headers: req.headers,
   });
 
   res.statusCode = proxied.status;

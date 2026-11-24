@@ -1,7 +1,6 @@
 import {
   type ListRoleBindingsRequest_Filter,
   ListRoleBindingsRequestSchema,
-  type RoleBinding,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/iam/v1/role_binding_pb';
 import {
   type CreateServiceAccountRequest,
@@ -17,7 +16,6 @@ import {
   type ListServiceAccountsResponse,
   type RotateServiceAccountSecretRequest,
   type RotateServiceAccountSecretResponse,
-  type ServiceAccount,
   ServiceAccountService,
   type UpdateServiceAccountRequest,
   type UpdateServiceAccountResponse,
@@ -37,7 +35,7 @@ import type { GenMessage } from '@bufbuild/protobuf/codegenv2';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
 import { createConnectQueryKey, useMutation, useQuery } from '@connectrpc/connect-query';
-import { type UseMutationResult, type UseQueryResult, useQueryClient } from '@tanstack/react-query';
+import { type UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import {
   MAX_PAGE_SIZE,
   MEDIUM_LIVED_CACHE_STALE_TIME,
@@ -50,7 +48,7 @@ import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 export const useListServiceAccountsQuery = (
   input?: ListServiceAccountsRequest,
   options?: QueryOptions<GenMessage<ListServiceAccountsRequest>, ListServiceAccountsResponse>
-): UseQueryResult<ListServiceAccountsResponse, ConnectError> => {
+) => {
   const listServiceAccountsRequest = create(ListServiceAccountsRequestSchema, {
     pageSize: input?.pageSize ?? MAX_PAGE_SIZE,
     pageToken: input?.pageToken ?? '',
@@ -65,12 +63,7 @@ export const useListServiceAccountsQuery = (
 export const useListServiceAccountsWithRoleBindingsQuery = (
   input?: ListServiceAccountsRequest,
   options?: QueryOptions<GenMessage<ListServiceAccountsRequest>, ListServiceAccountsResponse>
-): {
-  data: { serviceAccount: ServiceAccount; roleBindings: RoleBinding[] }[];
-  isLoading: boolean;
-  isError: boolean;
-  error: ConnectError | null;
-} => {
+) => {
   const listServiceAccountsResult = useListServiceAccountsQuery(input, options);
 
   const serviceAccounts = listServiceAccountsResult?.data?.serviceAccounts || [];
@@ -102,7 +95,7 @@ export const useListServiceAccountsWithRoleBindingsQuery = (
 export const useGetServiceAccountQuery = (
   input: GetServiceAccountRequest,
   options?: QueryOptions<GenMessage<GetServiceAccountRequest>, GetServiceAccountResponse>
-): UseQueryResult<GetServiceAccountResponse, ConnectError> =>
+) =>
   useQuery(getServiceAccount, input, {
     enabled: options?.enabled,
     staleTime: MEDIUM_LIVED_CACHE_STALE_TIME,
@@ -111,11 +104,11 @@ export const useGetServiceAccountQuery = (
 export const useGetServiceAccountCredentialsQuery = (
   input: GetServiceAccountCredentialsRequest,
   options?: QueryOptions<GenMessage<GetServiceAccountCredentialsRequest>, GetServiceAccountCredentialsResponse>
-): UseQueryResult<GetServiceAccountCredentialsResponse, ConnectError> =>
+) =>
   useQuery(getServiceAccountCredentials, input, {
     enabled: options?.enabled,
     staleTime: NO_LIVED_CACHE_STALE_TIME,
-    retry: 1, // Provide quick feedback to the user in case of an error
+    retry: 1,
   });
 
 const useInvalidateServiceAccountsList = () => {
@@ -134,9 +127,11 @@ const useInvalidateServiceAccountsList = () => {
   return { invalidate };
 };
 
-export const useCreateServiceAccountMutation = (options?: {
+export const useCreateServiceAccountMutation: (options?: {
   skipInvalidation?: boolean;
-}): UseMutationResult<CreateServiceAccountResponse, ConnectError, MessageInit<CreateServiceAccountRequest>> => {
+}) => UseMutationResult<CreateServiceAccountResponse, ConnectError, MessageInit<CreateServiceAccountRequest>> = (
+  options
+) => {
   const { invalidate } = useInvalidateServiceAccountsList();
 
   return useMutation(createServiceAccount, {
@@ -159,11 +154,11 @@ export const useCreateServiceAccountMutation = (options?: {
   });
 };
 
-export const useUpdateServiceAccountMutation = (): UseMutationResult<
+export const useUpdateServiceAccountMutation: () => UseMutationResult<
   UpdateServiceAccountResponse,
   ConnectError,
   MessageInit<UpdateServiceAccountRequest>
-> => {
+> = () => {
   const queryClient = useQueryClient();
   const { invalidate } = useInvalidateServiceAccountsList();
 
@@ -192,11 +187,11 @@ export const useUpdateServiceAccountMutation = (): UseMutationResult<
   });
 };
 
-export const useRotateServiceAccountSecretMutation = (): UseMutationResult<
+export const useRotateServiceAccountSecretMutation: () => UseMutationResult<
   RotateServiceAccountSecretResponse,
   ConnectError,
   MessageInit<RotateServiceAccountSecretRequest>
-> => {
+> = () => {
   const queryClient = useQueryClient();
 
   return useMutation(rotateServiceAccountSecret, {
@@ -223,9 +218,11 @@ export const useRotateServiceAccountSecretMutation = (): UseMutationResult<
   });
 };
 
-export const useDeleteServiceAccountMutation = (options?: {
+export const useDeleteServiceAccountMutation: (options?: {
   skipInvalidation?: boolean;
-}): UseMutationResult<DeleteServiceAccountResponse, ConnectError, MessageInit<DeleteServiceAccountRequest>> => {
+}) => UseMutationResult<DeleteServiceAccountResponse, ConnectError, MessageInit<DeleteServiceAccountRequest>> = (
+  options
+) => {
   const { invalidate } = useInvalidateServiceAccountsList();
 
   return useMutation(deleteServiceAccount, {

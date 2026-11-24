@@ -32,12 +32,11 @@ const SECTION_TITLES: Record<string, string> = {
   resource: 'RESOURCES',
 };
 
-// Per-level indent, capped so deep pipelines truncate instead of pushing rows off the side.
 const INDENT_STEP = 14;
 const INDENT_BASE = 8;
 const MAX_INDENT_DEPTH = 6;
 
-function indentFor(depth: number): number {
+function indentFor(depth: number) {
   return INDENT_BASE + Math.min(depth, MAX_INDENT_DEPTH) * INDENT_STEP;
 }
 
@@ -46,9 +45,7 @@ type NodeMaps = {
   byId: Map<string, PipelineFlowNode>;
 };
 
-// Nearest ancestor (or the node itself) with an editable YAML location — what a click reveals.
-// Structural sub-nodes (switch cases) have no edit target, so they resolve to their parent.
-function editableAncestorId(node: PipelineFlowNode, maps: NodeMaps): string | undefined {
+function editableAncestorId(node: PipelineFlowNode, maps: NodeMaps) {
   let current: PipelineFlowNode | undefined = node;
   while (current && !current.editTarget) {
     current = current.parentId ? maps.byId.get(current.parentId) : undefined;
@@ -56,13 +53,11 @@ function editableAncestorId(node: PipelineFlowNode, maps: NodeMaps): string | un
   return current?.id;
 }
 
-// Top-level rows shown for a section (its `none` placeholders read as "empty").
-function sectionRows(maps: NodeMaps, sectionId: string): PipelineFlowNode[] {
+function sectionRows(maps: NodeMaps, sectionId: string) {
   return maps.childrenOf(sectionId).filter((n) => n.label !== 'none');
 }
 
-// Visible rows in document order (respecting collapsed groups) for roving-tabindex navigation.
-function collectVisibleIds(maps: NodeMaps, collapsedIds: Set<string>): string[] {
+function collectVisibleIds(maps: NodeMaps, collapsedIds: Set<string>) {
   const ids: string[] = [];
   const visit = (node: PipelineFlowNode) => {
     ids.push(node.id);
@@ -80,15 +75,12 @@ function collectVisibleIds(maps: NodeMaps, collapsedIds: Set<string>): string[] 
   return ids;
 }
 
-// The row handler preventDefaults Enter/Space to select the node, which would swallow the link's
-// navigation; arrow keys still bubble, so row navigation keeps working from a focused link.
-function stopRowSelectKeys(e: React.KeyboardEvent): void {
+function stopRowSelectKeys(e: React.KeyboardEvent) {
   if (e.key === 'Enter' || e.key === ' ') {
     e.stopPropagation();
   }
 }
 
-/** Error takes precedence over the unsaved dot, so a row never shows both. */
 const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boolean }) => {
   if (hasError) {
     return (
@@ -107,14 +99,11 @@ const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boo
   return null;
 };
 
-// The id a row's StopMark describes it with (undefined for rows without one).
-function useStopDescriptionId(node: PipelineFlowNode): string | undefined {
+function useStopDescriptionId(node: PipelineFlowNode) {
   const id = useId();
   return hasStopSlot(node) ? id : undefined;
 }
 
-// How an input ends — its stop condition, or on its own — as a small glyph with the full sentence
-// on hover, and as the row's description (`descriptionId`) for assistive tech.
 const StopMark = ({ node, descriptionId }: { node: PipelineFlowNode; descriptionId?: string }) => {
   if (!(descriptionId && node.stopSlot && node.endBehavior)) {
     return null;
@@ -140,14 +129,13 @@ const StopMark = ({ node, descriptionId }: { node: PipelineFlowNode; description
   );
 };
 
-// The muted ink and the hover/focus reveal live on the wrapper; `current-ghost` takes that ink.
 const NodeDocsLink = ({ label, href }: { label: string; href: string }) => (
   <span className="inline-flex shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 has-[:focus-visible]:opacity-100">
     <Button
       aria-label={`${label} documentation`}
       as="a"
       href={href}
-      // Clicking the row jumps the YAML cursor — opening docs must not also do that.
+      // WARNING: Stop docs-link clicks from reaching the tree row; opening documentation must not move the YAML cursor.
       onClick={(e: React.MouseEvent) => e.stopPropagation()}
       onKeyDown={stopRowSelectKeys}
       rel="noopener noreferrer"
@@ -162,13 +150,7 @@ const NodeDocsLink = ({ label, href }: { label: string; href: string }) => (
 
 type TreeKeyNav = { visibleIds: string[]; maps: NodeMaps; collapsedIds: Set<string> };
 
-// Which visible row (if any) a navigation key moves focus to. Expansion-state changes (ArrowRight
-// on a collapsed group, ArrowLeft on an expanded one) are handled before this is consulted.
-function keyboardFocusTarget(
-  key: string,
-  node: PipelineFlowNode,
-  { visibleIds, maps, collapsedIds }: TreeKeyNav
-): string | undefined {
+function keyboardFocusTarget(key: string, node: PipelineFlowNode, { visibleIds, maps, collapsedIds }: TreeKeyNav) {
   const index = visibleIds.indexOf(node.id);
   switch (key) {
     case 'ArrowDown':
@@ -180,10 +162,8 @@ function keyboardFocusTarget(
     case 'End':
       return visibleIds.at(-1);
     case 'ArrowRight':
-      // Expanded group: move into its first child (the next row in document order).
       return maps.childrenOf(node.id).length > 0 && !collapsedIds.has(node.id) ? visibleIds[index + 1] : undefined;
     case 'ArrowLeft': {
-      // Leaf or collapsed group: move to the parent row, unless the parent is a section header.
       const parent = node.parentId ? maps.byId.get(node.parentId) : undefined;
       return parent && parent.kind !== 'section' ? parent.id : undefined;
     }
@@ -194,22 +174,19 @@ function keyboardFocusTarget(
 
 type RowKeyIntent = { kind: 'select' } | { kind: 'toggle' } | { kind: 'focus'; id: string };
 
-// What a key on a row does: Enter/Space select it, ArrowRight/ArrowLeft expand or collapse a group
-// before they move focus, and the remaining navigation keys move focus to another visible row.
-function rowKeyIntent(key: string, node: PipelineFlowNode, treeNav: TreeKeyNav): RowKeyIntent | undefined {
+function rowKeyIntent(key: string, node: PipelineFlowNode, treeNav: TreeKeyNav) {
   if (key === 'Enter' || key === ' ') {
-    return { kind: 'select' };
+    return { kind: 'select' } satisfies RowKeyIntent | undefined;
   }
   const hasChildren = treeNav.maps.childrenOf(node.id).length > 0;
   const collapsed = treeNav.collapsedIds.has(node.id);
   if ((key === 'ArrowRight' && hasChildren && collapsed) || (key === 'ArrowLeft' && hasChildren && !collapsed)) {
-    return { kind: 'toggle' };
+    return { kind: 'toggle' } satisfies RowKeyIntent | undefined;
   }
   const target = keyboardFocusTarget(key, node, treeNav);
-  return target ? { kind: 'focus', id: target } : undefined;
+  return (target ? { kind: 'focus', id: target } : undefined) satisfies RowKeyIntent | undefined;
 }
 
-// Roving-focus wiring shared by every row.
 type TreeNav = {
   tabbableId: string | undefined;
   registerRow: (id: string, el: HTMLDivElement | null) => void;
@@ -228,9 +205,7 @@ type RowProps = {
   unsavedNodeIds?: ReadonlySet<string>;
   onSelect: (highlightId: string, editableId?: string) => void;
   nav: TreeNav;
-  /** aria-posinset: 1-based position among rendered siblings. */
   posinset: number;
-  /** aria-setsize: number of rendered siblings at this level. */
   setsize: number;
 };
 
@@ -260,8 +235,6 @@ const NodeRow = ({
 
   return (
     <>
-      {/* The row itself is the treeitem: it takes focus and handles select/expand keys; the
-          chevron stays a presentational click target so mouse behaviour is unchanged. */}
       <div
         aria-describedby={stopDescriptionId}
         aria-expanded={hasChildren ? !collapsed : undefined}
@@ -279,8 +252,6 @@ const NodeRow = ({
         style={{ paddingLeft: indentFor(depth) }}
         tabIndex={nav.tabbableId === node.id ? 0 : -1}
       >
-        {/* Toggle is a separate hit target so it doesn't also select the node; the row owns the
-            keyboard/ARIA expansion semantics, so it's hidden from the accessibility tree. */}
         {hasChildren ? (
           <button
             aria-hidden
@@ -347,7 +318,6 @@ const NodeRow = ({
   );
 };
 
-// Mirrors a node row's indent + toggle gutter so the dashed "Add" affordance lines up.
 const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section: string) => void }) => (
   <div className="flex items-stretch" style={{ paddingLeft: indentFor(0) }}>
     <span aria-hidden className="w-5 shrink-0" />
@@ -362,14 +332,11 @@ const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section:
   </div>
 );
 
-// Notice atop the outline: holding a last-valid outline, vs. can't build one at all yet.
-function invalidOutlineNotice(showingStale: boolean, error?: string): string | undefined {
+function invalidOutlineNotice(showingStale: boolean, error?: string) {
   if (showingStale) {
     return 'Showing the last valid outline — the current YAML is invalid.';
   }
-  if (error) {
-    return 'The current YAML is invalid — fix it in the editor to see the outline.';
-  }
+  return error ? 'The current YAML is invalid — fix it in the editor to see the outline.' : undefined;
 }
 
 type TreeRovingFocusOptions = {
@@ -379,8 +346,7 @@ type TreeRovingFocusOptions = {
   onSelectNode?: (highlightId: string, editableId?: string) => void;
 };
 
-// Roving tabindex: exactly one row is tabbable; arrow keys move focus between visible rows.
-function useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode }: TreeRovingFocusOptions): TreeNav {
+function useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode }: TreeRovingFocusOptions) {
   const visibleIds = useMemo(() => collectVisibleIds(maps, collapsedIds), [maps, collapsedIds]);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const rowRefs = useRef(new Map<string, HTMLDivElement>());
@@ -412,7 +378,7 @@ function useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode }: TreeRo
     }
   };
 
-  return { tabbableId, registerRow, onRowKeyDown: handleRowKeyDown, onRowFocus: setFocusedId };
+  return { tabbableId, registerRow, onRowKeyDown: handleRowKeyDown, onRowFocus: setFocusedId } satisfies TreeNav;
 }
 
 type PipelineStructureTreeProps = {
@@ -433,6 +399,8 @@ type PipelineStructureTreeProps = {
  * Compact outline of a pipeline; shows only structure (icon + name) so deep nesting fits the narrow
  * lane, and rows drive the editor. ARIA tree (flattened): every row is a focusable `treeitem` with
  * aria-level/posinset/setsize; a roving tabindex + Arrow/Home/End/Enter/Space drive focus and selection.
+ *
+ * The treeitem owns keyboard focus, selection, and expansion. The separate pointer-only chevron must not select the row or appear as another accessibility target.
  */
 export function PipelineStructureTree({
   configYaml,
@@ -442,7 +410,6 @@ export function PipelineStructureTree({
   onSelectNode,
   onAddConnector,
 }: PipelineStructureTreeProps) {
-  // Hold the last valid outline so the lane doesn't blank out mid-edit.
   const { nodes, error, showingStale } = useResilientParse(configYaml);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
@@ -464,17 +431,14 @@ export function PipelineStructureTree({
     });
 
   const sections = maps.childrenOf(undefined).filter((n) => n.kind === 'section');
-  // Sections with no real component (only a `none` placeholder) read as "empty".
   const isEmptySection = (sectionId: string) => sectionRows(maps, sectionId).length === 0;
 
   const nav = useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode });
   const notice = invalidOutlineNotice(showingStale, error);
 
   return (
-    // Each non-empty section is its own labelled tree — role="tree" may own only treeitem/group
-    // children, so headers, "empty" notes and Add rows live between trees. Arrows still cross sections.
+    // WARNING: Keep section headings and add actions outside the tree; the tree role may own only tree items and groups.
     <div className="flex flex-col gap-3 py-3 pr-2">
-      {/* Left margin only — the container's `pr-2` supplies the matching right gap. */}
       {notice ? (
         <InvalidConfigNotice className="ml-2" variant="compact">
           {notice}

@@ -27,10 +27,9 @@ import type { DataColumnKey } from '../../../../../state/ui';
 import { toJson } from '../../../../../utils/json-utils';
 import { base64FromUInt8Array } from '../../../../../utils/utils';
 
-// Define the column order as a constant
 const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
 
-function cleanPayload(p: Payload, includeRawContent: boolean): Payload | undefined {
+function cleanPayload(p: Payload, includeRawContent: boolean) {
   if (!p) {
     return;
   }
@@ -51,7 +50,7 @@ function cleanPayload(p: Payload, includeRawContent: boolean): Payload | undefin
   return cleanedPayload;
 }
 
-function cleanMessage(src: TopicMessage, includeRawContent: boolean): Partial<TopicMessage> {
+function cleanMessage(src: TopicMessage, includeRawContent: boolean) {
   return {
     partitionID: src.partitionID,
     offset: src.offset,
@@ -64,13 +63,12 @@ function cleanMessage(src: TopicMessage, includeRawContent: boolean): Partial<To
     })),
     key: cleanPayload(src.key, includeRawContent),
     value: cleanPayload(src.value, includeRawContent),
-  };
+  } satisfies Partial<TopicMessage>;
 }
 
-function csvHeaders(firstMessage: TopicMessage): string[] {
+function csvHeaders(firstMessage: TopicMessage) {
   const headers: string[] = [...COLUMN_ORDER];
 
-  // Add other common fields that might not be in COLUMN_ORDER
   if (firstMessage.compression && !headers.includes('compression')) {
     headers.push('compression');
   }
@@ -81,16 +79,17 @@ function csvHeaders(firstMessage: TopicMessage): string[] {
   return headers;
 }
 
-// Commas inside a payload would split the cell, so they become semicolons.
-function csvPayloadCell(payload: Payload | undefined): string {
+function csvPayloadCell(payload: Payload | undefined) {
   if (!payload) {
     return '';
   }
   const content = payload.payload || '';
-  return typeof content === 'object' ? JSON.stringify(content).replace(/,/g, ';') : String(content).replace(/,/g, ';');
+  return typeof content === 'object'
+    ? JSON.stringify(content).replace(/,/gu, ';')
+    : String(content).replace(/,/gu, ';');
 }
 
-function csvCell(message: TopicMessage, header: string): string | number | boolean {
+function csvCell(message: TopicMessage, header: string) {
   if (header === 'key') {
     return csvPayloadCell(message.key);
   }
@@ -103,22 +102,19 @@ function csvCell(message: TopicMessage, header: string): string | number | boole
   if (header === 'valueSize') {
     return message.value?.size || '';
   }
-  // For other simple fields like partitionID, offset, timestamp, compression, isTransactional
   const messageValue = (message as Record<string, unknown>)[header];
   return messageValue !== undefined && messageValue !== null ? (messageValue as string | number | boolean) : '';
 }
 
-function convertToCSV(messagesToConvert: TopicMessage[]): string {
+function convertToCSV(messagesToConvert: TopicMessage[]) {
   if (messagesToConvert.length === 0) {
     return '';
   }
 
   const headers = csvHeaders(messagesToConvert[0]);
 
-  // Add the headers
   const csvRows: string[] = [headers.join(',')];
 
-  // Add the data, with fields in the same order as headers
   for (const message of messagesToConvert) {
     csvRows.push(headers.map((header) => csvCell(message, header)).join(','));
   }
@@ -131,7 +127,8 @@ function downloadFile(content: string, type: string, fileName: string) {
   const file = new Blob([content], { type });
   link.href = URL.createObjectURL(file);
   link.download = fileName;
-  document.body.appendChild(link); // required in firefox
+  // WARNING: Attach the download link before clicking it; Firefox requires it to be in the document.
+  document.body.appendChild(link);
   link.click();
 }
 

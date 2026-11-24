@@ -13,12 +13,8 @@ import { config } from 'config';
 import { z } from 'zod';
 import { create } from 'zustand';
 
-// Crash recovery for the pipeline editor: one localStorage buffer per editor target, cleared on save.
-// Not the drafts feature, which is server-side `STATE_DRAFT`.
-
 export const EDITOR_AUTOSAVE_STORAGE_KEY = 'rpcn-editor-autosave';
 
-// Earlier browser-local drafts prototype; removed on first read.
 const LEGACY_DRAFTS_STORAGE_KEY = 'rpcn-pipeline-drafts';
 
 /** Per cluster, evicted oldest-first. */
@@ -37,47 +33,43 @@ export const MAX_AUTOSAVE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const CREATE_AUTOSAVE_TARGET = 'create';
 
-export const autosaveTargetKey = (pipelineId?: string): string => pipelineId || CREATE_AUTOSAVE_TARGET;
+export const autosaveTargetKey = (pipelineId?: string) => pipelineId || CREATE_AUTOSAVE_TARGET;
 
 const attachedServiceAccountSchema = z.object({ serviceAccountId: z.string(), secretName: z.string() });
 
 /** A service account created in the editor for the pipeline to log in with, not yet saved to it. */
 export type AttachedServiceAccount = z.infer<typeof attachedServiceAccountSchema>;
 
-// Every field `applyAutosave` hands to `form.reset`, so a stale shape can't crash the editor.
 const editorAutosaveEntrySchema = z.object({
   version: z.literal(AUTOSAVE_ENTRY_VERSION),
-  /** `create`, or a pipeline id. */
   targetKey: z.string(),
   clusterId: z.string(),
   name: z.string(),
   description: z.string(),
   computeUnits: z.number(),
   tags: z.array(z.object({ key: z.string(), value: z.string() })),
-  /** Absent from entries written before egress gateways could be picked. */
   egressGatewayIds: z.array(z.string()).optional(),
   configYaml: z.string(),
-  /** Epoch ms, this browser's clock. */
   updatedAt: z.number(),
-  /** The pipeline's `update_time` (epoch ms) these edits were based on; staleness compares server clocks only. */
   basedOnUpdateTime: z.number().nullish(),
-  /** Lives outside the YAML, so the config's service-account login needs it restored alongside. */
   serviceAccount: attachedServiceAccountSchema.nullish(),
 });
 
+/**
+ * The target is create or a pipeline ID. Eviction uses browser time; staleness compares the displayed server baseline with the server's update time. Restore the service account alongside YAML and allow older entries with no gateway selection.
+ */
 export type EditorAutosaveEntry = z.infer<typeof editorAutosaveEntrySchema>;
 
 export type EditorAutosaveInput = Omit<EditorAutosaveEntry, 'version' | 'clusterId' | 'updatedAt'>;
 
-const currentClusterId = (): string => config.clusterId || 'default';
+const currentClusterId = () => config.clusterId || 'default';
 
-const isAutosaveYamlTooLarge = (configYaml: string): boolean => new Blob([configYaml]).size > MAX_AUTOSAVE_YAML_BYTES;
+const isAutosaveYamlTooLarge = (configYaml: string) => new Blob([configYaml]).size > MAX_AUTOSAVE_YAML_BYTES;
 
-const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now()): boolean =>
+const isAutosaveExpired = (entry: EditorAutosaveEntry, now: number = Date.now()) =>
   now - entry.updatedAt > MAX_AUTOSAVE_AGE_MS;
 
-// Stored entries that still match the schema; throws on unparsable JSON.
-function parseStoredEntries(raw: string | null): EditorAutosaveEntry[] {
+function parseStoredEntries(raw: string | null) {
   const parsed: unknown = raw ? JSON.parse(raw) : [];
   if (!Array.isArray(parsed)) {
     return [];
@@ -88,8 +80,7 @@ function parseStoredEntries(raw: string | null): EditorAutosaveEntry[] {
   });
 }
 
-// Drops malformed and expired entries, writing the pruned set back.
-function readAll(): EditorAutosaveEntry[] {
+function readAll() {
   if (typeof window === 'undefined') {
     return [];
   }
@@ -106,7 +97,7 @@ function readAll(): EditorAutosaveEntry[] {
   }
 }
 
-function writeAll(entries: EditorAutosaveEntry[]): boolean {
+function writeAll(entries: EditorAutosaveEntry[]) {
   if (typeof window === 'undefined') {
     return false;
   }
@@ -118,20 +109,18 @@ function writeAll(entries: EditorAutosaveEntry[]): boolean {
   }
 }
 
-function removeAll(): void {
+function removeAll() {
   if (typeof window === 'undefined') {
     return;
   }
   try {
     window.localStorage.removeItem(EDITOR_AUTOSAVE_STORAGE_KEY);
-  } catch {
-    // Storage is unavailable, so there is nothing left to remove.
-  }
+  } catch {}
 }
 
 const newestFirst = (a: EditorAutosaveEntry, b: EditorAutosaveEntry) => b.updatedAt - a.updatedAt;
 
-function prune(entries: EditorAutosaveEntry[], clusterId: string): EditorAutosaveEntry[] {
+function prune(entries: EditorAutosaveEntry[], clusterId: string) {
   const mine = entries.filter((e) => e.clusterId === clusterId).sort(newestFirst);
   const others = entries.filter((e) => e.clusterId !== clusterId);
   return [...mine.slice(0, MAX_AUTOSAVE_BUFFERS), ...others].sort(newestFirst).slice(0, MAX_AUTOSAVE_BUFFERS_TOTAL);
@@ -160,7 +149,6 @@ export const useRpcnEditorAutosaveStore = create<EditorAutosaveStore>()((set) =>
       clusterId: currentClusterId(),
       updatedAt: Date.now(),
     };
-    // Read through storage so another tab's write isn't clobbered.
     const next = prune(
       [...readAll().filter((e) => !(e.targetKey === entry.targetKey && e.clusterId === entry.clusterId)), entry],
       entry.clusterId
@@ -176,7 +164,6 @@ export const useRpcnEditorAutosaveStore = create<EditorAutosaveStore>()((set) =>
     const clusterId = currentClusterId();
     const next = readAll().filter((e) => !(e.targetKey === targetKey && e.clusterId === clusterId));
     if (!writeAll(next)) {
-      // A buffer that can't be removed would come back and offer to overwrite the save it protected.
       removeAll();
       set({ entries: [] });
       return;
@@ -192,10 +179,7 @@ export const useRpcnEditorAutosaveStore = create<EditorAutosaveStore>()((set) =>
   refresh: () => set({ entries: readAll() }),
 }));
 
-export function selectAutosaveEntry(
-  entries: EditorAutosaveEntry[],
-  targetKey: string | undefined
-): EditorAutosaveEntry | null {
+export function selectAutosaveEntry(entries: EditorAutosaveEntry[], targetKey: string | undefined) {
   if (!targetKey) {
     return null;
   }

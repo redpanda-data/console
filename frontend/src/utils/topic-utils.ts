@@ -46,7 +46,7 @@ export const sizeFactors = {
  * @param unit The time unit
  * @returns Milliseconds (-1 for infinite/default)
  */
-export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit | string): number {
+export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit | string) {
   if (unit === 'infinite' || unit === 'default') {
     return -1;
   }
@@ -70,7 +70,7 @@ export function convertRetentionTimeToMs(value: number, unit: RetentionTimeUnit 
  * @param unit The size unit
  * @returns Bytes (-1 for infinite/default)
  */
-export function convertRetentionSizeToBytes(value: number, unit: RetentionSizeUnit | string): number {
+export function convertRetentionSizeToBytes(value: number, unit: RetentionSizeUnit | string) {
   if (unit === 'infinite' || unit === 'default') {
     return -1;
   }
@@ -148,9 +148,8 @@ export function getRetentionSizeFinalValue(value: number | undefined, unit: Rete
  * @param isRedpanda Whether this is a Redpanda cluster
  * @returns Error message if invalid, empty string if valid
  */
-export function validateReplicationFactor(replicationFactor: number, isRedpanda: boolean): string {
+export function validateReplicationFactor(replicationFactor: number, isRedpanda: boolean) {
   if (isRedpanda) {
-    // Enforce odd numbers for Redpanda
     const isOdd = replicationFactor % 2 === 1;
     if (!isOdd) {
       return 'Replication factor must be an odd number';
@@ -159,7 +158,8 @@ export function validateReplicationFactor(replicationFactor: number, isRedpanda:
   return '';
 }
 
-// Exhaustive at compile time; retain the legacy undefined result for unknown runtime inputs.
-function unsupportedRetentionUnit(_unit: never): undefined {
-  // Unknown runtime units retain the legacy unset result; known units are exhaustively checked above.
+function unsupportedRetentionUnit(_unit: never) {
+  // WARNING: Keep the legacy unset result for an unknown runtime unit; the never parameter still checks exhaustiveness.
+  const unset = undefined;
+  return unset;
 }

@@ -59,15 +59,13 @@ function propertyErrorDisplay(property: Property) {
 
 function topicChoices(property: Property) {
   const selectedTopics = property.value ? property.value.toString().split(',').filter(Boolean) : [];
-  // Union, not just `api.topics`: a chip for a topic that has since been deleted (or one rendered
-  // before the topic list resolves) is only removable if its value is among the options.
+  // WARNING: Keep selected topics in the options even if missing from the broker list, or those chips cannot be removed.
   const topicOptions = [...new Set([...(api.topics?.map((x) => x.topicName) ?? []), ...selectedTopics])];
 
   return { selectedTopics, topicOptions };
 }
 
 export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 'source' }) => {
-  // A TopicInput is rendered per property group, so a fixed id would collide.
   const regexCheckboxId = useId();
   const { propsMap, selected, setSelected } = useTopicSelection(p.properties);
 
@@ -104,7 +102,6 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
           <ExpandableText maxChars={60}>{property.entry.definition.documentation}</ExpandableText>
         </FieldDescription>
 
-        {/* A 'source' connector imports data into the cluster. So we let the user choose the name of the topic directly  */}
         {isRegex || p.connectorType === 'source' ? (
           <Input
             autoComplete="off"

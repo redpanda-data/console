@@ -75,7 +75,7 @@ describe('appendWithSlackCap', () => {
   test('appends without trimming until length exceeds max + slack', () => {
     const buffer: number[] = [];
     for (let i = 0; i < 5; i++) {
-      appendWithSlackCap(buffer, i, 3, 2); // max 3 + slack 2 = 5, not yet exceeded
+      appendWithSlackCap(buffer, i, 3, 2);
     }
     expect(buffer).toEqual([0, 1, 2, 3, 4]);
   });
@@ -83,7 +83,7 @@ describe('appendWithSlackCap', () => {
   test('trims to max keeping the newest once past max + slack', () => {
     const buffer: number[] = [];
     for (let i = 0; i < 6; i++) {
-      appendWithSlackCap(buffer, i, 3, 2); // the 6th push exceeds 5 and trims to the last 3
+      appendWithSlackCap(buffer, i, 3, 2);
     }
     expect(buffer).toEqual([3, 4, 5]);
   });

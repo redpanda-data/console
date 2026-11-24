@@ -20,9 +20,8 @@ import {
 } from './pipeline-lint';
 import { describe, expect, it } from 'bun:test';
 
-const hint = (line: number, msg: string): LintHint => ({ line, column: 1, hint: msg, lintType: 'config' }) as LintHint;
+const hint = (line: number, msg: string) => ({ line, column: 1, hint: msg, lintType: 'config' }) as LintHint;
 
-// Line numbers below are 1-based against this document; `url: not-a-url` is line 8.
 const yaml = `pipeline:
   processors:
     - mapping: 'root = this'
@@ -38,7 +37,6 @@ output:
 describe('mapLintHintsToNodes', () => {
   it('attaches a hint to the most specific (nested) node whose YAML range contains its line', () => {
     const byNode = mapLintHintsToNodes(yaml, [hint(8, 'bad url')]);
-    // Line 8 is inside the http leaf (nested in branch), not the branch container.
     expect(byNode.get('proc-1-processors-p0')?.map((h) => h.hint)).toEqual(['bad url']);
     expect(byNode.has('proc-1')).toBe(false);
   });
@@ -61,7 +59,6 @@ describe('mapLintHintsToNodes', () => {
   });
 
   it("attaches a processor-switch `check` hint to the case's rendered entry node, not the wrapper", () => {
-    // Line 4 is the malformed routing condition; the case wrapper itself is never rendered.
     const switchYaml = `pipeline:
   processors:
     - switch:
@@ -87,7 +84,6 @@ output:
   });
 
   it("attaches a lint hint in a switch case's `check` to the CASE node, not the enclosing switch", () => {
-    // Line 6 is the (malformed) routing condition of the first output-switch case.
     const switchYaml = `pipeline:
   processors: []
 output:
@@ -99,7 +95,6 @@ output:
       - output:
           drop: {}`;
     const byNode = mapLintHintsToNodes(switchYaml, [hint(6, 'unexpected end of expression')]);
-    // The condition error maps to the case's own node, not the whole switch.
     expect(byNode.has('output-switch-0')).toBe(true);
   });
 });
@@ -107,9 +102,7 @@ output:
 describe('nodeLineRanges', () => {
   it('ends a node on its last content line, not the line below', () => {
     const ranges = nodeLineRanges(yaml);
-    // The single-line mapping is line 3 only — not extending to `- branch:` below (trailing-newline over-select bug).
     expect(ranges.find((r) => r.id === 'proc-0')).toEqual({ id: 'proc-0', start: 3, end: 3, span: 0 });
-    // The branch container spans its own block (lines 4–9), stopping before `output:`.
     expect(ranges.find((r) => r.id === 'proc-1')).toMatchObject({ start: 4, end: 9 });
   });
 
@@ -121,14 +114,12 @@ describe('nodeLineRanges', () => {
         root.x = 1
 output:
   drop: {}`;
-    // Lines: 3 `- mapping: |`, 4–5 the block body. The node ends on line 5, not 6.
     expect(nodeLineRanges(multiline).find((r) => r.id === 'proc-0')).toMatchObject({ start: 3, end: 5 });
   });
 });
 
 describe('mergeLintHints', () => {
-  const named = (line: number, msg: string, lintType: string): LintHint =>
-    ({ line, column: 1, hint: msg, lintType }) as LintHint;
+  const named = (line: number, msg: string, lintType: string) => ({ line, column: 1, hint: msg, lintType }) as LintHint;
 
   it('drops a query hint that duplicates a save-error hint, keeping the named copy', () => {
     const errorHints = { LINTBADLABEL: named(21, "invalid label 'fd fdas'", 'LINTBADLABEL') };
@@ -137,7 +128,6 @@ describe('mergeLintHints', () => {
     const merged = mergeLintHints(errorHints, queryHints);
 
     expect(Object.keys(merged)).toHaveLength(2);
-    // The deduped survivor carries the lint name (shown as the heading).
     const values = Object.values(merged);
     expect(values.find((h) => h.line === 21)?.lintType).toBe('LINTBADLABEL');
     expect(values.find((h) => h.line === 54)?.hint).toBe('another problem');
@@ -169,17 +159,14 @@ describe('localYamlLintHints', () => {
   });
 
   it('reports a YAML syntax error as an error hint with a clean single-line message', () => {
-    // `fds` is a bare scalar where a mapping key is expected — the class the server rejected on save.
     const hints = localYamlLintHints('input:\n  generate: {}\nfds\noutput:\n  drop: {}');
     expect(hints.length).toBeGreaterThan(0);
     expect(hints[0].lintType).toBe('error');
     expect(hints[0].line).toBeGreaterThan(0);
-    // No embedded code snippet (prettyErrors: false), so it renders as one panel row.
     expect(hints[0].hint).not.toContain('\n');
   });
 
   it('maps the error to its 1-based line', () => {
-    // Unclosed flow sequence on line 1 — a deterministic position.
     const hints = localYamlLintHints('input: [1, 2');
     expect(hints[0]?.line).toBe(1);
   });

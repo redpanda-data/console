@@ -1,20 +1,17 @@
-import { afterEach, expect, rs, test } from '@rstest/core';
+import { afterEach, expect, test } from '@rstest/core';
 import { render, screen, within } from '@testing-library/react';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
+import { useState } from 'react';
 
-import ReassignPartitions from './reassign-partitions';
+import type { PartitionSelection } from './reassign-partitions';
 import { StepSelectPartitions } from './step1-partitions';
 import { StepReview } from './step3-review';
-import { appGlobal } from '../../../state/app-global';
 import { useApiStore } from '../../../state/backend-api';
-import type { Partition, Topic } from '../../../state/rest-interfaces';
+import type { Topic } from '../../../state/rest-interfaces';
 
 const initialState = useApiStore.getState();
-const initialRefresh = appGlobal.onRefresh;
 afterEach(() => {
   useApiStore.setState(initialState, true);
-  appGlobal.onRefresh = initialRefresh;
-  rs.restoreAllMocks();
 });
 const topics: Topic[] = ['zebra', 'alpha'].map((topicName) => ({
   topicName,
@@ -26,7 +23,7 @@ const topics: Topic[] = ['zebra', 'alpha'].map((topicName) => ({
   logDirSummary: { totalSizeBytes: 0, replicaErrors: null, hint: null },
   allowedActions: undefined,
 }));
-const partitions = (topicName: string): Partition[] =>
+const partitions = (topicName: string) =>
   [2, 1].map((id) => ({
     id,
     topicName,
@@ -59,18 +56,27 @@ const seed = () =>
     topicPartitions: new Map(topics.map((topic) => [topic.topicName, partitions(topic.topicName)])),
   });
 
+function PartitionSelectionHarness() {
+  const [selection, setSelection] = useState<PartitionSelection>({});
+  return (
+    <StepSelectPartitions
+      onPartitionSelectionChange={setSelection}
+      partitionSelection={selection}
+      throttledTopics={[]}
+    />
+  );
+}
+
 test('sorts selectable topics by name', async () => {
   seed();
   const user = userEvent.setup();
-  render(<StepSelectPartitions onPartitionSelectionChange={rs.fn()} partitionSelection={{}} throttledTopics={[]} />);
+  render(<PartitionSelectionHarness />);
   await user.click(screen.getByRole('button', { name: 'Topic' }));
   await user.click(screen.getByRole('menuitem', { name: 'Asc' }));
   expect(within(screen.getAllByRole('row')[1]).getByRole('checkbox', { name: 'Select topic alpha' })).toBeVisible();
 });
 
 const renderReview = () => {
-  rs.spyOn(ReassignPartitions.prototype, 'refreshData').mockImplementation(() => undefined);
-  const parent = new ReassignPartitions({ matchedPath: '/reassign-partitions' });
   const topicsWithMoves = topics.map((topic) => ({
     topicName: topic.topicName,
     topic,
@@ -93,8 +99,6 @@ const renderReview = () => {
           partitions: partitions(topic.topicName).map((partition) => ({ partitionId: partition.id, replicas: [2] })),
         })),
       }}
-      partitionSelection={{}}
-      reassignPartitions={parent}
       topicsWithMoves={topicsWithMoves}
     />
   );
@@ -128,11 +132,9 @@ test('sorts review topics and expanded partitions', async () => {
 test('keeps the sort menu open when the page re-renders', async () => {
   seed();
   const user = userEvent.setup();
-  const props = { onPartitionSelectionChange: rs.fn(), partitionSelection: {}, throttledTopics: [] };
-  const { rerender } = render(<StepSelectPartitions {...props} />);
+  const { rerender } = render(<PartitionSelectionHarness />);
   await user.click(screen.getByRole('button', { name: 'Size' }));
   expect(screen.getByRole('menuitem', { name: 'Asc' })).toBeVisible();
-  // PageComponent forceUpdates the whole page on every store poll — three seconds here.
-  rerender(<StepSelectPartitions {...props} />);
+  rerender(<PartitionSelectionHarness />);
   expect(screen.getByRole('menuitem', { name: 'Asc' })).toBeVisible();
 });

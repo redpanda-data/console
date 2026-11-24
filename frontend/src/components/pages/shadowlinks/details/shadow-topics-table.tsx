@@ -45,7 +45,6 @@ type ShadowTopicsTableProps = {
 
 const emptyTopics: ShadowTopic[] = [];
 
-// Reusable loading row component
 const LoadingRow = ({ message, columnsLength }: { message: string; columnsLength: number }) => (
   <TableRow>
     <TableCell className="h-16 text-center" colSpan={columnsLength}>
@@ -57,7 +56,6 @@ const LoadingRow = ({ message, columnsLength }: { message: string; columnsLength
   </TableRow>
 );
 
-// Replaces further rows when the next page fails; automatic loading stays off until the user retries.
 const NextPageErrorRow = ({
   columnsLength,
   error,
@@ -81,7 +79,6 @@ const NextPageErrorRow = ({
   </TableRow>
 );
 
-// Extracted component for table body rows
 const VirtualizedRows = ({
   table,
   virtualRows,
@@ -143,10 +140,6 @@ type VirtualTopicRowsOptions = {
   getNextTopicPage?: () => Promise<void>;
 };
 
-/**
- * Virtualizes the topic rows and fetches the next page once the last row scrolls into view. A failed
- * page is kept as `nextPageError` and blocks further automatic fetches until it is cleared.
- */
 const useVirtualTopicRows = ({
   rowCount,
   scrollElementRef,
@@ -161,13 +154,11 @@ const useVirtualTopicRows = ({
     overscan: 10,
   });
 
-  // Without this, a failing page is requested again on every render that flips isFetchingNextPage.
   const [nextPageError, setNextPageError] = useState<string | null>(null);
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const totalSize = rowVirtualizer.getTotalSize();
 
-  // Auto-fetch next page when scrolling near bottom
   useEffect(() => {
     const [lastItem] = [...virtualRows].reverse();
 
@@ -175,7 +166,6 @@ const useVirtualTopicRows = ({
       return;
     }
 
-    // When last visible item is near the end, fetch more
     const canFetch = hasNextPage && !isFetchingNextPage && nextPageError === null;
     if (lastItem.index >= rowCount - 1 && canFetch && getNextTopicPage) {
       getNextTopicPage().catch((error: unknown) => {
@@ -189,11 +179,13 @@ const useVirtualTopicRows = ({
     paddingTop: virtualRows.length > 0 ? virtualRows[0].start : 0,
     paddingBottom: virtualRows.length > 0 ? totalSize - (virtualRows.at(-1)?.end ?? 0) : 0,
     nextPageError,
-    // Clearing the error re-arms the effect above, which fetches the page again.
     clearNextPageError: () => setNextPageError(null),
   };
 };
 
+/**
+ * Keep the header outside the virtualized scroll body, with matching fixed column widths. Otherwise a page append recalculates the body widths independently. A failed next page blocks automatic fetches until it is explicitly retried.
+ */
 export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
   topics,
   onFailoverTopic,
@@ -282,7 +274,6 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
     isFetchingNextPage,
     getNextTopicPage,
   });
-  // A failed page belongs to the previous filter's query, so a new filter starts without it.
   const changeTopicNameFilter = (value: string) => {
     clearNextPageError();
     onTopicNameFilterChange?.(value);
@@ -328,23 +319,8 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
           </CardAction>
         </CardHeader>
         <CardContent>
-          {/*
-            Two-table structure for virtualization with fixed header:
-            1. First <Table> contains header - stays fixed, always visible
-            2. Second <Table> in scrollable div contains body - virtualized rows
-
-            Why not one table?
-            - Sticky positioning on <thead> doesn't work reliably when scroll container wraps entire table
-            - We need the header outside the scroll container for it to remain fixed
-            - Separate tables allow independent scroll behavior while keeping columns aligned
-          */}
           <div className="relative">
             <Table className="" style={{ tableLayout: 'fixed', width: '100%' }} variant={'simple'}>
-              {/*
-                colgroup enforces fixed column widths to prevent browser from recalculating
-                when new rows are added via pagination/infinite scroll. Both header and body
-                tables must have identical colgroup definitions to keep columns aligned.
-              */}
               <colgroup>
                 {table.getAllColumns().map((column) => (
                   <col key={column.id} style={{ width: `${column.getSize()}px` }} />

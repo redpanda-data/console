@@ -23,17 +23,16 @@ import { startBlockedMessage } from './draft-copy';
 import { isInvalidConfigError } from './save-actions';
 import { extractLintHintsFromError } from '../errors';
 
-// A refused start's hints, for the editor it opens; taken once, after hydration.
+// WARNING: Consume the refused-start hints after hydration and only once; the editor resets its diagnostics while loading.
 const pendingStartLintHints = new Map<string, Record<string, LintHint>>();
 
-export function takeStartLintHints(pipelineId: string): Record<string, LintHint> | null {
+export function takeStartLintHints(pipelineId: string) {
   const hints = pendingStartLintHints.get(pipelineId) ?? null;
   pendingStartLintHints.delete(pipelineId);
   return hints;
 }
 
-// A lint refusal stashes its hints and opens the editor, where they are actionable; anything else is a toast.
-function reportStartDraftError(err: unknown, pipelineId: string, navigate: ReturnType<typeof useNavigate>): void {
+function reportStartDraftError(err: unknown, pipelineId: string, navigate: ReturnType<typeof useNavigate>) {
   const error = ConnectError.from(err);
   if (isInvalidConfigError(error)) {
     const hints = extractLintHintsFromError(error);
@@ -51,7 +50,7 @@ export function useStartDraft() {
   const { mutateAsync, isPending } = useStartPipelineMutation();
 
   const startDraft = useCallback(
-    async (pipelineId: string): Promise<void> => {
+    async (pipelineId: string) => {
       try {
         await mutateAsync(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
         toast.success('Pipeline starting');

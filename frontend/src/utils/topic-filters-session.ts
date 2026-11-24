@@ -17,10 +17,7 @@ type TopicFiltersMap = {
   [topicName: string]: FilterEntry[];
 };
 
-/**
- * Get all filters from sessionStorage
- */
-function getAllFilters(): TopicFiltersMap {
+function getAllFilters() {
   try {
     const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (!stored) {
@@ -34,10 +31,7 @@ function getAllFilters(): TopicFiltersMap {
   }
 }
 
-/**
- * Save all filters to sessionStorage
- */
-function saveAllFilters(filters: TopicFiltersMap): void {
+function saveAllFilters(filters: TopicFiltersMap) {
   try {
     sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(filters));
   } catch (error) {
@@ -49,7 +43,7 @@ function saveAllFilters(filters: TopicFiltersMap): void {
 /**
  * Get filters for a specific topic
  */
-export function getTopicFilters(topicName: string): FilterEntry[] {
+export function getTopicFilters(topicName: string) {
   const allFilters = getAllFilters();
   return allFilters[topicName] ?? [];
 }
@@ -57,7 +51,7 @@ export function getTopicFilters(topicName: string): FilterEntry[] {
 /**
  * Set filters for a specific topic
  */
-export function setTopicFilters(topicName: string, filters: FilterEntry[]): void {
+export function setTopicFilters(topicName: string, filters: FilterEntry[]) {
   const allFilters = getAllFilters();
   allFilters[topicName] = filters;
   saveAllFilters(allFilters);
@@ -66,7 +60,7 @@ export function setTopicFilters(topicName: string, filters: FilterEntry[]): void
 /**
  * Clear filters for a specific topic
  */
-export function clearTopicFilters(topicName: string): void {
+export function clearTopicFilters(topicName: string) {
   const allFilters = getAllFilters();
   delete allFilters[topicName];
   saveAllFilters(allFilters);
@@ -75,6 +69,6 @@ export function clearTopicFilters(topicName: string): void {
 /**
  * Clear all filters from sessionStorage
  */
-export function clearAllTopicFilters(): void {
+export function clearAllTopicFilters() {
   sessionStorage.removeItem(SESSION_STORAGE_KEY);
 }

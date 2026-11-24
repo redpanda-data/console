@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/*eslint block-scoped-var: "error"*/
-
 import { create, type Registry } from '@bufbuild/protobuf';
 import type { ConnectError } from '@connectrpc/connect';
 import { Code } from '@connectrpc/connect';
@@ -53,12 +51,10 @@ import {
   type CreateTopicResponse,
   type DeleteConsumerGroupOffsetsRequest,
   type DeleteConsumerGroupOffsetsResponse,
-  type DeleteConsumerGroupOffsetsResponseTopic,
   type DeleteConsumerGroupOffsetsTopic,
   type DeleteRecordsResponseData,
   type EditConsumerGroupOffsetsRequest,
   type EditConsumerGroupOffsetsResponse,
-  type EditConsumerGroupOffsetsResponseTopic,
   type EditConsumerGroupOffsetsTopic,
   type EndpointCompatibility,
   type EndpointCompatibilityResponse,
@@ -107,7 +103,6 @@ import {
   type TopicDocumentation,
   type TopicDocumentationResponse,
   type TopicMessage,
-  type TopicOffset,
   type TopicPermissions,
   type UserData,
   WrappedApiError,
@@ -117,8 +112,8 @@ import { Features, useSupportedFeaturesStore } from './supported-features';
 import { PartitionOffsetOrigin } from './ui';
 import { uiState } from './ui-state';
 import { config as appConfig, isEmbedded } from '../config';
-import { addHeapEventProperties, trackHeapUser } from '../heap/heap.helper';
-import { trackHubspotUser } from '../hubspot/hubspot.helper';
+import { addHeapEventProperties, trackHeapUser } from '../heap/heap-tracking';
+import { trackHubspotUser } from '../hubspot/hubspot-tracking';
 import {
   AuthenticationMethod,
   type GetIdentityResponse,
@@ -130,7 +125,6 @@ import { KafkaDistribution } from '../protogen/redpanda/api/console/v1alpha1/clu
 import type { PayloadEncoding } from '../protogen/redpanda/api/console/v1alpha1/common_pb';
 import {
   type CreateDebugBundleRequest,
-  type CreateDebugBundleResponse,
   type DebugBundleStatus,
   DebugBundleStatus_Status,
   type GetClusterHealthResponse,
@@ -140,12 +134,8 @@ import type {
   License,
   ListEnterpriseFeaturesResponse_Feature,
   SetLicenseRequest,
-  SetLicenseResponse,
 } from '../protogen/redpanda/api/console/v1alpha1/license_pb';
-import type {
-  PublishMessageRequest,
-  PublishMessageResponse,
-} from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
+import type { PublishMessageRequest } from '../protogen/redpanda/api/console/v1alpha1/publish_messages_pb';
 import type { ListTransformsResponse } from '../protogen/redpanda/api/console/v1alpha1/transform_pb';
 import {
   GetPipelinesBySecretsRequestSchema as GetPipelinesBySecretsRequestSchemaDataPlane,
@@ -175,24 +165,14 @@ import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
 
-/**
- * Bounded LRU cap for the module-level REST `cache` below. Without it the cache retained one
- * CacheEntry (a full parsed REST body) per distinct URL for the life of the tab. 500 keeps a
- * generous working set; least-recently-used URLs are evicted and simply re-fetched on next use.
- */
 const REST_CACHE_MAX_ENTRIES = 500;
 
 declare const registry: Registry;
 
-/*
-    - If statusCode is not 2xx (any sort of error) -> response content will always be an `ApiError` json object
-    - 2xx does not mean complete success, for some endpoints (e.g.: broker log dirs) we can get partial responses (array with some result entries and some error entries)
-*/
-
-/*
- * allow custom fetch or websocket interceptors
- * */
-export async function rest<T>(url: string, requestInit?: RequestInit): Promise<T | null> {
+/**
+ * Uses the configured fetch and auth handling. A non-2xx response is handled as an API error; a successful response can still contain per-item errors, such as failed broker log directories.
+ */
+export async function rest<T>(url: string, requestInit?: RequestInit) {
   const headers = createRestHeaders(requestInit?.headers);
 
   const res = await fetchWithTimeout(url, REST_TIMEOUT_SEC * 1000, {
@@ -201,12 +181,10 @@ export async function rest<T>(url: string, requestInit?: RequestInit): Promise<T
   });
 
   if (res.status === 401) {
-    // Unauthorized
     await handle401(res);
     return null;
   }
   if (res.status === 403) {
-    // Forbidden
     return null;
   }
 
@@ -218,35 +196,24 @@ export async function rest<T>(url: string, requestInit?: RequestInit): Promise<T
 }
 
 async function handle401(res: Response) {
-  // Logout
-  //   Clear our 'User' data if we have any
-  //   Any old/invalid JWT will be cleared by the server
   api.userData = null;
 
   await updateLoginError(res);
 
-  // Save current location url
-  // store.urlBeforeLogin = window.location.href;
-  // get current path
-
-  // Check if we're in embedded mode using multiple signals to handle V1 Module Federation race conditions
-  // where JWT might not be set yet when this function is called
   const inEmbeddedContext =
     isEmbedded() || appConfig.clusterId !== 'default' || window.location.pathname.includes('/clusters/');
 
   if (inEmbeddedContext) {
-    // In embedded mode, emit an event for the host to handle re-authentication
-    // instead of redirecting, which breaks the embedded experience
+    // WARNING: Delegate embedded reauthentication to the host; redirecting the child can navigate the user away from the host shell.
     window.dispatchEvent(
       new CustomEvent('console:auth-error', {
         detail: { clusterId: appConfig.clusterId, path: window.location.pathname },
       })
     );
-    // Don't redirect - let the request fail gracefully and allow the host to handle auth
+    // WARNING: Do not navigate the embedded app on auth failure; the host owns sign-in and the request must still fail.
     return;
   }
 
-  // Non-embedded mode: redirect to login
   appGlobal.historyPush('/login');
 }
 
@@ -269,7 +236,9 @@ function processVersionInfo(headers: Headers) {
 
       return;
     }
-  } catch {} // Catch malformed json (old versions where info is not sent as json yet)
+  } catch {
+    // WARNING: Keep legacy non-JSON version metadata from breaking the current request.
+  }
 }
 
 const _activeRequests: CacheEntry[] = [];
@@ -278,8 +247,7 @@ const cache = new LazyMap<string, CacheEntry>((u) => new CacheEntry(u), REST_CAC
 class CacheEntry {
   url: string;
 
-  private readonly timeSinceLastResult = new TimeSince(); // set automatically
-  /** How long ago (in seconds) the data was last updated */
+  private readonly timeSinceLastResult = new TimeSince();
   get resultAge() {
     return this.timeSinceLastResult.value / 1000;
   }
@@ -317,12 +285,11 @@ class CacheEntry {
   }
 
   error: unknown | null = null;
-  lastResult: unknown | undefined; // set automatically
-  isPending: boolean; // set automatically
+  lastResult: unknown | undefined;
+  isPending: boolean;
 
-  private readonly timeSinceRequestStarted = new TimeSince(); // set automatically
-  private lastRequestDurationMs: number; // set automatically
-  /** How long (in seconds) the last request took (or is currently taking so far) */
+  private readonly timeSinceRequestStarted = new TimeSince();
+  private lastRequestDurationMs: number;
   get requestTime() {
     if (this.isPending) {
       return this.timeSinceRequestStarted.value / 1000;
@@ -339,21 +306,18 @@ class CacheEntry {
   }
 }
 
-function cachedApiRequest<T>(url: string, force = false): Promise<T> {
+function cachedApiRequest<T>(url: string, force = false) {
   const entry = cache.get(url);
 
   if (entry.isPending) {
-    // return already running request
     return entry.lastPromise as Promise<T>;
   }
 
   if (entry.resultAge > REST_CACHE_DURATION_SEC || force) {
-    // expired or force refresh
     const promise = rest<T>(url);
     entry.setPromise(promise);
   }
 
-  // Return last result (can be still pending, or completed but not yet expired)
   return entry.lastPromise as Promise<T>;
 }
 
@@ -387,11 +351,7 @@ export async function handleExpiredLicenseError(r: Response) {
   }
 }
 
-//
-// BackendAPI
-//
-// Embedded in Cloud, a failed identity call means "no Console permissions", not "log in".
-function embeddedUserData(): UserData {
+function embeddedUserData() {
   return {
     displayName: '',
     avatarUrl: '',
@@ -413,21 +373,17 @@ function embeddedUserData(): UserData {
     canDeleteTransforms: false,
     canViewDebugBundle: false,
     canViewConsoleUsers: false,
-  };
+  } satisfies UserData;
 }
 
 type IdentityError = Parameters<typeof getOidcSubject>[0] & { code?: Code };
 
-// Where an identity failure sends the user, or null for a transient error that keeps them on the page.
-function authFailureRedirect(err: IdentityError): string | null {
-  // Authentication failure (401) - redirect to login
+function authFailureRedirect(err: IdentityError) {
   if (err.code === Code.Unauthenticated) {
     return '/login';
   }
 
-  // Permission denied (403) - redirect with error info
   if (err.code === Code.PermissionDenied) {
-    // TODO - solve typings, provide corresponding Reason type
     const subject = getOidcSubject(err);
     return `/login?error_code=permission_denied&oidc_subject=${subject}`;
   }
@@ -437,8 +393,7 @@ function authFailureRedirect(err: IdentityError): string | null {
 
 type PartitionLogDir = Partition['partitionLogDirs'][number];
 
-// Largest size reported by a healthy log dir, used as the partition's replica size.
-function largestLogDirSize(logDirs: PartitionLogDir[], isHealthy: (logDir: PartitionLogDir) => boolean): number {
+function largestLogDirSize(logDirs: PartitionLogDir[], isHealthy: (logDir: PartitionLogDir) => boolean) {
   const validLogDirs = logDirs.filter((e) => isHealthy(e) && e.size >= 0);
   const replicaSize = validLogDirs.length > 0 ? validLogDirs.max((e) => e.size) : 0;
   return Math.max(replicaSize, 0);
@@ -446,13 +401,10 @@ function largestLogDirSize(logDirs: PartitionLogDir[], isHealthy: (logDir: Parti
 
 const isLogDirErrorFree = (logDir: PartitionLogDir) => logDir.error === null || logDir.error === '';
 
-// Add some local/cached properties to make working with the data easier
 function annotateTopicPartitions(topicName: string, partitions: Partition[]) {
   for (const p of partitions) {
-    // topicName
     p.topicName = topicName;
 
-    // An errored partition is flagged and gets no cached replica size
     if (p.partitionError || p.waterMarksError) {
       p.hasErrors = true;
       continue;
@@ -482,13 +434,10 @@ function recordPartitionErrors(p: Partition, lists: PartitionErrorLists) {
   }
 }
 
-// Collects every partition's errors; once one has errored, the rest get no cached replica size.
-function collectPartitionErrors(topicName: string, partitions: Partition[]): PartitionErrorLists {
+function collectPartitionErrors(topicName: string, partitions: Partition[]) {
   const lists: PartitionErrorLists = { partitionErrors: [], waterMarksErrors: [] };
 
-  // Add some local/cached properties to make working with the data easier
   for (const p of partitions) {
-    // topicName
     p.topicName = topicName;
 
     recordPartitionErrors(p, lists);
@@ -496,7 +445,6 @@ function collectPartitionErrors(topicName: string, partitions: Partition[]): Par
       continue;
     }
 
-    // replicaSize
     p.replicaSize = largestLogDirSize(p.partitionLogDirs, isLogDirErrorFree);
   }
 
@@ -509,10 +457,8 @@ type TopicPartitionState = {
   topicWatermarksErrors: Map<string, PartitionErrorLists['waterMarksErrors']>;
 };
 
-// Without errors the topic's partitions replace its recorded errors; with errors only the errors are recorded.
 function topicPartitionsUpdate(topicName: string, partitions: Partition[], lists: PartitionErrorLists) {
   if (lists.partitionErrors.length === 0 && lists.waterMarksErrors.length === 0) {
-    // Set partitions
     return (s: TopicPartitionState) => {
       const tpe = new Map(s.topicPartitionErrors);
       tpe.delete(topicName);
@@ -552,13 +498,10 @@ function countPartitionErrors(p: Partition, counts: PartitionErrorCounts) {
   }
 }
 
-// Flags every partition from the first errored one on, which also keeps their cached replica size unset.
-function flagErroredPartitions(topicName: string, partitions: Partition[]): PartitionErrorCounts {
+function flagErroredPartitions(topicName: string, partitions: Partition[]) {
   const counts: PartitionErrorCounts = { partitionErrors: 0, waterMarkErrors: 0 };
 
-  // Add some local/cached properties to make working with the data easier
   for (const p of partitions) {
-    // topicName
     p.topicName = topicName;
 
     countPartitionErrors(p, counts);
@@ -567,7 +510,6 @@ function flagErroredPartitions(topicName: string, partitions: Partition[]): Part
       continue;
     }
 
-    // replicaSize
     p.replicaSize = largestLogDirSize(p.partitionLogDirs, isLogDirErrorFree);
   }
 
@@ -583,14 +525,11 @@ function warnPartitionErrorCounts(topicName: string, counts: PartitionErrorCount
   }
 }
 
-// Each store's state is inferred from its creator. The creator's `set` and `get` are typed through
-// non-generic function aliases: `StoreApi<ApiState>` there would make the state reference itself.
 type ApiState = ReturnType<typeof _apiCreator>;
 type SetApiState = (partial: Partial<ApiState> | ((state: ApiState) => Partial<ApiState>)) => void;
 type GetApiState = () => ApiState;
 
 const _apiCreator = (set: SetApiState, get: GetApiState) => ({
-  // Data
   endpointCompatibility: null as EndpointCompatibility | null,
 
   clusterOverview: {
@@ -607,23 +546,23 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
   clusters: ['A', 'B', 'C'],
   clusterInfo: null as ClusterInfo | null,
 
-  brokerConfigs: new Map<number, ConfigEntry[] | string>(), // config entries, or error string
+  brokerConfigs: new Map<number, ConfigEntry[] | string>(),
 
   schemaOverviewIsConfigured: undefined as boolean | undefined,
 
-  schemaMode: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
-  schemaCompatibility: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
+  schemaMode: undefined as string | null | undefined,
+  schemaCompatibility: undefined as string | null | undefined,
   schemaSubjects: undefined as SchemaRegistrySubject[] | undefined,
   schemaTypes: undefined as string[] | undefined,
-  schemaDetails: new Map<string, SchemaRegistrySubjectDetails>(), // subjectName => details
-  schemaReferencedBy: new Map<string, Map<number, SchemaReferencedByEntry[]>>(), // subjectName => version => details
+  schemaDetails: new Map<string, SchemaRegistrySubjectDetails>(),
+  schemaReferencedBy: new Map<string, Map<number, SchemaReferencedByEntry[]>>(),
   schemaUsagesById: new Map<number, SchemaVersion[]>(),
 
   topics: null as Topic[] | null,
-  topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
+  topicConfig: new Map<string, TopicDescription | null>(),
   topicDocumentation: new Map<string, TopicDocumentation>(),
   topicPermissions: new Map<string, TopicPermissions | null>(),
-  topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
+  topicPartitions: new Map<string, Partition[] | null>(),
   topicPartitionErrors: new Map<string, Array<{ id: number; partitionError: string }>>(),
   topicWatermarksErrors: new Map<string, Array<{ id: number; waterMarksError: string }>>(),
   topicConsumers: new Map<string, TopicConsumer[]>(),
@@ -638,7 +577,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
 
   connectConnectors: undefined as KafkaConnectors | undefined,
   connectConnectorsError: null as WrappedApiError | null,
-  connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
+  connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(),
 
   licenses: [] as License[],
   licenseViolation: false,
@@ -650,22 +589,18 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
   debugBundleStatuses: [] as GetDebugBundleStatusResponse_DebugBundleBrokerStatus[],
   hasDebugProcess: false as boolean,
 
-  // undefined = we haven't checked yet
-  // null = call completed, and we're not logged in
   userData: undefined as UserData | null | undefined,
-  // Track if refreshUserData is in progress to prevent duplicate requests
   isUserDataFetchInProgress: false as boolean,
-  // Store transient errors (5xx) to show error UI instead of redirect loop
   userDataError: null as ConnectError | null,
 
   async logout() {
     await appConfig.fetch('./auth/logout');
-    // Recovery buffers hold unsaved configuration verbatim; they must not outlive the session.
+    // WARNING: Clear recovery buffers on logout; they contain unsaved configuration verbatim.
     rpcnEditorAutosave.clearAll();
     set({ userData: null });
   },
   async refreshUserData() {
-    // Prevent duplicate concurrent requests to avoid redirect loops
+    // WARNING: Keep one login request in flight; competing responses can cause redirect loops.
     if (get().isUserDataFetchInProgress) {
       return;
     }
@@ -680,7 +615,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     await client
       .getIdentity({})
       .then((r: GetIdentityResponse) => {
-        // Clear any previous error on success
         set({ userDataError: null });
         set({
           userData: {
@@ -715,23 +649,20 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           } as UserData,
         });
 
-        // Track user in analytics after successful authentication
         if (r.displayName) {
           const userData = {
             firstName: r.displayName.split(' ')[0] || r.displayName,
             lastName: r.displayName.split(' ').slice(1).join(' ') || '',
-            email: r.displayName, // Using displayName as email fallback
+            email: r.displayName,
           };
           trackHubspotUser(userData);
           trackHeapUser(userData);
         }
       })
       .catch((err) => {
-        // Clear previous error
         set({ userDataError: null });
 
         if (isEmbedded()) {
-          // Create a mocked empty userData with all permissions set to false
           set({ userData: embeddedUserData() });
           return;
         }
@@ -743,9 +674,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           return;
         }
 
-        // Transient errors (5xx: Unavailable, DeadlineExceeded, Internal, Unknown)
-        // Do NOT redirect to login - this causes infinite loops
-        // Keep userData as undefined and store error for UI to display
+        // WARNING: Do not redirect on transient identity failures; redirecting retries the failing request in a loop.
         set({ userDataError: err });
       })
       .finally(() => {
@@ -760,34 +689,20 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       });
   },
 
-  // Fetch errors
   errors: [] as unknown[],
 
   _msgSearchVersion: 0,
 
-  refreshTopics(force?: boolean): Promise<void> {
+  refreshTopics(force?: boolean) {
     return cachedApiRequest<GetTopicsResponse>(`${appConfig.restBasePath}/topics`, force).then((v) => {
       if (v?.topics !== null && v?.topics !== undefined) {
         for (const t of v.topics) {
           if (!t.allowedActions) {
-            // no op - allowedActions may not be set
           }
-
-          // DEBUG: randomly remove some allowedActions
-          /*
-                        const numToRemove = Math.round(Math.random() * t.allowedActions.length);
-                        for (let i = 0; i < numToRemove; i++) {
-                            const randomIndex = Math.round(Math.random() * (t.allowedActions.length - 1));
-                            t.allowedActions.splice(randomIndex, 1);
-                        }
-                        */
         }
       }
       const topics = v?.topics;
       if (topics) {
-        // Prune topic-keyed caches to the current topic set so entries for deleted topics (or a
-        // previous cluster after a remount) don't accumulate for the life of the tab. Pruning to
-        // the live set never drops a topic that still exists, so nothing needs re-fetching.
         const validTopicNames = new Set(topics.map((t) => t.topicName));
         set((s: ApiState) => ({
           topics,
@@ -806,7 +721,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     }, addError);
   },
 
-  refreshTopicConfig(topicName: string, force?: boolean): Promise<void> {
+  refreshTopicConfig(topicName: string, force?: boolean) {
     const promise = cachedApiRequest<TopicConfigResponse | null>(
       `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/configuration`,
       force
@@ -825,17 +740,14 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         return;
       }
 
-      // add 'type' to each synonym
-      // in the raw data, only the root entries have 'type', but the nested synonyms do not
-      // we need 'type' on synonyms as well for filtering
       const topicDescription = v.topicDescription;
       prepareSynonyms(topicDescription.configEntries);
       set((s) => ({ topicConfig: new Map(s.topicConfig).set(topicName, topicDescription) }));
-    }, addError); // 403 -> null
+    }, addError);
     return promise as Promise<void>;
   },
 
-  async getTopicOffsetsByTimestamp(topicNames: string[], timestampUnixMs: number): Promise<TopicOffset[]> {
+  async getTopicOffsetsByTimestamp(topicNames: string[], timestampUnixMs: number) {
     const query = `topicNames=${encodeURIComponent(topicNames.join(','))}&timestamp=${timestampUnixMs}`;
     const response = await appConfig.fetch(`${appConfig.restBasePath}/topics-offsets?${query}`, {
       method: 'GET',
@@ -910,7 +822,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     ).catch(addError);
   },
 
-  refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean): Promise<void> {
+  refreshPartitions(topics: 'all' | string[] = 'all', force?: boolean) {
     const processedTopics = Array.isArray(topics) ? topics.sort().map((t) => encodeURIComponent(t)) : topics;
 
     const url =
@@ -934,7 +846,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
 
         annotateTopicPartitions(t.topicName, t.partitions);
 
-        // Set partition
         newTopicPartitions.set(t.topicName, t.partitions);
       }
 
@@ -948,7 +859,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       force
     ).then((response) => {
       if (!response?.partitions) {
-        // Set null to indicate that we're not allowed to see the partitions
         set((s: TopicPartitionState) => ({ topicPartitions: new Map(s.topicPartitions).set(topicName, null) }));
         return;
       }
@@ -959,7 +869,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
 
       const errorCounts = flagErroredPartitions(topicName, response.partitions);
 
-      // Set partitions
       set((s: TopicPartitionState) => ({
         topicPartitions: new Map(s.topicPartitions).set(topicName, response.partitions),
       }));
@@ -996,7 +905,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     );
   },
 
-  async refreshAcls(request: GetAclsRequest, force?: boolean): Promise<void> {
+  async refreshAcls(request: GetAclsRequest, force?: boolean) {
     const query = aclRequestToQuery(request);
     await cachedApiRequest<GetAclOverviewResponse | null>(`${appConfig.restBasePath}/acls?${query}`, force).then(
       (v) => {
@@ -1011,16 +920,13 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     );
   },
 
-  async refreshSupportedEndpoints(): Promise<EndpointCompatibilityResponse | null> {
+  async refreshSupportedEndpoints() {
     try {
       const r = await rest<EndpointCompatibilityResponse>(`${appConfig.restBasePath}/console/endpoints`);
       if (!r) {
         return null;
       }
-      // IMPORTANT: Update useSupportedFeaturesStore BEFORE useApiStore.
-      // The useApiStore subscription in config.ts fires synchronously and calls
-      // updateSidebarItems(), which reads feature support from useSupportedFeaturesStore.
-      // If useApiStore is updated first, the subscription sees stale feature data.
+      // WARNING: Publish capability state before API state; synchronous sidebar subscribers read the capability store.
       useSupportedFeaturesStore.getState().setEndpointCompatibility(r.endpointCompatibility);
       set({ endpointCompatibility: r.endpointCompatibility });
       return r;
@@ -1038,7 +944,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       throw new Error('Cluster status client is not initialized');
     }
 
-    // A tuple keeps each response's type; a failed request is logged and stored as null.
     const [kafkaAuthorizerInfo, consoleInfo, kafka, redpanda, kafkaConnect, schemaRegistry] = await Promise.all([
       client.getKafkaAuthorizerInfo({}).catch((e) => {
         set((s) => ({ clusterOverview: { ...s.clusterOverview, kafkaAuthorizerError: e } }));
@@ -1066,7 +971,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         console.error(e);
         return null;
       }),
-      // Schema registry info is only requested for users who can view schemas
       api.userData?.canViewSchemas
         ? client.getSchemaRegistryInfo({}).catch((e) => {
             // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -1099,7 +1003,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     cachedApiRequest<ClusterInfoResponse>(`${appConfig.restBasePath}/cluster`, force).then((v) => {
       if (v?.clusterInfo !== null && v?.clusterInfo !== undefined) {
         // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex business logic
-        // add 'type' to each synonym entry
         for (const broker of v.clusterInfo.brokers) {
           if (broker.config && !broker.config.error) {
             prepareSynonyms(broker.config.configs ?? []);
@@ -1170,10 +1073,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       .catch(console.error);
   },
 
-  async editConsumerGroupOffsets(
-    groupId: string,
-    topics: EditConsumerGroupOffsetsTopic[]
-  ): Promise<EditConsumerGroupOffsetsResponseTopic[]> {
+  async editConsumerGroupOffsets(groupId: string, topics: EditConsumerGroupOffsetsTopic[]) {
     const request: EditConsumerGroupOffsetsRequest = {
       groupId,
       topics,
@@ -1189,10 +1089,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return r.topics;
   },
 
-  async deleteConsumerGroupOffsets(
-    groupId: string,
-    topics: DeleteConsumerGroupOffsetsTopic[]
-  ): Promise<DeleteConsumerGroupOffsetsResponseTopic[]> {
+  async deleteConsumerGroupOffsets(groupId: string, topics: DeleteConsumerGroupOffsetsTopic[]) {
     const request: DeleteConsumerGroupOffsetsRequest = {
       groupId,
       topics,
@@ -1211,7 +1108,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return r.topics;
   },
 
-  async deleteConsumerGroup(groupId: string): Promise<void> {
+  async deleteConsumerGroup(groupId: string) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/consumer-groups/${encodeURIComponent(groupId)}`, {
       method: 'DELETE',
       headers: [['Content-Type', 'application/json']],
@@ -1263,7 +1160,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
   refreshSchemaSubjects(force?: boolean) {
     cachedApiRequest<SchemaRegistrySubject[]>(`${appConfig.restBasePath}/schema-registry/subjects`, force).then(
       (subjects) => {
-        // could also be a "not configured" response
         if (Array.isArray(subjects)) {
           set({ schemaSubjects: subjects });
         }
@@ -1278,7 +1174,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       force
     )
       .then((types) => {
-        // could also be a "not configured" response
         if (types.schemaTypes) {
           set({ schemaTypes: types.schemaTypes });
         }
@@ -1291,8 +1186,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
   },
 
   refreshSchemaDetails(subjectName: string, force?: boolean) {
-    // Always refresh all versions, otherwise we cannot know wether or not we have to refresh with 'all,
-    // If we refresh with 'latest' or specific number, we'd need to keep track of what information we're missing
+    // WARNING: Refresh all subject versions together; a latest-only refresh cannot distinguish obsolete entries from absent ones.
     const version = 'all';
     const rq = cachedApiRequest(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}`,
@@ -1338,12 +1232,10 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           return { schemaReferencedBy: newOuterMap };
         });
       })
-      .catch(() => {
-        // no op - error handled elsewhere
-      });
+      .catch(() => {});
   },
 
-  async refreshSchemaUsagesById(schemaId: number, force?: boolean): Promise<void> {
+  async refreshSchemaUsagesById(schemaId: number, force?: boolean) {
     type SchemaNotConfiguredType = { isConfigured: false };
     function isSchemaVersionArray(r: SchemaVersion[] | SchemaNotConfiguredType): r is SchemaVersion[] {
       return Array.isArray(r);
@@ -1359,9 +1251,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         }
       },
       (err) => {
-        // Currently we don't get helpful status codes (502) so we have to inspect the message
         if (err instanceof Error && err.message.includes('404') && err.message.includes('not found')) {
-          // Do nothing, most likely cause is that the user has entered a value into the search box that doesn't exist
           return null;
         }
         throw err;
@@ -1369,9 +1259,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     );
   },
 
-  async setSchemaRegistryCompatibilityMode(
-    mode: SchemaRegistryCompatibilityMode
-  ): Promise<SchemaRegistryConfigResponse> {
+  async setSchemaRegistryCompatibilityMode(mode: SchemaRegistryCompatibilityMode) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/schema-registry/config`, {
       method: 'PUT',
       headers: [['Content-Type', 'application/json']],
@@ -1385,7 +1273,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
   async setSchemaRegistrySubjectCompatibilityMode(
     subjectName: string,
     mode: SchemaRegistryCompatibilityModeWithDefault
-  ): Promise<SchemaRegistryConfigResponse> {
+  ) {
     if (mode === 'DEFAULT') {
       const response = await appConfig.fetch(
         `${appConfig.restBasePath}/schema-registry/config/${encodeURIComponent(subjectName)}`,
@@ -1408,11 +1296,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<SchemaRegistryConfigResponse>(response, null);
   },
 
-  async validateSchema(
-    subjectName: string,
-    version: number | 'latest',
-    request: SchemaRegistryCreateSchema
-  ): Promise<SchemaRegistryValidateSchemaResponse> {
+  async validateSchema(subjectName: string, version: number | 'latest', request: SchemaRegistryCreateSchema) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}/validate`,
       {
@@ -1423,10 +1307,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     );
     return parseOrUnwrap<SchemaRegistryValidateSchemaResponse>(response, null);
   },
-  async createSchema(
-    subjectName: string,
-    request: SchemaRegistryCreateSchema
-  ): Promise<SchemaRegistryCreateSchemaResponse> {
+  async createSchema(subjectName: string, request: SchemaRegistryCreateSchema) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions`,
       {
@@ -1438,7 +1319,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<SchemaRegistryCreateSchemaResponse>(response, null);
   },
 
-  async deleteSchemaSubject(subjectName: string, permanent: boolean): Promise<SchemaRegistryDeleteSubjectResponse> {
+  async deleteSchemaSubject(subjectName: string, permanent: boolean) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}?permanent=${permanent ? 'true' : 'false'}`,
       {
@@ -1449,11 +1330,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<SchemaRegistryDeleteSubjectResponse>(response, null);
   },
 
-  async deleteSchemaSubjectVersion(
-    subjectName: string,
-    version: 'latest' | number,
-    permanent: boolean
-  ): Promise<SchemaRegistryDeleteSubjectVersionResponse> {
+  async deleteSchemaSubjectVersion(subjectName: string, version: 'latest' | number, permanent: boolean) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${encodeURIComponent(version)}?permanent=${permanent ? 'true' : 'false'}`,
       {
@@ -1464,7 +1341,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<SchemaRegistryDeleteSubjectVersionResponse>(response, null);
   },
 
-  refreshPartitionReassignments(force?: boolean): Promise<void> {
+  refreshPartitionReassignments(force?: boolean) {
     return cachedApiRequest<PartitionReassignmentsResponse | null>(
       `${appConfig.restBasePath}/operations/reassign-partitions`,
       force
@@ -1477,9 +1354,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     }, addError);
   },
 
-  async startPartitionReassignment(
-    request: PartitionReassignmentRequest
-  ): Promise<AlterPartitionReassignmentsResponse> {
+  async startPartitionReassignment(request: PartitionReassignmentRequest) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/operations/reassign-partitions`, {
       method: 'PATCH',
       headers: [['Content-Type', 'application/json']],
@@ -1488,7 +1363,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return await parseOrUnwrap<AlterPartitionReassignmentsResponse>(response, null);
   },
 
-  async setReplicationThrottleRate(brokerIds: number[], maxBytesPerSecond: number): Promise<PatchConfigsResponse> {
+  async setReplicationThrottleRate(brokerIds: number[], maxBytesPerSecond: number) {
     const ceiledRate = Math.ceil(maxBytesPerSecond);
 
     const configRequest: PatchConfigsRequest = { resources: [] };
@@ -1521,12 +1396,11 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       leaderReplicas: { brokerId: number; partitionId: number }[];
       followerReplicas: { brokerId: number; partitionId: number }[];
     }[]
-  ): Promise<PatchConfigsResponse> {
+  ) {
     const configRequest: PatchConfigsRequest = { resources: [] };
 
     for (const t of topicReplicas) {
       const res: ResourceConfig = {
-        // Set which topics to throttle
         resourceType: ConfigResourceType.Topic,
         resourceName: t.topicName,
         configs: [],
@@ -1545,17 +1419,15 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         value: followerReplicas,
       });
 
-      // individual request for each topic
       configRequest.resources.push(res);
     }
 
     return await get().changeConfig(configRequest);
   },
 
-  async resetThrottledReplicas(topicNames: string[]): Promise<PatchConfigsResponse> {
+  async resetThrottledReplicas(topicNames: string[]) {
     const configRequest: PatchConfigsRequest = { resources: [] };
 
-    // reset throttled replicas for those topics
     for (const t of topicNames) {
       configRequest.resources.push({
         resourceType: ConfigResourceType.Topic,
@@ -1576,23 +1448,11 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return await get().changeConfig(configRequest);
   },
 
-  async resetReplicationThrottleRate(brokerIds: number[]): Promise<PatchConfigsResponse> {
+  async resetReplicationThrottleRate(brokerIds: number[]) {
     const configRequest: PatchConfigsRequest = { resources: [] };
 
-    // We currently only set replication throttle on each broker, instead of cluster-wide (same effect, but different kind of 'ConfigSource')
-    // So we don't remove the cluster-wide setting, only the ones we've set (the per-broker) settings
+    // WARNING: Reset only per-broker throttles set by Console; the cluster-wide setting has another owner.
 
-    // remove throttle configs from all brokers (DYNAMIC_DEFAULT_BROKER_CONFIG)
-    // configRequest.resources.push({
-    //     resourceType: ConfigResourceType.Broker,
-    //     resourceName: "", // empty = all brokers
-    //     configs: [
-    //         { name: 'leader.replication.throttled.rate', op: AlterConfigOperation.Delete },
-    //         { name: 'follower.replication.throttled.rate', op: AlterConfigOperation.Delete },
-    //     ]
-    // });
-
-    // remove throttle configs from each broker individually (DYNAMIC_BROKER_CONFIG)
     for (const b of brokerIds) {
       configRequest.resources.push({
         resourceType: ConfigResourceType.Broker,
@@ -1613,7 +1473,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return await get().changeConfig(configRequest);
   },
 
-  async changeConfig(request: PatchConfigsRequest): Promise<PatchConfigsResponse> {
+  async changeConfig(request: PatchConfigsRequest) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/operations/configs`, {
       method: 'PATCH',
       headers: [['Content-Type', 'application/json']],
@@ -1622,7 +1482,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return await parseOrUnwrap<PatchConfigsResponse>(response, null);
   },
 
-  async refreshConnectClusters(): Promise<void> {
+  async refreshConnectClusters() {
     set({ connectConnectorsError: null });
     const response = await appConfig.fetch(`${appConfig.restBasePath}/kafka-connect/connectors`, {
       method: 'GET',
@@ -1631,19 +1491,16 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
 
     return await parseOrUnwrap<KafkaConnectors | null>(response, null).then(
       (v) => {
-        // backend error
         if (!v) {
           set({ connectConnectors: undefined });
           return;
         }
 
-        // not configured
         if (!v.clusters) {
           set({ connectConnectors: v });
           return;
         }
 
-        // prepare helper properties
         for (const cluster of v.clusters) {
           addFrontendFieldsForConnectCluster(cluster);
         }
@@ -1656,9 +1513,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     );
   },
 
-  // PATCH /topics/{topicName}/configuration   //
-  // PATCH /topics/configuration               // default config
-  async changeTopicConfig(topicName: string | null, configs: PatchTopicConfigsRequest['configs']): Promise<void> {
+  async changeTopicConfig(topicName: string | null, configs: PatchTopicConfigsRequest['configs']) {
     const url = topicName
       ? `${appConfig.restBasePath}/topics/${encodeURIComponent(topicName)}/configuration`
       : `${appConfig.restBasePath}/topics/configuration`;
@@ -1671,8 +1526,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     await parseOrUnwrap<void>(response, null);
   },
 
-  // AdditionalInfo = list of plugins
-  refreshClusterAdditionalInfo(clusterName: string, force?: boolean): Promise<void> {
+  refreshClusterAdditionalInfo(clusterName: string, force?: boolean) {
     return cachedApiRequest<ClusterAdditionalInfo | null>(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}`,
       force
@@ -1691,8 +1545,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     }, addError);
   },
 
-  async deleteConnector(clusterName: string, connector: string): Promise<void> {
-    // DELETE "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
+  async deleteConnector(clusterName: string, connector: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}`,
       {
@@ -1703,8 +1556,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async pauseConnector(clusterName: string, connector: string): Promise<void> {
-    // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/pause"  (idempotent)
+  async pauseConnector(clusterName: string, connector: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/pause`,
       {
@@ -1715,8 +1567,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async resumeConnector(clusterName: string, connector: string): Promise<void> {
-    // PUT  "/kafka-connect/clusters/{clusterName}/connectors/{connector}/resume" (idempotent)
+  async resumeConnector(clusterName: string, connector: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/resume`,
       {
@@ -1727,8 +1578,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async restartConnector(clusterName: string, connector: string): Promise<void> {
-    // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/restart"
+  async restartConnector(clusterName: string, connector: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/restart`,
       {
@@ -1739,8 +1589,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async updateConnector(clusterName: string, connector: string, config: object): Promise<void> {
-    // PUT "/kafka-connect/clusters/{clusterName}/connectors/{connector}"
+  async updateConnector(clusterName: string, connector: string, config: object) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}`,
       {
@@ -1752,8 +1601,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async restartTask(clusterName: string, connector: string, taskID: number): Promise<void> {
-    // POST "/kafka-connect/clusters/{clusterName}/connectors/{connector}/tasks/{taskID}/restart"
+  async restartTask(clusterName: string, connector: string, taskID: number) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors/${encodeURIComponent(connector)}/tasks/${String(taskID)}/restart`,
       {
@@ -1765,12 +1613,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async validateConnectorConfig(
-    clusterName: string,
-    pluginClassName: string,
-    config: object
-  ): Promise<ConnectorValidationResult> {
-    // PUT "/kafka-connect/clusters/{clusterName}/connector-plugins/{pluginClassName}/config/validate"
+  async validateConnectorConfig(clusterName: string, pluginClassName: string, config: object) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connector-plugins/${encodeURIComponent(pluginClassName)}/config/validate`,
       {
@@ -1788,13 +1631,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return result;
   },
 
-  async createConnector(
-    clusterName: string,
-    connectorName: string,
-    _pluginClassName: string, // needs to be kept to avoid larger refactor despite not being used.
-    config: object
-  ): Promise<void> {
-    // POST "/kafka-connect/clusters/{clusterName}/connectors"
+  async createConnector(clusterName: string, connectorName: string, _pluginClassName: string, config: object) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors`,
       {
@@ -1809,8 +1646,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async publishRecords(request: PublishRecordsRequest): Promise<ProduceRecordsResponse> {
-    // POST "/topics-records"
+  async publishRecords(request: PublishRecordsRequest) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/topics-records`, {
       method: 'POST',
       headers: [['Content-Type', 'application/json']],
@@ -1819,12 +1655,10 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<ProduceRecordsResponse>(response, null);
   },
 
-  // New version of "publishRecords"
-  async publishMessage(request: PublishMessageRequest): Promise<PublishMessageResponse> {
+  async publishMessage(request: PublishMessageRequest) {
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.consoleClient!;
     if (!client) {
-      // this shouldn't happen but better to explicitly throw
       throw new Error('Console client is not initialized');
     }
     const r = await client.publishMessage(request);
@@ -1832,8 +1666,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return r;
   },
 
-  async createTopic(request: CreateTopicRequest): Promise<CreateTopicResponse> {
-    // POST "/topics"
+  async createTopic(request: CreateTopicRequest) {
     const response = await appConfig.fetch(`${appConfig.restBasePath}/topics`, {
       method: 'POST',
       headers: [['Content-Type', 'application/json']],
@@ -1842,7 +1675,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<CreateTopicResponse>(response, null);
   },
 
-  async createSecret(clusterName: string, connectorName: string, secretValue: string): Promise<CreateSecretResponse> {
+  async createSecret(clusterName: string, connectorName: string, secretValue: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets`,
       {
@@ -1861,7 +1694,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<CreateSecretResponse>(response, null);
   },
 
-  async updateSecret(clusterName: string, secretId: string, secretValue: string): Promise<void> {
+  async updateSecret(clusterName: string, secretId: string, secretValue: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`,
       {
@@ -1875,7 +1708,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async deleteSecret(clusterName: string, secretId: string): Promise<void> {
+  async deleteSecret(clusterName: string, secretId: string) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/secrets/${encodeURIComponent(secretId)}`,
       {
@@ -1885,11 +1718,10 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return parseOrUnwrap<void>(response, null);
   },
 
-  async uploadLicense(request: SetLicenseRequest): Promise<SetLicenseResponse> {
+  async uploadLicense(request: SetLicenseRequest) {
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.licenseClient!;
     if (!client) {
-      // this shouldn't happen but better to explicitly throw
       throw new Error('Console client is not initialized');
     }
     const r = await client.setLicense(request);
@@ -1897,11 +1729,10 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return r;
   },
 
-  async listLicenses(): Promise<void> {
+  async listLicenses() {
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.licenseClient!;
     if (!client) {
-      // this shouldn't happen but better to explicitly throw
       throw new Error('License client is not initialized');
     }
 
@@ -1954,7 +1785,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
-      // this shouldn't happen but better to explicitly throw
       throw new Error('Debug bundle client is not initialized');
     }
 
@@ -1967,7 +1797,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
-      // this shouldn't happen but better to explicitly throw
       throw new Error('Debug bundle client is not initialized');
     }
 
@@ -1983,11 +1812,10 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       });
   },
 
-  async createDebugBundle(request: CreateDebugBundleRequest): Promise<CreateDebugBundleResponse> {
+  async createDebugBundle(request: CreateDebugBundleRequest) {
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
-      // this shouldn't happen but better to explicitly throw
       throw new Error('Debug bundle client is not initialized');
     }
 
@@ -2001,7 +1829,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
-      // this shouldn't happen but better to explicitly throw
       throw new Error('Debug bundle client is not initialized');
     }
 
@@ -2019,7 +1846,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     // biome-ignore lint/style/noNonNullAssertion: leave as is for now due to MobX
     const client = appConfig.debugBundleClient!;
     if (!client) {
-      // this shouldn't happen but better to explicitly throw
       throw new Error('Debug bundle client is not initialized');
     }
     await client
@@ -2035,7 +1861,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
 const useApiStore = zustandCreate(_apiCreator);
 
 type apiStoreType = ApiState & {
-  // Computed properties resolved by the Proxy get handler
   activeRequests: CacheEntry[];
   isRedpanda: boolean;
   isAdminApiConfigured: boolean;
@@ -2052,7 +1877,6 @@ export type RolePrincipal = { name: string; principalType: 'User' | 'Group' };
 
 type SecurityClient = NonNullable<typeof appConfig.securityClient>;
 
-// One page of roles; a failed request is reported and ends the listing like an empty page.
 async function fetchRolesPage(client: SecurityClient, pageToken: string, onError: (error: ConnectError) => void) {
   const res = await client.listRoles({ request: { pageSize: 500, pageToken } }).catch((error) => {
     onError(error);
@@ -2061,18 +1885,17 @@ async function fetchRolesPage(client: SecurityClient, pageToken: string, onError
   return res?.response;
 }
 
-function listAllRoleNames(client: SecurityClient, onError: (error: ConnectError) => void): Promise<string[]> {
+function listAllRoleNames(client: SecurityClient, onError: (error: ConnectError) => void) {
   const roles: string[] = [];
-  const nextPage = async (pageToken: string): Promise<string[]> => {
+  const nextPage: (pageToken: string) => Promise<string[]> = async (pageToken) => {
     const page = await fetchRolesPage(client, pageToken, onError);
     roles.push(...(page?.roles.map((x) => x.name) ?? []));
     return page?.nextPageToken ? nextPage(page.nextPageToken) : roles;
   };
-  return nextPage('');
+  return nextPage('') satisfies Promise<string[]>;
 }
 
-// "User:alice" → { principalType: 'User', name: 'alice' }; anything else is logged and skipped.
-function parseRolePrincipal(roleName: string, principal: string): RolePrincipal | null {
+function parseRolePrincipal(roleName: string, principal: string) {
   const colonIdx = principal.indexOf(':');
   if (colonIdx < 0) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
@@ -2085,23 +1908,23 @@ function parseRolePrincipal(roleName: string, principal: string): RolePrincipal 
     console.warn('unsupported principal type in refreshRoleMembers, skipping', { roleName, principal });
     return null;
   }
-  return { principalType: principalTypeRaw, name: principal.slice(colonIdx + 1) };
+  return { principalType: principalTypeRaw, name: principal.slice(colonIdx + 1) } satisfies RolePrincipal;
 }
 
 type GetRoleResult = { response?: { role?: { name: string }; members: Array<{ principal: string }> } };
 
-// The role's name and members, or null when the reply carries no role.
-function roleMembersEntry(res: GetRoleResult): [string, RolePrincipal[]] | null {
+function roleMembersEntry(res: GetRoleResult) {
   const { response } = res;
   const role = response?.role;
   if (!(response && role)) {
-    return null; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
+    return null;
   }
   const members = response.members.map((x) => parseRolePrincipal(role.name, x.principal)).filterNull();
-  return [role.name, members];
+  const entry: [string, RolePrincipal[]] = [role.name, members];
+  return entry;
 }
 
-async function collectRoleMembers(rolePromises: Promise<GetRoleResult>[]): Promise<Map<string, RolePrincipal[]>> {
+async function collectRoleMembers(rolePromises: Promise<GetRoleResult>[]) {
   const roleMembers = new Map<string, RolePrincipal[]>();
   const roles = await Promise.all(rolePromises);
   for (const role of roles) {
@@ -2119,10 +1942,10 @@ type GetRolesState = () => RolesState;
 
 const _rolesCreator = (set: SetRolesState, get: GetRolesState) => ({
   roles: [] as string[],
-  roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
+  roleMembers: new Map<string, RolePrincipal[]>(),
   rolesError: null as ConnectError | null,
 
-  async refreshRoles(): Promise<void> {
+  async refreshRoles() {
     set({ rolesError: null });
     const client = appConfig.securityClient;
     if (!client) {
@@ -2207,7 +2030,7 @@ const _pipelinesCreator = (set: SetPipelinesState) => ({
   pipelines: undefined as undefined | Pipeline[],
   pipelinesError: null as ConnectError | null,
 
-  async refreshPipelines(_force: boolean): Promise<void> {
+  async refreshPipelines(_force: boolean) {
     const client = appConfig.pipelinesClient;
     if (!client) {
       throw new Error('pipelines client is not initialized');
@@ -2292,13 +2115,12 @@ const _rpcnSecretManagerCreator = (set: SetRpcnSecretManagerState, get: GetRpcnS
   secretsByPipeline: undefined as { secretId: string; pipelines: Pipeline[] }[] | undefined,
   isEnable: true,
 
-  async refreshSecrets(_force: boolean): Promise<void> {
+  async refreshSecrets(_force: boolean) {
     const client = appConfig.rpcnSecretsClient;
     if (!client) {
       throw new Error('redpanda connect secret client is not initialized');
     }
 
-    // handle error in order to avoid crash app for this request
     const secretsByPipeline = await get()
       .getPipelinesBySecret()
       .catch(() => []);
@@ -2387,7 +2209,6 @@ export const rpcnSecretManagerApi = new Proxy<RpcnSecretManagerState>({} as Rpcn
 
 type TransformsClient = NonNullable<typeof appConfig.transformsClient>;
 
-// One page of transforms; a failed request ends the listing like an empty page.
 async function fetchTransformsPage(client: TransformsClient, pageToken: string) {
   const res: ListTransformsResponse | null = await client
     .listTransforms({ request: { pageSize: 500, pageToken } })
@@ -2395,14 +2216,14 @@ async function fetchTransformsPage(client: TransformsClient, pageToken: string) 
   return res?.response;
 }
 
-function listAllTransforms(client: TransformsClient): Promise<TransformMetadata[]> {
+function listAllTransforms(client: TransformsClient) {
   const transforms: TransformMetadata[] = [];
-  const nextPage = async (pageToken: string): Promise<TransformMetadata[]> => {
+  const nextPage: (pageToken: string) => Promise<TransformMetadata[]> = async (pageToken) => {
     const page = await fetchTransformsPage(client, pageToken);
     transforms.push(...(page?.transforms ?? []));
     return page?.nextPageToken ? nextPage(page.nextPageToken) : transforms;
   };
-  return nextPage('');
+  return nextPage('') satisfies Promise<TransformMetadata[]>;
 }
 
 type TransformsState = ReturnType<typeof _transformsCreator>;
@@ -2414,7 +2235,7 @@ const _transformsCreator = (set: SetTransformsState) => ({
   transforms: undefined as undefined | TransformMetadata[],
   transformDetails: new Map<string, TransformMetadata>(),
 
-  async refreshTransforms(_force: boolean): Promise<void> {
+  async refreshTransforms(_force: boolean) {
     const client = appConfig.transformsClient;
     if (!client) {
       throw new Error('transforms client is not initialized');
@@ -2425,7 +2246,7 @@ const _transformsCreator = (set: SetTransformsState) => ({
     set({ transforms, transformDetails });
   },
 
-  async refreshTransformDetails(name: string, _force: boolean): Promise<void> {
+  async refreshTransformDetails(name: string, _force: boolean) {
     const client = appConfig.transformsClient;
     if (!client) {
       throw new Error('transforms client is not initialized');
@@ -2465,18 +2286,8 @@ export const transformsApi = new Proxy<TransformsState>({} as TransformsState, {
   },
 });
 
-/**
- * Sliding-window cap for the live-tail / filtered message buffer (`messageSearch.messages`).
- * Those streams append for up to 30 minutes; on a high-volume topic the array would otherwise
- * grow unbounded for the whole window — the dominant long-lived-tab retention vector.
- */
 const LIVE_TAIL_MAX_MESSAGES = 50_000;
 
-/**
- * Slack above `LIVE_TAIL_MAX_MESSAGES` before a trim runs, so the O(n) `splice` happens once per
- * ~slack messages instead of on every message past the cap (which would be hottest exactly on the
- * high-volume streams this guards). The memory ceiling stays cap + slack.
- */
 const LIVE_TAIL_TRIM_SLACK = 1024;
 
 type MessageSearchState = {
@@ -2497,20 +2308,16 @@ type ConsoleClient = NonNullable<typeof appConfig.consoleClient>;
 const SEARCH_TIMEOUT_MS = 30 * 1000;
 const LIVE_TAIL_TIMEOUT_MS = 30 * 60 * 1000;
 
-function requireConsoleClient(): ConsoleClient {
-  // https://connectrpc.com/docs/web/using-clients
-  // https://github.com/connectrpc/connect-es
-  // https://github.com/connectrpc/examples-es
+function requireConsoleClient() {
   const client = appConfig.consoleClient;
 
   if (!client) {
-    // this shouldn't happen but better to explicitly throw
     throw new Error('No console client configured');
   }
   return client;
 }
 
-function withCloudAccessToken(searchRequest: MessageSearchRequest): MessageSearchRequest {
+function withCloudAccessToken(searchRequest: MessageSearchRequest) {
   return {
     ...searchRequest,
     ...(appConfig.jwt
@@ -2522,7 +2329,7 @@ function withCloudAccessToken(searchRequest: MessageSearchRequest): MessageSearc
           },
         }
       : {}),
-  };
+  } satisfies MessageSearchRequest;
 }
 
 function toListMessagesRequest(searchRequest: MessageSearchRequest) {
@@ -2543,11 +2350,7 @@ function toListMessagesRequest(searchRequest: MessageSearchRequest) {
   });
 }
 
-// For StartOffset = Newest and any set push-down filter we need to bump the default timeout
-// from 30s to 30 minutes before ending the request gracefully.
-// The same condition marks a live-tail/filtered stream, which appends for the whole window
-// and so needs the sliding-window cap below (normal pagination never enters this branch).
-function isLiveTailSearch(searchRequest: MessageSearchRequest): boolean {
+function isLiveTailSearch(searchRequest: MessageSearchRequest) {
   return searchRequest.startOffset === PartitionOffsetOrigin.End || searchRequest.filterInterpreterCode !== null;
 }
 
@@ -2588,7 +2391,6 @@ function finishSearch(
   notify();
 }
 
-// error doesn't necessarily mean the whole request is done
 function reportSearchBackendError(message: string) {
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.info(`ws backend error: ${message}`);
@@ -2601,9 +2403,6 @@ function reportSearchBackendError(message: string) {
 }
 
 function appendSearchMessage(search: MessageSearchState, message: TopicMessage, isLiveTail: boolean) {
-  // Bound the live-tail/filtered buffer to a sliding window so a 30-minute stream on
-  // a high-volume topic cannot grow the heap without limit. appendWithSlackCap
-  // amortizes the O(n) trim to ~once per LIVE_TAIL_TRIM_SLACK messages.
   if (isLiveTail) {
     appendWithSlackCap(search.messages, message, LIVE_TAIL_MAX_MESSAGES, LIVE_TAIL_TRIM_SLACK);
   } else {
@@ -2639,7 +2438,6 @@ function applySearchControl(
   }
 }
 
-// A malformed frame is logged and skipped, so one bad message doesn't end the stream.
 function applySearchResponse(
   search: MessageSearchState,
   res: ListMessagesResponse,
@@ -2654,11 +2452,10 @@ function applySearchResponse(
   }
 }
 
-// https://connectrpc.com/docs/web/errors
 function failSearch(search: MessageSearchState, abortSignal: AbortSignal, error: unknown) {
   resetSearchProgress(search);
   if (abortSignal.aborted) {
-    return; // Do not throw, this is a user cancellation
+    return;
   }
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.error('startMessageSearchNew: error in await loop of client.listMessages', { error });
@@ -2687,58 +2484,45 @@ async function streamSearchMessages(
   } catch (e) {
     failSearch(search, abortSignal, e);
   } finally {
-    // Always cleanup the abort controller reference to prevent memory leaks
-    // This ensures cleanup happens whether the stream completes, errors, or is cancelled
     search.abortController = null;
   }
 }
 
+/**
+ * Live streams are capped with slack so an O(n) trim does not run on every incoming message. Search phase and elapsed time come from the server; elapsed time arrives on completion. User cancellation is not an error.
+ */
 export function createMessageSearch() {
   const notify = () => useApiStore.setState((s) => ({ _msgSearchVersion: s._msgSearchVersion + 1 }));
   const messageSearch = {
-    // Parameters last passed to 'startMessageSearch'
     searchRequest: null as MessageSearchRequest | null,
 
-    // Some statistics that might be interesting to show in the UI
-    searchPhase: null as string | null, // A search has different phases, like "waiting for mssages", or "creating consumers", this string is directly reported by the backend
-    elapsedMs: null as null | number, // Reported by the backend, only set once the search is done
+    searchPhase: null as string | null,
+    elapsedMs: null as null | number,
     bytesConsumed: 0,
     totalMessagesConsumed: 0,
 
-    // Pagination state
     nextPageToken: null as string | null,
     isLoadingMore: false,
 
-    // Call 'stopSearch' instead of using this directly
     abortController: null as AbortController | null,
 
-    // Live view of messages, gets updated as new messages arrive
     messages: [] as TopicMessage[],
 
-    async startSearch(
-      _searchRequest: MessageSearchRequest,
-      externalSignal?: AbortSignal,
-      append = false
-    ): Promise<TopicMessage[]> {
+    async startSearch(_searchRequest: MessageSearchRequest, externalSignal?: AbortSignal, append = false) {
       const client = requireConsoleClient();
 
       if (this.searchPhase) {
-        // There is a search running already, abort it
         this.stopSearch('starting a new search');
       }
 
       const searchRequest = withCloudAccessToken(_searchRequest);
       beginSearch(this, searchRequest, append, notify);
 
-      // Links external signal (component control) with internal controller - both can abort the same stream
-      // Ensures cleanup works from component unmount AND direct stopSearch() calls
       const linkedController = createLinkedAbortController(externalSignal);
       this.abortController = linkedController;
 
-      // do it
       await streamSearchMessages(this, client, searchRequest, linkedController.signal, notify);
 
-      // one done
       this.stopSearch();
       return this.messages;
     },
@@ -2754,7 +2538,7 @@ export function createMessageSearch() {
       }
     },
 
-    async loadMore(loadMorePageSize?: number, externalSignal?: AbortSignal): Promise<TopicMessage[]> {
+    async loadMore(loadMorePageSize?: number, externalSignal?: AbortSignal) {
       if (!this.nextPageToken) {
         throw new Error('No next page available');
       }
@@ -2799,9 +2583,7 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
 
   if (g.allowedActions) {
     if (g.allowedActions.includes('all')) {
-      // All perms
     } else {
-      // Not all perms, set helper props
       g.noEditPerms = !g.allowedActions?.includes('editConsumerGroup');
       g.noDeletePerms = !g.allowedActions?.includes('deleteConsumerGroup');
     }
@@ -2810,7 +2592,7 @@ function addFrontendFieldsForConsumerGroup(g: GroupDescription) {
 }
 
 export const brokerMap = {
-  get(): Map<number, Broker> | null {
+  get() {
     const brokers = api.clusterInfo?.brokers;
     if (!brokers) {
       return null;
@@ -2819,8 +2601,6 @@ export const brokerMap = {
   },
 };
 
-// 1. add 'type' to each synonym, so when expanding a config entry (to view its synonyms), we can still see the type
-// 2. remove redundant synonym entries (those that have the same source as the root config entry)
 function prepareSynonyms(configEntries: ConfigEntry[]) {
   if (!Array.isArray(configEntries)) {
     return;
@@ -2831,7 +2611,6 @@ function prepareSynonyms(configEntries: ConfigEntry[]) {
       continue;
     }
 
-    // add 'type' from root object
     for (const s of e.synonyms) {
       s.type = e.type;
     }
@@ -2839,7 +2618,7 @@ function prepareSynonyms(configEntries: ConfigEntry[]) {
 }
 
 function normalizeAcls(acls: AclResource[]) {
-  function upperFirst(str: string): string {
+  function upperFirst(str: string) {
     if (!str) {
       return str;
     }
@@ -2853,7 +2632,7 @@ function normalizeAcls(acls: AclResource[]) {
     TRANSACTIONAL_ID: 'TransactionalID',
   } as { [key: string]: string };
 
-  function normalizeStringEnum<T extends string>(str: T): T {
+  function normalizeStringEnum<T extends string>(str: T) {
     if (!str) {
       return str;
     }
@@ -2880,7 +2659,7 @@ function normalizeAcls(acls: AclResource[]) {
   }
 }
 
-export function aclRequestToQuery(request: GetAclsRequest): string {
+export function aclRequestToQuery(request: GetAclsRequest) {
   const filters = objToKv(request)
     .filter((kv) => !!kv.value)
     .map((x) => [x.key, String(x.value)]);
@@ -2889,10 +2668,7 @@ export function aclRequestToQuery(request: GetAclsRequest): string {
   return searchParams.toString();
 }
 
-export async function partialTopicConfigs(
-  configKeys: string[],
-  topics?: string[]
-): Promise<PartialTopicConfigsResponse> {
+export async function partialTopicConfigs(configKeys: string[], topics?: string[]) {
   const keys = configKeys.map((k) => encodeURIComponent(k)).join(',');
   const topicNames = topics?.map((t) => encodeURIComponent(t)).join(',');
   const query = topicNames ? `topicNames=${topicNames}&configKeys=${keys}` : `configKeys=${keys}`;
@@ -2901,15 +2677,18 @@ export async function partialTopicConfigs(
   return parseOrUnwrap<PartialTopicConfigsResponse>(response, null);
 }
 
+/**
+ * A maxResults value of -1 enables streaming pages with a token and default size of 50. Filter source is base64-encoded JavaScript. An empty schema context resolves the topic context; a dot forces the default context.
+ */
 export type MessageSearchRequest = {
   topicName: string;
   startOffset: number;
   startTimestamp: number;
   partitionId: number;
-  maxResults: number; // should also support '-1' soon, so we can do live tailing
-  pageToken?: string; // Page token for pagination (only used when maxResults = -1)
-  pageSize?: number; // Number of messages per page (only used when maxResults = -1, defaults to 50)
-  filterInterpreterCode: string; // js code, base64 encoded
+  maxResults: number;
+  pageToken?: string;
+  pageSize?: number;
+  filterInterpreterCode: string;
   enterprise?: {
     redpandaCloud?: {
       accessToken: string;
@@ -2920,19 +2699,17 @@ export type MessageSearchRequest = {
 
   keyDeserializer?: PayloadEncoding;
   valueDeserializer?: PayloadEncoding;
-  schemaContext?: string; // '' resolves the topic's context, '.' forces the default.
+  schemaContext?: string;
 };
 
-async function parseOrUnwrap<T>(response: Response, text: string | null): Promise<T> {
+async function parseOrUnwrap<T>(response: Response, text: string | null) {
   const responseText = await readResponseBody(response, text);
   const obj = parseResponseJson(responseText);
 
-  // api error?
   if (isApiError(obj)) {
     throw new WrappedApiError(response, obj);
   }
 
-  // server/proxy error?
   if (!response.ok) {
     const trimmedText = responseText?.trim() ?? '';
     throw new Error(`${response.status} (${trimmedText || response.statusText})`);
@@ -2941,12 +2718,6 @@ async function parseOrUnwrap<T>(response: Response, text: string | null): Promis
   return obj as T;
 }
 
-/**
- * Cap on retained API errors. `addError` is called from ~20 legacy refresh paths; on a
- * long-lived tab with auto-refresh enabled and a persistently failing endpoint the array
- * would otherwise grow without bound (each entry retains a stack + the Response body).
- * The error UI only ever surfaces the most recent entries, so a ring buffer loses nothing.
- */
 const MAX_TRACKED_ERRORS = 50;
 
 function addError(err: Error) {
@@ -2956,7 +2727,7 @@ function addError(err: Error) {
 }
 
 /** React hook to subscribe to API store state. Use this in components instead of useStore(useApiStore, ...). */
-function useApiStoreHook<T>(selector: (state: ApiState) => T): T {
+function useApiStoreHook<T>(selector: (state: ApiState) => T) {
   return useStore(useApiStore, selector);
 }
 
@@ -2969,6 +2740,9 @@ export {
   useTransformsStore,
 };
 
+/**
+ * The legacy REST cache retains a bounded LRU by URL. Store entries can distinguish an unknown value from an explicitly missing or unauthorized response; a cached broker configuration can carry its error string instead. The error view retains only its most recent entries.
+ */
 export const api = new Proxy<apiStoreType>({} as apiStoreType, {
   get(_, prop: string | symbol) {
     const s = useApiStore.getState();
@@ -3040,7 +2814,6 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
             status.value.case === 'bundleStatus' && status.value.value.status === DebugBundleStatus_Status.RUNNING
         );
       case 'debugBundleStatus': {
-        // The running job's status when there is one; other brokers can still report an older bundle.
         const bundleStatuses = s.debugBundleStatuses.flatMap((status) =>
           status.value.case === 'bundleStatus' ? [status.value.value] : []
         );
@@ -3056,9 +2829,8 @@ export const api = new Proxy<apiStoreType>({} as apiStoreType, {
   },
 });
 
-function createRestHeaders(initialHeaders?: HeadersInit): Headers {
-  // Add JWT Bearer token if available (same as gRPC addBearerTokenInterceptor)
-  // Only add if not already set - custom fetch (e.g., Cloud UI's authenticatedFetch) may have already added it
+function createRestHeaders(initialHeaders?: HeadersInit) {
+  // WARNING: Preserve the existing Authorization header; the embedded host may already have attached its own credentials.
   const headers = new Headers(initialHeaders);
   if (appConfig.jwt && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${appConfig.jwt}`);
@@ -3066,7 +2838,7 @@ function createRestHeaders(initialHeaders?: HeadersInit): Headers {
   return headers;
 }
 
-async function updateLoginError(res: Response): Promise<void> {
+async function updateLoginError(res: Response) {
   try {
     const text = await res.text();
     const obj = JSON.parse(text);
@@ -3080,7 +2852,7 @@ async function updateLoginError(res: Response): Promise<void> {
   }
 }
 
-function readResponseBody(response: Response, text: string | null): Promise<string> {
+function readResponseBody(response: Response, text: string | null) {
   if (text !== null) {
     return Promise.resolve(text);
   }
@@ -3090,19 +2862,21 @@ function readResponseBody(response: Response, text: string | null): Promise<stri
   return response.text();
 }
 
-function parseResponseJson(text: string): unknown {
+function parseResponseJson(text: string) {
+  let payload: unknown;
   try {
-    return JSON.parse(text);
+    payload = JSON.parse(text);
   } catch {
-    return undefined;
+    payload = undefined;
   }
+  return payload;
 }
 
 type PaginatedItems<T> = { items: T[]; nextPageToken?: string };
 
-function collectPages<T>(fetchPage: (pageToken: string) => Promise<PaginatedItems<T> | undefined>): Promise<T[]> {
+function collectPages<T>(fetchPage: (pageToken: string) => Promise<PaginatedItems<T> | undefined>) {
   const items: T[] = [];
-  const nextPage = async (pageToken: string): Promise<T[]> => {
+  const nextPage = async (pageToken: string) => {
     const page = await fetchPage(pageToken);
     if (!page) {
       return items;

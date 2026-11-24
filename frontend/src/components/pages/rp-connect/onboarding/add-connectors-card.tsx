@@ -45,8 +45,7 @@ export const AddConnectorsCard = memo(
   }) => {
     const inputSupportsScanner = editorContent
       ? SCANNER_SUPPORTED_INPUTS.some((inputType) => {
-          // Match input: <inputType>: pattern
-          const regex = new RegExp(`input:\\s*\n\\s*${inputType}:`);
+          const regex = new RegExp(`input:\\s*\n\\s*${inputType}:`, 'u');
           return regex.test(editorContent);
         })
       : false;

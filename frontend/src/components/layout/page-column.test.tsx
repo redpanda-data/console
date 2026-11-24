@@ -5,14 +5,12 @@ import { PageColumn } from './page-column';
 
 const PAGE_TOP_VAR = '--console-page-top';
 
-// Tailwind isn't loaded here, so stand in for the column's `pt-8`.
+// WARNING: Model the column padding explicitly here; the Tailwind stylesheet is not loaded by this test.
 const PADDING_TOP = 32;
 const styleEl = document.createElement('style');
 styleEl.textContent = `.pt-8 { padding-top: ${PADDING_TOP}px; }`;
 document.head.appendChild(styleEl);
 
-// Mirrors the layout roots: chrome, then the page column. ErrorDisplay swaps the column
-// out while the API is erroring, so it can mount more than once.
 const Harness = ({ erroring = false }: { erroring?: boolean }) => (
   <div id="mainLayout">
     <div data-testid="chrome" />
@@ -30,7 +28,6 @@ const column = (container: HTMLElement) => container.querySelector('.pt-8') as H
 const readVar = (el: HTMLElement) => el.style.getPropertyValue(PAGE_TOP_VAR);
 
 describe('the PageColumn', () => {
-  // happy-dom does no layout, so every offsetTop is 0 — the padding is the observable part.
   it("publishes an offset including the column's own top padding", () => {
     const { container } = render(<Harness />);
 

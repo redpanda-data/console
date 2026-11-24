@@ -29,7 +29,6 @@ export type ConfigurationShadowingProps = {
   shadowLink: UnifiedShadowLink;
 };
 
-// Component to display a single name filter (topic, consumer group, or role)
 const NameFilterDisplay = ({
   filter,
   index,
@@ -61,7 +60,6 @@ const NameFilterDisplay = ({
   );
 };
 
-// Reusable component for displaying name filter sections
 const NameFilterSection = ({
   title,
   filters,
@@ -101,7 +99,6 @@ const NameFilterSection = ({
   </Card>
 );
 
-// Component to display a single ACL filter
 const ACLFilterDisplay = ({ filter, index }: { filter: UnifiedACLFilter; index: number }) => {
   const resourceFilter = filter.resourceFilter;
   const accessFilter = filter.accessFilter;
@@ -157,7 +154,6 @@ const ACLFilterDisplay = ({ filter, index }: { filter: UnifiedACLFilter; index: 
   );
 };
 
-// Reusable component for displaying ACL filter section
 const ACLFilterSection = ({ filters }: { filters: UnifiedACLFilter[] }) => {
   const hasAllACLs = filters.length === 0;
 
@@ -194,7 +190,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
   const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
   const schemaRegistrySyncOptions = shadowLink.configurations?.schemaRegistrySyncOptions;
 
-  // Get filters
   const topicFilters = topicSyncOptions?.autoCreateShadowTopicFilters || [];
   const consumerFilters = consumerSyncOptions?.groupFilters || [];
   const aclFilters = securitySyncOptions?.aclFilters || [];
@@ -205,7 +200,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
         Shadowing
       </h2>
 
-      {/* Topic Replication Section */}
       <NameFilterSection
         emptyMessage="No topic filters configured"
         filters={topicFilters}
@@ -214,10 +208,8 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
         title="Topic replication"
       />
 
-      {/* ACL Replication Section */}
       <ACLFilterSection filters={aclFilters} />
 
-      {/* Role Replication Section (hidden when the source API does not expose role sync) */}
       {roleSyncOptions && (
         <NameFilterSection
           emptyMessage="No role filters configured"
@@ -228,7 +220,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
         />
       )}
 
-      {/* Consumer Group Replication Section */}
       <NameFilterSection
         emptyMessage="No consumer group filters configured"
         filters={consumerFilters}
@@ -237,7 +228,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
         title="Consumer group replication"
       />
 
-      {/* Schema Registry Section */}
       <ConfigurationSchemaRegistry syncOptions={schemaRegistrySyncOptions} />
     </div>
   );

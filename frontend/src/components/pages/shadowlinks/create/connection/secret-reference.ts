@@ -9,8 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-const SECRET_REFERENCE_REGEX = /^\$\{secrets\.([^}]+)\}$/;
+const SECRET_REFERENCE_REGEX = /^\$\{secrets\.(?<secretName>[^}]+)\}$/u;
 
-export const extractSecretId = (raw: string | undefined): string => raw?.match(SECRET_REFERENCE_REGEX)?.[1] ?? '';
+export const extractSecretId = (raw: string | undefined) => raw?.match(SECRET_REFERENCE_REGEX)?.[1] ?? '';
 
-export const toSecretReference = (id: string): string => `\${secrets.${id}}`;
+export const toSecretReference = (id: string) => `\${secrets.${id}}`;

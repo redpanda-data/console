@@ -21,7 +21,6 @@ import { peerConsoleTransport } from './peer-console-transport';
 
 const TRANSITION_POLL_MS = 3000;
 const STEADY_POLL_MS = 30_000;
-/** No controller leader is usually an election, over in seconds. */
 const NO_LEADER_POLL_MS = 5000;
 const SLOW_POLL_MS = 120_000;
 
@@ -69,23 +68,11 @@ const withDeadline = (signal: AbortSignal | undefined, timeoutMs: number) => {
   };
 };
 
-/**
- * Whether the code came from the other Console's own Connect error, which is JSON. A proxy or load
- * balancer in front of it answers with its own page, and Connect then derives the code from the HTTP
- * status alone, which would read a gateway 503 as "no controller leader" or a WAF 403 as "no
- * permission". The peer transport already fails a JSON error that carries no Connect code.
- */
 const isConsoleAnswer = (error: ConnectError) => error.metadata.get('content-type')?.includes('json') ?? false;
 
-/** Not served at all, as from a Console without the API: its router answers 404 with no Connect body. */
 const isMissingRoute = (error: ConnectError) => error.code === Code.Unimplemented;
 
-/**
- * Answers that won't change by asking again soon read as a fence that can't be shown; the rest throw,
- * so the query retries and keeps the last fence it read. Only the code counts, never the message:
- * Redpanda's wording varies.
- */
-const settledReading = (error: unknown): ShadowLinkPeerFence => {
+const settledReading: (error: unknown) => ShadowLinkPeerFence = (error) => {
   if (error instanceof PeerFenceReadError) {
     throw error;
   }
@@ -101,7 +88,6 @@ const settledReading = (error: unknown): ShadowLinkPeerFence => {
       return { status: 'unavailable', reason: 'unsupported' };
     case Code.PermissionDenied:
       return { status: 'unavailable', reason: 'forbidden' };
-    // A read only fails a precondition while some broker runs a Redpanda without the feature.
     case Code.FailedPrecondition:
       return { status: 'unavailable', reason: 'inactive' };
     case Code.Unavailable:
@@ -111,7 +97,7 @@ const settledReading = (error: unknown): ShadowLinkPeerFence => {
   }
 };
 
-const toKnownFence = (response: GetClusterFenceStatusResponse): ShadowLinkPeerFence => {
+const toKnownFence: (response: GetClusterFenceStatusResponse) => ShadowLinkPeerFence = (response) => {
   const summary = summarizeFence(response.fence);
   if (!summary) {
     throw new PeerFenceReadError('The cluster answered without a fence this Console can read', { reason: 'error' });
@@ -125,12 +111,18 @@ const toKnownFence = (response: GetClusterFenceStatusResponse): ShadowLinkPeerFe
   };
 };
 
-/** Another cluster's fence, read from that cluster's Console at `consoleUrl`. */
-export const readPeerClusterFence = async (
+/**
+ * Another cluster's fence, read from that cluster's Console at `consoleUrl`.
+ *
+ * Only the peer Console's own JSON codes establish fence errors. Do not mistake gateway HTTP 503/403 pages for controller loss or permission denial. An unmatched route is treated as unsupported; aborted reads are not failures.
+ *
+ * Transient reads retry while retaining the last fence. Do not depend on Redpanda's error wording.
+ */
+export const readPeerClusterFence: (
   consoleUrl: string | undefined,
   signal?: AbortSignal,
-  timeoutMs = PEER_FENCE_READ_TIMEOUT_MS
-): Promise<ShadowLinkPeerFence> => {
+  timeoutMs?: number
+) => Promise<ShadowLinkPeerFence> = async (consoleUrl, signal, timeoutMs = PEER_FENCE_READ_TIMEOUT_MS) => {
   if (!consoleUrl) {
     return { status: 'unavailable', reason: 'unsupported' };
   }
@@ -142,23 +134,22 @@ export const readPeerClusterFence = async (
     if (deadline.timedOut()) {
       throw new PeerFenceReadError(`No answer within ${timeoutMs} ms`, { reason: 'timeout', cause: error });
     }
-    // A query that was cancelled, as when its page closes, isn't a failed read.
     return signal?.aborted ? Promise.reject(error) : settledReading(error);
   } finally {
     deadline.dispose();
   }
 };
 
-const failureOf = (error: unknown): ReadFailure => (error instanceof PeerFenceReadError ? error.reason : 'error');
+const failureOf = (error: unknown) => (error instanceof PeerFenceReadError ? error.reason : 'error');
 
 /** What a failed read with nothing to show reads as, so the page says why instead of loading. */
-export const unreadablePeerFence = (error: unknown): ShadowLinkPeerFence => ({
+export const unreadablePeerFence: (error: unknown) => ShadowLinkPeerFence = (error) => ({
   status: 'unavailable',
   reason: failureOf(error) === 'no-leader' ? 'no-leader' : 'error',
 });
 
 /** One retry, except after a timeout: trying again straight away would only wait as long again. */
-export const peerFenceRetry = (failureCount: number, error: unknown): boolean =>
+export const peerFenceRetry = (failureCount: number, error: unknown) =>
   failureCount < 1 && failureOf(error) !== 'timeout';
 
 type PeerFenceQueryState = {
@@ -170,7 +161,7 @@ type PeerFenceQueryState = {
  * refresh still shows the last fence, slow after a failure with nothing to show or while the feature
  * isn't on yet, and not at all once the API is known to be missing or the viewer can't read it.
  */
-export const peerFenceRefetchInterval = (query: PeerFenceQueryState): number | false => {
+export const peerFenceRefetchInterval: (query: PeerFenceQueryState) => number | false = (query) => {
   if (query.state.status === 'error') {
     if (failureOf(query.state.error) === 'no-leader') {
       return NO_LEADER_POLL_MS;

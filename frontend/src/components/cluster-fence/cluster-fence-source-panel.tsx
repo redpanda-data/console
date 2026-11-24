@@ -57,7 +57,6 @@ import { UnfenceClusterDialog } from './unfence-cluster-dialog';
 const timeFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const clockFormatter = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
 
-/** Just the time for today, as in "Since 14:02"; the date too for anything older. */
 const formatSince = (date: Date, now: number) =>
   new Date(now).toDateString() === date.toDateString() ? clockFormatter.format(date) : timeFormatter.format(date);
 
@@ -82,7 +81,6 @@ const BrokerCopy = ({ broker }: { broker: BrokerProgress }) => {
   );
 };
 
-/** Each broker's own copy, as GetClusterFenceStatus lists it: a move waits until every copy matches. */
 const BrokersTable = ({ brokers }: { brokers: BrokerProgress[] }) => (
   <div className="flex flex-col gap-2">
     <h4 className="text-label">Brokers</h4>
@@ -94,7 +92,6 @@ const BrokersTable = ({ brokers }: { brokers: BrokerProgress[] }) => (
           <TableHead>Status</TableHead>
         </TableRow>
       </TableHeader>
-      {/* Plain rows: nothing here is clickable, so the registry body's hover would mislead. */}
       <tbody className="[&_tr:last-child]:border-0">
         {brokers.map((broker) => {
           const status = BROKER_STATUS[broker.status];
@@ -216,9 +213,7 @@ const ReadersCard = ({
   summary,
 }: {
   readers: ShadowLinkReader[];
-  /** Links are still being resolved, so an empty list doesn't mean none read from this cluster yet. */
   resolving: boolean;
-  /** Some links couldn't be checked, so the list may be missing some. */
   incomplete: boolean;
   summary: FenceSummary;
 }) => {
@@ -317,7 +312,6 @@ const FenceActions = ({
   onUnfence,
 }: {
   phase: FencePhase;
-  /** Names of this cluster's own shadow links that haven't failed over: while any remain, it's a shadow and Fence fails. */
   stopsFence: string[];
   onFence: () => void;
   onUnfence: () => void;
@@ -342,7 +336,6 @@ const FenceActions = ({
     </Button>
   );
 
-/** Each broker's own copy, read one by one while there's no controller leader to give the whole status. */
 const OwnCopies = ({ copies }: { copies: BrokerOwnCopy[] }) =>
   copies.length > 0 ? (
     <div className="text-body-sm">
@@ -387,7 +380,6 @@ const ReadProblem = ({
 
 type StatusQuery = ReturnType<typeof useClusterFenceStatusQuery>;
 
-/** Shown above the fence when a refresh failed, so the status below reads as possibly out of date. */
 const StaleStatusAlert = ({
   error,
   now,
@@ -460,11 +452,8 @@ type SourceDialog = 'fence' | 'unfence' | 'settings';
 
 const DIALOG_FOR_ACTION = { exempt: 'settings', fence: 'fence', unfence: 'unfence' } as const;
 
-/**
- * A search value as written, read from the raw query string: the parsed search turns a name like
- * `1001` into a number. Routers quote a value that would read as JSON, so `"1001"` is unquoted.
- */
-const searchText = (searchStr: string, key: string): string | undefined => {
+// WARNING: Read principal from the raw search string; coercing a numeric-looking username breaks its exemption.
+const searchText = (searchStr: string, key: string) => {
   const raw = new URLSearchParams(searchStr).get(key);
   if (raw === null) {
     return;
@@ -479,13 +468,7 @@ const searchText = (searchStr: string, key: string): string | undefined => {
 
 const URL_ACTIONS = Object.keys(DIALOG_FOR_ACTION) as (keyof typeof DIALOG_FOR_ACTION)[];
 
-/**
- * `?action=` opens a dialog for links from elsewhere: `exempt` the settings with `principal` already
- * added (from a shadow cluster's Failover tab), `fence` the Fence dialog, and `unfence` the Unfence
- * dialog unless the cluster is already unfenced. The params stay in the URL until the dialog
- * closes: embedded, Console can remount while the host settles its route, and the dialog then
- * reopens instead of vanishing. Returns the principal and an `onOpenChange` for each dialog.
- */
+// WARNING: Keep the URL action until the dialog closes; the host can remount Console while navigating.
 const useDialogFromUrl = (phase: FencePhase, setDialog: (dialog: SourceDialog | null) => void) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -543,7 +526,6 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
 
       <SettingsCard onEdit={() => setDialog('settings')} summary={summary} />
 
-      {/* Redpanda doesn't record which links read from a cluster; only Redpanda Cloud's link list says. */}
       {topology ? (
         <ReadersCard
           incomplete={topology.readersIncomplete}
@@ -568,7 +550,11 @@ const SourcePanelBody = ({ status }: { status: StatusQuery }) => {
   );
 };
 
-/** The Shadow Links page's view of this cluster as a link source: its fence, and who reads from it. */
+/**
+ * The Shadow Links page's view of this cluster as a link source: its fence, and who reads from it.
+ *
+ * Cloud link inventory identifies readers; the broker alone cannot list them. Empty, still resolving, and incomplete are distinct states. During controller loss the panel can show each broker's own fence copy.
+ */
 export const ClusterFenceSourcePanel = () => {
   const status = useClusterFenceStatusQuery();
 

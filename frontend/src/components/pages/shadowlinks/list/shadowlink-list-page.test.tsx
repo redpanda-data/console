@@ -9,295 +9,278 @@
  * by the Apache License, Version 2.0
  */
 
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { screen, waitFor } from '@testing-library/react';
+import { createQueryOptions } from '@connectrpc/connect-query';
+import { afterEach, describe, expect, test } from '@rstest/core';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-
-import { ShadowLinkListPage } from './shadowlink-list-page';
-
-// Mock the data hook so we can drive query state (error / loading / data) directly.
-rs.mock('react-query/api/shadowlink', () => ({
-  useListShadowLinksQuery: rs.fn(),
-}));
-
-rs.mock('react-query/api/cluster-fence', () => {
-  const actual = rs.requireActual<typeof import('react-query/api/cluster-fence')>('react-query/api/cluster-fence');
-  return { ...actual, useClusterFenceStatusQuery: rs.fn() };
-});
-
-function MockClusterFenceSourcePanel() {
-  return <div data-testid="cluster-fence-source-panel-stub" />;
-}
-
-rs.mock('components/cluster-fence/cluster-fence-source-panel', () => ({
-  ClusterFenceSourcePanel: MockClusterFenceSourcePanel,
-}));
-
-// Mock ui-state (mutated in a useEffect for breadcrumbs/title).
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
-
-// Mock toast notifications so we can assert on them.
-rs.mock('sonner', () => ({
-  toast: {
-    success: rs.fn(),
-    error: rs.fn(),
-  },
-}));
-
+import { ListShadowLinksRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
+import { ClusterFenceState } from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
+import { getClusterFenceStatus } from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
+import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { Toaster } from 'sonner';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { renderWithFileRoutes } from 'test-utils';
 
-const mockedUseListShadowLinksQuery = rs.mocked(useListShadowLinksQuery);
+import { ShadowLinkListPage } from './shadowlink-list-page';
 
-const mockQueryResult = (overrides: Partial<ReturnType<typeof useListShadowLinksQuery>>) =>
-  ({
-    data: undefined,
-    isLoading: false,
-    error: null,
-    refetch: rs.fn(),
-    ...overrides,
-  }) as unknown as ReturnType<typeof useListShadowLinksQuery>;
+type LinksReply = MessageInitShape<typeof listShadowLinks.output>;
+type FenceReply = MessageInitShape<typeof getClusterFenceStatus.output>;
 
-const CREATE_SHADOW_LINK = /create shadow link/i;
+type PageOptions = {
+  initialLocation?: string;
+  fence?: FenceReply | Promise<FenceReply>;
+  links?: () => LinksReply | Promise<LinksReply>;
+};
 
-// The /shadowlinks route loader lists the cluster's links whenever the router lands on the page.
-const routeLoaderTransport = createRouterTransport(({ rpc }) => {
-  rpc(listShadowLinks, () => ({ shadowLinks: [] }));
+const resolvingTopology = { clusterName: 'dr', readers: [], sources: {}, resolving: true, readersIncomplete: false };
+const CREATE_SHADOW_LINK = /create shadow link/iu;
+const NO_PERMISSION = /don't have permission to view shadow links/iu;
+const FENCE_CREATION_BLOCK = /rejects new shadow links/iu;
+const ERROR_TOAST = 'Failed to load shadowlinks';
+const SOURCE_PANEL = 'cluster-fence-source-panel';
+
+const unfenced = { fence: { state: ClusterFenceState.UNFENCED, revision: 1n } } satisfies FenceReply;
+const fenced = { fence: { state: ClusterFenceState.FENCED, revision: 3n } } satisfies FenceReply;
+
+function serveLinks({ fence, links = () => ({}) }: PageOptions) {
+  useSupportedFeaturesStore.setState({ clusterFence: fence !== undefined });
+  return createRouterTransport(({ rpc }) => {
+    rpc(listShadowLinks, links);
+    rpc(getClusterFenceStatus, () => fence ?? unfenced);
+  });
+}
+
+function renderLinks({ initialLocation = '/shadowlinks', ...api }: PageOptions = {}) {
+  const transport = serveLinks(api);
+  return renderWithFileRoutes(
+    <>
+      <ShadowLinkListPage />
+      <Toaster />
+    </>,
+    { initialLocation, transport }
+  );
+}
+
+async function publishUnfencedStatus(status: PromiseWithResolvers<FenceReply>) {
+  await act(async () => {
+    status.resolve(unfenced);
+    await status.promise;
+  });
+  await waitFor(() => expect(useClusterFenceStore.getState().phase).toBe('unfenced'));
+}
+
+async function arrangeListRetry() {
+  const retry = Promise.withResolvers<LinksReply>();
+  let reads = 0;
+  const transport = serveLinks({
+    fence: fenced,
+    links: () => {
+      reads += 1;
+      if (reads === 1) {
+        throw new ConnectError('temporary failure', Code.Internal);
+      }
+      return retry.promise;
+    },
+  });
+  const { rerender, router } = renderWithFileRoutes(null, { initialLocation: '/shadowlinks', transport });
+  const { queryClient } = router.options.context;
+  const query = createQueryOptions(listShadowLinks, create(ListShadowLinksRequestSchema), { transport });
+  await expect(queryClient.fetchQuery(query)).rejects.toThrow('temporary failure');
+  const reloading = queryClient.fetchQuery(query);
+  const finishRetry = async () => {
+    retry.resolve({ shadowLinks: [] });
+    await reloading;
+  };
+  return { rerender, finishRetry };
+}
+
+afterEach(() => {
+  useSupportedFeaturesStore.setState({ clusterFence: useSupportedFeaturesStore.getInitialState().clusterFence });
+  useClusterFenceStore.getState().setTopology(null);
+  useClusterFenceStore.getState().setPhase(null);
 });
 
-const mockFence = (status: { available: boolean; known?: boolean; phase?: string; isError?: boolean }) =>
-  rs.mocked(useClusterFenceStatusQuery).mockReturnValue({
-    available: status.available,
-    known: status.known ?? false,
-    isError: status.isError ?? false,
-    blocking: Boolean(status.known) && (status.phase === 'fencing' || status.phase === 'fenced'),
-    summary: { phase: status.phase ?? 'unfenced' },
-  } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
+describe('the shadow link list without cluster fencing', () => {
+  test('shows a no-permission state, without an error card or toast, on PermissionDenied', async () => {
+    renderLinks({
+      links: () => {
+        throw new ConnectError('you are not authorized to call this endpoint', Code.PermissionDenied);
+      },
+    });
 
-describe('the ShadowLinkListPage', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    mockFence({ available: false });
-    useClusterFenceStore.setState({ topology: null });
-  });
-
-  test('renders the no-permission state (not a raw error) when the API returns PermissionDenied', async () => {
-    const error = new ConnectError('you are not authorized to call this endpoint', Code.PermissionDenied);
-    mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ error }));
-
-    renderWithFileRoutes(<ShadowLinkListPage />);
-
-    // Dedicated "no permission" card is shown...
-    expect(await screen.findByTestId('shadowlink-no-permission-card')).toBeInTheDocument();
-    expect(screen.getByText(/don't have permission to view shadow links/i)).toBeInTheDocument();
-
-    // ...and we do NOT show the generic error card.
+    expect(await screen.findByTestId('shadowlink-no-permission-card')).toBeVisible();
+    expect(screen.getByText(NO_PERMISSION)).toBeVisible();
     expect(screen.queryByTestId('shadowlink-error-card')).not.toBeInTheDocument();
+    expect(screen.queryByText(ERROR_TOAST)).not.toBeInTheDocument();
   });
 
-  test('does not raise an error toast for PermissionDenied (it is expected, not a failure)', async () => {
-    const error = new ConnectError('you are not authorized to call this endpoint', Code.PermissionDenied);
-    mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ error }));
+  test('shows a retry card and an error toast on unexpected failures', async () => {
+    renderLinks({
+      links: () => {
+        throw new ConnectError('unexpected failure', Code.Internal);
+      },
+    });
 
-    renderWithFileRoutes(<ShadowLinkListPage />);
-
-    await screen.findByTestId('shadowlink-no-permission-card');
-    expect(toast.error).not.toHaveBeenCalled();
-  });
-
-  test('still renders the generic error state (and toasts) for unexpected errors', async () => {
-    const error = new ConnectError('boom', Code.Internal);
-    mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ error }));
-
-    renderWithFileRoutes(<ShadowLinkListPage />);
-
-    expect(await screen.findByTestId('shadowlink-error-card')).toBeInTheDocument();
+    expect(await screen.findByTestId('shadowlink-error-card')).toBeVisible();
+    expect(await screen.findByText(ERROR_TOAST)).toBeVisible();
     expect(screen.queryByTestId('shadowlink-no-permission-card')).not.toBeInTheDocument();
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to load shadowlinks', expect.anything()));
   });
+
+  test.each(['/shadowlinks', '/shadowlinks?tab=source'])(
+    'shows no fence tab without fencing support: %s',
+    async (initialLocation) => {
+      renderLinks({ initialLocation });
+
+      expect(await screen.findByText(CREATE_SHADOW_LINK)).toBeVisible();
+      expect(screen.queryByTestId('shadowlinks-tabs')).not.toBeInTheDocument();
+      expect(screen.queryByTestId(SOURCE_PANEL)).not.toBeInTheDocument();
+    }
+  );
 });
 
-const noLinks = () =>
-  mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ data: { shadowLinks: [] } as never }));
-
-describe('whether the ShadowLinkListPage has a Cluster fence tab', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    useClusterFenceStore.setState({ topology: null });
-  });
-
-  test.each([
-    ['', '/shadowlinks'],
-    [', even when linked to the fence tab', '/shadowlinks?tab=source'],
-  ])('without the API for this viewer, shows the page as it was, with no tabs%s', async (_label, initialLocation) => {
-    mockFence({ available: false });
-    noLinks();
-    renderWithFileRoutes(<ShadowLinkListPage />, { initialLocation, transport: routeLoaderTransport });
-
-    expect(await screen.findByText(CREATE_SHADOW_LINK)).toBeInTheDocument();
-    expect(screen.queryByTestId('shadowlinks-tabs')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('cluster-fence-source-panel-stub')).not.toBeInTheDocument();
-  });
-
-  test('a cluster Cloud knows no link reads from opens on its links, and can still be fenced from its tab', async () => {
+describe('opening the cluster fence tab', () => {
+  test('a cluster with no known readers opens its links and can still open the fence tab', async () => {
     const user = userEvent.setup();
-    mockFence({ available: true, known: true, phase: 'unfenced' });
-    noLinks();
-    useClusterFenceStore.setState({
-      topology: { clusterName: 'dr', readers: [], sources: {}, resolving: false, readersIncomplete: false },
+    useClusterFenceStore.getState().setTopology({
+      clusterName: 'dr',
+      readers: [],
+      sources: {},
+      resolving: false,
+      readersIncomplete: false,
     });
-    const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
-      initialLocation: '/shadowlinks',
-      transport: routeLoaderTransport,
-    });
+    const { router } = renderLinks({ fence: unfenced });
 
-    expect(await screen.findByText(CREATE_SHADOW_LINK)).toBeInTheDocument();
-    expect(screen.queryByTestId('cluster-fence-source-panel-stub')).not.toBeInTheDocument();
+    expect(await screen.findByText(CREATE_SHADOW_LINK)).toBeVisible();
+    expect(screen.queryByTestId(SOURCE_PANEL)).not.toBeInTheDocument();
     await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: 'links' }));
     await user.click(screen.getByTestId('shadowlinks-tab-source'));
-    expect(await screen.findByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
+    expect(await screen.findByTestId(SOURCE_PANEL)).toBeVisible();
   });
 
-  test('without Cloud’s list of links that read from it, any cluster that can be fenced gets the fence tab', async () => {
-    mockFence({ available: true, known: true, phase: 'unfenced' });
-    noLinks();
-    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
+  test('defaults to the fence for a self-hosted cluster with no topology', async () => {
+    renderLinks({ fence: unfenced });
 
-    expect(await screen.findByTestId('shadowlinks-tabs')).toBeInTheDocument();
-    expect(screen.getByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
+    expect(await screen.findByTestId(SOURCE_PANEL)).toBeVisible();
+    expect(screen.getByTestId('shadowlinks-tabs')).toBeVisible();
   });
 
-  test.each([
-    ['that hasn’t failed over, so it’s only a shadow', ShadowLinkState.ACTIVE],
-    ['that failed over', ShadowLinkState.FAILED_OVER],
-  ])('a cluster with a shadow link of its own %s has the fence tab, and opens on its links', async (_label, state) => {
-    mockFence({ available: true, known: true, phase: 'unfenced' });
-    mockedUseListShadowLinksQuery.mockReturnValue(
-      mockQueryResult({ data: { shadowLinks: [{ name: 'orders-dr', bootstrapServers: [], state }] } } as never)
-    );
-    const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
-      initialLocation: '/shadowlinks',
-      transport: routeLoaderTransport,
-    });
+  test.each([ShadowLinkState.ACTIVE, ShadowLinkState.FAILED_OVER])(
+    'defaults to links when the cluster has a link of its own in state %s',
+    async (state) => {
+      const { router } = renderLinks({
+        fence: unfenced,
+        links: () => ({ shadowLinks: [{ name: 'orders-dr', bootstrapServers: ['example.test:9092'], state }] }),
+      });
 
-    expect(await screen.findByTestId('shadowlink-row-orders-dr')).toBeInTheDocument();
-    expect(screen.getByTestId('shadowlinks-tab-source')).toBeInTheDocument();
-    await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: 'links' }));
+      expect(await screen.findByTestId('shadowlink-row-orders-dr')).toBeVisible();
+      expect(screen.getByTestId('shadowlinks-tab-source')).toBeVisible();
+      await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: 'links' }));
+    }
+  );
+
+  test('waits for both the fence response and Cloud topology before choosing a tab', async () => {
+    const status = Promise.withResolvers<FenceReply>();
+    useClusterFenceStore.getState().setTopology(resolvingTopology);
+    renderLinks({ fence: status.promise });
+
+    try {
+      expect(await screen.findByTestId('shadowlinks-tab-loading')).toBeVisible();
+      await publishUnfencedStatus(status);
+      expect(screen.getByTestId('shadowlinks-tab-loading')).toBeVisible();
+
+      act(() => useClusterFenceStore.getState().setTopology({ ...resolvingTopology, resolving: false }));
+      expect(await screen.findByText(CREATE_SHADOW_LINK)).toBeVisible();
+    } finally {
+      status.resolve(unfenced);
+    }
   });
 
-  test('waits for the fence and the topology before choosing a tab', async () => {
-    mockFence({ available: true, known: false });
-    noLinks();
-    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
+  test('honors a deep link to the fence while status is loading', async () => {
+    const status = Promise.withResolvers<FenceReply>();
+    renderLinks({ initialLocation: '/shadowlinks?tab=source', fence: status.promise });
 
-    expect(await screen.findByTestId('shadowlinks-tab-loading')).toBeInTheDocument();
-    expect(screen.queryByTestId('shadowlinks-tabs')).not.toBeInTheDocument();
-  });
-
-  test('a link to the fence tab keeps it while that’s still being decided', async () => {
-    mockFence({ available: true, known: false });
-    noLinks();
-    renderWithFileRoutes(<ShadowLinkListPage />, {
-      initialLocation: '/shadowlinks?tab=source',
-      transport: routeLoaderTransport,
-    });
-
-    expect(await screen.findByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
+    try {
+      expect(await screen.findByTestId('cluster-fence-source-loading')).toBeVisible();
+      expect(screen.queryByTestId('shadowlinks-tab-loading')).not.toBeInTheDocument();
+    } finally {
+      status.resolve(unfenced);
+    }
   });
 });
 
-describe('the tab the ShadowLinkListPage opens on', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    useClusterFenceStore.setState({ topology: null });
-  });
+describe('the shadow link list on clusters that can be fenced', () => {
+  test('opens a fenced cluster on Cluster fence and syncs the tab to the URL', async () => {
+    const { router } = renderLinks({ fence: fenced });
 
-  test('a fenced cluster opens on its fence, in a tab called Cluster fence, and writes the tab into the URL', async () => {
-    mockFence({ available: true, known: true, phase: 'fenced' });
-    noLinks();
-    const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
-      initialLocation: '/shadowlinks',
-      transport: routeLoaderTransport,
-    });
-
-    expect(await screen.findByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
+    expect(await screen.findByTestId(SOURCE_PANEL)).toBeVisible();
     expect(screen.getByTestId('shadowlinks-tab-source')).toHaveTextContent('Cluster fence');
     await waitFor(() => expect(router.state.location.search).toMatchObject({ tab: 'source' }));
   });
 
-  test('a cluster Cloud knows links read from opens on its fence', async () => {
-    mockFence({ available: true, known: true, phase: 'unfenced' });
-    noLinks();
-    useClusterFenceStore.setState({
-      topology: {
-        clusterName: 'prod',
-        readers: [{ linkName: 'orders-dr', shadowClusterId: 'dr', shadowClusterName: 'dr' }],
-        sources: {},
-        resolving: false,
-        readersIncomplete: false,
+  test('opens the fence when Cloud reports downstream readers', async () => {
+    useClusterFenceStore.getState().setTopology({
+      clusterName: 'prod',
+      readers: [
+        {
+          linkName: 'orders-dr',
+          shadowClusterId: 'dr',
+          shadowClusterName: 'dr',
+          authentication: 'sasl',
+          principal: 'shadow-orders',
+        },
+      ],
+      sources: {},
+      resolving: false,
+      readersIncomplete: false,
+    });
+    renderLinks({ fence: unfenced });
+
+    expect(await screen.findByTestId('cluster-fence-reader-orders-dr')).toBeVisible();
+  });
+
+  test('keeps the fence available when shadow linking itself is disabled', async () => {
+    const user = userEvent.setup();
+    renderLinks({
+      fence: unfenced,
+      links: () => {
+        throw new ConnectError('Cluster link feature is disabled', Code.FailedPrecondition);
       },
     });
-    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
 
-    expect(await screen.findByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
-  });
-
-  test('a cluster with shadow linking off, which a source doesn’t need, opens on its fence', async () => {
-    const user = userEvent.setup();
-    mockFence({ available: true, known: true, phase: 'unfenced' });
-    mockedUseListShadowLinksQuery.mockReturnValue(
-      mockQueryResult({
-        error: new ConnectError('Cluster link feature is disabled', Code.FailedPrecondition),
-      } as never)
-    );
-    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
-
-    expect(await screen.findByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
+    expect(await screen.findByTestId(SOURCE_PANEL)).toBeVisible();
     await user.click(screen.getByTestId('shadowlinks-tab-links'));
-    expect(await screen.findByTestId('shadowlink-feature-disabled-card')).toBeInTheDocument();
+    expect(await screen.findByTestId('shadowlink-feature-disabled-card')).toBeVisible();
   });
 
-  test('keeps its tabs while a list that failed loads again', async () => {
-    mockFence({ available: true, known: true, phase: 'unfenced' });
-    // A failed query that fetches again starts over with no data and no error.
-    mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ isLoading: true, isFetched: true } as never));
-    renderWithFileRoutes(<ShadowLinkListPage />, { transport: routeLoaderTransport });
+  test('keeps its default fence tab while a failed list reloads', async () => {
+    const { rerender, finishRetry } = await arrangeListRetry();
 
-    expect(await screen.findByTestId('shadowlinks-tabs')).toBeInTheDocument();
-    expect(screen.getByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
+    try {
+      rerender(<ShadowLinkListPage />);
+      expect(await screen.findByTestId(SOURCE_PANEL)).toBeVisible();
+      expect(screen.getByTestId('shadowlinks-tabs')).toBeVisible();
+      expect(screen.queryByTestId('shadowlinks-tab-loading')).not.toBeInTheDocument();
+    } finally {
+      await finishRetry();
+    }
   });
 
-  test('doesn’t pull the user back once the router has moved on to another page', async () => {
-    mockFence({ available: true, known: true, phase: 'fenced' });
-    noLinks();
-    const { router } = renderWithFileRoutes(<ShadowLinkListPage />, {
-      initialLocation: '/topics',
-      transport: routeLoaderTransport,
-    });
+  test('does not write the default tab after the router has moved to another page', async () => {
+    const { router } = renderLinks({ initialLocation: '/topics', fence: fenced });
 
-    // The page has rendered and its effects have run; a memory history records a push at once.
-    expect(await screen.findByTestId('cluster-fence-source-panel-stub')).toBeInTheDocument();
+    expect(await screen.findByTestId(SOURCE_PANEL)).toBeVisible();
     expect(router.history.location.pathname).toBe('/topics');
   });
 
-  test('a fenced cluster can’t take a new shadow link, and Create says why', async () => {
-    mockFence({ available: false, known: true, phase: 'fenced' });
-    mockedUseListShadowLinksQuery.mockReturnValue(mockQueryResult({ data: { shadowLinks: [] } as never }));
-    renderWithFileRoutes(<ShadowLinkListPage />);
+  test('explains why a fenced cluster cannot create a shadow link', async () => {
+    renderLinks({ initialLocation: '/shadowlinks?tab=links', fence: fenced });
 
-    const create = await screen.findByTestId('create-shadowlink-button');
-    expect(create).toBeDisabled();
-    expect(screen.getByText('rejects new shadow links', { exact: false })).toBeInTheDocument();
+    const createButton = await screen.findByTestId('create-shadowlink-button');
+    await waitFor(() => expect(createButton).toBeDisabled());
+    expect(screen.getByText(FENCE_CREATION_BLOCK)).toBeInTheDocument();
   });
 });

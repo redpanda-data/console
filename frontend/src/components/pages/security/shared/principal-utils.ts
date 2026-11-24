@@ -13,7 +13,7 @@
  * Parses a principal from a route parameter.
  * aclName may be a full principal like "Group:mygroup" or just a bare name (defaults to User).
  */
-export function parsePrincipalFromParam(aclName: string): { principalType: string; principalName: string } {
+export function parsePrincipalFromParam(aclName: string) {
   const colonIdx = aclName.indexOf(':');
   if (colonIdx >= 0) {
     return { principalType: aclName.slice(0, colonIdx), principalName: aclName.slice(colonIdx + 1) };
@@ -21,8 +21,6 @@ export function parsePrincipalFromParam(aclName: string): { principalType: strin
   return { principalType: 'User', principalName: aclName };
 }
 
-// Principal type prefixes (matching PrincipalType from acl.model.tsx).
-// Defined here to avoid importing acl.model.tsx which has heavy DOM dependencies.
 const PRINCIPAL_TYPE_MAP: Record<string, 'User:' | 'RedpandaRole:' | 'Group:'> = {
   user: 'User:',
   redpandarole: 'RedpandaRole:',
@@ -32,11 +30,9 @@ const PRINCIPAL_TYPE_MAP: Record<string, 'User:' | 'RedpandaRole:' | 'Group:'> =
 /**
  * Resolves route search params into the sharedConfig and principalType
  * needed by the CreateACL component.
+ * Uses local principal prefixes so resolving route state does not load the ACL view modules.
  */
-export function resolveAclSearchParams(search: { principalType?: string; principalName?: string }): {
-  sharedConfig?: { principal: string; host: string };
-  principalType?: 'User:' | 'RedpandaRole:' | 'Group:';
-} {
+export function resolveAclSearchParams(search: { principalType?: string; principalName?: string }) {
   const principalTypeParam = search.principalType?.toLowerCase();
   const principalName = search.principalName;
   const principalType = principalTypeParam ? PRINCIPAL_TYPE_MAP[principalTypeParam] : undefined;
@@ -44,5 +40,9 @@ export function resolveAclSearchParams(search: { principalType?: string; princip
   const sharedConfig =
     principalName && principalType ? { principal: `${principalType}${principalName}`, host: '*' } : undefined;
 
-  return { sharedConfig, principalType };
+  const searchParams: {
+    sharedConfig?: { principal: string; host: string };
+    principalType?: 'User:' | 'RedpandaRole:' | 'Group:';
+  } = { sharedConfig, principalType };
+  return searchParams;
 }

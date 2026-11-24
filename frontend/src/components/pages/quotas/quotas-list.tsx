@@ -73,7 +73,6 @@ const renderSortIcon = (sorted: false | 'asc' | 'desc') => {
   return <ChevronsUpDown />;
 };
 
-/** Info icon that reveals a tooltip on hover, used next to column titles. */
 const InfoTooltip = ({ children }: { children: React.ReactNode }) => (
   <Tooltip>
     <TooltipTrigger
@@ -87,7 +86,6 @@ const InfoTooltip = ({ children }: { children: React.ReactNode }) => (
   </Tooltip>
 );
 
-/** Sortable column header matching the look of DataTableColumnHeader, with an optional info tooltip. */
 function SortableHeader({
   column,
   title,
@@ -108,7 +106,6 @@ function SortableHeader({
   );
 }
 
-/** Renders for a rate that has no quota set — an em-dash with a tooltip explaining there is no limit. */
 const NOT_CONFIGURED_LABEL = 'No limit configured';
 
 const NotConfigured = () => (
@@ -116,7 +113,6 @@ const NotConfigured = () => (
     <TooltipTrigger
       render={
         <span className="cursor-help text-muted-foreground">
-          {/* The em-dash is decorative; screen readers announce the sr-only label instead. */}
           <span aria-hidden="true">—</span>
           <span className="sr-only">{NOT_CONFIGURED_LABEL}</span>
         </span>
@@ -170,7 +166,7 @@ const columns: DataTableColumnDef<QuotaRow>[] = [
   },
 ];
 
-const toQuotaRow = (quota: ListQuotasResponse_QuotaEntry): QuotaRow => {
+const toQuotaRow: (quota: ListQuotasResponse_QuotaEntry) => QuotaRow = (quota) => {
   const entityType = quota.entity?.entityType ?? Quota_EntityType.UNSPECIFIED;
   const entityName = quota.entity?.entityName;
 
@@ -187,15 +183,12 @@ const reportSearchUpdateFailure = (error: unknown) => {
   toast.error('Failed to update the quotas view', { description: String(error) });
 };
 
-/** Pagination and sorting live in the URL, so a reload or a shared link reopens the same view. */
 const useQuotasTableSearchState = (rowCount: number) => {
   const navigate = useNavigate({ from: '/quotas' });
   const search = useSearch({ from: '/quotas' });
 
   const pageSize = search.pageSize ?? DEFAULT_PAGE_SIZE;
   const pagination: PaginationState = {
-    // Clamp the requested page to what the data actually supports, so a stale or
-    // bookmarked out-of-range `?page=` can't render a false empty state.
     pageIndex: clampPageIndex(search.page ?? 0, rowCount, pageSize),
     pageSize,
   };
@@ -289,9 +282,6 @@ const QuotasList = () => {
   const rows = table.getRowModel().rows;
 
   return (
-    // Single TooltipProvider hoisted to the page root so the per-cell tooltips
-    // (column-header info icons, "no limit configured" em-dashes) share one
-    // provider instead of mounting one per instance.
     <TooltipProvider>
       <PageContent>
         <Table>
@@ -331,4 +321,7 @@ const QuotasList = () => {
   );
 };
 
+/**
+ * An unset limit uses a decorative dash and a separate screen-reader label.
+ */
 export default QuotasList;

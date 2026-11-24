@@ -18,11 +18,7 @@ import { ShadowSchemaRegistrySection } from '../create/configuration/schema-regi
 import { LegacySchemaRegistrySection } from '../create/configuration/schema-registry-step';
 import { type FormValues, SCHEMA_REGISTRY_MODE, type SchemaRegistryMode } from '../create/model';
 
-/**
- * Direct topic<->api switches are not supported; the link must go through
- * None (and a save) first. From None both modes are reachable.
- */
-const lockedModes = (originalMode: SchemaRegistryMode): SchemaRegistryMode[] => {
+const lockedModes: (originalMode: SchemaRegistryMode) => SchemaRegistryMode[] = (originalMode) => {
   if (originalMode === SCHEMA_REGISTRY_MODE.TOPIC) {
     return [SCHEMA_REGISTRY_MODE.API];
   }
@@ -64,14 +60,15 @@ export type SchemaRegistryEditSectionProps = {
   originalMode: SchemaRegistryMode;
 };
 
+/**
+ * Without the Schema Registry API sync capability, the legacy controls cannot change an existing API-mode link.
+ *
+ * Switching between topic and API mode requires saving None first; from None either mode is reachable.
+ */
 export const SchemaRegistryEditSection = ({ originalMode }: SchemaRegistryEditSectionProps) => {
-  // Requires Redpanda >= 26.2.0. Fails closed: on older or unknown backends
-  // the edit page keeps the legacy switch / read-only card, which cannot
-  // touch an existing api-mode configuration.
   const showRedesigned = useSupportedFeaturesStore((s) => s.shadowLinkSchemaRegistrySync);
 
   if (!showRedesigned) {
-    // Gate-OFF fallback: an api-mode link on an older backend stays read-only.
     return <LegacySchemaRegistrySection readOnlyApiMode={originalMode === SCHEMA_REGISTRY_MODE.API} />;
   }
 

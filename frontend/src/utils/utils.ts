@@ -15,77 +15,10 @@ import prettyMillisecondsOriginal, { type Options as PrettyMillisecondsOptions }
 
 import type { TopicMessage } from '../state/rest-interfaces';
 
-// Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
-export const nameof = <T>(name: Extract<keyof T, string>): string => name;
+export const nameof: <T>(name: Extract<keyof T, string>) => string = (name) => name;
 
-export class TimeSince {
-  timestamp: number = Date.now();
-
-  /** Reset timer back to 0 ms (or the given value). For example '1000' will set the timer as if it was started 1 second ago.  */
-  reset(to = 0) {
-    this.timestamp = Date.now() - to;
-  }
-
-  /** Time since last reset (or create) in ms */
-  get value() {
-    return Date.now() - this.timestamp;
-  }
-}
-
-export class Cooldown {
-  timestamp = 0; // time of last trigger
-  duration = 0; // how long the CD takes to charge
-
-  /**
-   * @description Create a cooldown with the given duration
-   * @param duration time the cooldown takes to complete in ms
-   * @param start `running` to start 'on cooldown', `ready` to start already charged
-   */
-  constructor(duration: number, start: 'ready' | 'running' = 'running') {
-    this.duration = duration;
-    if (start === 'running') {
-      this.timestamp = Date.now();
-    }
-  }
-
-  /** Time (in ms) since the last time the cooldown was triggered */
-  timeSinceLastTrigger(): number {
-    return Date.now() - this.timestamp;
-  }
-
-  /** Time (in ms) until the cooldown is ready (or 0 if it is) */
-  get timeLeft(): number {
-    const t = this.duration - this.timeSinceLastTrigger();
-    if (t < 0) {
-      return 0;
-    }
-    return t;
-  }
-
-  // Check if ready
-  get isReady(): boolean {
-    return this.timeLeft <= 0;
-  }
-
-  // 'Use' the cooldown. Check if ready, and if it is also trigger it
-  consume(force = false): boolean {
-    if (this.timeLeft <= 0 || force) {
-      this.timestamp = Date.now();
-      return true;
-    }
-    return false;
-  }
-
-  // Force the cooldown to be ready
-  setReady(): void {
-    this.timestamp = 0;
-  }
-
-  // Same as 'consume(true)'
-  restart(): void {
-    this.timestamp = Date.now();
-  }
-}
+export { Cooldown } from './cooldown';
+export { TimeSince } from './time-since';
 
 export class Timer {
   target = 0;
@@ -128,13 +61,19 @@ export class Timer {
   }
 }
 
-let refreshCounter = 0; // used to always create a different value, forcing some components to always re-render
+let refreshCounter = 0;
 const REFRESH_COUNTER_MAX = 1000;
+/**
+ * Returns a different value on each successive call so consumers can force a refresh.
+ */
 export const alwaysChanging = () => {
   refreshCounter = (refreshCounter + 1) % REFRESH_COUNTER_MAX;
   return refreshCounter;
 };
 
+/**
+ * Replaces arrays rather than merging them by index so reordering settings preserves the identities of their elements.
+ */
 export function assignDeep(target: Record<string, unknown>, source: Record<string, unknown>) {
   for (const key in source) {
     if (!Object.hasOwn(source, key) || key === '__proto__' || key === 'constructor') {
@@ -159,7 +98,6 @@ function assignDeepValue(target: Record<string, unknown>, key: string, value: un
 }
 
 function assignDeepObject(target: Record<string, unknown>, key: string, value: object | null, existing: unknown) {
-  // Replacing arrays preserves shared element identities when settings reorder them.
   if (Array.isArray(value) || !existing || typeof existing !== 'object') {
     target[key] = value;
     return;
@@ -169,7 +107,7 @@ function assignDeepObject(target: Record<string, unknown>, key: string, value: o
   }
 }
 
-export function containsIgnoreCase(str: string, search: string): boolean {
+export function containsIgnoreCase(str: string, search: string) {
   return str.toLowerCase().indexOf(search.toLowerCase()) >= 0;
 }
 
@@ -182,7 +120,6 @@ export function equalsIgnoreCase(a: string, b: string) {
 }
 
 type FoundProperty = { propertyName: string; path: string[]; value: unknown };
-type PropertySearchResult = 'continue' | 'abort';
 
 type PropertySearchExContext = {
   isMatch: (propertyName: string, path: string[], value: unknown) => boolean;
@@ -195,7 +132,7 @@ export function collectElements(
   obj: unknown,
   isMatch: (propertyName: string, path: string[], value: unknown) => boolean,
   returnFirstMatch: boolean
-): FoundProperty[] {
+) {
   const ctx: PropertySearchExContext = {
     isMatch,
     currentPath: [],
@@ -206,7 +143,7 @@ export function collectElements(
   return ctx.results;
 }
 
-function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>): PropertySearchResult {
+function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>) {
   for (const key in obj) {
     if (Object.hasOwn(obj, key) && collectMatchingProperty(ctx, key, obj[key]) === 'abort') {
       return 'abort';
@@ -215,7 +152,7 @@ function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<stri
   return 'continue';
 }
 
-function collectMatchingProperty(ctx: PropertySearchExContext, key: string, value: unknown): PropertySearchResult {
+function collectMatchingProperty(ctx: PropertySearchExContext, key: string, value: unknown) {
   if (ctx.isMatch(key, ctx.currentPath, value)) {
     ctx.results.push({ propertyName: key, path: Object.assign([], ctx.currentPath), value });
     if (ctx.returnFirstResult) {
@@ -234,11 +171,7 @@ function collectMatchingProperty(ctx: PropertySearchExContext, key: string, valu
 type IsMatchFunc = (pathElement: string, propertyName: string, value: unknown) => boolean;
 export type CollectedProperty = { path: string[]; value: unknown };
 
-export function collectElements2(
-  targetObject: Record<string, unknown>,
-  path: string[],
-  isMatch: IsMatchFunc
-): CollectedProperty[] {
+export function collectElements2(targetObject: Record<string, unknown>, path: string[], isMatch: IsMatchFunc) {
   let explore: CollectedProperty[] = [{ path: [], value: targetObject }];
   for (let index = 0; index < path.length; index++) {
     const next = explore.flatMap((property) => collectPathSegment(property, path[index], isMatch));
@@ -250,7 +183,7 @@ export function collectElements2(
   return [];
 }
 
-function collectPathSegment(property: CollectedProperty, segment: string, isMatch: IsMatchFunc): CollectedProperty[] {
+function collectPathSegment(property: CollectedProperty, segment: string, isMatch: IsMatchFunc) {
   if (segment !== '**') {
     return collectDirectProperties(property, segment, isMatch);
   }
@@ -261,11 +194,7 @@ function collectPathSegment(property: CollectedProperty, segment: string, isMatc
   ];
 }
 
-function collectDirectProperties(
-  property: CollectedProperty,
-  segment: string,
-  isMatch: IsMatchFunc
-): CollectedProperty[] {
+function collectDirectProperties(property: CollectedProperty, segment: string, isMatch: IsMatchFunc) {
   const results: CollectedProperty[] = [];
   for (const key in property.value as Record<string, unknown>) {
     if (Object.hasOwn(property.value as Record<string, unknown>, key)) {
@@ -281,7 +210,10 @@ function collectDirectProperties(
   return results;
 }
 
-export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
+/**
+ * Walks a snapshot of the messages so collecting keys does not traverse the live observable list.
+ */
+export function getAllMessageKeys(messages: TopicMessage[]) {
   const ctx: GetAllKeysContext = {
     currentFullPath: '',
     currentPath: [],
@@ -289,7 +221,6 @@ export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
     existingPaths: new Set<string>(),
   };
 
-  // slice is needed because messages array is observable
   for (const m of messages.slice()) {
     const payload = m.value.payload;
     getAllKeysRecursive(ctx, payload as Record<string, unknown>);
@@ -298,27 +229,22 @@ export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
     ctx.currentFullPath = '';
   }
 
-  // console.log('getAllMessageKeys', ctx.results);
-
   return ctx.results;
 }
 
 type Property = {
-  /** property name */
   propertyName: string;
-  /** path to the property (excluding 'prop' itself) */
   path: string[];
-  /** path + prop */
   fullPath: string;
 };
 type GetAllKeysContext = {
-  currentPath: string[]; // complete, real path
-  currentFullPath: string; // string path, with array indices replaced by a start
-  existingPaths: Set<string>; // list of 'currentFullPath' entries, used to filter duplicates
+  currentPath: string[];
+  currentFullPath: string;
+  existingPaths: Set<string>;
   results: Property[];
 };
 
-function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>): void {
+function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>) {
   const isArray = Array.isArray(obj);
   const pathToHere = ctx.currentFullPath;
   for (const key in obj) {
@@ -329,13 +255,7 @@ function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown
   ctx.currentFullPath = pathToHere;
 }
 
-function collectMessageKey(
-  ctx: GetAllKeysContext,
-  value: unknown,
-  key: string,
-  pathToHere: string,
-  isArray: boolean
-): void {
+function collectMessageKey(ctx: GetAllKeysContext, value: unknown, key: string, pathToHere: string, isArray: boolean) {
   ctx.currentPath.push(key);
   const fullPath = isArray ? `${pathToHere}[*]` : `${pathToHere}.${key}`;
   ctx.currentFullPath = fullPath;
@@ -349,7 +269,7 @@ function collectMessageKey(
   ctx.currentFullPath = fullPath;
 }
 
-function recordMessageKey(ctx: GetAllKeysContext, key: string, fullPath: string): void {
+function recordMessageKey(ctx: GetAllKeysContext, key: string, fullPath: string) {
   if (ctx.existingPaths.has(fullPath)) {
     return;
   }
@@ -360,7 +280,6 @@ function recordMessageKey(ctx: GetAllKeysContext, key: string, fullPath: string)
 const secToMs = 1000;
 const minToMs = 60 * secToMs;
 const hoursToMs = 60 * minToMs;
-// const daysToMs = 24 * hoursToMs;
 
 export function hoursToMilliseconds(hours: number) {
   return hours * hoursToMs;
@@ -371,7 +290,7 @@ export const cullText = (str: string, length: number) => {
   return str.length > length ? `${str.substring(0, length - ELLIPSIS_LENGTH)}...` : str;
 };
 
-export function groupConsecutive(ar: number[]): number[][] {
+export function groupConsecutive(ar: number[]) {
   const groups: number[][] = [];
 
   for (const cur of ar) {
@@ -380,7 +299,6 @@ export function groupConsecutive(ar: number[]): number[][] {
     if (group) {
       const last = group.at(-1);
       if (last === cur - 1) {
-        // We can extend the group
         group.push(cur);
         continue;
       }
@@ -400,8 +318,7 @@ export const prettyBytesOrNA = (n: number) => {
 };
 
 /** Same size, same members. */
-export const eqSet = <T = string>(xs: Set<T>, ys: Set<T>): boolean =>
-  xs.size === ys.size && [...xs].every((x) => ys.has(x));
+export const eqSet = <T = string>(xs: Set<T>, ys: Set<T>) => xs.size === ys.size && [...xs].every((x) => ys.has(x));
 
 export type PrettyValueOptions = {
   /** Show 'Infinite' for greater or equal to 2^64-1 */
@@ -409,7 +326,10 @@ export type PrettyValueOptions = {
   /** A fallback to show when the value is `undefined` or `null` */
   showNullAs?: string;
 };
-export const UInt64Max = '18446744073709551615'; // can't be represented in js, would be rounded up to 18446744073709552000
+/**
+ * Maximum unsigned 64-bit value as text; a JavaScript number cannot represent it exactly.
+ */
+export const UInt64Max = '18446744073709551615';
 function isUInt64Maximum(str: string) {
   if (str === UInt64Max) {
     return true;
@@ -420,7 +340,7 @@ function isUInt64Maximum(str: string) {
   return false;
 }
 
-function parsePrettyString(value: string): number | string {
+function parsePrettyString(value: string) {
   if (value === '') {
     return 'N/A';
   }
@@ -428,7 +348,7 @@ function parsePrettyString(value: string): number | string {
   return Number.isFinite(parsed) ? parsed : String(parsed);
 }
 
-function parsePrettyValue(value: number | string | null | undefined, options?: PrettyValueOptions): number | string {
+function parsePrettyValue(value: number | string | null | undefined, options?: PrettyValueOptions) {
   if (value === undefined || value === null) {
     return options?.showNullAs ?? 'N/A';
   }
@@ -480,15 +400,15 @@ export function prettyNumber(num: number) {
   return toG(num);
 }
 
-export function fromDecimalSeparated(str: string): number {
+export function fromDecimalSeparated(str: string) {
   if (!str || str === '') {
     return 0;
   }
   return Number.parseInt(str.replace(',', ''), 10);
 }
 
-export function toDecimalSeparated(num: number): string {
-  return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+export function toDecimalSeparated(num: number) {
+  return String(num).replace(/\B(?=(?:\d{3})+(?!\d))/gu, ',');
 }
 
 /**
@@ -508,20 +428,20 @@ export function simpleUniqueId(prefix?: string) {
 /**
  * 4x 'randomId()'
  */
-export function uniqueId4(): string {
+export function uniqueId4() {
   return randomId() + randomId() + randomId() + randomId();
 }
 
-export function titleCase(str: string): string {
+export function titleCase(str: string) {
   if (!str) {
     return str;
   }
   return str[0].toUpperCase() + str.slice(1).toLowerCase();
 }
 
-export function capitalizeFirst(str: string): string {
+export function capitalizeFirst(str: string) {
   if (!str) {
-    return str; // Handle empty or falsy strings
+    return str;
   }
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
@@ -529,8 +449,8 @@ export function capitalizeFirst(str: string): string {
 /**
  * Scroll the main content region
  */
-export function scrollToTop(): void {
-  const mainLayout = document.getElementById('mainLayout');
+export function scrollToTop() {
+  const mainLayout = document.querySelector<HTMLElement>('#mainLayout');
   if (!mainLayout) {
     return;
   }
@@ -538,44 +458,22 @@ export function scrollToTop(): void {
   mainLayout.scrollTo({ behavior: 'smooth', left: 0, top: 0 });
 }
 
-/**
- * Scroll the main content region to the target element (which is found by the given id)
- */
-export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 'center', offset?: number): void {
-  const mainLayout = document.getElementById('mainLayout');
-  if (!mainLayout) {
+/** Scrolls the main content region to a mounted element. */
+export function scrollToElement(target: HTMLElement | null, offset = 0) {
+  const mainLayout = document.querySelector<HTMLElement>('#mainLayout');
+  if (!(mainLayout && target)) {
     return;
-  }
-  const target = document.getElementById(targetId);
-  if (!target) {
-    return;
-  }
-
-  const rect = target.getBoundingClientRect();
-  // @ts-expect-error perhaps it affects the target for some reason?
-  let _top = 0;
-  switch (anchor) {
-    case 'start':
-      _top = rect.top;
-      break;
-    case 'center':
-      _top = (rect.top + rect.bottom) / 2;
-      break;
-    case 'end':
-      _top = rect.bottom;
-      break;
-    default:
-      _top = rect.top;
-      break;
   }
 
   mainLayout.scrollTo({
     behavior: 'smooth',
-    top: target.getBoundingClientRect().top + mainLayout.scrollTop + (offset ?? 0),
+    top: target.getBoundingClientRect().top + mainLayout.scrollTop + offset,
   });
 }
 
-// See: https://stackoverflow.com/questions/30106476/using-javascripts-atob-to-decode-base64-doesnt-properly-decode-utf-8-strings
+/**
+ * Decodes bytes as UTF-8 instead of treating the output of `atob` as the decoded text.
+ */
 export function decodeBase64(base64: string) {
   if (!base64) {
     return base64;
@@ -589,7 +487,7 @@ export function encodeBase64(rawData: string) {
 }
 
 /** True when `Base64.decode` accepts the string. */
-export function isValidBase64(str: string): boolean {
+export function isValidBase64(str: string) {
   try {
     Base64.decode(str);
     return true;
@@ -606,19 +504,19 @@ export function base64ToUInt8Array(base64: string) {
   return Base64.toUint8Array(base64);
 }
 
-function binaryStringToBytes(binary: string): Uint8Array {
+function binaryStringToBytes(binary: string) {
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index++) {
     bytes[index] = binary.charCodeAt(index);
   }
-  return bytes;
+  return bytes satisfies Uint8Array;
 }
 
-function formatHexBytes(bytes: Uint8Array): string {
+function formatHexBytes(bytes: Uint8Array) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(' ');
 }
 
-export function base64ToHexString(base64: string): string {
+export function base64ToHexString(base64: string) {
   try {
     return formatHexBytes(binaryStringToBytes(Base64.atob(base64)));
   } catch (_err) {
@@ -626,7 +524,7 @@ export function base64ToHexString(base64: string): string {
   }
 }
 
-export function uint8ArrayToHexString(ar: Uint8Array): string {
+export function uint8ArrayToHexString(ar: Uint8Array) {
   try {
     return formatHexBytes(ar);
   } catch (_err) {
@@ -634,8 +532,8 @@ export function uint8ArrayToHexString(ar: Uint8Array): string {
   }
 }
 
-export function delay(timeoutMs: number): Promise<void> {
-  return new Promise((resolve, _) => {
+export function delay(timeoutMs: number) {
+  return new Promise<void>((resolve, _) => {
     setTimeout(resolve, timeoutMs);
   });
 }
@@ -648,16 +546,11 @@ export function setHeader(init: RequestInit, name: string, value: string) {
   } else if (typeof init.headers.set === 'function') {
     init.headers.set(name, value);
   } else {
-    // Record<string, string>
     (init.headers as Record<string, string>)[name] = value;
   }
 }
 
-// very simple retrier utility for allowing some retries, if we ended up using it more often we should consider making it more elaborate
-export function retrier<T>(
-  operation: () => Promise<T>,
-  { attempts = Number.POSITIVE_INFINITY, delayTime = 100 }
-): Promise<T> {
+export function retrier<T>(operation: () => Promise<T>, { attempts = Number.POSITIVE_INFINITY, delayTime = 100 }) {
   return new Promise<T>((resolve, reject) => {
     operation()
       .then(resolve)
@@ -686,29 +579,24 @@ export type ElementOf<T> = T extends (infer E)[] ? E : T extends readonly (infer
  * @param {number} maxLength The maximum length of the string, including the ellipsis.
  * @returns {string} The truncated string with ellipsis if truncation was necessary, otherwise the original string.
  */
-export function substringWithEllipsis(input: string, maxLength: number): string {
-  // Check if the input length is greater than the maxLength
-  // Note: We account for the length of the ellipsis in the comparison
+export function substringWithEllipsis(input: string, maxLength: number) {
   if (input.length > maxLength) {
-    // Subtract 3 from maxLength to accommodate the ellipsis
-    // Ensure maxLength is at least 4 to avoid negative substring lengths
     const effectiveLength = Math.max(maxLength - 3, 1);
     return `${input.substring(0, effectiveLength)}...`;
   }
   return input;
 }
 
-// If the schemaName contains an escape character (%) we need to protect the url from getting auto decoded by react router.
-// Otherwise we cannot tell the difference between '/' and '%2F' and '%252F'
-// https://github.com/remix-run/react-router/issues/10213
-// https://github.com/remix-run/history/issues/874
-export function encodeURIComponentPercents(rawStr: string): string {
+/**
+ * Double-encodes an escaped percent so the router can decode once without conflating a slash with the literal text `%2F`.
+ */
+export function encodeURIComponentPercents(rawStr: string) {
   const encoded = encodeURIComponent(rawStr);
-  return encoded.replace(/%/g, '﹪');
+  return encoded.replace(/%/gu, '﹪');
 }
 
-export function decodeURIComponentPercents(encodedStr: string): string {
-  const encoded = encodedStr.replace(/﹪/g, '%');
+export function decodeURIComponentPercents(encodedStr: string) {
+  const encoded = encodedStr.replace(/﹪/gu, '%');
   return decodeURIComponent(encoded);
 }
 
@@ -718,7 +606,7 @@ export function decodeURIComponentPercents(encodedStr: string): string {
  */
 export function getOidcSubject(error: {
   details?: { debug?: { metadata?: { login_type?: string; subject?: string } } }[];
-}): string | null {
+}) {
   if (!error.details) {
     return null;
   }
@@ -727,5 +615,5 @@ export function getOidcSubject(error: {
       return detail.debug.metadata.subject;
     }
   }
-  return null; // Return null if no OIDC subject is found
+  return null;
 }

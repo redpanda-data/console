@@ -9,77 +9,156 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, describe, expect, rs, test } from '@rstest/core';
-import { act, renderHook, waitFor } from '@testing-library/react';
-import { config } from 'config';
+import { afterAll, afterEach, beforeAll, expect, test } from '@rstest/core';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { config, createAuthInjectingFetch } from 'config';
+import { HttpResponse, http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
 import { connectQueryWrapper } from 'test-utils';
 
-import { useLegacyListTopicsQuery, useUpdateTopicConfigMutation } from './topic';
+import { useLegacyListTopicsQuery, useTopicConfigQuery, useUpdateTopicConfigMutation } from './topic';
 import { useApiStore } from '../../state/backend-api';
+import type { GetTopicsResponse, TopicConfigResponse } from '../../state/rest-interfaces';
 
-// Disable retries so a failing query settles into the error state immediately.
 const NO_RETRY = { defaultOptions: { queries: { retry: false } } };
+const TOPIC = 'orders';
+const TOPICS_URL = new URL(`${config.restBasePath}/topics`, window.location.href).href;
+const TOPIC_CONFIG_URL = `${TOPICS_URL}/${TOPIC}/configuration`;
+const CHANGE = { topicName: TOPIC, configs: [{ key: 'retention.ms', op: 'SET' as const, value: '2000' }] };
+const originalRestFetch = config.fetch;
+const initialApiState = useApiStore.getState();
+const guardedFetch = globalThis.fetch;
+const server = setupServer();
 
-const jsonResponse = (body: unknown, init?: ResponseInit) =>
-  new Response(JSON.stringify(body), {
-    headers: { 'content-type': 'application/json' },
-    ...init,
+beforeAll(() => {
+  server.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in the topic query test');
+    },
   });
+  config.fetch = createAuthInjectingFetch(globalThis.fetch);
+});
 
 afterEach(() => {
-  rs.restoreAllMocks();
+  cleanup();
+  server.resetHandlers();
+  useApiStore.setState(initialApiState, true);
 });
 
-describe('useLegacyListTopicsQuery', () => {
-  test('surfaces an error when the topics endpoint returns a non-ok HTTP status with a JSON body', async () => {
-    // A 403 with a *valid JSON body* is the dangerous case: response.json() resolves,
-    // so without an explicit response.ok check the query settles as a success and the
-    // error UI never renders — the user sees 0 topics instead of an auth failure.
-    rs.spyOn(config, 'fetch').mockResolvedValue(
-      jsonResponse({ message: 'forbidden' }, { status: 403, statusText: 'Forbidden' })
-    );
-
-    const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
-    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error).toBeInstanceOf(Error);
-  });
-
-  test('returns topics on a successful response', async () => {
-    rs.spyOn(config, 'fetch').mockResolvedValue(
-      jsonResponse({ topics: [{ topicName: 'orders', isInternal: false }] }, { status: 200 })
-    );
-
-    const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
-    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data.topics).toEqual([{ topicName: 'orders', isInternal: false }]);
-  });
+afterAll(() => {
+  config.fetch = originalRestFetch;
+  server.close();
 });
 
-function renderUpdatingTopic() {
-  const refreshed = Promise.withResolvers<void>();
-  const { queryClient, queryClientWrapper } = connectQueryWrapper(NO_RETRY);
-  rs.spyOn(useApiStore.getState(), 'changeTopicConfig').mockResolvedValue(undefined);
-  const invalidate = rs.spyOn(queryClient, 'invalidateQueries').mockReturnValue(refreshed.promise);
-  const hook = renderHook(() => useUpdateTopicConfigMutation(), { wrapper: queryClientWrapper });
-  return { ...hook, refreshed, invalidate };
+function topicList() {
+  return {
+    topics: [TOPIC, '_schemas'].map((topicName) => ({
+      topicName,
+      isInternal: topicName === '_schemas',
+      partitionCount: 3,
+      replicationFactor: 1,
+      cleanupPolicy: 'delete',
+      documentation: 'NOT_CONFIGURED',
+      logDirSummary: { totalSizeBytes: 0, replicaErrors: null, hint: null },
+      allowedActions: undefined,
+    })),
+  } satisfies GetTopicsResponse;
 }
 
-test('topic updates remain pending until their configuration cache refresh completes', async () => {
-  const { result, refreshed, invalidate } = renderUpdatingTopic();
-  let update: Promise<unknown> | undefined;
-  act(() => {
-    update = result.current.mutateAsync({ topicName: 'orders', configs: [] });
+test('reports forbidden rather than treating a JSON error reply as an empty list', async () => {
+  server.use(
+    http.get(TOPICS_URL, () => HttpResponse.json({ message: 'forbidden' }, { status: 403, statusText: 'Forbidden' }))
+  );
+  const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
+  const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
+
+  await waitFor(() => expect(result.current.error?.message).toBe('Failed to fetch topics: 403 Forbidden'));
+  expect(result.current.isError).toBe(true);
+  expect(result.current.data.topics).toBeUndefined();
+});
+
+test('returns visible topics and filters internal ones when requested', async () => {
+  server.use(http.get(TOPICS_URL, () => HttpResponse.json(topicList())));
+  const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
+  const { result } = renderHook(() => useLegacyListTopicsQuery(undefined, { hideInternalTopics: true }), {
+    wrapper: queryClientWrapper,
   });
-  await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: ['topicConfig', 'orders'] }));
-  await act(() => undefined);
-  expect(result.current.isPending).toBe(true);
-  await act(async () => {
-    refreshed.resolve();
-    await update;
-  });
-  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+  await waitFor(() => expect(result.current.data.topics?.map((topic) => topic.topicName)).toEqual([TOPIC]));
+});
+
+function topicConfiguration(retention: string) {
+  return {
+    topicDescription: {
+      topicName: TOPIC,
+      error: null,
+      configEntries: [
+        {
+          name: 'retention.ms',
+          value: retention,
+          type: 'LONG',
+          source: 'DYNAMIC_TOPIC_CONFIG',
+          isExplicitlySet: true,
+          isDefaultValue: false,
+          isReadOnly: false,
+          isSensitive: false,
+          synonyms: [],
+          currentValue: undefined,
+        },
+      ],
+    },
+  } satisfies TopicConfigResponse;
+}
+
+function gateTopicConfigRefresh() {
+  const release = Promise.withResolvers<void>();
+  const requests: string[] = [];
+  const patches: unknown[] = [];
+  server.use(
+    http.patch(TOPIC_CONFIG_URL, async ({ request }) => {
+      requests.push('PATCH');
+      patches.push(await request.json());
+      return new HttpResponse(null, { status: 204 });
+    }),
+    http.get(TOPIC_CONFIG_URL, async () => {
+      const updated = requests.includes('PATCH');
+      requests.push('GET');
+      if (updated) {
+        await release.promise;
+      }
+      return HttpResponse.json(topicConfiguration(updated ? '2000' : '1000'));
+    })
+  );
+  return { requests, patches, releaseRefresh: () => release.resolve() };
+}
+
+async function renderTopicEditor() {
+  const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
+  const { result } = renderHook(
+    () => ({ topicConfig: useTopicConfigQuery(TOPIC), update: useUpdateTopicConfigMutation() }),
+    { wrapper: queryClientWrapper }
+  );
+  await waitFor(() => expect(result.current.topicConfig.data?.configEntries[0]?.value).toBe('1000'));
+  return result;
+}
+
+test('keeps a topic update pending until its active configuration query returns fresh data', async () => {
+  const { requests, patches, releaseRefresh } = gateTopicConfigRefresh();
+  const result = await renderTopicEditor();
+
+  try {
+    act(() => result.current.update.mutate(CHANGE));
+    await waitFor(() => expect(requests).toEqual(['GET', 'PATCH', 'GET']));
+    expect(patches).toEqual([{ configs: CHANGE.configs }]);
+    expect(result.current.update.isPending).toBe(true);
+  } finally {
+    releaseRefresh();
+  }
+
+  await waitFor(() => expect(result.current.update.isSuccess).toBe(true));
+  expect(result.current.topicConfig.data?.configEntries[0]?.value).toBe('2000');
 });

@@ -101,15 +101,11 @@ type AddUserStepProps = {
   selectionMode?: 'existing' | 'new' | 'both';
   hideTitle?: boolean;
   className?: string;
-  // Renders the form bare (no Card chrome/min-height/margin) so it can sit
-  // inside a host surface like a dialog body. Defaults to false for the wizard.
   inline?: boolean;
 };
 
 type UserForm = UseFormReturn<AddUserFormData>;
 type SubmitUser = (userData: AddUserFormData) => Promise<UserStepSubmissionResult>;
-
-// ── Hooks ──────────────────────────────────────────────────────────────────────
 
 function useAddUserForm({
   defaultUsername,
@@ -131,10 +127,7 @@ function useAddUserForm({
   });
 }
 
-function initialUserSelectionType(
-  selectionMode: NonNullable<AddUserStepProps['selectionMode']>,
-  hasUsers: boolean
-): CreatableSelectionType {
+function initialUserSelectionType(selectionMode: NonNullable<AddUserStepProps['selectionMode']>, hasUsers: boolean) {
   if (selectionMode === 'new') {
     return CreatableSelectionOptions.CREATE;
   }
@@ -144,7 +137,6 @@ function initialUserSelectionType(
   return hasUsers ? CreatableSelectionOptions.EXISTING : CreatableSelectionOptions.CREATE;
 }
 
-// The users to pick from, the Existing/New choice, and the existing user the typed name refers to.
 function useUserSelection({
   form,
   hideInternal,
@@ -164,8 +156,7 @@ function useUserSelection({
   });
 
   const existingUserSelected = useMemo(() => {
-    // Only check if the CURRENT form username matches an existing user
-    // Don't use persisted username to avoid showing existing user state when creating a new one
+    // WARNING: Match the username currently entered, not an earlier saved name; the old account can hide the new-user form.
     if (!watchedUsername) {
       return;
     }
@@ -223,7 +214,6 @@ function useTopicGrant({
       filter: {
         resourceType: ACL_ResourceType.TOPIC,
         resourceName: topicName,
-        // Also returns the prefixed and wildcard ACLs that cover the topic.
         resourcePatternType: ACL_ResourcePatternType.MATCH,
       },
     },
@@ -241,7 +231,6 @@ function useTopicGrant({
     return checkUserHasTopicPermissions(aclData.aclResources, topicName, existingUserSelected.name, topicAccess);
   }, [existingUserSelected, topicName, aclData, topicAccess]);
 
-  // An existing user is granted the topic only if they lack access, which is assumed until their ACLs load.
   const needsTopicGrant =
     Boolean(topicName) && !(existingUserSelected && userTopicPermissions?.missingPermissions.length === 0);
   return { userTopicPermissions, needsTopicGrant };
@@ -288,7 +277,6 @@ function useConsumerGroupAccess({
   return { watchedConsumerGroup, userConsumerGroupPermissions };
 }
 
-// The pipeline reads a user's credentials from secrets, which only exist for users created here.
 function useMissingUserSecrets(existingUserSelected?: User) {
   const { data: secretsData } = useListSecretsQuery({}, { enabled: Boolean(existingUserSelected) });
   return useMemo(() => {
@@ -300,7 +288,6 @@ function useMissingUserSecrets(existingUserSelected?: User) {
   }, [existingUserSelected, secretsData]);
 }
 
-// What an existing user can already do, and what the pipeline still needs to give them.
 function useExistingUserAccess({
   form,
   existingUserSelected,
@@ -397,8 +384,6 @@ function usePasswordRegeneration(form: UserForm) {
   return { generateNewPassword, handleSpecialCharsChange };
 }
 
-// ── Submission ─────────────────────────────────────────────────────────────────
-
 function invalidateUserQueries(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({
@@ -423,12 +408,12 @@ async function createPipelineServiceAccount(
   selector: ServiceAccountSelectorRef,
   serviceAccountLabel: string,
   serviceAccountName: string
-): Promise<UserStepSubmissionResult> {
+) {
   try {
     const result = await selector.createServiceAccount(serviceAccountLabel);
 
     if (!result) {
-      return { success: false };
+      return { success: false } satisfies UserStepSubmissionResult;
     }
 
     const submissionData: ServiceAccountSubmissionData = {
@@ -441,11 +426,11 @@ async function createPipelineServiceAccount(
     return {
       success: true,
       data: submissionData,
-    };
+    } satisfies UserStepSubmissionResult;
   } catch (createServiceAccountError) {
     const error = ConnectError.from(createServiceAccountError);
     toast.error(formatToastErrorMessageGRPC({ error, action: 'create', entity: 'service account' }));
-    return { success: false };
+    return { success: false } satisfies UserStepSubmissionResult;
   }
 }
 
@@ -459,16 +444,16 @@ function submitServiceAccount({
   selector: ServiceAccountSelectorRef | null;
   serviceAccountLabel: string;
   serviceAccountName: string;
-}): Promise<UserStepSubmissionResult> {
+}) {
   if (hasServiceAccount) {
-    return Promise.resolve({
+    return Promise.resolve<UserStepSubmissionResult>({
       success: true,
       data: { authMethod: AuthenticationMethod.SERVICE_ACCOUNT, existing: true },
     });
   }
   if (!selector) {
     toast.error('Service account selector not initialized');
-    return Promise.resolve({ success: false });
+    return Promise.resolve<UserStepSubmissionResult>({ success: false });
   }
   return createPipelineServiceAccount(selector, serviceAccountLabel, serviceAccountName);
 }
@@ -510,7 +495,6 @@ function useAddUserSubmit({
         });
       }
 
-      // An existing user logs in with the mechanism it was created with; the form only asks for a new one's.
       const existingMechanism = saslMechanismFromProto(existingUserSelected?.mechanism);
       const result = await createUserWithSecrets({
         userData: existingMechanism ? { ...userData, saslMechanism: existingMechanism } : userData,
@@ -542,7 +526,6 @@ function useAddUserSubmit({
   );
 }
 
-// A service account needs no form validation; a SASL user is submitted only once the form is valid.
 async function triggerUserStepSubmit({
   form,
   authMethod,
@@ -553,7 +536,7 @@ async function triggerUserStepSubmit({
   authMethod: AuthenticationMethodType;
   submit: SubmitUser;
   signal?: AbortSignal;
-}): Promise<UserStepSubmissionResult> {
+}) {
   if (signal?.aborted) {
     return { success: false };
   }
@@ -571,8 +554,6 @@ async function triggerUserStepSubmit({
     success: false,
   };
 }
-
-// ── Form sections ──────────────────────────────────────────────────────────────
 
 function AuthMethodField({
   authMethod,
@@ -633,7 +614,6 @@ function UsernameField({
           }}
           value={users.userSelectionType}
         >
-          {/* h-9 matches the field beside it. */}
           <TabsList className="h-9">
             <TabsTrigger disabled={isPending} value={CreatableSelectionOptions.EXISTING}>
               Existing
@@ -850,7 +830,6 @@ function GrantTopicField({ form, isPending, topicName }: { form: UserForm; isPen
             <FormLabel>Grant this user full access to {topicName}</FormLabel>
           </div>
           {field.value ? (
-            // Indented past the checkbox and its gap, under the label text.
             <FormDescription className="ml-7">
               Read, write, create, delete, describe and alter permissions on the topic.
             </FormDescription>
@@ -1132,8 +1111,9 @@ function AddUserFormBody({
   );
 }
 
-// ── Step ───────────────────────────────────────────────────────────────────────
-
+/**
+ * An existing user's SASL mechanism is reused; optional topic grants are added only when access is missing. Only a user created here has fresh password material to store as secrets.
+ */
 export const AddUserStep = forwardRef<UserStepRef, AddUserStepProps & MotionProps>(
   (
     {

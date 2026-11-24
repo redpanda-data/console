@@ -98,7 +98,6 @@ describe('durations', () => {
       ['0', 0],
       ['1µs', 1e3],
       ['1μs', 1e3],
-      // Go truncates a fraction below a nanosecond.
       ['0.0000000001s', 0],
       ['30', undefined],
       ['1d', undefined],
@@ -106,7 +105,6 @@ describe('durations', () => {
       ['5 m', undefined],
       ['', undefined],
       ['99999999999h', undefined],
-      // Units are looked up by name, so built-in object keys aren't units.
       ['5constructor', undefined],
       ['1toString', undefined],
     ];
@@ -118,7 +116,6 @@ describe('durations', () => {
   test('an idle timeout reads as Connect reads it', () => {
     const cases: [string | undefined, string][] = [
       [undefined, 'unset'],
-      // Connect skips an empty one.
       ['', 'unset'],
       ['30s', 'positive'],
       ['1h30m', 'positive'],
@@ -188,7 +185,6 @@ describe('stopShortLabel', () => {
   });
 
   test('names only the parts of the condition that act', () => {
-    // Re-read with restart_input, the input never goes idle, so only the limit ends it.
     const effective = { kind: 'condition' as const, reason: '', stopsOn: { check: 'counter() >= 1000' } };
     expect(stopShortLabel(slot({ check: 'counter() >= 1000', idleTimeout: '30s' }), effective)).toBe('1K msgs');
   });
@@ -599,7 +595,6 @@ describe('stopSlotLock', () => {
   test('a plain or wrapped input can be rewritten', () => {
     expect(lockOf('input:\n  kafka: {}\n')).toBeUndefined();
     expect(lockOf('input:\n  read_until:\n    idle_timeout: 5s\n    input: { kafka: {} }\n')).toBeUndefined();
-    // A component merged in moves inside the wrapper as is.
     expect(lockOf('x: &k { kafka: {} }\ninput:\n  <<: *k\n')).toBeUndefined();
   });
 

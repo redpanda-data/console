@@ -38,7 +38,6 @@ const DebugBundleLink = ({
         <button
           className="cursor-pointer border-none bg-transparent p-0 font-medium text-primary underline underline-offset-4"
           onClick={() => {
-            // Add JWT Bearer token if available (same as REST and gRPC calls)
             const headers: HeadersInit = {};
             if (config.jwt) {
               headers.Authorization = `Bearer ${config.jwt}`;
@@ -49,23 +48,17 @@ const DebugBundleLink = ({
               .then(async (response) => {
                 const url = window.URL.createObjectURL(await response.blob());
 
-                // Create a new anchor element
                 const a = document.createElement('a');
 
-                // Set the download URL and filename
                 a.href = url;
                 a.download = downloadFilename;
 
-                // Append the anchor to the document body (necessary for Firefox)
                 document.body.appendChild(a);
 
-                // Programmatically trigger the download
                 a.click();
 
-                // Remove the anchor from the DOM
                 document.body.removeChild(a);
 
-                // Revoke the temporary URL to free memory
                 window.URL.revokeObjectURL(url);
               });
           }}
@@ -80,9 +73,7 @@ const DebugBundleLink = ({
                 <Button
                   aria-label="Delete file"
                   onClick={() => {
-                    api.deleteDebugBundleFile().catch(() => {
-                      // Error handling should be managed by the API layer
-                    });
+                    api.deleteDebugBundleFile().catch(() => {});
                   }}
                   size="icon-sm"
                   variant="destructive-ghost"
@@ -102,4 +93,7 @@ const DebugBundleLink = ({
   );
 };
 
+/**
+ * The temporary download anchor is attached to the document for Firefox compatibility.
+ */
 export default DebugBundleLink;

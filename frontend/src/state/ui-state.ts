@@ -16,13 +16,6 @@ import { api } from './backend-api';
 import { createTopicDetailsSettings, type TopicDetailsSettings as TopicSettings, useUISettingsStore } from './ui';
 import { boundedAppend } from '../utils/bounded-array';
 
-/**
- * Cap on retained per-topic settings. The array grows by one entry per distinct topic ever
- * visited and is persisted (as a full blob) by the settings store, so a session that browses
- * many topics would grow heap and storage without bound. Oldest-added entries drop first (FIFO;
- * re-visits don't refresh position). The persisted zustand store has its own cap in
- * stores/topic-settings-store.ts.
- */
 const MAX_PER_TOPIC_SETTINGS = 200;
 
 export type BreadcrumbOptions = {
@@ -38,8 +31,11 @@ export type BreadcrumbEntry = {
   options?: BreadcrumbOptions;
 };
 
+/**
+ * The build timestamp uses Unix seconds.
+ */
 export type ServerVersionInfo = {
-  ts?: string; // build timestamp, unix seconds
+  ts?: string;
   sha?: string;
   branch?: string;
   shaBusiness?: string;
@@ -52,7 +48,6 @@ export type BackLink = {
 };
 
 type UIStateStore = {
-  // Core state
   _pageTitle: string | React.ReactElement;
   pageBreadcrumbs: BreadcrumbEntry[];
   backLink: BackLink | null;
@@ -63,13 +58,11 @@ type UIStateStore = {
   isUsingDebugUserLogin: boolean;
   serverBuildTimestamp: number | undefined;
 
-  // Computed getters (accessed as properties on the store)
   get pageTitle(): string | React.ReactElement;
   get selectedClusterName(): string | null;
   get currentTopicName(): string | undefined;
   get topicSettings(): TopicSettings;
 
-  // Actions (setters)
   setPageTitle: (title: string | React.ReactElement) => void;
   setPageBreadcrumbs: (breadcrumbs: BreadcrumbEntry[]) => void;
   setPageState: (
@@ -87,7 +80,6 @@ type UIStateStore = {
 };
 
 export const useUIStateStore = create<UIStateStore>((set, get) => ({
-  // Initial state
   _pageTitle: ' ',
   pageBreadcrumbs: [],
   backLink: null,
@@ -98,7 +90,6 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
   isUsingDebugUserLogin: false,
   serverBuildTimestamp: undefined,
 
-  // Computed getters
   get pageTitle() {
     return get()._pageTitle;
   },
@@ -111,7 +102,6 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
       }
       return null;
     } catch {
-      // In test environments, useUISettingsStore might not be properly initialized
       return null;
     }
   },
@@ -135,13 +125,10 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
 
       throw new Error('reaction for "currentTopicName" was supposed to create topicDetail settings container');
     } catch (error) {
-      // In test environments, stores might not be properly initialized
-      // Return a minimal default to avoid breaking tests
       return createTopicDetailsSettings('');
     }
   },
 
-  // Actions
   setPageTitle: (title: string | React.ReactElement) => {
     set({ _pageTitle: title });
     if (typeof title === 'string') {
@@ -179,10 +166,9 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
   setCurrentTopicName: (topicName: string | undefined) => {
     set({ _currentTopicName: topicName });
 
-    // Side effect: create topic settings if needed
     if (topicName) {
       const uiSettings = useUISettingsStore.getState();
-      if (!uiSettings.perTopicSettings.find((s) => s.topicName === topicName)) {
+      if (!uiSettings.perTopicSettings.some((s) => s.topicName === topicName)) {
         const topicSettings = createTopicDetailsSettings(topicName);
         useUISettingsStore.getState().updateSettings({
           perTopicSettings: boundedAppend(uiSettings.perTopicSettings, topicSettings, MAX_PER_TOPIC_SETTINGS),
@@ -204,10 +190,6 @@ export const useUIStateStore = create<UIStateStore>((set, get) => ({
   },
 }));
 
-// Legacy export with Proxy for backward compatibility
-// This allows existing code to access and set properties directly like: uiState.loginError = null
-
-// Handle properties with special setters; writes to any other property are ignored.
 function applyUIStateWrite(store: UIStateStore, prop: string, value: unknown) {
   switch (prop) {
     case 'pageTitle':
@@ -242,6 +224,9 @@ function applyUIStateWrite(store: UIStateStore, prop: string, value: unknown) {
   }
 }
 
+/**
+ * Legacy read/write proxy. Writes are routed only for properties with supported setters. Topic settings retain a bounded FIFO; revisiting an entry does not move it to the end.
+ */
 export const uiState = new Proxy(
   {} as {
     pageTitle: string | React.ReactElement;
@@ -260,7 +245,6 @@ export const uiState = new Proxy(
     get(_target, prop: string) {
       const store = useUIStateStore.getState();
 
-      // Handle computed properties
       if (prop === 'pageTitle') {
         return store.pageTitle;
       }
@@ -274,7 +258,6 @@ export const uiState = new Proxy(
         return store.topicSettings;
       }
 
-      // Handle direct properties
       return store[prop as keyof UIStateStore];
     },
     set(_target, prop: string, value: unknown) {

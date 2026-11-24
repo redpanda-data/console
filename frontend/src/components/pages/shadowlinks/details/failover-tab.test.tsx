@@ -25,26 +25,25 @@ const link = { name: 'orders-dr' } as UnifiedShadowLink;
 
 const sasl: LinkIdentity = { authentication: 'sasl', principal: 'shadow-orders' };
 
-const topics = (lags: number[]): FailoverTopic[] =>
+const topics: (lags: number[]) => FailoverTopic[] = (lags) =>
   lags.map((lag, index) => ({
     topicName: index === 0 ? 'orders-events' : `orders-${index}`,
     state: ShadowTopicState.ACTIVE,
     totalLag: BigInt(lag),
   }));
 
-/** orders-events, then orders-audit, each with no lag, in these states. */
-const inStates = (...states: ShadowTopicState[]): FailoverTopic[] =>
+const inStates: (...states: ShadowTopicState[]) => FailoverTopic[] = (...states) =>
   states.map((state, index) => ({ topicName: ['orders-events', 'orders-audit'][index] ?? '', state, totalLag: 0n }));
 
 const NOW = Date.UTC(2026, 5, 1, 12);
 const MINUTE = 60 * 1000;
 
-const cloudSource = (
+const cloudSource: (
   state: FencePhase,
-  exemptPrincipals = ['shadow-orders'],
-  brokers: ShadowLinkPeerFenceBroker[] = [],
+  exemptPrincipals?: string[],
+  brokers?: ShadowLinkPeerFenceBroker[],
   stateChangedAt?: Date
-): ShadowLinkSource => ({
+) => ShadowLinkSource = (state, exemptPrincipals = ['shadow-orders'], brokers = [], stateChangedAt?) => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',
@@ -67,7 +66,7 @@ const readinessFor = (
     topicsFailed = false,
     resolving = false,
   }: { identity?: LinkIdentity; topicsFailed?: boolean; resolving?: boolean } = {}
-): FailoverReadiness => {
+) => {
   const fence = getSourceFenceStep({ source, link: identity, resolving });
   if (!fence) {
     throw new Error('No guided failover for this source');
@@ -152,7 +151,7 @@ describe('the FailoverTab', () => {
       expect(screen.getByTestId('failover-step-lag')).not.toHaveTextContent('exempt');
     });
 
-    // A name that would read as JSON is quoted, as routers write it, so the host's router keeps it a string.
+    // WARNING: Keep JSON-like names quoted in the URL; the host router would otherwise read them as values instead of strings.
     test.each([
       ['shadow/orders', 'shadow%2Forders'],
       ['1001', '%221001%22'],

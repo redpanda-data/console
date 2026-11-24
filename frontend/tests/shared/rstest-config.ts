@@ -16,7 +16,7 @@ export function e2eConfig(
     extends: definePlaywrightConfig(definePlaywrightOptions({}, variant)),
     env: { E2E_VARIANT: variant },
     testEnvironment: 'node',
-    include: ['**/*.spec.ts'],
+    include: ['**/*.e2e.test.ts'],
     passWithNoTests: false,
     pool: { type: 'threads', maxWorkers: process.env.CI || variant === 'console' ? workers : undefined },
     retry: process.env.CI ? retries : 0,

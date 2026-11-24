@@ -33,13 +33,11 @@ describe('asciidocToMarkdown', () => {
       'Uses https://example.com/go[franz-go].',
       'Uses [franz-go](https://example.com/go).',
     ],
-    // Every AWS `credentials` field ends "…can be found in xref:guides:cloud/aws.adoc[].".
     [
       'an empty-label xref, leaving no dangling punctuation',
       'Found in xref:guides:cloud/aws.adoc[].',
       'Found in the documentation.',
     ],
-    // AsciiDoc escapes `]` inside a label; a trailing `^` means "open in a new window".
     [
       'bracketed labels and the new-window flag',
       'See https://x.com/dsn[`http[s\\]://u[:p\\]`^] here.',
@@ -93,7 +91,6 @@ describe('asciidocToMarkdown', () => {
       ),
       lines('A DSN.', '', '- Driver — Format', '', '- `mysql`', '- `[user[:pass]@]/db`'),
     ],
-    // The Debezium type table writes rows as `|Type Name |Bloblang Type`, unpadded.
     [
       'cells that are not padded around the marker',
       lines('|===', '|Type Name |Bloblang Type', '|==='),
@@ -126,7 +123,6 @@ describe('markdownToPlainText', () => {
       asciidocToMarkdown('See https://x.com[the docs] for <token> usage.'),
       'See the docs for <token> usage.',
     ],
-    // The sql `dsn` fields document a bracket-heavy DSN inside the link label.
     [
       'a link whose label nests brackets',
       'A DSN: [`ch://[user[:pass]@][host]`](https://x.com/dsn) applies.',

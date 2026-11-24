@@ -17,7 +17,7 @@ type NewsItem = {
   };
 };
 
-const fetchNews = async (segment?: 'redpanda' | 'kafka'): Promise<NewsItem[]> => {
+const fetchNews: (segment?: 'redpanda' | 'kafka') => Promise<NewsItem[]> = async (segment) => {
   const url = new URL('https://redpanda-news-feed.netlify.app/news');
   if (segment) {
     url.searchParams.set('segment', segment);
@@ -30,14 +30,13 @@ const fetchNews = async (segment?: 'redpanda' | 'kafka'): Promise<NewsItem[]> =>
   return response.json();
 };
 
-export const useNewsFeed = (segment?: 'redpanda' | 'kafka') => {
-  return useQuery({
+export const useNewsFeed = (segment?: 'redpanda' | 'kafka') =>
+  useQuery({
     queryKey: ['news', segment],
     queryFn: () => fetchNews(segment),
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: Number.POSITIVE_INFINITY,
-    refetchOnMount: false, // Don't refetch when component mounts
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnReconnect: false, // Don't refetch when network reconnects
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
-};

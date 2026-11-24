@@ -11,13 +11,13 @@
 
 import { render, screen } from '@testing-library/react';
 
+import { RouteError } from './route-error';
+
 const mockRouter = { invalidate: rs.fn() };
 
 rs.mock('@tanstack/react-router', () => ({
   useRouter: () => mockRouter,
 }));
-
-import { RouteError } from './route-error';
 
 describe('the RouteError', () => {
   test('shows a real Error message', () => {
@@ -26,9 +26,6 @@ describe('the RouteError', () => {
     expect(screen.getByText('boom')).toBeVisible();
   });
 
-  // Regression test: clicking away (e.g. a breadcrumb) while a request is in flight
-  // can unmount the page and leave a non-Error rejection reason behind. The boundary
-  // must never render the literal text "undefined".
   test('falls back to a generic message for a non-Error value', () => {
     render(<RouteError error={undefined} />);
 

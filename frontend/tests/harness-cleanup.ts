@@ -9,18 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Side-effect-free module for tracking and tearing down QueryClients and
- * routers created by the test harness.
- *
- * Kept separate from `src/test-utils.tsx` on purpose: that file transitively
- * imports `routeTree.gen` (and from there, nearly the whole app, including
- * `config` / `isEmbedded` live bindings). Importing
- * `cleanupTestHarness` from here in `rstest.setup.ts` avoids
- * pinning those bindings before any test file's `rs.mock('config', ...)`
- * has a chance to take effect.
- */
-
 import type { QueryClient } from '@tanstack/react-query';
 
 export const trackedQueryClients = new Set<QueryClient>();
@@ -40,11 +28,11 @@ export const trackedRouters = new Set<TrackedRouter>();
  */
 export const trackedTeardowns = new Set<() => void>();
 
-export function registerTestTeardown(teardown: () => void): void {
+export function registerTestTeardown(teardown: () => void) {
   trackedTeardowns.add(teardown);
 }
 
-function collectFailure(errors: unknown[], operation: () => void): void {
+function collectFailure(errors: unknown[], operation: () => void) {
   try {
     operation();
   } catch (error) {
@@ -52,10 +40,8 @@ function collectFailure(errors: unknown[], operation: () => void): void {
   }
 }
 
-// Cancellation is asynchronous. Clearing a QueryClient before its active
-// ConnectRPC requests settle leaves their AbortSignal races and retry
-// promises alive after the test has finished.
-async function cancelQueries(clients: QueryClient[], errors: unknown[]): Promise<void> {
+// WARNING: Await query cancellation before clearing clients; active Connect requests and retries can otherwise outlive the test.
+async function cancelQueries(clients: QueryClient[], errors: unknown[]) {
   await Promise.all(
     clients.map(async (client) => {
       try {
@@ -67,7 +53,7 @@ async function cancelQueries(clients: QueryClient[], errors: unknown[]): Promise
   );
 }
 
-function releaseQueryClients(clients: QueryClient[], errors: unknown[]): void {
+function releaseQueryClients(clients: QueryClient[], errors: unknown[]) {
   for (const client of clients) {
     collectFailure(errors, () => {
       client.clear();
@@ -76,21 +62,24 @@ function releaseQueryClients(clients: QueryClient[], errors: unknown[]): void {
   }
 }
 
-function destroyTrackedRouters(errors: unknown[]): void {
+function destroyTrackedRouters(errors: unknown[]) {
   for (const router of trackedRouters) {
     collectFailure(errors, () => router.history.destroy?.());
   }
   trackedRouters.clear();
 }
 
-function runTrackedTeardowns(errors: unknown[]): void {
+function runTrackedTeardowns(errors: unknown[]) {
   for (const teardown of trackedTeardowns) {
     collectFailure(errors, teardown);
   }
   trackedTeardowns.clear();
 }
 
-export async function cleanupTestHarness(): Promise<void> {
+/**
+ * Import this module from runner setup, not the render helpers, which import the application route graph eagerly. Cancels queries before releasing clients and routers.
+ */
+export async function cleanupTestHarness() {
   const errors: unknown[] = [];
   const clients = [...trackedQueryClients];
   trackedQueryClients.clear();

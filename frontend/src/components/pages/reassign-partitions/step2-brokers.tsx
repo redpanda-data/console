@@ -25,7 +25,6 @@ import type { Broker } from '../../../state/rest-interfaces';
 import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 
-// Legacy table parity: 50 rows a page, pager only past that. No column-visibility UI, so hiding is off.
 const TABLE_OPTIONS = {
   enableHiding: false,
   initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_TABLE_PAGE_SIZE } },
@@ -37,8 +36,6 @@ export class StepSelectBrokers extends Component<{
   partitionSelection: PartitionSelection;
 }> {
   brokers: Broker[];
-  // Built once: the page force-updates on every poll, and a fresh `header`/`cell` identity
-  // remounts the header's sort menu out from under the pointer.
   private readonly columns: DataTableColumnDef<Broker>[];
 
   constructor(props: {

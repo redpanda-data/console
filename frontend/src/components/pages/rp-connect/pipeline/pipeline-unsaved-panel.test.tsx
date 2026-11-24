@@ -42,7 +42,6 @@ describe('the PipelineUnsavedPanel', () => {
 
     await user.click(screen.getByText('mapping'));
     expect(onSelect).toHaveBeenCalledWith('proc-0');
-    // The list collapses after a selection.
     expect(screen.queryByTestId('pipeline-unsaved-list')).not.toBeInTheDocument();
   });
 
@@ -79,7 +78,6 @@ describe('the PipelineUnsavedPanel', () => {
     await user.click(screen.getByTestId('outside'));
     expect(screen.queryByTestId('pipeline-unsaved-list')).not.toBeInTheDocument();
 
-    // Clicking inside the panel (the chip re-toggle aside, rows) must not count as outside.
     await user.click(screen.getByTestId('pipeline-unsaved-chip'));
     expect(screen.getByTestId('pipeline-unsaved-list')).toBeInTheDocument();
   });

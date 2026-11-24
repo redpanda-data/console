@@ -58,7 +58,6 @@ const getRuleResourceText = (rule: Rule) => {
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
-/** Whether every operation the resource type supports is set, and all to the same permission. */
 const getUniformPermission = (rule: Rule, operations: { value: OperationType }[]) => {
   const coversAllOperations =
     operations.length > 0 &&

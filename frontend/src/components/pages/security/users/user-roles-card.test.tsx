@@ -47,11 +47,9 @@ describe('the UserRolesCard', () => {
   test('should render roles table with role names and action buttons', () => {
     renderWithFileRoutes(<UserRolesCard roles={mockRoles} />);
 
-    // Role names
     expect(screen.getByTestId('role-name-admin')).toHaveTextContent('admin');
     expect(screen.getByTestId('role-name-viewer')).toHaveTextContent('viewer');
 
-    // Action buttons per row
     expect(screen.getByTestId('view-role-admin')).toBeInTheDocument();
     expect(screen.getByTestId('view-role-viewer')).toBeInTheDocument();
   });

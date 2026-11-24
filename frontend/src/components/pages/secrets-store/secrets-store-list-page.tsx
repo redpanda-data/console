@@ -62,7 +62,7 @@ export type SecretTableRow = {
   scope: string;
 };
 
-const transformSecret = (secret: Secret): SecretTableRow => ({
+const transformSecret: (secret: Secret) => SecretTableRow = (secret) => ({
   id: secret.id,
   labels: secret.labels || {},
   scopes: secret.scopes || [],
@@ -91,7 +91,7 @@ type CreateColumnsOptions = {
   isDeletingSecret: boolean;
 };
 
-export const createColumns = (options: CreateColumnsOptions): DataTableColumnDef<SecretTableRow>[] => {
+export const createColumns: (options: CreateColumnsOptions) => DataTableColumnDef<SecretTableRow>[] = (options) => {
   const { handleEdit, handleDelete, isDeletingSecret } = options;
   return [
     {
@@ -136,7 +136,7 @@ export const createColumns = (options: CreateColumnsOptions): DataTableColumnDef
           return null;
         }
 
-        const getScopeDetails = (scope: Scope): { label: string; icon: React.ReactNode } => {
+        const getScopeDetails: (scope: Scope) => { label: string; icon: React.ReactNode } = (scope) => {
           const option = scopeOptions.find((opt) => opt.value === String(scope));
           if (!option) {
             return { label: 'Unknown', icon: null };
@@ -235,7 +235,6 @@ function SecretsStoreDataTableToolbar({ table }: { table: DataTableInstance<Secr
   );
 }
 
-/** Sorting, filter, visibility, pagination and selection state for the secrets table. */
 const useSecretsTableState = () => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -259,7 +258,6 @@ const useSecretsTableState = () => {
   };
 };
 
-/** Deletes a secret and reports the outcome in a toast. */
 const useDeleteSecretHandler = () => {
   const { mutateAsync: deleteSecret, isPending: isDeletingSecret } = useDeleteSecretMutation();
 

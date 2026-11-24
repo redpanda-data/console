@@ -19,8 +19,7 @@ Node must satisfy `package.json`. CI selects Node from `.nvmrc`.
 | Running Console + backend + brokers/services | Rstest + Playwright + Testcontainers | `bun run e2e-test:variant console` |
 
 Classify before naming: `.test.ts` is the Bun convention, `.test.tsx` covers DOM/React
-integration, `.integration.test.ts` covers non-JSX integration, and `.spec.ts` drives a
-real browser. A test does not become an integration just because its module uses JSX.
+integration, `.integration.test.ts` covers non-JSX integration, `.browser.test.ts` drives a real browser, and `.e2e.test.ts` covers a running-app journey. A test does not become an integration just because its module uses JSX.
 Focused tests and direct legacy runner imports (including subpaths) are lint errors;
 selector helpers such as Ivya and Rstest's transitive internals are not prohibited.
 The focused Console policy check also rejects arbitrary sleeps, hand-written polling,
@@ -49,6 +48,13 @@ Bundle and full-stack E2E require a built frontend.
 Use `bun run test:unit:watch` or `bun run test:watch` for integration watch mode.
 Pass file paths to `bun run test:file:unit` or `bun run test:file:integration`.
 
+The [pipeline YAML fixtures](../src/components/pages/rp-connect/utils/yaml.test.ts) retain
+examples from the Connect docs: [broker input](https://docs.redpanda.com/redpanda-connect/components/inputs/broker/),
+[sequence input](https://docs.redpanda.com/redpanda-connect/components/inputs/sequence/),
+and [broker](https://docs.redpanda.com/redpanda-connect/components/outputs/broker/),
+[switch](https://docs.redpanda.com/redpanda-connect/components/outputs/switch/), and
+[fallback](https://docs.redpanda.com/redpanda-connect/components/outputs/fallback/) outputs.
+
 ## Real end-to-end variants
 
 ```sh
@@ -67,7 +73,7 @@ Setup uses `tests/shared/global-setup.mjs`, variant JSON/YAML, pinned `test-imag
 and the existing Testcontainers resource/cleanup helpers. Teardown also runs after
 failure. Local single-variant runs allocate free host ports; the all-variant command
 runs variants in parallel with separate port mappings. Console uses eight workers.
-The quota cases are collected by `quotas/quotas.spec.ts` and run sequentially within
+The quota cases are collected by `quotas/quotas.e2e.test.ts` and run sequentially within
 that file so pagination cannot race other quota mutations.
 Other variants retain their worker/retry limits.
 
@@ -78,7 +84,7 @@ the OSS workflow does not repeat those variants in a second matrix.
 
 ```sh
 bun run e2e-test:variant console list --summary
-bun run e2e-test:variant console topics/topic-list.spec.ts
+bun run e2e-test:variant console topics/topic-list.e2e.test.ts
 bun run e2e-test:dev
 ```
 
@@ -91,6 +97,9 @@ Testcontainers environment; there is no separate Playwright Test UI or dev-serve
 Enterprise authentication remains a real login in global setup, plus an explicit
 `authenticate` test. Login-error tests use an unauthenticated context. Pre-existing
 pending/skipped tests retain their conditions; the migration adds none.
+
+The transforms smoke tests cover the setup page. List and detail coverage needs a
+real backend fixture that deploys a transform before the browser opens the page.
 
 ## Helpers and native behavior
 

@@ -44,22 +44,18 @@ const RoleCreatePage = () => {
   const { mutateAsync: createRole } = useCreateRoleMutation();
 
   const createRoleWithAcls = async (roleName: string, principal: string, host: string, rules: Rule[]) => {
-    // First create the role
     await createRole(create(CreateRoleRequestSchema, { role: { name: roleName } }));
     toast.success(`Role "${roleName}" created`);
 
-    // Then create the ACLs for the role
     const applyResult = await createAcls(convertRulesToCreateACLRequests(rules, principal, host));
     handleResponses(applyResult.errors, applyResult.created);
 
-    // Handled here so a navigation failure is not reported as a failed role create.
     navigate({ to: `/security/roles/${roleName}/details` }).catch((error: unknown) => {
       toast.error('Failed to navigate', { description: String(error) });
     });
   };
 
   const createRoleAclMutation = async (principal: string, host: string, rules: Rule[]) => {
-    // Extract the role name from the principal (format: "RedpandaRole:roleName")
     const roleName = parsePrincipal(principal).name;
 
     if (!roleName || roleName.trim() === '') {

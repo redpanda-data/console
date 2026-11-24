@@ -15,18 +15,15 @@ import type { InputEndBehavior } from '../utils/input-end-behavior';
 import { idleTimeoutFires, parseMessageLimit, type StopConditionDraft } from '../utils/read-until';
 import { isStopConditionSet, type StopCondition } from '../utils/yaml';
 
-// The stop condition editor's form model.
-
 const STOP_MODES = ['none', 'count', 'idle', 'check'] as const;
 
 export type StopMode = (typeof STOP_MODES)[number];
 
 const DEFAULT_LIMIT = '1000';
 export const DEFAULT_IDLE = '30s';
-const POSITIVE_INT_RE = /^\d+$/;
+const POSITIVE_INT_RE = /^\d+$/u;
 
-const usesIdle = (s: { mode: StopMode; alsoIdle: boolean }): boolean =>
-  s.mode === 'idle' || (s.mode !== 'none' && s.alsoIdle);
+const usesIdle = (s: { mode: StopMode; alsoIdle: boolean }) => s.mode === 'idle' || (s.mode !== 'none' && s.alsoIdle);
 
 /** The editor's form. Each field is checked only when the chosen mode reads it. */
 export const stopFormSchema = z
@@ -52,7 +49,6 @@ export const stopFormSchema = z
     if (s.mode === 'check' && s.check.trim() === '') {
       issue('check', 'Enter a Bloblang condition.');
     }
-    // The editor accepts only a timeout that fires: a positive duration or an env var reference.
     if (usesIdle(s) && !idleTimeoutFires(s.idle.trim())) {
       issue('idle', 'Enter a duration such as 30s, 5m or 1h.');
     }
@@ -64,7 +60,7 @@ export type StopFormState = z.infer<typeof stopFormSchema>;
  * The editor's starting state for a slot's current condition. Without Keep running on offer (a
  * wrapper only the YAML can remove), an unset condition starts on an idle timeout instead.
  */
-export function stopFormState(condition?: StopCondition, canKeepRunning = true): StopFormState {
+export function stopFormState(condition?: StopCondition, canKeepRunning = true) {
   const state: StopFormState = {
     mode: 'none',
     limit: DEFAULT_LIMIT,
@@ -74,16 +70,26 @@ export function stopFormState(condition?: StopCondition, canKeepRunning = true):
     restart: Boolean(condition?.restartInput),
   };
   if (!isStopConditionSet(condition)) {
-    return canKeepRunning ? state : { ...state, mode: 'idle' };
+    return canKeepRunning ? state : ({ ...state, mode: 'idle' } satisfies StopFormState);
   }
   const limit = parseMessageLimit(condition.check);
   if (limit) {
-    return { ...state, mode: 'count', limit: String(limit.limit), alsoIdle: Boolean(condition.idleTimeout) };
+    return {
+      ...state,
+      mode: 'count',
+      limit: String(limit.limit),
+      alsoIdle: Boolean(condition.idleTimeout),
+    } satisfies StopFormState;
   }
   if (condition.check) {
-    return { ...state, mode: 'check', check: condition.check, alsoIdle: Boolean(condition.idleTimeout) };
+    return {
+      ...state,
+      mode: 'check',
+      check: condition.check,
+      alsoIdle: Boolean(condition.idleTimeout),
+    } satisfies StopFormState;
   }
-  return { ...state, mode: 'idle' };
+  return { ...state, mode: 'idle' } satisfies StopFormState;
 }
 
 /**
@@ -91,12 +97,15 @@ export function stopFormState(condition?: StopCondition, canKeepRunning = true):
  * it's met (with an idle timeout alone, a re-read input never goes idle). One the YAML already sets
  * stays on offer, so applying never drops it unseen.
  */
-export function offersRestart(mode: StopMode, own: InputEndBehavior, condition?: StopCondition): boolean {
+export function offersRestart(mode: StopMode, own: InputEndBehavior, condition?: StopCondition) {
   return Boolean(condition?.restartInput) || ((mode === 'count' || mode === 'check') && own.kind !== 'continuous');
 }
 
 /** What the form asks for; null keeps the input running with no stop condition. */
-export function draftFromStopForm(s: StopFormState, restartOffered = true): StopConditionDraft | null {
+export const draftFromStopForm: (s: StopFormState, restartOffered?: boolean) => StopConditionDraft | null = (
+  s,
+  restartOffered = true
+) => {
   if (s.mode === 'none') {
     return null;
   }
@@ -109,10 +118,9 @@ export function draftFromStopForm(s: StopFormState, restartOffered = true): Stop
     return { messageLimit: Number(s.limit.trim()), idleTimeout, restartInput };
   }
   return { check: s.check.trim(), idleTimeout, restartInput };
-}
+};
 
-// A count or check on an input that never ends, with no idle timeout behind it.
-function noBackstopHint(s: Pick<StopFormState, 'mode' | 'limit'>, own: InputEndBehavior): string {
+function noBackstopHint(s: Pick<StopFormState, 'mode' | 'limit'>, own: InputEndBehavior) {
   const limit = s.limit.trim();
   const unit = own.batches ? 'batches' : 'messages';
   const shortfall =
@@ -121,10 +129,7 @@ function noBackstopHint(s: Pick<StopFormState, 'mode' | 'limit'>, own: InputEndB
 }
 
 /** What can still leave the input running with the condition as chosen. */
-export function backstopHint(
-  s: Pick<StopFormState, 'mode' | 'restart' | 'alsoIdle' | 'limit'>,
-  own: InputEndBehavior
-): string | undefined {
+export function backstopHint(s: Pick<StopFormState, 'mode' | 'restart' | 'alsoIdle' | 'limit'>, own: InputEndBehavior) {
   const rereads = s.restart && own.kind !== 'continuous';
   if (s.mode === 'idle') {
     return rereads

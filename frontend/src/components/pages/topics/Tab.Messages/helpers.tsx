@@ -15,40 +15,34 @@ import { Feature, isSupported } from '../../../../state/supported-features';
 /**
  * Checks if user has privilege to delete records
  */
-export function hasDeleteRecordsPrivilege(allowedActions: TopicAction[] | undefined): boolean {
-  // undefined has the same meaning as 'all'
+export function hasDeleteRecordsPrivilege(allowedActions: TopicAction[] | undefined) {
   return !allowedActions || allowedActions.includes('deleteTopicRecords') || allowedActions.includes('all');
 }
 
 /**
  * Checks if deletion is enabled for a topic
  */
-export function isDeleteEnabled(isCompacted: boolean, allowedActions: TopicAction[] | undefined): boolean {
+export function isDeleteEnabled(isCompacted: boolean, allowedActions: TopicAction[] | undefined) {
   return !isCompacted && hasDeleteRecordsPrivilege(allowedActions) && isSupported(Feature.DeleteRecords);
 }
 
 /**
  * Gets error message for why deletion is disabled
  */
-export function getDeleteErrorText(
-  isCompacted: boolean,
-  allowedActions: TopicAction[] | undefined
-): string | undefined {
+export function getDeleteErrorText(isCompacted: boolean, allowedActions: TopicAction[] | undefined) {
   if (isCompacted) {
     return "Records on Topics with the 'compact' cleanup policy cannot be deleted.";
   }
   if (!hasDeleteRecordsPrivilege(allowedActions)) {
     return "You're not permitted to delete records on this topic.";
   }
-  if (!isSupported(Feature.DeleteRecords)) {
-    return "The cluster doesn't support deleting records.";
-  }
+  return isSupported(Feature.DeleteRecords) ? undefined : "The cluster doesn't support deleting records.";
 }
 
 /**
  * Gets the name of a control character by its ASCII code
  */
-export function getControlCharacterName(code: number): string {
+export function getControlCharacterName(code: number) {
   switch (code) {
     case 0:
       return 'NUL';

@@ -14,7 +14,6 @@ import type { SchemaRegistryCreateSchema } from '../../../state/rest-interfaces'
 
 describe('the Schema Create - Normalize Parameter', () => {
   test('the SchemaRegistryCreateSchema interface should support params.normalize boolean', () => {
-    // Test that the interface accepts normalize: true
     const requestWithNormalizeTrue: SchemaRegistryCreateSchema = {
       schema: '{"type": "record", "name": "test", "fields": []}',
       schemaType: 'AVRO',
@@ -60,7 +59,6 @@ describe('the Schema Create - Normalize Parameter', () => {
       },
     };
 
-    // Test that it serializes correctly to JSON
     const serialized = JSON.stringify(request);
     const deserialized = JSON.parse(serialized);
 

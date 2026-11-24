@@ -24,7 +24,6 @@ export const ConnectionStep = () => {
 
   return (
     <div className="space-y-4">
-      {/* SL name */}
       <Card size="full">
         <CardHeader>Name</CardHeader>
         <CardContent>
@@ -43,11 +42,8 @@ export const ConnectionStep = () => {
           />
         </CardContent>
       </Card>
-      {/* Source Cluster Connection and TLS */}
       <BootstrapServers />
-      {/* Authentication (None / SCRAM / PLAIN) */}
       <AuthenticationSection />
-      {/* Advanced Settings */}
       <AdvancedClientOptions />
     </div>
   );

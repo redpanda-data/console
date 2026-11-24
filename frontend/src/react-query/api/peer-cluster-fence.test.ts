@@ -20,7 +20,7 @@ import {
 } from './peer-cluster-fence';
 import { describe, expect, test } from 'bun:test';
 
-const known = (state: 'fenced' | 'fencing'): ShadowLinkPeerFence => ({
+const known: (state: 'fenced' | 'fencing') => ShadowLinkPeerFence = (state) => ({
   status: 'known',
   state,
   revision: 1n,

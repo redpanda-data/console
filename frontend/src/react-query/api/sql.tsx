@@ -50,8 +50,6 @@ export const useListCatalogsQuery = (input?: MessageInit<ListCatalogsRequest>, o
   });
 };
 
-// Resolves the caller's SQL identity (engine username + admin/superuser flag).
-// Admin gates write/DDL affordances like the "Add a topic" button.
 export const useGetSqlIdentityQuery = (options?: SqlQueryOptions) => {
   const request = create(GetSqlIdentityRequestSchema, {});
   return useQuery(getSqlIdentity, request, {
@@ -83,9 +81,7 @@ export const useDescribeTableQuery = (input?: MessageInit<DescribeTableRequest>,
   });
 };
 
-// RP SQL's SHOW TABLES has no per-table Iceberg flag; the authoritative signal
-// is the backing Kafka topic's `redpanda.iceberg.mode` config. Returns whether
-// the topic is Iceberg-tiered so the catalog tree can show the label.
+/** RP SQL's SHOW TABLES has no per-table Iceberg flag; the authoritative signal */
 export const useTopicIcebergQuery = (topicName: string, options?: SqlQueryOptions) => {
   const request = create(GetTopicConfigurationsRequestSchema, { topicName });
   const result = useQuery(getTopicConfigurations, request, {
@@ -95,10 +91,7 @@ export const useTopicIcebergQuery = (topicName: string, options?: SqlQueryOption
   return { ...result, isIceberg: Boolean(mode && mode !== 'disabled') };
 };
 
-// Errors surface inline (run panel / wizard), so no toast on failure.
-// A plain TanStack mutation over callUnaryMethod rather than connect-query's
-// useMutation, which exposes no per-call AbortSignal; aborting the request is
-// what lets the Cancel button stop the query on the engine.
+/** what lets the Cancel button stop the query on the engine. */
 export const useExecuteQueryMutation = () => {
   const transport = useTransport();
   return useMutation<ExecuteQueryResponse, ConnectError, { request: ExecuteQueryRequest; signal?: AbortSignal }>({
@@ -106,8 +99,6 @@ export const useExecuteQueryMutation = () => {
   });
 };
 
-// Returns a function that refreshes the catalog/table listings, e.g. after a
-// CREATE TABLE so the new table shows up in the tree.
 export const useInvalidateSqlCatalog = () => {
   const queryClient = useQueryClient();
   return () =>

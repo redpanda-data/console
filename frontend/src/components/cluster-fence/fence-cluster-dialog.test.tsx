@@ -9,134 +9,169 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { beforeEach, describe, expect, onTestFinished, test } from '@rstest/core';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useSyncExternalStore } from 'react';
+import { Button } from 'components/redpanda-ui/components/button';
+import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
+import {
+  ClusterFenceState,
+  type FenceRequest,
+  type GetClusterFenceStatusResponse,
+  GetClusterFenceStatusResponseSchema,
+  type UpdateClusterFenceSettingsRequest,
+} from 'protogen/redpanda/api/dataplane/v1/cluster_fence_pb';
+import {
+  fence,
+  updateClusterFenceSettings,
+} from 'protogen/redpanda/api/dataplane/v1/cluster_fence-ClusterFenceService_connectquery';
+import { ShadowLinkState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import { useState } from 'react';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
-import { renderWithFileRoutes } from 'test-utils';
 
-import type { ShadowLinkReader } from './shadow-link-topology';
-
-const mutate = rs.fn();
-const mutation = { mutate, reset: rs.fn(), isPending: false, error: null as unknown, savedFence: undefined as unknown };
-
-rs.mock('react-query/api/cluster-fence', () => {
-  const actual = rs.requireActual<typeof import('react-query/api/cluster-fence')>('react-query/api/cluster-fence');
-  return {
-    ...actual,
-    useClusterFenceStatusQuery: rs.fn(),
-    useFenceClusterMutation: rs.fn(() => mutation),
-  };
-});
-rs.mock('react-query/api/shadowlink', () => ({ useListShadowLinksQuery: rs.fn() }));
-rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
-
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-
+import {
+  enableFenceFixtures,
+  fenceStatus,
+  readFenceStatus,
+  renderWithFenceStatus,
+  serveFenceStatus,
+} from './cluster-fence.test-utils';
 import { FenceClusterDialog } from './fence-cluster-dialog';
+import type { ShadowLinkReader, ShadowLinkTopology } from './shadow-link-topology';
 
-const mockOwnLinks = (names: string[] | 'loading') =>
-  rs
-    .mocked(useListShadowLinksQuery)
-    .mockReturnValue(
-      (names === 'loading'
-        ? { data: undefined, isError: false }
-        : { data: { shadowLinks: names.map((name) => ({ name })) } }) as unknown as ReturnType<
-        typeof useListShadowLinksQuery
-      >
-    );
-
-const summaryAt = (revision: number, overrides: Record<string, unknown> = {}) => ({
-  phase: 'unfenced',
-  revision: BigInt(revision),
-  exemptPrincipals: [],
-  allowAllReads: false,
-  ...overrides,
-});
-
-/** Stands in for the polled status, so a test can change it while the dialog is open. */
-const live = {
-  value: { summary: summaryAt(2), brokers: [{ nodeId: 1, status: 'confirmed' }] } as unknown,
-  open: true,
-  listeners: new Set<() => void>(),
-  set(next: Partial<{ value: unknown; open: boolean }>) {
-    act(() => {
-      Object.assign(live, next);
-      for (const listener of live.listeners) {
-        listener();
-      }
-    });
+const CLUSTER = 'prod-us-east-1';
+const CONFIRM = 'confirm-fence-cluster';
+const CONFIRMATION = 'fence-cluster-confirmation';
+const DIALOG = 'fence-cluster-dialog';
+const CHANGED = 'cluster-fence-changed';
+const REVIEW = 'cluster-fence-changed-refresh';
+const READERS: ShadowLinkReader[] = [
+  {
+    linkName: 'orders-dr',
+    shadowClusterId: 'dr',
+    shadowClusterName: 'dr-us-west-2',
+    authentication: 'sasl',
+    principal: 'shadow-orders',
   },
-};
-const subscribe = (listener: () => void) => {
-  live.listeners.add(listener);
-  return () => live.listeners.delete(listener);
-};
+];
 
-const Harness = () => {
-  const open = useSyncExternalStore(subscribe, () => live.open);
-  return <FenceClusterDialog onOpenChange={(next) => live.set({ open: next })} open={open} />;
-};
-
-const renderDialog = () => renderWithFileRoutes(<Harness />);
-
-const setReaders = (readers: ShadowLinkReader[], resolving = false) =>
+function setReaders(readers: ShadowLinkReader[] = READERS, overrides: Partial<ShadowLinkTopology> = {}) {
   useClusterFenceStore.setState({
-    topology: { clusterName: 'prod-us-east-1', readers, sources: {}, resolving, readersIncomplete: false },
+    topology: { clusterName: CLUSTER, readers, sources: {}, resolving: false, readersIncomplete: false, ...overrides },
   });
+}
 
-/** Renders the dialog and types the cluster name, as a user about to fence would. */
-const renderConfirmed = async () => {
-  const user = userEvent.setup();
-  renderDialog();
-  await user.type(await screen.findByTestId('fence-cluster-confirmation'), 'prod-us-east-1');
-  return user;
+function Harness() {
+  const [open, setOpen] = useState(true);
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>Open fence</Button>
+      <FenceClusterDialog onOpenChange={setOpen} open={open} />
+    </>
+  );
+}
+
+function initialFence(exemptPrincipals: string[] = []) {
+  const response = fenceStatus(ClusterFenceState.UNFENCED, 2n, exemptPrincipals);
+  return create(GetClusterFenceStatusResponseSchema, {
+    fence: response.fence,
+    brokers: [1, 2].map((nodeId) => ({ nodeId, fence: response.fence })),
+  });
+}
+
+type OwnLinks = { shadowLinks: Array<{ name: string; state: ShadowLinkState }> };
+
+type FenceOptions = {
+  initial?: GetClusterFenceStatusResponse;
+  links?: OwnLinks | Promise<OwnLinks>;
+  fenceError?: ConnectError;
 };
+
+function nextRevision(expectedRevision: bigint | undefined) {
+  if (expectedRevision === undefined) {
+    throw new ConnectError('missing expected revision', Code.InvalidArgument);
+  }
+  return expectedRevision + 1n;
+}
+
+function createFenceServer({ initial = initialFence(), links = { shadowLinks: [] }, fenceError }: FenceOptions) {
+  const writes: FenceRequest[] = [];
+  const settings: UpdateClusterFenceSettingsRequest[] = [];
+  let failure = fenceError;
+  const server = serveFenceStatus(initial, ({ rpc }) => {
+    rpc(listShadowLinks, () => links);
+    rpc(updateClusterFenceSettings, (request) => {
+      settings.push(request);
+      const saved = create(GetClusterFenceStatusResponseSchema, {
+        fence: {
+          state: ClusterFenceState.UNFENCED,
+          revision: nextRevision(request.expectedRevision),
+          settings: request.settings,
+        },
+      });
+      server.publish(saved);
+      return { fence: saved.fence };
+    });
+    rpc(fence, (request) => {
+      writes.push(request);
+      if (failure) {
+        const rejected = failure;
+        failure = undefined;
+        throw rejected;
+      }
+      const fenced = fenceStatus(ClusterFenceState.FENCING, nextRevision(request.expectedRevision));
+      server.publish(fenced);
+      return { fence: fenced.fence };
+    });
+  });
+  return { ...server, writes, settings };
+}
+
+async function renderDialog(options: FenceOptions = {}) {
+  const server = createFenceServer(options);
+  const rendered = await renderWithFenceStatus(<Harness />, server.transport);
+  const publish = async (response: GetClusterFenceStatusResponse) => {
+    server.publish(response);
+    await act(async () => {
+      await readFenceStatus(rendered.queryClient, server.transport);
+    });
+  };
+  return { ...rendered, ...server, publish };
+}
+
+async function confirmWith(user: ReturnType<typeof userEvent.setup>, name = CLUSTER) {
+  await user.type(await screen.findByTestId(CONFIRMATION), name);
+}
+
+const waitForClose = () => waitFor(() => expect(screen.queryByTestId(DIALOG)).not.toBeInTheDocument());
+
+async function renderConfirmed(options: FenceOptions = {}) {
+  const user = userEvent.setup();
+  const dialog = await renderDialog(options);
+  await confirmWith(user);
+  await waitFor(() => expect(screen.getByTestId(CONFIRM)).toBeEnabled());
+  return { user, ...dialog };
+}
+
+beforeEach(() => {
+  enableFenceFixtures();
+  setReaders();
+});
 
 describe('the FenceClusterDialog', () => {
-  beforeEach(() => {
-    rs.clearAllMocks();
-    mutation.error = null;
-    mutation.savedFence = undefined;
-    live.open = true;
-    live.value = {
-      summary: summaryAt(2),
-      brokers: [
-        { nodeId: 1, status: 'confirmed' },
-        { nodeId: 2, status: 'confirmed' },
-      ],
-    };
-    rs.mocked(useClusterFenceStatusQuery).mockImplementation(
-      () =>
-        useSyncExternalStore(subscribe, () => live.value) as unknown as ReturnType<typeof useClusterFenceStatusQuery>
-    );
-    mockOwnLinks([]);
-    setReaders([
-      {
-        linkName: 'orders-dr',
-        shadowClusterId: 'dr',
-        shadowClusterName: 'dr-us-west-2',
-        authentication: 'sasl',
-        principal: 'shadow-orders',
-      },
-    ]);
-  });
-
   describe('its settings', () => {
     test('prefills the principals of the links that read from the cluster', async () => {
-      renderDialog();
+      await renderDialog();
 
       expect(await screen.findByTestId('cluster-fence-exempt-principals-chip-shadow-orders')).toBeVisible();
       expect(screen.getByTestId('fence-preflight-readers')).toHaveAttribute('data-status', 'pass');
     });
 
-    test('a User: name is flagged once, in the field, with a one-click fix to the bare name', async () => {
+    test('a User: name is flagged once, with a one-click fix to the bare name', async () => {
       const user = userEvent.setup();
-      live.value = { summary: summaryAt(2, { exemptPrincipals: ['User:shadow-orders'] }), brokers: [] };
-      renderDialog();
+      await renderDialog({ initial: initialFence(['User:shadow-orders']) });
 
       expect(await screen.findAllByText('matches nobody', { exact: false })).toHaveLength(1);
       expect(screen.queryByTestId('fence-preflight-policy-prefix-User:shadow-orders')).not.toBeInTheDocument();
@@ -148,70 +183,70 @@ describe('the FenceClusterDialog', () => {
     test('a typed User: prefix is dropped, since Redpanda only matches bare names', async () => {
       const user = userEvent.setup();
       setReaders([]);
-      renderDialog();
+      await renderDialog();
 
       await user.type(await screen.findByTestId('cluster-fence-exempt-principals-field'), 'User:shadow-audit{Enter}');
       expect(screen.getByTestId('cluster-fence-exempt-principals-chip-shadow-audit')).toBeVisible();
       expect(screen.queryByText('matches nobody', { exact: false })).not.toBeInTheDocument();
     });
 
-    test('with no one exempt, warns in the field, and typing the name is still all it takes', async () => {
+    test('warns about an empty policy without blocking confirmation', async () => {
       setReaders([]);
       await renderConfirmed();
 
       expect(screen.getByTestId('cluster-fence-settings-warning-empty')).toHaveTextContent('every shadow link’s user');
-      expect(screen.getByTestId('confirm-fence-cluster')).toBeEnabled();
+      expect(screen.getByTestId(CONFIRM)).toBeEnabled();
     });
   });
 
   describe('its preflight checks', () => {
-    test('doesn’t pass the own-links check before the links load, or the readers check before the links resolve', async () => {
+    test('waits for the own-link and reader checks instead of treating an unresolved list as empty', async () => {
       const user = userEvent.setup();
-      mockOwnLinks('loading');
-      setReaders([], true);
-      renderDialog();
+      const links = Promise.withResolvers<OwnLinks>();
+      onTestFinished(() => links.resolve({ shadowLinks: [] }));
+      setReaders([], { resolving: true });
+      await renderDialog({ links: links.promise });
 
       expect(await screen.findByTestId('fence-preflight-own-links')).toHaveAttribute('data-status', 'pending');
       expect(screen.getByTestId('fence-preflight-readers')).toHaveAttribute('data-status', 'pending');
-      await user.type(screen.getByTestId('fence-cluster-confirmation'), 'prod-us-east-1');
-      expect(screen.getByTestId('confirm-fence-cluster')).toBeDisabled();
+      await confirmWith(user);
+      expect(screen.getByTestId(CONFIRM)).toBeDisabled();
     });
 
-    test('self-hosted, with no link list to name the readers, a healthy cluster has nothing to check', async () => {
+    test('self-hosted, a healthy cluster with no reader inventory can be fenced', async () => {
       const user = userEvent.setup();
       useClusterFenceStore.setState({ topology: null });
-      renderDialog();
+      await renderDialog();
+      await confirmWith(user, 'fence');
 
-      await user.type(await screen.findByTestId('fence-cluster-confirmation'), 'fence');
+      await waitFor(() => expect(screen.getByTestId(CONFIRM)).toBeEnabled());
       expect(screen.queryByTestId('fence-preflight-checks')).not.toBeInTheDocument();
-      expect(screen.getByTestId('confirm-fence-cluster')).toBeEnabled();
     });
 
-    test('keeps the word to type it opened with, even when the cluster’s name loads later', async () => {
+    test('keeps its original confirmation word even when the cluster name loads later', async () => {
       const user = userEvent.setup();
-      useClusterFenceStore.setState({
-        topology: { clusterName: undefined, readers: [], sources: {}, resolving: true, readersIncomplete: false },
-      });
-      renderDialog();
-      await user.type(await screen.findByTestId('fence-cluster-confirmation'), 'fence');
+      setReaders([], { clusterName: undefined, resolving: true });
+      await renderDialog();
+      await confirmWith(user, 'fence');
       act(() => setReaders([]));
 
-      expect(screen.getByTestId('confirm-fence-cluster')).toBeEnabled();
+      await waitFor(() => expect(screen.getByTestId(CONFIRM)).toBeEnabled());
     });
 
-    test('a cluster with shadow links of its own can’t be fenced', async () => {
+    test('an active inbound link prevents fencing', async () => {
       const user = userEvent.setup();
-      mockOwnLinks(['inbound-dr']);
-      renderDialog();
+      await renderDialog({ links: { shadowLinks: [{ name: 'inbound-dr', state: ShadowLinkState.ACTIVE }] } });
 
-      expect(await screen.findByTestId('fence-preflight-own-links')).toHaveAttribute('data-status', 'fail');
-      await user.type(screen.getByTestId('fence-cluster-confirmation'), 'prod-us-east-1');
-      expect(screen.getByTestId('confirm-fence-cluster')).toBeDisabled();
+      await waitFor(() =>
+        expect(screen.getByTestId('fence-preflight-own-links')).toHaveAttribute('data-status', 'fail')
+      );
+      await confirmWith(user);
+      expect(screen.getByTestId(CONFIRM)).toBeDisabled();
     });
 
     test('warns when a reader would be fenced out', async () => {
       const user = userEvent.setup();
-      renderDialog();
+      await renderDialog();
 
       await user.click(await screen.findByLabelText('Remove tag'));
       expect(screen.getByTestId('fence-preflight-reader-orders-dr')).toHaveAttribute('data-status', 'warn');
@@ -220,76 +255,80 @@ describe('the FenceClusterDialog', () => {
   });
 
   describe('fencing', () => {
-    test('fences only after the cluster name is typed, with the reviewed settings and revision', async () => {
+    test('saves the reviewed policy before fencing at the revision returned by that save', async () => {
       const user = userEvent.setup();
-      renderDialog();
-
-      const confirm = await screen.findByTestId('confirm-fence-cluster');
+      const { settings, writes } = await renderDialog();
+      const confirm = screen.getByTestId(CONFIRM);
       expect(confirm).toBeDisabled();
-
-      await user.type(screen.getByTestId('fence-cluster-confirmation'), 'prod-us-east-1');
-      expect(confirm).toBeEnabled();
+      await confirmWith(user);
+      await waitFor(() => expect(confirm).toBeEnabled());
       await user.click(confirm);
 
-      await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1));
-      expect(mutate.mock.calls[0]?.[0]).toMatchObject({
-        settings: { exemptPrincipals: ['shadow-orders'], allowAllReads: false },
-        opened: { revision: 2n },
-      });
+      await waitForClose();
+      expect(settings).toMatchObject([
+        {
+          settings: { readPolicy: { exemptPrincipals: ['shadow-orders'], allowAllReads: false } },
+          updateMask: { paths: ['read_policy'] },
+          expectedRevision: 2n,
+        },
+      ]);
+      expect(writes.map(({ expectedRevision }) => expectedRevision)).toEqual([3n]);
     });
 
-    test('keeps the revision it opened with when a poll brings a newer one, and says so', async () => {
-      const user = await renderConfirmed();
+    test('blocks a stale confirmation until the new settings and revision are reviewed', async () => {
+      const { user, publish, writes } = await renderConfirmed();
+      const newer = create(GetClusterFenceStatusResponseSchema, {
+        fence: {
+          state: ClusterFenceState.UNFENCED,
+          revision: 5n,
+          settings: { readPolicy: { exemptPrincipals: ['shadow-orders'], allowAllReads: true } },
+        },
+      });
+      await publish(newer);
 
-      live.set({ value: { summary: summaryAt(5, { allowAllReads: true }), brokers: [] } });
-
-      expect(await screen.findByTestId('cluster-fence-changed')).toBeVisible();
-      expect(screen.getByTestId('confirm-fence-cluster')).toBeDisabled();
-
-      await user.click(screen.getByTestId('cluster-fence-changed-refresh'));
-      expect(screen.queryByTestId('cluster-fence-changed')).not.toBeInTheDocument();
+      expect(await screen.findByTestId(CHANGED)).toBeVisible();
+      expect(screen.getByTestId(CONFIRM)).toBeDisabled();
+      await user.click(screen.getByTestId(REVIEW));
+      expect(screen.queryByTestId(CHANGED)).not.toBeInTheDocument();
       expect(screen.getByTestId('cluster-fence-allow-all-reads')).toBeChecked();
-      await user.click(screen.getByTestId('confirm-fence-cluster'));
-      expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: 5n } });
+      await user.click(screen.getByTestId(CONFIRM));
+      await waitFor(() => expect(writes.map(({ expectedRevision }) => expectedRevision)).toEqual([5n]));
     });
 
     test('says so when someone else fenced the cluster while it was open', async () => {
       const user = userEvent.setup();
-      renderDialog();
-      await screen.findByTestId('confirm-fence-cluster');
-
-      live.set({ value: { summary: summaryAt(3, { phase: 'fencing' }), brokers: [] } });
-      await user.click(await screen.findByTestId('cluster-fence-changed-refresh'));
+      const { publish } = await renderDialog();
+      await publish(fenceStatus(ClusterFenceState.FENCING, 3n));
+      await user.click(await screen.findByTestId(REVIEW));
 
       expect(screen.getByTestId('fence-cluster-already-fenced')).toHaveTextContent('already fencing');
-      expect(screen.getByTestId('confirm-fence-cluster')).toBeDisabled();
+      expect(screen.getByTestId(CONFIRM)).toBeDisabled();
     });
 
-    test('when its own save went through but Fence failed, doesn’t blame someone else and lets the user retry', async () => {
-      const user = await renderConfirmed();
+    test('keeps saved settings when fencing fails and retries without saving them again', async () => {
+      const fenceError = new ConnectError('a data migration is still running', Code.FailedPrecondition);
+      const { user, settings, writes } = await renderConfirmed({ fenceError });
 
-      const saved = summaryAt(3, { exemptPrincipals: ['shadow-orders'] });
-      mutation.error = new ConnectError('a data migration is still running', Code.FailedPrecondition);
-      mutation.savedFence = saved;
-      live.set({ value: { summary: saved, brokers: [] } });
-
+      await user.click(screen.getByTestId(CONFIRM));
       expect(await screen.findByTestId('fence-cluster-error')).toHaveTextContent(
         'Settings saved, but the cluster isn’t fenced'
       );
-      expect(screen.queryByTestId('cluster-fence-changed')).not.toBeInTheDocument();
-      await user.click(screen.getByTestId('confirm-fence-cluster'));
-      expect(mutate.mock.calls[0]?.[0]).toMatchObject({ opened: { revision: 3n } });
+      expect(screen.queryByTestId(CHANGED)).not.toBeInTheDocument();
+      await user.click(screen.getByTestId(CONFIRM));
+
+      await waitForClose();
+      expect(settings).toHaveLength(1);
+      expect(writes.map(({ expectedRevision }) => expectedRevision)).toEqual([3n, 3n]);
     });
 
     test('starts over after Cancel', async () => {
-      const user = await renderConfirmed();
+      const { user } = await renderConfirmed();
       await user.click(screen.getByRole('button', { name: 'Cancel' }));
-      await waitFor(() => expect(screen.queryByTestId('fence-cluster-dialog')).not.toBeInTheDocument());
+      await waitForClose();
+      await user.click(screen.getByRole('button', { name: 'Open fence' }));
 
-      live.set({ open: true });
-
-      expect(await screen.findByTestId('fence-cluster-confirmation')).toHaveValue('');
-      expect(screen.getByTestId('confirm-fence-cluster')).toBeDisabled();
+      expect(await screen.findByTestId(CONFIRMATION)).toHaveValue('');
+      expect(screen.getByTestId(CONFIRM)).toBeDisabled();
     });
   });
 });

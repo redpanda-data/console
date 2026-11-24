@@ -42,7 +42,7 @@ import { toast } from 'sonner';
 
 import { isServerless } from '../../../config';
 import { api, useApiStoreHook } from '../../../state/backend-api';
-import type { ConfigEntryExtended, ConfigEntrySynonym } from '../../../state/rest-interfaces';
+import type { ConfigEntryExtended } from '../../../state/rest-interfaces';
 import {
   entryHasInfiniteValue,
   formatConfigValue,
@@ -50,7 +50,7 @@ import {
 } from '../../../utils/formatters/config-value-formatter';
 
 type ConfigurationEditorProps = {
-  targetTopic: string; // topic name, or null if default configs
+  targetTopic: string;
   entries: ConfigEntryExtended[];
   onForceRefresh: () => void;
 };
@@ -60,8 +60,6 @@ type Inputs = {
   customValue: string | number | undefined | null;
 };
 
-// ── Shared config helpers ───────────────────────────────────────────────────────
-
 const SOURCE_PRIORITY_ORDER = [
   'DYNAMIC_TOPIC_CONFIG',
   'DYNAMIC_BROKER_CONFIG',
@@ -70,20 +68,17 @@ const SOURCE_PRIORITY_ORDER = [
   'DEFAULT_CONFIG',
 ];
 
-/** Highest-priority synonym that represents the inherited (non topic-level) default. */
-function getDefaultConfigSynonym(entry: ConfigEntryExtended): ConfigEntrySynonym | undefined {
+function getDefaultConfigSynonym(entry: ConfigEntryExtended) {
   return entry.synonyms
     ?.filter(({ source }) => source !== 'DYNAMIC_TOPIC_CONFIG')
     .sort((a, b) => SOURCE_PRIORITY_ORDER.indexOf(a.source) - SOURCE_PRIORITY_ORDER.indexOf(b.source))[0];
 }
 
-/** A config is "modified" when this topic explicitly overrides the cluster/broker default. */
-function isConfigModified(entry: ConfigEntryExtended): boolean {
+function isConfigModified(entry: ConfigEntryExtended) {
   return entry.isExplicitlySet;
 }
 
-/** First option for enum-style editors, used as the fallback when there's no value. */
-function getFirstSelectOption(entry: ConfigEntryExtended): string | undefined {
+function getFirstSelectOption(entry: ConfigEntryExtended) {
   if (entry.frontendFormat === 'BOOLEAN') {
     return 'false';
   }
@@ -92,8 +87,6 @@ function getFirstSelectOption(entry: ConfigEntryExtended): string | undefined {
   }
 }
 
-// Curated categories + order for the grouped layout. Anything the backend tags
-// with a category outside this set falls back to "Other".
 const CONFIG_CATEGORIES = [
   { name: 'Retention', blurb: 'How long and how much data this topic retains.' },
   { name: 'Compaction', blurb: 'Log cleanup and key-based compaction behavior.' },
@@ -110,32 +103,29 @@ const CONFIG_CATEGORIES = [
 
 const ALLOWED_CATEGORIES = new Set<string>(CONFIG_CATEGORIES.map((c) => c.name));
 
-function categoryForEntry(entry: ConfigEntryExtended): string {
+function categoryForEntry(entry: ConfigEntryExtended) {
   return entry.category && ALLOWED_CATEGORIES.has(entry.category) ? entry.category : 'Other';
 }
 
-function getDefaultValueType(entry: ConfigEntryExtended): Inputs['valueType'] {
+function getDefaultValueType(entry: ConfigEntryExtended) {
   if (!entry.isExplicitlySet) {
     return 'default';
   }
   return entryHasInfiniteValue(entry) ? 'infinite' : 'custom';
 }
 
-function getEditorDefaultValues(entry: ConfigEntryExtended): Inputs {
+function getEditorDefaultValues(entry: ConfigEntryExtended) {
   const defaultConfigSynonym = getDefaultConfigSynonym(entry);
   const explicitCustomValue = entry.isExplicitlySet && !entryHasInfiniteValue(entry) ? entry.value : '';
-  // Seed Custom from the resolved/inherited value (explicit override → current effective
-  // value → inherited default) so opening Custom and saving without touching the control
-  // doesn't silently overwrite a non-default BOOLEAN/SELECT value. Only fall back to the
-  // first enum option when nothing is resolved, so the dropdown still shows a concrete choice.
+  // WARNING: Seed Custom from the resolved setting; otherwise saving without changing the field can overwrite the current value.
   const resolvedValue = explicitCustomValue || entry.value || defaultConfigSynonym?.value || '';
   return {
     valueType: getDefaultValueType(entry),
     customValue: resolvedValue || getFirstSelectOption(entry) || '',
-  };
+  } satisfies Inputs;
 }
 
-function getValueTypeOptions(entry: ConfigEntryExtended): Array<{ label: string; value: Inputs['valueType'] }> {
+function getValueTypeOptions(entry: ConfigEntryExtended) {
   const hasInfiniteValue =
     entry.frontendFormat && ['BYTE_SIZE', 'DURATION'].includes(entry.frontendFormat) && !entry.noInfiniteValue;
   const valueTypeOptions: Array<{
@@ -215,10 +205,7 @@ const ConfigEditorForm: FC<{
 
   const valueType = useWatch({ control, name: 'valueType' });
 
-  // Route "Reset to default" through the normal submit path (which DELETEs for the
-  // 'default' value type) instead of firing an out-of-band DELETE. This shares the
-  // single pending/disabled state with Save/Cancel, so reset can't race a concurrent
-  // Save and the buttons disable together while the mutation is in flight.
+  // WARNING: Reset through the normal submit path; an independent DELETE could race an in-flight save.
   const handleReset = () => {
     setValue('valueType', 'default');
     void handleSubmit(onSubmit)();
@@ -322,8 +309,6 @@ const ConfigEditorForm: FC<{
   );
 };
 
-// ── Grouped, navigable layout ─────
-
 type ConfigSection = {
   name: string;
   blurb: string;
@@ -370,8 +355,6 @@ function useConfigSections(entries: ConfigEntryExtended[], query: string, scope:
     }).filter((s) => s.rows.length > 0);
   }, [entries, query, scope]);
 
-  // Sidebar is a stable index of the topic's categories — not subject to the
-  // search/scope filter, so it never reflows as you type or toggle Modified.
   const sidebarCategories = useMemo(
     () =>
       CONFIG_CATEGORIES.map(({ name }) => {
@@ -384,9 +367,6 @@ function useConfigSections(entries: ConfigEntryExtended[], query: string, scope:
   return { totalModifiedCount, sections, sidebarCategories };
 }
 
-// The sections render in their own scroll container; clicking a sidebar category
-// scrolls to its section *within this panel* (not by filtering, and without
-// scrolling the whole page).
 function useConfigScrollSpy(sections: ConfigSection[]) {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const sectionsContainerRef = useRef<HTMLDivElement>(null);
@@ -403,9 +383,6 @@ function useConfigScrollSpy(sections: ConfigSection[]) {
     setActiveCategory(name);
   };
 
-  // Scroll-spy: highlight the sidebar category whose section is at the top of the
-  // scroll container as the user scrolls. Re-attaches whenever the rendered section
-  // set changes so the observer always tracks the current section elements.
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-run on section set change
   useEffect(() => {
     const container = sectionsContainerRef.current;
@@ -657,13 +634,12 @@ const ConfigRow: FC<{
   );
 };
 
+/**
+ * An explicit topic value is an override; the highest-priority inherited synonym supplies the broker default.
+ */
 export default ConfigurationEditor;
 
-function isTopicConfigEdittable(
-  entry: ConfigEntryExtended,
-  hasEditPermissions: boolean,
-  fenceReason?: string
-): { canEdit: boolean; reason?: string } {
+function isTopicConfigEdittable(entry: ConfigEntryExtended, hasEditPermissions: boolean, fenceReason?: string) {
   if (!hasEditPermissions) {
     return { canEdit: false, reason: "You don't have permissions to change topic configuration entries" };
   }
@@ -764,7 +740,7 @@ export const ConfigEntryEditorController = <T extends string | number>(p: {
   }
 };
 
-function getConfigDescription(source: string): string {
+function getConfigDescription(source: string) {
   switch (source) {
     case 'DEFAULT_CONFIG':
       return 'Inherited from DEFAULT_CONFIG';
@@ -777,8 +753,6 @@ function getConfigDescription(source: string): string {
       return '';
   }
 }
-
-// ── Local input helpers ────────────────────────────────────────────────────────
 
 function NumInput(p: {
   value: number | undefined;
@@ -846,7 +820,6 @@ function NumInput(p: {
   if (!p.addonAfter) {
     return input;
   }
-  // An attached group joins the input and its addon into one control.
   return (
     <Group attached>
       {input}
@@ -866,7 +839,7 @@ function UnitInput<U extends string>({
   onChange: (v: number) => void;
   id?: string;
 }) {
-  const getInitialUnit = (): U => {
+  const getInitialUnit = () => {
     const pairs = (Object.entries(unitFactors) as [U, number][])
       .map(([unit, factor]) => ({ unit, text: String(baseValue / factor) }))
       .sort((a, b) => a.text.length - b.text.length);
@@ -967,7 +940,6 @@ function RatioInput(p: { value: number; onChange: (ratio: number) => void; id?: 
             type="number"
             value={pct}
           >
-            {/* The end slot pads the input to fit the unit. */}
             <InputEnd>
               <span className="text-body text-muted-foreground">%</span>
             </InputEnd>

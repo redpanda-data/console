@@ -9,11 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Route utilities for TanStack Router integration.
- * Provides sidebar item generation and visibility management.
- */
-
 import type { LucideIcon } from 'lucide-react';
 import { Database } from 'lucide-react';
 import type { JSX, ReactNode, SVGProps } from 'react';
@@ -46,7 +41,6 @@ type SidebarSectionName = (typeof SidebarSection)[keyof typeof SidebarSection];
 
 type SidebarItemIcon = LucideIcon | ((props: SVGProps<SVGSVGElement>) => JSX.Element);
 
-// Shape the sidebar renders each nav link from. Grouping lives on SidebarGroupedItems, not here.
 type NavLinkProps = {
   title: string;
   to: string;
@@ -55,7 +49,6 @@ type NavLinkProps = {
   disabledText?: string;
 };
 
-// Sidebar item definition
 export type SidebarItem = {
   path: string;
   title: string | ReactNode;
@@ -64,22 +57,20 @@ export type SidebarItem = {
   group: SidebarSectionName;
 };
 
-// Visibility state for menu items
 export type MenuItemState = {
   visible: boolean;
   disabledReasons: DisabledReason[];
 };
 
 const DisabledReasons = {
-  notSupported: 0, // kafka cluster version too low
-  noPermission: 1, // user doesn't have permissions to use the feature
+  notSupported: 0,
+  noPermission: 1,
   enterpriseFeature: 2,
-  notSupportedServerless: 3, // This feature is not supported in serverless mode
+  notSupportedServerless: 3,
 } as const;
 
 type DisabledReason = (typeof DisabledReasons)[keyof typeof DisabledReasons];
 
-// Permission keys from UserData type (excluding non-boolean keys)
 type UserPermissions =
   | 'canViewConsoleUsers'
   | 'canListAcls'
@@ -99,31 +90,22 @@ type UserPermissions =
   | 'canCreateTransforms'
   | 'canDeleteTransforms';
 
-/**
- * Check if required features are supported.
- * Returns [shouldHide, disabledReason] tuple.
- */
-function checkFeatureSupport(
-  features: Parameters<typeof isSupported>[0][] | undefined
-): [boolean, DisabledReason | null] {
+function checkFeatureSupport(features: Parameters<typeof isSupported>[0][] | undefined) {
   if (!features) {
-    return [false, null];
+    return [false, null] satisfies [boolean, DisabledReason | null];
   }
   for (const f of features) {
     if (!isSupported(f)) {
       if (shouldHideIfNotSupported(f)) {
-        return [true, null];
+        return [true, null] satisfies [boolean, DisabledReason | null];
       }
-      return [false, DisabledReasons.notSupported];
+      return [false, DisabledReasons.notSupported] satisfies [boolean, DisabledReason | null];
     }
   }
-  return [false, null];
+  return [false, null] satisfies [boolean, DisabledReason | null];
 }
 
-/**
- * Check if user has required permissions.
- */
-function checkPermissions(permissions: UserPermissions[] | undefined): DisabledReason | null {
+function checkPermissions(permissions: UserPermissions[] | undefined) {
   if (!(permissions && api.userData)) {
     return null;
   }
@@ -135,10 +117,7 @@ function checkPermissions(permissions: UserPermissions[] | undefined): DisabledR
   return null;
 }
 
-/**
- * Check if app features are enabled.
- */
-function checkAppFeatures(appFeatures: AppFeature[] | undefined): DisabledReason | null {
+function checkAppFeatures(appFeatures: AppFeature[] | undefined) {
   if (!appFeatures) {
     return null;
   }
@@ -150,15 +129,12 @@ function checkAppFeatures(appFeatures: AppFeature[] | undefined): DisabledReason
   return null;
 }
 
-/**
- * Creates a visibility check function for route items.
- */
 function routeVisibility(
   visible: boolean | (() => boolean),
   requiredFeatures?: Parameters<typeof isSupported>[0][],
   requiredPermissions?: UserPermissions[],
   requiredAppFeatures?: AppFeature[]
-): () => MenuItemState {
+) {
   return () => {
     const isVisible = typeof visible === 'boolean' ? visible : visible();
     const [shouldHide, featureReason] = checkFeatureSupport(requiredFeatures);
@@ -166,9 +142,9 @@ function routeVisibility(
       featureReason,
       checkPermissions(requiredPermissions),
       checkAppFeatures(requiredAppFeatures),
-    ].filter((reason): reason is DisabledReason => reason !== null);
+    ].filter((reason) => reason !== null);
 
-    return { visible: !shouldHide && isVisible, disabledReasons };
+    return { visible: !shouldHide && isVisible, disabledReasons } satisfies MenuItemState;
   };
 }
 
@@ -177,7 +153,6 @@ function routeVisibility(
  * Ordered by display order in the sidebar.
  */
 export const SIDEBAR_ITEMS: SidebarItem[] = [
-  // --- Streaming ---
   {
     path: '/overview',
     title: 'Overview',
@@ -238,10 +213,6 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     title: 'SQL',
     icon: Database,
     group: SidebarSection.STREAMING,
-    // The enterprise backend mounts the SQLService and reports it in endpoint
-    // compatibility only when SQL is enabled (cfg.API.SQL.Enabled). This is the
-    // single source of truth for both embedded (cloud) and self-hosted, so the
-    // nav is gated on capability detection rather than a feature flag.
     visibilityCheck: routeVisibility(true, [Feature.SQLService]),
   },
   {
@@ -290,7 +261,6 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       return true;
     }),
   },
-  // --- Platform ---
   {
     path: '/secrets',
     title: 'Secrets Store',
@@ -300,14 +270,11 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
   },
 ];
 
-// Routes that should be hidden in embedded mode
 const routesIgnoredInEmbedded = ['/overview', '/reassign-partitions', '/admin'];
 
-// Routes that should be hidden in serverless mode
 const routesIgnoredInServerless = ['/overview', '/quotas', '/reassign-partitions', '/admin', '/transforms'];
 
-/** Nav link for one sidebar item, or null when it has no icon or is not visible. */
-function processSidebarItem(item: SidebarItem): NavLinkProps | null {
+function processSidebarItem(item: SidebarItem) {
   if (!item.icon) {
     return null;
   }
@@ -326,18 +293,14 @@ function processSidebarItem(item: SidebarItem): NavLinkProps | null {
     icon: item.icon,
     isDisabled: !isEnabled,
     disabledText: disabledText || undefined,
-  };
+  } satisfies NavLinkProps;
 }
 
-/**
- * Get disabled text from disabled reasons.
- */
-function getDisabledText(reasons: DisabledReason[]): string {
+function getDisabledText(reasons: DisabledReason[]) {
   const firstReason = reasons[0];
   if (firstReason === undefined) {
     return '';
   }
-  // Simplified text extraction - just return the key message
   const textMap: Record<DisabledReason, string> = {
     [DisabledReasons.noPermission]: "You don't have permissions to view this page.",
     [DisabledReasons.notSupported]: 'The Kafka cluster does not support this feature.',
@@ -355,7 +318,7 @@ const SECTION_ORDER = [SidebarSection.STREAMING, SidebarSection.PLATFORM];
  * Creates sidebar items grouped by section.
  * Filters invisible items and omits empty groups.
  */
-export function createGroupedSidebarItems(): SidebarGroupedItems[] {
+export function createGroupedSidebarItems() {
   const groupMap = new Map<string, NavLinkProps[]>();
 
   for (const section of SECTION_ORDER) {
@@ -369,19 +332,22 @@ export function createGroupedSidebarItems(): SidebarGroupedItems[] {
     }
   }
 
-  return SECTION_ORDER.map((section) => ({
+  const groups: SidebarGroupedItems[] = SECTION_ORDER.map((section) => ({
     group: section,
     items: groupMap.get(section) ?? [],
   })).filter((g) => g.items.length > 0);
+  return groups;
 }
 
 /**
  * Get filtered routes for embedded mode.
  * Used by config.ts for embeddedAvailableRoutesObservable.
+ *
+ * Excludes nested items without sidebar icons as well as routes not exposed in the host.
  */
-export function getEmbeddedAvailableRoutes(): SidebarItem[] {
-  return SIDEBAR_ITEMS.filter((x) => x.icon !== null && x.icon !== undefined) // Routes without icon are "nested"
-    .filter((x) => !routesIgnoredInEmbedded.includes(x.path)) // Things that should not be visible in embedded/cloud mode
+export function getEmbeddedAvailableRoutes() {
+  return SIDEBAR_ITEMS.filter((x) => x.icon !== null && x.icon !== undefined)
+    .filter((x) => !routesIgnoredInEmbedded.includes(x.path))
     .filter((x) => {
       if (x.visibilityCheck) {
         const state = x.visibilityCheck();
@@ -392,5 +358,4 @@ export function getEmbeddedAvailableRoutes(): SidebarItem[] {
     .filter((x) => !(isServerless() && routesIgnoredInServerless.includes(x.path)));
 }
 
-// Re-export types for backwards compatibility
 export type { MenuItemState as RouteMenuItemState };

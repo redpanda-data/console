@@ -13,7 +13,6 @@ import { patchDetailViewState, readDetailViewState } from '../detail/detail-view
 import type { ValuePreviewConfig } from '../table/message-cells';
 import { valuePaths } from '../utils/client-match';
 
-/** Which page-level overlays are open; any of them suspends the table's keyboard shortcuts. */
 function usePageSurfaces() {
   const [docSheetOpen, setDocSheetOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -39,8 +38,6 @@ export function useDetailPresentation(setSelectedKey: (key: string | null) => vo
   const expandButtonRef = useRef<HTMLButtonElement>(null);
   const fallbackFocusRef = useRef<HTMLDivElement>(null);
 
-  // Detail presentation is a persisted preference: whoever prefers the expanded
-  // sheet gets it again for the next message and after reloads.
   const [detailExpanded, setDetailExpandedState] = useState<boolean>(() => readDetailViewState().expanded);
   const setDetailExpanded = useCallback((expanded: boolean) => {
     setDetailExpandedState(expanded);
@@ -51,8 +48,6 @@ export function useDetailPresentation(setSelectedKey: (key: string | null) => vo
     setSelectedKey(null);
   }, [setSelectedKey]);
 
-  // Docked panel width is a persisted preference too. A ref (not state) so
-  // resize drags don't re-render the whole page; the panel reads it on mount.
   const detailPanelSizeRef = useRef(readDetailViewState().panelSizePct);
   const handleDetailPanelResize = useCallback((size: PanelSize) => {
     detailPanelSizeRef.current = size.asPercentage;
@@ -90,7 +85,6 @@ export function useJsFilters(topicName: string) {
   return { jsFilters, setJsFilters, jsDialog, setJsDialog };
 }
 
-/** The table's look from the per-topic view settings, plus the value paths the settings panel suggests. */
 function useViewSettingsState(topicName: string, messages: TopicMessage[]) {
   const { getRowDensity, getMessageColumns, getTopicSettings } = useTopicSettingsStore();
   const topicSettings = getTopicSettings(topicName);

@@ -50,7 +50,7 @@ export const WhiteCard = (p: PropsWithChildren<{ style?: React.CSSProperties; ti
   </div>
 );
 
-function constant(constantValue: JSX.Element): () => JSX.Element {
+function constant(constantValue: JSX.Element) {
   return () => constantValue;
 }
 
@@ -59,7 +59,7 @@ export const Spacer = constant(<span style={{ display: 'flex', flexGrow: 1 }} />
 /**
  * returns an array with the numbers from start, up to end (does not include end!)
  */
-export function range(start: number, end: number): number[] {
+export function range(start: number, end: number) {
   const ar: number[] = [];
   for (let i = start; i < end; i++) {
     ar.push(i);
@@ -67,10 +67,8 @@ export function range(start: number, end: number): number[] {
   return ar;
 }
 
-/*
- * TODO:
- * Reloading the page does not ensure we'll get the update!
- * If there are multiple backend instances, we might get connected to an old instance again when we trigger a reload.
+/**
+ * A browser reload does not guarantee an upgrade: a load balancer may still select a backend instance on the older version.
  */
 export const UpdatePopup = () => {
   const [isUpdateDialogOpen, setUpdateDialogOpen] = useState(true);
@@ -91,7 +89,6 @@ export const UpdatePopup = () => {
 
   return (
     <Dialog onOpenChange={setUpdateDialogOpen} open={isUpdateDialogOpen}>
-      {/* Nearest rung above the old 36rem minimum. */}
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Redpanda Console has been updated</DialogTitle>
@@ -121,7 +118,7 @@ export const UpdatePopup = () => {
   );
 };
 
-export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
+export function renderLogDirSummary(summary: TopicLogDirSummary) {
   if (!summary.hint) {
     return <>{prettyBytesOrNA(summary.totalSizeBytes)}</>;
   }
@@ -133,7 +130,7 @@ export function renderLogDirSummary(summary: TopicLogDirSummary): JSX.Element {
   );
 }
 
-export function WarningToolip(p: { content: React.ReactNode; position: 'top' | 'left' }): JSX.Element {
+export function WarningToolip(p: { content: React.ReactNode; position: 'top' | 'left' }) {
   const styleLeft = {
     bottom: '-2px',
     left: 'auto',
@@ -165,6 +162,6 @@ export function WarningToolip(p: { content: React.ReactNode; position: 'top' | '
   );
 }
 
-function isNewerBuild(current: number, server: number | undefined): boolean {
+function isNewerBuild(current: number, server: number | undefined) {
   return Boolean(current && Number.isFinite(current) && server && Number.isFinite(server) && server > current);
 }

@@ -58,16 +58,15 @@ describe('the ViewSettingsPanel', () => {
 
   test('column count summary reflects visibility', () => {
     renderPanel();
-    // Defaults: timestamp, key, value visible out of 7
     expect(screen.getByText('3 of 7')).toBeInTheDocument();
   });
 
   describe('accessible labels', () => {
     test('each column visibility checkbox has an accessible name from its label', () => {
       renderPanel();
-      expect(screen.getByRole('checkbox', { name: /Timestamp/i })).toBeInTheDocument();
-      expect(screen.getByRole('checkbox', { name: /^Key$/i })).toBeInTheDocument();
-      expect(screen.getByRole('checkbox', { name: /^Value$/i })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /Timestamp/iu })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /^Key$/iu })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /^Value$/iu })).toBeInTheDocument();
     });
 
     test.each([

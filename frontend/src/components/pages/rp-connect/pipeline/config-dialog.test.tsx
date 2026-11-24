@@ -49,7 +49,6 @@ describe('the ConfigDialog', () => {
     render(<TestWrapper />);
     const input = screen.getByPlaceholderText('Enter pipeline name');
     expect(input).toBeInTheDocument();
-    // Value round-trip only — skip char-by-char user.type.
     fireEvent.input(input, { target: { value: 'my-pipeline' } });
     expect(input).toHaveValue('my-pipeline');
   });
@@ -63,7 +62,7 @@ describe('the ConfigDialog', () => {
   it('add tag button creates a new row', async () => {
     const user = userEvent.setup();
     render(<TestWrapper defaultValues={{ tags: [{ key: '', value: '' }] }} />);
-    const addButton = screen.getByRole('button', { name: /add tag/i });
+    const addButton = screen.getByRole('button', { name: /add tag/iu });
     await user.click(addButton);
     await waitFor(() => {
       expect(screen.getAllByPlaceholderText('Key')).toHaveLength(2);
@@ -86,7 +85,7 @@ describe('the ConfigDialog', () => {
     const keyInputs = screen.getAllByPlaceholderText('Key');
     expect(keyInputs).toHaveLength(2);
 
-    const removeButtons = screen.getAllByRole('button', { name: /delete key-value pair/i });
+    const removeButtons = screen.getAllByRole('button', { name: /delete key-value pair/iu });
     expect(removeButtons.length).toBeGreaterThanOrEqual(1);
     await user.click(removeButtons[0]);
 

@@ -81,11 +81,8 @@ import {
   targetComponentType,
 } from '../utils/yaml';
 
-// Which node the inspector shows: its canvas id, which a stop condition wrapping it or its broker doesn't
-// change, else its path.
-const nodeIdentity = (target: EditTarget, nodeId?: string): string => nodeId ?? JSON.stringify(editTargetPath(target));
+const nodeIdentity = (target: EditTarget, nodeId?: string) => nodeId ?? JSON.stringify(editTargetPath(target));
 
-// Default component per kind for the dangling-reference quick-fix.
 const DEFAULT_RESOURCE_COMPONENT: Record<ResourceKind, string> = { cache: 'memory', rate_limit: 'local' };
 
 const COMPONENT_TYPE_LABEL: Partial<Record<ConnectComponentType, string>> = {
@@ -149,12 +146,10 @@ export type PendingNodeCommit = {
   discard: () => void;
 };
 
-// The top-level section a target's component is.
-const topLevelSection = (target: EditTarget | null): 'input' | 'output' | undefined =>
+const topLevelSection = (target: EditTarget | null) =>
   target?.kind === 'input' || target?.kind === 'output' ? target.kind : undefined;
 
-// Lint message falling on a switch case's routing `check` line, so the condition field can show its own error.
-function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?: LintHint[]): string | undefined {
+function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?: LintHint[]) {
   if (!lintHints?.length) {
     return;
   }
@@ -169,9 +164,7 @@ function lintMessageOnCaseCheck(yaml: string, caseTarget: EditTarget, lintHints?
     }
     const { line } = lineCounter.linePos(checkNode.range[0]);
     return lintHints.find((h) => h.line === line)?.hint;
-  } catch {
-    // Unparseable YAML: no hint, as for a case without a check.
-  }
+  } catch {}
 }
 
 type InspectorDraftsArgs = Pick<
@@ -183,15 +176,14 @@ type InspectorDraftsArgs = Pick<
 
 type DraftRef = RefObject<Record<string, unknown> | null>;
 
-// Writes the pending routing-condition draft at `caseTarget`, consuming it once it lands.
-function flushConditionDraft(draftRef: DraftRef, yaml: string, caseTarget?: EditTarget | null): string {
+function flushConditionDraft(draftRef: DraftRef, yaml: string, caseTarget?: EditTarget | null) {
   const cond = draftRef.current;
   if (!(cond && caseTarget)) {
     return yaml;
   }
   const applied = setComponentAt(yaml, caseTarget, cond);
   if (applied === null) {
-    // Surgical editor couldn't rewrite this YAML; keep the draft (next flush retries) and warn.
+    // WARNING: Keep the draft when a rewrite fails; dropping it would lose the user's edits before the next flush.
     toast.error('Couldn’t apply the condition edit to the YAML — edit it in the YAML view instead.');
     return yaml;
   }
@@ -199,13 +191,7 @@ function flushConditionDraft(draftRef: DraftRef, yaml: string, caseTarget?: Edit
   return applied;
 }
 
-// Writes the pending component draft at `target`, consuming it once it lands.
-function flushComponentDraft(
-  draftRef: DraftRef,
-  yaml: string,
-  target: EditTarget | null,
-  originalLabel?: string
-): string {
+function flushComponentDraft(draftRef: DraftRef, yaml: string, target: EditTarget | null, originalLabel?: string) {
   const comp = draftRef.current;
   if (!(comp && target)) {
     return yaml;
@@ -218,7 +204,6 @@ function flushComponentDraft(
   return applied;
 }
 
-// Clear pending drafts when the selected node changes — the inspector instance is reused.
 function useClearDraftsOnNodeChange(
   { target, nodeId, caseTarget }: Pick<InspectorDraftsArgs, 'target' | 'nodeId' | 'caseTarget'>,
   draftRefs: DraftRef[]
@@ -233,8 +218,6 @@ function useClearDraftsOnNodeChange(
   }, [targetIdentity, caseIdentity]);
 }
 
-// Pending edits from the active editors (null when clean), registered into the panel's `commitRef`
-// so it can flush them on node-leave / save, and flushed per field through `commitField`.
 function useInspectorDrafts({
   target,
   nodeId,
@@ -243,28 +226,21 @@ function useInspectorDrafts({
   commitRef,
   onRequestCommit,
 }: InspectorDraftsArgs) {
-  // Refs, not state, so per-keystroke reporting doesn't re-render. `component` applies at
-  // `target`; `condition` at `caseTarget`.
   const componentDraftRef = useRef<Record<string, unknown> | null>(null);
   const conditionDraftRef = useRef<Record<string, unknown> | null>(null);
-  // Stable draft reporters — they sit in the editors' effect deps, so an inline arrow would re-fire it every render.
   const reportComponentDraft = useCallback((next: Record<string, unknown> | null) => {
     componentDraftRef.current = next;
   }, []);
   const reportConditionDraft = useCallback((next: Record<string, unknown> | null) => {
     conditionDraftRef.current = next;
   }, []);
-  // The resource's original label, captured for the rename cascade when committing a resource
-  // edit — for cache/rate_limit `resource` targets and `*_resources` items alike.
   const resourceLabel0 =
     target && resourceRefKindForTarget(target) && component && typeof component.label === 'string'
       ? component.label
       : undefined;
 
-  // Commit pending edits, condition before component — the condition replaces the whole case, so
-  // written second it would clobber the component edit. Drafts are consumed as applied (re-call = no-op).
   const commit = useCallback(
-    (input: string): string => {
+    (input: string) => {
       const withCondition = flushConditionDraft(conditionDraftRef, input, caseTarget);
       return flushComponentDraft(componentDraftRef, withCondition, target, resourceLabel0);
     },
@@ -287,9 +263,7 @@ function useInspectorDrafts({
   }, [commit, commitRef]);
   useClearDraftsOnNodeChange({ target, nodeId, caseTarget }, [componentDraftRef, conditionDraftRef]);
 
-  // Flush the draft immediately (field blur / Apply); reports whether the write landed — the
-  // panel's flush consumes the draft on success, so a surviving draft means it failed.
-  const commitField = useCallback((): boolean => {
+  const commitField = useCallback(() => {
     if (!onRequestCommit) {
       return false;
     }
@@ -316,12 +290,9 @@ export function NodeInspector(props: NodeInspectorProps) {
     return <InspectorEmptyState readOnly={readOnly} />;
   }
 
-  // A switch case is edited for its routing condition only; its body is separate nodes. Reported
-  // as a draft (at `target`), auto-committed on leave / save.
   if (target.kind === 'switchCase') {
     return (
-      // Key by the case's path so switching cases remounts the editor and resets the `check` draft —
-      // otherwise a typed value leaks to a sibling with an equal saved check, misrouting on save.
+      // WARNING: Keep the case path as the key, or a draft can leak to a sibling case and change its routing on save.
       <SwitchCaseEditor
         caseObject={component}
         key={JSON.stringify(editTargetPath(target))}
@@ -345,10 +316,7 @@ export function NodeInspector(props: NodeInspectorProps) {
   );
 }
 
-// Anchor the node's lint hints to the form fields they're about; the banner keeps only the rest.
-// Anchors exist only when the schema form will actually render them: in read-only mode, for the
-// raw-YAML/member-list fallbacks, and for list-valued components (switch/try — value is an array,
-// so the form shows no schema fields) everything stays bannered, located by field name via lines.
+// WARNING: Only anchor errors to rendered fields; otherwise errors for read-only, raw YAML, and list-valued nodes disappear.
 function useNodeLintMapping({
   yaml,
   target,
@@ -375,8 +343,6 @@ function useNodeLintMapping({
   }, [yaml, target, componentName, lintHints, fieldKeys]);
 }
 
-// The routing condition of the switch case a case-entry node sits in, with any lint problem on its
-// `check` line so the field shows its own error, not just the banner.
 function useCaseCondition(yaml: string, caseTarget?: EditTarget | null, lintHints?: LintHint[]) {
   const caseObject = useMemo(() => (caseTarget ? getComponentAt(yaml, caseTarget) : undefined), [yaml, caseTarget]);
   const conditionError = useMemo(
@@ -386,26 +352,24 @@ function useCaseCondition(yaml: string, caseTarget?: EditTarget | null, lintHint
   return { caseObject, conditionError };
 }
 
-// Create-topic is patched by section+componentName, which only resolves for top-level
-// input/output nodes; nested topic fields still get the picker, just not the create flow.
+// WARNING: Limit this create action to top-level nodes; section and component name cannot identify a nested patch target.
 function createTopicHandler(
   componentName: string,
   section: 'input' | 'output' | undefined,
   readOnly?: boolean,
   onAddTopic?: (section: string, componentName: string) => void
-): (() => void) | undefined {
+) {
   if (readOnly || !(onAddTopic && section)) {
     return;
   }
   return () => onAddTopic(section, componentName);
 }
 
-// A `resource:` reference whose label has no matching resource — fixable here vs. failing at deploy.
 function findDanglingResourceRef(
   component: Record<string, unknown>,
   componentName: string,
   resourceLabels: Record<ResourceKind, string[]>
-): { ref: string; kind: ResourceKind } | undefined {
+) {
   const refKind = resourceKindForComponentName(componentName);
   const innerConfig = component[componentName];
   const refValue =
@@ -417,13 +381,11 @@ function findDanglingResourceRef(
     : undefined;
 }
 
-// Quick-fix: the YAML with the missing resource created under that exact label, so the reference
-// resolves; undefined when no default component of that kind is available.
 function yamlWithMissingResource(
   yaml: string,
   danglingRef: { ref: string; kind: ResourceKind },
   components: ConnectComponentSpec[]
-): string | undefined {
+) {
   const obj = buildInsertableComponent(DEFAULT_RESOURCE_COMPONENT[danglingRef.kind], danglingRef.kind, components);
   if (!obj) {
     return;
@@ -432,7 +394,6 @@ function yamlWithMissingResource(
   return appendResource(yaml, resourceArrayKey(danglingRef.kind), obj) ?? yaml;
 }
 
-// Header for a component node: kind, name, and — for a resource — how many nodes reference it.
 const ComponentInspectorHeader = ({
   target,
   component,
@@ -445,8 +406,6 @@ const ComponentInspectorHeader = ({
   onDelete?: () => void;
 }) => {
   const kind = targetComponentType(target);
-  // Resource label + reference count ("Used by N"). Kind-scoped: a same-labelled resource of
-  // another kind must not inflate the count.
   const resourceRefKind = resourceRefKindForTarget(target);
   const resourceLabel = resourceRefKind && typeof component.label === 'string' ? component.label : undefined;
   return (
@@ -469,7 +428,6 @@ type ComponentInspectorProps = NodeInspectorProps & {
   drafts: InspectorDrafts;
 };
 
-// A component node: header, the problems that didn't anchor to a field, and its editor.
 function ComponentInspector(props: ComponentInspectorProps) {
   const { target, caseTarget, yaml, components, component, componentName, readOnly, onDelete, drafts, stop } = props;
   const spec = useMemo(
@@ -478,18 +436,14 @@ function ComponentInspector(props: ComponentInspectorProps) {
   );
   const lintMapping = useNodeLintMapping({ ...props, spec });
   const { caseObject, conditionError } = useCaseCondition(yaml, caseTarget, props.lintHints);
-  // Resource labels for the `resource:` dropdowns in this component's form.
   const resourceLabels: Record<ResourceKind, string[]> = {
     cache: listResourceLabels(yaml, 'cache'),
     rate_limit: listResourceLabels(yaml, 'rate_limit'),
   };
   const danglingRef = findDanglingResourceRef(component, componentName, resourceLabels);
 
-  // A case-entry node's condition is edited at the top of the panel. The form scrolls it with the
-  // fields (headerSlot); raw/read-only render it above.
   const conditionSection =
     caseTarget && caseObject ? (
-      // Key by the case's path so selecting a sibling remounts + resets the draft (see above).
       <CaseConditionSection
         caseObject={caseObject}
         error={conditionError}
@@ -505,13 +459,11 @@ function ComponentInspector(props: ComponentInspectorProps) {
         component={component}
         componentName={componentName}
         onClose={props.onClose}
-        // Delete lives in the header's 3-dot menu.
         onDelete={readOnly || !onDelete ? undefined : () => onDelete(target)}
         onOpenInYaml={props.onOpenInYaml}
         target={target}
         yaml={yaml}
       />
-      {/* Field-anchored problems render under their fields; the banner keeps only what didn't map. */}
       {lintMapping.unmapped.length > 0 ? <InspectorLintErrors hints={lintMapping.unmapped} /> : null}
       {danglingRef && !readOnly ? (
         <DanglingRefBanner
@@ -559,7 +511,6 @@ function ComponentInspector(props: ComponentInspectorProps) {
 
 type InspectorBodyProps = {
   conditionSection: ReactNode;
-  /** Re-keys the editors on selection change. */
   identity: string;
   component: Record<string, unknown>;
   componentName: string;
@@ -578,7 +529,6 @@ type InspectorBodyProps = {
   resetToken?: number;
 };
 
-// Case-condition section (if any) plus the most specific of: schema form, read-only view, child list, raw YAML.
 const InspectorBody = ({
   conditionSection,
   identity,
@@ -613,10 +563,6 @@ const InspectorBody = ({
         componentName={componentName}
         fieldErrors={fieldErrors}
         headerSlot={conditionSection}
-        // Re-key on node identity + the undo/redo token: identity remounts on selection change (a
-        // sibling with identical config can't inherit dirty state); the token remounts on undo/redo,
-        // dropping stale edit state. Same-node saved-value changes (field-blur commits, Topic/User
-        // dialogs) re-sync IN PLACE inside the form, so focus and scroll survive a commit.
         key={`${identity}:${resetToken ?? 0}`}
         onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
@@ -630,7 +576,6 @@ const InspectorBody = ({
       />
     );
   }
-  // Fan-out container with no schema form (fallback / broker / output switch): list members instead of raw YAML.
   if (childItems && childItems.length > 0 && onSelectChild) {
     const listLabel = componentName === 'switch' || componentName === 'group_by' ? 'Cases' : 'Outputs';
     return (
@@ -647,7 +592,7 @@ const InspectorBody = ({
       {conditionSection}
       <RawComponentEditor
         component={component}
-        // Same keying as NodeConfigForm: remount on node identity or undo/redo, re-sync in place otherwise.
+        // WARNING: Remount only when node identity or undo/redo changes; remounting on each update loses current inspector edits.
         key={`${identity}:${resetToken ?? 0}`}
         onCommitField={onCommitField}
         onConfigChange={reportComponentDraft}
@@ -656,15 +601,12 @@ const InspectorBody = ({
   );
 };
 
-// Secondary node actions (View in YAML, Delete) in a 3-dot menu.
 const InspectorActionsMenu = ({ onOpenInYaml, onDelete }: { onOpenInYaml?: () => void; onDelete?: () => void }) => {
   if (!(onOpenInYaml || onDelete)) {
     return null;
   }
   return (
     <DropdownMenu>
-      {/* Base UI `render` (not Radix `asChild`): the trigger IS our icon-sm Button, not a nested one. */}
-      {/* `current-ghost`: the trigger takes the muted ink of the header's action group. */}
       <DropdownMenuTrigger render={<Button aria-label="More actions" size="icon-sm" variant="current-ghost" />}>
         <EllipsisVertical />
       </DropdownMenuTrigger>
@@ -702,9 +644,6 @@ const InspectorBanner = ({
   </Alert>
 );
 
-// Lint problems for the selected node that didn't anchor to a form field, shown above its config.
-// No line numbers — there are none to see in this view; when the problem's line resolved to a
-// known (unrendered) field, its name is shown instead.
 const InspectorLintErrors = ({ hints }: { hints: UnmappedLintHint[] }) => (
   <InspectorBanner title={pluralizeWithNumber(hints.length, 'problem')} tone="destructive">
     <ul className="flex flex-col gap-1">
@@ -718,18 +657,14 @@ const InspectorLintErrors = ({ hints }: { hints: UnmappedLintHint[] }) => (
   </InspectorBanner>
 );
 
-// Write a component-config draft at `target`, cascading a resource-label rename to every component
-// that references it (so the link is never silently broken).
 function applyComponentDraft(
   yaml: string,
   target: EditTarget,
   config: Record<string, unknown>,
   originalLabel?: string
-): string | null {
+) {
   const applied = setComponentAt(yaml, target, config);
   if (applied === null) {
-    // Surgical editor couldn't rewrite this YAML (e.g. an anchor referenced elsewhere). Return null
-    // so the caller keeps the draft (next flush retries) instead of consuming an edit that never landed.
     toast.error('Couldn’t apply this edit to the YAML — edit the component in the YAML view instead.');
     return null;
   }
@@ -737,16 +672,14 @@ function applyComponentDraft(
   if (refKind && originalLabel) {
     const nextLabel = typeof config.label === 'string' ? config.label : undefined;
     if (nextLabel && nextLabel !== originalLabel) {
-      // Kind-scoped: renaming a cache must not rewrite a same-labelled rate limit's (or input's) references.
+      // WARNING: Scope renames by component kind; same-labelled caches and rate limits are distinct resources.
       return renameResourceReferences(applied, originalLabel, nextLabel, refKind) ?? applied;
     }
   }
   return applied;
 }
 
-// Apply a routing-condition `check` to a switch case, preserving key order: a non-empty check is
-// set in place, an empty one omitted (the default/else case).
-function caseWithCheck(caseObject: Record<string, unknown>, check: string): Record<string, unknown> {
+function caseWithCheck(caseObject: Record<string, unknown>, check: string) {
   const trimmed = check.trim();
   const entries = Object.entries(caseObject);
   if (!Object.hasOwn(caseObject, 'check')) {
@@ -754,13 +687,11 @@ function caseWithCheck(caseObject: Record<string, unknown>, check: string): Reco
   }
   return Object.fromEntries(
     entries
-      .map(([key, value]): [string, unknown] => (key === 'check' ? [key, trimmed] : [key, value]))
+      .map<[string, unknown]>(([key, value]) => (key === 'check' ? [key, trimmed] : [key, value]))
       .filter(([key]) => key !== 'check' || trimmed !== '')
-  );
+  ) satisfies Record<string, unknown>;
 }
 
-// Shared draft state for a case's `check` field: tracks the value, re-syncs on saved-case change,
-// and reports the edited case up as a draft (null when clean).
 function useCaseCheckDraft(
   caseObject: Record<string, unknown>,
   onConfigChange?: (next: Record<string, unknown> | null) => void
@@ -777,7 +708,6 @@ function useCaseCheckDraft(
 
 const CASE_CHECK_PLACEHOLDER = 'e.g. this.region == "us"';
 
-// The mono `check` text field shared by the switch-case editor and the inline case-condition section.
 const CaseCheckInput = ({
   id,
   check,
@@ -802,8 +732,6 @@ const CaseCheckInput = ({
   />
 );
 
-// Edits a switch case's routing condition (`check`); empty makes it the default/else case. The
-// case's body is separate canvas nodes — this rail only owns the condition.
 const SwitchCaseEditor = ({
   caseObject,
   onConfigChange,
@@ -832,7 +760,6 @@ const SwitchCaseEditor = ({
           <span className="text-body-sm font-medium tracking-wide text-muted-foreground uppercase">Switch</span>
           <span className="text-body font-semibold">Routing condition</span>
         </div>
-        {/* Muted actions: the `current-ghost` buttons take this group's ink. */}
         <div className="ml-auto flex shrink-0 items-center gap-1 text-muted-foreground">
           <InspectorActionsMenu onDelete={onDelete} onOpenInYaml={onOpenInYaml} />
           {onClose ? (
@@ -853,8 +780,6 @@ const SwitchCaseEditor = ({
   );
 };
 
-// The routing condition of a case-entry node, edited inline at the top of its inspector panel.
-// Writes the case's `check` (empty = default/else); reported as a draft, auto-committed with the node.
 const CaseConditionSection = ({
   caseObject,
   onConfigChange,
@@ -864,7 +789,6 @@ const CaseConditionSection = ({
   caseObject: Record<string, unknown>;
   onConfigChange?: (next: Record<string, unknown> | null) => void;
   readOnly?: boolean;
-  /** A lint message on this condition — renders the input in its error state. */
   error?: string;
 }) => {
   const { check, setCheck, dirty } = useCaseCheckDraft(caseObject, onConfigChange);
@@ -895,7 +819,6 @@ const CaseConditionSection = ({
         </TooltipProvider>
       </div>
       <CaseCheckInput check={check} id={inputId} invalid={Boolean(error)} readOnly={readOnly} setCheck={setCheck} />
-      {/* The field's own error, shown where it's fixed. Hidden once editing starts — they're addressing it. */}
       {error && !dirty ? (
         <div className="flex items-center gap-1 pt-1.5 text-body-sm text-destructive">
           <AlertCircle className="size-3.5 shrink-0" />
@@ -906,8 +829,6 @@ const CaseConditionSection = ({
   );
 };
 
-// Banner for a dangling `resource:` reference, with a one-click fix that creates it under that
-// label.
 const DanglingRefBanner = ({ refLabel, onCreate }: { refLabel: string; onCreate: () => void }) => (
   <InspectorBanner
     title={
@@ -923,7 +844,6 @@ const DanglingRefBanner = ({ refLabel, onCreate }: { refLabel: string; onCreate:
   </InspectorBanner>
 );
 
-// The component still loads and saves; this only steers the user toward the replacement.
 const DeprecatedComponentBanner = ({ messages }: { messages: string[] }) => (
   <InspectorBanner title="Deprecated component" tone="warning">
     {[...new Set(messages)].map((message) => (
@@ -989,7 +909,6 @@ const InspectorHeader = ({
         <span className="min-w-0 truncate text-body font-semibold">{componentName}</span>
       </ElementTooltip>
     </div>
-    {/* Muted actions: the `current-ghost` buttons take this group's ink. */}
     <div className="ml-auto flex shrink-0 items-center gap-1 text-muted-foreground">
       {docsUrl ? (
         <Button
@@ -1014,7 +933,6 @@ const InspectorHeader = ({
   </div>
 );
 
-// Read-only inspection (view lane): the component as scoped YAML.
 const ReadOnlyComponent = ({ component }: { component: Record<string, unknown> }) => (
   <div className="min-h-0 flex-1 p-4">
     <div className="h-full overflow-hidden rounded-md border border-border">
@@ -1031,22 +949,20 @@ type ComponentDraft = { config: Record<string, unknown> | null; error: string | 
 
 const CLEAN_COMPONENT_DRAFT: ComponentDraft = { config: null, error: null };
 
-// An edited draft as a component config, or why it can't be one.
-function parseComponentDraft(draft: string): ComponentDraft {
+function parseComponentDraft(draft: string) {
   let parsed: unknown;
   try {
     parsed = parseYaml(draft);
   } catch (e) {
-    return { config: null, error: e instanceof Error ? e.message : 'Invalid YAML' };
+    return { config: null, error: e instanceof Error ? e.message : 'Invalid YAML' } satisfies ComponentDraft;
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return { config: null, error: 'Configuration must be a YAML mapping.' };
+    return { config: null, error: 'Configuration must be a YAML mapping.' } satisfies ComponentDraft;
   }
-  return { config: parsed as Record<string, unknown>, error: null };
+  return { config: parsed as Record<string, unknown>, error: null } satisfies ComponentDraft;
 }
 
-// Whether a draft holds the component `yaml` does, formatting and comments aside.
-function draftMatches(draft: string, yaml: string): boolean {
+function draftMatches(draft: string, yaml: string) {
   if (draft === yaml) {
     return true;
   }
@@ -1054,13 +970,9 @@ function draftMatches(draft: string, yaml: string): boolean {
   return config !== null && yamlStringify(config) === yaml;
 }
 
-// The raw editor's text, and the pending config it parses to (null when clean).
 function useComponentDraft(component: Record<string, unknown>) {
   const initial = useMemo(() => yamlStringify(component), [component]);
   const [draft, setDraft] = useState(initial);
-  // The node's YAML changed under the editor (this draft committed, or an edit elsewhere): a draft
-  // matching the old YAML follows it, an edited one is kept. Adjusted in render, so no render pairs
-  // the old draft with the new YAML; in place, so focus, caret and scroll survive a commit.
   const [baseline, setBaseline] = useState(initial);
   if (baseline !== initial) {
     setBaseline(initial);
@@ -1069,8 +981,6 @@ function useComponentDraft(component: Record<string, unknown>) {
     }
   }
 
-  // Parse the draft live. Only a valid draft that changes the component is pending and reported, so
-  // invalid YAML is never committed and a whitespace or comment edit isn't reformatted into the YAML.
   const { config, error } = useMemo(() => {
     const parsed = draft === initial ? CLEAN_COMPONENT_DRAFT : parseComponentDraft(draft);
     return parsed.config && yamlStringify(parsed.config) === initial ? CLEAN_COMPONENT_DRAFT : parsed;
@@ -1078,7 +988,6 @@ function useComponentDraft(component: Record<string, unknown>) {
   return { draft, setDraft, config, error };
 }
 
-// Fallback editor for components without a known schema (e.g. bloblang mappings): scoped, editable YAML.
 const RawComponentEditor = ({
   component,
   onConfigChange,
@@ -1093,7 +1002,6 @@ const RawComponentEditor = ({
     onConfigChange?.(config);
   }, [config, onConfigChange]);
 
-  // Like the schema form: a pending edit applies on Apply, ⌘⏎, or focus leaving the editor.
   const pending = config !== null;
   const commitNow = () => {
     if (pending) {
@@ -1111,8 +1019,6 @@ const RawComponentEditor = ({
           commitNow();
         }
       }}
-      // Capture phase, or Monaco takes ⌘⏎ as "insert line below" first (which it still does when
-      // nothing is pending).
       onKeyDownCapture={(e) => {
         if (pending && onCommitField && isCommitShortcut(e)) {
           e.preventDefault();
@@ -1121,7 +1027,6 @@ const RawComponentEditor = ({
         }
       }}
     >
-      {/* Flex column so the editor shrinks to leave room for the error row below it. */}
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
         <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
           <YamlEditor

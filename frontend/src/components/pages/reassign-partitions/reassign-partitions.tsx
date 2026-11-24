@@ -8,7 +8,6 @@
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
-/** biome-ignore-all lint/correctness/useUniqueElementIds: legacy, needs refactor */
 
 import { ConnectError } from '@connectrpc/connect';
 import { AlertIcon, ChevronLeftIcon, ChevronRightIcon } from 'components/icons';
@@ -24,11 +23,12 @@ import {
 import { Stat } from 'components/redpanda-ui/components/stat';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { motion } from 'motion/react';
+import { createRef } from 'react';
 import { closeToast, showToast, updateToast } from 'utils/toast.utils';
 
 import { ActiveReassignments } from './components/active-reassignments';
 import { WizardSteps } from './components/wizard-steps';
-import { type ApiData, computeReassignments, type TopicPartitions } from './logic/reassign-logic';
+import { type ApiData, computeReassignments } from './logic/reassign-logic';
 import { ReassignmentTracker } from './logic/reassignment-tracker';
 import {
   computeMovedReplicas,
@@ -37,13 +37,12 @@ import {
 } from './logic/utils';
 import { StepSelectPartitions } from './step1-partitions';
 import { StepSelectBrokers } from './step2-brokers';
-import { StepReview, type TopicWithMoves } from './step3-review';
+import { StepReview } from './step3-review';
 import { appGlobal } from '../../../state/app-global';
 import { api, partialTopicConfigs } from '../../../state/backend-api';
 import type {
   AlterPartitionReassignmentsPartitionResponse,
   AlterPartitionReassignmentsResponse,
-  Broker,
   PartialTopicConfigsResponse,
   Partition,
   PartitionReassignmentRequest,
@@ -55,7 +54,7 @@ import { animProps } from '../../../utils/animation-props';
 import { IsDev } from '../../../utils/env';
 import { clone, toJson } from '../../../utils/json-utils';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import { scrollTo, scrollToTop } from '../../../utils/utils';
+import { scrollToElement, scrollToTop } from '../../../utils/utils';
 import { FeatureLicenseNotification } from '../../license/feature-license-notification';
 import { showErrorModal } from '../../misc/error-modal';
 import { NullFallbackBoundary } from '../../misc/null-fallback-boundary';
@@ -65,8 +64,7 @@ import { PageComponent, type PageInitHelper } from '../page';
 import { CompactSection } from '../shared/compact-section';
 
 export type PartitionSelection = {
-  // Which partitions are selected?
-  [topicName: string]: number[]; // topicName -> array of partitionIds
+  [topicName: string]: number[];
 };
 
 const reassignmentTracker = new ReassignmentTracker();
@@ -84,6 +82,7 @@ type ReassignPartitionsState = {
 };
 
 class ReassignPartitions extends PageComponent {
+  private readonly wizardSection = createRef<HTMLDivElement>();
   refreshTopicConfigsTimer: number | null = null;
   refreshTopicConfigsRequestsInProgress = 0;
 
@@ -97,7 +96,6 @@ class ReassignPartitions extends PageComponent {
     requestInProgress: false,
   };
 
-  // Getter wrappers so the steps[] isEnabled functions can read rp.partitionSelection etc.
   get partitionSelection() {
     return this.state.partitionSelection;
   }
@@ -109,7 +107,7 @@ class ReassignPartitions extends PageComponent {
     super(p);
   }
 
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Reassign Partitions';
     p.addBreadcrumb('Reassign Partitions', '/reassign-partitions');
 
@@ -133,12 +131,10 @@ class ReassignPartitions extends PageComponent {
   }
 
   componentDidUpdate(_prevProps: Readonly<{ matchedPath: string }>, prevState: Readonly<ReassignPartitionsState>) {
-    // Auto-scroll when navigating to a non-first step
     if (prevState.currentStep !== this.state.currentStep && this.state.currentStep !== 0) {
-      setTimeout(() => scrollTo('wizard', 'start', -20), 20);
+      setTimeout(() => scrollToElement(this.wizardSection.current, -20), 20);
     }
 
-    // Reset selection if brokers or partitions become unavailable
     if (
       prevState.selectedBrokerIds !== this.state.selectedBrokerIds ||
       prevState.partitionSelection !== this.state.partitionSelection
@@ -151,25 +147,23 @@ class ReassignPartitions extends PageComponent {
     const { selectedBrokerIds, partitionSelection } = this.state;
 
     if (selectedBrokerIds.length === 0 && isPartitionSelectionEmpty(partitionSelection)) {
-      return; // nothing selected so far
+      return;
     }
 
-    // has user selected a broker that is not available anymore?
     const brokerUnavailable = selectedBrokerIds.any(
       (x) => api.clusterInfo?.brokers.find((b) => b.brokerId === x) === undefined
     );
 
-    // has user selected a topic partition that is not available anymore?
     if (brokerUnavailable || this.selectedTopicPartitions === null) {
       this.resetSelectionAndPage(true, true);
     }
   }
 
   refreshData(force: boolean) {
-    api.refreshCluster(force); // need to know brokers for reassignment calculation, will also refresh config
-    api.refreshTopics(force);
-    api.refreshPartitions('all', force);
-    api.refreshPartitionReassignments(force);
+    this.api.refreshCluster(force);
+    this.api.refreshTopics(force);
+    this.api.refreshPartitions('all', force);
+    this.api.refreshPartitionReassignments(force);
   }
 
   componentWillUnmount() {
@@ -197,31 +191,25 @@ class ReassignPartitions extends PageComponent {
             <FeatureLicenseNotification featureName="reassignPartitions" />
           </NullFallbackBoundary>
 
-          {/* Statistics */}
           <ClusterStatistics brokerCount={api.clusterInfo.brokers.length} topics={api.topics} />
 
-          {/* Active Reassignments */}
-          <Section id="activeReassignments">
+          <Section>
             <ActiveReassignments
               onRemoveThrottleFromTopics={this.removeThrottleFromTopics}
               throttledTopics={this.state.topicsWithThrottle}
             />
           </Section>
 
-          {/* Content */}
-          <Section id="wizard">
-            {/* Steps */}
+          <Section ref={this.wizardSection}>
             <div style={{ margin: '.75em 1em 1em 1em' }}>
               <WizardSteps currentStep={this.state.currentStep} steps={steps} />
             </div>
 
-            {/* Content */}
             <motion.div {...animProps} key={`step${this.state.currentStep}`}>
               {' '}
               {this.renderStepContent()}
             </motion.div>
 
-            {/* Navigation */}
             {this.renderNavigation()}
           </Section>
         </PageContent>
@@ -255,8 +243,6 @@ class ReassignPartitions extends PageComponent {
           <StepReview
             // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
             assignments={reassignmentRequest!}
-            partitionSelection={partitionSelection}
-            reassignPartitions={this}
             topicsWithMoves={this.topicsWithMoves}
           />
         );
@@ -282,7 +268,6 @@ class ReassignPartitions extends PageComponent {
           height: '2.5em',
         }}
       >
-        {/* Back */}
         {Boolean(step.backButton) && (
           <Button className="min-w-56" disabled={currentStep <= 0 || requestInProgress} onClick={this.onPreviousPage}>
             <span>
@@ -292,7 +277,6 @@ class ReassignPartitions extends PageComponent {
           </Button>
         )}
 
-        {/* Next */}
         <div className="ml-auto flex items-center gap-8">
           <div>{nextButtonHelp}</div>
           <Button
@@ -321,7 +305,6 @@ class ReassignPartitions extends PageComponent {
         }}
         open={this.state.removeThrottleFromTopicsContent !== null}
       >
-        {/* Nearest rung to the old 64rem minimum. */}
         <DialogContent size="xl">
           <DialogHeader>
             <DialogTitle>
@@ -438,16 +421,13 @@ class ReassignPartitions extends PageComponent {
 
   onNextPage() {
     if (this.state.currentStep === 0) {
-      // Select -> Assign
     }
 
-    // Assign -> Review
     if (this.state.currentStep === 1 && !this.planReassignment()) {
       return;
     }
 
     if (this.state.currentStep === 2) {
-      // Review -> Start
       this.startReviewedReassignment();
       return;
     }
@@ -456,7 +436,7 @@ class ReassignPartitions extends PageComponent {
   }
 
   /** Computes the reassignment request for the selection. Returns false when the selection had to be reset instead. */
-  planReassignment(): boolean {
+  planReassignment() {
     const topicPartitions = this.selectedTopicPartitions;
     if (topicPartitions === null || topicPartitions === undefined) {
       this.resetSelectionAndPage(true, true);
@@ -465,7 +445,6 @@ class ReassignPartitions extends PageComponent {
 
     const targetBrokers = this.selectedTargetBrokers();
 
-    // error checking will happen inside computeReassignments
     const apiData: ApiData = {
       brokers: api.clusterInfo?.brokers ?? [],
       topics: api.topics as Topic[],
@@ -478,7 +457,7 @@ class ReassignPartitions extends PageComponent {
     return true;
   }
 
-  selectedTargetBrokers(): Broker[] {
+  selectedTargetBrokers() {
     const targetBrokers = this.state.selectedBrokerIds
       .map((id) => api.clusterInfo?.brokers.first((b) => b.brokerId === id))
       .filterFalsy();
@@ -505,10 +484,8 @@ class ReassignPartitions extends PageComponent {
   async runReassignment(request: PartitionReassignmentRequest) {
     try {
       this.setState({ requestInProgress: true });
-      // todo: Don't use returns and execeptions for control flow
       const success = await this.startReassignment(request);
       if (success) {
-        // Reset settings, go back to first page
         this.resetSelectionAndPage(true, false);
       }
     } catch (err) {
@@ -528,7 +505,7 @@ class ReassignPartitions extends PageComponent {
     this.setState({ currentStep: this.state.currentStep - 1 });
   }
 
-  async startReassignment(request: PartitionReassignmentRequest): Promise<boolean> {
+  async startReassignment(request: PartitionReassignmentRequest) {
     if (uiSettings.reassignment.maxReplicationTraffic !== null && uiSettings.reassignment.maxReplicationTraffic > 0) {
       const success = await this.setTrafficLimit(request);
       if (!success) {
@@ -550,11 +527,10 @@ class ReassignPartitions extends PageComponent {
   }
 
   /** Settles the toast, and lists the failed partitions when there are any. Fails only when no partition started. */
-  reportReassignmentResult(toastRef: string, response: AlterPartitionReassignmentsResponse): boolean {
+  reportReassignmentResult(toastRef: string, response: AlterPartitionReassignmentsResponse) {
     const errors = reassignmentErrors(response);
     const startedCount = response.reassignPartitionsResponses.sum((x) => x.partitions.count((p) => !p.errorCode));
 
-    // No errors, or only some errors: still successful
     const success = errors.length === 0 || startedCount > 0;
     updateToast(toastRef, success ? REASSIGNMENT_STARTED_TOAST : REASSIGNMENT_FAILED_TOAST);
 
@@ -564,50 +540,9 @@ class ReassignPartitions extends PageComponent {
     return success;
   }
 
-  async setTrafficLimit(request: PartitionReassignmentRequest): Promise<boolean> {
-    const toastRef = showToast({
-      status: 'loading',
-      description: 'Setting bandwidth throttle... 1/2',
-    });
-    try {
-      await applyReplicationThrottle(toastRef, request);
-      return true;
-    } catch (err) {
-      // The per-broker patch fails outright on Redpanda ("Setting broker properties on named
-      // brokers is unsupported"), so the message itself is what an operator needs.
-      showRequestFailure(toastRef, 'setTrafficLimit failed', 'Could not set the bandwidth throttle', err);
-      return false;
-    }
-  }
+  setTrafficLimit = setTrafficLimit;
 
-  setReassignError(
-    startedCount: number,
-    errors: {
-      topicName: string;
-      partitions: AlterPartitionReassignmentsPartitionResponse[];
-    }[]
-  ) {
-    showErrorModal(
-      'Reassign Partitions',
-      `Reassignment request returned errors for ${errors.sum((e) => e.partitions.length)} / ${startedCount} partitions.`,
-      <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-        {errors.map((r) => (
-          <div key={r.topicName}>
-            <div>
-              <h4>Topic: "{r.topicName}"</h4>
-              <ul>
-                {r.partitions.map((p) => (
-                  <li key={p.partitionId}>
-                    PartitionID {p.partitionId}: {p.errorMessage}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  setReassignError = setReassignError;
 
   startRefreshingTopicConfigs() {
     if (IsDev && this.refreshTopicConfigsTimer === null) {
@@ -646,7 +581,7 @@ class ReassignPartitions extends PageComponent {
     this.setState({ removeThrottleFromTopicsContent: clone(this.state.topicsWithThrottle) });
   }
 
-  get selectedTopicPartitions(): TopicPartitions[] | undefined {
+  get selectedTopicPartitions() {
     const apiTopics = api.topics;
     const apiPartitions = api.topicPartitions;
 
@@ -658,7 +593,7 @@ class ReassignPartitions extends PageComponent {
     return partitionSelectionToTopicPartitions(this.state.partitionSelection, apiPartitions, apiTopics);
   }
 
-  get maximumSelectedReplicationFactor(): number {
+  get maximumSelectedReplicationFactor() {
     let maxRf = 0;
     for (const topicName in this.state.partitionSelection) {
       if (Object.hasOwn(this.state.partitionSelection, topicName)) {
@@ -671,7 +606,7 @@ class ReassignPartitions extends PageComponent {
     return maxRf;
   }
 
-  get topicsWithMoves(): TopicWithMoves[] {
+  get topicsWithMoves() {
     if (this.state.reassignmentRequest === null) {
       return [];
     }
@@ -686,10 +621,13 @@ class ReassignPartitions extends PageComponent {
     );
   }
 
-  get topicPartitionsInProgress(): string[] {
-    return api.partitionReassignments?.map((r) => r.topicName) ?? [];
+  get topicPartitionsInProgress() {
+    return this.api.partitionReassignments?.map((r) => r.topicName) ?? [];
   }
 }
+/**
+ * Refresh cluster brokers before planning an assignment. Throttle leaders on all source replica brokers and followers only on brokers gaining a copy. Clearing stale throttles must exclude topics still being reassigned.
+ */
 export default ReassignPartitions;
 
 type WizardStep = {
@@ -708,7 +646,6 @@ const steps: WizardStep[] = [
     title: 'Select Partitions',
     nextButton: {
       text: 'Select Target Brokers',
-      // Can only continue if at least one partition was selected
       isEnabled: (rp) => Object.keys(rp.partitionSelection).length > 0,
     },
   },
@@ -718,8 +655,7 @@ const steps: WizardStep[] = [
     backButton: 'Select Partitions',
     nextButton: {
       text: 'Review Plan',
-      // Can only continue if enough brokers are selected,
-      // so all replicas of each partitions can be put on a different broker.
+      // WARNING: Require enough distinct brokers for all replicas; otherwise a target assignment cannot put each replica on a different broker.
       isEnabled: (rp) => {
         const maxRf = rp.maximumSelectedReplicationFactor;
 
@@ -748,7 +684,6 @@ function ClusterStatistics({ brokerCount, topics }: { brokerCount: number; topic
 
   return (
     <CompactSection>
-      {/* Scoped: step 1's SelectionInfoBar repeats these labels. */}
       <div className="flex gap-8" data-testid="cluster-statistics">
         <Stat label="Broker Count" size="lg" value={brokerCount} />
         <Stat label="Leader Partitions" size="lg" value={partitionCountLeaders ?? '...'} />
@@ -767,8 +702,7 @@ function ClusterStatistics({ brokerCount, topics }: { brokerCount: number; topic
   );
 }
 
-/** True when no topic has a selected partition. */
-function isPartitionSelectionEmpty(partitionSelection: PartitionSelection): boolean {
+function isPartitionSelectionEmpty(partitionSelection: PartitionSelection) {
   const selectedTopicPartitions = Object.values(partitionSelection);
   return selectedTopicPartitions.length === 0 || selectedTopicPartitions.all((x) => x.length === 0);
 }
@@ -780,8 +714,7 @@ function throttleRemovalOutcome(baseText: string, errorCount: number) {
   return { status: 'error', description: `${baseText}: ${errorCount} errors`, duration: 2500 } as const;
 }
 
-/** The loaded partitions of every topic, without the partitions that report errors. */
-function partitionsWithoutErrors(topicPartitions: Map<string, Partition[] | null>): Map<string, Partition[]> {
+function partitionsWithoutErrors(topicPartitions: Map<string, Partition[] | null>) {
   const apiTopicPartitions = new Map<string, Partition[]>();
   for (const [topicName, partitions] of topicPartitions) {
     if (!partitions) {
@@ -800,7 +733,6 @@ const REASSIGNMENT_STARTED_TOAST = {
 } as const;
 const REASSIGNMENT_FAILED_TOAST = { status: 'error', description: 'Reassignment failed', duration: 2500 } as const;
 
-/** The partitions that report an error message, by topic; topics without any are left out. */
 function reassignmentErrors(response: AlterPartitionReassignmentsResponse) {
   return response.reassignPartitionsResponses
     .map((e) => {
@@ -813,7 +745,6 @@ function reassignmentErrors(response: AlterPartitionReassignmentsResponse) {
     .filterNull();
 }
 
-/** Replaces the loading toast with an error toast carrying the failure's message, and logs the details. */
 function showRequestFailure(toastRef: string, logMessage: string, title: string, err: unknown) {
   closeToast(toastRef);
   // biome-ignore lint/suspicious/noConsole: the toast promises console detail
@@ -840,10 +771,8 @@ function throttledTopicReplicas(t: PartitionReassignmentRequest['topics'][number
       continue;
     }
 
-    // leader throttling is applied to all sources (all brokers that have a replica of this partition)
     leaderReplicas.push(...brokersOld.map((sourceBroker) => ({ partitionId, brokerId: sourceBroker })));
 
-    // follower throttling is applied only to target brokers that do not yet have a copy
     followerReplicas.push(
       ...brokersNew.except(brokersOld).map((targetBroker) => ({ partitionId, brokerId: targetBroker }))
     );
@@ -863,7 +792,6 @@ function throwOnPatchErrors(response: PatchConfigsResponse) {
   }
 }
 
-/** Sets the broker-wide throttle rate, then marks the moving replicas as throttled, reporting progress in the toast. */
 async function applyReplicationThrottle(toastRef: string, request: PartitionReassignmentRequest) {
   const maxBytesPerSecond = Math.round(uiSettings.reassignment.maxReplicationTraffic ?? 0);
   const topicReplicas = request.topics.map((t) => throttledTopicReplicas(t));
@@ -885,17 +813,58 @@ async function applyReplicationThrottle(toastRef: string, request: PartitionReas
   });
 }
 
-/** The topics with a throttle applied, by name, leaving out those still being reassigned. */
 function throttledTopicNames(
   topicDescriptions: PartialTopicConfigsResponse['topicDescriptions'],
   topicsInProgress: string[]
-): string[] {
-  // Only get the names of the topics that have throttles applied
+) {
   const newThrottledTopics = topicDescriptions
     .filter((t) => t.configEntries.any((x) => Boolean(x.value)))
     .map((t) => t.topicName)
     .sort();
 
-  // Filter topics that are still being reassigned
   return newThrottledTopics.filter((t) => !topicsInProgress.includes(t));
+}
+
+async function setTrafficLimit(request: PartitionReassignmentRequest) {
+  const toastRef = showToast({
+    status: 'loading',
+    description: 'Setting bandwidth throttle... 1/2',
+  });
+  try {
+    await applyReplicationThrottle(toastRef, request);
+    return true;
+  } catch (err) {
+    // WARNING: Keep the backend error visible; Redpanda rejects named-broker rate updates and the operator needs that reason.
+    showRequestFailure(toastRef, 'setTrafficLimit failed', 'Could not set the bandwidth throttle', err);
+    return false;
+  }
+}
+
+function setReassignError(
+  startedCount: number,
+  errors: {
+    topicName: string;
+    partitions: AlterPartitionReassignmentsPartitionResponse[];
+  }[]
+) {
+  showErrorModal(
+    'Reassign Partitions',
+    `Reassignment request returned errors for ${errors.sum((e) => e.partitions.length)} / ${startedCount} partitions.`,
+    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+      {errors.map((r) => (
+        <div key={r.topicName}>
+          <div>
+            <h4>Topic: "{r.topicName}"</h4>
+            <ul>
+              {r.partitions.map((p) => (
+                <li key={p.partitionId}>
+                  PartitionID {p.partitionId}: {p.errorMessage}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }

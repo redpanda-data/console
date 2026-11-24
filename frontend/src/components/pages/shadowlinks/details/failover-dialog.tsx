@@ -40,7 +40,7 @@ const CHECK_ICON = {
 type Verdict = { status: keyof typeof CHECK_ICON; text: string };
 type Check = Verdict & { id: string };
 
-const sourceVerdict = ({ fence }: FailoverReadiness): Verdict => {
+const sourceVerdict: (options: FailoverReadiness) => Verdict = ({ fence }) => {
   if (fence.kind === 'loading') {
     return {
       status: 'unknown',
@@ -74,14 +74,14 @@ const sourceVerdict = ({ fence }: FailoverReadiness): Verdict => {
   };
 };
 
-const behindVerdict = (behind: LagStep['behind'], topicName: string | undefined): Verdict => ({
+const behindVerdict: (behind: LagStep['behind'], topicName: string | undefined) => Verdict = (behind, topicName) => ({
   status: 'not-ready',
   text: topicName
     ? `${topicName} is still behind, so its newest records won’t be on this cluster.`
     : `${behind.length} ${behind.length === 1 ? 'topic is' : 'topics are'} still behind, so their newest records won’t be on this cluster.`,
 });
 
-const faultedVerdict = (faulted: string[], topicName: string | undefined): Verdict => {
+const faultedVerdict: (faulted: string[], topicName: string | undefined) => Verdict = (faulted, topicName) => {
   const subject = topicName ? `${topicName} has` : topicsSubject(faulted, 'has', 'have');
   return {
     status: 'not-ready',
@@ -89,8 +89,7 @@ const faultedVerdict = (faulted: string[], topicName: string | undefined): Verdi
   };
 };
 
-/** A topic still behind or faulted, among the one being failed over or all of them. */
-const lagProblemVerdict = (lag: LagStep, topicName: string | undefined): Verdict | undefined => {
+const lagProblemVerdict: (lag: LagStep, topicName: string | undefined) => Verdict | undefined = (lag, topicName) => {
   const behind = topicName ? lag.behind.filter((topic) => topic.topicName === topicName) : lag.behind;
   if (behind.length > 0) {
     return behindVerdict(behind, topicName);
@@ -101,7 +100,7 @@ const lagProblemVerdict = (lag: LagStep, topicName: string | undefined): Verdict
   }
 };
 
-const caughtUpVerdict = (lag: LagStep, topicName: string | undefined): Verdict => {
+const caughtUpVerdict: (lag: LagStep, topicName: string | undefined) => Verdict = (lag, topicName) => {
   if (lag.stale) {
     return {
       status: 'unknown',
@@ -114,7 +113,11 @@ const caughtUpVerdict = (lag: LagStep, topicName: string | undefined): Verdict =
   };
 };
 
-const lagVerdict = ({ lag }: FailoverReadiness, topicName: string | undefined, checking: boolean): Verdict => {
+const lagVerdict: (options: FailoverReadiness, topicName: string | undefined, checking: boolean) => Verdict = (
+  { lag },
+  topicName,
+  checking
+) => {
   if (lag.status === 'loading' || checking) {
     return { status: 'unknown', text: 'Checking each topic’s lag…' };
   }
@@ -127,8 +130,7 @@ const lagVerdict = ({ lag }: FailoverReadiness, topicName: string | undefined, c
   return lagProblemVerdict(lag, topicName) ?? caughtUpVerdict(lag, topicName);
 };
 
-/** Fail over all topics is refused while any topic is paused, so say so before the request fails. */
-const pausedCheck = ({ lag }: FailoverReadiness): Check | undefined => {
+const pausedCheck: (options: FailoverReadiness) => Check | undefined = ({ lag }) => {
   if (lag.paused.length === 0) {
     return;
   }
@@ -154,6 +156,9 @@ type FailoverDialogProps = {
   checkingLag?: boolean;
 };
 
+/**
+ * Advises the safe order—stop writes, let lag drain, fail over, then repoint clients—without blocking disaster recovery if the source cannot be reached. Paused topics block an all-topics request; do not present a second action while failover is running or complete.
+ */
 export const FailoverDialog = (props: FailoverDialogProps) =>
   props.readiness ? (
     <GuidedFailoverDialog {...props} readiness={props.readiness} />
@@ -161,11 +166,6 @@ export const FailoverDialog = (props: FailoverDialogProps) =>
     <LegacyFailoverDialog {...props} />
   );
 
-/**
- * Failover stays available even when the checks fail: in a real outage the source can't be fenced,
- * and failing over anyway is the point. The checks follow the safe order: stop writes, let lag
- * drain, fail over, then repoint clients.
- */
 const GuidedFailoverDialog = ({
   open,
   onOpenChange,
@@ -245,7 +245,6 @@ const GuidedFailoverDialog = ({
   );
 };
 
-/** Nothing left to fail over, or a failover still running: say so instead of offering another. */
 const FailoverUnderWayDialog = ({
   open,
   onOpenChange,
@@ -273,7 +272,6 @@ const FailoverUnderWayDialog = ({
   );
 };
 
-/** The dialog as it was before cluster fencing, shown without the Failover tab. */
 const LegacyFailoverDialog = ({ open, onOpenChange, topicName, onConfirm, isLoading }: FailoverDialogProps) => {
   const handleCancel = () => {
     onOpenChange(false);

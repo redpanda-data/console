@@ -78,7 +78,6 @@ import { navigateToConnectClusters } from '../utils/navigation';
 import { usesServiceAccountLogin } from '../utils/yaml';
 import type { PipelineFormValues } from '.';
 
-// Sonner's default is 4s.
 const SAVE_SUCCESS_TOAST_MS = 6000;
 
 type PipelineForm = UseFormReturn<PipelineFormValues>;
@@ -92,7 +91,6 @@ type MarkSaved = (
   savedUpdateTime: number | null
 ) => void;
 
-/** The settings and config one save writes, shared by the create and update requests. */
 type PipelineWrite = {
   name: string;
   description: string | undefined;
@@ -104,7 +102,6 @@ type PipelineWrite = {
   egressGatewayIds: string[];
 };
 
-/** What a save reads and reports through, fixed for the save's duration. */
 type SaveFlow = {
   form: PipelineForm;
   editorStore: EditorStoreApi;
@@ -125,7 +122,6 @@ type SaveFlow = {
   assignUntitledName: () => Promise<void>;
 };
 
-/** One save that passed its checks: how it runs, and what it sends. */
 type SaveAttempt = {
   run: SaveRunIntent;
   isDraftSave: boolean;
@@ -136,7 +132,7 @@ type SaveAttempt = {
 
 type StopOutcome = { stopped: boolean; stopFailed: boolean };
 
-function buildUserTags(formTags: PipelineFormValues['tags']): Record<string, string> {
+function buildUserTags(formTags: PipelineFormValues['tags']) {
   const userTags: Record<string, string> = {};
   for (const { key, value } of formTags) {
     if (key) {
@@ -154,7 +150,6 @@ function warnIfResized(form: PipelineForm, cpuShares: string | undefined) {
   }
 }
 
-/** The pipeline's service account, which Connect's service-account SASL logs in with, and its tracking tags. */
 function serviceAccountFields(account: AttachedServiceAccount | undefined) {
   if (!account) {
     return {};
@@ -206,9 +201,8 @@ function buildUpdateRequest(id: string, current: Pipeline | undefined, write: Pi
           ...write.userTags,
         },
         serviceAccount: account.serviceAccount ?? current?.serviceAccount,
-        // Asserted so the server refuses the write if the draft was started meanwhile.
         draft: write.draft ? true : undefined,
-        // Only the picker sets egress; elsewhere (BYOC) the backend owns the refs, and unset leaves them alone.
+        // WARNING: Set egress only from the picker; sending it on other platforms could overwrite backend-owned gateway references.
         egress: isEgressGatewayPickerEnabled()
           ? egressWrite(write.egressGatewayIds, storedEgressGatewayIds(current))
           : undefined,
@@ -217,7 +211,7 @@ function buildUpdateRequest(id: string, current: Pipeline | undefined, write: Pi
   });
 }
 
-// A failed lookup must not fail the save; duplicate display names are legal.
+// WARNING: Do not block saving on a name lookup failure; display names need not be unique.
 async function nextUntitledName(fetchPipelineNames: ReturnType<typeof useFetchPipelineNames>) {
   try {
     return untitledPipelineName(await fetchPipelineNames(UNTITLED_PIPELINE_NAME));
@@ -226,28 +220,25 @@ async function nextUntitledName(fetchPipelineNames: ReturnType<typeof useFetchPi
   }
 }
 
-function invalidSettingsMessage(fieldErrors: FieldErrors<PipelineFormValues>): string {
+function invalidSettingsMessage(fieldErrors: FieldErrors<PipelineFormValues>) {
   const firstError = fieldErrors.name?.message ?? fieldErrors.computeUnits?.message ?? fieldErrors.tags?.message;
   return typeof firstError === 'string' ? firstError : 'Fix the highlighted pipeline settings before saving.';
 }
 
-/** A deploy needs a config to run, and an account for any component that logs in as the pipeline. */
-function deployBlockerMessage(isDraftSave: boolean, yamlContent: string, hasServiceAccount: boolean): string | null {
+function deployBlockerMessage(isDraftSave: boolean, yamlContent: string, hasServiceAccount: boolean) {
   if (isDraftSave) {
     return null;
   }
   if (isBlankConfig(yamlContent)) {
     return BLANK_CONFIG_MESSAGE;
   }
-  // A draft can wait for its account; a deploy would start a pipeline that can't log in.
   if (!hasServiceAccount && usesServiceAccountLogin(yamlContent)) {
     return MISSING_SERVICE_ACCOUNT_MESSAGE;
   }
   return null;
 }
 
-/** Why the save must not go ahead, or null when it can; an unnamed draft is named first. */
-async function saveBlockerMessage(flow: SaveFlow, isDraftSave: boolean, yamlContent: string): Promise<string | null> {
+async function saveBlockerMessage(flow: SaveFlow, isDraftSave: boolean, yamlContent: string) {
   if (isDraftSave && flow.mode === 'create' && isBlankConfig(yamlContent) && !flow.form.getValues('name').trim()) {
     return NOTHING_TO_SAVE_MESSAGE;
   }
@@ -255,7 +246,6 @@ async function saveBlockerMessage(flow: SaveFlow, isDraftSave: boolean, yamlCont
     await flow.assignUntitledName();
   }
   if (!(await flow.form.trigger())) {
-    // Settings live in the header/dialog, so surface why the save was blocked.
     return invalidSettingsMessage(flow.form.formState.errors);
   }
   return deployBlockerMessage(
@@ -265,13 +255,7 @@ async function saveBlockerMessage(flow: SaveFlow, isDraftSave: boolean, yamlCont
   );
 }
 
-/** The validated settings, read after the checks so a just-assigned name is included. */
-function saveAttempt(
-  flow: SaveFlow,
-  run: SaveRunIntent,
-  yamlContent: string,
-  intent: SaveIntent | undefined
-): SaveAttempt {
+function saveAttempt(flow: SaveFlow, run: SaveRunIntent, yamlContent: string, intent: SaveIntent | undefined) {
   const submittedSettings = flow.form.getValues();
   const { name, description, computeUnits, tags, egressGatewayIds } = submittedSettings;
   return {
@@ -289,10 +273,10 @@ function saveAttempt(
       serviceAccount: flow.attachedServiceAccount,
       egressGatewayIds: egressGatewayIds ?? [],
     },
-  };
+  } satisfies SaveAttempt;
 }
 
-async function stopQuietly(stopPipeline: SaveFlow['stopPipeline'], id: string): Promise<boolean> {
+async function stopQuietly(stopPipeline: SaveFlow['stopPipeline'], id: string) {
   try {
     await stopPipeline(create(StopPipelineRequestSchema, { request: { id } }));
     return true;
@@ -301,31 +285,24 @@ async function stopQuietly(stopPipeline: SaveFlow['stopPipeline'], id: string): 
   }
 }
 
-/**
- * CreatePipeline always starts, so "stopped" is a follow-up stop; a dropped `draft` lands in the same
- * place, and leaving that to the user is the weak link on something irreversible. `stopFailed` covers
- * a stop that was needed and did not happen, including a response with no id to aim one at, so the
- * copy cannot claim it was parked.
- */
 async function stopCreatedPipeline(
   flow: SaveFlow,
   attempt: SaveAttempt,
   newPipelineId: string | undefined,
   draftWasIgnored: boolean
-): Promise<StopOutcome> {
+) {
   if (!(attempt.run === 'stopped' || draftWasIgnored)) {
-    return { stopped: false, stopFailed: false };
+    return { stopped: false, stopFailed: false } satisfies StopOutcome;
   }
   const stopped = newPipelineId ? await stopQuietly(flow.stopPipeline, newPipelineId) : false;
   if (!(stopped || draftWasIgnored)) {
     toast.warning('Pipeline created, but stopping it failed — it may be running. Stop it from its page.');
   }
-  return { stopped, stopFailed: !stopped };
+  return { stopped, stopFailed: !stopped } satisfies StopOutcome;
 }
 
 function toastCreateOutcome(flow: SaveFlow, attempt: SaveAttempt, draftWasIgnored: boolean, outcome: StopOutcome) {
   if (draftWasIgnored) {
-    // Both messages name the deployment; only one of them still needs a human.
     toast.error(outcome.stopped ? DRAFT_UNSUPPORTED_STOPPED_MESSAGE : DRAFT_UNSUPPORTED_MESSAGE);
   } else if (!outcome.stopFailed) {
     toast.success(saveSuccessMessage(flow.saveContext, attempt.run), { duration: SAVE_SUCCESS_TOAST_MS });
@@ -346,7 +323,6 @@ function leaveAfterCreate(
     flow.navigate({ to: '/connect-clusters' });
     return;
   }
-  // A draft stays in the editor on its own route so the next save updates it.
   flow.navigate({
     to: attempt.isDraftSave && !draftWasIgnored ? `/rp-connect/${newPipelineId}/edit` : `/rp-connect/${newPipelineId}`,
   });
@@ -358,7 +334,7 @@ async function requestCreate(flow: SaveFlow, write: PipelineWrite) {
   return response.response?.pipeline;
 }
 
-async function createAndFinish(flow: SaveFlow, attempt: SaveAttempt): Promise<boolean> {
+async function createAndFinish(flow: SaveFlow, attempt: SaveAttempt) {
   const createdPipeline = await requestCreate(flow, attempt.write);
   const draftWasIgnored = wasDraftIgnored(attempt.isDraftSave, createdPipeline);
   const stopOutcome = await stopCreatedPipeline(flow, attempt, createdPipeline?.id, draftWasIgnored);
@@ -391,11 +367,7 @@ function reportRunFailure(flow: SaveFlow, run: SaveRunIntent, runError: ConnectE
   }
 }
 
-/**
- * UpdatePipeline keeps the run state; on a draft, `start` is promotion and validates first. Resolves
- * to false when the start or stop failed, which the saved configuration survives.
- */
-async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: string): Promise<boolean> {
+async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: string) {
   try {
     if (run === 'start') {
       await flow.startPipeline(create(StartPipelineRequestSchema, { request: { id: pipelineId } }));
@@ -411,14 +383,12 @@ async function applyRunIntent(flow: SaveFlow, run: SaveRunIntent, pipelineId: st
 
 function toastUpdateOutcome(flow: SaveFlow, attempt: SaveAttempt, draftWasIgnored: boolean) {
   if (draftWasIgnored) {
-    // No longer a draft, so the editor's next save would deploy too: hand over to the pipeline's page.
     toast.error(DRAFT_UPDATE_UNSUPPORTED_MESSAGE);
   } else {
     toast.success(saveSuccessMessage(flow.saveContext, attempt.run), { duration: SAVE_SUCCESS_TOAST_MS });
   }
 }
 
-// A saved draft stays in the editor; everything else opens the pipeline's page.
 function leaveAfterUpdate(flow: SaveFlow, attempt: SaveAttempt, pipelineId: string, draftWasIgnored: boolean) {
   if ((attempt.isDraftSave && !draftWasIgnored) || attempt.skipNavigation) {
     return;
@@ -433,7 +403,7 @@ async function requestUpdate(flow: SaveFlow, write: PipelineWrite, pipelineId: s
   return response.response?.pipeline;
 }
 
-async function updateAndFinish(flow: SaveFlow, attempt: SaveAttempt, pipelineId: string): Promise<boolean> {
+async function updateAndFinish(flow: SaveFlow, attempt: SaveAttempt, pipelineId: string) {
   const updatedPipeline = await requestUpdate(flow, attempt.write, pipelineId);
   const draftWasIgnored = wasDraftIgnored(attempt.isDraftSave, updatedPipeline);
   const runSucceeded = await applyRunIntent(flow, attempt.run, pipelineId);
@@ -452,12 +422,12 @@ async function updateAndFinish(flow: SaveFlow, attempt: SaveAttempt, pipelineId:
   return true;
 }
 
-function reportSaveFailure(flow: SaveFlow, err: unknown, isDraftSave: boolean): false {
+function reportSaveFailure(flow: SaveFlow, err: unknown, isDraftSave: boolean) {
   const connectError = ConnectError.from(err);
   flow.setErrorLintHints(extractLintHintsFromError(connectError));
   if (isDraftSave && isNoLongerDraftError(connectError)) {
     toast.error(NO_LONGER_DRAFT_MESSAGE);
-    return false;
+    return false as const;
   }
   toast.error(
     formatToastErrorMessageGRPC({
@@ -466,10 +436,10 @@ function reportSaveFailure(flow: SaveFlow, err: unknown, isDraftSave: boolean): 
       entity: 'pipeline',
     })
   );
-  return false;
+  return false as const;
 }
 
-async function submitSave(flow: SaveFlow, attempt: SaveAttempt): Promise<boolean> {
+async function submitSave(flow: SaveFlow, attempt: SaveAttempt) {
   try {
     if (flow.mode === 'create') {
       return await createAndFinish(flow, attempt);
@@ -480,10 +450,8 @@ async function submitSave(flow: SaveFlow, attempt: SaveAttempt): Promise<boolean
   }
 }
 
-/** Resolves to whether the configuration was persisted; a failed start/stop after the write still counts. */
-async function savePipeline(flow: SaveFlow, intent?: SaveIntent): Promise<boolean> {
+async function savePipeline(flow: SaveFlow, intent?: SaveIntent) {
   const run: SaveRunIntent = intent?.run ?? primaryRunIntent(flow.saveContext);
-  // Flush the Visual lane's in-progress edit (the user may save mid-edit), then read fresh YAML.
   flow.editorStore.getState().pendingEditCommit?.();
   const { yamlContent } = flow.editorStore.getState();
   const blocker = await saveBlockerMessage(flow, run === 'draft', yamlContent);
@@ -494,8 +462,7 @@ async function savePipeline(flow: SaveFlow, intent?: SaveIntent): Promise<boolea
   return submitSave(flow, saveAttempt(flow, run, yamlContent, intent));
 }
 
-// A save that navigates unmounts the editor before the debounced write can run, so edits made
-// while the request was in flight are stored here, against the target the editor continues on.
+// WARNING: Persist edits made during a save here; navigation unmounts the editor before its debounced write can run.
 function keepEditsMadeInFlight({
   targetKey,
   savedYaml,
@@ -540,8 +507,7 @@ function useMarkSaved({
   mode: string;
   pipelineId: string | undefined;
   attachedServiceAccount: AttachedServiceAccount | undefined;
-}): MarkSaved {
-  // Add user can attach one while a save is in flight, after the save read it.
+}) {
   const latestServiceAccount = useRef(attachedServiceAccount);
   useLayoutEffect(
     function syncSavedServiceAccount() {
@@ -553,7 +519,6 @@ function useMarkSaved({
   return useCallback(
     (yamlContent, submittedSettings, savedPipelineId, savedUpdateTime) => {
       editorStore.getState().markSavedBaseline(yamlContent, savedUpdateTime);
-      // The settings stay editable while the request is in flight, so the baseline is what it carried.
       const onScreen = form.getValues();
       form.reset(submittedSettings);
       form.reset(onScreen, { keepDefaultValues: true });
@@ -572,7 +537,7 @@ function useMarkSaved({
       });
     },
     [editorStore, form, mode, pipelineId]
-  );
+  ) satisfies MarkSaved;
 }
 
 function useSaveMutations() {
@@ -590,10 +555,8 @@ function useSaveMutations() {
   };
 }
 
-/** Names an unnamed draft before it is saved. */
 function useUntitledNaming(form: PipelineForm) {
   const fetchPipelineNames = useFetchPipelineNames();
-  // The name lookup runs before any mutation is pending, so the button needs its own busy flag.
   const [isNaming, setIsNaming] = useState(false);
 
   const assignUntitledName = useCallback(async () => {
@@ -654,6 +617,11 @@ function usePipelineDelete(pipeline: Pipeline | undefined, onBeforeGuardedNaviga
   return { handleDelete, isDeleting: isPending };
 }
 
+/**
+ * A create can deploy even when draft was requested. When a stopped save comes back running, follow with a stop, and do not report it as parked if the stop fails or its ID is missing.
+ *
+ * Updates keep run state unless explicitly started or stopped. A failed follow-up action does not undo a persisted config.
+ */
 export function usePipelineSave({
   form,
   editorStore,

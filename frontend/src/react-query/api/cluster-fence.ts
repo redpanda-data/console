@@ -42,11 +42,10 @@ import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
 const TRANSITION_POLL_MS = 1500;
 const STEADY_POLL_MS = 15_000;
-/** A change still applying after this long is waiting on a broker that isn't answering, so ease off. */
 const STALLED_TRANSITION_MS = 2 * 60 * 1000;
 const STALLED_POLL_MS = 10_000;
 
-const transitionPollMs = (data: GetClusterFenceStatusResponse | undefined): number => {
+const transitionPollMs: (data: GetClusterFenceStatusResponse | undefined) => number = (data) => {
   const changedAt = data?.fence?.stateChangedAt;
   const stalled = changedAt !== undefined && Date.now() - timestampDate(changedAt).getTime() > STALLED_TRANSITION_MS;
   return stalled ? STALLED_POLL_MS : TRANSITION_POLL_MS;
@@ -59,7 +58,7 @@ const transitionPollMs = (data: GetClusterFenceStatusResponse | undefined): numb
  * cluster this is all it needs; fencing this cluster also needs its backend to serve
  * ClusterFenceService for a cluster that supports fencing.
  */
-export const isGuidedFailoverEnabled = (): boolean =>
+export const isGuidedFailoverEnabled = () =>
   !isServerless() && (!isEmbedded() || isFeatureFlagEnabled('enableClusterFencing'));
 
 const invalidateStatus = (queryClient: QueryClient) =>
@@ -68,14 +67,9 @@ const invalidateStatus = (queryClient: QueryClient) =>
     exact: false,
   });
 
-/**
- * No fencing on this cluster, which reads as "no fence to show", not as an error: the API isn't
- * there, or a read fails its precondition while some broker runs a Redpanda without the feature.
- */
 const UNSUPPORTED_CODES = new Set([Code.Unimplemented, Code.NotFound, Code.FailedPrecondition]);
 
-/** Why the status can't be shown, when it can't. */
-const accessOf = (error: unknown): 'ok' | 'unsupported' | 'forbidden' => {
+const accessOf = (error: unknown) => {
   if (!(error instanceof ConnectError)) {
     return 'ok';
   }
@@ -85,24 +79,15 @@ const accessOf = (error: unknown): 'ok' | 'unsupported' | 'forbidden' => {
   return error.code === Code.PermissionDenied ? 'forbidden' : 'ok';
 };
 
-/** Not answered for this viewer, and asking again won't change that until they sign in as someone else. */
-const isSettledReadError = (error: unknown): boolean => accessOf(error) !== 'ok';
+const isSettledReadError = (error: unknown) => accessOf(error) !== 'ok';
 
-const isNoLeaderError = (error: unknown): boolean => error instanceof ConnectError && error.code === Code.Unavailable;
+const isNoLeaderError = (error: unknown) => error instanceof ConnectError && error.code === Code.Unavailable;
 
-/** No controller leader is usually brief, so ask again soon. */
 const NO_LEADER_POLL_MS = 5000;
 
 /** One broker's own copy, read straight from that broker while the cluster has no controller leader. */
 export type BrokerOwnCopy = { nodeId?: number; phase?: FencePhase; revision?: bigint; errorMessage?: string };
 
-/**
- * GetClusterFenceStatus needs the controller leader; GetClusterFenceBrokerStatus doesn't. While the first
- * fails with UNAVAILABLE, this asks each broker the last status listed (or the broker that takes the
- * call, when none was) for its own copy, so Console still knows whether brokers are blocking. `since`
- * is when that status was read, so each time the leader goes, the copies are read afresh rather than
- * shown from the time before.
- */
 const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[], since: number) => {
   const transport = useTransport();
   const targets = useMemo<(number | undefined)[]>(
@@ -141,16 +126,10 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[], since: 
   );
 };
 
-/**
- * Without a status, one broker's own blocking copy is enough to block. Until every broker's copy is
- * in, the last status read before the controller leader went still counts, so the banner and the
- * guards don't drop while the copies load or can't be read.
- */
-const ownCopiesBlock = (copies: BrokerOwnCopy[], lastRead: FenceSummary | undefined): boolean =>
+const ownCopiesBlock = (copies: BrokerOwnCopy[], lastRead: FenceSummary | undefined) =>
   copies.some((copy) => copy.phase && isBlockingPhase(copy.phase)) ||
   (lastRead !== undefined && isBlockingPhase(lastRead.phase) && !copies.every((copy) => copy.phase));
 
-/** The status query, polled at the pace the fence's state calls for. */
 const useClusterFenceStatusRead = (available: boolean) =>
   useQuery(
     getClusterFenceStatus,
@@ -170,12 +149,10 @@ const useClusterFenceStatusRead = (available: boolean) =>
         return phase && isTransitionPhase(phase) ? transitionPollMs(data) : STEADY_POLL_MS;
       },
       refetchOnWindowFocus: (state) => !isSettledReadError(state.state.error),
-      /** Once the API is known to be missing, a newly mounted guard or banner doesn't ask again. */
       retryOnMount: false,
     }
   );
 
-/** Hands the phase to the store that code outside React reads, or null while it isn't known. */
 const usePublishedFencePhase = (phase: FencePhase | null) => {
   useEffect(() => {
     useClusterFenceStore.getState().setPhase(phase);
@@ -187,6 +164,8 @@ const usePublishedFencePhase = (phase: FencePhase | null) => {
  * consumer shares one query, so the banner, the Shadow Links page and the write guards agree.
  * A cluster without fencing, or a viewer without permission to read it, stops polling and the banner
  * and guards hide; without fencing, the Shadow Links page shows no fence at all.
+ *
+ * Poll with the fence phase. Unsupported fencing is not a status error and newly mounted readers do not refetch it. During controller loss, read broker copies for this outage; any blocking copy is enough, and the previous status still guards writes until every copy is known.
  */
 export const useClusterFenceStatusQuery = () => {
   const available = useSupportedFeaturesStore((state) => state.clusterFence) && isGuidedFailoverEnabled();
@@ -204,26 +183,17 @@ export const useClusterFenceStatusQuery = () => {
 
   return {
     ...query,
-    /** The flag is on and this cluster can serve the API, and it hasn't said it has no fencing. */
     available: available && access !== 'unsupported',
     access,
-    /** True once a status with a state Console understands has loaded; until then, treat the cluster as unfenced. */
     known,
-    /** A status loaded, but with no fence or a state this version of Console doesn't know. */
     unreadable: available && query.data !== undefined && parsed === undefined,
-    /** Each broker's own copy, read while the cluster has no controller leader to give the status. */
     ownCopies,
-    /** Whether some broker rejects writes now, as far as Console can tell. */
     blocking: known ? isBlockingPhase(summary.phase) : ownCopiesBlock(ownCopies, noLeader ? parsed : undefined),
     summary,
     brokers,
   };
 };
 
-/**
- * `read_policy` replaces the whole policy, which is the only way to remove a name;
- * `read_policy.exempt_principals` would only add names.
- */
 const saveSettings = async (transport: Transport, settings: ReadPolicy, expectedRevision: bigint) =>
   (
     await callUnaryMethod(transport, updateClusterFenceSettings, {
@@ -241,6 +211,8 @@ const saveSettings = async (transport: Transport, settings: ReadPolicy, expected
  *
  * `savedFence` is the fence as this hook's own save left it, until `reset`. When Fence fails after the save,
  * the fence has moved on to that revision because of this call, not someone else.
+ *
+ * Write the whole read policy to remove a name; a nested exempt-principals update can only add names.
  */
 export const useFenceClusterMutation = () => {
   const transport = useTransport();
@@ -256,7 +228,6 @@ export const useFenceClusterMutation = () => {
           throw new ConnectError('the settings were saved, but the response had no fence', Code.Internal);
         }
         if (!sameFenceSettings(settings, saved)) {
-          // Worded to match isStaleRevisionError, like the server's own stale-revision failure.
           throw new ConnectError('the fence revision has changed', Code.FailedPrecondition);
         }
         setSavedFence(saved);
@@ -298,36 +269,32 @@ export const useUnfenceClusterMutation = () => {
   });
 };
 
-const STALE_REVISION = /revision has changed/i;
+const STALE_REVISION = /revision has changed/iu;
 
-/**
- * Fence's preconditions all fail with FAILED_PRECONDITION, so the message is the only way to tell them
- * apart. These are hints: the server's own message is always shown with them.
- */
 const PRECONDITION_HINTS: { pattern: RegExp; sentence: string }[] = [
-  { pattern: /shadow link/i, sentence: SHADOW_CLUSTER_CANT_FENCE },
+  { pattern: /shadow link/iu, sentence: SHADOW_CLUSTER_CANT_FENCE },
   {
-    pattern: /not active|feature/i,
+    pattern: /not active|feature/iu,
     sentence: 'Cluster fencing turns on once every broker runs Redpanda v26.3.1 or later.',
   },
   {
-    pattern: /migration/i,
+    pattern: /migration/iu,
     sentence: 'A data migration on this cluster hasn’t finished. Fence it once the migration is done.',
   },
-  { pattern: /recovery/i, sentence: 'A cluster recovery is running. Fence the cluster once it finishes.' },
+  { pattern: /recovery/iu, sentence: 'A cluster recovery is running. Fence the cluster once it finishes.' },
   {
-    pattern: /storage (?:mode|configuration)/i,
+    pattern: /storage (?:mode|configuration)/iu,
     sentence:
       'A topic the fence covers uses a storage mode this Redpanda doesn’t recognize, which can happen while brokers run different versions.',
   },
   {
-    pattern: /membership changed/i,
+    pattern: /membership changed/iu,
     sentence: 'A broker joined or left the cluster while the fence was changing. Check its state, then try again.',
   },
 ];
 
 /** A stale `expected_revision`: someone else changed the fence since this page read it. */
-export const isStaleRevisionError = (error: unknown): boolean =>
+export const isStaleRevisionError = (error: unknown) =>
   error instanceof ConnectError && error.code === Code.FailedPrecondition && STALE_REVISION.test(error.rawMessage);
 
 const withServerMessage = (sentence: string, error: ConnectError) =>
@@ -343,8 +310,12 @@ const CHANGE_ERROR_SENTENCE: Partial<Record<Code, string>> = {
   [Code.Internal]: 'Redpanda couldn’t record the change. Check the fence’s state before you try again.',
 };
 
-/** Turns a cluster fence API failure into a sentence that says what to do next. */
-export const describeClusterFenceError = (error: unknown): string => {
+/**
+ * Turns a cluster fence API failure into a sentence that says what to do next.
+ *
+ * Fence preconditions share a status code. Interpret their text only as hints and retain the server's original message.
+ */
+export const describeClusterFenceError = (error: unknown) => {
   if (!(error instanceof ConnectError)) {
     return error instanceof Error ? error.message : String(error);
   }
@@ -362,7 +333,7 @@ export const describeClusterFenceError = (error: unknown): string => {
 };
 
 /** A sentence for a status read that failed, which unlike a change has nothing that may still apply. */
-export const describeClusterFenceReadError = (error: unknown): string => {
+export const describeClusterFenceReadError = (error: unknown) => {
   if (!(error instanceof ConnectError)) {
     return describeClusterFenceError(error);
   }

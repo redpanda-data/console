@@ -32,7 +32,6 @@ type FederatedProvidersProps = {
 export function FederatedProviders({ children, transport, queryClient, featureFlags }: FederatedProvidersProps) {
   return (
     <CustomFeatureFlagProvider initialFlags={featureFlags}>
-      {/* showToast viewport; mirrors app.tsx */}
       <BaseUiToaster testId="console-toasts" />
       <TransportProvider transport={transport}>
         <QueryClientProvider client={queryClient}>

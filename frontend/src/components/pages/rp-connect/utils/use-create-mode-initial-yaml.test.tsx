@@ -9,236 +9,125 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
+import { CONNECT_WIZARD_CONNECTOR_KEY, useRpcnWizardStore } from 'state/rpcn-wizard-store';
+import { parse as parseYaml } from 'yaml';
 
+import { mockGenerateInput } from './__fixtures__/component-schemas';
 import { useCreateModeInitialYaml } from './use-create-mode-initial-yaml';
-import type { ConnectComponentSpec } from '../types/schema';
 
-const mockStoreSetYamlContent = rs.fn();
-let mockPersistedYaml: string | undefined;
+const components = [mockGenerateInput];
+const persistedYaml = 'input: {http_client: {url: "http://example.com"}}';
+const generatorChoice = { connectionName: 'generate', connectionType: 'input' } as const;
 
-rs.mock('state/rpcn-wizard-store', () => ({
-  useRpcnWizardStore: Object.assign(
-    rs.fn((selector: (s: { yamlContent: string | undefined }) => unknown) =>
-      selector({ yamlContent: mockPersistedYaml })
-    ),
-    {
-      getState: () => ({ setYamlContent: mockStoreSetYamlContent, yamlContent: mockPersistedYaml }),
-    }
-  ),
-  getWizardConnectionData: rs.fn(() => ({
-    input: { connectionName: 'generate', connectionType: 'input' },
-    output: undefined,
-  })),
-}));
+type EditorOptions = Omit<Parameters<typeof useCreateModeInitialYaml>[0], 'onResolved'>;
 
-const GENERATED_YAML = 'input:\n  generate:\n    mapping: "root = {}"';
-const mockGenerateYaml = rs.fn(() => GENERATED_YAML);
-rs.mock('./yaml', () => ({
-  generateYamlFromWizardData: (...args: unknown[]) => mockGenerateYaml(...args),
-}));
+const defaults: EditorOptions = {
+  enabled: true,
+  isServerlessMode: true,
+  components,
+  isPipelineDiagramsEnabled: false,
+};
 
-const fakeComponents = [{ name: 'generate', type: 'input' }] as ConnectComponentSpec[];
+function mountInitialYaml(overrides: Partial<EditorOptions> = {}) {
+  const resolved: string[] = [];
+  const render = renderHook(
+    (options: Partial<EditorOptions>) =>
+      useCreateModeInitialYaml({ ...defaults, ...overrides, ...options, onResolved: (yaml) => resolved.push(yaml) }),
+    { initialProps: {} }
+  );
+  return { ...render, resolved };
+}
 
-describe('useCreateModeInitialYaml', () => {
-  let onResolved: ReturnType<typeof rs.fn>;
+function setGeneratorChoice() {
+  useRpcnWizardStore.getState().setWizardData({ input: generatorChoice });
+}
 
+function expectGenerateConfig(yaml: string) {
+  expect(parseYaml(yaml)).toMatchObject({ input: { generate: expect.any(Object) } });
+}
+
+describe('create-mode YAML initialization', () => {
   beforeEach(() => {
-    rs.useFakeTimers();
-    mockPersistedYaml = undefined;
-    onResolved = rs.fn();
-    mockGenerateYaml.mockReturnValue(GENERATED_YAML);
+    useRpcnWizardStore.getState().reset();
   });
 
   afterEach(() => {
+    useRpcnWizardStore.getState().reset();
     rs.useRealTimers();
-    rs.restoreAllMocks();
   });
 
-  it('does not call onResolved and isInitializing=false when disabled', () => {
-    const { result } = renderHook(() =>
-      useCreateModeInitialYaml({
-        enabled: false,
-        isServerlessMode: false,
-        components: fakeComponents,
-        isPipelineDiagramsEnabled: false,
-        onResolved,
-      })
-    );
-    expect(onResolved).not.toHaveBeenCalled();
+  test('does not initialize a disabled editor even with data ready', () => {
+    setGeneratorChoice();
+    const { result, resolved } = mountInitialYaml({ enabled: false });
+
     expect(result.current.isInitializing).toBe(false);
+    expect(resolved).toEqual([]);
+    expect(useRpcnWizardStore.getState().yamlContent).toBeUndefined();
   });
 
-  describe('serverless path', () => {
-    it('returns isInitializing=true while waiting for components', () => {
-      const { result } = renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: true,
-          components: [],
-          isPipelineDiagramsEnabled: false,
-          onResolved,
-        })
-      );
-      expect(onResolved).not.toHaveBeenCalled();
-      expect(result.current.isInitializing).toBe(true);
-    });
+  test('waits for the catalog, consumes a late wizard choice once, and keeps it for legacy reopen', () => {
+    const { rerender, result, resolved } = mountInitialYaml({ components: [] });
+    expect(result.current.isInitializing).toBe(true);
+    expect(resolved).toEqual([]);
 
-    it('calls onResolved with generated YAML once components are loaded', () => {
-      const { result } = renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: true,
-          components: fakeComponents,
-          isPipelineDiagramsEnabled: false,
-          onResolved,
-        })
-      );
-      expect(onResolved).toHaveBeenCalledWith(GENERATED_YAML);
-      expect(result.current.isInitializing).toBe(false);
-      expect(mockGenerateYaml).toHaveBeenCalledOnce();
-    });
+    sessionStorage.setItem(CONNECT_WIZARD_CONNECTOR_KEY, JSON.stringify({ input: generatorChoice }));
+    rerender({ components });
 
-    it('persists to onboarding YAML store when diagrams disabled', () => {
-      renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: true,
-          components: fakeComponents,
-          isPipelineDiagramsEnabled: false,
-          onResolved,
-        })
-      );
-      expect(mockStoreSetYamlContent).toHaveBeenCalledWith({ yamlContent: GENERATED_YAML });
-    });
-
-    it('does not persist to onboarding YAML store when diagrams enabled', () => {
-      renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: true,
-          components: fakeComponents,
-          isPipelineDiagramsEnabled: true,
-          onResolved,
-        })
-      );
-      expect(mockStoreSetYamlContent).not.toHaveBeenCalled();
-    });
-
-    it('times out after timeoutMs and sets isInitializing=false', () => {
-      const { result } = renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: true,
-          components: [],
-          isPipelineDiagramsEnabled: false,
-          onResolved,
-          timeoutMs: 1000,
-        })
-      );
-      expect(result.current.isInitializing).toBe(true);
-
-      act(() => {
-        rs.advanceTimersByTime(1000);
-      });
-
-      expect(result.current.isInitializing).toBe(false);
-      expect(onResolved).not.toHaveBeenCalled();
-    });
-
-    it('runs generation only once even if rerendered', () => {
-      const { rerender } = renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: true,
-          components: fakeComponents,
-          isPipelineDiagramsEnabled: false,
-          onResolved,
-        })
-      );
-      expect(mockGenerateYaml).toHaveBeenCalledOnce();
-
-      rerender();
-      rerender();
-
-      expect(mockGenerateYaml).toHaveBeenCalledOnce();
-      expect(onResolved).toHaveBeenCalledOnce();
-    });
-
-    it('does not call onResolved when wizard has no data', () => {
-      mockGenerateYaml.mockReturnValue('');
-      const { result } = renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: true,
-          components: fakeComponents,
-          isPipelineDiagramsEnabled: false,
-          onResolved,
-        })
-      );
-      expect(onResolved).not.toHaveBeenCalled();
-      expect(result.current.isInitializing).toBe(false);
-    });
+    expectGenerateConfig(resolved[0]);
+    expect(result.current.isInitializing).toBe(false);
+    expect(useRpcnWizardStore.getState().yamlContent).toBe(resolved[0]);
+    rerender({ components: [...components] });
+    expect(resolved).toHaveLength(1);
   });
 
-  describe('non-serverless path (persisted YAML)', () => {
-    it('calls onResolved with persisted YAML', () => {
-      mockPersistedYaml = 'input:\n  http_client:\n    url: http://example.com';
-      const { result } = renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: false,
-          components: fakeComponents,
-          isPipelineDiagramsEnabled: false,
-          onResolved,
-        })
-      );
-      expect(onResolved).toHaveBeenCalledWith('input:\n  http_client:\n    url: http://example.com');
-      expect(result.current.isInitializing).toBe(false);
-    });
+  test('initializes the diagram without overwriting the legacy wizard YAML', () => {
+    setGeneratorChoice();
+    useRpcnWizardStore.getState().setYamlContent({ yamlContent: persistedYaml });
 
-    it('does not restore when diagrams are enabled', () => {
-      mockPersistedYaml = 'input:\n  http_client:\n    url: http://example.com';
-      renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: false,
-          components: fakeComponents,
-          isPipelineDiagramsEnabled: true,
-          onResolved,
-        })
-      );
-      expect(onResolved).not.toHaveBeenCalled();
-    });
+    const { result, resolved } = mountInitialYaml({ isPipelineDiagramsEnabled: true });
 
-    it('does not call onResolved when no persisted YAML exists', () => {
-      mockPersistedYaml = undefined;
-      const { result } = renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: false,
-          components: fakeComponents,
-          isPipelineDiagramsEnabled: false,
-          onResolved,
-        })
-      );
-      expect(onResolved).not.toHaveBeenCalled();
-      expect(result.current.isInitializing).toBe(false);
-    });
+    expectGenerateConfig(resolved[0]);
+    expect(result.current.isInitializing).toBe(false);
+    expect(useRpcnWizardStore.getState().yamlContent).toBe(persistedYaml);
+  });
 
-    it('does not call generateYamlFromWizardData', () => {
-      mockPersistedYaml = 'input:\n  http_client:\n    url: http://example.com';
-      renderHook(() =>
-        useCreateModeInitialYaml({
-          enabled: true,
-          isServerlessMode: false,
-          components: fakeComponents,
-          isPipelineDiagramsEnabled: false,
-          onResolved,
-        })
-      );
-      expect(mockGenerateYaml).not.toHaveBeenCalled();
+  test('a catalog arriving after the initialization deadline does not overwrite editor work', () => {
+    rs.useFakeTimers();
+    setGeneratorChoice();
+    const { rerender, result, resolved } = mountInitialYaml({ components: [], timeoutMs: 1000 });
+    expect(result.current.isInitializing).toBe(true);
+
+    act(() => {
+      rs.advanceTimersByTime(1000);
     });
+    rerender({ components });
+
+    expect(result.current.isInitializing).toBe(false);
+    expect(resolved).toEqual([]);
+    expect(useRpcnWizardStore.getState().yamlContent).toBeUndefined();
+  });
+
+  test('leaves the editor empty and usable when there is no wizard choice', () => {
+    const { result, resolved } = mountInitialYaml();
+
+    expect(result.current.isInitializing).toBe(false);
+    expect(resolved).toEqual([]);
+  });
+
+  test.each([
+    { mode: 'persisted YAML', diagrams: false, saved: persistedYaml, expected: [persistedYaml] },
+    { mode: 'diagrams enabled', diagrams: true, saved: persistedYaml, expected: [] },
+    { mode: 'no saved YAML', diagrams: false, saved: undefined, expected: [] },
+  ])('self-managed editor initialization: $mode', ({ diagrams, saved, expected }) => {
+    setGeneratorChoice();
+    useRpcnWizardStore.getState().setYamlContent({ yamlContent: saved });
+
+    const { result, resolved } = mountInitialYaml({ isServerlessMode: false, isPipelineDiagramsEnabled: diagrams });
+
+    expect(result.current.isInitializing).toBe(false);
+    expect(resolved).toEqual(expected);
+    expect(useRpcnWizardStore.getState().yamlContent).toBe(saved);
   });
 });

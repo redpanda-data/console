@@ -20,7 +20,7 @@ type ConnectionErrorUIProps = {
   onRetry: () => void;
 };
 
-function getErrorMessage(error: ConnectError): { title: string; description: string } {
+function getErrorMessage(error: ConnectError) {
   switch (error.code) {
     case Code.Unavailable:
       return {

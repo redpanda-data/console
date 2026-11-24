@@ -73,19 +73,15 @@ import {
 import { PIPELINE_END_RUNS } from './pipeline-end-chip';
 import { TabKafkaConnect } from '../../connect/overview';
 
-// Module scope: the query hook memoizes on request identity. Asked for unconditionally because the
-// flag gates making drafts, not seeing the ones already made — turning it back off must not strand a
-// draft that still counts against the cluster's quota with no row to delete it from.
+// WARNING: Always list saved drafts; gating discovery would strand drafts that still count against the cluster quota.
 const LIST_WITH_DRAFTS = { filter: { includeDrafts: true } } as const;
 
-// One table for every tab, so the tabs need an explicit `aria-controls` target — otherwise a screen
-// reader announces "tab, 1 of 4" with nowhere to move into.
+// WARNING: Every status tab must point to the shared panel so screen readers can find its table.
 const STATUS_PANEL_ID = 'pipeline-status-panel';
 
 const statusTabId = (tabId: PipelineStateTabId) => `pipeline-status-tab-${tabId}`;
 
-// The status lines below the table unmount as they animate, and a live region only announces changes
-// made while already mounted — so these stay mounted for the reader.
+// WARNING: Keep the live region mounted; remounting it with the status line prevents announcements from screen readers.
 const ListStatusAnnouncements = ({
   isLoadingMorePages,
   listErrorMessage,
@@ -103,8 +99,7 @@ const ListStatusAnnouncements = ({
   </>
 );
 
-// Pages still unfetched means partial data; otherwise a background refresh failed and it's stale.
-const listErrorMessageFor = (error: { message: string } | null, hasNextPage: boolean | undefined): string | null => {
+const listErrorMessageFor = (error: { message: string } | null, hasNextPage: boolean | undefined) => {
   if (!error) {
     return null;
   }
@@ -145,8 +140,6 @@ const usePipelineListData = () => {
     draftCount,
     isLoading,
     error,
-    // isLoading stays true until every page is drained, so render page one and stream the rest in behind
-    // it. A mid-drain error halts the drain for good, so it replaces the spinner.
     isInitialLoading: isLoading && pipelines.length === 0 && !error,
     isLoadingMorePages: isLoading && pipelines.length > 0 && !error,
     listErrorMessage: listErrorMessageFor(error, hasNextPage),
@@ -178,9 +171,6 @@ const reportSearchUpdateFailure = (error: unknown) => {
   showToast({ status: 'error', title: 'Failed to update the pipelines view', description: String(error) });
 };
 
-// The list's view lives in the URL. Every change replaces the entry rather than pushing one, and any
-// change but a page move goes back to page 1. It reads the settled location: while a navigation away is
-// pending, `location` is already the next page's.
 const usePipelineListSearch = () => {
   const navigate = useNavigate();
   const router = useRouter();
@@ -191,7 +181,6 @@ const usePipelineListSearch = () => {
   const search = useMemo(() => readPipelineListSearch(rawSearch), [rawSearch]);
   const update = useCallback(
     (patch: SearchPatch, { keepPage = false }: { keepPage?: boolean } = {}) => {
-      // `to: '.'` resolves against a pending location, so a write while leaving would land on the next page.
       const { location, resolvedLocation } = router.state;
       if (resolvedLocation && location.pathname !== resolvedLocation.pathname) {
         return;
@@ -199,7 +188,6 @@ const usePipelineListSearch = () => {
       const full = keepPage ? patch : { ...patch, page: undefined };
       const next = nextPipelineListSearch(rawSearch, full);
       if (JSON.stringify(next) !== JSON.stringify(nextPipelineListSearch(rawSearch, {}))) {
-        // Built on the latest search, so two writes before the first settles both land.
         navigate({
           to: '.',
           search: (prev: Record<string, unknown>) => nextPipelineListSearch(prev, full),
@@ -228,14 +216,9 @@ const usePipelinesTable = (pipelines: PipelineRow[], isLoading: boolean) => {
   const table = useDataTable({
     data: pipelines,
     columns,
-    // Id rather than row index: a row keeps its identity while pages stream in and the sort re-runs,
-    // so React reuses its DOM.
     getRowId: (row) => row.id,
-    // No column-visibility UI here; also drops Hide from the column header menus.
     enableHiding: false,
-    // Also drops the pagination footer's "X of N row(s) selected." text.
     enableRowSelection: false,
-    // The URL holds the view; a sort or filter change goes back to page 1 as it's written.
     state: { sorting, columnFilters, pagination },
     onSortingChange: (updater) => update(sortSearchFromSorting(functionalUpdate(updater, sorting))),
     onColumnFiltersChange: (updater) => update(facetSearchFromFilters(functionalUpdate(updater, columnFilters))),
@@ -243,12 +226,9 @@ const usePipelinesTable = (pipelines: PipelineRow[], isLoading: boolean) => {
       const next = functionalUpdate(updater, pagination);
       update({ page: next.pageIndex + 1, size: next.pageSize }, { keepPage: true });
     },
-    // Pages stream in behind the first; the page only resets when the view changes.
     autoResetPageIndex: false,
   });
 
-  // A page past the end (a stale link, or rows that went away) moves to the last one, once every
-  // page has loaded: while they stream in, a linked page may not exist yet.
   const pageCount = table.getPageCount();
   useLayoutEffect(() => {
     if (!isLoading && pagination.pageIndex > 0 && pagination.pageIndex >= pageCount) {
@@ -268,7 +248,6 @@ const usePipelineStateTabs = (
 ) => {
   const activeTab: PipelineStateTabId = search.tab ?? 'all';
 
-  // Each tab counts what selecting it would yield: the faceted model applies every filter but its own.
   const stateFacetedRows = table.getColumn('state')?.getFacetedRowModel().flatRows;
   const tabCounts = useMemo(
     () => countPipelinesPerTab((stateFacetedRows ?? []).map((r) => r.original.state)),
@@ -289,7 +268,6 @@ const usePipelineStateTabs = (
     [draftCount]
   );
 
-  // Deleting or starting the last draft hides its tab; not while the drain is still filling it.
   useEffect(() => {
     if (!isLoading && activeTab === 'draft' && draftCount === 0) {
       handleTabChange('all');
@@ -302,11 +280,9 @@ const usePipelineStateTabs = (
 type PipelineStateTabsState = ReturnType<typeof usePipelineStateTabs>;
 
 const usePipelineNameSearch = (table: PipelinesTable, { search, update }: PipelineListSearchState) => {
-  // The search box types ahead of the URL, which takes it after a pause.
   const [searchText, setSearchText] = useState(search.q ?? '');
   const writtenQuery = useRef(search.q ?? '');
   useEffect(() => {
-    // Follows the URL when it changes some other way (back, a link, Clear filters).
     const urlQuery = search.q ?? '';
     if (urlQuery !== writtenQuery.current) {
       writtenQuery.current = urlQuery;
@@ -333,8 +309,6 @@ const usePipelineNameSearch = (table: PipelinesTable, { search, update }: Pipeli
   return {
     search: searchText,
     setSearch: setSearchText,
-    // Status tabs are views, not filters. Read the search box, not the URL: that lands 200ms later, and
-    // Clear filters must be clickable as soon as the user has typed.
     hasActiveFilters:
       searchText.trim() !== '' || table.state.columnFilters.some((f) => f.id !== 'state' && f.id !== 'name'),
     clearFilters,
@@ -426,11 +400,7 @@ const PipelineListToolbar = ({
   );
 };
 
-// ⌘/middle-click mean "open elsewhere" — leave them to the name cell's link. The registry guard, same one
-// DataTable's rows use, drops clicks on a control in the row, and portaled children (open menus, the
-// delete-confirm backdrop) that bubble outside the <tr>. A mouseup that ends a text selection (copying the
-// id) isn't navigation intent.
-const isRowNavigationClick = (event: MouseEvent<HTMLTableRowElement>): boolean =>
+const isRowNavigationClick = (event: MouseEvent<HTMLTableRowElement>) =>
   !isModifiedClick(event) &&
   isRowActivationClick(event.target, event.currentTarget) &&
   !window.getSelection()?.toString();
@@ -482,8 +452,6 @@ const PipelineListTable = ({
           </TableRow>
         ) : (
           rows.map((row) => (
-            // Pointer shortcut only: the name cell holds the same link, so a row tab stop would
-            // duplicate it on every row.
             <TableRow
               className="cursor-pointer"
               key={row.id}
@@ -576,6 +544,9 @@ const RedpandaConnectContent = () => (
   </div>
 );
 
+/**
+ * Keeps the pipeline list mounted when switching tabs so visiting Kafka Connect does not reset the list.
+ */
 export const PipelineListPage = () => {
   const { data: kafkaConnectors, isLoading: isLoadingKafkaConnect } = useKafkaConnectConnectorsQuery();
 
@@ -613,8 +584,6 @@ export const PipelineListPage = () => {
         </TabsList>
         <TabsContents>
           <div className="p-6">
-            {/* keepMounted: a trip to the Kafka Connect tab and back keeps the list as it was, rather than
-                rebuilding it. */}
             <TabsContent keepMounted value="redpanda-connect">
               <RedpandaConnectContent />
             </TabsContent>

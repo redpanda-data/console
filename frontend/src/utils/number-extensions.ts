@@ -24,12 +24,12 @@ declare global {
   }
 }
 
-Number.prototype.lerp = function lerp(this: number, to: number, t: number): number {
+Number.prototype.lerp = function lerp(this: number, to: number, t: number) {
   const d = to - this;
   return this + d * t;
 };
 
-Number.prototype.clamp = function clamp(this: number, min: number | undefined, max: number | undefined): number {
+Number.prototype.clamp = function clamp(this: number, min: number | undefined, max: number | undefined) {
   if (max !== undefined && this > max) {
     return max;
   }
