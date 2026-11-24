@@ -11,8 +11,12 @@
 
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
-import { createRouterTransport } from '@connectrpc/connect';
+import { createRouterTransport, type MethodImpl } from '@connectrpc/connect';
 import userEvent from '@testing-library/user-event';
+import { config, createAuthInjectingFetch } from 'config';
+import { HttpResponse, http } from 'msw';
+import { HttpNetworkFrame } from 'msw/experimental';
+import { setupServer } from 'msw/node';
 import {
   DeletePipelineResponseSchema,
   type ListPipelinesRequest,
@@ -30,23 +34,42 @@ import {
   PipelineSchema,
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { appGlobal } from 'state/app-global';
+import { useApiStore } from 'state/backend-api';
+import type { KafkaConnectors } from 'state/rest-interfaces';
 import { useRpcnEditorAutosaveStore } from 'state/rpcn-editor-autosave';
-import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
+import { cleanup, renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
 import { PipelineListPage } from './list';
 
-const mockIsFeatureFlagEnabled = rs.fn((_flag: string) => false);
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
-  return {
-    ...actual,
-    config: { jwt: 'test-jwt-token' },
-    isEmbedded: rs.fn(() => false),
-    isFeatureFlagEnabled: (...args: unknown[]) => mockIsFeatureFlagEnabled(...(args as [string])),
-  };
+const initialConfig = { featureFlags: config.featureFlags, jwt: config.jwt };
+const originalRestFetch = config.fetch;
+const guardedFetch = globalThis.fetch;
+const { connectConnectors, connectConnectorsError } = useApiStore.getState();
+const connectorsUrl = new URL(`${config.restBasePath}/kafka-connect/connectors`, window.location.href).href;
+const rest = setupServer(
+  http.get(connectorsUrl, () => HttpResponse.json({ clusters: null, isConfigured: false } satisfies KafkaConnectors))
+);
+
+beforeAll(() => {
+  rest.listen({
+    async onUnhandledFrame({ frame }) {
+      if (frame instanceof HttpNetworkFrame) {
+        await guardedFetch(frame.data.request);
+      }
+      throw new Error('Unexpected network frame in the pipeline list');
+    },
+  });
+  config.fetch = createAuthInjectingFetch(globalThis.fetch);
 });
 
-type ListRequest = ListPipelinesRequest;
+afterAll(() => {
+  config.fetch = originalRestFetch;
+  rest.close();
+});
+
+function setDraftsEnabled(enabled: boolean) {
+  config.featureFlags = { ...config.featureFlags, enableRpcnPipelineDrafts: enabled };
+}
 
 const yamlFor = ({ inputs, outputs }: { inputs: string[]; outputs: string[] }) => `
 input:
@@ -103,8 +126,7 @@ const FIXTURES: Fixture[] = [
   },
 ];
 
-// Draft edit times are relative to this instant, which the drafts tests pin as the system time.
-const NOW = Date.UTC(2026, 0, 15, 12);
+const DRAFT_TEST_NOW = Date.UTC(2026, 0, 15, 12);
 
 const DRAFT_FIXTURE: Fixture = {
   id: 'draft777',
@@ -113,16 +135,15 @@ const DRAFT_FIXTURE: Fixture = {
   inputs: ['generate'],
   outputs: [],
   createdBy: 'author@example.com',
-  updateTime: timestampFromDate(new Date(NOW - 5 * 60 * 1000)),
+  updateTime: timestampFromDate(new Date(DRAFT_TEST_NOW - 5 * 60 * 1000)),
 };
 
-// Two pages, so the test exercises the drain the list renders behind.
 const buildTransport = (opts?: {
   pipelines?: Fixture[];
   withDraft?: boolean;
   extraDrafts?: Fixture[];
-  startPipelineMock?: ReturnType<typeof rs.fn>;
-  deletePipelineMock?: ReturnType<typeof rs.fn>;
+  startPipelineHandler?: MethodImpl<typeof startPipeline>;
+  deletePipelineHandler?: MethodImpl<typeof deletePipeline>;
   onRequest?: (req: ListPipelinesRequest) => void;
 }) =>
   createRouterTransport(({ rpc }) => {
@@ -150,11 +171,11 @@ const buildTransport = (opts?: {
         }),
       });
     });
-    rpc(startPipeline, opts?.startPipelineMock ?? rs.fn().mockReturnValue(create(StartPipelineResponseSchema, {})));
-    rpc(deletePipeline, opts?.deletePipelineMock ?? rs.fn().mockReturnValue(create(DeletePipelineResponseSchema, {})));
+    rpc(startPipeline, opts?.startPipelineHandler ?? (() => create(StartPipelineResponseSchema, {})));
+    rpc(deletePipeline, opts?.deletePipelineHandler ?? (() => create(DeletePipelineResponseSchema, {})));
   });
 
-const renderList = (opts?: { withDraft?: boolean }) =>
+const renderList = (opts?: Parameters<typeof buildTransport>[0]) =>
   renderWithFileRoutes(<PipelineListPage />, { transport: buildTransport(opts) });
 
 const tab = (name: string) => screen.getByRole('tab', { name: new RegExp(`^${name}`, 'u') });
@@ -167,14 +188,28 @@ const rowFor = (displayName: string) => {
   return row;
 };
 
+const OPEN_MENU_RE = /open menu/iu;
+const START_DRAFT_CONFIRM_RE = /can't go back to being a draft/u;
+const DRAFTS_TAB_RE = /^Drafts/u;
+const DELETE_DRAFT_RE = /delete draft/iu;
+const DELETE_DRAFT_CONFIRM_RE = /delete draft\?/iu;
 const SEARCH_INPUT_RE = /search pipelines/iu;
 const UNTIL_DONE_RE = /Until done/u;
 const CLEAR_FILTERS_RE = /clear filters/iu;
 
+const openDraftMenu = (user: ReturnType<typeof userEvent.setup>) =>
+  user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: OPEN_MENU_RE }));
+
 const openDraftRowMenuItem = async (user: ReturnType<typeof userEvent.setup>, item: RegExp) => {
-  await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/iu }));
+  await openDraftMenu(user);
   await user.click(await screen.findByRole('menuitem', { name: item }));
 };
+
+async function confirmStartDraft(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('menuitem', { name: 'Start' }));
+  expect(await screen.findByText(START_DRAFT_CONFIRM_RE)).toBeInTheDocument();
+  await user.click(screen.getByTestId('confirm-start-draft'));
+}
 
 const visibleLinkNames = () =>
   screen
@@ -183,6 +218,17 @@ const visibleLinkNames = () =>
     .filter((text) => text !== 'Learn more');
 
 describe('the PipelineListPage', () => {
+  beforeEach(() => {
+    config.jwt = undefined;
+    setDraftsEnabled(false);
+  });
+
+  afterEach(() => {
+    cleanup();
+    Object.assign(config, initialConfig);
+    useApiStore.setState({ connectConnectors, connectConnectorsError });
+  });
+
   describe('rows', () => {
     it('renders every drained page and skips agent pipelines', async () => {
       renderList();
@@ -196,7 +242,7 @@ describe('the PipelineListPage', () => {
     });
 
     it('refetches the list from the header refresh button', async () => {
-      const requests: ListRequest[] = [];
+      const requests: ListPipelinesRequest[] = [];
       renderWithFileRoutes(<PipelineListPage />, {
         transport: buildTransport({ onRequest: (req) => requests.push(req) }),
       });
@@ -459,8 +505,8 @@ describe('the PipelineListPage', () => {
 
   describe('drafts', () => {
     beforeEach(() => {
-      rs.setSystemTime(NOW);
-      mockIsFeatureFlagEnabled.mockImplementation((flag: string) => flag === 'enableRpcnPipelineDrafts');
+      rs.setSystemTime(DRAFT_TEST_NOW);
+      setDraftsEnabled(true);
     });
 
     afterEach(() => {
@@ -472,39 +518,21 @@ describe('the PipelineListPage', () => {
         renderList();
 
         await waitFor(() => expect(screen.getByText('orders-enrichment')).toBeInTheDocument());
-        expect(screen.queryByRole('tab', { name: /^Drafts/u })).not.toBeInTheDocument();
+        expect(screen.queryByRole('tab', { name: DRAFTS_TAB_RE })).not.toBeInTheDocument();
       });
 
-      // The flag gates making drafts, not seeing them. Turning it back off would otherwise strand a
-      // draft that still counts against the cluster's pipeline quota with no row to delete it from —
-      // and the request is inert against a pre-drafts dataplane, which drops the field.
-      it('asks for drafts whether or not the feature is enabled', async () => {
-        const requests: unknown[] = [];
-        renderWithFileRoutes(<PipelineListPage />, {
-          transport: buildTransport({ onRequest: (r) => requests.push(r) }),
-        });
-
-        await waitFor(() => expect(screen.getByText('orders-enrichment')).toBeInTheDocument());
-        expect(requests.every((r) => (r as ListRequest).request?.filter?.includeDrafts === true)).toBe(true);
+      it('requests drafts on every page whether their creation is enabled or not', async () => {
+        const requests: ListPipelinesRequest[] = [];
+        const { unmount } = renderList({ onRequest: (request) => requests.push(request) });
+        await screen.findByText('nightly-export');
+        expect(requests.map((request) => request.request?.filter?.includeDrafts)).toEqual([true, true]);
+        unmount();
 
         requests.length = 0;
-        mockIsFeatureFlagEnabled.mockImplementation(() => false);
-        renderWithFileRoutes(<PipelineListPage />, {
-          transport: buildTransport({ onRequest: (r) => requests.push(r) }),
-        });
-
-        await waitFor(() => expect(requests.length).toBeGreaterThan(0));
-        expect(requests.every((r) => (r as ListRequest).request?.filter?.includeDrafts === true)).toBe(true);
-      });
-
-      // The stranded-draft case the request above exists for: flag off, draft still there, still
-      // deletable from its row.
-      it('shows and can delete a leftover draft with the feature disabled', async () => {
-        mockIsFeatureFlagEnabled.mockImplementation(() => false);
-        renderList({ withDraft: true });
-
-        await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
-        expect(screen.getByRole('tab', { name: /^Drafts/u })).toBeInTheDocument();
+        setDraftsEnabled(false);
+        renderList({ onRequest: (request) => requests.push(request) });
+        await screen.findByText('nightly-export');
+        expect(requests.map((request) => request.request?.filter?.includeDrafts)).toEqual([true, true]);
       });
 
       it('lists a draft alongside deployed pipelines, marked as a draft', async () => {
@@ -546,7 +574,7 @@ describe('the PipelineListPage', () => {
                 state: Pipeline_State.DRAFT,
                 inputs: ['generate'],
                 outputs: [],
-                updateTime: timestampFromDate(new Date(NOW - 3 * 24 * 60 * 60 * 1000)),
+                updateTime: timestampFromDate(new Date(DRAFT_TEST_NOW - 3 * 24 * 60 * 60 * 1000)),
               },
             ],
           }),
@@ -564,7 +592,6 @@ describe('the PipelineListPage', () => {
 
         await waitFor(() => expect(tab('All')).toHaveTextContent('All4'));
         expect(tab('Drafts')).toHaveTextContent('Drafts1');
-        // A draft is never counted as a run state.
         expect(tab('Stopped')).toHaveTextContent('Stopped1');
 
         await user.click(tab('Drafts'));
@@ -582,42 +609,44 @@ describe('the PipelineListPage', () => {
         expect(link).toHaveAttribute('href', expect.stringContaining('/rp-connect/draft777'));
       });
 
-      it('starts a draft from its row', async () => {
+      it('offers edit and start but no stop on a draft, and starts it after confirmation', async () => {
         const user = userEvent.setup();
-        const startPipelineMock = rs.fn().mockReturnValue(create(StartPipelineResponseSchema, {}));
-        renderWithFileRoutes(<PipelineListPage />, {
-          transport: buildTransport({ withDraft: true, startPipelineMock }),
+        const started: (string | undefined)[] = [];
+        renderList({
+          withDraft: true,
+          startPipelineHandler(request) {
+            started.push(request.request?.id);
+            return create(StartPipelineResponseSchema, {});
+          },
         });
+        await screen.findByText('half-built-pipeline');
 
-        await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
+        await openDraftMenu(user);
+        expect(await screen.findByRole('menuitem', { name: 'Continue editing' })).toBeInTheDocument();
+        expect(screen.queryByRole('menuitem', { name: 'Stop' })).not.toBeInTheDocument();
+        await confirmStartDraft(user);
 
-        await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/iu }));
-        await user.click(await screen.findByRole('menuitem', { name: 'Start' }));
-        expect(await screen.findByText(/can't go back to being a draft/u)).toBeInTheDocument();
-        await user.click(screen.getByTestId('confirm-start-draft'));
-
-        await waitFor(() => expect(startPipelineMock).toHaveBeenCalled());
-        expect(startPipelineMock.mock.calls[0][0].request.id).toBe('draft777');
+        await waitFor(() => expect(started).toEqual(['draft777']));
       });
 
-      it('deletes a draft from its row, after a confirmation', async () => {
+      it('lists and lets users delete a leftover draft while draft creation is disabled', async () => {
         const user = userEvent.setup();
-        const deletePipelineMock = rs.fn().mockReturnValue(create(DeletePipelineResponseSchema, {}));
-        renderWithFileRoutes(<PipelineListPage />, {
-          transport: buildTransport({ withDraft: true, deletePipelineMock }),
+        const deleted: (string | undefined)[] = [];
+        setDraftsEnabled(false);
+        renderList({
+          withDraft: true,
+          deletePipelineHandler(request) {
+            deleted.push(request.request?.id);
+            return create(DeletePipelineResponseSchema, {});
+          },
         });
-
-        await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
-
-        await openDraftRowMenuItem(user, /delete draft/iu);
-
-        expect(await screen.findByText(/delete draft\?/iu)).toBeInTheDocument();
-        expect(deletePipelineMock).not.toHaveBeenCalled();
+        expect(await screen.findByRole('tab', { name: DRAFTS_TAB_RE })).toBeInTheDocument();
+        await openDraftRowMenuItem(user, DELETE_DRAFT_RE);
+        expect(await screen.findByText(DELETE_DRAFT_CONFIRM_RE)).toBeInTheDocument();
+        expect(deleted).toHaveLength(0);
 
         await user.click(screen.getByTestId('confirm-delete-draft'));
-
-        await waitFor(() => expect(deletePipelineMock).toHaveBeenCalled());
-        expect(deletePipelineMock.mock.calls[0][0].request.id).toBe('draft777');
+        await waitFor(() => expect(deleted).toEqual(['draft777']));
       });
 
       // The dialog's line about unsaved edits is only true when this browser holds a buffer for the draft.
@@ -635,22 +664,10 @@ describe('the PipelineListPage', () => {
         renderList({ withDraft: true });
 
         await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
-        await openDraftRowMenuItem(user, /delete draft/iu);
+        await openDraftRowMenuItem(user, DELETE_DRAFT_RE);
 
         expect(await screen.findByText(/your unsaved changes go with it/iu)).toBeInTheDocument();
         useRpcnEditorAutosaveStore.getState().clearAll();
-      });
-
-      it('offers no Stop on a draft', async () => {
-        const user = userEvent.setup();
-        renderList({ withDraft: true });
-
-        await waitFor(() => expect(screen.getByText('half-built-pipeline')).toBeInTheDocument());
-
-        await user.click(within(rowFor('half-built-pipeline')).getByRole('button', { name: /open menu/iu }));
-
-        expect(await screen.findByRole('menuitem', { name: 'Continue editing' })).toBeInTheDocument();
-        expect(screen.queryByRole('menuitem', { name: 'Stop' })).not.toBeInTheDocument();
       });
     });
   });
