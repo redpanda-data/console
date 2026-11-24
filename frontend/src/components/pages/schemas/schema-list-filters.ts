@@ -5,7 +5,7 @@ export function subjectsInContext<T extends SchemaRegistrySubject>(
   subjects: T[],
   contextsSupported: boolean,
   selectedContext: string
-): T[] {
+) {
   if (!contextsSupported || selectedContext === ALL_CONTEXT_ID) {
     return subjects;
   }
@@ -16,7 +16,7 @@ export function subjectsInContext<T extends SchemaRegistrySubject>(
   return subjects.filter((s) => s.name.startsWith(prefix));
 }
 
-function subjectsMatchingName<T extends SchemaRegistrySubject>(subjects: T[], searchQuery: string): T[] {
+function subjectsMatchingName<T extends SchemaRegistrySubject>(subjects: T[], searchQuery: string) {
   try {
     const quickSearchRegExp = new RegExp(searchQuery, 'iu');
     return subjects.filter((subject) => Boolean(subject.name.match(quickSearchRegExp)));
@@ -30,7 +30,7 @@ export function subjectsMatchingSearch<T extends SchemaRegistrySubject>(
   subjects: T[],
   searchQuery: string,
   schemaUsages: { subject: string }[] | undefined
-): T[] {
+) {
   if (!searchQuery) {
     return subjects;
   }

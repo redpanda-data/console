@@ -222,7 +222,7 @@ function EditSchemaCompatibility(p: {
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
   );
 
-  const getInitialCompatibility = (): SchemaRegistryCompatibilityModeWithDefault => {
+  const getInitialCompatibility = () => {
     if (contextName) {
       return contextCompatibility ?? SchemaRegistryCompatibilityModes.DEFAULT;
     }

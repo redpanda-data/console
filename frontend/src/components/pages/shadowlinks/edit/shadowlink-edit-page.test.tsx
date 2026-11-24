@@ -92,7 +92,7 @@ rs.mock('@tanstack/react-router', () => {
   };
 });
 
-const createMockShadowLink = (): ShadowLink =>
+const createMockShadowLink = () =>
   create(ShadowLinkSchema, {
     name: 'test-shadow-link',
     uid: 'test-uid-123',
@@ -359,7 +359,7 @@ describe('the ShadowLinkEditPage', () => {
   });
 
   describe('schema registry api mode', () => {
-    const createApiModeShadowLink = (): ShadowLink => {
+    const createApiModeShadowLink = () => {
       const link = createMockShadowLink();
       if (link.configurations) {
         link.configurations.schemaRegistrySyncOptions = create(SchemaRegistrySyncOptionsSchema, {

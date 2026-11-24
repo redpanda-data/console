@@ -804,7 +804,7 @@ const lerpPoint = (a: FlowPoint, b: FlowPoint, f: number): FlowPoint => ({
   y: a.y + (b.y - a.y) * f,
 });
 
-function polylinePointAt(points: { x: number; y: number }[], t = 0.5): { x: number; y: number } {
+function polylinePointAt(points: { x: number; y: number }[], t = 0.5) {
   if (points.length === 0) {
     return { x: 0, y: 0 };
   }

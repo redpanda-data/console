@@ -47,7 +47,7 @@ rs.mock('../../config', () => ({
   },
 }));
 
-function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
+function makeMessage(id: number, keyJson = 'pipeline-1') {
   return {
     partitionID: 0,
     offset: id,

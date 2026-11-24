@@ -9,11 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Controlplane Mappers
- * Convert controlplane proto types (buf packages) to plain TypeScript types
- */
-
 import type { ShadowLink as ControlplaneShadowLink } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -36,12 +31,7 @@ import {
 
 type ControlplaneClientOptions = NonNullable<ControlplaneShadowLink['clientOptions']>;
 
-/**
- * Map TLS settings - controlplane uses flat structure
- */
-function mapControlplaneTlsSettings(
-  tlsSettings: ControlplaneClientOptions['tlsSettings']
-): UnifiedTLSSettings | undefined {
+function mapControlplaneTlsSettings(tlsSettings: ControlplaneClientOptions['tlsSettings']) {
   if (!tlsSettings?.enabled) {
     return;
   }
@@ -56,15 +46,10 @@ function mapControlplaneTlsSettings(
         keyFingerprint: '',
       },
     },
-  };
+  } satisfies UnifiedTLSSettings;
 }
 
-/**
- * Map authentication configuration
- */
-function mapControlplaneAuthentication(
-  authProto: ControlplaneClientOptions['authenticationConfiguration']
-): UnifiedAuthenticationConfiguration | undefined {
+function mapControlplaneAuthentication(authProto: ControlplaneClientOptions['authenticationConfiguration']) {
   if (authProto?.authentication?.case === 'scramConfiguration') {
     const scram = authProto.authentication.value;
     return {
@@ -76,7 +61,7 @@ function mapControlplaneAuthentication(
           scramMechanism: scram.scramMechanism,
         },
       },
-    };
+    } satisfies UnifiedAuthenticationConfiguration;
   }
   const { plainConfig } = extractRawAuthConfigs(authProto);
   if (!plainConfig) {
@@ -87,16 +72,10 @@ function mapControlplaneAuthentication(
       case: 'plainConfiguration',
       value: { username: plainConfig.username ?? '', password: plainConfig.password ?? '' },
     },
-  };
+  } satisfies UnifiedAuthenticationConfiguration;
 }
 
-/**
- * Map controlplane client options to unified type
- * Note: Controlplane TLS uses flat structure (ca, key, cert directly on tlsSettings object)
- */
-function mapControlplaneClientOptions(
-  clientOptions: ControlplaneShadowLink['clientOptions']
-): UnifiedClientOptions | undefined {
+function mapControlplaneClientOptions(clientOptions: ControlplaneShadowLink['clientOptions']) {
   if (!clientOptions) {
     return;
   }
@@ -124,15 +103,10 @@ function mapControlplaneClientOptions(
     effectiveFetchMinBytes: 0,
     effectiveFetchMaxBytes: 0,
     effectiveFetchPartitionMaxBytes: 0,
-  };
+  } satisfies UnifiedClientOptions;
 }
 
-/**
- * Map controlplane topic metadata sync options to unified type
- */
-function mapControlplaneTopicMetadataSyncOptions(
-  options: ControlplaneShadowLink['topicMetadataSyncOptions']
-): UnifiedTopicMetadataSyncOptions | undefined {
+function mapControlplaneTopicMetadataSyncOptions(options: ControlplaneShadowLink['topicMetadataSyncOptions']) {
   if (!options) {
     return;
   }
@@ -145,15 +119,10 @@ function mapControlplaneTopicMetadataSyncOptions(
     })),
     syncedShadowTopicProperties: options.syncedShadowTopicProperties ?? [],
     excludeDefault: options.excludeDefault,
-  };
+  } satisfies UnifiedTopicMetadataSyncOptions;
 }
 
-/**
- * Map controlplane consumer offset sync options to unified type
- */
-function mapControlplaneConsumerOffsetSyncOptions(
-  options: ControlplaneShadowLink['consumerOffsetSyncOptions']
-): UnifiedConsumerOffsetSyncOptions | undefined {
+function mapControlplaneConsumerOffsetSyncOptions(options: ControlplaneShadowLink['consumerOffsetSyncOptions']) {
   if (!options) {
     return;
   }
@@ -164,15 +133,10 @@ function mapControlplaneConsumerOffsetSyncOptions(
       patternType: f.patternType,
       filterType: f.filterType,
     })),
-  };
+  } satisfies UnifiedConsumerOffsetSyncOptions;
 }
 
-/**
- * Map controlplane role sync options to unified type
- */
-function mapControlplaneRoleSyncOptions(
-  options: ControlplaneShadowLink['roleSyncOptions']
-): UnifiedRoleSyncOptions | undefined {
+function mapControlplaneRoleSyncOptions(options: ControlplaneShadowLink['roleSyncOptions']) {
   if (!options) {
     return;
   }
@@ -183,15 +147,10 @@ function mapControlplaneRoleSyncOptions(
       patternType: f.patternType,
       filterType: f.filterType,
     })),
-  };
+  } satisfies UnifiedRoleSyncOptions;
 }
 
-/**
- * Map controlplane security sync options to unified type
- */
-function mapControlplaneSecuritySyncOptions(
-  options: ControlplaneShadowLink['securitySyncOptions']
-): UnifiedSecuritySyncOptions | undefined {
+function mapControlplaneSecuritySyncOptions(options: ControlplaneShadowLink['securitySyncOptions']) {
   if (!options) {
     return;
   }
@@ -214,13 +173,10 @@ function mapControlplaneSecuritySyncOptions(
           }
         : undefined,
     })),
-  };
+  } satisfies UnifiedSecuritySyncOptions;
 }
 
-/**
- * Map controlplane configurations to unified configurations
- */
-function mapControlplaneConfigurations(sl: ControlplaneShadowLink): UnifiedShadowLinkConfigurations | undefined {
+function mapControlplaneConfigurations(sl: ControlplaneShadowLink) {
   if (!sl.clientOptions) {
     return;
   }
@@ -232,16 +188,18 @@ function mapControlplaneConfigurations(sl: ControlplaneShadowLink): UnifiedShado
     roleSyncOptions: mapControlplaneRoleSyncOptions(sl.roleSyncOptions),
     securitySyncOptions: mapControlplaneSecuritySyncOptions(sl.securitySyncOptions),
     schemaRegistrySyncOptions: mapSchemaRegistrySyncOptions(sl.schemaRegistrySyncOptions),
-  };
+  } satisfies UnifiedShadowLinkConfigurations;
 }
 
 /**
  * Transform controlplane API response to unified model.
  * Used as fallback when dataplane query fails in embedded mode.
- * Note: tasksStatus and syncedShadowTopicProperties are not available from controlplane.
+ * Controlplane sends flat CA/key/cert fields and may send auth directly in JSON
+ * instead of a deserialized protobuf oneof. Live task status and synced topic
+ * properties are only available from the dataplane.
  */
-export function fromControlplaneShadowLink(sl: ControlplaneShadowLink): UnifiedShadowLink {
-  return {
+export function fromControlplaneShadowLink(sl: ControlplaneShadowLink) {
+  const link: UnifiedShadowLink = {
     name: sl.name,
     id: sl.id,
     state: mapControlplaneStateToUnified(sl.state),
@@ -252,25 +210,15 @@ export function fromControlplaneShadowLink(sl: ControlplaneShadowLink): UnifiedS
     tasksStatus: [],
     syncedShadowTopicProperties: [],
   };
+  return link;
 }
 
-/**
- * Extract authentication settings from controlplane shadow link client options
- * Controlplane uses the same core AuthenticationConfiguration type (oneof pattern)
- *
- * Note: The JSON wire format may have scramConfiguration directly under authenticationConfiguration,
- * while the TypeScript types expect authentication.case === 'scramConfiguration'.
- * We handle both formats for robustness.
- */
 type RawScramConfig = { username?: string; password?: string; scramMechanism?: ScramMechanism };
 type RawPlainConfig = { username?: string; password?: string };
 
 type ControlplaneAuthConfig = NonNullable<ControlplaneClientOptions['authenticationConfiguration']>;
 
-// Fallback: config sits directly on authConfig (JSON wire format) when response isn't fully deserialized.
-const extractWireAuthConfigs = (
-  authConfig: ControlplaneAuthConfig
-): { scramConfig?: RawScramConfig; plainConfig?: RawPlainConfig } => {
+const extractWireAuthConfigs = (authConfig: ControlplaneAuthConfig) => {
   const raw = authConfig as unknown as {
     scramConfiguration?: RawScramConfig;
     plainConfiguration?: RawPlainConfig;
@@ -286,7 +234,7 @@ const extractWireAuthConfigs = (
 
 const extractRawAuthConfigs = (
   authConfig: NonNullable<ControlplaneShadowLink['clientOptions']>['authenticationConfiguration'] | undefined
-): { scramConfig?: RawScramConfig; plainConfig?: RawPlainConfig } => {
+) => {
   if (!authConfig) {
     return {};
   }
@@ -300,9 +248,7 @@ const extractRawAuthConfigs = (
   return extractWireAuthConfigs(authConfig);
 };
 
-const extractControlplaneAuthSettings = (
-  clientOptions: ControlplaneShadowLink['clientOptions']
-): Pick<FormValues, 'authMethod' | 'scramCredentials' | 'plainCredentials'> => {
+const extractControlplaneAuthSettings = (clientOptions: ControlplaneShadowLink['clientOptions']) => {
   const { scramConfig, plainConfig } = extractRawAuthConfigs(clientOptions?.authenticationConfiguration);
 
   let authMethod: FormValues['authMethod'] = AUTH_METHOD.NONE;
@@ -327,21 +273,15 @@ const extractControlplaneAuthSettings = (
           password: plainConfig.password || '',
         }
       : undefined,
-  };
+  } satisfies Pick<FormValues, 'authMethod' | 'scramCredentials' | 'plainCredentials'>;
 };
 
-/**
- * Check if name filters represent "all" mode (single filter with name='*')
- */
 const isAllNameFilter = (filters: { name: string; patternType: PatternType; filterType: FilterType }[]) =>
   filters.length === 1 &&
   filters[0].name === '*' &&
   filters[0].patternType === PatternType.LITERAL &&
   filters[0].filterType === FilterType.INCLUDE;
 
-/**
- * Check if ACL filters represent "all" mode (single filter matching any ACL)
- */
 const isAllACLFilter = (filters: ControlplaneShadowLink['securitySyncOptions']) => {
   const aclFilters = filters?.aclFilters ?? [];
   if (aclFilters.length !== 1) {
@@ -363,12 +303,7 @@ const isAllACLFilter = (filters: ControlplaneShadowLink['securitySyncOptions']) 
   );
 };
 
-/**
- * Build connection form values from controlplane shadow link
- */
-const buildControlplaneConnectionValues = (
-  shadowLink: ControlplaneShadowLink
-): Pick<FormValues, 'bootstrapServers' | 'useTls' | 'mtlsMode' | 'mtls' | 'advanceClientOptions'> => {
+const buildControlplaneConnectionValues = (shadowLink: ControlplaneShadowLink) => {
   const clientOptions = shadowLink.clientOptions;
   const tlsSettings = clientOptions?.tlsSettings;
 
@@ -392,15 +327,10 @@ const buildControlplaneConnectionValues = (
       fetchMaxBytes: clientOptions?.fetchMaxBytes ?? 20_971_520,
       fetchPartitionMaxBytes: clientOptions?.fetchPartitionMaxBytes ?? 1_048_576,
     },
-  };
+  } satisfies Pick<FormValues, 'bootstrapServers' | 'useTls' | 'mtlsMode' | 'mtls' | 'advanceClientOptions'>;
 };
 
-/**
- * Build topics form values from controlplane shadow link
- */
-const buildControlplaneTopicsValues = (
-  shadowLink: ControlplaneShadowLink
-): Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties' | 'excludeDefault'> => {
+const buildControlplaneTopicsValues = (shadowLink: ControlplaneShadowLink) => {
   const topicMetadataSyncOptions = shadowLink.topicMetadataSyncOptions;
   const filters = topicMetadataSyncOptions?.autoCreateShadowTopicFilters ?? [];
 
@@ -417,15 +347,13 @@ const buildControlplaneTopicsValues = (
         })),
     topicProperties: topicMetadataSyncOptions?.syncedShadowTopicProperties ?? [],
     excludeDefault: topicMetadataSyncOptions?.excludeDefault ?? false,
-  };
+  } satisfies Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties' | 'excludeDefault'>;
 };
 
 /**
  * Build consumer groups form values from controlplane shadow link
  */
-const buildControlplaneConsumerGroupsValues = (
-  shadowLink: ControlplaneShadowLink
-): Pick<FormValues, 'enableConsumerOffsetSync' | 'consumersMode' | 'consumers'> => {
+const buildControlplaneConsumerGroupsValues = (shadowLink: ControlplaneShadowLink) => {
   const consumerOffsetSyncOptions = shadowLink.consumerOffsetSyncOptions;
   const groupFilters = consumerOffsetSyncOptions?.groupFilters ?? [];
 
@@ -441,7 +369,7 @@ const buildControlplaneConsumerGroupsValues = (
           patternType: filter.patternType,
           filterType: filter.filterType,
         })),
-  };
+  } satisfies Pick<FormValues, 'enableConsumerOffsetSync' | 'consumersMode' | 'consumers'>;
 };
 
 /**
@@ -450,7 +378,7 @@ const buildControlplaneConsumerGroupsValues = (
  * filters (role sync disabled), matching the dataplane hydration so an
  * untouched edit form never emits a role_sync_options mask.
  */
-const buildControlplaneRolesValues = (shadowLink: ControlplaneShadowLink): Pick<FormValues, 'rolesMode' | 'roles'> => {
+const buildControlplaneRolesValues = (shadowLink: ControlplaneShadowLink) => {
   const roleNameFilters = shadowLink.roleSyncOptions?.roleNameFilters ?? [];
 
   const isAllMode = isAllNameFilter(roleNameFilters);
@@ -464,15 +392,10 @@ const buildControlplaneRolesValues = (shadowLink: ControlplaneShadowLink): Pick<
           patternType: filter.patternType,
           filterType: filter.filterType,
         })),
-  };
+  } satisfies Pick<FormValues, 'rolesMode' | 'roles'>;
 };
 
-/**
- * Build ACLs form values from controlplane shadow link
- */
-const buildControlplaneACLsValues = (
-  shadowLink: ControlplaneShadowLink
-): Pick<FormValues, 'aclsMode' | 'aclFilters'> => {
+const buildControlplaneACLsValues = (shadowLink: ControlplaneShadowLink) => {
   const securitySyncOptions = shadowLink.securitySyncOptions;
   const aclFilters = securitySyncOptions?.aclFilters ?? [];
 
@@ -491,22 +414,17 @@ const buildControlplaneACLsValues = (
           permissionType: filter.accessFilter?.permissionType,
           host: filter.accessFilter?.host,
         })),
-  };
+  } satisfies Pick<FormValues, 'aclsMode' | 'aclFilters'>;
 };
 
-/**
- * Build schema registry form values from controlplane shadow link
- */
-const buildControlplaneSchemaRegistryValues = (
-  shadowLink: ControlplaneShadowLink
-): Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'> =>
+const buildControlplaneSchemaRegistryValues = (shadowLink: ControlplaneShadowLink) =>
   mapSchemaRegistrySyncOptionsToFormValues(shadowLink.schemaRegistrySyncOptions);
 
 /**
  * Build form values from controlplane shadow link data
  * Maps the controlplane structure to form fields without type casts
  */
-export const buildDefaultFormValuesFromControlplane = (shadowLink: ControlplaneShadowLink): FormValues => {
+export const buildDefaultFormValuesFromControlplane = (shadowLink: ControlplaneShadowLink) => {
   const connectionValues = buildControlplaneConnectionValues(shadowLink);
   const authSettings = extractControlplaneAuthSettings(shadowLink.clientOptions);
   const topicsValues = buildControlplaneTopicsValues(shadowLink);
@@ -515,7 +433,7 @@ export const buildDefaultFormValuesFromControlplane = (shadowLink: ControlplaneS
   const aclsValues = buildControlplaneACLsValues(shadowLink);
   const schemaRegistryValues = buildControlplaneSchemaRegistryValues(shadowLink);
 
-  return {
+  const values: FormValues = {
     name: shadowLink.name ?? '',
     ...rolesValues,
     ...connectionValues,
@@ -525,4 +443,5 @@ export const buildDefaultFormValuesFromControlplane = (shadowLink: ControlplaneS
     ...aclsValues,
     ...schemaRegistryValues,
   };
+  return values;
 };

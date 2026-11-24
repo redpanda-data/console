@@ -67,7 +67,7 @@ const readinessFor = (
     topicsFailed = false,
     resolving = false,
   }: { identity?: LinkIdentity; topicsFailed?: boolean; resolving?: boolean } = {}
-): FailoverReadiness => {
+) => {
   const fence = getSourceFenceStep({ source, link: identity, resolving });
   if (!fence) {
     throw new Error('No guided failover for this source');

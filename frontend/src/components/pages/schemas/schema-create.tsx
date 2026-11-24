@@ -89,7 +89,7 @@ function createInitialSchemaState(): SchemaEditorStateData {
 }
 
 export class SchemaCreatePage extends PageComponent<{ contextName?: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     p.title = 'Create schema';
     p.addBreadcrumb('Schema Registry', '/schema-registry');
     const contextName = this.props.contextName ? decodeURIComponent(this.props.contextName) : undefined;
@@ -324,7 +324,7 @@ async function createSchemaAndOpen(
   editorState: SchemaEditorStateHelper,
   queryClient: QueryClient,
   onSettled: () => void
-): Promise<void> {
+) {
   try {
     const subjectName = editorState.qualifiedSubjectName;
     await api

@@ -57,7 +57,7 @@ function reportNavigationError(error: unknown) {
   toast.error('Failed to navigate', { description: String(error) });
 }
 
-function requestedVersionNumber(versionParam: string | undefined): number | null {
+function requestedVersionNumber(versionParam: string | undefined) {
   return versionParam && versionParam !== 'latest' && !Number.isNaN(Number(versionParam)) ? Number(versionParam) : null;
 }
 
@@ -356,7 +356,7 @@ function correctedSelectedVersion(p: {
   hasSchema: boolean;
   fallbackVersion: number | undefined;
   defaultVersion: number;
-}): number | null {
+}) {
   if (!p.hasSchema && p.selectedVersion !== p.defaultVersion) {
     return p.defaultVersion;
   }

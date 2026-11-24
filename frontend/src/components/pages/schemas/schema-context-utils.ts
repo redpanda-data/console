@@ -24,7 +24,7 @@ export type ParsedSubject = {
  * Extract context and display name from a subject.
  * E.g. ":.staging:my-topic" → { context: "staging", … }
  */
-export function parseSubjectContext(name: string): ParsedSubject {
+export function parseSubjectContext(name: string) {
   const match = CONTEXT_PREFIX_RE.exec(name);
   if (match) {
     return {
@@ -44,7 +44,7 @@ export function parseSubjectContext(name: string): ParsedSubject {
  * Schema Registry context of a subject as the backend expects it:
  * ":.staging:my-topic" → ".staging", "my-topic" → "." (the default context).
  */
-export function subjectSchemaContext(name: string): string {
+export function subjectSchemaContext(name: string) {
   const match = CONTEXT_PREFIX_RE.exec(name);
   return match ? `.${match[1]}` : '.';
 }
@@ -53,7 +53,7 @@ export function subjectSchemaContext(name: string): string {
  * Schema Registry context a topic is bound to via redpanda.schema.registry.context,
  * "." (default) if none.
  */
-export function topicSchemaContext(configEntries?: ReadonlyArray<{ name: string; value?: string | null }>): string {
+export function topicSchemaContext(configEntries?: ReadonlyArray<{ name: string; value?: string | null }>) {
   const raw = configEntries?.find((e) => e.name === 'redpanda.schema.registry.context')?.value?.trim() ?? '';
   const name = raw.replace(/^:|:$/gu, '');
   if (name === '' || name === '.') {
@@ -63,8 +63,8 @@ export function topicSchemaContext(configEntries?: ReadonlyArray<{ name: string;
 }
 
 /** Schema IDs are context-local: prefer the subject that lives in the given context. */
-export function pickSubjectForContext(subjects: SchemaVersion[], schemaContext: string): SchemaVersion | undefined {
-  return subjects.find((s) => subjectSchemaContext(s.subject) === schemaContext) ?? subjects[0];
+export function pickSubjectForContext(subjects: SchemaVersion[], schemaContext: string) {
+  return subjects.find((s) => subjectSchemaContext(s.subject) === schemaContext) ?? subjects.at(0);
 }
 
 export const ALL_CONTEXT_ID = '__all__';
@@ -79,9 +79,7 @@ export type DerivedContext = {
   compatibility: string;
 };
 
-// Active subjects per context key: DEFAULT_CONTEXT_ID for the default
-// context, otherwise the context name without its leading dot.
-function countSubjectsByContext(activeSubjects: SchemaRegistrySubject[]): Map<string, number> {
+function countSubjectsByContext(activeSubjects: SchemaRegistrySubject[]) {
   const countByContext = new Map<string, number>();
   for (const subject of activeSubjects) {
     const { context } = parseSubjectContext(subject.name);
@@ -93,19 +91,16 @@ function countSubjectsByContext(activeSubjects: SchemaRegistrySubject[]): Map<st
 
 /**
  * Merge backend context list with subject counts for
- * the dropdown. Order: Default, named (sorted), All.
+ * the dropdown. Order: Default, named (sorted), All. Counts exclude soft-deleted
+ * subjects; All borrows the default context's mode and compatibility.
  */
-export function deriveContexts(
-  apiContexts: SchemaRegistryContextResponse[],
-  subjects: SchemaRegistrySubject[]
-): DerivedContext[] {
+export function deriveContexts(apiContexts: SchemaRegistryContextResponse[], subjects: SchemaRegistrySubject[]) {
   const activeSubjects = subjects.filter((s) => !s.isSoftDeleted);
   const countByContext = countSubjectsByContext(activeSubjects);
   const defaultApiContexts = apiContexts.filter((ctx) => ctx.name === '.');
   const namedApiContexts = apiContexts.filter((ctx) => ctx.name !== '.').sort((a, b) => a.name.localeCompare(b.name));
   const defaultContext = defaultApiContexts.at(-1);
 
-  // Default first, then named contexts alphabetically, then All at the bottom
   return [
     ...defaultApiContexts.map((ctx) => ({
       id: DEFAULT_CONTEXT_ID,
@@ -121,7 +116,6 @@ export function deriveContexts(
       mode: ctx.mode,
       compatibility: ctx.compatibility,
     })),
-    // "All" uses the default context's mode/compat, falling back to empty strings
     {
       id: ALL_CONTEXT_ID,
       label: 'All',
@@ -136,7 +130,7 @@ export function deriveContexts(
  * True for actual SR contexts (not the synthetic
  * "All" or "Default" entries).
  */
-export function isNamedContext(contextId: string): boolean {
+export function isNamedContext(contextId: string) {
   return contextId != '' && contextId !== ALL_CONTEXT_ID && contextId !== DEFAULT_CONTEXT_ID;
 }
 
@@ -145,7 +139,7 @@ export function isNamedContext(contextId: string): boolean {
  * into the internal context ID used by the editor state.
  * ".staging" → ".staging", "default" → DEFAULT_CONTEXT_ID, "prod" → ".prod"
  */
-export function contextNameToId(name: string): string {
+export function contextNameToId(name: string) {
   if (name === 'default') {
     return DEFAULT_CONTEXT_ID;
   }
@@ -160,7 +154,7 @@ export function contextNameToId(name: string): string {
  * Named contexts (e.g. ".staging") → ":.staging:subject"
  * Default context → plain "subject"
  */
-export function buildQualifiedSubjectName(contextId: string, subjectName: string): string {
+export function buildQualifiedSubjectName(contextId: string, subjectName: string) {
   if (!subjectName) {
     return '';
   }
@@ -174,11 +168,11 @@ export function buildQualifiedSubjectName(contextId: string, subjectName: string
  * Map between internal context IDs and display labels.
  * DEFAULT_CONTEXT_ID ('__default__') ↔ 'Default'; all others pass through.
  */
-export function contextIdToLabel(contextId: string): string {
+export function contextIdToLabel(contextId: string) {
   return contextId === DEFAULT_CONTEXT_ID ? DEFAULT_CONTEXT_LABEL : contextId;
 }
 
-export function contextLabelToId(label: string): string {
+export function contextLabelToId(label: string) {
   return label === DEFAULT_CONTEXT_LABEL ? DEFAULT_CONTEXT_ID : label;
 }
 
@@ -191,7 +185,7 @@ export function contextLabelToId(label: string): string {
 export function buildQualifiedReferences(
   refs: { name: string; subject: string; version: number; context: string }[],
   parentContext: string
-): { name: string; subject: string; version: number }[] {
+) {
   return refs
     .filter((x) => x.name && x.subject)
     .map((r) => ({

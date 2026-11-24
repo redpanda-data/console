@@ -30,7 +30,7 @@ export type SchemaEditorStateHelper = SchemaEditorStateData & {
 };
 
 // The record name `regex` captures from the schema text, or '' when it doesn't match.
-function matchRecordName(schemaText: string, regex: RegExp): string {
+function matchRecordName(schemaText: string, regex: RegExp) {
   const ar = regex.exec(schemaText);
   if (!ar) {
     return '';
@@ -67,7 +67,7 @@ const SUBJECT_NAME_BY_STRATEGY: Record<NamingStrategy, (userInput: string, recor
   CUSTOM: (userInput) => userInput,
 };
 
-export function computeSubjectName(state: SchemaEditorStateData): string {
+export function computeSubjectName(state: SchemaEditorStateData) {
   const subjectName = SUBJECT_NAME_BY_STRATEGY[state.strategy](state.userInput, computeRecordName(state));
   if (state.strategy !== 'CUSTOM' && state.keyOrValue !== undefined && subjectName) {
     return `${subjectName}-${state.keyOrValue.toLowerCase()}`;
@@ -76,9 +76,7 @@ export function computeSubjectName(state: SchemaEditorStateData): string {
 }
 
 /** Metadata to register: the properties with both a key and a value, or undefined when there are none. */
-export function computeMetadata(
-  metadataProperties: SchemaEditorStateData['metadataProperties']
-): SchemaEditorStateHelper['computedMetadata'] {
+export function computeMetadata(metadataProperties: SchemaEditorStateData['metadataProperties']) {
   const properties: Record<string, string> = {};
   for (const prop of metadataProperties) {
     if (prop.key && prop.value) {
@@ -145,7 +143,7 @@ export function addVersionEditorState(
 }
 
 /** Display names of subjects per context id, for the reference subject picker. */
-export function subjectOptionsByContext(subjects: SchemaRegistrySubject[]): Map<string, { value: string }[]> {
+export function subjectOptionsByContext(subjects: SchemaRegistrySubject[]) {
   const map = new Map<string, { value: string }[]>();
   for (const s of subjects) {
     const parsed = parseSubjectContext(s.name);

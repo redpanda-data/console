@@ -34,7 +34,7 @@ function readConfigFacts(configYaml: string): ConfigListFacts {
   if (config === undefined) {
     return NO_FACTS;
   }
-  const end = orElse((): PipelineEndStatus => summarizePipelineEnd(config).status, 'none');
+  const end = orElse(() => summarizePipelineEnd(config).status, 'none');
   return { ...orElse(() => configComponentsOf(config), NO_FACTS), end };
 }
 

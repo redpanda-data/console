@@ -90,7 +90,7 @@ rs.mock('./peer-console-transport', () => ({
 
 const PROD_CONSOLE = 'https://console-prod.example.com';
 
-const cluster = (id: string, name: string, seed: string, state = Cluster_State.READY): Cluster =>
+const cluster = (id: string, name: string, seed: string, state = Cluster_State.READY) =>
   create(ClusterSchema, {
     id,
     name,
@@ -107,7 +107,7 @@ const CLUSTERS = [
 
 type LinkInit = MessageInitShape<typeof ShadowLinkSchema>;
 
-const link = (id: string, shadowRedpandaId: string, clientOptions: LinkInit['clientOptions']): ShadowLink =>
+const link = (id: string, shadowRedpandaId: string, clientOptions: LinkInit['clientOptions']) =>
   create(ShadowLinkSchema, { id, name: id, shadowRedpandaId, state: ShadowLink_State.ACTIVE, clientOptions });
 
 const LINKS = [
@@ -200,7 +200,7 @@ const renderTopology = (clusterId: string) => {
 const settled = (result: { current: ReturnType<typeof useShadowLinkTopology> }) =>
   waitFor(() => expect(result.current?.resolving).toBe(false));
 
-function requireCloudSource(source: ShadowLinkSource | undefined): CloudSource {
+function requireCloudSource(source: ShadowLinkSource | undefined) {
   if (source?.kind !== 'cloud') {
     throw new Error('Expected a Cloud source');
   }

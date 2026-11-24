@@ -15,7 +15,7 @@ import { api } from '../../../state/backend-api';
 import { PageComponent, type PageInitHelper } from '../page';
 
 export class SchemaAddVersionPage extends PageComponent<{ subjectName: string }> {
-  initPage(p: PageInitHelper): void {
+  initPage(p: PageInitHelper) {
     const subjectName = decodeURIComponent(this.props.subjectName);
     const encodedSubjectName = encodeURIComponent(subjectName);
     p.title = 'Add schema version';

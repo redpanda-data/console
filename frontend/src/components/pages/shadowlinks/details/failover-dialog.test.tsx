@@ -16,7 +16,7 @@ import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb
 import type { ComponentProps } from 'react';
 
 import { FailoverDialog } from './failover-dialog';
-import { type CloudSource, getFailoverReadiness, getSourceFenceStep, type SourceFenceStep } from './failover-model';
+import { type CloudSource, getFailoverReadiness, getSourceFenceStep } from './failover-model';
 
 const source = (state: 'fenced' | 'unfenced', allowAllReads: boolean): CloudSource => ({
   kind: 'cloud',
@@ -25,7 +25,7 @@ const source = (state: 'fenced' | 'unfenced', allowAllReads: boolean): CloudSour
   fence: { status: 'known', state, revision: 18n, exemptPrincipals: [], allowAllReads, brokers: [] },
 });
 
-const sourceStep = (state: 'fenced' | 'unfenced', allowAllReads: boolean): SourceFenceStep => {
+const sourceStep = (state: 'fenced' | 'unfenced', allowAllReads: boolean) => {
   const step = getSourceFenceStep({
     source: source(state, allowAllReads),
     link: { authentication: 'sasl', principal: 'shadow-orders' },

@@ -39,7 +39,7 @@ const { mockLocation } = rs.hoisted(() => ({ mockLocation: { pathname: '/overvie
  * @param daysOffset - The number of days to offset (default is 0).
  * @returns Unix timestamp in seconds.
  */
-const getUnixTimestampWithExpiration = (daysOffset = 0): number => NOW_SECONDS + daysOffset * 86_400;
+const getUnixTimestampWithExpiration = (daysOffset = 0) => NOW_SECONDS + daysOffset * 86_400;
 
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
@@ -92,7 +92,7 @@ rs.mock('../../state/backend-api', () => {
   return {
     ...actual,
     api: mockApi,
-    useApiStoreHook<T>(selector: (state: typeof mockApi) => T): T {
+    useApiStoreHook<T>(selector: (state: typeof mockApi) => T) {
       return selector(mockApi);
     },
   };

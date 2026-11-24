@@ -167,7 +167,7 @@ function EditSchemaMode({
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
   );
 
-  const getInitialMode = (): SchemaRegistryModeWithDefault => {
+  const getInitialMode = () => {
     if (contextName) {
       return contextMode ?? SchemaRegistryModes.DEFAULT;
     }

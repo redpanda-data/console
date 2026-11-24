@@ -9,11 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Dataplane Mappers
- * Convert dataplane proto types to plain TypeScript types and form values
- */
-
 import type { ShadowLink as DataplaneShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import type {
   ACLFilter,
@@ -49,12 +44,7 @@ import {
   type UnifiedTopicMetadataSyncOptions,
 } from '../model';
 
-/**
- * Map dataplane authentication configuration to unified type
- */
-function mapDataplaneAuthConfig(
-  authConfig: AuthenticationConfiguration | undefined
-): UnifiedAuthenticationConfiguration | undefined {
+function mapDataplaneAuthConfig(authConfig: AuthenticationConfiguration | undefined) {
   if (!authConfig?.authentication) {
     return;
   }
@@ -70,21 +60,18 @@ function mapDataplaneAuthConfig(
           scramMechanism: scram.scramMechanism,
         },
       },
-    };
+    } satisfies UnifiedAuthenticationConfiguration;
   }
 
   if (authConfig.authentication.case === 'plainConfiguration') {
     const { username, password } = authConfig.authentication.value;
-    return { authentication: { case: 'plainConfiguration', value: { username, password } } };
+    return {
+      authentication: { case: 'plainConfiguration', value: { username, password } },
+    } satisfies UnifiedAuthenticationConfiguration;
   }
 }
 
-/**
- * Map dataplane client options to unified type
- */
-function mapDataplaneClientOptions(
-  clientOptions: ShadowLinkClientOptions | undefined
-): UnifiedClientOptions | undefined {
+function mapDataplaneClientOptions(clientOptions: ShadowLinkClientOptions | undefined) {
   if (!clientOptions) {
     return;
   }
@@ -109,15 +96,10 @@ function mapDataplaneClientOptions(
     effectiveFetchMinBytes: clientOptions.effectiveFetchMinBytes,
     effectiveFetchMaxBytes: clientOptions.effectiveFetchMaxBytes,
     effectiveFetchPartitionMaxBytes: clientOptions.effectiveFetchPartitionMaxBytes,
-  };
+  } satisfies UnifiedClientOptions;
 }
 
-/**
- * Map dataplane topic metadata sync options to unified type
- */
-function mapDataplaneTopicMetadataSyncOptions(
-  options: TopicMetadataSyncOptions | undefined
-): UnifiedTopicMetadataSyncOptions | undefined {
+function mapDataplaneTopicMetadataSyncOptions(options: TopicMetadataSyncOptions | undefined) {
   if (!options) {
     return;
   }
@@ -130,15 +112,10 @@ function mapDataplaneTopicMetadataSyncOptions(
     })),
     syncedShadowTopicProperties: options.syncedShadowTopicProperties ?? [],
     excludeDefault: options.excludeDefault,
-  };
+  } satisfies UnifiedTopicMetadataSyncOptions;
 }
 
-/**
- * Map dataplane consumer offset sync options to unified type
- */
-function mapDataplaneConsumerOffsetSyncOptions(
-  options: ConsumerOffsetSyncOptions | undefined
-): UnifiedConsumerOffsetSyncOptions | undefined {
+function mapDataplaneConsumerOffsetSyncOptions(options: ConsumerOffsetSyncOptions | undefined) {
   if (!options) {
     return;
   }
@@ -149,13 +126,10 @@ function mapDataplaneConsumerOffsetSyncOptions(
       patternType: f.patternType,
       filterType: f.filterType,
     })),
-  };
+  } satisfies UnifiedConsumerOffsetSyncOptions;
 }
 
-/**
- * Map dataplane role sync options to unified type
- */
-function mapDataplaneRoleSyncOptions(options: RoleSyncOptions | undefined): UnifiedRoleSyncOptions | undefined {
+function mapDataplaneRoleSyncOptions(options: RoleSyncOptions | undefined) {
   if (!options) {
     return;
   }
@@ -166,15 +140,10 @@ function mapDataplaneRoleSyncOptions(options: RoleSyncOptions | undefined): Unif
       patternType: f.patternType,
       filterType: f.filterType,
     })),
-  };
+  } satisfies UnifiedRoleSyncOptions;
 }
 
-/**
- * Map dataplane security sync options to unified type
- */
-function mapDataplaneSecuritySyncOptions(
-  options: SecuritySettingsSyncOptions | undefined
-): UnifiedSecuritySyncOptions | undefined {
+function mapDataplaneSecuritySyncOptions(options: SecuritySettingsSyncOptions | undefined) {
   if (!options) {
     return;
   }
@@ -197,15 +166,10 @@ function mapDataplaneSecuritySyncOptions(
           }
         : undefined,
     })),
-  };
+  } satisfies UnifiedSecuritySyncOptions;
 }
 
-/**
- * Map dataplane configurations to unified configurations
- */
-function mapDataplaneConfigurations(
-  config: ShadowLinkConfigurations | undefined
-): UnifiedShadowLinkConfigurations | undefined {
+function mapDataplaneConfigurations(config: ShadowLinkConfigurations | undefined) {
   if (!config) {
     return;
   }
@@ -217,14 +181,14 @@ function mapDataplaneConfigurations(
     roleSyncOptions: mapDataplaneRoleSyncOptions(config.roleSyncOptions),
     securitySyncOptions: mapDataplaneSecuritySyncOptions(config.securitySyncOptions),
     schemaRegistrySyncOptions: mapSchemaRegistrySyncOptions(config.schemaRegistrySyncOptions),
-  };
+  } satisfies UnifiedShadowLinkConfigurations;
 }
 
 /**
  * Transform dataplane API response to unified model
  */
-export function fromDataplaneShadowLink(sl: DataplaneShadowLink): UnifiedShadowLink {
-  return {
+export function fromDataplaneShadowLink(sl: DataplaneShadowLink) {
+  const link: UnifiedShadowLink = {
     name: sl.name,
     id: sl.uid,
     state: mapConsoleStateToUnified(sl.state),
@@ -232,15 +196,14 @@ export function fromDataplaneShadowLink(sl: DataplaneShadowLink): UnifiedShadowL
     tasksStatus: sl.tasksStatus,
     syncedShadowTopicProperties: sl.syncedShadowTopicProperties,
   };
+  return link;
 }
 
 /**
  * Extract TLS settings from shadow link client options
  * mTLS is determined by presence of certificates
  */
-const extractTLSSettings = (
-  tlsCertsSettings: TLSSettings['tlsSettings'] | undefined
-): Pick<FormValues, 'mtlsMode' | 'mtls'> => {
+const extractTLSSettings = (tlsCertsSettings: TLSSettings['tlsSettings'] | undefined) => {
   if (!tlsCertsSettings) {
     return {
       mtlsMode: TLS_MODE.PEM,
@@ -249,7 +212,7 @@ const extractTLSSettings = (
         clientCert: undefined,
         clientKey: undefined,
       },
-    };
+    } satisfies Pick<FormValues, 'mtlsMode' | 'mtls'>;
   }
 
   if (tlsCertsSettings.case === 'tlsFileSettings') {
@@ -261,7 +224,7 @@ const extractTLSSettings = (
         clientCert: fileSettings.certPath ? { filePath: fileSettings.certPath } : undefined,
         clientKey: fileSettings.keyPath ? { filePath: fileSettings.keyPath } : undefined,
       },
-    };
+    } satisfies Pick<FormValues, 'mtlsMode' | 'mtls'>;
   }
 
   if (tlsCertsSettings.case === 'tlsPemSettings') {
@@ -273,7 +236,7 @@ const extractTLSSettings = (
         clientCert: pemSettings.cert ? { pemContent: pemSettings.cert } : undefined,
         clientKey: pemSettings.key ? { pemContent: pemSettings.key } : undefined,
       },
-    };
+    } satisfies Pick<FormValues, 'mtlsMode' | 'mtls'>;
   }
 
   // Fallback for unknown cases
@@ -284,15 +247,13 @@ const extractTLSSettings = (
       clientCert: undefined,
       clientKey: undefined,
     },
-  };
+  } satisfies Pick<FormValues, 'mtlsMode' | 'mtls'>;
 };
 
 /**
  * Extract authentication settings from shadow link client options
  */
-const extractAuthSettings = (
-  clientOptions: ShadowLinkClientOptions | undefined
-): Pick<FormValues, 'authMethod' | 'scramCredentials' | 'plainCredentials'> => {
+const extractAuthSettings = (clientOptions: ShadowLinkClientOptions | undefined) => {
   const authConfig = clientOptions?.authenticationConfiguration;
   const scramConfig =
     authConfig?.authentication?.case === 'scramConfiguration' ? authConfig.authentication.value : undefined;
@@ -321,7 +282,7 @@ const extractAuthSettings = (
           password: plainConfig.password || '',
         }
       : undefined,
-  };
+  } satisfies Pick<FormValues, 'authMethod' | 'scramCredentials' | 'plainCredentials'>;
 };
 
 /**
@@ -337,18 +298,12 @@ const extractAdvancedClientOptions = (clientOptions: ShadowLinkClientOptions | u
   fetchPartitionMaxBytes: clientOptions?.fetchPartitionMaxBytes || 1_048_576,
 });
 
-/**
- * Check if name filters represent "all" mode (single filter with name='*')
- */
 const isAllNameFilter = (filters: { name: string; patternType: PatternType; filterType: FilterType }[]) =>
   filters.length === 1 &&
   filters[0].name === '*' &&
   filters[0].patternType === PatternType.LITERAL &&
   filters[0].filterType === FilterType.INCLUDE;
 
-/**
- * Check if ACL filters represent "all" mode (single filter matching any ACL)
- */
 const isAllACLFilter = (filters: ACLFilter[]) => {
   if (filters.length !== 1) {
     return false;
@@ -372,19 +327,7 @@ const isAllACLFilter = (filters: ACLFilter[]) => {
 /**
  * Build default form values for connection category from shadow link client options
  */
-export const buildDefaultConnectionValues = (
-  shadowLink: DataplaneShadowLink
-): Pick<
-  FormValues,
-  | 'bootstrapServers'
-  | 'useTls'
-  | 'mtlsMode'
-  | 'mtls'
-  | 'authMethod'
-  | 'scramCredentials'
-  | 'plainCredentials'
-  | 'advanceClientOptions'
-> => {
+export const buildDefaultConnectionValues = (shadowLink: DataplaneShadowLink) => {
   const clientOptions = shadowLink.configurations?.clientOptions;
   const tlsCertsSettings = clientOptions?.tlsSettings?.tlsSettings;
 
@@ -394,27 +337,36 @@ export const buildDefaultConnectionValues = (
 
   const bootstrapServers = (clientOptions?.bootstrapServers || []).map((server) => ({ value: server }));
 
-  return {
+  const connection: Pick<
+    FormValues,
+    | 'bootstrapServers'
+    | 'useTls'
+    | 'mtlsMode'
+    | 'mtls'
+    | 'authMethod'
+    | 'scramCredentials'
+    | 'plainCredentials'
+    | 'advanceClientOptions'
+  > = {
     bootstrapServers: bootstrapServers.length > 0 ? bootstrapServers : [{ value: '' }],
     advanceClientOptions: advancedOptions,
     useTls: Boolean(clientOptions?.tlsSettings?.enabled),
     ...tlsSettings,
     ...authSettings,
   };
+  return connection;
 };
 
 /**
  * Build default form values for topics category from shadow link configurations
  */
-export const buildDefaultTopicsValues = (
-  shadowLink: DataplaneShadowLink
-): Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties' | 'excludeDefault'> => {
+export const buildDefaultTopicsValues = (shadowLink: DataplaneShadowLink) => {
   const topicMetadataSyncOptions = shadowLink.configurations?.topicMetadataSyncOptions;
   const filters = topicMetadataSyncOptions?.autoCreateShadowTopicFilters || [];
 
   const isAllMode = isAllNameFilter(filters);
 
-  return {
+  const topics: Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties' | 'excludeDefault'> = {
     topicsMode: isAllMode ? 'all' : 'specify',
     topics: isAllMode
       ? []
@@ -426,21 +378,21 @@ export const buildDefaultTopicsValues = (
     topicProperties: shadowLink.syncedShadowTopicProperties || [],
     excludeDefault: topicMetadataSyncOptions?.excludeDefault ?? false,
   };
+  return topics;
 };
 
 /**
- * Build default form values for consumer groups category from shadow link configurations
+ * Hydrate the consumer-group filters. The enable toggle is UI-only, not
+ * persisted alongside the filters on the backend.
  */
-export const buildDefaultConsumerGroupsValues = (
-  shadowLink: DataplaneShadowLink
-): Pick<FormValues, 'enableConsumerOffsetSync' | 'consumersMode' | 'consumers'> => {
+export const buildDefaultConsumerGroupsValues = (shadowLink: DataplaneShadowLink) => {
   const consumerOffsetSyncOptions = shadowLink.configurations?.consumerOffsetSyncOptions;
   const groupFilters = consumerOffsetSyncOptions?.groupFilters || [];
 
   const isAllMode = isAllNameFilter(groupFilters);
 
-  return {
-    enableConsumerOffsetSync: false, // UI-only field, not stored in backend
+  const consumerGroups: Pick<FormValues, 'enableConsumerOffsetSync' | 'consumersMode' | 'consumers'> = {
+    enableConsumerOffsetSync: false,
     consumersMode: isAllMode ? 'all' : 'specify',
     consumers: isAllMode
       ? []
@@ -450,6 +402,7 @@ export const buildDefaultConsumerGroupsValues = (
           filterType: filter.filterType,
         })),
   };
+  return consumerGroups;
 };
 
 /**
@@ -457,13 +410,13 @@ export const buildDefaultConsumerGroupsValues = (
  * A link without role sync options hydrates to specify mode with no filters,
  * so an untouched edit keeps role sync disabled.
  */
-export const buildDefaultRolesValues = (shadowLink: DataplaneShadowLink): Pick<FormValues, 'rolesMode' | 'roles'> => {
+export const buildDefaultRolesValues = (shadowLink: DataplaneShadowLink) => {
   const roleSyncOptions = shadowLink.configurations?.roleSyncOptions;
   const roleNameFilters = roleSyncOptions?.roleNameFilters || [];
 
   const isAllMode = isAllNameFilter(roleNameFilters);
 
-  return {
+  const roles: Pick<FormValues, 'rolesMode' | 'roles'> = {
     rolesMode: isAllMode ? 'all' : 'specify',
     roles: isAllMode
       ? []
@@ -473,20 +426,19 @@ export const buildDefaultRolesValues = (shadowLink: DataplaneShadowLink): Pick<F
           filterType: filter.filterType,
         })),
   };
+  return roles;
 };
 
 /**
  * Build default form values for ACLs category from shadow link configurations
  */
-export const buildDefaultACLsValues = (
-  shadowLink: DataplaneShadowLink
-): Pick<FormValues, 'aclsMode' | 'aclFilters'> => {
+export const buildDefaultACLsValues = (shadowLink: DataplaneShadowLink) => {
   const securitySyncOptions = shadowLink.configurations?.securitySyncOptions;
   const aclFilters = securitySyncOptions?.aclFilters || [];
 
   const isAllMode = isAllACLFilter(aclFilters);
 
-  return {
+  const acls: Pick<FormValues, 'aclsMode' | 'aclFilters'> = {
     aclsMode: isAllMode ? 'all' : 'specify',
     aclFilters: isAllMode
       ? []
@@ -500,21 +452,20 @@ export const buildDefaultACLsValues = (
           host: filter.accessFilter?.host,
         })),
   };
+  return acls;
 };
 
 /**
  * Build default form values for Schema Registry category from shadow link configurations
  */
-export const buildDefaultSchemaRegistryValues = (
-  shadowLink: DataplaneShadowLink
-): Pick<FormValues, 'enableSchemaRegistrySync' | 'schemaRegistry'> =>
+export const buildDefaultSchemaRegistryValues = (shadowLink: DataplaneShadowLink) =>
   mapSchemaRegistrySyncOptionsToFormValues(shadowLink.configurations?.schemaRegistrySyncOptions);
 
 /**
  * Build default form values from existing shadow link data (dataplane)
  * Orchestrates category-specific builders
  */
-export const buildDefaultFormValues = (shadowLink: DataplaneShadowLink): FormValues => {
+export const buildDefaultFormValues = (shadowLink: DataplaneShadowLink) => {
   const connectionValues = buildDefaultConnectionValues(shadowLink);
   const topicsValues = buildDefaultTopicsValues(shadowLink);
   const consumerGroupsValues = buildDefaultConsumerGroupsValues(shadowLink);
@@ -522,7 +473,7 @@ export const buildDefaultFormValues = (shadowLink: DataplaneShadowLink): FormVal
   const aclsValues = buildDefaultACLsValues(shadowLink);
   const schemaRegistryValues = buildDefaultSchemaRegistryValues(shadowLink);
 
-  return {
+  const values: FormValues = {
     name: shadowLink.name || '',
     ...connectionValues,
     ...topicsValues,
@@ -531,4 +482,5 @@ export const buildDefaultFormValues = (shadowLink: DataplaneShadowLink): FormVal
     ...aclsValues,
     ...schemaRegistryValues,
   };
+  return values;
 };
