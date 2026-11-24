@@ -291,7 +291,6 @@ describe('getClientEffects', () => {
       schema: 'rejected',
       transaction: 'ended',
     });
-    /** The error codes clients get are cluster settings, so the details don't name them. */
     expect(effects.find((effect) => effect.id === 'produce')?.detail).toBe('Rejected.');
     expect(effects.find((effect) => effect.id === 'schema')?.detail).toBe('Rejected.');
   });

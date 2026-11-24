@@ -34,7 +34,6 @@ const buildShadowLink = (
   create(ShadowLinkSchema, {
     id: 'cp-id-1',
     name: 'test-link',
-    // clientOptions must be present for configurations to be mapped
     clientOptions: { bootstrapServers: ['localhost:9092'] },
     schemaRegistrySyncOptions,
     roleSyncOptions,

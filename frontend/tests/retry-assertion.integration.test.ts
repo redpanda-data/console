@@ -45,7 +45,7 @@ describe('e2E assertion retries', () => {
     const pending = retryAssertion(
       () =>
         new Promise<void>(() => {
-          // Intentionally pending: verify the outer retry deadline bounds the assertion.
+          // WARNING: Leave the assertion pending; settling it would not test the outer deadline.
         }),
       { timeout: 350 }
     );

@@ -1406,7 +1406,7 @@ output:
         });
       });
 
-      // What the patch writes and what the node checks must agree, or "Add user" never goes away.
+      // WARNING: Apply the same service-account rule when writing and reading YAML; otherwise Add user remains visible after linking.
       test.each([
         ['no brokers', 'output:\n  redpanda:\n    topic: orders\n'],
         ['an empty broker list', 'output:\n  redpanda:\n    seed_brokers: []\n    topic: orders\n'],

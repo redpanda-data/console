@@ -102,9 +102,7 @@ describe('getUpdateValuesForSchemaRegistry', () => {
     });
 
     test('an unrelated api edit round-trips TLS material stored with TLS disabled', () => {
-      // rpk/Admin API links can store file-path TLS with enabled: false; the
-      // mask replaces the whole parent message, so the material must survive
-      // edits to other fields.
+      // WARNING: Do not drop disabled file-path TLS on another edit: rpk/Admin API links can retain that material and the mask replaces the parent.
       const disabledTls = () =>
         apiValues({
           useTls: false,

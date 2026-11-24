@@ -12,7 +12,6 @@ import { appGlobal } from '../../../state/app-global';
 import { type MessageSearchRequest, useTransformsStore } from '../../../state/backend-api';
 import type { TopicMessage } from '../../../state/rest-interfaces';
 
-/** Every log search the page started, in order; each stays open until stopped, like the real stream. */
 const { logSearches } = rs.hoisted(() => ({ logSearches: [] as FakeLogSearch[] }));
 
 rs.mock('../../../state/backend-api', () => ({

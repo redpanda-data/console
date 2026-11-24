@@ -13,12 +13,6 @@ import { render, screen } from '@testing-library/react';
 
 import { UserInformationCard } from './user-information-card';
 
-/**
- * The Edit password button in UserInformationCard is shown whenever
- * onEditPassword is provided. The serverless and admin API guards
- * have been removed — the button should always appear when the
- * callback is passed.
- */
 describe('password change button visibility', () => {
   it('shows the Edit password button when onEditPassword is provided', () => {
     render(<UserInformationCard onEditPassword={rs.fn()} username="test-user" />);

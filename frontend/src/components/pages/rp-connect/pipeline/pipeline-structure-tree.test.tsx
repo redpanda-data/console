@@ -176,7 +176,6 @@ describe('the PipelineStructureTree', () => {
       const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
       await userEvent.click(docsLink);
       expect(onSelectNode).not.toHaveBeenCalled();
-      // Enter must reach the link, not the row's select handler (which would preventDefault it).
       act(() => docsLink.focus());
       await userEvent.keyboard('{Enter}');
       expect(onSelectNode).not.toHaveBeenCalled();

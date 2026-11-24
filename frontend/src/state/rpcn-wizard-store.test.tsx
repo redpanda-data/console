@@ -20,7 +20,7 @@ import {
 } from './rpcn-wizard-store';
 import type { OnboardingWizardFormData } from '../components/pages/rp-connect/types/wizard';
 
-// Enable automatic store reset between tests - must be before imports
+// WARNING: Install the store reset before importing stores; later registration misses import-time instances.
 rs.mock('zustand');
 
 function renderStoresWithReset() {

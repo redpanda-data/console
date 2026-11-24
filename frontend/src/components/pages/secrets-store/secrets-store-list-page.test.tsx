@@ -48,7 +48,6 @@ const createListSecretsTransport = (handler: MethodImpl<typeof listSecrets>) =>
     rpc(listSecrets, handler);
   });
 
-// Hoisted once — 25 rows = 3 pages at the page's hard-coded pageSize of 10.
 const PAGINATION_SECRETS_FIXTURE = Array.from({ length: 25 }, (_, index) =>
   create(SecretSchema, {
     id: `test-secret-${index + 1}`,
@@ -166,8 +165,6 @@ describe('the SecretsStoreListPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/Error loading secrets:/iu)).toBeVisible();
     });
-    // Server returned nextPageToken='stuck' on first call; second call echoed 'stuck' again and the
-    // loop bailed out. Anything higher means the guard did not trip.
     expect(requests).toHaveLength(2);
   });
 

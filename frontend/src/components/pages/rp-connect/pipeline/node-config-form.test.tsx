@@ -148,7 +148,6 @@ describe('the NodeConfigForm — full schema', () => {
 
     test('preserves complex/untouched settings when reporting an unrelated edit', async () => {
       const user = userEvent.setup();
-      // `metadata` is not in the schema; `count: 1000$` is a malformed int — both must survive.
       const onConfigChange = renderForm({
         kafka: {
           topic: 't',

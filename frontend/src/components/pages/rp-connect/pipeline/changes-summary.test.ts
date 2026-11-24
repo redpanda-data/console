@@ -67,7 +67,6 @@ describe('summarizeComponentChanges', () => {
     expect(changes.some((c) => c.kind === 'added')).toBe(false);
   });
 
-  // Ids are positional: deleting the first processor renumbers the second into its slot.
   it('names the component that was removed, not the one that slid into its place', () => {
     const changes = summarize(
       config({ processors: ['mapping: root = this', 'log: {}'] }),
@@ -131,7 +130,6 @@ describe('summarizeSettingsChanges', () => {
     expect(summarizeSettingsChanges({ description: '' }, {})).toEqual([]);
   });
 
-  // Trimming here would report no change for one the server would store.
   it('keeps a whitespace-only edit visible', () => {
     const [change] = summarizeSettingsChanges({ name: 'orders' }, { name: 'orders ' });
 
@@ -184,8 +182,6 @@ describe('changesImpactMessage', () => {
 });
 
 describe('changesImpactTone', () => {
-  // The editor header already shows "N issues to fix" in warning orange; a second orange line saying
-  // something far less urgent flattens both into undifferentiated alarm.
   it('warns only where applying actually costs something', () => {
     expect(changesImpactTone(Pipeline_State.RUNNING)).toBe('warning');
     expect(changesImpactTone(Pipeline_State.STARTING)).toBe('warning');

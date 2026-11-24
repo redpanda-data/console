@@ -58,8 +58,6 @@ const aclDetailResult = (principal: string) => ({
   isLoading: false,
 });
 
-/** Return value that keeps the component in "loading" state — useful when we
- *  only care about the call arguments, not what gets rendered. */
 const loadingResult = { data: undefined, isLoading: true };
 
 describe('the AclDetailPage — principal URL encoding', () => {

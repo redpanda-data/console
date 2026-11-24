@@ -1,16 +1,3 @@
-/**
- * spec: UX-1208 — Phase 1 e2e test coverage (CRITICAL + HIGH)
- * parent epic: UX-1198 — REST-to-Connect RPC migration
- *
- * Exercises the Connect error-mapping path added when UserService.CreateUser replaced
- * REST /api/users. Without these, a regression in formatToastErrorMessageGRPC or the
- * ConnectError detail extraction would go unnoticed.
- *
- * Uses the full-page /security/users/create form (rather than the tab's create-user
- * dialog) since it exercises the same fields/testids without depending on how the
- * dialog is triggered.
- */
-
 import { mockConnectError, mockConnectNetworkFailure, rpcUrl } from '../../shared/connect-mock';
 import { appURL, expect, test } from '../../shared/e2e';
 

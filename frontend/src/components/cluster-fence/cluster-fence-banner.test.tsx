@@ -85,7 +85,6 @@ describe('the ClusterFenceBanner', () => {
 
   test.each([
     ['fencing', 'fencing', [{ nodeId: 2, status: 'behind', blocks: false }], 'This cluster is being fenced'],
-    // A settings change while fenced: writes stay blocked, so it isn't a new fence.
     ['applying settings', 'fencing', [{ nodeId: 2, status: 'behind', blocks: true }], 'applying new fence settings'],
     ['unfencing', 'unfencing', [], 'This cluster is being unfenced'],
   ] as const)('while %s, the title says so', (_label, phase, brokers, title) => {

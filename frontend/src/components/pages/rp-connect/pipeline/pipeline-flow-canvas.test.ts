@@ -61,8 +61,8 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
       noMeasure,
       (n) => n.id === 'marker'
     );
-    expect(geom?.body).toEqual({ minX: 500, minY: 0, maxX: 1200, maxY: 680 }); // outputs + join
-    expect(geom?.entry).toEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 }); // just the entry marker
+    expect(geom?.body).toEqual({ minX: 500, minY: 0, maxX: 1200, maxY: 680 });
+    expect(geom?.entry).toEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 });
   });
 
   it('has a null entry when nothing is flagged', () => {
@@ -75,7 +75,7 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
 
   it('ignores nodes outside the scope; returns null when the scope is only the entry', () => {
     const marker = node('marker', 0, 300, 'flowSplit');
-    const outsider = node('outsider', 5000, 5000); // NOT in scope — must not stretch the bounds
+    const outsider = node('outsider', 5000, 5000);
     expect(scopeBounds([marker, outsider], scope('marker'), noMeasure)?.body).toEqual({
       minX: 0,
       minY: 300,
@@ -91,17 +91,17 @@ describe('regionGeometry — the arm reaches the entry marker', () => {
   const body = { minX: 500, minY: 300, maxX: 700, maxY: 480 };
 
   it('wraps a same-row marker with a thin arm clamped to the body height', () => {
-    const marker = { minX: 0, minY: 340, maxX: 200, maxY: 420 }; // within the body's rows
+    const marker = { minX: 0, minY: 340, maxX: 200, maxY: 420 };
     const { rects } = regionGeometry(body, marker, 6, 6);
-    expect(rects).toHaveLength(2); // padded body + one arm
+    expect(rects).toHaveLength(2);
     const arm = rects[1];
-    expect(arm.maxX).toBe(body.minX - 6); // arm abuts the padded body's left edge
+    expect(arm.maxX).toBe(body.minX - 6);
     expect(arm.minY).toBeGreaterThanOrEqual(body.minY - 6);
     expect(arm.maxY).toBeLessThanOrEqual(body.maxY + 6);
   });
 
   it('stretches the arm up to meet the body when the marker sits clear above it (try/catch)', () => {
-    const marker = { minX: 0, minY: 100, maxX: 200, maxY: 180 }; // fully above the body
+    const marker = { minX: 0, minY: 100, maxX: 200, maxY: 180 };
     const { rects } = regionGeometry(body, marker, 6, 6);
     const arm = rects[1];
     expect(arm.minY).toBe(marker.minY - 6);

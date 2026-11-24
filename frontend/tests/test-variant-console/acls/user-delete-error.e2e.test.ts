@@ -1,11 +1,3 @@
-/**
- * spec: UX-1208 — Phase 1 e2e test coverage (CRITICAL + HIGH)
- * parent epic: UX-1198 — REST-to-Connect RPC migration
- *
- * Exercises the error path in UserService.DeleteUser. The REST endpoint had a slightly
- * different error envelope; this guards the migrated toast + UI state.
- */
-
 import { mockConnectError, rpcUrl } from '../../shared/connect-mock';
 import { appURL, expect, type Page, test } from '../../shared/e2e';
 import { SecurityPage } from '../utils/security-page';

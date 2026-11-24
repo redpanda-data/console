@@ -5,7 +5,7 @@ import { PageColumn } from './page-column';
 
 const PAGE_TOP_VAR = '--console-page-top';
 
-// Tailwind isn't loaded here, so stand in for the column's `pt-8`.
+// WARNING: Model the column padding explicitly here; the Tailwind stylesheet is not loaded by this test.
 const PADDING_TOP = 32;
 const styleEl = document.createElement('style');
 styleEl.textContent = `.pt-8 { padding-top: ${PADDING_TOP}px; }`;

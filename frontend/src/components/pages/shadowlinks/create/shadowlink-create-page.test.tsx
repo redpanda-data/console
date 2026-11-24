@@ -105,10 +105,6 @@ const CERTIFICATE_PATH_TEST_ID_SUFFIX: Record<CertificateType, string> = {
   clientKey: 'client-key',
 };
 
-/**
- * Expand the disclosure that owns this cert type. CA lives under the CA disclosure;
- * clientCert/clientKey live under the mTLS disclosure.
- */
 const openCertificateDisclosure = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen,
@@ -147,10 +143,6 @@ const addCertificateFilePath = async (
   await user.type(scr.getByTestId(`mtls-${testIdSuffix}-path-input`), filePath);
 };
 
-/**
- * Expand the disclosure that owns this cert type, then drop a file directly into
- * the inline upload row. No modal, no save step.
- */
 const uploadCertificatePem = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen,

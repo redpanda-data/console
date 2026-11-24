@@ -1,5 +1,3 @@
-// spec: the security ACLs tab — see the PR for the swap's contract
-
 import { expect, test } from '../../shared/e2e';
 
 const PRINCIPAL_HEADER = /^Principal$/u;

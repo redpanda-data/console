@@ -183,13 +183,6 @@ type TestCase = {
   verify: (updateRequest: any, exp: typeof import('@rstest/core').expect) => void;
 };
 
-/**
- * Test cases for table-driven testing
- *
- * Note: pure `buildDataplaneUpdateRequest` behaviours (field mask / request
- * payload given a form-values diff) live in `shadowlink-edit-utils.test.ts`.
- * These DOM tests only cover end-to-end wiring from the form UI to the hook.
- */
 const testCases: TestCase[] = [
   {
     description: 'updates comprehensive set of fields',
@@ -306,8 +299,6 @@ const saveAndBuildUpdateRequest = async (
     expect(mockUpdateShadowLink).toHaveBeenCalledTimes(1);
   });
 
-  // The hook builds the request internally from the submitted form values, so build it
-  // here too to verify the update request structure
   const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
   const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
   return buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink, {
@@ -344,7 +335,7 @@ describe('the ShadowLinkEditPage', () => {
 
     await screen.findByTestId('bootstrap-server-input-0', {}, { timeout: 5000 });
 
-    // Each action edits the same form and later actions read its state, so chain them in order.
+    // WARNING: Do not run actions on the same form in parallel; later actions depend on earlier values.
     await actions.reduce<Promise<void>>(
       (previous, action) => previous.then(() => performAction(user, screen, action)),
       Promise.resolve()
@@ -452,8 +443,7 @@ describe('the ShadowLinkEditPage', () => {
     });
 
     test('saves unrelated edits on an api-mode link when the gate is closed', async () => {
-      // The hydrated basic-auth password can never be re-entered behind the
-      // read-only card, so its validation must not block the rest of the form.
+      // WARNING: Do not require the password from the read-only basic-auth card; that hidden input would block saving unrelated edits.
       const user = userEvent.setup();
       const mockShadowLink = createApiModeShadowLink();
       renderEditPageFor(mockUpdateShadowLink, mockShadowLink);

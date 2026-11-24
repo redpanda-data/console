@@ -108,8 +108,6 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
 
       expect(options.authOptions?.authOptions?.case).toBe('basic');
       if (options.authOptions?.authOptions?.case === 'basic') {
-        // The SecretSelector already stores the reference; the builder must not
-        // re-wrap or unwrap it.
         expect(options.authOptions.authOptions.value.password).toBe('${secrets.SR_PASSWORD}');
       }
     });
@@ -207,7 +205,6 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
       if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
         expect(options.tlsSettings.tlsSettings.value.ca).toBe('CA_PEM');
         expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
-        // Empty key = keep the stored key, same as the enabled path.
         expect(options.tlsSettings.tlsSettings.value.key).toBe('');
       }
     });
@@ -329,8 +326,7 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
       expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
       if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
         expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
-        // Empty key = keep the stored key (verified server behavior); the
-        // fingerprint marker never reaches the wire.
+        // WARNING: Do not send the TLS fingerprint marker as a private key; an empty key leaves the stored one in place.
         expect(options.tlsSettings.tlsSettings.value.key).toBe('');
         expect(options.tlsSettings.tlsSettings.value.keyFingerprint).toBe('');
       }

@@ -399,8 +399,6 @@ describe('the PipelineListPage', () => {
   });
 
   describe('pagination', () => {
-    // 35 rows over pages of 20. The default status sort pins the error row to page 1 and the
-    // stopped row to page 2.
     const MANY_PIPELINES: Fixture[] = [
       { id: 'err000', displayName: 'first-error', state: Pipeline_State.ERROR, inputs: ['generate'], outputs: ['s3'] },
       ...Array.from({ length: 33 }, (_, i) => ({
@@ -467,7 +465,6 @@ describe('the PipelineListPage', () => {
       await user.click(screen.getByRole('button', { name: 'Go to last page' }));
       await expectPage(2);
 
-      // The 33 running rows still fill two pages, so landing on page 1 is the reset, not a clamp.
       await user.click(tab('Running'));
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();

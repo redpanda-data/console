@@ -27,8 +27,8 @@ const node: (overrides: Partial<PipelineFlowNode>) => PipelineFlowNode = (overri
 describe('jumpableNodes', () => {
   test('keeps only nodes with both an editTarget and a section', () => {
     const editable = node({ id: 'a', editTarget: TARGET, section: 'input' });
-    const structural = node({ id: 'b', section: 'input' }); // no editTarget (e.g. a merge dot)
-    const sectionless = node({ id: 'c', editTarget: TARGET }); // no section (e.g. a bare case wrapper)
+    const structural = node({ id: 'b', section: 'input' });
+    const sectionless = node({ id: 'c', editTarget: TARGET });
 
     expect(jumpableNodes([editable, structural, sectionless])).toEqual([editable]);
   });

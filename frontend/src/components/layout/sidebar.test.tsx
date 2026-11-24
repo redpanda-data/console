@@ -72,8 +72,7 @@ describe('the SidebarNavigation re-renders on endpointCompatibility change (UX-9
 
     expect(result.current).toBe(compatibility);
 
-    // Unmount before the afterEach's store reset fires, otherwise the
-    // any act boundary and emits the "not wrapped in act(...)" warning.
+    // WARNING: Unmount before resetting the store; the subscribed hook would otherwise update outside act.
     unmount();
   });
 });

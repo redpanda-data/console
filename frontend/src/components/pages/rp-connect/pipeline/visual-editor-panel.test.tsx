@@ -631,8 +631,7 @@ output:
 
     test('deselects when an external edit leaves a different component at the selected position', async () => {
       const user = userEvent.setup();
-      // Edit targets are positional, so after a reorder `proc-0` resolves to a different component —
-      // the inspector must close rather than silently show (and edit) the wrong node.
+      // WARNING: Close the inspector on positional reuse; the old target can point at a different component after a reorder.
       const panelProps = {
         componentList: {} as ComponentList,
         components: [],

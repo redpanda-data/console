@@ -4,17 +4,7 @@ const OVERVIEW_URL = /\/overview/u;
 const STAT_LABEL = '[data-slot="stat-label"]';
 const CLUSTER_STATUS_LABEL = /^Cluster Status$/iu;
 
-/**
- * Smoke coverage for the login page. The OSS variant has no authentication
- * configured, so /login redirects to /overview — that redirect is itself the
- * contract worth guarding, since it is what NoneAuthComponent does.
- *
- * The credential form is exercised by the enterprise variant's auth.setup.ts,
- * which is the gate for every enterprise spec. The /login/callbacks/$provider
- * page is deliberately not asserted here: it navigates away as soon as its own
- * fetch settles, so any assertion on its transient state is a race, not a
- * contract.
- */
+// WARNING: Do not assert on transient callback-page content; it navigates as soon as the login response settles.
 test.describe('login', () => {
   test('sends an unauthenticated variant straight to the overview', async ({ page }) => {
     await page.goto('/login');

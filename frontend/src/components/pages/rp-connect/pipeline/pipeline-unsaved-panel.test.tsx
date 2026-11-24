@@ -78,7 +78,6 @@ describe('the PipelineUnsavedPanel', () => {
     await user.click(screen.getByTestId('outside'));
     expect(screen.queryByTestId('pipeline-unsaved-list')).not.toBeInTheDocument();
 
-    // Clicking inside the panel (the chip re-toggle aside, rows) must not count as outside.
     await user.click(screen.getByTestId('pipeline-unsaved-chip'));
     expect(screen.getByTestId('pipeline-unsaved-list')).toBeInTheDocument();
   });

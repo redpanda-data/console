@@ -864,7 +864,6 @@ describe('computeGraphLayout', () => {
     });
 
     it('source-aligns fanned cases: a short case hugs the split, not the merge', () => {
-      // The short (1-step) case must sit near the split, not packed against the merge with the long case.
       const yaml = `pipeline:
   processors:
     - switch:
@@ -956,8 +955,7 @@ output:
       const withCache = `${BRANCHING_PIPELINE}\ncache_resources:\n  - label: c\n    memory: {}`;
       const layout = computeGraphLayout(parsePipelineFlowTree(withCache).nodes);
       const resource = layout.rfNodes.find((n) => n.id === 'resource-cache_resources-0');
-      // The lane must drop by the cross-axis (height) extent, not the much larger
-      // main-axis (width) extent — otherwise fitView zooms the whole graph out of view.
+      // WARNING: Use the lane height, not its length, to space lanes; using width makes fitView zoom the graph out.
       expect(resource?.position.y ?? 0).toBeLessThan(layout.width);
       expect(layout.height).toBeLessThan(layout.width);
     });

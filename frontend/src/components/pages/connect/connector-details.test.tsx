@@ -7,7 +7,6 @@ import { type MessageSearchRequest, useApiStore } from '../../../state/backend-a
 import { ConnectClusterStore } from '../../../state/connect/state';
 import type { Topic, TopicMessage } from '../../../state/rest-interfaces';
 
-/** Every log search the page started, in order; each stays open until stopped, like the real stream. */
 const { logSearches } = rs.hoisted(() => ({ logSearches: [] as FakeLogSearch[] }));
 
 rs.mock('../../../state/backend-api', () => ({
@@ -24,7 +23,7 @@ function createFakeLogSearch() {
     startSearch: rs.fn((request: MessageSearchRequest) => {
       search.searchRequest = request;
       return new Promise<TopicMessage[]>(() => {
-        // stays open until stopped
+        // WARNING: Leave the stream open; an early completion would hide missing cancellation.
       });
     }),
     stopSearch: rs.fn(),
@@ -90,7 +89,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  // The page is still mounted and subscribed when this runs.
   act(() => {
     useApiStore.setState(initialApiState, true);
   });

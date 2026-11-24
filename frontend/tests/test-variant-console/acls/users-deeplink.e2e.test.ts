@@ -1,12 +1,4 @@
-/**
- * spec: UX-1208 — Phase 1 e2e test coverage (CRITICAL + HIGH)
- * parent epic: UX-1198 — REST-to-Connect RPC migration
- *
- * After the REST→Connect swap, the /users/:name/details and /acls/:principal/details
- * routes fetch via Connect Query with a different cache key. These specs catch a
- * deep-link regression where the details page breaks when the cache is cold (e.g.
- * bookmarks, share links).
- */
+// WARNING: Open details with a cold cache; app navigation can hide a broken bookmark by warming the Connect query first.
 
 import { expect, type Page, test } from '../../shared/e2e';
 

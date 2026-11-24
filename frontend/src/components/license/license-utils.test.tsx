@@ -32,13 +32,6 @@ const NOW = new Date('2026-01-15T12:00:00Z');
 const NOW_SECONDS = Math.floor(NOW.getTime() / 1000);
 const { mockLocation } = rs.hoisted(() => ({ mockLocation: { pathname: '/overview' } }));
 
-/**
- * Returns a Unix timestamp (seconds since epoch) offset by a given number of days.
- * A negative `daysOffset` will give a past timestamp, and a positive one will give a future timestamp.
- *
- * @param daysOffset - The number of days to offset (default is 0).
- * @returns Unix timestamp in seconds.
- */
 const getUnixTimestampWithExpiration = (daysOffset = 0) => NOW_SECONDS + daysOffset * 86_400;
 
 rs.mock('@tanstack/react-router', () => {
@@ -459,7 +452,6 @@ describe('licenseUtils', () => {
     });
 
     test('hides the trial notice once the cluster holds an active enterprise license', () => {
-      // Console keeps the trial it copied from the cluster at boot; the cluster has since been licensed.
       api.licenses = [bakedInTrial(License_Source.REDPANDA_CONSOLE), enterprise(License_Source.REDPANDA_CORE, 90)];
       const screen = renderWithRouter(<OverviewLicenseNotification />, { route: '/overview' });
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();

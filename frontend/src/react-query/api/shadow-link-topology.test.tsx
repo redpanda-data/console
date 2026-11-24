@@ -446,7 +446,6 @@ describe('readPeerClusterFence', () => {
     expect((failure as PeerFenceReadError).reason).toBe(reason);
   });
 
-  /** The transport the read really uses, answered by a stand-in for the network. */
   const answeringWith = (status: number, contentType: string, body: string) =>
     transports.peers.set(
       PROD_CONSOLE,

@@ -48,7 +48,7 @@ rs.mock('state/ui-state', () => ({
   },
 }));
 
-// recharts ResponsiveContainer requires measured dimensions; stub to a simple div
+// WARNING: Do not use the Happy DOM chart fixture as a layout check; ResponsiveContainer requires measured dimensions.
 function ResponsiveContainerStub({ children }: { children: React.ReactNode }) {
   return <div data-testid="responsive-container">{children}</div>;
 }

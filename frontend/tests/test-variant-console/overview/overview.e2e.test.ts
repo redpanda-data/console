@@ -1,20 +1,9 @@
 import { expect, test } from '../../shared/e2e';
 
-/**
- * Smoke coverage for the overview page — the first screen anyone sees, and until now
- * the largest route with no Playwright spec at all.
- *
- * Deliberately shallow: it asserts the panels are present and populated, not their
- * values, which depend on the cluster the suite happens to run against.
- *
- * Locators are scoped rather than page-wide: several of these labels ("Topics",
- * "Security", "Schema Registry") are also sidebar nav items, so an unscoped
- * `getByText(..., { exact: true })` resolves to two elements and trips strict mode.
- */
+// WARNING: Scope overview stat labels to their section; the sidebar repeats several names and makes page-wide locators ambiguous.
 const STAT_LABEL = '[data-slot="stat-label"]';
 const BROKER_ID_LABEL = /^Broker ID$/iu;
 const ROLE_LABEL = /^Role$/iu;
-/** Exact-match on a stat label, scoped so sidebar items with the same text cannot collide. */
 const exactly = (label: string) => new RegExp(`^${label}$`, 'iu');
 
 test.describe('overview', () => {

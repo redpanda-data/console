@@ -140,7 +140,6 @@ describe('lint-required overrides', () => {
     result.config?.children?.find((c) => c.name === name) as RawFieldSpec;
 
   test('stamps the lint-enforced fields required even without a usable schema', () => {
-    // The degraded path (no raw schema at all — e.g. older dataplanes) must still apply them.
     const [result] = enrichComponentsWithConfigSchema([redpandaInput], undefined);
     expect(fieldOf(result, 'topics').requiredBySchema).toBe(true);
     expect(fieldOf(result, 'consumer_group').requiredBySchema).toBe(true);

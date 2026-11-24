@@ -136,7 +136,6 @@ const partitionOffset = (partitionId: number, groupOffset: number) => ({
   lag: 0,
 });
 
-/** A KIP-848 group with two members, one of which has not yet reached the group epoch. */
 const mockConsumerGroup: GroupDescription = {
   ...mockGroup,
   groupType: 'consumer',

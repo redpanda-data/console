@@ -27,10 +27,7 @@ import {
 } from './save-actions';
 import { describe, expect, it } from 'bun:test';
 
-/**
- * A ConnectError as it arrives off the wire: details are decoded into `{ type, value, debug }`
- * rather than the `{ desc, value }` pairs a locally-constructed error carries.
- */
+// WARNING: Use decoded error details here; locally constructed ConnectError instances have a different descriptor shape.
 function wireError(message: string, code: Code, details: Array<{ type: string; debug?: unknown }>) {
   const error = new ConnectError(message, code);
   Object.defineProperty(error, 'details', {

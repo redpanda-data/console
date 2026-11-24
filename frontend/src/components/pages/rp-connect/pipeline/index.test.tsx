@@ -99,9 +99,7 @@ function enableFeatures(...enabled: FeatureFlagKey[]) {
 
 const mockNavigate = rs.fn();
 const mockBack = rs.fn();
-// Overridable so the leave-without-saving dialog can be driven directly; the guard itself belongs to
-// the router, not to this page. The options are passed through so a test can ask the page's own
-// `shouldBlockFn` whether it would block, which is the only honest way to test the guard here.
+// WARNING: Pass the page’s own guard options through; a stubbed blocker result cannot prove when navigation should block.
 type BlockerOptions = { shouldBlockFn: () => boolean };
 const mockBlocker = rs.fn(
   (_options?: BlockerOptions) =>
@@ -143,8 +141,7 @@ const mockEditorInstance = {
     cursorPositionListeners.push(cb);
     return { dispose: rs.fn() };
   }),
-  // Mirrors Monaco: setSelection places the cursor at the selection end and notifies
-  // cursor-position listeners synchronously, before the call returns.
+  // WARNING: Emit cursor movement synchronously; a delayed notification cannot reproduce the nested-row selection regression.
   setSelection: rs.fn((sel: { endLineNumber: number; endColumn: number }) => {
     for (const cb of cursorPositionListeners) {
       cb({ position: { lineNumber: sel.endLineNumber, column: sel.endColumn } });
@@ -186,7 +183,6 @@ rs.mock('components/ui/yaml/yaml-editor', () => ({
   YamlEditor: MockYamlEditor,
 }));
 
-// Monaco's diff editor is heavy and needs a real layout; stub it to a marker carrying both sides.
 function MockDiffEditor(props: { original?: string; modified?: string }) {
   return React.createElement('div', {
     'data-testid': 'diff-editor',
@@ -199,8 +195,6 @@ rs.mock('components/misc/monaco-editor', () => ({
   DiffEditor: MockDiffEditor,
 }));
 
-// The expanded Visual lane renders the canvas; stub it to a marker carrying the YAML, with the
-// node's "Add user" action for each section's `redpanda` component.
 function MockPipelineFlowCanvas(props: {
   configYaml: string;
   onAddSasl?: (section: string, componentName: string) => void;
@@ -243,7 +237,6 @@ function MockPipelineThroughputCard() {
 
 rs.mock('./pipeline-throughput-card', () => ({ PipelineThroughputCard: MockPipelineThroughputCard }));
 
-// Counted, not just queried: mounting is what fires the logs and throughput requests.
 const logsTabRenders = { count: 0 };
 function MockLogsTab() {
   logsTabRenders.count += 1;
@@ -259,7 +252,6 @@ function MockLogExplorer() {
 
 rs.mock('components/ui/connect/log-explorer', () => ({ LogExplorer: MockLogExplorer }));
 
-// Simplified stub — the real menu needs secrets/topics/users RPCs; variant distinguishes dialog vs popover.
 function MockPipelineCommandMenu(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -285,7 +277,7 @@ rs.mock('./pipeline-command-menu', () => ({
   PipelineCommandMenu: MockPipelineCommandMenu,
 }));
 
-// What a draft-capable backend returns: the console backend drops `create_time` when it predates drafts.
+// WARNING: Pre-draft servers omit create_time; a draft request against one can deploy the pipeline instead.
 const DRAFT_ERA_PIPELINE = create(PipelineSchema, {
   id: 'existing',
   displayName: 'Existing pipeline',
@@ -382,7 +374,6 @@ function createTransport(overrides?: TransportOverrides) {
 
 const secretRef = (secretName: string, key: string) => `\${secrets.${secretName}.${key}}`;
 
-/** Logs its output in with the pipeline's service account, which the YAML itself doesn't carry. */
 const SERVICE_ACCOUNT_LOGIN_YAML =
   'input:\n  stdin: {}\noutput:\n  redpanda:\n    topic: orders\n    sasl:\n      - mechanism: REDPANDA_CLOUD_SERVICE_ACCOUNT\n';
 
@@ -435,8 +426,7 @@ const addServiceAccountToOutput = async (user: ReturnType<typeof userEvent.setup
   await submitServiceAccountLogin(user);
 };
 
-// What CreatePipeline answers with. The state is not incidental: the editor trusts the response
-// over the flag it sent. Defaults to what a drafts-capable server returns.
+// WARNING: Use the returned pipeline state, not the requested draft flag; the server can still deploy the create.
 const createdPipelineResponse = (id: string, state: Pipeline_State = Pipeline_State.DRAFT) =>
   create(ConsoleCreatePipelineResponseSchema, {
     response: create(CreatePipelineResponseSchema, { pipeline: create(PipelineSchema, { id, state }) }),
@@ -1088,8 +1078,6 @@ describe('the PipelinePage', () => {
 
       const { user } = await renderPipelinePage('create');
 
-      // A processor switch whose last case closes the component: revealing the switch selects its
-      // whole line range, so the synchronous cursor event lands inside the nested `log` processor.
       fireEvent.change(await screen.findByTestId('yaml-editor'), {
         target: {
           value: [
@@ -1179,8 +1167,6 @@ describe('the PipelinePage', () => {
         expect(screen.getByTestId('command-menu')).toBeInTheDocument();
       });
 
-      // Fire a slash trigger through the mock editor's content-change listener; the mock's position
-      // {line:1,col:4} + line content '  /' is a valid trigger, so the hook closes the command menu.
       act(() => {
         for (const cb of contentChangeListeners) {
           cb({ changes: [{ text: '/' }] });
@@ -1250,8 +1236,6 @@ describe('the PipelinePage', () => {
     });
   });
 
-  // The node's Add user action writes the component's login into the YAML; whatever that login needs
-  // outside the YAML has to reach the save as well.
   describe('add user quick action', () => {
     beforeEach(() => {
       enableFeatures('enableRpcnVisualEditor', 'enablePipelineDiagrams');
@@ -1394,7 +1378,6 @@ describe('the PipelinePage', () => {
     });
 
     describe('the topic and consumer group it grants', () => {
-      // A user added before its topic gets no topic ACL, and adding the topic later grants nothing.
       it.each([
         ['has no topic yet', 'output:\n  redpanda: {}\n', true],
         ['already names its topic', REDPANDA_OUTPUT_YAML, false],
@@ -1532,8 +1515,6 @@ describe('pipelinePage saving and recovering work', () => {
 
         expect(sent.draft).toBe(true);
         expect(pipelineRequests.stopPipeline).toHaveLength(0);
-        // Parking work keeps the editor open, now bound to the draft so the next save updates it rather
-        // than forking a second one.
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/new-pipeline/edit' }));
       });
 
@@ -1551,8 +1532,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(sent.draft).toBe(true);
       });
 
-      // A console backend that predates drafts drops `draft` on the way in and `create_time` on the way
-      // out, so a pipeline without the latter means a draft save would deploy.
       it('offers no draft when the console backend predates drafts', async () => {
         const user = userEvent.setup();
         const listPipelinesHandler = () =>
@@ -1589,7 +1568,6 @@ describe('pipelinePage saving and recovering work', () => {
         });
       });
 
-      // Until the sample answers, the primary save would deploy, so a quick click or ⌘S has to wait.
       it('holds save until it knows whether the cluster can store drafts', async () => {
         const { user, answerSample } = await renderCreatePageAwaitingDraftSample();
 
@@ -1606,9 +1584,7 @@ describe('pipelinePage saving and recovering work', () => {
     });
 
     describe('a create that comes back deployed', () => {
-      // The flag can be on before the API that understands it has rolled out, in which case `draft` is
-      // dropped in transit and the pipeline deploys for real. Never report that as a parked draft, and
-      // do not leave the deployment running on the strength of a toast the user may not read.
+      // WARNING: Do not leave an unexpected deployment running by only showing an error toast; the draft response can actually be deployed.
       it('stops a create that came back deployed instead of drafted', async () => {
         const { createPipelineHandler, stopPipelineHandler } = deployingCreate();
         const { user } = await renderPipelinePage('create', { createPipelineHandler, stopPipelineHandler });
@@ -1677,8 +1653,7 @@ describe('pipelinePage saving and recovering work', () => {
         expect(autosaveEntry('test-pipeline')?.name).toBe('newer-unsaved-name');
       });
 
-      // A save that navigates unmounts the editor, so the debounced write never runs and the edit has
-      // to be stored as part of the save itself.
+      // WARNING: A save can unmount the editor before its debounce fires; preserve edits entered while the save was pending.
       it('keeps an in-flight settings edit recoverable when the save navigates away', async () => {
         await renameWhileSaveInFlight(Pipeline_State.STOPPED);
 
@@ -1751,9 +1726,7 @@ describe('pipelinePage saving and recovering work', () => {
         expect(pipelineRequests.createPipeline[0]?.request?.pipeline?.displayName).toBe('Untitled pipeline');
       });
 
-      // Narrow, and at save time rather than on mount: the unfiltered list drains every page, and as a
-      // query this lookup would share the list's one cache entry (the input never reaches the query key,
-      // see `useListPipelinesQuery`) and replace the list with its filtered result.
+      // WARNING: Do not reuse the list query for the save-time name lookup; the shared cache key would replace the list with the filtered results.
       it('looks up untitled names only when saving, with a narrow request', async () => {
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
         const { listPipelinesHandler, requests } = recordedNameLookups();
@@ -1804,7 +1777,6 @@ describe('pipelinePage saving and recovering work', () => {
         await waitFor(() => expect(pipelineRequests.createPipeline.length).toBeGreaterThan(0));
       });
 
-      // Numbering is a nicety; duplicate display names are legal. Losing the work is not an option.
       it('still saves the draft when the name lookup fails', async () => {
         const user = userEvent.setup();
         const createPipelineHandler = () => createdPipelineResponse('new-pipeline');
@@ -1839,8 +1811,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(pipelineRequests.stopPipeline).toHaveLength(0);
       });
 
-      // Blocked client-side rather than round-tripping to be told there is no pipeline to run. The copy
-      // itself is covered in save-actions.test.ts; toasts aren't mounted in this harness.
       it("won't start an empty pipeline", async () => {
         const user = userEvent.setup();
 
@@ -1972,8 +1942,6 @@ describe('pipelinePage saving and recovering work', () => {
 
         const yamlEditor = (await screen.findByTestId('yaml-editor')) as HTMLTextAreaElement;
         await waitFor(() => expect(yamlEditor.value).toBe(partialConfig));
-        // Nothing to save yet: reopening a draft is not an edit of it. Scoped to the status pill — the
-        // lane tab is called "Unsaved changes" whether or not there are any.
         expect(screen.queryByText('Unsaved changes', { selector: '[role="status"]' })).not.toBeInTheDocument();
 
         await user.click(await screen.findByTestId('save-pipeline'));
@@ -2019,8 +1987,6 @@ describe('pipelinePage saving and recovering work', () => {
         fireEvent.change(await screen.findByTestId('yaml-editor'), { target: { value: 'input:\n  edited: {}' } });
         await user.click(await screen.findByTestId('save-pipeline'));
 
-        // Only a draft save asserts `draft`, so only a draft save can be refused for that reason. Saying
-        // otherwise would send the user looking for a teammate who started something.
         await waitFor(() => expect(toastMessages('error').length).toBeGreaterThan(0));
         expect(toastMessages('error')).not.toContainEqual(NO_LONGER_DRAFT_MESSAGE);
         expect(toastMessages('error')).toContainEqual(expect.stringMatching(/suspended/iu));
@@ -2070,8 +2036,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(screen.queryByRole('tab', { name: /unsaved changes/iu })).not.toBeInTheDocument();
       });
 
-      // Nothing is saved on the create page, so every component would be listed as "Added" and the count
-      // would only restate how big the document is.
       it('is not offered while creating', async () => {
         await mountPipelinePage('create', { transport: createTransport() });
 
@@ -2202,8 +2166,7 @@ describe('pipelinePage saving and recovering work', () => {
         expect(await screen.findByRole('heading', { name: 'Components' })).toBeInTheDocument();
       });
 
-      // The diff drops to a single inline pane on a narrow lane, so the legend keys on the gutter markers
-      // rather than on colour or left/right.
+      // WARNING: Do not key the diff legend on left/right or only on color; a narrow lane renders one inline pane.
       it('says what the two sides of the diff are', async () => {
         const user = userEvent.setup();
 
@@ -2297,8 +2260,7 @@ describe('pipelinePage saving and recovering work', () => {
       await waitFor(() => expect(useRpcnEditorAutosaveStore.getState().entries).toHaveLength(0));
     });
 
-    // Deleting is a departure the user has already confirmed, so a second dialog would offer to save
-    // the draft that was just deleted — writing to a pipeline that no longer exists.
+    // WARNING: Do not offer a second save after confirmed deletion; it would write to a pipeline that no longer exists.
     it('stands the unsaved-changes guard down after deleting, so no second dialog follows', async () => {
       const { user } = await renderPipelinePage('edit', {
         getPipelineHandler: draftPipeline,
@@ -2347,8 +2309,7 @@ describe('pipelinePage saving and recovering work', () => {
 
       await waitFor(() => expect(pipelineRequests.createPipeline.length).toBeGreaterThan(0));
       expect(pipelineRequests.createPipeline[0]?.request?.pipeline?.draft).toBe(true);
-      // The dialog's own proceed is what resumes the navigation, so the editor must not add one of
-      // its own — two navigations would flash a route nobody chose.
+      // WARNING: Let the blocker resume its own navigation; another navigation can briefly show an unrelated route.
       await waitFor(() => expect(proceed).toHaveBeenCalled());
       expect(mockNavigate).not.toHaveBeenCalled();
     });
@@ -2371,8 +2332,6 @@ describe('pipelinePage saving and recovering work', () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    // A quota-full cluster is the realistic version of this: the better exit is gone, and Discard must
-    // not become the only one.
     it('falls back to keeping the edits in this browser when the draft cannot be saved', async () => {
       const { proceed } = blocked();
       const createPipelineHandler = () => {
@@ -2411,8 +2370,7 @@ describe('pipelinePage saving and recovering work', () => {
 
       await user.click(await screen.findByTestId('leave-and-keep-edits'));
 
-      // Asserted without waiting out the debounce: the pending write dies with the page, so the button
-      // that promises the edits are kept has to flush them itself.
+      // WARNING: Keeping edits must flush the pending draft write before unmount cancels the debounce.
       const buffer = useRpcnEditorAutosaveStore.getState().entries.find((e) => e.targetKey === 'test-pipeline');
       expect(buffer?.configYaml).toBe('input:\n  half_typed');
       expect(proceed).toHaveBeenCalled();
@@ -2564,8 +2522,6 @@ describe('pipelinePage saving and recovering work', () => {
         expect(await screen.findByTestId('autosave-restore-notice')).toBeInTheDocument();
       });
 
-      // Quiet periods run on a fake clock that still advances by itself, so a debounce window
-      // passes on demand rather than as a real wait.
       describe('across a debounce window', () => {
         beforeEach(() => {
           rs.useFakeTimers({ shouldAdvanceTime: true });
@@ -2747,7 +2703,7 @@ describe('pipelinePage saving and recovering work', () => {
       expect(screen.queryByRole('tab', { name: 'Monitor' })).not.toBeInTheDocument();
       expect(screen.queryByTestId('log-explorer')).not.toBeInTheDocument();
       expect(screen.queryByTestId('logs-tab')).not.toBeInTheDocument();
-      // Not even for the one commit before the lane correction: mounting is what fires the requests.
+      // WARNING: Even a single Monitor mount before correcting the lane starts network requests.
       expect(logsTabRenders.count).toBe(0);
     });
 
@@ -2799,7 +2755,7 @@ describe('pipelinePage saving and recovering work', () => {
       await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
       unmount();
 
-      // The editor the navigation lands on. Hydration clears hints, so they are seeded after it.
+      // WARNING: Seed hints after editor hydration; hydration clears earlier hints.
       await mountPipelinePage('edit', { transport: draftTransport() });
 
       expect(await screen.findByText(/secret NOT_YET_CREATED does not exist/u)).toBeInTheDocument();
@@ -2838,7 +2794,7 @@ describe('pipelinePage saving and recovering work', () => {
       await mountPipelinePage('view', { transport: draftTransport() });
 
       await screen.findByTestId('draft-view-notice');
-      // Same button copy as any other pipeline, but the generic start has nowhere to send a lint failure.
+      // WARNING: Do not assume the generic start button can show per-line lint issues; this entrypoint has no editor.
       expect(await screen.findByTestId('start-draft')).toHaveTextContent('Start pipeline');
       expect(screen.queryByTestId('pipeline-start')).not.toBeInTheDocument();
     });

@@ -19,7 +19,7 @@ import { MAX_REGION_PIECE_PX, PipelineFlowCanvas, PipelineMiniMap } from './pipe
 
 const JOIN_NAME_RE = /branches reconverge/iu;
 
-// React Flow needs ResizeObserver + measurable container dimensions to mount nodes in Happy DOM.
+// WARNING: React Flow cannot mount measured nodes in Happy DOM without an observable size and ResizeObserver.
 const ResizeObserverMock = rs.fn(function ResizeObserver() {
   return {
     observe: rs.fn(),
@@ -107,7 +107,6 @@ function regionFillPieces(container: HTMLElement) {
 
 describe('the PipelineFlowCanvas — placeholder cards', () => {
   it('renders a non-interactive "No output configured" note in read-only mode', async () => {
-    // No edit callbacks → viewer mode; a disabled "Add output" would read as broken permissions.
     render(<PipelineFlowCanvas configYaml={NO_OUTPUT_YAML} />);
     expect(await screen.findByText('No output configured')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: ADD_OUTPUT_RE })).not.toBeInTheDocument();
@@ -119,8 +118,7 @@ describe('the PipelineFlowCanvas — placeholder cards', () => {
   });
 });
 
-// Reports each element only once, so nothing re-measures a node after a rebuild: its handle bounds
-// have to survive on their own.
+// WARNING: Do not remeasure on each rebuild here; that would hide loss of the handles’ prior bounds.
 class MeasureOnceResizeObserver {
   private readonly seen = new WeakSet<Element>();
   constructor(private readonly callback: ResizeObserverCallback) {}
@@ -160,7 +158,6 @@ describe('the PipelineFlowCanvas — measured nodes', () => {
     const { container, rerender } = render(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} />);
     await waitFor(() => expect(container.querySelectorAll('.react-flow__edge')).toHaveLength(1));
 
-    // Selection re-decorates every node into a new object; no new measurement follows.
     rerender(<PipelineFlowCanvas configYaml={VALID_PIPELINE_YAML} selectedNodeId="input-0" />);
     await waitFor(() => expect(container.querySelector('.ring-primary')).not.toBeNull());
     expect(container.querySelectorAll('.react-flow__edge')).toHaveLength(1);
@@ -221,20 +218,16 @@ describe('the PipelineFlowCanvas — control-flow render', () => {
 
     expect(screen.getAllByText('switch').length).toBeGreaterThan(0);
     expect(screen.getAllByText('branch').length).toBeGreaterThan(0);
-    // The construct name can also appear as a faint scope-region label, so allow more than one match.
     expect(screen.getAllByText('catch').length).toBeGreaterThan(0);
 
     expect(screen.getByText('3 cases')).toBeInTheDocument();
     expect(screen.getByText('on error')).toBeInTheDocument();
 
     expect(screen.getAllByRole('img', { name: JOIN_NAME_RE }).length).toBeGreaterThan(0);
-    // Edge labels (the case conditions) render via EdgeLabelRenderer, which Happy DOM doesn't lay out;
-    // asserted in the parser unit test instead.
+    // WARNING: Use the parser tests for edge label text; Happy DOM does not lay out the React Flow label renderer.
   });
 
-  // A switch fanning out to many cases makes its scope region very tall; a single fill div that tall
-  // exceeds the browser's max paintable size and silently stops painting. Fix: stacked, size-capped
-  // pieces so the background always renders.
+  // WARNING: A single fill taller than the browser’s paint limit disappears; keep the scope background split into bounded pieces.
   it('caps every scope-region fill piece so a tall area still renders its background', async () => {
     const { container } = render(<PipelineFlowCanvas configYaml={tallSwitchYaml(60)} />);
     await screen.findAllByText('switch');
@@ -250,7 +243,6 @@ describe('the PipelineFlowCanvas — control-flow render', () => {
   });
 });
 
-// Drives the RF store directly so the test controls pane size and transform without RF measuring Happy DOM.
 function SetFlowState({
   transform,
   width,
@@ -287,9 +279,7 @@ function expectBoxWithin(box: AttrBox, width: number, height: number) {
 
 describe('the PipelineMiniMap — viewport outside the pan extent', () => {
   it('keeps the viewport rect fully inside the svg when the transform sticks out of the extent', () => {
-    // An insert re-runs Dagre and moves `translateExtent`, but RF doesn't re-clamp the current
-    // transform — so the live viewport can sit partly outside the extent until the next pan.
-    // tx=150 → viewLeft = -150, left of the extent's minX=0 (and viewTop = -80 above minY=0).
+    // WARNING: Changing translateExtent does not re-clamp the live viewport until a pan; insertion must re-clamp it itself.
     render(
       <ReactFlowProvider>
         <SetFlowState height={800} transform={[150, 80, 1]} width={1200} />

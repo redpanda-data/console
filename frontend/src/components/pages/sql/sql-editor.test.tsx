@@ -14,8 +14,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 
 import { SqlEditor } from './sql-editor';
 
-// CodeMirror's layout/measure loop doesn't run in Happy DOM; the editor surface is
-// exercised manually/e2e.
+// WARNING: Do not use this harness to prove CodeMirror layout; the measure loop requires a real browser.
 rs.mock('@uiw/react-codemirror', () => ({
   default: ({ value }: { value: string }) => <div data-testid="editor">{value}</div>,
 }));

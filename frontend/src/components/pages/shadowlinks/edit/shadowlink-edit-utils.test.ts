@@ -30,10 +30,6 @@ import { buildDataplaneUpdateRequest } from './shadowlink-edit-utils';
 import { describe, expect, test } from 'bun:test';
 import { buildDefaultFormValues } from '../mappers/dataplane';
 
-/**
- * Create a mock shadow link matching the fixture in shadowlink-edit-page.test.tsx
- * (SCRAM auth, '*' topic filter, empty ACLs).
- */
 const createMockShadowLink = () =>
   create(ShadowLinkSchema, {
     name: 'test-shadow-link',

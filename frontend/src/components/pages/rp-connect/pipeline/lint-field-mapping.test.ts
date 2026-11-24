@@ -93,7 +93,7 @@ describe('mapLintHintsToFields', () => {
   describe('anchor precedence', () => {
     test('an explicit field reference beats the line anchor', () => {
       const message = 'field seed_brokers is required';
-      const { byField } = run([hint(6, message)]); // line 6 is `topics:`
+      const { byField } = run([hint(6, message)]);
       expect(byField.get('seed_brokers')).toEqual([message]);
       expect(byField.has('topics')).toBe(false);
     });
@@ -132,8 +132,8 @@ describe('mapLintHintsToFields', () => {
         yaml: YAML,
         target,
         componentName: 'redpanda',
-        hints: [hint(8, 'expected bool value')], // tls/enabled's line
-        fieldKeys: new Set(['tls']), // only the group section is rendered
+        hints: [hint(8, 'expected bool value')],
+        fieldKeys: new Set(['tls']),
       });
       expect(byField.get('tls')).toEqual(['expected bool value (enabled)']);
     });

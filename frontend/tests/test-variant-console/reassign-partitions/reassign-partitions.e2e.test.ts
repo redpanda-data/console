@@ -1,18 +1,6 @@
 import { expect, type Page, test } from '../../shared/e2e';
 
-/**
- * Smoke coverage for the reassign-partitions wizard: three steps of shared state.
- *
- * It walks step 1 → step 2 and back, because the step state is the thing a re-skin
- * can break invisibly: the wizard owns `currentStep` and every guard reads it, and
- * the Next button is enabled only once the step's own precondition holds.
- *
- * Deliberately stops before "Start Reassignment" — this suite runs against a live
- * cluster and starting a reassignment is not a smoke test.
- *
- * The header stats are scoped: step 1's SelectionInfoBar repeats "Leader Partitions"
- * and "Total Partitions", so a page-wide exact match trips strict mode.
- */
+// WARNING: Stop before Start Reassignment; this smoke test uses a live cluster and should not move partitions.
 const SELECT_TOPIC_LABEL = /^Select topic /u;
 const SELECT_PARTITION_LABEL = /^Select partition /u;
 

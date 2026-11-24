@@ -55,7 +55,6 @@ const summaryAt = (revision: number, overrides: Record<string, unknown> = {}) =>
   ...overrides,
 });
 
-/** Stands in for the polled status, so a test can change it while the dialog is open. */
 const live = {
   value: { summary: summaryAt(2), brokers: [{ nodeId: 1, status: 'confirmed' }] } as unknown,
   open: true,

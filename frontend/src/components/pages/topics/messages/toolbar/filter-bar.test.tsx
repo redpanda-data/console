@@ -64,13 +64,7 @@ const StatefulBar = (props: Partial<FilterBarProps> & { spies: FilterBarProps })
   );
 };
 
-/**
- * Simulates a parent whose three pieces of state don't all echo back in the same render — e.g.
- * separate URL-state setters that each trigger their own history/render cycle instead of one
- * atomic update. `fieldTokens` here is held back until `flushSignal` changes, deterministically
- * reproducing "one piece catches up a render behind the others" without racing a real timer
- * against the ongoing typing simulation.
- */
+// WARNING: Do not echo all three values together here; that would hide the one-render URL lag that overwrites active typing.
 const StaggeredBar = (props: { spies: FilterBarProps; flushSignal: number }) => {
   const [quickSearch, setQuickSearch] = useState('');
   const [fieldTokens, setFieldTokens] = useState<FieldFilterToken[]>([]);
@@ -386,7 +380,6 @@ describe('the FilterBar', () => {
       const { rerender } = render(<StaggeredBar flushSignal={0} spies={spies} />);
       await userEvent.click(input());
       await userEvent.keyboard('key:abc value:xyz');
-      // fieldTokens hasn't caught up to what was emitted yet — text must still be intact
       expect(input()).toHaveValue('key:abc value:xyz');
       rerender(<StaggeredBar flushSignal={1} spies={spies} />);
       expect(input()).toHaveValue('key:abc value:xyz');

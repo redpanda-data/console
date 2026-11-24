@@ -107,7 +107,6 @@ const setTopology = (overrides: Partial<ShadowLinkTopology> = {}, openCluster = 
     },
   });
 
-/** Kafka error names the fence returns by default; clusters can configure others. */
 const ERROR_CODE_NAMES = /REQUEST_TIMED_OUT|POLICY_VIOLATION|COORDINATOR_NOT_AVAILABLE/u;
 
 describe('the ClusterFenceSourcePanel', () => {

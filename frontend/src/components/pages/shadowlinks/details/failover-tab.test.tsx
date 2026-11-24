@@ -151,7 +151,7 @@ describe('the FailoverTab', () => {
       expect(screen.getByTestId('failover-step-lag')).not.toHaveTextContent('exempt');
     });
 
-    // A name that would read as JSON is quoted, as routers write it, so the host's router keeps it a string.
+    // WARNING: Keep JSON-like names quoted in the URL; the host router would otherwise read them as values instead of strings.
     test.each([
       ['shadow/orders', 'shadow%2Forders'],
       ['1001', '%221001%22'],

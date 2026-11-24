@@ -24,17 +24,13 @@ import { useControllableState } from 'components/redpanda-ui/lib/use-controllabl
 
 import { labelsToMap, SCOPE_OPTIONS } from './secret-form-shared';
 
-// cmdk calls scrollIntoView which is not available in Happy DOM
+// WARNING: Keep scrollIntoView available in the DOM harness; cmdk calls it when options move.
 beforeAll(() => {
   Element.prototype.scrollIntoView = () => {};
 });
 
 const EMPTY_SCOPES: string[] = [];
 
-/**
- * Helper component that mirrors the scope MultiSelect usage in the
- * secret create / edit pages, but without any form or routing wiring.
- */
 function ScopeMultiSelect({ defaultValue = EMPTY_SCOPES }: { defaultValue?: string[] }) {
   const [value, setValue] = useControllableState({ defaultProp: defaultValue });
 

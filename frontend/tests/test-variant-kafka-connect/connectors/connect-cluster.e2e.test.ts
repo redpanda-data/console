@@ -104,7 +104,7 @@ test.describe('kafka Connect Wizard', () => {
 });
 
 test.describe('kafka Connect Connector Lifecycle', () => {
-  // Run sequentially — delete must happen last
+  // WARNING: Keep the connector cases serial with delete last; later steps need the same live connector.
 
   let request: APIRequestContext;
   test.beforeAll(async () => {

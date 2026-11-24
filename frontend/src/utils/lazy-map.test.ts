@@ -32,7 +32,7 @@ describe('the LazyMap', () => {
       const map = new LazyMap<string, number>(() => 0, 2);
       map.get('a');
       map.get('b');
-      map.get('c'); // exceeds cap -> 'a' (oldest) evicted
+      map.get('c');
 
       expect(map.size).toBe(2);
       expect(map.has('a')).toBe(false);

@@ -25,7 +25,6 @@ rs.mock('state/app-global', () => ({
   },
 }));
 
-// Delegates to the real store-backed proxy so `api.topics` reads the test state; refreshes are no-ops.
 rs.mock('state/backend-api', () => {
   const actual = rs.requireActual<typeof import('state/backend-api')>('state/backend-api');
   const refresh = rs.fn(() => Promise.resolve());

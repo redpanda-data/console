@@ -5,10 +5,6 @@ const test = base.extend({ playwright: definePlaywrightOptions({ storageState: {
 
 const LOGIN_URL = /\/login/u;
 
-/**
- * The credential form's failure path. `auth.setup.ts` exercises the success path for
- * every enterprise spec, so a rejected password is only asserted here.
- */
 test.describe('login', () => {
   test('rejects a wrong password inline and stays on the login page', async ({ page }) => {
     await page.goto('/login');

@@ -147,9 +147,7 @@ const createBaseShadowLink = () =>
     syncedShadowTopicProperties: [],
   });
 
-// Helper to create a minimal controlplane ShadowLink for testing.
-// Hydrating it through buildDefaultFormValuesFromControlplane must equal
-// baseFormValues so unchanged categories never produce false-positive masks.
+// WARNING: Hydrate untouched categories to the same values; unequal fixtures manufacture field masks unrelated to the test.
 const createBaseControlplaneShadowLink = () =>
   create(CpShadowLinkSchema, {
     id: 'cp-shadow-link-id',
@@ -196,9 +194,6 @@ const createBaseControlplaneShadowLink = () =>
     },
   });
 
-/**
- * Pause role sync with a custom interval: neither is exposed in the UI, so both must round-trip
- */
 const pauseRoleSyncWithCustomInterval = (roleSyncOptions: { paused: boolean; interval?: Duration } | undefined) => {
   if (!roleSyncOptions) {
     throw new Error('base shadow link must have role sync options');
@@ -322,8 +317,7 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      // The whole role_sync_options message is replaced by the mask path, so
-      // the fields the UI never exposes must carry over from the fetched link
+      // WARNING: A role_sync_options mask replaces the parent message; preserve fields the form never exposes.
       expect(result.updateMask?.paths).toContain('role_sync_options');
       expect(result.shadowLink?.roleSyncOptions?.paused).toBe(true);
       expect(result.shadowLink?.roleSyncOptions?.interval?.seconds).toBe(300n);
@@ -698,8 +692,7 @@ describe('buildDataplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      // The whole role_sync_options message is replaced by the mask path, so
-      // the fields the UI never exposes must carry over from the fetched link
+      // WARNING: A role_sync_options mask replaces the parent message; preserve fields the form never exposes.
       expect(result.updateMask?.paths).toContain('configurations.role_sync_options');
       expect(result.shadowLink?.configurations?.roleSyncOptions?.paused).toBe(true);
       expect(result.shadowLink?.configurations?.roleSyncOptions?.interval?.seconds).toBe(300n);
