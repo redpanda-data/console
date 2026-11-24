@@ -57,7 +57,6 @@ const findCategory = (property: string) =>
   Object.entries(CATEGORY_PROPERTIES_MAP).find(([, properties]) => properties.includes(property))?.[0] ??
   OTHER_CATEGORY;
 
-/** Groups properties by their first matching category, in map order, with uncategorized ones last under "Other". */
 const groupPropertiesByCategory = (properties: string[]) => {
   const grouped = new Map<string, string[]>();
   for (const property of properties) {

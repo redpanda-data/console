@@ -186,6 +186,8 @@ function mapDataplaneConfigurations(config: ShadowLinkConfigurations | undefined
 
 /**
  * Transform dataplane API response to unified model
+ *
+ * Certificate material distinguishes mTLS from server-authenticated TLS.
  */
 export function fromDataplaneShadowLink(sl: DataplaneShadowLink) {
   const link: UnifiedShadowLink = {
@@ -199,10 +201,6 @@ export function fromDataplaneShadowLink(sl: DataplaneShadowLink) {
   return link;
 }
 
-/**
- * Extract TLS settings from shadow link client options
- * mTLS is determined by presence of certificates
- */
 const extractTLSSettings = (tlsCertsSettings: TLSSettings['tlsSettings'] | undefined) => {
   if (!tlsCertsSettings) {
     return {
@@ -249,9 +247,6 @@ const extractTLSSettings = (tlsCertsSettings: TLSSettings['tlsSettings'] | undef
   } satisfies Pick<FormValues, 'mtlsMode' | 'mtls'>;
 };
 
-/**
- * Extract authentication settings from shadow link client options
- */
 const extractAuthSettings = (clientOptions: ShadowLinkClientOptions | undefined) => {
   const authConfig = clientOptions?.authenticationConfiguration;
   const scramConfig =
@@ -284,9 +279,6 @@ const extractAuthSettings = (clientOptions: ShadowLinkClientOptions | undefined)
   } satisfies Pick<FormValues, 'authMethod' | 'scramCredentials' | 'plainCredentials'>;
 };
 
-/**
- * Extract advanced client options from shadow link client options
- */
 const extractAdvancedClientOptions = (clientOptions: ShadowLinkClientOptions | undefined) => ({
   metadataMaxAgeMs: clientOptions?.metadataMaxAgeMs || 10_000,
   connectionTimeoutMs: clientOptions?.connectionTimeoutMs || 1000,

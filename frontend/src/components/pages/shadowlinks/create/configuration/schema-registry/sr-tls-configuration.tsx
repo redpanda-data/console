@@ -55,11 +55,6 @@ const reportRevalidationError = (error: unknown) => {
   toast.error('Failed to validate the form', { description: String(error) });
 };
 
-/**
- * Trash affordance overlaid on the top-right corner of a dropzone or
- * configured-material row. Stops propagation so the click never reaches the
- * dropzone's file picker underneath.
- */
 const RemoveMaterialButton = ({ label, onRemove, testId }: { label: string; onRemove: () => void; testId: string }) => (
   <Button
     aria-label={label}
@@ -77,12 +72,6 @@ const RemoveMaterialButton = ({ label, onRemove, testId }: { label: string; onRe
   </Button>
 );
 
-/**
- * Duplicated from connection/mtls-configuration.tsx rather than parameterized:
- * that component hardwires the connection step's 'mtls.*' field paths, its
- * file-path input mode, and the embedded secret-selector flow, none of which
- * apply here — the Schema Registry section is PEM uploads only.
- */
 function SrCertificateDropzone({ certType, optional }: { certType: SrCertificateType; optional?: boolean }) {
   const { control, setValue, trigger } = useFormContext<FormValues>();
   const cert = useWatch({ control, name: `schemaRegistry.mtls.${certType}` });
@@ -186,11 +175,6 @@ const SrMtlsConfiguredBadge = () => {
   return hasSrCertificate(clientCert) && hasKeyMaterial ? <ConfiguredBadge /> : null;
 };
 
-/**
- * Shown in place of the key dropzone when the stored key exists only
- * server-side (the API never returns it). Removing it reveals the dropzone;
- * an empty key in the update request keeps the stored one.
- */
 const ExistingKeyRow = () => {
   const { control, setValue, trigger } = useFormContext<FormValues>();
   const fingerprint = useWatch({ control, name: 'schemaRegistry.mtls.existingKeyFingerprint' });
@@ -229,11 +213,6 @@ const ExistingKeyRow = () => {
   );
 };
 
-/**
- * Embedded-mode client-key picker (lives in Cloud Secrets, not as a file).
- * Mirrors ClientKeySecretField in connection/mtls-configuration.tsx: the
- * secret reference is stored in the pemContent slot and sent verbatim.
- */
 const SrClientKeySecretField = () => {
   const { control, trigger } = useFormContext<FormValues>();
 
@@ -290,10 +269,6 @@ const SrClientKeyField = () => {
   return isEmbedded() ? <SrClientKeySecretField /> : <SrCertificateDropzone certType="clientKey" />;
 };
 
-/**
- * Read-only view for TLS configured as certificate file paths (e.g. via rpk):
- * Console can't edit those, only round-trip them.
- */
 const SrTlsFilePathsNotice = ({
   filePaths,
 }: {
@@ -322,6 +297,9 @@ const SrTlsFilePathsNotice = ({
   </div>
 );
 
+/**
+ * The API editor accepts PEM uploads or embedded secret references, not TLS path edits. The read-only file-path and server-stored-key rows preserve configurations from rpk/API-created links. Removing a stored key reveals the key picker; an empty update key keeps the stored value.
+ */
 export const SrTlsConfiguration = () => {
   const { control, getValues, trigger } = useFormContext<FormValues>();
   const useTls = useWatch({ control, name: 'schemaRegistry.useTls' });
@@ -352,8 +330,7 @@ export const SrTlsConfiguration = () => {
                 checked={field.value}
                 onCheckedChange={(checked) => {
                   field.onChange(checked);
-                  // The https-required error lives on the source URL field, so
-                  // toggling TLS must refresh it or a stale error lingers.
+                  // WARNING: Revalidate the source URL when TLS changes; otherwise the old scheme error remains on another field.
                   trigger('schemaRegistry.sourceUrl').catch(reportRevalidationError);
                 }}
                 testId="sr-tls-toggle"

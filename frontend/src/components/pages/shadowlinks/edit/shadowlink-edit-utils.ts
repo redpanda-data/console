@@ -49,10 +49,6 @@ import { buildSchemaRegistrySyncOptions } from '../create/schema-registry-reques
 import { buildDefaultFormValuesFromControlplane } from '../mappers/controlplane';
 import { buildDefaultFormValues } from '../mappers/dataplane';
 
-/**
- * Regex to strip "configurations." prefix from field mask paths
- * Used when converting dataplane field masks to controlplane format
- */
 const CONFIGURATIONS_PREFIX_REGEX = /^configurations\./u;
 
 /**
@@ -77,9 +73,6 @@ export type UpdateResult<T> = {
   fieldMaskPaths: string[];
 };
 
-/**
- * Helper to compare arrays of strings (order-independent)
- */
 const arraysEqual = (a: string[], b: string[]) => {
   if (a.length !== b.length) {
     return false;
@@ -501,11 +494,6 @@ export const getUpdateValuesForSchemaRegistry: (
 
 type RoleSyncRoundTrip = Pick<NonNullable<ReturnType<typeof getUpdateValuesForRoles>>['value'], 'interval' | 'paused'>;
 
-/**
- * Get update values for every category, plus the combined field mask paths.
- * Roles are skipped entirely when the shadow cluster does not support role
- * sync (Redpanda < 26.2.0): no value, no mask path.
- */
 const getCategoryUpdates = (
   values: FormValues,
   originalValues: FormValues,
@@ -550,6 +538,8 @@ const getCategoryUpdates = (
  *
  * Uses create() with buf core schemas to build properly typed Message instances
  * that are compatible with the controlplane API.
+ *
+ * Strip the configurations prefix from dataplane mask paths. For a cluster without role sync support, emit neither role options nor a role mask path.
  */
 export const buildControlplaneUpdateRequest = (
   shadowLinkId: string,
@@ -564,7 +554,7 @@ export const buildControlplaneUpdateRequest = (
     originalRoleSyncOptions: originalShadowLink.roleSyncOptions,
   });
 
-  // differences between local protos and buf packages. Wire format is compatible.
+  // WARNING: The local and Buf SDK proto types differ, but use the same wire format; keep the control-plane conversion at this boundary.
   const shadowLinkUpdate = create(CpShadowLinkUpdateSchema, {
     id: shadowLinkId,
     clientOptions: create(ShadowLinkClientOptionsSchema, updates.connection.value),
@@ -590,6 +580,8 @@ export const buildControlplaneUpdateRequest = (
 /**
  * Transform form values to UpdateShadowLinkRequest protobuf message (dataplane)
  * Only includes fields that have changed from the original shadow link
+ *
+ * For a cluster without role sync support, emit neither role options nor a role mask path.
  */
 export const buildDataplaneUpdateRequest = (
   name: string,

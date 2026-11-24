@@ -70,7 +70,7 @@ const edgeStyle: CSSProperties = {
 
 export const ShadowLinkDiagram = ({ shadowLink }: ShadowLinkDiagramProps) => {
   const brokers = shadowLink.configurations?.clientOptions?.bootstrapServers ?? [];
-  // Must be told, or react-flow's `light` default re-themes the subtree (see the pipeline canvas).
+  // WARNING: Pass the current theme to React Flow; its light default otherwise recolors the entire diagram subtree.
   const appearance = useThemeAppearance();
 
   const nodes: Node[] = [

@@ -76,18 +76,12 @@ export type Action =
   | { type: 'toggleExcludeDefault' }
   | { type: 'enableSchemaRegistrySync' };
 
-/**
- * Wait until the element with this test ID renders
- */
 const waitForTestId = async (scr: typeof import('@testing-library/react').screen, testId: string) => {
   await waitFor(() => {
     expect(scr.getByTestId(testId)).toBeInTheDocument();
   });
 };
 
-/**
- * Wait for an input to render, then type into it
- */
 const typeIntoTestId = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen,
@@ -98,9 +92,6 @@ const typeIntoTestId = async (
   await user.type(scr.getByTestId(testId), text);
 };
 
-/**
- * Navigate to the Shadowing tab (edit form; may already be there)
- */
 const clickShadowingTabIfPresent = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
@@ -111,9 +102,6 @@ const clickShadowingTabIfPresent = async (
   }
 };
 
-/**
- * Expand a filter section (topics, consumers, acls) and switch it to specify mode
- */
 const expandSectionInSpecifyMode = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen,
@@ -127,9 +115,6 @@ const expandSectionInSpecifyMode = async (
   await user.click(scr.getByTestId(`${section}-specify-tab`));
 };
 
-/**
- * Expand advanced options if not already expanded
- */
 const expandAdvancedOptions = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
@@ -140,9 +125,6 @@ const expandAdvancedOptions = async (
   }
 };
 
-/**
- * Expand the topics section and switch it to specify mode, skipping steps that are already done
- */
 const openTopicFiltersInSpecifyMode = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
@@ -163,10 +145,6 @@ const openTopicFiltersInSpecifyMode = async (
   await waitForTestId(scr, 'add-topic-filter-button');
 };
 
-/**
- * The topic filter to fill: filter 0 while it is the empty one seeded by the mode switch,
- * otherwise a newly added filter
- */
 const nextTopicFilterIndex = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
@@ -190,9 +168,6 @@ const TOPIC_FILTER_TAB_SUFFIX: Record<string, string> = {
   [`${FilterType.EXCLUDE}-${PatternType.PREFIX}`]: 'exclude-prefix',
 };
 
-/**
- * Pick the filter type tab matching the pattern and filter type
- */
 const selectTopicFilterType = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen,
@@ -481,7 +456,7 @@ export const addACLFilterCreate = async (
   await expandSectionInSpecifyMode(user, scr, 'acls');
   await waitForTestId(scr, 'add-acl-filter-button');
 
-  // Only add a filter when the mode switch did not seed one already
+  // WARNING: Reuse the empty filter seeded by the mode switch; adding another would leave the submitted filter list invalid.
   if (!scr.queryByTestId('acl-filter-0-principal')) {
     await user.click(scr.getByTestId('add-acl-filter-button'));
   }

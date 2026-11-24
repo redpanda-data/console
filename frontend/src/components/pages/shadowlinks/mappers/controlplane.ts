@@ -350,9 +350,6 @@ const buildControlplaneTopicsValues = (shadowLink: ControlplaneShadowLink) => {
   } satisfies Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties' | 'excludeDefault'>;
 };
 
-/**
- * Build consumer groups form values from controlplane shadow link
- */
 const buildControlplaneConsumerGroupsValues = (shadowLink: ControlplaneShadowLink) => {
   const consumerOffsetSyncOptions = shadowLink.consumerOffsetSyncOptions;
   const groupFilters = consumerOffsetSyncOptions?.groupFilters ?? [];
@@ -372,12 +369,6 @@ const buildControlplaneConsumerGroupsValues = (shadowLink: ControlplaneShadowLin
   } satisfies Pick<FormValues, 'enableConsumerOffsetSync' | 'consumersMode' | 'consumers'>;
 };
 
-/**
- * Build roles form values from controlplane shadow link.
- * Unset options and an empty filter list both hydrate as specify mode with no
- * filters (role sync disabled), matching the dataplane hydration so an
- * untouched edit form never emits a role_sync_options mask.
- */
 const buildControlplaneRolesValues = (shadowLink: ControlplaneShadowLink) => {
   const roleNameFilters = shadowLink.roleSyncOptions?.roleNameFilters ?? [];
 
@@ -423,6 +414,8 @@ const buildControlplaneSchemaRegistryValues = (shadowLink: ControlplaneShadowLin
 /**
  * Build form values from controlplane shadow link data
  * Maps the controlplane structure to form fields without type casts
+ *
+ * Hydrates absent and empty role filters identically to the disabled dataplane state; an untouched form must not emit a role_sync_options mask.
  */
 export const buildDefaultFormValuesFromControlplane = (shadowLink: ControlplaneShadowLink) => {
   const connectionValues = buildControlplaneConnectionValues(shadowLink);

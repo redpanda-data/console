@@ -210,7 +210,6 @@ export const ConfigurationShadowing = ({ shadowLink }: ConfigurationShadowingPro
 
       <ACLFilterSection filters={aclFilters} />
 
-      {/* Role Replication Section (hidden when the source API does not expose role sync) */}
       {roleSyncOptions && (
         <NameFilterSection
           emptyMessage="No role filters configured"

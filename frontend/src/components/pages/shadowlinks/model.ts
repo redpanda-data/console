@@ -19,29 +19,35 @@ import {
 /**
  * Plain TypeScript name filter interface
  * Used for topic filters and consumer group filters
+ *
+ * PatternType: 0 unspecified, 1 literal, 2 prefixed. FilterType: 0 unspecified, 1 include, 2 exclude.
  */
 export type UnifiedNameFilter = {
   name: string;
-  patternType: number; // PatternType enum: 0=UNSPECIFIED, 1=LITERAL, 2=PREFIXED
-  filterType: number; // FilterType enum: 0=UNSPECIFIED, 1=INCLUDE, 2=EXCLUDE
+  patternType: number;
+  filterType: number;
 };
 
 /**
  * Plain TypeScript ACL resource filter interface
+ *
+ * Uses ACLResource and ACLPattern wire values.
  */
 export type UnifiedACLResourceFilter = {
-  resourceType: number; // ACLResource enum
-  patternType: number; // ACLPattern enum
+  resourceType: number;
+  patternType: number;
   name: string;
 };
 
 /**
  * Plain TypeScript ACL access filter interface
+ *
+ * Uses ACLOperation and ACLPermissionType wire values.
  */
 export type UnifiedACLAccessFilter = {
   principal: string;
-  operation: number; // ACLOperation enum
-  permissionType: number; // ACLPermissionType enum
+  operation: number;
+  permissionType: number;
   host: string;
 };
 
@@ -157,6 +163,8 @@ export type UnifiedSchemaRegistryContextMapping = {
 /**
  * Plain TypeScript options for Schema Registry replication over the REST API.
  * Durations are seconds; undefined means unset/zero, so the cluster default applies.
+ *
+ * UnsupportedSchemaFeaturePolicy: 0 unspecified, 1 fail sync, 2 remove unsupported features.
  */
 export type UnifiedSchemaRegistryApiOptions = {
   sourceUrl: string;
@@ -173,7 +181,7 @@ export type UnifiedSchemaRegistryApiOptions = {
   sourceFilter?: { contexts: string[]; subjects: string[] };
   /** undefined = source context names are preserved (same as identity) */
   destinationMapping?: { case: 'identity' } | { case: 'exact'; mappings: UnifiedSchemaRegistryContextMapping[] };
-  unsupportedSchemaFeaturePolicy: number; // UnsupportedSchemaFeaturePolicy enum: 0=UNSPECIFIED, 1=FAIL, 2=REMOVE
+  unsupportedSchemaFeaturePolicy: number;
   paused: boolean;
 };
 
@@ -238,10 +246,12 @@ export const UnifiedShadowLinkStateLabel: Record<UnifiedShadowLinkState, string>
 
 /**
  * Unified ShadowLink model that works with both console and controlplane APIs
+ *
+ * Uses the Console UID or the control-plane ID, depending on which API returned the link.
  */
 export type UnifiedShadowLink = {
   name: string;
-  id: string; // uid from console, id from controlplane
+  id: string;
   state: UnifiedShadowLinkState;
   configurations?: UnifiedShadowLinkConfigurations;
   tasksStatus: ShadowLinkTaskStatus[];
@@ -253,18 +263,20 @@ export type UnifiedShadowLink = {
 
 /**
  * Map console API state (3 states) to unified state
+ *
+ * Console state numbers 1–5 represent active, paused, failing over, failed over and failover faulted.
  */
 export function mapConsoleStateToUnified(state: CoreShadowLinkState): UnifiedShadowLinkState {
   switch (state) {
-    case 1: // ACTIVE
+    case 1:
       return UnifiedShadowLinkState.ACTIVE;
-    case 2: // PAUSED
+    case 2:
       return UnifiedShadowLinkState.PAUSED;
-    case 3: // FAILING_OVER
+    case 3:
       return UnifiedShadowLinkState.FAILING_OVER;
-    case 4: // FAILED_OVER
+    case 4:
       return UnifiedShadowLinkState.FAILED_OVER;
-    case 5: // FAILOVER_FAULTED
+    case 5:
       return UnifiedShadowLinkState.FAILOVER_FAULTED;
     default:
       return UnifiedShadowLinkState.UNSPECIFIED;
@@ -273,20 +285,22 @@ export function mapConsoleStateToUnified(state: CoreShadowLinkState): UnifiedSha
 
 /**
  * Map controlplane API state (8 states) to unified state
+ *
+ * Control-plane numbers 1–6 represent creating, creation failed, deleting, deletion failed, active and paused; they differ from Console states.
  */
 export function mapControlplaneStateToUnified(state: ControlplaneShadowLinkState): UnifiedShadowLinkState {
   switch (state) {
-    case 1: // CREATING
+    case 1:
       return UnifiedShadowLinkState.CREATING;
-    case 2: // CREATION_FAILED
+    case 2:
       return UnifiedShadowLinkState.CREATION_FAILED;
-    case 3: // DELETING
+    case 3:
       return UnifiedShadowLinkState.DELETING;
-    case 4: // DELETION_FAILED
+    case 4:
       return UnifiedShadowLinkState.DELETION_FAILED;
-    case 5: // ACTIVE
+    case 5:
       return UnifiedShadowLinkState.ACTIVE;
-    case 6: // PAUSED
+    case 6:
       return UnifiedShadowLinkState.PAUSED;
     default:
       return UnifiedShadowLinkState.UNSPECIFIED;

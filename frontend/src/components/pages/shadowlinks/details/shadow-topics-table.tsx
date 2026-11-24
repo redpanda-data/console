@@ -140,10 +140,6 @@ type VirtualTopicRowsOptions = {
   getNextTopicPage?: () => Promise<void>;
 };
 
-/**
- * Virtualizes the topic rows and fetches the next page once the last row scrolls into view. A failed
- * page is kept as `nextPageError` and blocks further automatic fetches until it is cleared.
- */
 const useVirtualTopicRows = ({
   rowCount,
   scrollElementRef,
@@ -187,6 +183,9 @@ const useVirtualTopicRows = ({
   };
 };
 
+/**
+ * Keep the header outside the virtualized scroll body, with matching fixed column widths. Otherwise a page append recalculates the body widths independently. A failed next page blocks automatic fetches until it is explicitly retried.
+ */
 export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
   topics,
   onFailoverTopic,
@@ -320,23 +319,8 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
           </CardAction>
         </CardHeader>
         <CardContent>
-          {/*
-            Two-table structure for virtualization with fixed header:
-            1. First <Table> contains header - stays fixed, always visible
-            2. Second <Table> in scrollable div contains body - virtualized rows
-
-            Why not one table?
-            - Sticky positioning on <thead> doesn't work reliably when scroll container wraps entire table
-            - We need the header outside the scroll container for it to remain fixed
-            - Separate tables allow independent scroll behavior while keeping columns aligned
-          */}
           <div className="relative">
             <Table className="" style={{ tableLayout: 'fixed', width: '100%' }} variant={'simple'}>
-              {/*
-                colgroup enforces fixed column widths to prevent browser from recalculating
-                when new rows are added via pagination/infinite scroll. Both header and body
-                tables must have identical colgroup definitions to keep columns aligned.
-              */}
               <colgroup>
                 {table.getAllColumns().map((column) => (
                   <col key={column.id} style={{ width: `${column.getSize()}px` }} />

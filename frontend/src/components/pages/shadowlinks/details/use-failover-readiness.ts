@@ -16,13 +16,8 @@ import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { type CloudSource, getFailoverReadiness, getLinkIdentity, getSourceFenceStep } from './failover-model';
 import type { UnifiedShadowLink } from '../model';
 
-/** After a failed read, keep trying, but slowly: the shadow cluster may be struggling. */
 const ERROR_POLL_MS = 30_000;
 
-/**
- * The source as last read with a known fence while this page has been open, so a passing read
- * failure later in the visit doesn't take the Failover tab away mid-failover.
- */
 const useLastKnownSource = (linkName: string, source: CloudSource | undefined) => {
   const [lastKnown, setLastKnown] = useState<Partial<Record<string, CloudSource>>>({});
   const known = source?.fence.status === 'known' ? source : undefined;
@@ -40,6 +35,8 @@ const useLastKnownSource = (linkName: string, source: CloudSource | undefined) =
  * when there's no guided failover: `enabled` is false, or Console can't read the source's fence.
  * `available` once the fence has been read in this visit; until then, `readiness` may only be
  * loading. Pass a short `pollMs` while the user is watching lag drain.
+ *
+ * Retain a known source fence through temporary read failures so a failover does not lose its tab. Back off after a failed read. If a topic refresh fails, the previous topics remain visible but are not counted as fresh readiness evidence.
  */
 export const useFailoverReadiness = (
   link: UnifiedShadowLink | undefined,
@@ -63,7 +60,6 @@ export const useFailoverReadiness = (
     }
   );
 
-  /** A failed refresh keeps the last topics, which readiness then treats as out of date. */
   const topicsFailed = topicsQuery.isError;
   const readiness = useMemo(
     () => (fence ? getFailoverReadiness({ topics: topicsQuery.data?.shadowTopics, topicsFailed, fence }) : undefined),

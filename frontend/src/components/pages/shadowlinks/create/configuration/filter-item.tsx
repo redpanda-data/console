@@ -60,9 +60,9 @@ type FilterItemProps<TFieldValues extends FieldValues> = {
   fieldNamePrefix: string;
   onRemove: () => void;
   children: React.ReactNode;
-  viewType: boolean; // true = editable, false = resume/summary
+  viewType: boolean;
   'data-testid'?: string;
-  errorMessage?: string; // Error message to display in resume/summary view
+  errorMessage?: string;
 };
 
 type FilterItemSummaryProps = {

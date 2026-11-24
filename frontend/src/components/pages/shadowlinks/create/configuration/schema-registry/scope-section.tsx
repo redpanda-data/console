@@ -53,7 +53,7 @@ export const ScopeSection = () => {
   };
 
   const revalidateScope = () => {
-    // trigger() rejects only if the resolver itself throws; report that instead of dropping it.
+    // WARNING: Report a rejected trigger; validation errors resolve normally, so rejection means the resolver itself failed.
     trigger('schemaRegistry.contexts').catch((error: unknown) => {
       toast.error('Failed to validate the form', { description: String(error) });
     });

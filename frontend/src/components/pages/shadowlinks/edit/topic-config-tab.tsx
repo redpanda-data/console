@@ -37,7 +37,6 @@ import {
 import { CollapsibleSectionCard } from '../create/collapsible-section-card';
 import type { FormValues } from '../create/model';
 
-/** Tone + emphasis for a status badge. `optional` carries no tone, so it stays a plain outline. */
 const getBadgeStyle: (status: ShadowingStatus) => { tone?: BadgeTone; variant: BadgeEmphasis | BadgeVariant } = (
   status
 ) => {
@@ -53,9 +52,6 @@ const getBadgeStyle: (status: ShadowingStatus) => { tone?: BadgeTone; variant: B
   }
 };
 
-/**
- * Format status label for display
- */
 const formatStatusLabel: (status: ShadowingStatus) => string = (status) => {
   switch (status) {
     case 'always':
@@ -71,9 +67,6 @@ const formatStatusLabel: (status: ShadowingStatus) => string = (status) => {
   }
 };
 
-/**
- * Get tooltip message for disabled properties
- */
 const getTooltipMessage: (property: { status: ShadowingStatus[] }) => string | null = (property) => {
   if (property.status.includes('always')) {
     return 'Required property - always replicated to shadow cluster';
@@ -84,9 +77,6 @@ const getTooltipMessage: (property: { status: ShadowingStatus[] }) => string | n
   return null;
 };
 
-/**
- * Individual property item with toggle switch
- */
 type TopicPropertyItemProps = {
   property: {
     name: string;
@@ -148,9 +138,6 @@ const TopicPropertyItem = ({ property, isSelected, isEditable, onToggle }: Topic
   );
 };
 
-/**
- * Exclude default properties toggle
- */
 const ExcludeDefaultToggle = () => {
   const { control } = useFormContext<FormValues>();
 
@@ -182,10 +169,6 @@ const ExcludeDefaultToggle = () => {
   );
 };
 
-/**
- * The explicit property list after the "exclude defaults" toggle flips, or `undefined` when it is
- * already in sync: excluding drops every default property, including adds the missing ones.
- */
 const syncDefaultProperties = (topicProperties: string[], excludeDefault: boolean | undefined) => {
   const defaultProps = getDefaultProperties();
   if (excludeDefault) {
@@ -196,6 +179,9 @@ const syncDefaultProperties = (topicProperties: string[], excludeDefault: boolea
   return propsToAdd.length > 0 ? [...topicProperties, ...propsToAdd] : undefined;
 };
 
+/**
+ * Excluding defaults drops those properties; including defaults adds only missing ones. A state already in sync does not write a new form value.
+ */
 export const TopicConfigTab = () => {
   const { control, setValue } = useFormContext<FormValues>();
   const [isOpen, setIsOpen] = useState(false);
@@ -205,9 +191,6 @@ export const TopicConfigTab = () => {
   const excludeDefault = useWatch({ control, name: 'excludeDefault' });
   const propertiesByCategory = getPropertiesByCategory();
 
-  /**
-   * Sync default properties when excludeDefault toggle changes
-   */
   useEffect(() => {
     if (prevExcludeDefault.current === excludeDefault) {
       return;
@@ -226,9 +209,6 @@ export const TopicConfigTab = () => {
     }
   }, [excludeDefault, topicProperties, setValue]);
 
-  /**
-   * Toggle a property in the topicProperties array
-   */
   const handlePropertyToggle = (propertyName: string, checked: boolean) => {
     if (checked) {
       if (!topicProperties.includes(propertyName)) {
@@ -243,9 +223,6 @@ export const TopicConfigTab = () => {
     }
   };
 
-  /**
-   * Check if a property is currently selected for replication
-   */
   const isPropertySelected = (propertyName: string) => {
     if (isPropertyAlwaysReplicated(propertyName)) {
       return true;

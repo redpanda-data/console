@@ -191,7 +191,6 @@ function ClientKeySecretField() {
   );
 }
 
-/** File-path inputs replace the uploads when a self-managed user picks the "File path" method. */
 function useCertificateFilePaths() {
   const { control } = useFormContext<FormValues>();
   const mtlsMode = useWatch({ control, name: 'mtlsMode' });

@@ -33,14 +33,11 @@ export type TransientReason = Exclude<PeerUnavailableReason, NoFenceReason>;
  * Where the source's fence stands, from this shadow cluster's point of view. Only embedded in
  * Redpanda Cloud can Console find a link's source cluster and read its fence, so the Failover tab
  * exists only once it has.
+ *
+ * Distinguishes unresolved source identity from a source read earlier in this visit that temporarily became unavailable; neither proves the fence was ready.
  */
 export type SourceFenceStep =
-  /** Without a source, Console is still working out which cluster the link reads from. */
   | { kind: 'loading'; source: CloudSource | undefined }
-  /**
-   * Read earlier in this visit, but not right now, such as while the source has no controller leader.
-   * No reason when the link's source can't be resolved any more.
-   */
   | { kind: 'unreadable'; source: CloudSource; reason: TransientReason | undefined }
   | {
       kind: 'cloud';
@@ -313,7 +310,6 @@ const getSourceStepStates: (fence: SourceFenceStep) => SourceStepStates = (fence
   if (fence.kind !== 'cloud') {
     return { settings: 'current', fence: 'pending', fenced: 'pending' };
   }
-  /** A link Console can't check, such as one that uses mTLS, isn't done: the operator still has to look. */
   const settings = fence.linkExempt === true ? 'done' : 'attention';
   if (isBlockingPhase(fence.fence.state)) {
     return { settings, fence: 'done', fenced: fence.fenced ? 'done' : 'current' };
@@ -325,6 +321,8 @@ const getSourceStepStates: (fence: SourceFenceStep) => SourceStepStates = (fence
  * The reference's six steps, three on the source and three here. Each unlocks when the one before
  * it is done; a finished failover marks the first five done and makes moving clients current. A
  * settings problem shows on step 1 whatever the phase, since the settings exist before Fence.
+ *
+ * A link Console cannot check, including an mTLS source, still needs operator attention; do not mark its steps done.
  */
 export const getFailoverStepStates = ({
   fence,

@@ -9,14 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-/**
- * Schema Registry sync-options mappers shared by the dataplane and
- * controlplane mappers. Both planes carry the same redpanda.core.admin.v2
- * messages (dataplane via local protogen, controlplane via the @buf npm SDK),
- * so unlike the per-plane client-options mappers there is no structural
- * difference to justify duplicating this logic.
- */
-
 import { type Duration, timestampDate } from '@bufbuild/protobuf/wkt';
 import {
   type SchemaRegistryAuthOptions,
@@ -119,9 +111,6 @@ export function mapTLSSettings(tlsSettings: TLSSettings | undefined): UnifiedTLS
   };
 }
 
-/**
- * Map the schema registry destination context mapping to unified type
- */
 function mapDestinationMapping(
   destination: SchemaRegistryContextDestination | undefined
 ): UnifiedSchemaRegistryApiOptions['destinationMapping'] {
@@ -139,10 +128,6 @@ function mapDestinationMapping(
   }
 }
 
-/**
- * Map API-mode schema registry options to unified type.
- * The password itself is never mapped — only password_set/password_set_at.
- */
 function mapSchemaRegistryApiOptions(api: SchemaRegistryApiOptionsMessage) {
   const basic = api.authOptions?.authOptions?.case === 'basic' ? api.authOptions.authOptions.value : undefined;
 
@@ -250,7 +235,6 @@ function applyApiOptionsToFormSlice(api: SchemaRegistryApiOptionsMessage) {
   const exactMappings =
     api.destination?.mapping?.case === 'exact' ? (api.destination.mapping.value.mappings ?? []) : [];
 
-  // without deciding its hydration fails to compile.
   return {
     mode: SCHEMA_REGISTRY_MODE.API,
     sourceUrl: api.sourceUrl,
@@ -299,6 +283,8 @@ export function mapSchemaRegistrySyncOptionsToFormValues(
 
 /**
  * Map schema registry sync options to unified type
+ *
+ * Both planes carry the same admin-v2 wire message even though they source types differently. Hydrate password presence and timestamps only; never expect a returned password.
  */
 export function mapSchemaRegistrySyncOptions(
   options: SchemaRegistrySyncOptionsMessage | undefined

@@ -28,9 +28,6 @@ import { useEditShadowLink } from '../../../../react-query/api/shadowlink';
 import { FormSchema, FormSchemaWithoutSchemaRegistryRules, type FormValues } from '../create/model';
 import { ShadowLinkLoadErrorState } from '../list/shadowlink-empty-state';
 
-/**
- * Map form field to its corresponding tab
- */
 const getTabForField = (fieldName: string) => {
   const fieldToTabMap: Record<string, string> = {
     name: 'source',
@@ -59,9 +56,6 @@ const getTabForField = (fieldName: string) => {
   return fieldToTabMap[fieldName] || 'source';
 };
 
-/**
- * Display names for tabs used in error messages
- */
 const tabDisplayNames: Record<string, string> = {
   source: 'Source',
   shadowing: 'Shadowing',
@@ -118,10 +112,6 @@ const useShadowLinkUpdateFeedback = (
   }, [dataplaneUpdate.error, controlplaneUpdate.error]);
 };
 
-/**
- * Handle validation errors on form submit
- * Navigate to the tab containing the first error
- */
 const reportValidationErrors = (errors: FieldErrors<FormValues>, showTab: (tab: string) => void) => {
   const firstErrorField = Object.keys(errors)[0];
 

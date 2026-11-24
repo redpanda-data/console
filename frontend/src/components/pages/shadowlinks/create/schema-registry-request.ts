@@ -38,10 +38,6 @@ import {
   srCertificatePem,
 } from './model';
 
-// Sub-second units carry (units per second, nanos per unit) so seconds/nanos
-// are computed with exact integer math — a single total-nanos float would lose
-// precision past 2^53 ns (~104 days). Sub-millisecond units exist because rpk
-// accepts any Go duration and those values must round-trip unchanged.
 const DURATION_SUBSECOND_UNITS: Record<string, { perSecond: number; nsPerUnit: number }> = {
   ns: { perSecond: 1_000_000_000, nsPerUnit: 1 },
   us: { perSecond: 1_000_000, nsPerUnit: 1000 },
@@ -54,6 +50,8 @@ const DURATION_INPUT_REGEX = /^(?<value>\d+)(?<unit>ns|us|ms|s|m|h)$/u;
  * Parse a user-entered duration string ("10s", "5m", "100ms", "1h") into a
  * google.protobuf.Duration. '' or an unparseable value returns undefined so
  * the field stays unset and the cluster default applies.
+ *
+ * Splits seconds and nanoseconds with integer arithmetic; computing total nanoseconds in one float loses precision on long durations. Sub-millisecond rpk durations still round-trip.
  */
 export const durationFromString = (value: string) => {
   const match = value.trim().match(DURATION_INPUT_REGEX);
@@ -72,19 +70,8 @@ export const durationFromString = (value: string) => {
   return create(DurationSchema, { seconds: BigInt(count) * BigInt(DURATION_SECOND_UNITS[match[2]]), nanos: 0 });
 };
 
-// Hydrated PEMs carry no file name (the dropzone sets one on upload), so this
-// distinguishes server-stored material from fresh uploads.
 const hydratedSrPem = (cert: SrCertificate | undefined) => (cert?.fileName === '' ? srCertificatePem(cert) : '');
 
-/**
- * TLS off normally omits the message entirely (the create contract). But an
- * edit can hydrate TLS material the server stored with `enabled: false`
- * (rpk/Admin API links); the field mask replaces the whole parent message, so
- * that material must be round-tripped or any Schema Registry edit would
- * silently delete it. Only hydrated material is preserved — file paths and
- * PEMs without a file name; fresh uploads keep today's drop-on-disable
- * behavior.
- */
 const buildDisabledSrTlsSettings = (sr: SchemaRegistryFormValues) => {
   if (sr.mtls.filePaths) {
     return create(TLSSettingsSchema, {
@@ -115,13 +102,6 @@ const buildDisabledSrTlsSettings = (sr: SchemaRegistryFormValues) => {
   });
 };
 
-/**
- * The Schema Registry section stores PEM uploads only, so unlike the
- * connection step's buildTLSSettings there is no file-path variant in the UI.
- * The raw PEM private key goes into the request as-is; an empty key with a
- * cert present means "keep the key stored server-side" (edit flow). File-path
- * settings hydrated from an rpk-created link are round-tripped verbatim.
- */
 const buildSrTlsSettings = (sr: SchemaRegistryFormValues) => {
   if (!sr.useTls) {
     return buildDisabledSrTlsSettings(sr);
@@ -164,6 +144,11 @@ const SR_UNSUPPORTED_FEATURE_POLICY: Record<
   remove: UnsupportedSchemaFeaturePolicy.REMOVE,
 };
 
+/**
+ * Zero sync intervals use cluster defaults. Unset destinations and an empty map preserve context names.
+ *
+ * An update mask replaces the parent TLS message. Round-trip hydrated paths and PEMs without a filename even when TLS is off, or an unrelated edit deletes stored material. Fresh uploads are dropped when disabled. For a stored client key, a certificate plus an empty request key keeps the server's key; a fresh PEM or secret reference goes on the wire as-is.
+ */
 export const buildShadowSchemaRegistryApiOptions = (sr: SchemaRegistryFormValues) => {
   const rate = sr.syncBehavior.maxSourceRequestRate.trim();
 
@@ -184,7 +169,6 @@ export const buildShadowSchemaRegistryApiOptions = (sr: SchemaRegistryFormValues
     tlsSettings: buildSrTlsSettings(sr),
     tailInterval: durationFromString(sr.syncBehavior.tailInterval),
     fullSyncInterval: durationFromString(sr.syncBehavior.fullSyncInterval),
-    // 0 = unset; the cluster default applies.
     maxSourceRequestsPerSecond: rate ? Number(rate) : 0,
     sourceFilter:
       sr.scopeMode === 'specify'
@@ -193,8 +177,6 @@ export const buildShadowSchemaRegistryApiOptions = (sr: SchemaRegistryFormValues
             subjects: sr.subjects.map((subject) => subject.trim()),
           })
         : undefined,
-    // Unset destination = preserve source context names; an empty map is the
-    // same as preserve.
     destination:
       sr.destinationContextsMode === 'map' && sr.contextMappings.length > 0
         ? create(SchemaRegistryContextDestinationSchema, {
@@ -212,8 +194,7 @@ export const buildShadowSchemaRegistryApiOptions = (sr: SchemaRegistryFormValues
           })
         : undefined,
     unsupportedSchemaFeaturePolicy: SR_UNSUPPORTED_FEATURE_POLICY[sr.syncBehavior.unsupportedSchemaFeatures],
-    // Hydrated on edit so rebuilding the message doesn't unpause a paused
-    // sync; create always carries the initialValues false.
+    // WARNING: Keep the hydrated pause flag when rebuilding the message; clearing it would resume sync on an unrelated edit.
     paused: sr.paused,
   });
 };

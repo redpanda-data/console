@@ -105,9 +105,6 @@ const buildSecuritySyncOptions = (values: FormValues) =>
           ),
   });
 
-/**
- * Transform form values to CreateShadowLinkRequest protobuf message
- */
 const buildCreateShadowLinkRequest = (values: FormValues, { roleSyncSupported }: { roleSyncSupported: boolean }) => {
   const clientOptions = buildClientOptions(values);
 

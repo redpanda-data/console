@@ -172,7 +172,6 @@ export const AclsStep = () => {
                       </CardAction>
                     </CardHeader>
                     <CardContent>
-                      {/* Resource Filter - Full Width */}
                       <div>
                         <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-4">
                           <FormField
@@ -263,7 +262,6 @@ export const AclsStep = () => {
                         </div>
                       </div>
 
-                      {/* Access Filter - Full Width */}
                       <div>
                         <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-4">
                           <FormField

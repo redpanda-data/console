@@ -18,10 +18,6 @@ import { ShadowSchemaRegistrySection } from '../create/configuration/schema-regi
 import { LegacySchemaRegistrySection } from '../create/configuration/schema-registry-step';
 import { type FormValues, SCHEMA_REGISTRY_MODE, type SchemaRegistryMode } from '../create/model';
 
-/**
- * Direct topic<->api switches are not supported; the link must go through
- * None (and a save) first. From None both modes are reachable.
- */
 const lockedModes: (originalMode: SchemaRegistryMode) => SchemaRegistryMode[] = (originalMode) => {
   if (originalMode === SCHEMA_REGISTRY_MODE.TOPIC) {
     return [SCHEMA_REGISTRY_MODE.API];
@@ -66,6 +62,8 @@ export type SchemaRegistryEditSectionProps = {
 
 /**
  * Without the Schema Registry API sync capability, the legacy controls cannot change an existing API-mode link.
+ *
+ * Switching between topic and API mode requires saving None first; from None either mode is reachable.
  */
 export const SchemaRegistryEditSection = ({ originalMode }: SchemaRegistryEditSectionProps) => {
   const showRedesigned = useSupportedFeaturesStore((s) => s.shadowLinkSchemaRegistrySync);
