@@ -1,7 +1,7 @@
 import { create } from '@bufbuild/protobuf';
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { beforeEach, describe, expect, test } from '@rstest/core';
 import { ComponentStatus, FieldSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { rpcnWizardStore } from 'state/rpcn-wizard-store';
+import { rpcnWizardStore, useRpcnWizardStore } from 'state/rpcn-wizard-store';
 
 import { mockComponents } from './__fixtures__/component-schemas';
 import { groundTruthComponents, groundTruthConfigSchema } from './__fixtures__/ground-truth';
@@ -21,7 +21,10 @@ import {
 import { enrichComponentsWithConfigSchema } from './schema-enrichment';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 
-rs.mock('zustand');
+beforeEach(() => {
+  useRpcnWizardStore.setState(useRpcnWizardStore.getInitialState(), true);
+  sessionStorage.clear();
+});
 
 function expectKafkaWizardFields(outputConfig: Record<string, any>) {
   expect(outputConfig.topic).toBe('example');
@@ -59,10 +62,6 @@ function expectKafkaInputLostDefaultsOmitted(inputConfig: Record<string, any>) {
 }
 
 describe('generateDefaultValue', () => {
-  beforeEach(() => {
-    sessionStorage.clear();
-  });
-
   describe('per-field generation', () => {
     describe('the SASL visibility for Redpanda components', () => {
       test('the SASL shown for Redpanda components when wizard user data exists', () => {
@@ -1270,10 +1269,6 @@ describe('generateDefaultValue with enriched ground-truth specs', () => {
     }
     return component;
   };
-
-  beforeEach(() => {
-    sessionStorage.clear();
-  });
 
   describe('starter configs', () => {
     test('kafka input starter config marks exactly the schema-required fields', () => {

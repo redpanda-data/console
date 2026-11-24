@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { beforeEach, describe, expect, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
 
 import {
@@ -19,9 +19,6 @@ import {
   useRpcnWizardStore,
 } from './rpcn-wizard-store';
 import type { OnboardingWizardFormData } from '../components/pages/rp-connect/types/wizard';
-
-// WARNING: Install the store reset before importing stores; later registration misses import-time instances.
-rs.mock('zustand');
 
 function renderStoresWithReset() {
   const wizardResult = renderHook(() => useRpcnWizardStore()).result;
@@ -33,6 +30,7 @@ function renderStoresWithReset() {
 
 describe('the RPCN Wizard Store', () => {
   beforeEach(() => {
+    useRpcnWizardStore.setState(useRpcnWizardStore.getInitialState(), true);
     sessionStorage.clear();
   });
 
