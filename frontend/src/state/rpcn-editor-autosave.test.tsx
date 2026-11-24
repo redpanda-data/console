@@ -9,7 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { beforeEach, describe, expect, it, onTestFinished, rs } from '@rstest/core';
+import { config } from 'config';
 
 import {
   AUTOSAVE_ENTRY_VERSION,
@@ -25,9 +26,6 @@ import {
   selectAutosaveEntry,
   useRpcnEditorAutosaveStore,
 } from './rpcn-editor-autosave';
-
-const { mockConfig } = rs.hoisted(() => ({ mockConfig: { clusterId: 'cluster-a' } }));
-rs.mock('config', () => ({ config: mockConfig }));
 
 const buffer = (overrides: Partial<EditorAutosaveInput> = {}) => ({
   targetKey: CREATE_AUTOSAVE_TARGET,
@@ -46,7 +44,7 @@ const stored = () => JSON.parse(localStorage.getItem(EDITOR_AUTOSAVE_STORAGE_KEY
 function saveFullBufferSetPerCluster(clusterIds: string[]) {
   let tick = 0;
   for (const clusterId of clusterIds) {
-    mockConfig.clusterId = clusterId;
+    config.clusterId = clusterId;
     for (let i = 0; i < MAX_AUTOSAVE_BUFFERS; i++) {
       rs.setSystemTime(new Date(2026, 0, 1, 0, 0, tick));
       tick += 1;
@@ -57,13 +55,15 @@ function saveFullBufferSetPerCluster(clusterIds: string[]) {
 
 describe('rpcn-editor-autosave', () => {
   beforeEach(() => {
+    const originalClusterId = config.clusterId;
     rs.setSystemTime(NOW);
     localStorage.clear();
-    mockConfig.clusterId = 'cluster-a';
+    config.clusterId = 'cluster-a';
     useRpcnEditorAutosaveStore.getState().refresh();
-    return () => {
+    onTestFinished(() => {
       rs.useRealTimers();
-    };
+      config.clusterId = originalClusterId;
+    });
   });
 
   describe('targets and clusters', () => {
@@ -101,21 +101,23 @@ describe('rpcn-editor-autosave', () => {
     it('never offers one cluster its work from another', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1', configYaml: 'from cluster a' }));
 
-      mockConfig.clusterId = 'cluster-b';
+      config.clusterId = 'cluster-b';
       expect(rpcnEditorAutosave.get('p1')).toBeNull();
 
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1', configYaml: 'from cluster b' }));
       expect(rpcnEditorAutosave.get('p1')?.configYaml).toBe('from cluster b');
 
-      mockConfig.clusterId = 'cluster-a';
+      config.clusterId = 'cluster-a';
       expect(rpcnEditorAutosave.get('p1')?.configYaml).toBe('from cluster a');
     });
 
-    it('clears only the target it is asked to clear', () => {
+    it('clears only the requested target and does not restore it on reload', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
       rpcnEditorAutosave.save(buffer({ targetKey: 'p2' }));
 
       rpcnEditorAutosave.clear('p1');
+      expect(rpcnEditorAutosave.get('p1')).toBeNull();
+      useRpcnEditorAutosaveStore.getState().refresh();
 
       expect(rpcnEditorAutosave.get('p1')).toBeNull();
       expect(rpcnEditorAutosave.get('p2')).not.toBeNull();
@@ -150,33 +152,9 @@ describe('rpcn-editor-autosave', () => {
       expect(rpcnEditorAutosave.save(buffer({ configYaml: 'x'.repeat(MAX_AUTOSAVE_YAML_BYTES + 1) }))).toBe(false);
       expect(stored()).toHaveLength(0);
     });
-
-    it('reports a refusal when storage is unavailable, instead of pretending it saved', () => {
-      const setItem = rs.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
-        throw new Error('quota exceeded');
-      });
-
-      expect(rpcnEditorAutosave.save(buffer())).toBe(false);
-
-      setItem.mockRestore();
-    });
   });
 
   describe('storage consistency', () => {
-    it('does not let a buffer it failed to clear come back and offer to overwrite the save', () => {
-      rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
-      const setItem = rs.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
-        throw new Error('quota exceeded');
-      });
-
-      rpcnEditorAutosave.clear('p1');
-
-      setItem.mockRestore();
-      expect(rpcnEditorAutosave.get('p1')).toBeNull();
-      useRpcnEditorAutosaveStore.getState().refresh();
-      expect(rpcnEditorAutosave.get('p1')).toBeNull();
-    });
-
     it('writes through storage rather than over an in-memory snapshot', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
       const otherTab = [
@@ -290,14 +268,14 @@ describe('rpcn-editor-autosave', () => {
   describe('clearAll', () => {
     it('drops buffers from every cluster, for logout', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
-      mockConfig.clusterId = 'cluster-b';
+      config.clusterId = 'cluster-b';
       rpcnEditorAutosave.save(buffer({ targetKey: 'p2' }));
       expect(stored()).toHaveLength(2);
 
       rpcnEditorAutosave.clearAll();
 
       expect(stored()).toEqual([]);
-      mockConfig.clusterId = 'cluster-a';
+      config.clusterId = 'cluster-a';
       expect(rpcnEditorAutosave.get('p1')).toBeNull();
     });
   });

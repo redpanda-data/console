@@ -9,6 +9,14 @@ import { cleanupTestHarness } from './tests/harness-cleanup';
 
 expect.extend(jestDomMatchers);
 
+const unexpectedRequests: Error[] = [];
+
+function rejectUnexpectedRequest({ request }: { request: { method: string; url: string } }): never {
+  const error = new Error(`Unexpected test request: ${request.method} ${request.url}`);
+  unexpectedRequests.push(error);
+  throw error;
+}
+
 // WARNING: Keep Happy DOM resource loading disabled; implicit script and CSS loads can reach the network outside the fetch guard.
 if (typeof window !== 'undefined' && 'happyDOM' in window) {
   const happyDOM = Reflect.get(window, 'happyDOM');
@@ -24,6 +32,12 @@ if (typeof window !== 'undefined' && 'happyDOM' in window) {
       Reflect.set(settings, 'fetch', {
         ...(typeof fetchSettings === 'object' && fetchSettings !== null ? fetchSettings : {}),
         disableSameOriginPolicy: true,
+        interceptor: {
+          // WARNING: Only network traffic that escaped MSW reaches Happy DOM. Record failures even if the app catches them.
+          beforeAsyncRequest: async ({ request }: { request: { method: string; url: string } }) =>
+            rejectUnexpectedRequest({ request }),
+          beforeSyncRequest: rejectUnexpectedRequest,
+        },
       });
       Reflect.set(settings, 'disableJavaScriptFileLoading', true);
       Reflect.set(settings, 'disableCSSFileLoading', true);
@@ -31,8 +45,6 @@ if (typeof window !== 'undefined' && 'happyDOM' in window) {
     }
   }
 }
-
-const unexpectedRequests: Error[] = [];
 
 function alignFetchHeaders() {
   const browserHeaders = new Request(window.location.href).headers.constructor;
@@ -54,22 +66,9 @@ function alignFetchHeaders() {
   });
 }
 
-// WARNING: Record unexpected requests before rejecting fetch asynchronously; application catches must not conceal missing handlers.
+// WARNING: Rstest installs Happy DOM Request and Response but leaves Node Headers; mixed constructors silently drop HTTP headers.
 if (typeof window !== 'undefined') {
-  // WARNING: Rstest installs happy-dom Request and Response but leaves Node Headers; mixed constructors silently drop HTTP headers.
   alignFetchHeaders();
-  globalThis.fetch = Object.assign(
-    (input: RequestInfo | URL, init?: RequestInit) =>
-      new Promise<Response>((_, reject) => {
-        const isRequest = typeof input !== 'string' && !(input instanceof URL);
-        const url = isRequest ? input.url : input.toString();
-        const method = init?.method ?? (isRequest ? input.method : 'GET');
-        const error = new Error(`Unexpected test request: ${method} ${new URL(url, window.location.href).href}`);
-        unexpectedRequests.push(error);
-        reject(error);
-      }),
-    globalThis.fetch
-  );
 }
 
 // WARNING: Keep getAnimations available; Base UI calls it asynchronously even where Happy DOM does not implement it.

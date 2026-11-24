@@ -28,6 +28,8 @@ test('bun preload provides DOM globals without replacing native networking', () 
         const form = new FormData();
         form.set('key', 'value');
         expect(await new Request('http://localhost', { method: 'POST', body: form }).text()).toContain('value');
+        expect(window).toBe(globalThis);
+        expect(document.defaultView).toBe(window);
         expect(document.createElement('div').tagName).toBe('DIV');
         localStorage.setItem('host', 'ready');
         expect(localStorage.getItem('host')).toBe('ready');

@@ -145,7 +145,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.2",
-    "@happy-dom/global-registrator": "21.0.3",
     "@interfere/landmines": "0.1.1",
     "@module-federation/enhanced": "^2.9.2",
     "@module-federation/rsbuild-plugin": "^2.9.2",
