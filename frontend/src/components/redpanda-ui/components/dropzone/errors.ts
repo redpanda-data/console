@@ -1,11 +1,21 @@
 import type { FileRejection } from 'react-dropzone';
 
-/** Preserve every rejected file's reasons in the same error delivered to the consumer. */
-export function rejectedFilesError(rejections: readonly FileRejection[]): AggregateError {
+/** Copy shown in place of the per-file reasons, fixed or derived from the rejections. */
+export type DropzoneRejectionMessage = string | ((rejections: readonly FileRejection[]) => string);
+
+/**
+ * Preserve every rejected file's reasons in the same error delivered to the consumer. A `message` replaces the
+ * joined reasons as the error's message; the reasons stay in `errors`.
+ */
+export function rejectedFilesError(
+  rejections: readonly FileRejection[],
+  message?: DropzoneRejectionMessage
+): AggregateError {
   const errors = rejections.flatMap(({ file, errors: reasons }) =>
     reasons.length === 0
       ? [new Error(`${file.name}: File rejected`)]
-      : reasons.map(({ message }) => new Error(`${file.name}: ${message}`))
+      : reasons.map(({ message: reason }) => new Error(`${file.name}: ${reason}`))
   );
-  return new AggregateError(errors, errors.map(({ message }) => message).join('\n'));
+  const summary = typeof message === 'function' ? message(rejections) : message;
+  return new AggregateError(errors, summary ?? errors.map(({ message: reason }) => reason).join('\n'));
 }

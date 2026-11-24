@@ -1,6 +1,6 @@
 // Copyright 2026 Redpanda Data, Inc.
 
-import { isValidElement, type KeyboardEvent, type ReactNode } from 'react';
+import { isValidElement, type KeyboardEvent, type ReactNode, type RefObject, useLayoutEffect } from 'react';
 import { type CommandStore, navigableGroups, navigableItems } from './store';
 
 /**
@@ -142,4 +142,32 @@ export function navigationTarget(
     return stepTarget(items, index, offset, loop);
   }
   return groups[groupIndex + offset]?.[0] ?? stepTarget(items, index, offset, loop);
+}
+
+/** The flex items `order` moves: an item or its wrapper inside a group or the list, and a group or its wrapper in the list. */
+export const RANKED_ITEM_ROW_SELECTOR = '[cmdk-group-items] > *, [cmdk-list-sizer] > *';
+export const RANKED_GROUP_ROW_SELECTOR = '[cmdk-list-sizer] > *';
+
+/**
+ * Ranks a wrapped part through its wrapper, as cmdk moved that wrapper: `order` only moves flex items, so an
+ * item or group in its own element (a tooltip trigger, a layout `div`) puts its rank there. The wrapper gets its
+ * own inline `order` back when the rank clears.
+ */
+export function useRankedWrapper(
+  elementRef: RefObject<HTMLElement | null>,
+  order: number | undefined,
+  rowSelector: string
+) {
+  useLayoutEffect(() => {
+    const element = elementRef.current;
+    const row = element?.closest<HTMLElement>(rowSelector) ?? null;
+    if (row === null || row === element || order === undefined) {
+      return;
+    }
+    const own = row.style.order;
+    row.style.order = String(order);
+    return () => {
+      row.style.order = own;
+    };
+  }, [elementRef, order, rowSelector]);
 }

@@ -15,7 +15,7 @@ import { cn, type SharedProps } from '../lib/utils';
 import { omitUndefined } from '../lib/utils/omit-undefined';
 import { requireDefined } from '../lib/utils/require-defined';
 import { requireInstance } from '../lib/utils/require-instance';
-import { rejectedFilesError } from './dropzone/errors';
+import { type DropzoneRejectionMessage, rejectedFilesError } from './dropzone/errors';
 
 interface DropzoneContextType {
   accept?: DropzoneOptions['accept'] | undefined;
@@ -51,6 +51,8 @@ export type DropzoneProps = Omit<DropzoneOptions, 'onDrop'> &
     src?: File[] | undefined;
     className?: string | undefined;
     onDrop?: ((acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => void) | undefined;
+    /** Replaces the per-file reasons shown for rejected files; `onError` still receives every reason in `errors`. */
+    rejectionMessage?: DropzoneRejectionMessage | undefined;
     children?: React.ReactNode | undefined;
     variant?: ButtonVariants['variant'] | undefined;
   };
@@ -62,6 +64,7 @@ export const Dropzone = ({
   minSize,
   onDrop,
   onError,
+  rejectionMessage,
   disabled,
   src,
   className,
@@ -88,7 +91,7 @@ export const Dropzone = ({
       disabled,
       onDrop: (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
         if (fileRejections.length > 0) {
-          reportFailure(rejectedFilesError(fileRejections));
+          reportFailure(rejectedFilesError(fileRejections, rejectionMessage));
           return;
         }
         setFailure(undefined);

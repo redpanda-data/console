@@ -15,8 +15,11 @@ import {
   movesHighlight,
   navigationIntent,
   navigationTarget,
+  RANKED_GROUP_ROW_SELECTOR,
+  RANKED_ITEM_ROW_SELECTOR,
   type ReconciledItems,
   textFromNode,
+  useRankedWrapper,
 } from './command/navigation';
 import {
   type CommandFilter,
@@ -121,6 +124,7 @@ function useCommandState<T>(selector: (state: CommandState) => T): T {
 }
 
 interface CommandSelectionSyncProps {
+  autoHighlight: boolean;
   onValueChange: ((value: string) => void) | undefined;
   ranked: boolean;
   rootRef: React.RefObject<HTMLElement | null>;
@@ -132,9 +136,16 @@ interface CommandSelectionSyncProps {
  * Rendered after the command's children, so its layout effect sees their committed DOM. It
  * publishes each commit's item changes in one notification, then reconciles the highlight on the
  * next pass: typing highlights the first match, and a highlight whose item disappears moves to the
- * first item.
+ * first item. With `autoHighlight` off the highlight is left to the caller.
  */
-function CommandSelectionSync({ onValueChange, ranked, rootRef, store, value }: CommandSelectionSyncProps) {
+function CommandSelectionSync({
+  autoHighlight,
+  onValueChange,
+  ranked,
+  rootRef,
+  store,
+  value,
+}: CommandSelectionSyncProps) {
   const search = useCommandStore(store, (state) => state.getSearch());
   const itemsVersion = useCommandStore(store, (state) => state.getItemsVersion());
   const [, requestFlush] = React.useReducer((count: number) => count + 1, 0);
@@ -163,7 +174,7 @@ function CommandSelectionSync({ onValueChange, ranked, rootRef, store, value }: 
       values: new Set(items.map((item) => itemValueOf(item) ?? '')),
     };
     reconciled.current = next;
-    if (!movesHighlight(previous, next, store.getValue())) {
+    if (!(autoHighlight && movesHighlight(previous, next, store.getValue()))) {
       return;
     }
     const first = items[0];
@@ -180,6 +191,12 @@ interface CommandProps
   extends Omit<React.ComponentProps<'div'>, 'defaultValue'>,
     VariantProps<typeof commandVariants>,
     SharedProps {
+  /**
+   * Highlights the first item when the highlight is empty or the search changes, and moves a highlight whose item
+   * disappears, as cmdk does. `false` leaves the highlight to the caller, for lists that drive it themselves, such as
+   * virtualised ones.
+   */
+  autoHighlight?: boolean | undefined;
   /** Highlighted item value when uncontrolled. */
   defaultValue?: string | undefined;
   /** Keeps the pointer from moving the highlight; clicks still select. */
@@ -211,6 +228,7 @@ function Command({
   value,
   onValueChange,
   loop = false,
+  autoHighlight = true,
   disablePointerSelection = false,
   vimBindings = true,
   onKeyDown,
@@ -277,6 +295,7 @@ function Command({
           )}
           <CommandGroupContext.Provider value={undefined}>{children}</CommandGroupContext.Provider>
           <CommandSelectionSync
+            autoHighlight={autoHighlight}
             onValueChange={onValueChange}
             ranked={shouldFilter}
             rootRef={rootRef}
@@ -462,34 +481,6 @@ function CommandEmpty({ className, testId, ref, ...props }: React.ComponentProps
       role="presentation"
     />
   );
-}
-
-/** The flex items `order` moves: an item or its wrapper inside a group or the list, and a group or its wrapper in the list. */
-const RANKED_ITEM_ROW_SELECTOR = '[cmdk-group-items] > *, [cmdk-list-sizer] > *';
-const RANKED_GROUP_ROW_SELECTOR = '[cmdk-list-sizer] > *';
-
-/**
- * Ranks a wrapped part through its wrapper, as cmdk moved that wrapper: `order` only moves flex items, so an
- * item or group in its own element (a tooltip trigger, a layout `div`) puts its rank there. The wrapper gets its
- * own inline `order` back when the rank clears.
- */
-function useRankedWrapper(
-  elementRef: React.RefObject<HTMLElement | null>,
-  order: number | undefined,
-  rowSelector: string
-) {
-  React.useLayoutEffect(() => {
-    const element = elementRef.current;
-    const row = element?.closest<HTMLElement>(rowSelector) ?? null;
-    if (row === null || row === element || order === undefined) {
-      return;
-    }
-    const own = row.style.order;
-    row.style.order = String(order);
-    return () => {
-      row.style.order = own;
-    };
-  }, [elementRef, order, rowSelector]);
 }
 
 interface CommandGroupProps extends React.ComponentProps<'div'>, SharedProps {
