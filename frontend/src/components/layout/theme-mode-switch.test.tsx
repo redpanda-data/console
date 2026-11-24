@@ -14,6 +14,7 @@ import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from 'components/redpanda-ui/components/theme-provider';
 import { render, screen, waitFor } from 'test-utils';
 
+import { renderHeader } from './header-test-helpers';
 import { ThemeModeSwitch } from './theme-mode-switch';
 
 const renderSwitch = () =>
@@ -42,11 +43,12 @@ describe('the ThemeModeSwitch', () => {
     expect(screen.getByTestId('ColorModeSwitch-dark')).toHaveAccessibleName('Dark');
   });
 
-  test('stores the choice and applies it to the document', async () => {
+  test('applies and stores the choice from the breadcrumb-only header when dark mode is available', async () => {
     const user = userEvent.setup();
-    renderSwitch();
+    renderHeader(true);
 
-    await user.click(screen.getByRole('button', { name: 'Dark' }));
+    await user.click(await screen.findByRole('button', { name: 'Dark' }));
+    expect(screen.queryByRole('heading', { name: 'Cluster details' })).not.toBeInTheDocument();
 
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe('dark'));
     expect(localStorage.getItem('redpanda-ui-theme')).toBe('dark');
