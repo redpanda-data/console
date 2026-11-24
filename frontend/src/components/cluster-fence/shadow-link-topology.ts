@@ -349,7 +349,7 @@ export const buildShadowLinkTopology = ({
   clusterNames,
   clusterNamesSettled,
   candidates,
-}: TopologyInputs): ShadowLinkTopology => {
+}: TopologyInputs) => {
   const needed = linksNeedingDetails(links.items, clusterId);
   const own = resolveSources(
     needed.filter((link) => link.shadowRedpandaId === clusterId),
@@ -363,13 +363,14 @@ export const buildShadowLinkTopology = ({
     { self, clusterNames, candidates }
   );
   const namesPending = others.readers.length > 0 && !clusterNamesSettled;
-  return {
+  const shadowLinkTopology: ShadowLinkTopology = {
     clusterName: self.status === 'ready' ? self.value.name : clusterNames.get(clusterId),
     readers: others.readers,
     sources: own.sources,
     resolving: links.loading || own.pending || others.pending || namesPending,
     readersIncomplete: !links.complete || others.failed,
   };
+  return shadowLinkTopology;
 };
 
 /** The Cloud clusters this cluster's links read from, each once. */

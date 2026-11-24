@@ -32,18 +32,13 @@ export type NamespaceTables = {
   hidden: boolean;
 };
 
-export function namespaceTables(
-  namespace: Namespace,
-  fetched: TableRef[],
-  query: string,
-  shownCount: number
-): NamespaceTables {
+export function namespaceTables(namespace: Namespace, fetched: TableRef[], query: string, shownCount: number) {
   const all = tablesForNamespace(namespace, fetched);
   const q = query.trim().toLowerCase();
   const matched = q ? all.filter((t) => t.name.toLowerCase().includes(q)) : all;
   const paginate = !q && matched.length > CAT_LIMIT;
   const visible = paginate ? matched.slice(0, shownCount) : matched;
-  return {
+  const tablePage: NamespaceTables = {
     all,
     matched,
     visible,
@@ -52,4 +47,5 @@ export function namespaceTables(
     searching: q.length > 0,
     hidden: q.length > 0 && matched.length === 0 && !namespace.name.toLowerCase().includes(q),
   };
+  return tablePage;
 }

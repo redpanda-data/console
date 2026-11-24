@@ -37,7 +37,7 @@ export function getTimeRanges(maxMs: number) {
   return ALL_TIME_RANGES.filter((range) => range.ms <= maxMs);
 }
 
-export function calculateTimeRange(selectedTimeRange: TimeRange): TimeRangeDates {
+export function calculateTimeRange(selectedTimeRange: TimeRange) {
   const now = new Date();
   const config = ALL_TIME_RANGES.find((range) => range.value === selectedTimeRange);
   if (!config) {
@@ -45,10 +45,11 @@ export function calculateTimeRange(selectedTimeRange: TimeRange): TimeRangeDates
   }
   const startTime = new Date(now.getTime() - config.ms);
 
-  return {
+  const timeRangeDates: TimeRangeDates = {
     start: startTime,
     end: now,
   };
+  return timeRangeDates;
 }
 
 /** Evenly spaced timestamps (ms) across [startMs, endMs] inclusive, for chart axis ticks. */

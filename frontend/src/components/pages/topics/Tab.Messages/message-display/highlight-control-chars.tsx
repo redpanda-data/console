@@ -24,8 +24,8 @@ function controlCharElements(code: number, position: number): ReactNode[] {
 }
 
 /** Renders text with its ASCII control characters spelled out, for example `LF` for a line feed. */
-export function highlightControlChars(str: string, maxLength?: number): ReactNode[] {
-  return splitControlChars(str, maxLength).flatMap((part, position) =>
+export function highlightControlChars(str: string, maxLength?: number) {
+  return splitControlChars(str, maxLength).flatMap<ReactNode>((part, position) =>
     typeof part === 'string' ? [part] : controlCharElements(part, position)
   );
 }

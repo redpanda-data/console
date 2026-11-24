@@ -111,12 +111,7 @@ function useClampedPageIndex({
  * point past the last page and render empty — so the index is clamped and the URL repaired once
  * data arrives.
  */
-export function useUrlTableState({
-  keyPrefix,
-  settings,
-  rowCount,
-  enabled = true,
-}: UseUrlTableStateParams): UseUrlTableStateResult {
+export function useUrlTableState({ keyPrefix, settings, rowCount, enabled = true }: UseUrlTableStateParams) {
   const [pageIndex, setPageIndex] = useQueryState(`${keyPrefix}Page`, parseAsInteger.withDefault(0));
 
   const [pageSize, setPageSize] = useQueryStateWithCallback<number>(
@@ -141,5 +136,6 @@ export function useUrlTableState({
     setPageSize(next.pageSize);
   };
 
-  return { sorting, pagination, onSortingChange, onPaginationChange };
+  const tableState: UseUrlTableStateResult = { sorting, pagination, onSortingChange, onPaginationChange };
+  return tableState;
 }

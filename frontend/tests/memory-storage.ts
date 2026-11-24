@@ -9,10 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-export function createMemoryStorage(): Storage {
+export function createMemoryStorage() {
   const values = new Map<string, string>();
 
-  return {
+  const storage: Storage = {
     get length() {
       return values.size;
     },
@@ -32,4 +32,5 @@ export function createMemoryStorage(): Storage {
       values.set(key, value);
     },
   };
+  return storage;
 }

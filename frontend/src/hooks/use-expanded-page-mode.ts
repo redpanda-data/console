@@ -36,11 +36,7 @@ const readStoredExpanded = (storageKey: string) => {
  * Attach `ref` to the page root: the attribute is held only while that root is on
  * screen, because embedded Cloud UI keeps Console mounted but hidden on host routes.
  */
-export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
-  expanded: boolean;
-  toggleExpanded: () => void;
-  ref: (el: HTMLElement | null) => void;
-} {
+export function useExpandedPageMode({ storageKey }: { storageKey: string }) {
   const [expanded, setExpanded] = useState(() => readStoredExpanded(storageKey));
   const [pageRoot, setPageRoot] = useState<HTMLElement | null>(null);
 
@@ -74,5 +70,10 @@ export function useExpandedPageMode({ storageKey }: { storageKey: string }): {
     });
   }, [storageKey]);
 
-  return { expanded, toggleExpanded, ref: setPageRoot };
+  const pageMode: {
+    expanded: boolean;
+    toggleExpanded: () => void;
+    ref: (el: HTMLElement | null) => void;
+  } = { expanded, toggleExpanded, ref: setPageRoot };
+  return pageMode;
 }

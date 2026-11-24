@@ -98,12 +98,12 @@ export type ParsedFilterLine = {
  * instant a word is syntactically complete — there's no separate commit
  * step, just continuous re-parsing on every edit.
  */
-export function parseFilterLine(text: string, options?: { partitionCount?: number }): ParsedFilterLine {
+export function parseFilterLine(text: string, options?: { partitionCount?: number }) {
   const words = tokenizeLine(text).map((word) => ({ word, parsed: parseFilterInput(word.text, options) }));
   const recognized = words.filter((entry): entry is RecognizedWord => entry.parsed !== null);
   const partitionWord = recognized.findLast(({ parsed }) => parsed.field === 'partition');
 
-  return {
+  const parsedFilterLine: ParsedFilterLine = {
     partitionId: partitionWord ? Number(partitionWord.parsed.value) : null,
     fieldTokens: recognized
       .filter(({ parsed }) => parsed.field !== 'partition')
@@ -116,6 +116,7 @@ export function parseFilterLine(text: string, options?: { partitionCount?: numbe
       .join(' '),
     tokenRanges: recognized.map(({ word }) => ({ start: word.start, end: word.end })),
   };
+  return parsedFilterLine;
 }
 
 type RecognizedWord = { word: LineWord; parsed: NonNullable<ReturnType<typeof parseFilterInput>> };

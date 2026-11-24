@@ -12,11 +12,12 @@ export type SchemaEditTarget = { subjectName?: string; contextName?: string };
 /** An edit page's title, breadcrumb label and route segment, e.g. `Edit Mode` at `…/edit-mode`. */
 export type SchemaEditPageKind = { pageTitle: string; crumbTitle: string; segment: string };
 
-export function decodeSchemaEditTarget(subjectNameEncoded?: string, contextNameEncoded?: string): SchemaEditTarget {
-  return {
+export function decodeSchemaEditTarget(subjectNameEncoded?: string, contextNameEncoded?: string) {
+  const schemaEditTarget: SchemaEditTarget = {
     subjectName: subjectNameEncoded ? decodeURIComponent(subjectNameEncoded) : undefined,
     contextName: contextNameEncoded ? decodeURIComponent(contextNameEncoded) : undefined,
   };
+  return schemaEditTarget;
 }
 
 export function schemaEditBreadcrumbs(

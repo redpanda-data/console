@@ -581,7 +581,7 @@ export type ACLDifference = {
  * @param newRules - The desired ACL rules
  * @returns Object containing arrays of rules to create and delete
  */
-export function calculateACLDifference(currentRules: ACLWithId[], newRules: ACLWithId[]): ACLDifference {
+export function calculateACLDifference(currentRules: ACLWithId[], newRules: ACLWithId[]) {
   const currentIds = new Set(currentRules.map((r) => r.id));
   const newIds = new Set(newRules.map((r) => r.id));
 
@@ -589,10 +589,11 @@ export function calculateACLDifference(currentRules: ACLWithId[], newRules: ACLW
 
   const toDelete = currentRules.filter((rule) => !newIds.has(rule.id));
 
-  return {
+  const aclDifference: ACLDifference = {
     toCreate,
     toDelete,
   };
+  return aclDifference;
 }
 
 export const handleResponses = (errors: ConnectError[], created: boolean) => {

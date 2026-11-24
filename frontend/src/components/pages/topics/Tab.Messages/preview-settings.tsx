@@ -324,15 +324,11 @@ function compareTagMatches(tags: PreviewTagV2[]) {
   };
 }
 
-export function getPreviewTags(
-  targetObject: Record<string, unknown>,
-  tags: PreviewTagV2[],
-  caseSensitive: boolean
-): React.ReactNode[] {
+export function getPreviewTags(targetObject: Record<string, unknown>, tags: PreviewTagV2[], caseSensitive: boolean) {
   const results = tags.flatMap((t) => findTagMatches(targetObject, t, caseSensitive));
   results.sort(compareTagMatches(tags));
 
-  return results.map((r, index) => {
+  return results.map<React.ReactNode>((r, index) => {
     const tag = r.tag;
     const displayName = tag.customName && tag.customName.length > 0 ? tag.customName : r.fullPath;
     return (

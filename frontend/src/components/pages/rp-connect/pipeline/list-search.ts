@@ -51,7 +51,7 @@ const FILTER_KEYS = {
 } as const satisfies Record<string, keyof PipelineListSearch>;
 
 /** The table's column filters for `search`: its tab, its name search, and each facet. */
-export function columnFiltersFromSearch(search: PipelineListSearch): ColumnFiltersState {
+export function columnFiltersFromSearch(search: PipelineListSearch) {
   const filters: ColumnFiltersState = [];
   const tab = PIPELINE_STATE_TABS.find((t) => t.id === search.tab);
   const states = tab ? stateFilterValues(tab) : undefined;
@@ -64,7 +64,8 @@ export function columnFiltersFromSearch(search: PipelineListSearch): ColumnFilte
   const facets = Object.entries(FILTER_KEYS).flatMap(([id, key]) =>
     search[key]?.length ? [{ id, value: search[key] }] : []
   );
-  return [...filters, ...facets];
+  const columnFiltersState: ColumnFiltersState = [...filters, ...facets];
+  return columnFiltersState;
 }
 
 /** The facet keys for a table's column filters; the tab and name search have keys of their own. */

@@ -78,7 +78,7 @@ function groupFetchedTables(catalog: Catalog, tables: FetchedTable[]) {
  * The catalog with fetched tables filled into its namespaces (which the bare
  * catalog list seeds empty), adding any namespace only the tables name.
  */
-export function withFetchedTables(catalog: Catalog, tables: FetchedTable[]): Catalog {
+export function withFetchedTables(catalog: Catalog, tables: FetchedTable[]) {
   const byNamespace = groupFetchedTables(catalog, tables);
   const namespaces = catalog.namespaces.map((ns) => ({
     ...ns,
@@ -89,7 +89,8 @@ export function withFetchedTables(catalog: Catalog, tables: FetchedTable[]): Cat
       namespaces.push({ id: `${catalog.name}.${name}`, name, tables: nsTables });
     }
   }
-  return { ...catalog, namespaces };
+  const updatedCatalog: Catalog = { ...catalog, namespaces };
+  return updatedCatalog;
 }
 
 /**

@@ -24,7 +24,7 @@ type ResilientParse = { nodes: PipelineFlowNode[]; error?: string; showingStale:
  * Hold the last REAL pipeline while an edit leaves the YAML unparseable, or valid but no longer a
  * pipeline — blanking the view (canvas or sidebar outline) reads as broken. Shared by both.
  */
-export function useResilientParse(yaml: string): ResilientParse {
+export function useResilientParse(yaml: string) {
   const parsed = useMemo(() => parsePipelineFlowTree(yaml), [yaml]);
   const lastGoodRef = useRef<PipelineFlowNode[]>([]);
   // Hold only a real pipeline as the fallback; a blank config resets it (nothing left to fall back to).
@@ -35,5 +35,10 @@ export function useResilientParse(yaml: string): ResilientParse {
   }
   const brokenOverContent = !parsed.error && isPipelineEmpty(parsed.nodes) && !isConfigTextEmpty(yaml);
   const showingStale = (Boolean(parsed.error) || brokenOverContent) && lastGoodRef.current.length > 0;
-  return { nodes: showingStale ? lastGoodRef.current : parsed.nodes, error: parsed.error, showingStale };
+  const resilientParse: ResilientParse = {
+    nodes: showingStale ? lastGoodRef.current : parsed.nodes,
+    error: parsed.error,
+    showingStale,
+  };
+  return resilientParse;
 }

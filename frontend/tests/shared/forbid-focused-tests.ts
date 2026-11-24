@@ -1,6 +1,6 @@
 import type { Reporter, TestInfo } from '@rstest/core';
 
-export function forbidFocusedTests(): Reporter {
+export function forbidFocusedTests() {
   const check = (tests: TestInfo[]) => {
     for (const test of tests) {
       if (test.runMode === 'only') {
@@ -11,11 +11,12 @@ export function forbidFocusedTests(): Reporter {
       }
     }
   };
-  return {
+  const reporter: Reporter = {
     onTestFileReady: ({ tests }) => {
       if (process.env.CI) {
         check(tests);
       }
     },
   };
+  return reporter;
 }

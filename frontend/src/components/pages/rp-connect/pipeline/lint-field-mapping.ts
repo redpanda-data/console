@@ -227,7 +227,7 @@ export function mapLintHintsToFields(opts: {
   hints: readonly LintHint[];
   /** Keys the schema form actually renders — leaves and group sections (see `formFieldKeys`). */
   fieldKeys: ReadonlySet<string>;
-}): { byField: FieldLintErrors; unmapped: UnmappedLintHint[] } {
+}) {
   const segments = collectFieldSegments(opts.yaml, opts.target, opts.componentName);
   const byField = new Map<string, string[]>();
   const unmapped: UnmappedLintHint[] = [];
@@ -240,5 +240,6 @@ export function mapLintHintsToFields(opts: {
       appendFieldMessages(byField, resolved.anchors);
     }
   }
-  return { byField, unmapped };
+  const fieldHints: { byField: FieldLintErrors; unmapped: UnmappedLintHint[] } = { byField, unmapped };
+  return fieldHints;
 }

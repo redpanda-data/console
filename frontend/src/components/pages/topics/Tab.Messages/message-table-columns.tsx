@@ -115,9 +115,9 @@ export type MessageColumnOptions = {
   onSaveMessage: (message: TopicMessage) => void;
 };
 
-function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, DataTableColumnDef<TopicMessage>> {
+function buildDataColumns(options: MessageColumnOptions) {
   const { continuousPaginationEnabled, tsFormat, keyDeserializer, valueDeserializer, onShowDeserializers } = options;
-  return {
+  const topicColumns: Record<DataColumnKey, DataTableColumnDef<TopicMessage>> = {
     offset: {
       header: 'Offset',
       accessorKey: 'offset',
@@ -222,6 +222,7 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
       }) => <span>{prettyBytes(size)}</span>,
     },
   };
+  return topicColumns;
 }
 
 function selectColumnKeys(previewColumnFields: ColumnList[]): DataColumnKey[] {
@@ -232,8 +233,8 @@ function selectColumnKeys(previewColumnFields: ColumnList[]): DataColumnKey[] {
   return COLUMN_ORDER.filter((column) => selectedColumns.has(column));
 }
 
-function buildActionColumn(onSaveMessage: (message: TopicMessage) => void): DataTableColumnDef<TopicMessage> {
-  return {
+function buildActionColumn(onSaveMessage: (message: TopicMessage) => void) {
+  const actionColumn: DataTableColumnDef<TopicMessage> = {
     id: 'action',
     size: 0,
     cell: ({ row: { original } }) => (
@@ -287,10 +288,11 @@ function buildActionColumn(onSaveMessage: (message: TopicMessage) => void): Data
       </DropdownMenu>
     ),
   };
+  return actionColumn;
 }
 
 /** The message table's columns: the visible data columns, the last one taking the free width, then actions. */
-export function buildMessageColumns(options: MessageColumnOptions): DataTableColumnDef<TopicMessage>[] {
+export function buildMessageColumns(options: MessageColumnOptions) {
   const dataTableColumns = buildDataColumns(options);
   const newColumns = selectColumnKeys(options.previewColumnFields).map((key) => dataTableColumns[key]);
 
@@ -299,7 +301,8 @@ export function buildMessageColumns(options: MessageColumnOptions): DataTableCol
     lastColumn.size = Number.POSITIVE_INFINITY;
   }
 
-  return [...newColumns, buildActionColumn(options.onSaveMessage)];
+  const visibleColumns: DataTableColumnDef<TopicMessage>[] = [...newColumns, buildActionColumn(options.onSaveMessage)];
+  return visibleColumns;
 }
 
 export const expanderColumn: DataTableColumnDef<TopicMessage> = {

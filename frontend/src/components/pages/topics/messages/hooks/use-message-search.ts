@@ -455,7 +455,7 @@ function useSearchState() {
  * incrementally (throttled to ~5 flushes/s), which the live-tail UX needs to
  * insert rows and drive the flash animation while the stream is open.
  */
-export function useMessageSearch(topicName: string): MessageSearchResult {
+export function useMessageSearch(topicName: string) {
   const { state, setters } = useSearchState();
   const [session] = useState(createSearchSession);
 
@@ -526,7 +526,7 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
     [session]
   );
 
-  return {
+  const messageSearchResult: MessageSearchResult = {
     messages: state.messages,
     phase: state.phase,
     backendPhase: state.backendPhase,
@@ -542,4 +542,5 @@ export function useMessageSearch(topicName: string): MessageSearchResult {
     loadMore,
     loadLargeMessage,
   };
+  return messageSearchResult;
 }

@@ -86,15 +86,16 @@ export function computeMetadata(metadataProperties: SchemaEditorStateData['metad
   return Object.keys(properties).length > 0 ? { properties } : undefined;
 }
 
-export function deriveSchemaEditorState(state: SchemaEditorStateData): SchemaEditorStateHelper {
+export function deriveSchemaEditorState(state: SchemaEditorStateData) {
   const subjectName = computeSubjectName(state);
-  return {
+  const schemaEditorStateHelper: SchemaEditorStateHelper = {
     ...state,
     computedMetadata: computeMetadata(state.metadataProperties),
     isInvalidKeyOrValue: state.strategy === 'TOPIC' && state.userInput.length > 0 && !state.keyOrValue,
     computedSubjectName: subjectName,
     qualifiedSubjectName: buildQualifiedSubjectName(state.context, subjectName),
   };
+  return schemaEditorStateHelper;
 }
 
 // Splits a subject name into its context id and the name typed in the editor.
@@ -123,13 +124,13 @@ export function addVersionEditorState(
   subjectName: string,
   schema: SchemaRegistryVersionedSchema,
   srContextsEnabled: boolean
-): SchemaEditorStateData {
+) {
   const schemaText =
     schema.type === SchemaType.AVRO || schema.type === SchemaType.JSON
       ? JSON.stringify(JSON.parse(schema.schema), undefined, 4)
       : schema.schema;
   const { contextId, userInput } = subjectNameParts(subjectName, srContextsEnabled);
-  return {
+  const schemaEditorStateData: SchemaEditorStateData = {
     strategy: 'CUSTOM',
     userInput,
     keyOrValue: undefined,
@@ -140,6 +141,7 @@ export function addVersionEditorState(
     metadataProperties: metadataRows(schema),
     context: contextId,
   };
+  return schemaEditorStateData;
 }
 
 /** Display names of subjects per context id, for the reference subject picker. */

@@ -109,7 +109,7 @@ export function useLiveTailLoop({
   start,
   stop,
   maxRetries = DEFAULT_LIVE_TAIL_MAX_RETRIES,
-}: LiveTailLoopOptions): LiveTailLoop {
+}: LiveTailLoopOptions) {
   const [status, setStatus] = useState<LiveTailStatus>('idle');
   // Cancels the running session; null while the loop is inactive.
   const cancelSessionRef = useRef<(() => void) | null>(null);
@@ -137,5 +137,6 @@ export function useLiveTailLoop({
     cancelSessionRef.current = runLiveTailSession({ start, maxRetries, setStatus });
   }, [start, stop, maxRetries]);
 
-  return { status, restart };
+  const liveTailLoop: LiveTailLoop = { status, restart };
+  return liveTailLoop;
 }

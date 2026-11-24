@@ -45,22 +45,20 @@ const REPLACEMENTS: Record<string, ComponentRef> = {
   'processor:jira': { name: 'jira', type: 'input' },
 };
 
-export function deprecationNotice(
-  component: ConnectComponentSpec,
-  catalog: readonly ConnectComponentSpec[]
-): DeprecationNotice {
+export function deprecationNotice(component: ConnectComponentSpec, catalog: readonly ConnectComponentSpec[]) {
   const named = REPLACEMENTS[`${component.type}:${component.name}`];
   const replacement =
     named && catalog.some((c) => c.type === named.type && c.name === named.name && !isDeprecatedComponent(c))
       ? named
       : undefined;
   const docsTarget = replacement ?? component;
-  return {
+  const result: DeprecationNotice = {
     name: component.name,
     type: component.type,
     replacement,
     docsUrl: getConnectorDocsUrl(docsTarget.type, docsTarget.name),
   };
+  return result;
 }
 
 /** The warning every surface shows. */

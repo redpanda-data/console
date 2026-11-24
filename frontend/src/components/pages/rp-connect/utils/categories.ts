@@ -46,7 +46,7 @@ export const getCategoryDisplayName = (category: string) =>
 export const getAllCategories = (
   components: (ConnectComponentSpec | ExtendedConnectComponentSpec)[],
   componentType?: ConnectComponentType[]
-): ConnectNodeCategory[] => {
+) => {
   const categorySet = new Set<string>();
 
   for (const component of components) {
@@ -62,7 +62,7 @@ export const getAllCategories = (
 
   return Array.from(categorySet)
     .sort((a, b) => a.localeCompare(b))
-    .map((categoryId) => ({
+    .map<ConnectNodeCategory>((categoryId) => ({
       id: categoryId,
       name: getCategoryDisplayName(categoryId),
     }));

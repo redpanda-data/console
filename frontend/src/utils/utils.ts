@@ -550,8 +550,8 @@ export function uint8ArrayToHexString(ar: Uint8Array) {
   }
 }
 
-export function delay(timeoutMs: number): Promise<void> {
-  return new Promise((resolve, _) => {
+export function delay(timeoutMs: number) {
+  return new Promise<void>((resolve, _) => {
     setTimeout(resolve, timeoutMs);
   });
 }

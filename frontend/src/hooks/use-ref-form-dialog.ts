@@ -90,9 +90,7 @@ async function settleSubmission<TData>(
   }
 }
 
-function useRefFormDialog<TData, TTarget = boolean>(
-  options: UseRefFormDialogOptions<TData, TTarget>
-): UseRefFormDialogReturn<TTarget> {
+function useRefFormDialog<TData, TTarget = boolean>(options: UseRefFormDialogOptions<TData, TTarget>) {
   const { ref, onSuccess, timeout = DEFAULT_TIMEOUT } = options;
   const [target, setTarget] = useState<TTarget | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,7 +132,7 @@ function useRefFormDialog<TData, TTarget = boolean>(
     });
   }, [ref, target, onSuccess, timeout, close]);
 
-  return {
+  const dialogState: UseRefFormDialogReturn<TTarget> = {
     isOpen: target !== null,
     isSubmitting,
     target,
@@ -142,6 +140,7 @@ function useRefFormDialog<TData, TTarget = boolean>(
     close,
     submit,
   };
+  return dialogState;
 }
 
 export type { RefFormSubmittable, UseRefFormDialogOptions, UseRefFormDialogReturn };

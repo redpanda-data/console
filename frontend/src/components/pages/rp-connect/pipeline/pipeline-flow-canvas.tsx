@@ -130,12 +130,19 @@ type MiniMapLayout = {
   view: { x: number; y: number; w: number; h: number };
 };
 
-function flowViewport([tx, ty, zoom]: [number, number, number], paneWidth: number, paneHeight: number): FlowViewport {
-  return { left: -tx / zoom, top: -ty / zoom, width: paneWidth / zoom, height: paneHeight / zoom, zoom };
+function flowViewport([tx, ty, zoom]: [number, number, number], paneWidth: number, paneHeight: number) {
+  const visibleViewport: FlowViewport = {
+    left: -tx / zoom,
+    top: -ty / zoom,
+    width: paneWidth / zoom,
+    height: paneHeight / zoom,
+    zoom,
+  };
+  return visibleViewport;
 }
 
 // The extent is unioned with the viewport because RF doesn't re-clamp the transform when
-function miniMapWorld(ext: ScopeBounds, vp: FlowViewport): { world: ScopeBounds; canPanX: boolean; canPanY: boolean } {
+function miniMapWorld(ext: ScopeBounds, vp: FlowViewport) {
   const canPanX = vp.width < ext.maxX - ext.minX;
   const canPanY = vp.height < ext.maxY - ext.minY;
   const world = {
@@ -144,10 +151,11 @@ function miniMapWorld(ext: ScopeBounds, vp: FlowViewport): { world: ScopeBounds;
     minY: canPanY ? Math.min(ext.minY, vp.top) : vp.top,
     maxY: canPanY ? Math.max(ext.maxY, vp.top + vp.height) : vp.top + vp.height,
   };
-  return { world, canPanX, canPanY };
+  const mapWorld: { world: ScopeBounds; canPanX: boolean; canPanY: boolean } = { world, canPanX, canPanY };
+  return mapWorld;
 }
 
-function miniMapProjection(world: ScopeBounds): MiniMapProjection {
+function miniMapProjection(world: ScopeBounds) {
   const mapW = MINIMAP_WIDTH - 2 * MINIMAP_BORDER;
   const worldW = Math.max(world.maxX - world.minX, 1);
   const worldH = Math.max(world.maxY - world.minY, 1);
@@ -155,7 +163,7 @@ function miniMapProjection(world: ScopeBounds): MiniMapProjection {
   const innerH = clampValue(innerW * (worldH / worldW), MINIMAP_MIN_INNER_H, MINIMAP_MAX_INNER_H);
   const scaleX = innerW / worldW;
   const scaleY = innerH / worldH;
-  return {
+  const mapProjection: MiniMapProjection = {
     mapW,
     mapH: innerH + 2 * MINIMAP_PAD,
     scaleX,
@@ -163,6 +171,7 @@ function miniMapProjection(world: ScopeBounds): MiniMapProjection {
     offsetX: MINIMAP_PAD - world.minX * scaleX,
     offsetY: MINIMAP_PAD - world.minY * scaleY,
   };
+  return mapProjection;
 }
 
 function miniMapLayout(
@@ -170,7 +179,7 @@ function miniMapLayout(
   paneWidth: number,
   paneHeight: number,
   translateExtent: FlowExtent
-): MiniMapLayout {
+) {
   const viewport = flowViewport(transform, paneWidth, paneHeight);
   const [[minX, minY], [maxX, maxY]] = translateExtent;
   const ext = { minX, minY, maxX, maxY };
@@ -183,7 +192,8 @@ function miniMapLayout(
     w: viewport.width * scaleX,
     h: viewport.height * scaleY,
   };
-  return { viewport, ext, canPanX, canPanY, projection, view };
+  const viewportLayout: MiniMapLayout = { viewport, ext, canPanX, canPanY, projection, view };
+  return viewportLayout;
 }
 
 function miniMapPanCentre(layout: MiniMapLayout, px: number, py: number) {
@@ -555,11 +565,17 @@ type Point = { x: number; y: number };
 type MeasuredById = Map<string, { measured?: { width?: number; height?: number } }>;
 type ScopeGeometry = { body: ScopeBounds; entry: ScopeBounds | null };
 
-function nodeRect(n: Node, measuredById: MeasuredById): ScopeBounds {
+function nodeRect(n: Node, measuredById: MeasuredById) {
   const m = measuredById.get(n.id)?.measured;
   const w = (m?.width ?? n.initialWidth ?? n.width ?? 0) as number;
   const h = (m?.height ?? n.initialHeight ?? n.height ?? 0) as number;
-  return { minX: n.position.x, minY: n.position.y, maxX: n.position.x + w, maxY: n.position.y + h };
+  const measuredBounds: ScopeBounds = {
+    minX: n.position.x,
+    minY: n.position.y,
+    maxX: n.position.x + w,
+    maxY: n.position.y + h,
+  };
+  return measuredBounds;
 }
 
 const growBounds = (box: ScopeBounds | null, r: ScopeBounds) =>
@@ -1047,9 +1063,10 @@ type DecorateEdgeOptions = {
   onSelectNode?: (nodeId: string, target: EditTarget, caseTarget?: EditTarget) => void;
 };
 
-function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | undefined): Edge {
+function decorateReferenceEdge(edge: Edge, activeScope: ReadonlySet<string> | undefined) {
   const touchesActive = activeScope !== undefined && (activeScope.has(edge.source) || activeScope.has(edge.target));
-  return { ...edge, data: { ...edge.data, emphasized: touchesActive, faint: !touchesActive } };
+  const decoratedEdge: Edge = { ...edge, data: { ...edge.data, emphasized: touchesActive, faint: !touchesActive } };
+  return decoratedEdge;
 }
 
 type EdgeActionData = {
@@ -1081,10 +1098,10 @@ function withLabelClick(edge: Edge, onSelectNode: DecorateEdgeOptions['onSelectN
   return { ...edge, data: { ...edge.data, onLabelClick: () => onSelectNode(selectId, selectTarget) } };
 }
 
-export function decorateEdges(edges: Edge[], options: DecorateEdgeOptions): Edge[] {
+export function decorateEdges(edges: Edge[], options: DecorateEdgeOptions) {
   const { selectedScope, hoveredScope } = options;
   const activeScope = selectedScope ?? hoveredScope;
-  return edges.map((edge) => {
+  return edges.map<Edge>((edge) => {
     const next = withLabelClick(withInsertHandler(edge, options), options.onSelectNode);
     if (next.id.startsWith('ref-')) {
       return decorateReferenceEdge(next, activeScope);

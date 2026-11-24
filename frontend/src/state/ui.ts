@@ -65,8 +65,8 @@ export type FilterEntry = {
   code: string; // js code the user entered
 };
 
-export function createFilterEntry(overrides?: Partial<FilterEntry>): FilterEntry {
-  return {
+export function createFilterEntry(overrides?: Partial<FilterEntry>) {
+  const filterEntry: FilterEntry = {
     isNew: false,
     id: randomId() + randomId(),
     filterType: 'code',
@@ -76,6 +76,7 @@ export function createFilterEntry(overrides?: Partial<FilterEntry>): FilterEntry
     code: 'return true\n//allow all messages',
     ...overrides,
   };
+  return filterEntry;
 }
 
 export type TimestampDisplayFormat = 'default' | 'unixTimestamp' | 'onlyDate' | 'onlyTime' | 'unixMillis' | 'relative';
@@ -167,11 +168,8 @@ export type TopicDetailsSettings = {
   quickSearch: string;
 };
 
-export function createTopicDetailsSettings(
-  topicName: string,
-  overrides?: Partial<TopicDetailsSettings>
-): TopicDetailsSettings {
-  return {
+export function createTopicDetailsSettings(topicName: string, overrides?: Partial<TopicDetailsSettings>) {
+  const topicDetailsSettings: TopicDetailsSettings = {
     topicName,
     searchParams: { ...DEFAULT_SEARCH_PARAMS },
     dynamicFilters: [],
@@ -195,6 +193,7 @@ export function createTopicDetailsSettings(
     quickSearch: '',
     ...overrides,
   };
+  return topicDetailsSettings;
 }
 
 type UISettings = {
