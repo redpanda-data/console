@@ -20,9 +20,6 @@ export const usePublishMessageMutation = () =>
       }),
   });
 
-/**
- * Helper function to create a PublishMessageRequest with payload options
- */
 // biome-ignore lint/nursery/useMaxParams: Message publishing helper with many configuration options
 export const createPublishMessageRequest = (
   topic: string,

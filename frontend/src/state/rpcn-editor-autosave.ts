@@ -42,24 +42,22 @@ export type AttachedServiceAccount = z.infer<typeof attachedServiceAccountSchema
 
 const editorAutosaveEntrySchema = z.object({
   version: z.literal(AUTOSAVE_ENTRY_VERSION),
-  /** `create`, or a pipeline id. */
   targetKey: z.string(),
   clusterId: z.string(),
   name: z.string(),
   description: z.string(),
   computeUnits: z.number(),
   tags: z.array(z.object({ key: z.string(), value: z.string() })),
-  /** Absent from entries written before egress gateways could be picked. */
   egressGatewayIds: z.array(z.string()).optional(),
   configYaml: z.string(),
-  /** Epoch ms, this browser's clock. */
   updatedAt: z.number(),
-  /** The pipeline's `update_time` (epoch ms) these edits were based on; staleness compares server clocks only. */
   basedOnUpdateTime: z.number().nullish(),
-  /** Lives outside the YAML, so the config's service-account login needs it restored alongside. */
   serviceAccount: attachedServiceAccountSchema.nullish(),
 });
 
+/**
+ * The target is create or a pipeline ID. Eviction uses browser time; staleness compares the displayed server baseline with the server's update time. Restore the service account alongside YAML and allow older entries with no gateway selection.
+ */
 export type EditorAutosaveEntry = z.infer<typeof editorAutosaveEntrySchema>;
 
 export type EditorAutosaveInput = Omit<EditorAutosaveEntry, 'version' | 'clusterId' | 'updatedAt'>;

@@ -68,6 +68,9 @@ function sanitizeValue(value: unknown, type: string) {
   }
 }
 
+/**
+ * Validates an empty configuration to discover properties. New connectors omit untouched optional defaults so they continue to follow the connector default; editing can still explicitly restore a changed default. Validation errors are associated with the input value at the time of the request.
+ */
 export class ConnectorPropertiesStore {
   allGroups: PropertyGroup[] = [];
   propsByName = new Map<string, Property>();
@@ -208,7 +211,6 @@ export class ConnectorPropertiesStore {
   private validateInitialConfig() {
     const { clusterName, pluginClassName } = this;
 
-    // Validate with empty object to get all properties initially
     const basicConfig = {
       'connector.class': pluginClassName,
       name: '',
@@ -218,7 +220,6 @@ export class ConnectorPropertiesStore {
   }
 
   private indexProperties(allProps: Property[]) {
-    // Save props to map, so we can quickly find them to set their validation errors
     for (const p of allProps) {
       this.propsByName.set(p.name, p);
     }
@@ -259,7 +260,6 @@ export class ConnectorPropertiesStore {
       .filter((x) => x !== null && x !== undefined);
   }
 
-  // Runs `handle` now, then shortly after every change that alters the serialized config.
   private onConfigChange(delayMs: number, handle: (config: object) => void) {
     let lastConfig: string | null = null;
     const handleIfChanged = () => {
@@ -299,10 +299,8 @@ export class ConnectorPropertiesStore {
       this.mergeValidatedProperty(source);
     }
 
-    // Sort all groups again because order might have changed
     this.allGroups = this.allGroups.orderBy((x) => stepGroupOrder(validationResult.steps, x.group.name));
 
-    // Set last error values, so we know when to show the validation error
     for (const g of this.allGroups) {
       for (const p of g.properties) {
         p.lastErrorValue = p.value;
@@ -315,7 +313,6 @@ export class ConnectorPropertiesStore {
     const srcNames = new Set(srcProps.map((x) => x.name));
     const removedProps = [...this.propsByName.keys()].filter((key) => !srcNames.has(key));
     for (const key of removedProps) {
-      // group names might not be accurate so we check all groups
       for (const g of this.allGroups) {
         g.properties.removeAll((x) => x.name === key);
       }
@@ -343,8 +340,6 @@ export class ConnectorPropertiesStore {
     }
   }
 
-  // Creates our Property objects, while fixing some issues with the source data
-  // like: missing value, propertyWidth, group, ...
   createCustomProperties(properties: ConnectorProperty[]) {
     for (const p of properties) {
       const def = p.definition;
@@ -403,34 +398,25 @@ export class ConnectorPropertiesStore {
   }
 }
 
-const hiddenProperties = [
-  'connector.class', // user choses that in the first page of the wizard
-];
+const hiddenProperties = ['connector.class'];
 
 function parseConfigJson(jsonText: string): Record<string, unknown> {
   try {
     return JSON.parse(jsonText);
   } catch {
-    // no op - JSON may be invalid during editing
+    // WARNING: Keep the last valid props during an incomplete JSON edit; a parse failure is expected while typing.
     return {};
   }
 }
 
-// Whether a property's value goes into the submitted config. Optional values still at their default
-// are left out, so the connector keeps following the default.
 function isSubmittedProperty(p: Property, config: Record<string, unknown>) {
   if (p.entry.definition.required) {
     return true;
   }
   if (p.value === p.entry.definition.default_value) {
-    // Prevent sending configs set to default when the user has not modified them.
-
-    // let's ignore the default variable if the value is the same as initially rendered
-    // otherwise, user might want to set it back to default
     if (p.value === p.entry.value.value) {
       return false;
     }
-    // let's ignore the variable if the original value is null and the config is not present in current set configs values.
     if (p.entry.value.value === null && !config[p.name]) {
       return false;
     }
@@ -445,7 +431,6 @@ function applyCustomDefaults(allProps: Property[]) {
     }
   }
 
-  // Set last error values, so we know when to show the validation error
   for (const p of allProps) {
     if (p.errors.length > 0) {
       p.lastErrorValue = p.value;
@@ -454,7 +439,6 @@ function applyCustomDefaults(allProps: Property[]) {
 }
 
 function linkPropertiesToGroups(groups: PropertyGroup[]) {
-  // Let properties know about their parent group, so they can add/remove themselves in 'propertiesWithErrors'
   for (const g of groups) {
     for (const p of g.properties) {
       p.propertyGroup = g;
@@ -466,7 +450,6 @@ function linkPropertiesToGroups(groups: PropertyGroup[]) {
   }
 }
 
-// The group's position across all steps' groups; a group no step lists sorts last.
 function stepGroupOrder(steps: ConnectorStep[], groupName: string | undefined) {
   let order = 0;
   for (const s of steps) {
@@ -489,7 +472,6 @@ function syncRecommendedValues(target: Property, source: Property) {
   }
 }
 
-// Show the first error, skipping over simple / unhelpful messages when there are several.
 function firstHelpfulErrorIndex(errors: string[]) {
   if (errors.length <= 1) {
     return 0;
@@ -524,8 +506,6 @@ function initialPropertyValue(p: ConnectorProperty) {
 function bindSecretValue(property: Property, secret: Secret) {
   secret.extractSecretId(String(property.value));
 
-  // Instead of intercept, we'll use a custom setter pattern
-  // Store original value
   let currentValue = property.value;
   Object.defineProperty(property, 'value', {
     get() {
@@ -554,16 +534,19 @@ export type PropertyGroup = {
   documentation_link?: string;
 };
 
+/**
+ * Tracks the last validated value and prior errors so corrected inputs can hide old errors immediately.
+ */
 export type Property = {
   name: string;
   entry: ConnectorProperty;
   value: null | string | number | boolean | string[];
-  isHidden: boolean; // currently only used for "connector.class"
+  isHidden: boolean;
   errors: string[];
   showErrors: boolean;
-  lastErrors: string[]; // previous errors, used so we can fade/animate them out when they get fixed
-  currentErrorIndex: number; // since we can only display one error at a time, we use this to cycle through
-  lastErrorValue: unknown; // the 'value' the property had at the last validation check (used so we can immediately hide the reported error once the user changes the value)
+  lastErrors: string[];
+  currentErrorIndex: number;
+  lastErrorValue: unknown;
 
   propertyGroup: PropertyGroup;
   crud: 'create' | 'update';

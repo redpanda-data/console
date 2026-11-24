@@ -6,14 +6,6 @@ export type GetConsumerGroupsResponse = {
   consumerGroups: GroupDescription[];
 };
 
-/**
- * Lists consumer groups with full {@link GroupDescription} details (state, members,
- * coordinator, topic offsets) and the frontend-derived fields the list table needs.
- *
- * Uses the legacy REST API because authorization is only possible with Console v3 and above.
- * TODO: Remove once Console v3 is released.
- */
-// Enrich with the frontend-only fields (mirrors addFrontendFieldsForConsumerGroup in backend-api.ts).
 function addListTableFields(group: GroupDescription) {
   group.lagSum = group.topicOffsets.sum((o) => o.summedLag);
   group.isInUse = group.state.toLowerCase() !== 'empty';
@@ -46,6 +38,9 @@ async function fetchConsumerGroupsFull() {
   return data;
 }
 
+/**
+ * Uses legacy REST for compatibility with versions lacking v3 authorization. Adds table-only derived fields to the returned groups.
+ */
 export const useLegacyListConsumerGroupsFullQuery = (options?: { enabled?: boolean }) => {
   const result = useTanstackQuery<GetConsumerGroupsResponse>({
     queryKey: ['consumer-groups', 'full'],

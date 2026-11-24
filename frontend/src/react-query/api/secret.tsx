@@ -56,7 +56,7 @@ function nextSecretsPageToken(response: ListSecretsResponse, pageToken: string) 
   if (!next) {
     return null;
   }
-  // Guard against a server that returns the same token twice — would otherwise loop forever.
+  // WARNING: Stop when the server repeats a page token; following it would page forever.
   if (next === pageToken) {
     throw new Error('ListSecrets returned a non-advancing nextPageToken; aborting to avoid infinite loop');
   }

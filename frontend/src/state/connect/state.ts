@@ -35,6 +35,9 @@ export type ConnectorSecret = Map<string, string>;
 export type UpdatingConnectorData = { clusterName: string; connectorName: string };
 export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
 
+/**
+ * Stores only filled-in secrets. For JSON-only edits, recover the password placeholders from the config rather than assuming the property wrappers contain them.
+ */
 export class ConnectClusterStore {
   private readonly clusterName: string;
   isInitialized = false;
@@ -94,7 +97,6 @@ export class ConnectClusterStore {
     }
   }
 
-  // Stores each filled-in secret and points its property, and `updatedConfig`, at the stored secret.
   private async createConnectorSecrets(
     connector: ConnectorPropertiesStore,
     secrets: SecretsStore,
@@ -105,13 +107,11 @@ export class ConnectClusterStore {
         throw new Error('Cluster name is missing or empty. Cannot create secrets without a valid cluster.');
       }
 
-      // Get connector name from the actual config object (works in both form and JSON mode)
       const connectorName = requireConnectorName(connector.getConfigObject() as Record<string, unknown> | undefined);
 
-      // Stop at the first failure without creating later secrets or mutating their config fields.
+      // WARNING: Stop on the first secret failure; do not create later secrets or rewrite their config fields after a partial failure.
       await [...secrets.secrets].reduce(async (previous, [key, secret]) => {
         await previous;
-        // Skip secrets with empty keys or values (optional PASSWORD fields the user didn't fill)
         if (isFilledSecret(key, secret)) {
           await this.createConnectorSecret({ connector, connectorName, key, secret, updatedConfig });
         }
@@ -189,7 +189,7 @@ export class ConnectClusterStore {
       return;
     }
 
-    // Preserve partial-update order: later secrets stay untouched if an update fails.
+    // WARNING: Keep secret updates ordered; a failed update must leave later secrets untouched.
     await [...secrets.secrets].reduce(async (previous, [key, secret]) => {
       await previous;
       if (secret.isDirty && secret.id) {
@@ -218,7 +218,6 @@ export class ConnectClusterStore {
       if (connectorType) {
         connectorStore = new ConnectorPropertiesStore(this.clusterName, pluginClassName, connectorType, initialConfig, {
           secretStore: this.features.secretStore,
-          // Create passes no connector name; only an existing connector is being edited.
           editing: connectorName !== null,
         });
         this.connectors.set(identifier, connectorStore);
@@ -292,7 +291,6 @@ export type ConnectorClusterFeatures = {
   editing?: boolean;
 };
 
-// The connector name the secrets are stored under: it must be a non-blank string.
 function requireConnectorName(configObj: Record<string, unknown> | undefined) {
   const connectorNameValue = configObj?.name;
 
@@ -325,8 +323,6 @@ function isFilledSecret(key: string, secret: Secret) {
   return Boolean(key && key.trim() !== '' && secret.value && secret.value.trim() !== '');
 }
 
-// If the config has been created using only the json view, the secrets are missing (since updates to them, only apply to our property wrappers)
-// We need to go through all props of type password, and use those values instead (since those will be the "secret string" aka placeholder)
 function withSecretValues(properties: Record<string, unknown>, secrets: SecretsStore | null | undefined) {
   if (secrets) {
     for (const [key, secret] of secrets.secrets) {

@@ -34,7 +34,6 @@ const LOGS_TOPIC = '__redpanda.connect.logs';
 const LIVE_MAX_RESULTS = 1000;
 const HISTORY_MAX_RESULTS = 1000;
 const LIVE_TIMEOUT_MS = 30 * ONE_MINUTE;
-// Reads at most HISTORY_MAX_RESULTS per partition, so a healthy search is well under a second.
 const HISTORY_TIMEOUT_MS = 15 * ONE_SECOND;
 const FLUSH_INTERVAL_MS = 200;
 /**
@@ -71,7 +70,6 @@ const logHistoryKey = (pipelineId: string) => ['log-history', pipelineId] as con
 // biome-ignore lint/suspicious/noEmptyBlockStatements: intentional no-op for live mode refresh
 const noop = () => {};
 
-// Serverful clusters filter by pipelineId with a pushdown filter; serverless has none.
 function logsFilterCode(pipelineId: string, serverless: boolean) {
   return serverless ? '' : encodeBase64(sanitizeString(`return key == "${pipelineId}";`));
 }
@@ -84,14 +82,12 @@ function buildRequest(pipelineId: string, live: boolean, serverless: boolean) {
     keyDeserializer: PayloadEncoding.UNSPECIFIED,
     valueDeserializer: PayloadEncoding.UNSPECIFIED,
     filterInterpreterCode: logsFilterCode(pipelineId, serverless),
-    // History starts at high-water-mark - maxResults so we get the most recent N, not the oldest.
     startOffset: BigInt(live ? PartitionOffsetOrigin.End : PartitionOffsetOrigin.EndMinusResults),
     startTimestamp: 0n,
     maxResults: live ? LIVE_MAX_RESULTS : HISTORY_MAX_RESULTS,
   });
 }
 
-// The logs topic is created by the first pipeline that logs, so until then there is nothing to find.
 const isMissingLogsTopic = (message: string) => message.includes('UNKNOWN_TOPIC_OR_PARTITION');
 
 function describeHistoryError(error: Error) {
@@ -124,8 +120,6 @@ function collectPipelineMessage(
   }
 }
 
-// History streaming (extracted for React Compiler compatibility).
-
 type HistoryStreamOpts = {
   pipelineId: string;
   serverless: boolean;
@@ -135,7 +129,6 @@ type HistoryStreamOpts = {
   setPhase: React.Dispatch<React.SetStateAction<string | null>>;
 };
 
-// A missing logs topic is expected before any pipeline has logged, so only other failures are toasted.
 function historyStreamError(errMsg: string) {
   if (!isMissingLogsTopic(errMsg)) {
     sonnerToast.error('Failed to search pipeline logs', { description: errMsg });
@@ -179,7 +172,6 @@ async function streamHistory(client: ConsoleClient, opts: HistoryStreamOpts) {
   }
 }
 
-// No logs topic yet means there are no logs to show; anything else is a real failure.
 function settleHistoryFailure(e: unknown, setPhase: HistoryStreamOpts['setPhase']): TopicMessage[] {
   setPhase(null);
   if (e instanceof Error && isMissingLogsTopic(e.message)) {
@@ -246,11 +238,9 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
     staleTime: NO_LIVED_CACHE_STALE_TIME,
     gcTime: 5 * ONE_MINUTE,
     refetchOnWindowFocus: false,
-    // A retried timeout doubles the wait; Refresh is the retry.
     retry: false,
   });
 
-  // Incremental messages while streaming, query data once resolved; newest-first to match live tail.
   const messages = useMemo(() => (query.data ?? streamingMessages).toReversed(), [query.data, streamingMessages]);
 
   return {
@@ -291,8 +281,6 @@ export function liveReducer(state: LiveState, action: LiveAction) {
       if (action.msgs.length === 0) {
         return state;
       }
-      // Newest message first; cap to a sliding window so a 30-minute live tail cannot grow
-      // the reducer buffer without bound on a long-lived tab.
       const messages = [...action.msgs.toReversed(), ...state.messages];
       return {
         ...state,
@@ -392,7 +380,6 @@ function stopLiveStream(refs: LiveRefs) {
   refs.pendingRef.current = [];
 }
 
-// Opens a fresh tail in place of any earlier one; returns its controller, or null without a client.
 function startLiveStream(
   opts: { pipelineId: string; serverless: boolean },
   refs: LiveRefs,
@@ -410,7 +397,7 @@ function startLiveStream(
     return null;
   }
 
-  // runLiveStream owns rejection reporting and cancellation; the hook owns only its controller.
+  // WARNING: The stream owns failure reporting; do not attach a second report from the controller owner.
   void runLiveStream({
     client,
     req: buildRequest(opts.pipelineId, true, opts.serverless),
@@ -491,7 +478,6 @@ function useLogLive(opts: { pipelineId: string; serverless: boolean; enabled: bo
   return state;
 }
 
-/** History and tail can both hold a message written as the tail opened; keeps the first of each. */
 function withoutRepeats(messages: TopicMessage[]) {
   const seen = new Set<string>();
   return messages.filter((msg) => {
@@ -504,13 +490,17 @@ function withoutRepeats(messages: TopicMessage[]) {
   });
 }
 
+/**
+ * History starts near the high watermark, not at the oldest offsets; no log topic before the first log is an empty history, not a failure. Serverful queries push down pipeline filtering.
+ *
+ * Live tail has a bounded buffer. Re-read history on each mode switch to avoid gaps, and deduplicate history/tail overlap at startup. A failed history read does not stop the tail.
+ */
 export function useLogSearch({
   pipelineId,
   live,
   enabled,
   serverless = true,
 }: UseLogSearchOptions): UseLogSearchReturn {
-  // Stays on in live mode: the tail starts at the end, so history is what it shows before anything new.
   const history = useLogHistory({
     pipelineId,
     serverless,
@@ -523,8 +513,6 @@ export function useLogSearch({
     enabled: enabled && live,
   });
 
-  // Re-read on entering live mode, or logs written since the last search fall between the two; and on
-  // leaving it, since the tail's messages go with it.
   const { messages: historyMessages, refetch: refetchHistory } = history;
   const wasLive = useRef(live);
   useEffect(() => {
@@ -543,10 +531,8 @@ export function useLogSearch({
 
   return {
     messages,
-    // The tail stays open until it is turned off, so only the history read counts as searching.
     phase: history.phase,
     progress: history.progress,
-    // Refresh is off while live, so a failed history read leaves the tail showing on its own.
     error: live ? liveResult.error : history.error,
     refresh: live ? noop : refetchHistory,
   };

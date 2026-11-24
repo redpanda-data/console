@@ -153,7 +153,7 @@ export const useUpdateRoleMembershipMutation = () => {
 
   return useMutation(updateRoleMembership, {
     onMutate: async (variables) => {
-      // Cancel in-flight fetches so they don't overwrite the optimistic data
+      // WARNING: Cancel pre-update reads; they can otherwise overwrite optimistic member changes with stale data.
       await queryClient.cancelQueries(listRoleMembersQueryFilter);
 
       const previousData =
@@ -172,7 +172,6 @@ export const useUpdateRoleMembershipMutation = () => {
             ...page,
             members: [
               ...page.members.filter((m) => !toRemove.has(m.principal)),
-              // Append new members to the first page only
               ...(i === 0 ? [...toAdd].map((principal) => create(RoleMembershipSchema, { principal })) : []),
             ],
           })),

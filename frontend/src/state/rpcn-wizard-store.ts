@@ -38,6 +38,9 @@ type RpcnWizardStore = RpcnWizardData & {
 
 const initialData: RpcnWizardData = { yamlContent: undefined };
 
+/**
+ * Persists only the input/output connection choices; topic, account and YAML choices are transient.
+ */
 export const useRpcnWizardStore = create<RpcnWizardStore>()(
   persist(
     (set, get) => ({
@@ -68,7 +71,6 @@ export const useRpcnWizardStore = create<RpcnWizardStore>()(
     {
       name: CONNECT_WIZARD_CONNECTOR_KEY,
       storage: createFlatStorage<Pick<OnboardingWizardFormData, 'input' | 'output'>>(),
-      // Only input/output connections persist; topic/user/yaml are transient.
       partialize: (state) => ({
         input: state.input,
         output: state.output,

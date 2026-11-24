@@ -19,7 +19,6 @@ import { config, isEmbedded } from 'config';
 import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 
-/** The API's largest page. */
 const PAGE_SIZE = 100;
 
 /**

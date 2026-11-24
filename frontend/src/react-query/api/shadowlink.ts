@@ -308,12 +308,6 @@ export type UnifiedShadowLinkResult = {
   refetch: () => Promise<void>;
 };
 
-/**
- * Shadow-link data for both console and controlplane modes, picking the API off embedded mode and
- * creating the controlplane transport internally (no TransportProvider needed). Embedded, dataplane
- * data wins but state comes from controlplane; if only controlplane answers, its partial data is
- * returned.
- */
 type DataplaneShadowLink = NonNullable<Parameters<typeof fromDataplaneShadowLink>[0]>;
 type ControlplaneShadowLink = NonNullable<Parameters<typeof fromControlplaneShadowLink>[0]>;
 
@@ -342,10 +336,12 @@ function unifyShadowLink(
   return unifiedData;
 }
 
+/**
+ * Embedded mode uses its own transport. Prefer dataplane details and control-plane state, falling back to partial control-plane data when dataplane does not answer. Keep retries bounded so fallback is prompt.
+ */
 export const useGetShadowLinkUnified: (params: { name: string }) => UnifiedShadowLinkResult = (params) => {
   const embedded = isEmbedded();
 
-  // In embedded mode, use retry: 1 to fail fast and fallback to controlplane data sooner
   const dataplaneQuery = useGetShadowLinkQuery({ name: params.name }, { retry: embedded ? 1 : undefined });
 
   const controlplaneQuery = useControlplaneGetShadowLinkByNameQuery({ name: params.name }, { enabled: embedded });

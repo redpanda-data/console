@@ -40,12 +40,11 @@ const listShadowLinksKeys = () => [
   createConnectQueryKey({ schema: cpListShadowLinks, cardinality: 'infinite' }),
 ];
 
-/* These hooks are used when running in embedded mode (cloud UI) */
-/* They create their own controlplane transport internally */
-
 /**
  * Hook to list shadow links using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
+ *
+ * Uses its own control-plane transport and runs only embedded with a valid, non-default cluster ID.
  */
 export const useControlplaneListShadowLinksQuery = (opts?: { enabled?: boolean }) => {
   const transport = useControlplaneTransport();
@@ -61,7 +60,6 @@ export const useControlplaneListShadowLinksQuery = (opts?: { enabled?: boolean }
     pageToken: '',
   });
 
-  // Only make request in embedded mode with a valid (non-default) clusterId
   const isEnabled = embedded && hasValidClusterId && (opts?.enabled ?? true);
 
   return useQuery(cpListShadowLinks, request, { enabled: isEnabled, transport });

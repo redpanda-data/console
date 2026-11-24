@@ -32,12 +32,15 @@ export type PreviewTag = {
   customName?: string;
 };
 
+/**
+ * The pattern field replaces the old text property.
+ */
 export type PreviewTagV2 = {
   id: string;
 
   isActive: boolean;
 
-  pattern: string; // pattern, upgrade from old "text" prop
+  pattern: string;
   customName?: string;
 
   searchInMessageHeaders: boolean;
@@ -56,13 +59,13 @@ export type FilterType = 'code';
 
 export type FilterEntry = {
   isNew: boolean;
-  id: string; // used as react key
+  id: string;
   filterType: FilterType;
   isActive: boolean;
 
-  name: string; // name of the filter, shown instead of the code when set
+  name: string;
   transpiledCode: string;
-  code: string; // js code the user entered
+  code: string;
 };
 
 export function createFilterEntry(overrides?: Partial<FilterEntry>) {
@@ -83,7 +86,7 @@ export type TimestampDisplayFormat = 'default' | 'unixTimestamp' | 'onlyDate' | 
 export function IsLocalTimestampFormat(timestampType: TimestampDisplayFormat) {
   switch (timestampType) {
     case 'default':
-      return true; // 'localDateTime'
+      return true;
     case 'onlyDate':
       return true;
     case 'onlyTime':
@@ -111,11 +114,14 @@ export type PartitionOffsetOriginType = (typeof PartitionOffsetOrigin)[keyof typ
 
 export type ConnectTabKeys = 'clusters' | 'connectors' | 'tasks';
 
+/**
+ * Explicit timestamps remain fixed; only an unset timestamp may initialize to now on page load.
+ */
 export const DEFAULT_SEARCH_PARAMS = {
-  offsetOrigin: -1 as PartitionOffsetOriginType, // start, end, custom
-  startOffset: -1, // used when offsetOrigin is custom
-  startTimestamp: -1, // used when offsetOrigin is timestamp
-  startTimestampWasSetByUser: false, // only used in frontend, to track whether we should update the timestamp to 'now' when the page loads
+  offsetOrigin: -1 as PartitionOffsetOriginType,
+  startOffset: -1,
+  startTimestamp: -1,
+  startTimestampWasSetByUser: false,
   partitionID: -1,
   maxResults: 50,
   page: 0,
@@ -146,11 +152,10 @@ export type TopicDetailsSettings = {
   previewTags: PreviewTagV2[];
   previewTagsCaseSensitive: 'caseSensitive' | 'ignoreCase';
 
-  previewMultiResultMode: 'showOnlyFirst' | 'showAll'; // maybe todo: 'limitTo'|'onlyCount' ?
+  previewMultiResultMode: 'showOnlyFirst' | 'showAll';
   previewDisplayMode: 'single' | 'wrap' | 'rows';
 
-  // previewResultLimit: 3; // todo
-  previewShowEmptyMessages: boolean; // todo: filter out messages that don't match
+  previewShowEmptyMessages: boolean;
   showMessageMetadata: boolean;
   showMessageHeaders: boolean;
 
@@ -199,10 +204,9 @@ export function createTopicDetailsSettings(topicName: string, overrides?: Partia
 type UISettings = {
   sideBarOpen: boolean;
   selectedClusterIndex: number;
-  perTopicSettings: TopicDetailsSettings[]; // don't use directly, instead use uiState.topicDetails
+  perTopicSettings: TopicDetailsSettings[];
   topicDetailsActiveTabKey: TopicTabId | undefined;
 
-  // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
   brokerList: {
     hideEmptyColumns: boolean;
     pageSize: number;
@@ -227,7 +231,7 @@ type UISettings = {
     pageSizeBrokers: number;
 
     pageSizeReview: number;
-    maxReplicationTraffic: number | null; // bytes per second, or "no change"
+    maxReplicationTraffic: number | null;
   };
 
   topicList: {
@@ -369,10 +373,9 @@ type UISettings = {
 const defaultUiSettings: UISettings = {
   sideBarOpen: true,
   selectedClusterIndex: 0,
-  perTopicSettings: [] as TopicDetailsSettings[], // don't use directly, instead use uiState.topicDetails
+  perTopicSettings: [] as TopicDetailsSettings[],
   topicDetailsActiveTabKey: undefined as TopicTabId | undefined,
 
-  // todo: refactor into: brokers.list, brokers.detail, topics.messages, topics.config, ...
   brokerList: {
     hideEmptyColumns: false,
     pageSize: DEFAULT_TABLE_PAGE_SIZE,
@@ -397,7 +400,7 @@ const defaultUiSettings: UISettings = {
     pageSizeBrokers: 10,
 
     pageSizeReview: 20,
-    maxReplicationTraffic: 0 as number | null, // bytes per second, or "no change"
+    maxReplicationTraffic: 0 as number | null,
   },
 
   topicList: {
@@ -697,6 +700,8 @@ export const useUISettingsStore = create<UISettingsStore>()(
  * Installed from `app.tsx` / `embedded-app.tsx` inside a `useEffect` so
  * React owns the lifecycle. No-op when `window` is undefined (SSR and tests
  * isolate resets before happy-dom installs globals).
+ *
+ * Persists on lifecycle transitions such as closing, minimizing, or switching tabs.
  */
 export function installUISettingsSideEffects() {
   if (typeof window === 'undefined') {
@@ -710,7 +715,7 @@ export function installUISettingsSideEffects() {
 
   const onVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
-      return; // only save on close, minimize, tab-switch
+      return;
     }
 
     const state = useUISettingsStore.getState();
@@ -747,7 +752,9 @@ export function installUISettingsSideEffects() {
   };
 }
 
-// Legacy exports for backward compatibility
+/**
+ * Use the per-topic accessor rather than mutating the backing settings array. Replication traffic is in bytes per second, or null to leave it unchanged.
+ */
 export const uiSettings = new Proxy({} as UISettings, {
   get(_target, prop: string) {
     return useUISettingsStore.getState()[prop as keyof UISettings];

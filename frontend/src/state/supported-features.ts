@@ -92,10 +92,6 @@ export class Feature {
   };
 }
 
-/**
- * Compute whether a feature is supported given endpoint compatibility data.
- * Pure function — no side effects.
- */
 function computeSupported(f: FeatureEntry, c: EndpointCompatibility | null): { supported: boolean; error?: string } {
   if (!c) {
     switch (f.endpoint) {
@@ -152,9 +148,6 @@ export function isSupported(f: FeatureEntry) {
   return result.supported;
 }
 
-/**
- * A list of features we should hide instead of showing a disabled message.
- */
 const HIDE_IF_NOT_SUPPORTED_FEATURES = [Feature.GetQuotas, Feature.SQLService];
 export function shouldHideIfNotSupported(f: FeatureEntry) {
   return HIDE_IF_NOT_SUPPORTED_FEATURES.includes(f);
@@ -249,7 +242,6 @@ export const useSupportedFeaturesStore = create<SupportedFeaturesStore>((set) =>
   clearFeatureErrors: () => set({ featureErrors: [] }),
 }));
 
-// Create singleton instance for backwards compatibility
 const Features = {
   get clusterConfig() {
     return useSupportedFeaturesStore.getState().clusterConfig;

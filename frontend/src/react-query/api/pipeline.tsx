@@ -174,7 +174,7 @@ export const useInvalidatePipelineQueries = () => {
 
 const NAME_LOOKUP_PAGE_SIZE = 100;
 
-// `name_contains` is validated server-side against `^[A-Za-z0-9-_ /]+$`, max 128; strip rather than 400.
+// WARNING: Keep the request within the server's allowed name characters and 128-character limit; invalid filters receive a bad request.
 const DISALLOWED_IN_NAME_FILTER = /[^A-Za-z0-9\-_ /]/gu;
 const NAME_FILTER_MAX_LENGTH = 128;
 

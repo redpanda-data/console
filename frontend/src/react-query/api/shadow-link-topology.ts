@@ -71,7 +71,6 @@ const loadedOf = <T>(value: T | undefined, isError: boolean): Loaded<T> => {
 type AllPages<Item> = {
   items: Item[] | undefined;
   complete: boolean;
-  /** A page failed before the list was complete; a failed refresh of a complete list keeps it. */
   failed: boolean;
 };
 
@@ -137,7 +136,6 @@ const combineDetails = (ids: readonly string[]) => (results: UseQueryResult<GetS
   return byId;
 };
 
-/** Details of the links the topology needs, which carry the bootstrap servers and user the list doesn't. */
 const useLinkDetails = (transport: Transport, links: readonly ShadowLinkListItem[], clusterId: string) => {
   const ids = useMemo(() => linksNeedingDetails(links, clusterId).map((link) => link.id), [links, clusterId]);
   const combine = useMemo(() => combineDetails(ids), [ids]);
@@ -164,11 +162,6 @@ const combineCandidates = (results: UseQueryResult<GetClusterResponse>[]) => {
   return { clusters, pending, failed };
 };
 
-/**
- * The organization's other clusters, with the seed brokers and Console URLs ListClusters doesn't
- * carry. Only read when needed: for this cluster's own links' sources, or to tell which of several
- * clusters on one host a link reads from.
- */
 const useSourceCandidates: (
   transport: Transport,
   clusterId: string,
@@ -195,7 +188,6 @@ const useSourceCandidates: (
 
 const NOT_RUNNING: ShadowLinkPeerFence = { status: 'unavailable', reason: 'not-running' };
 
-/** Each source cluster's fence, keyed by cluster id; one still loading has no entry. */
 const usePeerFences = (sources: readonly Cluster[]) => {
   const readable = useMemo(() => sources.filter(canReadFence), [sources]);
   const combine = useCallback(
@@ -248,7 +240,6 @@ const useSelfCluster: (transport: Transport, clusterId: string, enabled: boolean
 const useClusterNames = (clusters: Cluster[] | undefined) =>
   useMemo(() => new Map((clusters ?? NO_CLUSTERS).map((cluster) => [cluster.id, cluster.name])), [clusters]);
 
-/** The topology from the control plane alone, with every source's fence still loading. */
 const useResolvedTopology = (clusterId: string, enabled: boolean) => {
   const transport = useControlplaneTransport();
   const links = useOrganizationLinks(transport, enabled);
@@ -281,7 +272,6 @@ const useResolvedTopology = (clusterId: string, enabled: boolean) => {
   return { topology, candidates };
 };
 
-/** The source clusters to read fences from, with the Console URL and state GetCluster gave. */
 const useSourceClusters = (topology: ShadowLinkTopology | null, candidates: readonly Cluster[]) => {
   const ids = topology ? sourceClusterIds(topology).join(',') : '';
   return useMemo(() => {
@@ -296,6 +286,8 @@ const useSourceClusters = (topology: ShadowLinkTopology | null, candidates: read
  * that source's fence, read from the source's own Console. Only embedded in Cloud, and only with
  * fencing on. Null otherwise, or when the link list can't load, so the pages fall back to what this
  * cluster can see on its own, as in a self-hosted Console.
+ *
+ * Reads list pages and link details for bootstrap servers and users. A failed refresh keeps a complete prior list rather than presenting it as partial. Other clusters are read only to resolve a source or disambiguate clusters sharing a host; their fences remain unknown until those reads finish.
  */
 export const useShadowLinkTopology = () => {
   const clusterId = hasClusterId(config.clusterId) ? config.clusterId : '';

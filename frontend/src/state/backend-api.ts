@@ -167,23 +167,13 @@ import { decodeBase64, getOidcSubject, TimeSince } from '../utils/utils';
 const REST_TIMEOUT_SEC = 25;
 export const REST_CACHE_DURATION_SEC = 20;
 
-/**
- * Bounded LRU cap for the module-level REST `cache` below. Without it the cache retained one
- * CacheEntry (a full parsed REST body) per distinct URL for the life of the tab. 500 keeps a
- * generous working set; least-recently-used URLs are evicted and simply re-fetched on next use.
- */
 const REST_CACHE_MAX_ENTRIES = 500;
 
 declare const registry: Registry;
 
-/*
-    - If statusCode is not 2xx (any sort of error) -> response content will always be an `ApiError` json object
-    - 2xx does not mean complete success, for some endpoints (e.g.: broker log dirs) we can get partial responses (array with some result entries and some error entries)
-*/
-
-/*
- * allow custom fetch or websocket interceptors
- * */
+/**
+ * Uses the configured fetch and auth handling. A non-2xx response is handled as an API error; a successful response can still contain per-item errors, such as failed broker log directories.
+ */
 export async function rest<T>(url: string, requestInit?: RequestInit) {
   const headers = createRestHeaders(requestInit?.headers);
 
@@ -222,7 +212,7 @@ async function handle401(res: Response) {
         detail: { clusterId: appConfig.clusterId, path: window.location.pathname },
       })
     );
-    // Don't redirect - let the request fail gracefully and allow the host to handle auth
+    // WARNING: Do not navigate the embedded app on auth failure; the host owns sign-in and the request must still fail.
     return;
   }
 
@@ -248,7 +238,9 @@ function processVersionInfo(headers: Headers) {
 
       return;
     }
-  } catch {} // Catch malformed json (old versions where info is not sent as json yet)
+  } catch {
+    // WARNING: Keep legacy non-JSON version metadata from breaking the current request.
+  }
 }
 
 const _activeRequests: CacheEntry[] = [];
@@ -258,7 +250,6 @@ class CacheEntry {
   url: string;
 
   private readonly timeSinceLastResult = new TimeSince();
-  /** How long ago (in seconds) the data was last updated */
   get resultAge() {
     return this.timeSinceLastResult.value / 1000;
   }
@@ -301,7 +292,6 @@ class CacheEntry {
 
   private readonly timeSinceRequestStarted = new TimeSince();
   private lastRequestDurationMs: number;
-  /** How long (in seconds) the last request took (or is currently taking so far) */
   get requestTime() {
     if (this.isPending) {
       return this.timeSinceRequestStarted.value / 1000;
@@ -396,7 +386,6 @@ function authFailureRedirect(err: IdentityError) {
   }
 
   if (err.code === Code.PermissionDenied) {
-    // TODO - solve typings, provide corresponding Reason type
     const subject = getOidcSubject(err);
     return `/login?error_code=permission_denied&oidc_subject=${subject}`;
   }
@@ -470,7 +459,6 @@ type TopicPartitionState = {
   topicWatermarksErrors: Map<string, PartitionErrorLists['waterMarksErrors']>;
 };
 
-// Without errors the topic's partitions replace its recorded errors; with errors only the errors are recorded.
 function topicPartitionsUpdate(topicName: string, partitions: Partition[], lists: PartitionErrorLists) {
   if (lists.partitionErrors.length === 0 && lists.waterMarksErrors.length === 0) {
     return (s: TopicPartitionState) => {
@@ -560,23 +548,23 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
   clusters: ['A', 'B', 'C'],
   clusterInfo: null as ClusterInfo | null,
 
-  brokerConfigs: new Map<number, ConfigEntry[] | string>(), // config entries, or error string
+  brokerConfigs: new Map<number, ConfigEntry[] | string>(),
 
   schemaOverviewIsConfigured: undefined as boolean | undefined,
 
-  schemaMode: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
-  schemaCompatibility: undefined as string | null | undefined, // undefined = not yet known, null = got not configured response
+  schemaMode: undefined as string | null | undefined,
+  schemaCompatibility: undefined as string | null | undefined,
   schemaSubjects: undefined as SchemaRegistrySubject[] | undefined,
   schemaTypes: undefined as string[] | undefined,
-  schemaDetails: new Map<string, SchemaRegistrySubjectDetails>(), // subjectName => details
-  schemaReferencedBy: new Map<string, Map<number, SchemaReferencedByEntry[]>>(), // subjectName => version => details
+  schemaDetails: new Map<string, SchemaRegistrySubjectDetails>(),
+  schemaReferencedBy: new Map<string, Map<number, SchemaReferencedByEntry[]>>(),
   schemaUsagesById: new Map<number, SchemaVersion[]>(),
 
   topics: null as Topic[] | null,
-  topicConfig: new Map<string, TopicDescription | null>(), // null = not allowed to view config of this topic
+  topicConfig: new Map<string, TopicDescription | null>(),
   topicDocumentation: new Map<string, TopicDocumentation>(),
   topicPermissions: new Map<string, TopicPermissions | null>(),
-  topicPartitions: new Map<string, Partition[] | null>(), // null = not allowed to view partitions of this config
+  topicPartitions: new Map<string, Partition[] | null>(),
   topicPartitionErrors: new Map<string, Array<{ id: number; partitionError: string }>>(),
   topicWatermarksErrors: new Map<string, Array<{ id: number; waterMarksError: string }>>(),
   topicConsumers: new Map<string, TopicConsumer[]>(),
@@ -591,7 +579,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
 
   connectConnectors: undefined as KafkaConnectors | undefined,
   connectConnectorsError: null as WrappedApiError | null,
-  connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(), // clusterName => additional info (plugins)
+  connectAdditionalClusterInfo: new Map<string, ClusterAdditionalInfo>(),
 
   licenses: [] as License[],
   licenseViolation: false,
@@ -609,12 +597,12 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
 
   async logout() {
     await appConfig.fetch('./auth/logout');
-    // Recovery buffers hold unsaved configuration verbatim; they must not outlive the session.
+    // WARNING: Clear recovery buffers on logout; they contain unsaved configuration verbatim.
     rpcnEditorAutosave.clearAll();
     set({ userData: null });
   },
   async refreshUserData() {
-    // Prevent duplicate concurrent requests to avoid redirect loops
+    // WARNING: Keep one login request in flight; competing responses can cause redirect loops.
     if (get().isUserDataFetchInProgress) {
       return;
     }
@@ -667,7 +655,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
           const userData = {
             firstName: r.displayName.split(' ')[0] || r.displayName,
             lastName: r.displayName.split(' ').slice(1).join(' ') || '',
-            email: r.displayName, // Using displayName as email fallback
+            email: r.displayName,
           };
           trackHubspotUser(userData);
           trackHeapUser(userData);
@@ -713,14 +701,6 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
         for (const t of v.topics) {
           if (!t.allowedActions) {
           }
-
-          /*
-                        const numToRemove = Math.round(Math.random() * t.allowedActions.length);
-                        for (let i = 0; i < numToRemove; i++) {
-                            const randomIndex = Math.round(Math.random() * (t.allowedActions.length - 1));
-                            t.allowedActions.splice(randomIndex, 1);
-                        }
-                        */
         }
       }
       const topics = v?.topics;
@@ -765,7 +745,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
       const topicDescription = v.topicDescription;
       prepareSynonyms(topicDescription.configEntries);
       set((s) => ({ topicConfig: new Map(s.topicConfig).set(topicName, topicDescription) }));
-    }, addError); // 403 -> null
+    }, addError);
     return promise as Promise<void>;
   },
 
@@ -1208,8 +1188,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
   },
 
   refreshSchemaDetails(subjectName: string, force?: boolean) {
-    // Always refresh all versions, otherwise we cannot know wether or not we have to refresh with 'all,
-    // If we refresh with 'latest' or specific number, we'd need to keep track of what information we're missing
+    // WARNING: Refresh all subject versions together; a latest-only refresh cannot distinguish obsolete entries from absent ones.
     const version = 'all';
     const rq = cachedApiRequest(
       `${appConfig.restBasePath}/schema-registry/subjects/${encodeURIComponent(subjectName)}/versions/${version}`,
@@ -1474,8 +1453,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
   async resetReplicationThrottleRate(brokerIds: number[]) {
     const configRequest: PatchConfigsRequest = { resources: [] };
 
-    // We currently only set replication throttle on each broker, instead of cluster-wide (same effect, but different kind of 'ConfigSource')
-    // So we don't remove the cluster-wide setting, only the ones we've set (the per-broker) settings
+    // WARNING: Reset only per-broker throttles set by Console; the cluster-wide setting has another owner.
 
     for (const b of brokerIds) {
       configRequest.resources.push({
@@ -1655,12 +1633,7 @@ const _apiCreator = (set: SetApiState, get: GetApiState) => ({
     return result;
   },
 
-  async createConnector(
-    clusterName: string,
-    connectorName: string,
-    _pluginClassName: string, // needs to be kept to avoid larger refactor despite not being used.
-    config: object
-  ) {
+  async createConnector(clusterName: string, connectorName: string, _pluginClassName: string, config: object) {
     const response = await appConfig.fetch(
       `${appConfig.restBasePath}/kafka-connect/clusters/${encodeURIComponent(clusterName)}/connectors`,
       {
@@ -1946,7 +1919,7 @@ function roleMembersEntry(res: GetRoleResult): [string, RolePrincipal[]] | null 
   const { response } = res;
   const role = response?.role;
   if (!(response && role)) {
-    return null; // how could this ever happen, maybe someone deleted the role right before we retreived the members?
+    return null;
   }
   const members = response.members.map((x) => parseRolePrincipal(role.name, x.principal)).filterNull();
   return [role.name, members];
@@ -1970,7 +1943,7 @@ type GetRolesState = () => RolesState;
 
 const _rolesCreator = (set: SetRolesState, get: GetRolesState) => ({
   roles: [] as string[],
-  roleMembers: new Map<string, RolePrincipal[]>(), // RoleName -> Principals
+  roleMembers: new Map<string, RolePrincipal[]>(),
   rolesError: null as ConnectError | null,
 
   async refreshRoles() {
@@ -2149,7 +2122,6 @@ const _rpcnSecretManagerCreator = (set: SetRpcnSecretManagerState, get: GetRpcnS
       throw new Error('redpanda connect secret client is not initialized');
     }
 
-    // handle error in order to avoid crash app for this request
     const secretsByPipeline = await get()
       .getPipelinesBySecret()
       .catch(() => []);
@@ -2315,18 +2287,8 @@ export const transformsApi = new Proxy<TransformsState>({} as TransformsState, {
   },
 });
 
-/**
- * Sliding-window cap for the live-tail / filtered message buffer (`messageSearch.messages`).
- * Those streams append for up to 30 minutes; on a high-volume topic the array would otherwise
- * grow unbounded for the whole window — the dominant long-lived-tab retention vector.
- */
 const LIVE_TAIL_MAX_MESSAGES = 50_000;
 
-/**
- * Slack above `LIVE_TAIL_MAX_MESSAGES` before a trim runs, so the O(n) `splice` happens once per
- * ~slack messages instead of on every message past the cap (which would be hottest exactly on the
- * high-volume streams this guards). The memory ceiling stays cap + slack.
- */
 const LIVE_TAIL_TRIM_SLACK = 1024;
 
 type MessageSearchState = {
@@ -2348,9 +2310,6 @@ const SEARCH_TIMEOUT_MS = 30 * 1000;
 const LIVE_TAIL_TIMEOUT_MS = 30 * 60 * 1000;
 
 function requireConsoleClient() {
-  // https://connectrpc.com/docs/web/using-clients
-  // https://github.com/connectrpc/connect-es
-  // https://github.com/connectrpc/examples-es
   const client = appConfig.consoleClient;
 
   if (!client) {
@@ -2494,11 +2453,10 @@ function applySearchResponse(
   }
 }
 
-// https://connectrpc.com/docs/web/errors
 function failSearch(search: MessageSearchState, abortSignal: AbortSignal, error: unknown) {
   resetSearchProgress(search);
   if (abortSignal.aborted) {
-    return; // Do not throw, this is a user cancellation
+    return;
   }
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.error('startMessageSearchNew: error in await loop of client.listMessages', { error });
@@ -2531,13 +2489,16 @@ async function streamSearchMessages(
   }
 }
 
+/**
+ * Live streams are capped with slack so an O(n) trim does not run on every incoming message. Search phase and elapsed time come from the server; elapsed time arrives on completion. User cancellation is not an error.
+ */
 export function createMessageSearch() {
   const notify = () => useApiStore.setState((s) => ({ _msgSearchVersion: s._msgSearchVersion + 1 }));
   const messageSearch = {
     searchRequest: null as MessageSearchRequest | null,
 
-    searchPhase: null as string | null, // A search has different phases, like "waiting for mssages", or "creating consumers", this string is directly reported by the backend
-    elapsedMs: null as null | number, // Reported by the backend, only set once the search is done
+    searchPhase: null as string | null,
+    elapsedMs: null as null | number,
     bytesConsumed: 0,
     totalMessagesConsumed: 0,
 
@@ -2717,15 +2678,18 @@ export async function partialTopicConfigs(configKeys: string[], topics?: string[
   return parseOrUnwrap<PartialTopicConfigsResponse>(response, null);
 }
 
+/**
+ * A maxResults value of -1 enables streaming pages with a token and default size of 50. Filter source is base64-encoded JavaScript. An empty schema context resolves the topic context; a dot forces the default context.
+ */
 export type MessageSearchRequest = {
   topicName: string;
   startOffset: number;
   startTimestamp: number;
   partitionId: number;
-  maxResults: number; // should also support '-1' soon, so we can do live tailing
-  pageToken?: string; // Page token for pagination (only used when maxResults = -1)
-  pageSize?: number; // Number of messages per page (only used when maxResults = -1, defaults to 50)
-  filterInterpreterCode: string; // js code, base64 encoded
+  maxResults: number;
+  pageToken?: string;
+  pageSize?: number;
+  filterInterpreterCode: string;
   enterprise?: {
     redpandaCloud?: {
       accessToken: string;
@@ -2736,7 +2700,7 @@ export type MessageSearchRequest = {
 
   keyDeserializer?: PayloadEncoding;
   valueDeserializer?: PayloadEncoding;
-  schemaContext?: string; // '' resolves the topic's context, '.' forces the default.
+  schemaContext?: string;
 };
 
 async function parseOrUnwrap<T>(response: Response, text: string | null) {
@@ -2755,12 +2719,6 @@ async function parseOrUnwrap<T>(response: Response, text: string | null) {
   return obj as T;
 }
 
-/**
- * Cap on retained API errors. `addError` is called from ~20 legacy refresh paths; on a
- * long-lived tab with auto-refresh enabled and a persistently failing endpoint the array
- * would otherwise grow without bound (each entry retains a stack + the Response body).
- * The error UI only ever surfaces the most recent entries, so a ring buffer loses nothing.
- */
 const MAX_TRACKED_ERRORS = 50;
 
 function addError(err: Error) {
@@ -2783,6 +2741,9 @@ export {
   useTransformsStore,
 };
 
+/**
+ * The legacy REST cache retains a bounded LRU by URL. Store entries can distinguish an unknown value from an explicitly missing or unauthorized response; a cached broker configuration can carry its error string instead. The error view retains only its most recent entries.
+ */
 export const api = new Proxy<apiStoreType>({} as apiStoreType, {
   get(_, prop: string | symbol) {
     const s = useApiStore.getState();

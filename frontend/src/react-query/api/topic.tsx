@@ -160,7 +160,7 @@ export const useTopicConfigQuery = (topicName: string, enabled = true) => {
     enabled: enabled && !!topicName,
     staleTime: TOPIC_CONFIG_CACHE_STALE_TIME,
     retry: (failureCount, error) => {
-      // Don't retry on authorization errors
+      // WARNING: Do not retry authorization failures; the same credential cannot gain access by repeating the request.
       if (error && typeof error === 'object' && 'statusText' in error) {
         return false;
       }

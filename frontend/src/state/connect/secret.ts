@@ -13,6 +13,9 @@ import { encodeBase64 } from '../../utils/utils';
 
 const SECRET_STRING_REGEX = /^\$\{secretsManager:[A-Za-z\-0-9]+:.+\}$/u;
 
+/**
+ * Updates its observable snapshot explicitly when the value or secret reference changes.
+ */
 export class Secret {
   key: string;
   value: string;
@@ -25,7 +28,6 @@ export class Secret {
     this.key = key;
   }
 
-  // Manual reactivity - call this when value or secretString changes
   private notifyListeners() {
     if (this.secretString && this.value) {
       this.isDirty = this.value !== this.secretString;

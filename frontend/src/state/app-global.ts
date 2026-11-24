@@ -18,10 +18,6 @@ type NavigateFn = (to: string, options?: { replace?: boolean }) => void;
 
 const TRAILING_SLASH_REGEX = /\/+$/u;
 
-/**
- * Normalizes a path by removing trailing slashes for consistent comparison.
- * This prevents duplicate navigations when paths differ only by trailing slash.
- */
 function normalizePath(path: string | undefined) {
   if (!path) {
     return '/';
@@ -29,7 +25,6 @@ function normalizePath(path: string | undefined) {
   return path.replace(TRAILING_SLASH_REGEX, '') || '/';
 }
 
-// Pages replace this callback once initialized.
 const noopRefresh = () => {};
 
 class AppGlobal {
@@ -39,8 +34,6 @@ class AppGlobal {
   private _router: Router<any, any, any> | null = null;
 
   historyPush(path: string) {
-    // Skip navigation if already at this path to prevent navigation loops
-    // This is critical for embedded mode where shell and console routers can conflict
     if (normalizePath(this._location?.pathname) === normalizePath(path)) {
       return;
     }
@@ -50,7 +43,6 @@ class AppGlobal {
   }
 
   historyReplace(path: string) {
-    // Skip navigation if already at this path to prevent navigation loops
     if (normalizePath(this._location?.pathname) === normalizePath(path)) {
       return;
     }
@@ -104,4 +96,7 @@ class AppGlobal {
 
   searchMessagesFunc?: (source: 'auto' | 'manual') => void;
 }
+/**
+ * Normalizes trailing slashes before navigation so the embedded and host routers cannot loop between equivalent paths.
+ */
 export const appGlobal = new AppGlobal();
