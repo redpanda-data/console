@@ -84,6 +84,6 @@ const getSnapshot = () => {
 /**
  * Derives appearance from the painted background, not a theme name or assumed CSS color syntax. Canvas normalizes variable-backed and wide-gamut colors to sRGB before classification. The snapshot is document-wide.
  */
-export function useThemeAppearance(): ThemeAppearance {
-  return useSyncExternalStore(subscribe, getSnapshot, () => 'light');
+export function useThemeAppearance() {
+  return useSyncExternalStore<ThemeAppearance>(subscribe, getSnapshot, () => 'light');
 }

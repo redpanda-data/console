@@ -167,16 +167,16 @@ function buildSchema(catalogs: Catalog[]) {
   return root satisfies SQLNamespace;
 }
 
-function schemaColumnSource(catalogs: Catalog[]): (context: CompletionContext) => CompletionResult | null {
+function schemaColumnSource(catalogs: Catalog[]) {
   const source = schemaCompletionSource({ dialect: PostgreSQL, schema: buildSchema(catalogs) });
-  return (context) => {
+  return ((context) => {
     const result = source(context);
     if (!result || result instanceof Promise) {
       return null;
     }
     const dotted = context.state.sliceDoc(result.from - 1, result.from) === '.';
     return dotted ? result : null;
-  };
+  }) satisfies (context: CompletionContext) => CompletionResult | null;
 }
 
 const CATALOG_REF_RE =

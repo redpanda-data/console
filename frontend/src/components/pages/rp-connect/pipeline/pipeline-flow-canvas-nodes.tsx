@@ -90,8 +90,11 @@ export function sectionAccent(section?: string) {
   return section ? SECTION_ACCENT[section] : undefined;
 }
 
-function headerTintStyle(accent?: string): React.CSSProperties | undefined {
-  return accent ? { backgroundColor: `color-mix(in srgb, ${accent} 10%, var(--color-card))` } : undefined;
+function headerTintStyle(accent?: string) {
+  const style: React.CSSProperties | undefined = accent
+    ? { backgroundColor: `color-mix(in srgb, ${accent} 10%, var(--color-card))` }
+    : undefined;
+  return style;
 }
 
 const LogoTile = ({ name }: { name: string }) => (
@@ -385,8 +388,9 @@ const PlaceholderCard = ({ data }: { data: FlowCardData }) => {
 const SELECTED_RING = 'ring-2 ring-primary ring-offset-1 ring-offset-background';
 const ERROR_RING = 'ring-2 ring-destructive ring-offset-1 ring-offset-background';
 
-function cardRing(data: FlowCardData): string {
-  return data.lintErrors?.length ? ERROR_RING : data.selected ? SELECTED_RING : '';
+function cardRing(data: FlowCardData) {
+  const ring: string = data.lintErrors?.length ? ERROR_RING : data.selected ? SELECTED_RING : '';
+  return ring;
 }
 
 const FlashPulse = ({ token }: { token?: number }) => (
@@ -824,8 +828,9 @@ function edgeStroke(d: FlowGraphEdgeData | undefined, tone: LinkTone) {
   return LINK_STROKE[tone];
 }
 
-function edgeOpacity(d: FlowGraphEdgeData | undefined): number {
-  return d?.dimmed ? 0.25 : d?.ghost ? 0.4 : d?.faint ? 0.6 : 1;
+function edgeOpacity(d: FlowGraphEdgeData | undefined) {
+  const opacity: number = d?.dimmed ? 0.25 : d?.ghost ? 0.4 : d?.faint ? 0.6 : 1;
+  return opacity;
 }
 
 type EdgeEndpoints = Pick<

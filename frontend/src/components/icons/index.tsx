@@ -114,6 +114,7 @@ export type IconSize = keyof typeof iconSizes;
 /**
  * Helper function to get icon size
  */
-export function getIconSize(size: IconSize = 'sm'): number {
-  return iconSizes[size];
+export function getIconSize(size: IconSize = 'sm') {
+  const pixels: number = iconSizes[size];
+  return pixels;
 }

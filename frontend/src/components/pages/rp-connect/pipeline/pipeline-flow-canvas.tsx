@@ -332,8 +332,9 @@ function StaleParseBanner({ show }: { show: boolean }) {
 type ZoomMode = 'in' | 'out' | null;
 const ZOOM_STEP = 1.5;
 
-function cursorForMode(mode: ZoomMode): string {
-  return mode === 'in' ? 'zoom-in' : mode === 'out' ? 'zoom-out' : '';
+function cursorForMode(mode: ZoomMode) {
+  const cursor: string = mode === 'in' ? 'zoom-in' : mode === 'out' ? 'zoom-out' : '';
+  return cursor;
 }
 
 function useZoomCursor(mode: ZoomMode, ref: RefObject<HTMLDivElement | null>) {
@@ -359,8 +360,9 @@ function useZoomCursor(mode: ZoomMode, ref: RefObject<HTMLDivElement | null>) {
 
 const canPanCanvas = (mode: ZoomMode) => mode === null;
 
-function heldZoomMode(zDown: boolean, alt: boolean): ZoomMode {
-  return zDown ? (alt ? 'out' : 'in') : null;
+function heldZoomMode(zDown: boolean, alt: boolean) {
+  const mode: ZoomMode = zDown ? (alt ? 'out' : 'in') : null;
+  return mode;
 }
 
 const isTypingTarget = (target: EventTarget | null) =>
@@ -622,12 +624,9 @@ type ScopeRegion = {
 export const MAX_REGION_PIECE_PX = 3000;
 
 type RegionGeometry = {
-  /** Padded body rect + optional arm rect, painted as the fill (sliced by MAX_REGION_PIECE_PX). */
   rects: ScopeBounds[];
-  /** Dashed outline path in bbox-local coords: the body rectangle with an arm out to the entry. */
   path: string;
   bbox: { x: number; y: number; w: number; h: number };
-  /** Body's top-left corner, where the label sits. */
   anchor: Point;
 };
 
@@ -660,10 +659,12 @@ function entryArm(entry: ScopeBounds, body: ScopeBounds, pb: ScopeBounds, pad: n
     : undefined;
 }
 
-function armRect(arm: ScopeArm, pb: ScopeBounds): ScopeBounds {
-  return arm.side === 'left'
-    ? { minX: arm.outerX, minY: arm.top, maxX: pb.minX, maxY: arm.bottom }
-    : { minX: pb.maxX, minY: arm.top, maxX: arm.outerX, maxY: arm.bottom };
+function armRect(arm: ScopeArm, pb: ScopeBounds) {
+  const bounds: ScopeBounds =
+    arm.side === 'left'
+      ? { minX: arm.outerX, minY: arm.top, maxX: pb.minX, maxY: arm.bottom }
+      : { minX: pb.maxX, minY: arm.top, maxX: arm.outerX, maxY: arm.bottom };
+  return bounds;
 }
 
 function regionPath(pb: ScopeBounds, arm?: ScopeArm) {
@@ -693,13 +694,11 @@ function regionPath(pb: ScopeBounds, arm?: ScopeArm) {
 
 /**
  * The arm joins a separate entry to its padded body and stays narrow enough not to cross sibling regions.
+ *
+ * The padded body and optional arm provide the fill rectangles. The dashed
+ * outline is in bounding-box coordinates; the label anchors at the body's top left.
  */
-export function regionGeometry(
-  body: ScopeBounds,
-  entry: ScopeBounds | null,
-  pad: number,
-  topPad: number
-): RegionGeometry {
+export function regionGeometry(body: ScopeBounds, entry: ScopeBounds | null, pad: number, topPad: number) {
   const pb = { minX: body.minX - pad, minY: body.minY - topPad, maxX: body.maxX + pad, maxY: body.maxY + pad };
   const arm = entry ? entryArm(entry, body, pb, pad) : undefined;
   const rects: ScopeBounds[] = arm ? [pb, armRect(arm, pb)] : [pb];
@@ -707,12 +706,13 @@ export function regionGeometry(
   const path = `M${regionPath(pb, arm)
     .map((p) => `${p.x - outer.minX} ${p.y - outer.minY}`)
     .join('L')}Z`;
-  return {
+  const geometry: RegionGeometry = {
     rects,
     path,
     bbox: { x: outer.minX, y: outer.minY, w: outer.maxX - outer.minX, h: outer.maxY - outer.minY },
     anchor: { x: pb.minX, y: pb.minY },
   };
+  return geometry;
 }
 
 const RegionBox = memo(({ region, active }: { region: ScopeRegion; active: boolean }) => {

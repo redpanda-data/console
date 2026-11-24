@@ -32,8 +32,8 @@ export const createPublishMessageRequest: (
 ) => MessageInit<PublishMessageRequest> = (
   topic,
   partitionId = -1,
-  key,
-  value,
+  key?,
+  value?,
   headers = [],
   useTransactions = false,
   compression = 0

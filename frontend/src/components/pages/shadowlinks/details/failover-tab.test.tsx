@@ -43,7 +43,7 @@ const cloudSource: (
   exemptPrincipals?: string[],
   brokers?: ShadowLinkPeerFenceBroker[],
   stateChangedAt?: Date
-) => ShadowLinkSource = (state, exemptPrincipals = ['shadow-orders'], brokers = [], stateChangedAt) => ({
+) => ShadowLinkSource = (state, exemptPrincipals = ['shadow-orders'], brokers = [], stateChangedAt?) => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',

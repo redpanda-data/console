@@ -170,8 +170,10 @@ type SwitchCaseInsert = Extract<PendingInsert, { context: 'switchCase' }>;
 type ResourceForNodeInsert = Extract<PendingInsert, { context: 'resourceForNode' }>;
 type IndexedInsert = Extract<PendingInsert, { context: 'spine' | 'slot' }>;
 
-function wrapAsCase(section: SwitchCaseInsert['section'], step: Record<string, unknown>): Record<string, unknown> {
-  return section === 'output' ? { check: '', output: step } : { check: '', processors: [step] };
+function wrapAsCase(section: SwitchCaseInsert['section'], step: Record<string, unknown>) {
+  const branch: Record<string, unknown> =
+    section === 'output' ? { check: '', output: step } : { check: '', processors: [step] };
+  return branch;
 }
 
 function caseStepPath(target: SwitchCaseInsert, caseIndex: number) {

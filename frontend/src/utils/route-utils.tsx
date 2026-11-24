@@ -320,7 +320,7 @@ const SECTION_ORDER = [SidebarSection.STREAMING, SidebarSection.PLATFORM];
  * Creates sidebar items grouped by section.
  * Filters invisible items and omits empty groups.
  */
-export function createGroupedSidebarItems(): SidebarGroupedItems[] {
+export function createGroupedSidebarItems() {
   const groupMap = new Map<string, NavLinkProps[]>();
 
   for (const section of SECTION_ORDER) {
@@ -334,10 +334,11 @@ export function createGroupedSidebarItems(): SidebarGroupedItems[] {
     }
   }
 
-  return SECTION_ORDER.map((section) => ({
+  const groups: SidebarGroupedItems[] = SECTION_ORDER.map((section) => ({
     group: section,
     items: groupMap.get(section) ?? [],
   })).filter((g) => g.items.length > 0);
+  return groups;
 }
 
 /**

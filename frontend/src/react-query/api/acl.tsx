@@ -184,8 +184,8 @@ export const useDeleteAclMutation = (
   });
 };
 
-function toAclsWithIds(rules: Rule[], sharedConfig: SharedConfig): ACLWithId[] {
-  return convertRulesToCreateACLRequests(rules, sharedConfig.principal, sharedConfig.host).map((r) => ({
+function toAclsWithIds(rules: Rule[], sharedConfig: SharedConfig) {
+  return convertRulesToCreateACLRequests(rules, sharedConfig.principal, sharedConfig.host).map<ACLWithId>((r) => ({
     ...r,
     id: getIdFromCreateACLRequest(r),
   }));

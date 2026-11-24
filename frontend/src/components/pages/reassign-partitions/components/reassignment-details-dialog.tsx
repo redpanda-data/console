@@ -246,8 +246,8 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
 type ThrottledReplica = { partitionId: number; brokerId: number };
 
-function parseThrottledReplicas(value: string | null | undefined): ThrottledReplica[] | undefined {
-  return value
+function parseThrottledReplicas(value: string | null | undefined) {
+  const replicas: ThrottledReplica[] | undefined = value
     ?.split(',')
     .map((e) => {
       const ar = e.split(':');
@@ -257,6 +257,7 @@ function parseThrottledReplicas(value: string | null | undefined): ThrottledRepl
       return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
     })
     .filterNull();
+  return replicas;
 }
 
 function anyPartitionThrottled(

@@ -154,8 +154,10 @@ export type UnmappedLintHint = { hint: LintHint; fieldLabel?: string };
 
 type ResolvedHint = { anchors: { key: string; message: string }[]; fieldLabel?: string };
 
-function anchoredToKeys(keys: string[], message: string): ResolvedHint | undefined {
-  return keys.length > 0 ? { anchors: keys.map((key) => ({ key, message })) } : undefined;
+function anchoredToKeys(keys: string[], message: string) {
+  const hint: ResolvedHint | undefined =
+    keys.length > 0 ? { anchors: keys.map((key) => ({ key, message })) } : undefined;
+  return hint;
 }
 
 function lineAnchoredHint(message: string, lineKey: string, fieldKeys: ReadonlySet<string>): ResolvedHint | undefined {

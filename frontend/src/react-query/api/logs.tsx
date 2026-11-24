@@ -104,8 +104,12 @@ function shouldIncludeMessage(msg: TopicMessage, pipelineId: string, serverless:
   return msg.keyJson === pipelineId;
 }
 
-function toSearchProgress(p: ListMessagesResponse_ProgressMessage): SearchProgress {
-  return { bytesConsumed: Number(p.bytesConsumed), messagesConsumed: Number(p.messagesConsumed) };
+function toSearchProgress(p: ListMessagesResponse_ProgressMessage) {
+  const progress: SearchProgress = {
+    bytesConsumed: Number(p.bytesConsumed),
+    messagesConsumed: Number(p.messagesConsumed),
+  };
+  return progress;
 }
 
 function collectPipelineMessage(
@@ -495,12 +499,7 @@ function withoutRepeats(messages: TopicMessage[]) {
  *
  * Live tail has a bounded buffer. Re-read history on each mode switch to avoid gaps, and deduplicate history/tail overlap at startup. A failed history read does not stop the tail.
  */
-export function useLogSearch({
-  pipelineId,
-  live,
-  enabled,
-  serverless = true,
-}: UseLogSearchOptions): UseLogSearchReturn {
+export function useLogSearch({ pipelineId, live, enabled, serverless = true }: UseLogSearchOptions) {
   const history = useLogHistory({
     pipelineId,
     serverless,
@@ -529,11 +528,12 @@ export function useLogSearch({
     [live, liveMessages, historyMessages]
   );
 
-  return {
+  const search: UseLogSearchReturn = {
     messages,
     phase: history.phase,
     progress: history.progress,
     error: live ? liveResult.error : history.error,
     refresh: live ? noop : refetchHistory,
   };
+  return search;
 }

@@ -257,16 +257,17 @@ export const useUpdateGlobalCompatibilityMutation = () => {
   });
 };
 
-async function readSchemaRegistryResponse<T>(response: Response, failureMessage: string): Promise<T> {
+async function readSchemaRegistryResponse<T>(response: Response, failureMessage: string) {
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(errorText || failureMessage);
   }
 
-  return response.json();
+  const payload: Promise<T> = response.json();
+  return payload;
 }
 
-async function resetSchemaRegistrySetting<T>(path: string, failureMessage: string): Promise<T> {
+async function resetSchemaRegistrySetting<T>(path: string, failureMessage: string) {
   const response = await fetch(`${config.restBasePath}/schema-registry/${path}`, {
     method: 'DELETE',
     headers: {
@@ -276,7 +277,7 @@ async function resetSchemaRegistrySetting<T>(path: string, failureMessage: strin
   return readSchemaRegistryResponse<T>(response, failureMessage);
 }
 
-async function putSchemaRegistrySetting<T>(path: string, body: object, failureMessage: string): Promise<T> {
+async function putSchemaRegistrySetting<T>(path: string, body: object, failureMessage: string) {
   const response = await fetch(`${config.restBasePath}/schema-registry/${path}`, {
     method: 'PUT',
     headers: {

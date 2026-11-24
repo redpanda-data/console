@@ -351,9 +351,10 @@ function generateObjectArrayValue(
   spec: RawFieldSpec,
   showAdvancedFields: boolean | undefined,
   componentName: string | undefined
-): unknown[] | undefined {
+) {
   const obj = generateObjectValue(spec, showAdvancedFields, componentName);
-  return obj && Object.keys(obj).length > 0 ? [obj] : undefined;
+  const values: unknown[] | undefined = obj && Object.keys(obj).length > 0 ? [obj] : undefined;
+  return values;
 }
 
 type GenerateDefaultValueOptions = {
@@ -528,12 +529,12 @@ export function generateDefaultValue(spec: RawFieldSpec, options: GenerateDefaul
   return generateShownFieldValue(spec, options);
 }
 
-function populateRedpandaValue(spec: RawFieldSpec, componentName?: string, parentName?: string): unknown {
-  return (
+function populateRedpandaValue(spec: RawFieldSpec, componentName?: string, parentName?: string) {
+  const value: unknown =
     populateWizardFields(spec, componentName, parentName) ??
     populateContextualVariables(spec, componentName, parentName) ??
-    populateConnectionDefaults(spec, componentName, parentName)
-  );
+    populateConnectionDefaults(spec, componentName, parentName);
+  return value;
 }
 
 function markRequired(spec: RawFieldSpec) {

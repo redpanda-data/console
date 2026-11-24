@@ -69,15 +69,14 @@ export function columnFiltersFromSearch(search: PipelineListSearch) {
 }
 
 /** The facet keys for a table's column filters; the tab and name search have keys of their own. */
-export function facetSearchFromFilters(
-  filters: ColumnFiltersState
-): Pick<PipelineListSearch, (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS]> {
-  return Object.fromEntries(
+export function facetSearchFromFilters(filters: ColumnFiltersState) {
+  const facets: Pick<PipelineListSearch, (typeof FILTER_KEYS)[keyof typeof FILTER_KEYS]> = Object.fromEntries(
     Object.entries(FILTER_KEYS).map(([id, key]) => {
       const value = filters.find((filter) => filter.id === id)?.value;
       return [key, Array.isArray(value) && value.length > 0 ? (value as string[]) : undefined];
     })
   );
+  return facets;
 }
 
 const DEFAULT_SORT: SortingState = [{ id: 'state', desc: false }];
