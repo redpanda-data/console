@@ -105,9 +105,9 @@ export const useControlplaneGetShadowLinkByNameQuery = (request: { name: string 
  * Hook to update a shadow link using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneUpdateShadowLinkMutation = (
+export const useControlplaneUpdateShadowLinkMutation: (
   options?: UseMutationOptions<typeof CpUpdateShadowLinkRequestSchema, typeof CpUpdateShadowLinkOperationSchema>
-): UseMutationResult<UpdateShadowLinkOperation, ConnectError, MessageInit<UpdateShadowLinkRequest>> => {
+) => UseMutationResult<UpdateShadowLinkOperation, ConnectError, MessageInit<UpdateShadowLinkRequest>> = (options) => {
   const transport = useControlplaneTransport();
   const queryClient = useQueryClient();
 
@@ -133,9 +133,9 @@ export const useControlplaneUpdateShadowLinkMutation = (
  * Hook to delete a shadow link using controlplane API
  * Creates its own controlplane transport, no TransportProvider needed
  */
-export const useControlplaneDeleteShadowLinkMutation = (
+export const useControlplaneDeleteShadowLinkMutation: (
   options?: UseMutationOptions<typeof CpDeleteShadowLinkRequestSchema, typeof CpDeleteShadowLinkOperationSchema>
-): UseMutationResult<DeleteShadowLinkOperation, ConnectError, MessageInit<DeleteShadowLinkRequest>> => {
+) => UseMutationResult<DeleteShadowLinkOperation, ConnectError, MessageInit<DeleteShadowLinkRequest>> = (options) => {
   const transport = useControlplaneTransport();
   const queryClient = useQueryClient();
 

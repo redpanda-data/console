@@ -128,19 +128,14 @@ const cloudSourceStep: (
  * (a source already down when the page opened). A fence read earlier in the visit (`lastKnown`)
  * keeps it through a passing failure, which reads as `unreadable`.
  */
-export const getSourceFenceStep = ({
-  source,
-  link,
-  resolving,
-  lastKnown,
-}: {
+export const getSourceFenceStep: (options: {
   source: ShadowLinkSource | undefined;
   link: LinkIdentity;
   /** Links are still being resolved, so a missing source may yet turn up. */
   resolving: boolean;
   /** The source as it was last read with a known fence during this visit. */
   lastKnown?: CloudSource;
-}): SourceFenceStep | undefined => {
+}) => SourceFenceStep | undefined = ({ source, link, resolving, lastKnown }) => {
   if (source?.kind === 'cloud') {
     return cloudSourceStep(source, link, lastKnown);
   }
@@ -192,7 +187,11 @@ const lagStatus: (behind: number, faulted: number, fence: FenceProgress) => LagS
 };
 
 /** `topics` is undefined until they load; `failed` says the latest read didn't succeed. */
-export const getLagStep = (topics: FailoverTopic[] | undefined, fence: FenceProgress, failed = false): LagStep => {
+export const getLagStep: (topics: FailoverTopic[] | undefined, fence: FenceProgress, failed?: boolean) => LagStep = (
+  topics,
+  fence,
+  failed = false
+) => {
   if (topics === undefined) {
     return {
       status: failed ? 'unavailable' : 'loading',
@@ -272,17 +271,13 @@ const failoverReason = (
   return sourceFenceReason(fence) ?? lagReason(lag);
 };
 
-export const getFailoverReadiness = ({
-  topics,
-  topicsFailed = false,
-  fence,
-}: {
+export const getFailoverReadiness: (options: {
   /** The last ones read, even when a later read failed. */
   topics: FailoverTopic[] | undefined;
   /** The latest read of the topics failed. */
   topicsFailed?: boolean;
   fence: SourceFenceStep;
-}): FailoverReadiness => {
+}) => FailoverReadiness = ({ topics, topicsFailed = false, fence }) => {
   const lag = getLagStep(topics, getFenceProgress(fence), topicsFailed);
   const inProgress = topics?.filter((topic) => FAILING_OVER_STATES.has(topic.state)).length ?? 0;
   const done =
@@ -324,11 +319,11 @@ const getSourceStepStates: (fence: SourceFenceStep) => SourceStepStates = (fence
  *
  * A link Console cannot check, including an mTLS source, still needs operator attention; do not mark its steps done.
  */
-export const getFailoverStepStates = ({
+export const getFailoverStepStates: (options: FailoverReadiness) => Record<FailoverStepId, StepState> = ({
   fence,
   lag,
   failover,
-}: FailoverReadiness): Record<FailoverStepId, StepState> => {
+}) => {
   if (failover.done) {
     return { settings: 'done', fence: 'done', fenced: 'done', lag: 'done', failover: 'done', clients: 'current' };
   }

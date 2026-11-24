@@ -370,7 +370,7 @@ const lagBadge: (lag: LagStep, failedOver: boolean) => BadgeSpec | undefined = (
   return lag.stale ? { label: 'Out of date', variant: 'warning' } : LAG_BADGE[lag.status];
 };
 
-const failoverBadge = ({ done, inProgress }: FailoverReadiness['failover']): BadgeSpec | undefined => {
+const failoverBadge: (options: FailoverReadiness['failover']) => BadgeSpec | undefined = ({ done, inProgress }) => {
   if (done) {
     return { label: 'Failed over', variant: 'success' };
   }

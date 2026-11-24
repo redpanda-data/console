@@ -385,11 +385,11 @@ const moveSplitDetail = (
     ? `${words.allowed} again on ${brokersPhrase(open)}. Still ${words.rejected.toLowerCase()} on ${brokersPhrase(blocking)} until the change reaches ${reach(blocking)}.`
     : `${words.rejected} on ${brokersPhrase(blocking)}. Still ${words.allowed.toLowerCase()} on ${brokersPhrase(open)} until the fence reaches ${reach(open)}.`;
 
-const splitVerdict = (
+const splitVerdict: (
   summary: Pick<FenceSummary, 'phase'>,
   brokers: readonly BrokerProgress[],
-  words = { allowed: 'Allowed', rejected: 'Rejected' }
-): Verdict => {
+  words?: { allowed: string; rejected: string }
+) => Verdict = (summary, brokers, words = { allowed: 'Allowed', rejected: 'Rejected' }) => {
   const blocking = brokers.filter((broker) => broker.blocks === true).map((broker) => broker.nodeId);
   const open = brokers.filter((broker) => broker.blocks === false).map((broker) => broker.nodeId);
   if (blocking.length > 0 && open.length > 0) {

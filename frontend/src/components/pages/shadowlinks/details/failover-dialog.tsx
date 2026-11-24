@@ -40,7 +40,7 @@ const CHECK_ICON = {
 type Verdict = { status: keyof typeof CHECK_ICON; text: string };
 type Check = Verdict & { id: string };
 
-const sourceVerdict = ({ fence }: FailoverReadiness): Verdict => {
+const sourceVerdict: (options: FailoverReadiness) => Verdict = ({ fence }) => {
   if (fence.kind === 'loading') {
     return {
       status: 'unknown',
@@ -113,7 +113,11 @@ const caughtUpVerdict: (lag: LagStep, topicName: string | undefined) => Verdict 
   };
 };
 
-const lagVerdict = ({ lag }: FailoverReadiness, topicName: string | undefined, checking: boolean): Verdict => {
+const lagVerdict: (options: FailoverReadiness, topicName: string | undefined, checking: boolean) => Verdict = (
+  { lag },
+  topicName,
+  checking
+) => {
   if (lag.status === 'loading' || checking) {
     return { status: 'unknown', text: 'Checking each topic’s lag…' };
   }
@@ -126,7 +130,7 @@ const lagVerdict = ({ lag }: FailoverReadiness, topicName: string | undefined, c
   return lagProblemVerdict(lag, topicName) ?? caughtUpVerdict(lag, topicName);
 };
 
-const pausedCheck = ({ lag }: FailoverReadiness): Check | undefined => {
+const pausedCheck: (options: FailoverReadiness) => Check | undefined = ({ lag }) => {
   if (lag.paused.length === 0) {
     return;
   }

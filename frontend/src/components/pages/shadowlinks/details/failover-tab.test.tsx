@@ -32,18 +32,18 @@ const topics: (lags: number[]) => FailoverTopic[] = (lags) =>
     totalLag: BigInt(lag),
   }));
 
-const inStates = (...states: ShadowTopicState[]): FailoverTopic[] =>
+const inStates: (...states: ShadowTopicState[]) => FailoverTopic[] = (...states) =>
   states.map((state, index) => ({ topicName: ['orders-events', 'orders-audit'][index] ?? '', state, totalLag: 0n }));
 
 const NOW = Date.UTC(2026, 5, 1, 12);
 const MINUTE = 60 * 1000;
 
-const cloudSource = (
+const cloudSource: (
   state: FencePhase,
-  exemptPrincipals = ['shadow-orders'],
-  brokers: ShadowLinkPeerFenceBroker[] = [],
+  exemptPrincipals?: string[],
+  brokers?: ShadowLinkPeerFenceBroker[],
   stateChangedAt?: Date
-): ShadowLinkSource => ({
+) => ShadowLinkSource = (state, exemptPrincipals = ['shadow-orders'], brokers = [], stateChangedAt) => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',

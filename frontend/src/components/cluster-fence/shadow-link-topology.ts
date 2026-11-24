@@ -278,11 +278,11 @@ const resolveSources = (
 
 type ReaderLookup = Pick<TopologyInputs, 'self' | 'clusterNames' | 'candidates'>;
 
-const readerFrom = (
+const readerFrom: (
   link: ShadowLinkListItem,
   details: Loaded<ShadowLink>,
-  { self, clusterNames, candidates }: ReaderLookup
-): ShadowLinkReader | 'pending' | 'failed' | undefined => {
+  selection: ReaderLookup
+) => ShadowLinkReader | 'pending' | 'failed' | undefined = (link, details, { self, clusterNames, candidates }) => {
   if (details.status === 'failed' || self.status === 'failed') {
     return 'failed';
   }

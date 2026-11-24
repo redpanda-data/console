@@ -21,15 +21,23 @@ export const usePublishMessageMutation = () =>
   });
 
 // biome-ignore lint/nursery/useMaxParams: Message publishing helper with many configuration options
-export const createPublishMessageRequest = (
+export const createPublishMessageRequest: (
   topic: string,
-  partitionId = -1,
+  partitionId?: number,
   key?: MessageInit<PublishMessagePayloadOptions>,
   value?: MessageInit<PublishMessagePayloadOptions>,
-  headers: { key: string; value: Uint8Array }[] = [],
+  headers?: { key: string; value: Uint8Array }[],
+  useTransactions?: boolean,
+  compression?: number
+) => MessageInit<PublishMessageRequest> = (
+  topic,
+  partitionId = -1,
+  key,
+  value,
+  headers = [],
   useTransactions = false,
   compression = 0
-): MessageInit<PublishMessageRequest> => {
+) => {
   const request = create(PublishMessageRequestSchema, {
     topic,
     partitionId,

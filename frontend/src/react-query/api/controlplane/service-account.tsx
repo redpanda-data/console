@@ -127,9 +127,11 @@ const useInvalidateServiceAccountsList = () => {
   return { invalidate };
 };
 
-export const useCreateServiceAccountMutation = (options?: {
+export const useCreateServiceAccountMutation: (options?: {
   skipInvalidation?: boolean;
-}): UseMutationResult<CreateServiceAccountResponse, ConnectError, MessageInit<CreateServiceAccountRequest>> => {
+}) => UseMutationResult<CreateServiceAccountResponse, ConnectError, MessageInit<CreateServiceAccountRequest>> = (
+  options
+) => {
   const { invalidate } = useInvalidateServiceAccountsList();
 
   return useMutation(createServiceAccount, {
@@ -216,9 +218,11 @@ export const useRotateServiceAccountSecretMutation: () => UseMutationResult<
   });
 };
 
-export const useDeleteServiceAccountMutation = (options?: {
+export const useDeleteServiceAccountMutation: (options?: {
   skipInvalidation?: boolean;
-}): UseMutationResult<DeleteServiceAccountResponse, ConnectError, MessageInit<DeleteServiceAccountRequest>> => {
+}) => UseMutationResult<DeleteServiceAccountResponse, ConnectError, MessageInit<DeleteServiceAccountRequest>> = (
+  options
+) => {
   const { invalidate } = useInvalidateServiceAccountsList();
 
   return useMutation(deleteServiceAccount, {

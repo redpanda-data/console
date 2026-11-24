@@ -61,7 +61,7 @@ const STALE_MS = 60_000;
 const NO_LINKS: ShadowLinkListItem[] = [];
 const NO_CLUSTERS: Cluster[] = [];
 
-const loadedOf = <T>(value: T | undefined, isError: boolean): Loaded<T> => {
+const loadedOf: <T>(value: T | undefined, isError: boolean) => Loaded<T> = (value, isError) => {
   if (value !== undefined) {
     return { status: 'ready', value };
   }
@@ -74,10 +74,10 @@ type AllPages<Item> = {
   failed: boolean;
 };
 
-const useAllPages = <Item>(
+const useAllPages: <Item>(
   pages: Item[][] | undefined,
   query: { hasNextPage: boolean; isError: boolean }
-): AllPages<Item> => {
+) => AllPages<Item> = (pages, query) => {
   const items = useMemo(() => pages?.flat(), [pages]);
   const complete = items !== undefined && !query.hasNextPage;
   const failed = query.isError && !complete;

@@ -127,17 +127,20 @@ const renderWithRouter = (ui: ReactElement, renderOptions: RenderWithRouterOptio
     ...renderOptions,
   });
 
-const connectQueryWrapper = (
+const connectQueryWrapper: (
   config?: QueryClientConfig,
-  transport = createConnectTransport({
-    baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
-  })
-): {
+  transport?: Transport
+) => {
   wrapper: JSXElementConstructor<PropsWithChildren>;
   queryClient: QueryClient;
   transport: Transport;
   queryClientWrapper: JSXElementConstructor<PropsWithChildren>;
-} => {
+} = (
+  config,
+  transport = createConnectTransport({
+    baseUrl: process.env.REACT_APP_PUBLIC_API_URL ?? '',
+  })
+) => {
   const queryClient = new QueryClient(config);
   trackedQueryClients.add(queryClient);
   const router = createRouter({

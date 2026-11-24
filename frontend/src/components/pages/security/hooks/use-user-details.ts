@@ -6,7 +6,7 @@ import { appGlobal } from '../../../../state/app-global';
 import { api, rolesApi } from '../../../../state/backend-api';
 import { AclRequestDefault } from '../../../../state/rest-interfaces';
 
-const formatMechanism = (mechanism?: SASLMechanism): string | null => {
+const formatMechanism: (mechanism?: SASLMechanism) => string | null = (mechanism) => {
   if (mechanism === SASLMechanism.SASL_MECHANISM_SCRAM_SHA_256) {
     return 'SCRAM-SHA-256';
   }

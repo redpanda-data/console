@@ -66,13 +66,13 @@ export type MessagesTableProps = {
   onRetry?: () => void;
 };
 
-const buildColumn = (
+const buildColumn: (
   config: MessageColumnConfig,
   density: RowDensity,
   timestampFormat: TimestampDisplayFormat,
   sortingDisabled: boolean,
   valuePreview?: ValuePreviewConfig
-): DataTableColumnDef<TopicMessage> => {
+) => DataTableColumnDef<TopicMessage> = (config, density, timestampFormat, sortingDisabled, valuePreview) => {
   const base: DataTableColumnDef<TopicMessage> = {
     id: config.id,
     header: COLUMN_LABELS[config.id],

@@ -33,7 +33,10 @@ export const createRule: (id: number, resourceType: ResourceType) => Rule = (id,
 
 export const getInitialRules = (rules?: Rule[]) => rules ?? [createRule(1, ResourceTypeCluster)];
 
-export const getInitialSharedConfig = (sharedConfig?: Partial<SharedConfig>, principalType?: string): SharedConfig => ({
+export const getInitialSharedConfig: (sharedConfig?: Partial<SharedConfig>, principalType?: string) => SharedConfig = (
+  sharedConfig,
+  principalType
+) => ({
   principal: sharedConfig?.principal ?? (principalType ? `${principalType}` : 'User:'),
   host: sharedConfig?.host ?? '*',
 });

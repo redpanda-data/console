@@ -90,7 +90,10 @@ const FINDING_READERS_CHECK: PreflightCheck = {
   message: 'Finding the shadow links that read from this cluster…',
 };
 
-const noReadersCheck = ({ resolving, incomplete }: { resolving: boolean; incomplete: boolean }): PreflightCheck => {
+const noReadersCheck: (options: { resolving: boolean; incomplete: boolean }) => PreflightCheck = ({
+  resolving,
+  incomplete,
+}) => {
   if (resolving) {
     return FINDING_READERS_CHECK;
   }
@@ -126,11 +129,11 @@ const readerProblems: (reader: ShadowLinkReader, canRead: boolean | undefined) =
   return [];
 };
 
-const readerChecks = (
+const readerChecks: (
   readers: ShadowLinkReader[],
   policy: { exemptPrincipals: string[]; allowAllReads: boolean },
-  { resolving, incomplete }: { resolving: boolean; incomplete: boolean }
-): PreflightCheck[] => {
+  selection: { resolving: boolean; incomplete: boolean }
+) => PreflightCheck[] = (readers, policy, { resolving, incomplete }) => {
   if (readers.length === 0) {
     return [noReadersCheck({ resolving, incomplete })];
   }

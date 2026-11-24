@@ -15,7 +15,7 @@ import prettyMillisecondsOriginal, { type Options as PrettyMillisecondsOptions }
 
 import type { TopicMessage } from '../state/rest-interfaces';
 
-export const nameof = <T>(name: Extract<keyof T, string>): string => name;
+export const nameof: <T>(name: Extract<keyof T, string>) => string = (name) => name;
 
 export { Cooldown } from './cooldown';
 export { TimeSince } from './time-since';

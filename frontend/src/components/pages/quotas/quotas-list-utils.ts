@@ -62,8 +62,10 @@ export const clampPageIndex = (requestedPage: number, rowCount: number, pageSize
 };
 
 /** Derives TanStack's SortingState from the URL search params. */
-export const searchToSorting = (sortField?: QuotaSortField, sortDirection?: QuotaSortDirection): SortingState =>
-  sortField ? [{ id: sortField, desc: sortDirection === 'desc' }] : [];
+export const searchToSorting: (sortField?: QuotaSortField, sortDirection?: QuotaSortDirection) => SortingState = (
+  sortField,
+  sortDirection
+) => (sortField ? [{ id: sortField, desc: sortDirection === 'desc' }] : []);
 
 /** Derives the URL search params from TanStack's SortingState. */
 export const sortingToSearch: (sorting: SortingState) => {

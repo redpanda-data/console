@@ -297,7 +297,7 @@ const Details: FC<DetailsProps> = ({ title, content }) => {
   );
 };
 
-const formatStatus = (overviewStatus?: ComponentStatus): React.ReactNode => {
+const formatStatus: (overviewStatus?: ComponentStatus) => React.ReactNode = (overviewStatus) => {
   if (!overviewStatus) {
     return null;
   }

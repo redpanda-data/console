@@ -118,11 +118,11 @@ const toKnownFence: (response: GetClusterFenceStatusResponse) => ShadowLinkPeerF
  *
  * Transient reads retry while retaining the last fence. Do not depend on Redpanda's error wording.
  */
-export const readPeerClusterFence = async (
+export const readPeerClusterFence: (
   consoleUrl: string | undefined,
   signal?: AbortSignal,
-  timeoutMs = PEER_FENCE_READ_TIMEOUT_MS
-): Promise<ShadowLinkPeerFence> => {
+  timeoutMs?: number
+) => Promise<ShadowLinkPeerFence> = async (consoleUrl, signal, timeoutMs = PEER_FENCE_READ_TIMEOUT_MS) => {
   if (!consoleUrl) {
     return { status: 'unavailable', reason: 'unsupported' };
   }

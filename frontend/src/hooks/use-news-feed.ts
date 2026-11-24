@@ -17,7 +17,7 @@ type NewsItem = {
   };
 };
 
-const fetchNews = async (segment?: 'redpanda' | 'kafka'): Promise<NewsItem[]> => {
+const fetchNews: (segment?: 'redpanda' | 'kafka') => Promise<NewsItem[]> = async (segment) => {
   const url = new URL('https://redpanda-news-feed.netlify.app/news');
   if (segment) {
     url.searchParams.set('segment', segment);

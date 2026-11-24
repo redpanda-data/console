@@ -75,7 +75,7 @@ const external = create(ShadowLinkSchema, {
 const listItem = ({ id, name, shadowRedpandaId }: ShadowLink, state = ShadowLink_State.ACTIVE) =>
   create(ShadowLinkListItemSchema, { id, name, shadowRedpandaId, state });
 
-const ready = <T>(value: T): Loaded<T> => ({ status: 'ready', value });
+const ready: <T>(value: T) => Loaded<T> = (value) => ({ status: 'ready', value });
 
 const inputs = (overrides: Partial<TopologyInputs> = {}) =>
   ({
