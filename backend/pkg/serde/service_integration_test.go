@@ -173,7 +173,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 	cborConfig := config.Cbor{}
 
-	serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, nil, cborConfig)
+	serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, nil, nil, cborConfig)
 	require.NoError(err)
 
 	t.Run("schema registry protobuf in a named context", func(t *testing.T) {
@@ -684,7 +684,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NoError(protoSvc.Start())
 
-		serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, nil, cborConfig)
+		serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, nil, nil, cborConfig)
 		require.NoError(err)
 
 		orderCreatedAt := time.Date(2023, time.June, 10, 13, 0, 0, 0, time.UTC)
@@ -845,7 +845,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		require.NoError(err)
 		require.NoError(testProtoSvc.Start())
 
-		serdeSvc, err := NewService(testProtoSvc, mspPackSvc, cachedSchemaClient, nil, cborConfig)
+		serdeSvc, err := NewService(testProtoSvc, mspPackSvc, cachedSchemaClient, nil, nil, cborConfig)
 		require.NoError(err)
 
 		orderCreatedAt := time.Date(2023, time.July, 15, 10, 0, 0, 0, time.UTC)
@@ -2302,7 +2302,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		cachedSchemaClient2, err := schemacache.NewCachedClient(schemaClientFactory2, cacheNamespaceFn)
 		require.NoError(err)
 
-		serdeSvc2, err := NewService(protoSvc2, mspPackSvc, cachedSchemaClient2, nil, cborConfig)
+		serdeSvc2, err := NewService(protoSvc2, mspPackSvc, cachedSchemaClient2, nil, nil, cborConfig)
 		require.NoError(err)
 
 		for _, cr := range records {
@@ -2714,7 +2714,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 
 		cborConfig := config.Cbor{}
 
-		serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, nil, cborConfig)
+		serdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, nil, nil, cborConfig)
 		require.NoError(err)
 
 		var serde sr.Serde
@@ -2954,7 +2954,7 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		}
 		// cachedSchemaClient remains nil here when schema registry disabled
 
-		disabledSerdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, nil, cborConfig)
+		disabledSerdeSvc, err := NewService(protoSvc, mspPackSvc, cachedSchemaClient, nil, nil, cborConfig)
 		require.NoError(err)
 
 		// Step 3: Consume the Avro message and attempt deserialization
