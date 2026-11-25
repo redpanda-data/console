@@ -51,7 +51,8 @@ func newOptions(opts []Option) options {
 }
 
 // Seed registers the fixture schemas with fixed IDs, creates the topics and
-// produces one record per scenario.
+// produces one record per scenario. It needs a registry with schema GUIDs
+// (Redpanda 26.3 or later).
 func Seed(ctx context.Context, kafka *kgo.Client, adm *kadm.Client, reg *sr.Client, opts ...Option) (*Fixture, error) {
 	o := newOptions(opts)
 	schemas := newSchemas(o.idBase)
@@ -96,7 +97,8 @@ func Seed(ctx context.Context, kafka *kgo.Client, adm *kadm.Client, reg *sr.Clie
 	return &Fixture{Schemas: schemas, Topics: topicContexts, Scenarios: scenarios}, nil
 }
 
-// register creates the schema with its fixed ID through IMPORT mode.
+// register creates the schema with its fixed ID through IMPORT mode and reads
+// back its GUID.
 func register(ctx context.Context, reg *sr.Client, s *Schema) error {
 	subject := s.QualifiedSubject()
 	if err := setMode(ctx, reg, sr.ModeImport, subject); err != nil {
@@ -116,6 +118,10 @@ func register(ctx context.Context, reg *sr.Client, s *Schema) error {
 	if registered.ID != s.ID {
 		return fmt.Errorf("%s got ID %d, want %d", subject, registered.ID, s.ID)
 	}
+	if registered.GUID == "" {
+		return fmt.Errorf("the registry returned no GUID for %s, it needs Redpanda 26.3 or later", subject)
+	}
+	s.GUID = registered.GUID
 	return nil
 }
 

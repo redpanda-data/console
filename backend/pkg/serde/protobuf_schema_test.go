@@ -222,7 +222,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
-				assert.Equal(t, "payload has no schema ID: unknown magic byte 0x01", err.Error())
+				assert.Equal(t, "payload has no schema ID: truncated schema GUID, got 7 of 17 bytes", err.Error())
 			},
 		},
 		{

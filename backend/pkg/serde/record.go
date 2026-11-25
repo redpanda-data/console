@@ -59,6 +59,10 @@ type RecordPayload struct {
 	// If no schema was used for this payload, this will be nil.
 	SchemaID *uint32 `json:"schemaId,omitempty"`
 
+	// SchemaGUID is the schema GUID that the record carries. It is empty if
+	// the record carries a schema ID.
+	SchemaGUID string `json:"schemaGuid,omitempty"`
+
 	// SchemaContext is the schema registry context that SchemaID was resolved
 	// in. Empty means the default context.
 	SchemaContext string `json:"schemaContext,omitempty"`

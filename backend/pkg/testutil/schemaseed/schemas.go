@@ -7,8 +7,9 @@
 // the Business Source License, use of this software will be governed
 // by the Apache License, Version 2.0
 
-// Package schemaseed provides schemas and schema-encoded records for tests,
-// across Schema Registry contexts with colliding schema IDs.
+// Package schemaseed provides schemas and records that cover every schema
+// locator form (ID or GUID, in the payload or in a record header) across
+// Schema Registry contexts with colliding schema IDs.
 package schemaseed
 
 import (
@@ -31,6 +32,8 @@ type Schema struct {
 	Text       string
 	References []sr.SchemaReference
 	SoftDelete bool
+	// GUID is set once the schema is registered.
+	GUID string
 }
 
 // QualifiedSubject returns the subject with its context prefix.
@@ -49,6 +52,8 @@ const (
 	avroCustomerKey = `{"type":"record","name":"CustomerKey","namespace":"com.acme","fields":[{"name":"customer_id","type":"string"}]}`
 	avroCustomer    = `{"type":"record","name":"Customer","namespace":"com.acme","fields":[{"name":"customer_id","type":"string"},{"name":"name","type":"string"},{"name":"tier","type":{"type":"enum","name":"Tier","symbols":["FREE","PRO","ENTERPRISE"]}}]}`
 	avroLegacy      = `{"type":"record","name":"LegacyEvent","namespace":"com.acme.legacy","fields":[{"name":"id","type":"long"},{"name":"note","type":"string"}]}`
+	avroDeviceKey   = `{"type":"record","name":"DeviceKey","namespace":"com.acme.iot","fields":[{"name":"device_id","type":"string"}]}`
+	avroTelemetry   = `{"type":"record","name":"Telemetry","namespace":"com.acme.iot","fields":[{"name":"device_id","type":"string"},{"name":"temperature_c","type":"double"},{"name":"battery_pct","type":"int"}]}`
 
 	jsonOrderKey = `{"$schema":"http://json-schema.org/draft-07/schema#","title":"OrderKey","type":"object","properties":{"order_id":{"type":"string"},"region":{"type":"string"}},"required":["order_id"]}`
 	jsonPayment  = `{"$schema":"http://json-schema.org/draft-07/schema#","title":"Payment","type":"object","properties":{"payment_id":{"type":"string"},"amount_cents":{"type":"integer"},"currency":{"type":"string"},"status":{"enum":["AUTHORIZED","CAPTURED","REFUNDED"]}},"required":["payment_id","amount_cents"]}`
@@ -106,8 +111,8 @@ message Invoice {
 `
 )
 
-// newSchemas returns the fixture schemas. The contexts reuse the same IDs,
-// from base+1, for different schemas.
+// newSchemas returns the fixture schemas. Each context reuses the IDs base+1
+// to base+4 for different schemas.
 func newSchemas(base int) []*Schema {
 	return []*Schema{
 		{Context: ContextDefault, Subject: "matrix-avro-default-key", ID: base + 1, Type: sr.TypeAvro, Text: avroCustomerKey},
@@ -116,6 +121,8 @@ func newSchemas(base int) []*Schema {
 		{Context: ContextDefault, Subject: "proto-nested-default-value", ID: base + 4, Type: sr.TypeProtobuf, Text: protoCatalog},
 		{Context: ContextStaging, Subject: "matrix-proto-staging-key", ID: base + 1, Type: sr.TypeJSON, Text: jsonOrderKey},
 		{Context: ContextStaging, Subject: "matrix-proto-staging-value", ID: base + 2, Type: sr.TypeProtobuf, Text: protoShipment},
+		{Context: ContextStaging, Subject: "native-rpk-staging-key", ID: base + 3, Type: sr.TypeAvro, Text: avroDeviceKey},
+		{Context: ContextStaging, Subject: "native-rpk-staging-value", ID: base + 4, Type: sr.TypeAvro, Text: avroTelemetry},
 		{Context: ContextProd, Subject: "money.proto", ID: base + 1, Type: sr.TypeProtobuf, Text: protoMoney},
 		{Context: ContextProd, Subject: "matrix-json-prod-key", ID: base + 2, Type: sr.TypeAvro, Text: avroCustomer},
 		{Context: ContextProd, Subject: "matrix-json-prod-value", ID: base + 3, Type: sr.TypeJSON, Text: jsonPayment},
@@ -129,10 +136,12 @@ func newSchemas(base int) []*Schema {
 // topicContexts maps each fixture topic to the context it is bound to with
 // redpanda.schema.registry.context.
 var topicContexts = map[string]string{
-	"matrix-avro-default":  ContextDefault,
-	"matrix-proto-staging": ContextStaging,
-	"matrix-json-prod":     ContextProd,
-	"proto-nested-default": ContextDefault,
-	"refs-prod":            ContextProd,
-	"edge-cases":           ContextDefault,
+	"matrix-avro-default":         ContextDefault,
+	"matrix-proto-staging":        ContextStaging,
+	"matrix-json-prod":            ContextProd,
+	"proto-nested-default":        ContextDefault,
+	"refs-prod":                   ContextProd,
+	"guid-required-unbound":       ContextDefault,
+	"guid-required-cross-context": ContextStaging,
+	"edge-cases":                  ContextDefault,
 }

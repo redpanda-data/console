@@ -20,11 +20,16 @@ import (
 // nothing.
 type Want struct {
 	Encoding string // Console payload encoding, "" asserts nothing
-	SchemaID int    // schema ID, 0 for no schema
+	SchemaID int    // resolved schema ID, 0 for no schema
+	GUID     string // set when the locator is a GUID
 	Context  string // context the schema resolves in, "" is the default
 	Location string // "payload" or "header"
 	JSON     string // decoded payload
 	Error    string // text that a registry serde must report
+
+	// WrongSchema marks an integer ID that resolves to another schema in the
+	// topic's context. Only a GUID decodes such a record correctly.
+	WrongSchema bool
 }
 
 // Scenario is one record and its correct decode result.
@@ -44,9 +49,12 @@ type Fixture struct {
 	Scenarios []Scenario
 }
 
+const bogusGUID = "00000000-dead-beef-0000-000000000000"
+
 var (
-	allLocations     = []Location{Plain, PayloadID, HeaderID}
-	encodedLocations = []Location{PayloadID, HeaderID}
+	allLocations     = []Location{Plain, PayloadID, PayloadGUID, HeaderID, HeaderGUID}
+	encodedLocations = []Location{PayloadID, PayloadGUID, HeaderID, HeaderGUID}
+	guidFirst        = []Location{PayloadGUID, HeaderGUID, PayloadID, HeaderID}
 )
 
 var (
@@ -122,6 +130,54 @@ func jsonAll(s *Schema, samples []string) []encoded {
 	return out
 }
 
+// resolve returns the schema that a locator of e resolves to on a topic bound
+// to topicContext: an ID in that context, a GUID in that context, then the
+// default context, then the first one registered.
+func (b *builder) resolve(e encoded, loc Location, topicContext string) *Schema {
+	if !loc.isGUID() {
+		for _, s := range b.schemas {
+			if s.Context == topicContext && s.ID == e.schema.ID {
+				return s
+			}
+		}
+		return nil
+	}
+	var pick *Schema
+	for _, s := range b.schemas {
+		if s.GUID != e.schema.GUID {
+			continue
+		}
+		if s.Context == topicContext {
+			return s
+		}
+		if pick == nil || (s.Context == ContextDefault && pick.Context != ContextDefault) {
+			pick = s
+		}
+	}
+	return pick
+}
+
+func (b *builder) want(e encoded, loc Location, topicContext string) Want {
+	var w Want
+	resolved := b.resolve(e, loc, topicContext)
+	if resolved == nil || resolved.GUID != e.schema.GUID {
+		w.WrongSchema = true
+		return w
+	}
+	w.Encoding = encodingName(e.schema.Type)
+	w.SchemaID = resolved.ID
+	w.Context = resolved.Context
+	w.JSON = e.json
+	w.Location = "payload"
+	if loc.inHeader() {
+		w.Location = "header"
+	}
+	if loc.isGUID() {
+		w.GUID = e.schema.GUID
+	}
+	return w
+}
+
 func encodingName(t sr.SchemaType) string {
 	switch t {
 	case sr.TypeProtobuf:
@@ -152,20 +208,9 @@ func newScenario(topic, name, origin, expect string) Scenario {
 	}
 }
 
-// place puts an encoded message in the key or value of the scenario record and
-// sets its correct result.
-func place(sc *Scenario, isKey bool, e encoded, loc Location) {
-	Place(sc.Record, isKey, loc, e.locator(), e.message)
-	w := Want{
-		Encoding: encodingName(e.schema.Type),
-		SchemaID: e.schema.ID,
-		Context:  e.schema.Context,
-		Location: "payload",
-		JSON:     e.json,
-	}
-	if loc.inHeader() {
-		w.Location = "header"
-	}
+func (b *builder) place(sc *Scenario, isKey bool, e encoded, loc Location) {
+	Place(sc.Record, isKey, loc, e.locator(loc), e.message)
+	w := b.want(e, loc, sc.TopicContext)
 	if isKey {
 		sc.Key = w
 		return
@@ -187,14 +232,14 @@ func (b *builder) matrix(topic, origin string, keys, values []encoded) {
 				sc.Record.Key = fmt.Appendf(nil, "plain-key-%02d", i)
 				sc.Key = Want{}
 			} else {
-				place(&sc, true, keys[i%len(keys)], kl)
+				b.place(&sc, true, keys[i%len(keys)], kl)
 			}
 			if vl == Plain {
 				plain := fmt.Sprintf(`{"plain":true,"n":%d}`, i)
 				sc.Record.Value = []byte(plain)
 				sc.Value = Want{Encoding: "json", JSON: plain}
 			} else {
-				place(&sc, false, values[i%len(values)], vl)
+				b.place(&sc, false, values[i%len(values)], vl)
 			}
 			b.scenarios = append(b.scenarios, sc)
 		}
@@ -208,7 +253,7 @@ func (b *builder) single(topic, what, origin, expect string, key []byte, e encod
 		sc.Record.Key = key
 		sc.Key = Want{}
 	}
-	place(&sc, false, e, loc)
+	b.place(&sc, false, e, loc)
 	b.scenarios = append(b.scenarios, sc)
 }
 
@@ -223,6 +268,7 @@ func (b *builder) raw(name, expect string, value []byte, header *kgo.RecordHeade
 	b.scenarios = append(b.scenarios, sc)
 }
 
+//nolint:funlen // one table of scenarios
 func buildScenarios(schemas []*Schema, base int) ([]Scenario, error) {
 	b := &builder{schemas: schemas}
 
@@ -275,25 +321,91 @@ func buildScenarios(schemas []*Schema, base int) ([]Scenario, error) {
 		b.single("refs-prod", "Invoice", ContextProd, "ok", []byte("inv-1"), invoiceEnc, loc)
 	}
 
-	b.edgeCases(base, custKeys[0], custs[0], legacyEnc)
+	// Unbound topic: integer IDs resolve in the default context.
+	for _, c := range []struct {
+		what, origin, wrong string
+		enc                 encoded
+	}{
+		{"Shipment", ContextStaging, "default id 2 is Avro Customer", shipmentsEnc[0]},
+		{"Payment", ContextProd, "default id 3 is soft-deleted Avro LegacyEvent", paymentsEnc[0]},
+		{"Invoice", ContextProd, "default id 4 is Protobuf Catalog", invoiceEnc},
+		{"OrderKey", ContextStaging, "default id 1 is Avro CustomerKey", orderKeysEnc[0]},
+	} {
+		for _, loc := range guidFirst {
+			expect := "ok"
+			if !loc.isGUID() {
+				expect = "wrong-schema: " + c.wrong
+			}
+			b.single("guid-required-unbound", c.what, c.origin, expect, nil, c.enc, loc)
+		}
+	}
+	b.single("guid-required-unbound", "Customer", ContextProd,
+		"ok-by-coincidence: default id 2 has the same schema and GUID", nil, prodCusts[0], PayloadID)
+	b.single("guid-required-unbound", "Customer", ContextProd,
+		"ok: GUID is registered in default and .prod", nil, prodCusts[0], HeaderGUID)
+
+	// Topic bound to .staging with records whose schemas are elsewhere.
+	for _, c := range []struct {
+		what, origin, wrong string
+		enc                 encoded
+	}{
+		{"Payment", ContextProd, ".staging id 3 is Avro DeviceKey", paymentsEnc[1]},
+		{"Catalog", "default", ".staging id 4 is Avro Telemetry", catalogEnc},
+		{"Customer", "default", ".staging id 2 is Protobuf Shipment", custs[1]},
+	} {
+		for _, loc := range guidFirst {
+			expect := "ok"
+			if !loc.isGUID() {
+				expect = "wrong-schema: " + c.wrong
+			}
+			b.single("guid-required-cross-context", c.what, c.origin, expect, nil, c.enc, loc)
+		}
+	}
+	b.single("guid-required-cross-context", "Shipment", ContextStaging, "ok: native context", nil, shipmentsEnc[1], PayloadID)
+	b.single("guid-required-cross-context", "Shipment", ContextStaging, "ok: native context", nil, shipmentsEnc[1], HeaderGUID)
+
+	b.edgeCases(base, custKeys[0], custs[0], legacyEnc, productEnc, catalog)
 
 	return b.scenarios, nil
 }
 
-func (b *builder) edgeCases(base int, key, value, legacy encoded) {
+func (b *builder) edgeCases(base int, key, value, legacy, product encoded, catalog *Schema) {
 	const topic = "edge-cases"
 	valueHeader := func(v []byte) *kgo.RecordHeader {
 		return &kgo.RecordHeader{Key: ValueSchemaIDHeader, Value: v}
 	}
+	bogus := GUIDLocator(bogusGUID)
 	headerError := Want{Error: ValueSchemaIDHeader + " header"}
 
 	sc := newScenario(topic, "tombstone, key=payload-id", "default", "ok: key decodes, value is null")
-	place(&sc, true, key, PayloadID)
+	b.place(&sc, true, key, PayloadID)
 	b.scenarios = append(b.scenarios, sc)
 
+	sc = newScenario(topic, "tombstone, key=header-guid", "default", "ok: key decodes, value is null")
+	b.place(&sc, true, key, HeaderGUID)
+	b.scenarios = append(b.scenarios, sc)
+
+	b.single(topic, "null key", "default", "ok: null key", nil, value, HeaderGUID)
+
+	sc = newScenario(topic, "value=header-guid after an unknown GUID header", "default", "ok: the last __value_schema_id header wins")
+	sc.Record.Headers = append(sc.Record.Headers, *valueHeader(bogus))
+	b.place(&sc, false, value, HeaderGUID)
+	b.scenarios = append(b.scenarios, sc)
+
+	sc = newScenario(topic, "value=header-id before an unknown GUID header", "default", "error: the last __value_schema_id header is an unknown GUID")
+	b.place(&sc, false, value, HeaderID)
+	sc.Record.Headers = append(sc.Record.Headers, *valueHeader(bogus))
+	sc.Value = Want{Error: "not found"}
+	b.scenarios = append(b.scenarios, sc)
+
+	b.raw("value=payload-guid unknown GUID", "error: GUID not found",
+		append(append([]byte{}, bogus...), value.message...), nil,
+		Want{Error: "not found"})
 	b.raw("value=payload-id unknown ID", "error: schema ID not found",
 		append(IDLocator(base+9999), value.message...), nil,
 		Want{Error: "not found"})
+	b.raw("value=header-guid truncated", "error: truncated GUID header",
+		value.message, valueHeader(value.locator(HeaderGUID)[:9]), headerError)
 	b.raw("value=header-id truncated", "error: truncated ID header",
 		value.message, valueHeader([]byte{0, 0, 0}), headerError)
 	b.raw("value=header empty", "error: empty schema ID header",
@@ -306,9 +418,14 @@ func (b *builder) edgeCases(base int, key, value, legacy encoded) {
 		Want{Encoding: "json", JSON: `{"plain":true}`})
 
 	b.single(topic, "soft-deleted schema", "default", "ok: schema is soft-deleted, ID lookup still works", nil, legacy, PayloadID)
+	b.single(topic, "soft-deleted schema", "default", "ok: GUID of a soft-deleted schema still resolves", nil, legacy, HeaderGUID)
+
+	b.raw("value=header-guid malformed Protobuf indexes", "error: malformed Protobuf message indexes",
+		product.message, valueHeader(append(GUIDLocator(catalog.GUID), 0x7f)),
+		Want{Error: "index"})
 
 	sc = newScenario(topic, "value=payload-id with a null schema ID header", "default", "ok: a null header selects the payload")
 	sc.Record.Headers = append(sc.Record.Headers, *valueHeader(nil))
-	place(&sc, false, value, PayloadID)
+	b.place(&sc, false, value, PayloadID)
 	b.scenarios = append(b.scenarios, sc)
 }

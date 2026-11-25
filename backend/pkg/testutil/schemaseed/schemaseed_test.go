@@ -28,13 +28,19 @@ func TestFake(t *testing.T) {
 			counts[sc.Topic]++
 		}
 		assert.Equal(t, map[string]int{
-			"matrix-avro-default":  8,
-			"matrix-proto-staging": 8,
-			"matrix-json-prod":     8,
-			"proto-nested-default": 6,
-			"refs-prod":            2,
-			"edge-cases":           8,
+			"matrix-avro-default":         24,
+			"matrix-proto-staging":        24,
+			"matrix-json-prod":            24,
+			"proto-nested-default":        12,
+			"refs-prod":                   4,
+			"guid-required-unbound":       18,
+			"guid-required-cross-context": 14,
+			"edge-cases":                  16,
 		}, counts)
+	})
+
+	t.Run("the same schema has one GUID in every context", func(t *testing.T) {
+		assert.Equal(t, fixture.Schemas[1].GUID, fixture.Schemas[9].GUID)
 	})
 
 	client, err := sr.NewClient(sr.URLs(registry.URL()))
@@ -53,9 +59,25 @@ func TestFake(t *testing.T) {
 		require.Error(t, err)
 	})
 
+	t.Run("a GUID lists every context that has the schema", func(t *testing.T) {
+		ids, err := client.SchemaIDsByGUID(t.Context(), fixture.Schemas[1].GUID)
+		require.NoError(t, err)
+		assert.Equal(t, []sr.ContextID{{Context: ".", ID: 2}, {Context: ContextProd, ID: 2}}, ids)
+
+		ids, err = client.SchemaIDsByGUID(t.Context(), bogusGUID)
+		require.NoError(t, err)
+		assert.Empty(t, ids)
+	})
+
 	t.Run("references resolve in the request context", func(t *testing.T) {
 		ref, err := client.SchemaByVersion(sr.InContext(t.Context(), ContextProd), "money.proto", 1)
 		require.NoError(t, err)
 		assert.Equal(t, 1, ref.ID)
+	})
+
+	t.Run("a broker without GUID routes answers 404", func(t *testing.T) {
+		DisableGUIDRoutes(registry)
+		_, err := client.SchemaIDsByGUID(t.Context(), fixture.Schemas[1].GUID)
+		require.Error(t, err)
 	})
 }

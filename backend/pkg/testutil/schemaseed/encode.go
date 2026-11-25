@@ -23,35 +23,49 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-// Location is where a key or value carries its schema ID.
+// Location is where a key or value carries its schema locator.
 type Location string
 
-// Locations of a schema ID.
+// Locations of a schema locator.
 const (
-	Plain     Location = "plain"
-	PayloadID Location = "payload-id"
-	HeaderID  Location = "header-id"
+	Plain       Location = "plain"
+	PayloadID   Location = "payload-id"
+	PayloadGUID Location = "payload-guid"
+	HeaderID    Location = "header-id"
+	HeaderGUID  Location = "header-guid"
 )
 
-// Record headers that carry a schema ID.
+// Record headers that carry a schema locator.
 const (
 	KeySchemaIDHeader   = "__key_schema_id"
 	ValueSchemaIDHeader = "__value_schema_id"
 )
 
-func (l Location) inHeader() bool { return l == HeaderID }
+func (l Location) inHeader() bool { return l == HeaderID || l == HeaderGUID }
+func (l Location) isGUID() bool   { return l == PayloadGUID || l == HeaderGUID }
 
-// IDLocator returns a schema ID in the Confluent wire format: 0x00, the ID,
-// and the Protobuf message indexes if any.
+// IDLocator returns the schema ID form of a locator: 0x00, the ID, and the
+// Protobuf message indexes if any.
 func IDLocator(id int, index ...int) []byte {
 	var h sr.ConfluentHeader
 	b, _ := h.AppendEncode(nil, id, index)
 	return b
 }
 
+// GUIDLocator returns the schema GUID form of a locator: 0x01, the GUID, and
+// the Protobuf message indexes if any.
+func GUIDLocator(guid string, index ...int) []byte {
+	var h sr.ConfluentHeader
+	b, err := h.AppendEncodeGUID(nil, guid, index)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 // Place writes an encoded message to the key or value of rec. A payload
-// location prefixes the message with the schema ID, a header location puts
-// the schema ID in the schema ID record header.
+// location prefixes the message with the locator, a header location puts the
+// locator in the schema ID record header.
 func Place(rec *kgo.Record, isKey bool, loc Location, locator, message []byte) {
 	payload := message
 	if loc.inHeader() {
@@ -78,7 +92,10 @@ type encoded struct {
 	json    string // the decoded message as Console shows it
 }
 
-func (e encoded) locator() []byte {
+func (e encoded) locator(loc Location) []byte {
+	if loc.isGUID() {
+		return GUIDLocator(e.schema.GUID, e.index...)
+	}
 	return IDLocator(e.schema.ID, e.index...)
 }
 

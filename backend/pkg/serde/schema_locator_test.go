@@ -10,6 +10,9 @@
 package serde
 
 import (
+	"context"
+	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +20,14 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"github.com/redpanda-data/console/backend/pkg/config"
+	schemafactory "github.com/redpanda-data/console/backend/pkg/factory/schema"
+	"github.com/redpanda-data/console/backend/pkg/schema"
+	"github.com/redpanda-data/console/backend/pkg/testutil/schemaseed"
 )
+
+const testGUID = "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9"
+
+var testGUIDBytes = []byte{0x0a, 0x1b, 0x2c, 0x3d, 0x4e, 0x5f, 0x60, 0x71, 0x82, 0x93, 0xa4, 0xb5, 0xc6, 0xd7, 0xe8, 0xf9}
 
 func TestLocateSchema(t *testing.T) {
 	tests := []struct {
@@ -62,6 +72,24 @@ func TestLocateSchema(t *testing.T) {
 			payload: []byte{0x00, 0x00, 0x00},
 			validateFn: func(t *testing.T, _ schemaLocator, err error) {
 				assert.EqualError(t, err, "payload has no schema ID: truncated schema ID, got 3 of 5 bytes")
+			},
+		},
+		{
+			name:    "schema GUID and message",
+			payload: append(append([]byte{0x01}, testGUIDBytes...), 'm', 's', 'g'),
+			validateFn: func(t *testing.T, loc schemaLocator, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, testGUID, loc.guid)
+				assert.Zero(t, loc.id)
+				assert.Equal(t, SchemaIDLocationPayload, loc.location)
+				assert.Equal(t, []byte("msg"), loc.message())
+			},
+		},
+		{
+			name:    "truncated schema GUID",
+			payload: append([]byte{0x01}, testGUIDBytes[:8]...),
+			validateFn: func(t *testing.T, _ schemaLocator, err error) {
+				assert.EqualError(t, err, "payload has no schema ID: truncated schema GUID, got 9 of 17 bytes")
 			},
 		},
 		{
@@ -162,6 +190,25 @@ func TestLocateSchema_Header(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, 1, loc.id)
 				assert.Equal(t, SchemaIDLocationHeader, loc.location)
+			},
+		},
+		{
+			name:        "schema GUID in the header",
+			record:      valueOnly(header(valueSchemaIDHeader, append([]byte{0x01}, testGUIDBytes...))),
+			payloadType: PayloadTypeValue,
+			validateFn: func(t *testing.T, loc schemaLocator, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, testGUID, loc.guid)
+				assert.Equal(t, SchemaIDLocationHeader, loc.location)
+				assert.Equal(t, bare, loc.message())
+			},
+		},
+		{
+			name:        "truncated schema GUID in the header",
+			record:      valueOnly(header(valueSchemaIDHeader, []byte{0x01, 0x0a})),
+			payloadType: PayloadTypeValue,
+			validateFn: func(t *testing.T, _ schemaLocator, err error) {
+				assert.EqualError(t, err, "invalid __value_schema_id header: truncated schema GUID, got 2 of 17 bytes")
 			},
 		},
 		{
@@ -332,4 +379,121 @@ func TestService_DeserializeRecordWithFailedSpecificEncoding(t *testing.T) {
 			assert.Equal(t, len(record.Value), dr.Value.PayloadSizeBytes)
 		})
 	}
+}
+
+func TestSchemaLocator_Resolve(t *testing.T) {
+	fixture, registry, err := schemaseed.Fake()
+	require.NoError(t, err)
+	defer registry.Close()
+
+	provider, err := schemafactory.NewSingleClientProvider(&config.Config{
+		SchemaRegistry: config.Schema{Enabled: true, URLs: []string{registry.URL()}},
+	})
+	require.NoError(t, err)
+	newClient := func(t *testing.T) schema.Client {
+		client, err := schema.NewCachedClient(provider, func(context.Context) (string, error) { return "single", nil })
+		require.NoError(t, err)
+		return client
+	}
+
+	guidOf := func(schemaContext, subject string) string {
+		for _, s := range fixture.Schemas {
+			if s.Context == schemaContext && s.Subject == subject {
+				return s.GUID
+			}
+		}
+		t.Fatalf("no fixture schema %s in %q", subject, schemaContext)
+		return ""
+	}
+	// Avro Customer is ID 2 in the default context and in .prod.
+	customer := guidOf(schemaseed.ContextDefault, "matrix-avro-default-value")
+	// Protobuf Shipment is only in .staging, as ID 2.
+	shipment := guidOf(schemaseed.ContextStaging, "matrix-proto-staging-value")
+
+	tests := []struct {
+		name           string
+		locator        schemaLocator
+		requestContext string
+		wantID         int
+		wantContext    string
+		wantErr        string
+	}{
+		{
+			name:           "an ID stays in the request context",
+			locator:        schemaLocator{id: 3},
+			requestContext: schemaseed.ContextStaging,
+			wantID:         3,
+			wantContext:    schemaseed.ContextStaging,
+		},
+		{
+			name:           "a GUID prefers the request context",
+			locator:        schemaLocator{guid: customer},
+			requestContext: schemaseed.ContextProd,
+			wantID:         2,
+			wantContext:    schemaseed.ContextProd,
+		},
+		{
+			name:           "a GUID falls back to the default context",
+			locator:        schemaLocator{guid: customer},
+			requestContext: schemaseed.ContextStaging,
+			wantID:         2,
+			wantContext:    schemaseed.ContextDefault,
+		},
+		{
+			name:           "a GUID falls back to the only context that has it",
+			locator:        schemaLocator{guid: shipment},
+			requestContext: schemaseed.ContextDefault,
+			wantID:         2,
+			wantContext:    schemaseed.ContextStaging,
+		},
+		{
+			name:    "an unknown GUID",
+			locator: schemaLocator{guid: testGUID},
+			wantErr: "schema GUID " + testGUID + " not found",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := schema.InContext(t.Context(), tc.requestContext)
+			resolved, id, err := tc.locator.resolve(ctx, newClient(t))
+			if tc.wantErr != "" {
+				require.EqualError(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantID, id)
+			assert.Equal(t, tc.wantContext, schema.ContextName(resolved))
+		})
+	}
+
+	t.Run("a GUID lookup ignores the request context and is cached", func(t *testing.T) {
+		client := newClient(t)
+		var mu sync.Mutex
+		var paths []string
+		registry.Intercept(func(_ http.ResponseWriter, r *http.Request) bool {
+			mu.Lock()
+			defer mu.Unlock()
+			paths = append(paths, r.URL.Path)
+			return false
+		})
+		for range 3 {
+			_, _, err := schemaLocator{guid: shipment}.resolve(schema.InContext(t.Context(), schemaseed.ContextProd), client)
+			require.NoError(t, err)
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		assert.Equal(t, []string{"/schemas/guids/" + shipment + "/ids"}, paths)
+	})
+
+	t.Run("no schema registry", func(t *testing.T) {
+		_, _, err := schemaLocator{guid: customer}.resolve(t.Context(), nil)
+		require.EqualError(t, err, "no schema registry configured")
+	})
+
+	t.Run("a registry without GUID routes", func(t *testing.T) {
+		schemaseed.DisableGUIDRoutes(registry)
+		_, _, err := schemaLocator{guid: customer}.resolve(t.Context(), newClient(t))
+		require.EqualError(t, err, "the schema registry does not support schema GUIDs, Redpanda supports them from 26.3")
+	})
 }

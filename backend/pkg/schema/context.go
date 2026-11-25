@@ -11,6 +11,8 @@ package schema
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -63,4 +65,31 @@ func ContextFromSubject(subject string) string {
 		return ""
 	}
 	return NormalizeContextName(m[1])
+}
+
+// IsRouteNotFound reports whether the registry has no such route, as opposed
+// to a registry error such as an unknown schema. A registry without schema
+// GUID support answers its GUID routes this way.
+func IsRouteNotFound(err error) bool {
+	const firstRegistryErrorCode = 40000
+	var respErr *sr.ResponseError
+	return errors.As(err, &respErr) && respErr.StatusCode == http.StatusNotFound && respErr.ErrorCode < firstRegistryErrorCode
+}
+
+// PickContextID chooses the schema ID to use for a GUID that exists in several
+// contexts: the one in the preferred context, then the default context, then
+// the first one listed. The returned context name is normalized. ok is false
+// if ids is empty.
+func PickContextID(ids []sr.ContextID, preferred string) (picked sr.ContextID, ok bool) {
+	preferred = NormalizeContextName(preferred)
+	for i, id := range ids {
+		id.Context = NormalizeContextName(id.Context)
+		switch {
+		case id.Context == preferred:
+			return id, true
+		case i == 0, id.Context == "" && picked.Context != "":
+			picked = id
+		}
+	}
+	return picked, len(ids) > 0
 }

@@ -8,8 +8,7 @@
 // by the Apache License, Version 2.0
 
 // Command cmd seeds a cluster with the schema locator fixture for manual
-// tests. It needs a cluster with Schema Registry contexts and without
-// authentication.
+// tests. It needs Redpanda 26.3 or later without authentication.
 package main
 
 import (
@@ -70,7 +69,7 @@ func run(brokers, registry string, reset bool, idBase int, topicPrefix string) e
 	}
 
 	for _, s := range fixture.Schemas {
-		fmt.Printf("%-9s id=%d %s\n", contextName(s.Context), s.ID, s.Subject)
+		fmt.Printf("%-9s id=%d guid=%s %s\n", contextName(s.Context), s.ID, s.GUID, s.Subject)
 	}
 	counts := make(map[string]int)
 	for _, sc := range fixture.Scenarios {

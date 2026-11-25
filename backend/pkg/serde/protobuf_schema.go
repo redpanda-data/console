@@ -53,7 +53,12 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 		return &RecordPayload{}, err
 	}
 
-	compiledProtoFiles, rootFilename, err := d.schemaClient.ProtoFilesByID(ctx, loc.id)
+	ctx, schemaID, err := loc.resolve(ctx, d.schemaClient)
+	if err != nil {
+		return &RecordPayload{}, err
+	}
+
+	compiledProtoFiles, rootFilename, err := d.schemaClient.ProtoFilesByID(ctx, schemaID)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("failed getting proto files: %w", err)
 	}
@@ -100,7 +105,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 		NormalizedPayload:   jsonBytes,
 		Encoding:            PayloadEncodingProtobuf,
 	}
-	loc.describe(ctx, rp)
+	loc.describe(ctx, schemaID, rp)
 	return rp, nil
 }
 

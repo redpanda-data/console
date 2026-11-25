@@ -34,7 +34,7 @@ func (JSONSchemaSerde) Name() PayloadEncoding {
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (JSONSchemaSerde) DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+func (d JSONSchemaSerde) DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	loc, err := locateSchema(record, payloadType)
 	if err != nil {
 		return &RecordPayload{}, err
@@ -46,12 +46,18 @@ func (JSONSchemaSerde) DeserializePayload(ctx context.Context, record *kgo.Recor
 		return &RecordPayload{}, err
 	}
 
+	// A schema ID needs no registry request, a GUID is looked up.
+	ctx, schemaID, err := loc.resolve(ctx, d.schemaClient)
+	if err != nil {
+		return &RecordPayload{}, err
+	}
+
 	rp := &RecordPayload{
 		NormalizedPayload:   jsonPayload,
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingJSON,
 	}
-	loc.describe(ctx, rp)
+	loc.describe(ctx, schemaID, rp)
 	return rp, nil
 }
 

@@ -42,7 +42,12 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 		return &RecordPayload{}, err
 	}
 
-	avroSch, err := d.schemaClient.AvroSchemaByID(ctx, loc.id)
+	ctx, schemaID, err := loc.resolve(ctx, d.schemaClient)
+	if err != nil {
+		return &RecordPayload{}, err
+	}
+
+	avroSch, err := d.schemaClient.AvroSchemaByID(ctx, schemaID)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("getting avro schema from registry: %w", err)
 	}
@@ -63,7 +68,7 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingAvro,
 	}
-	loc.describe(ctx, rp)
+	loc.describe(ctx, schemaID, rp)
 	return rp, nil
 }
 
