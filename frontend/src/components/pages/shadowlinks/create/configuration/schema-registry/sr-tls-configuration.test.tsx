@@ -10,7 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { rs } from '@rstest/core';
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { type DeepPartial, useForm } from 'react-hook-form';
@@ -197,7 +197,7 @@ describe('the SrTlsConfiguration', () => {
       await user.click(await screen.findByRole('option', { name: 'SR_MTLS_CLIENT_KEY' }));
 
       await waitFor(() => {
-        expect(formValues?.schemaRegistry?.mtls?.clientKey).toEqual({
+        expect(formValues?.schemaRegistry?.mtls?.clientKey).toStrictEqual({
           // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
           pemContent: '${secrets.SR_MTLS_CLIENT_KEY}',
           fileName: '',

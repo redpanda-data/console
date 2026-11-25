@@ -69,7 +69,7 @@ test.describe('security pages deep-link (cold cache)', () => {
 
     // Guard: no console errors mentioning undefined user / missing data.
     const suspicious = consoleErrors.filter((msg) => CACHE_MISS_ERROR_PATTERN.test(msg));
-    expect(suspicious).toEqual([]);
+    expect(suspicious).toStrictEqual([]);
   });
 
   test('direct-load /security/acls/<principal>/details renders for existing principal', async ({

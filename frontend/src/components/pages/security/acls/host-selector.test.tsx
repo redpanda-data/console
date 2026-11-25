@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 
 import { HostSelector } from './host-selector';
@@ -35,7 +36,9 @@ describe('the HostSelector', () => {
 
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
-        expect(router.state.location.search).toEqual({ host: '192.168.1.1' });
+        expect(Array.from(new URLSearchParams(router.state.location.searchStr))).toStrictEqual([
+          ['host', '192.168.1.1'],
+        ]);
       });
     });
 
@@ -49,7 +52,9 @@ describe('the HostSelector', () => {
 
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
-        expect(router.state.location.search).toEqual({ host: '192.168.1.1' });
+        expect(Array.from(new URLSearchParams(router.state.location.searchStr))).toStrictEqual([
+          ['host', '192.168.1.1'],
+        ]);
       });
 
       // Click second host
@@ -58,7 +63,9 @@ describe('the HostSelector', () => {
 
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
-        expect(router.state.location.search).toEqual({ host: '192.168.1.2' });
+        expect(Array.from(new URLSearchParams(router.state.location.searchStr))).toStrictEqual([
+          ['host', '192.168.1.2'],
+        ]);
       });
     });
 
@@ -80,7 +87,9 @@ describe('the HostSelector', () => {
 
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/security/acls/test-user/details');
-        expect(router.state.location.search).toEqual({ host: 'host@example.com' });
+        expect(Array.from(new URLSearchParams(router.state.location.searchStr))).toStrictEqual([
+          ['host', 'host@example.com'],
+        ]);
       });
     });
 
@@ -99,7 +108,9 @@ describe('the HostSelector', () => {
 
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/security/roles/my-role/details');
-        expect(router.state.location.search).toEqual({ host: '192.168.1.1' });
+        expect(Array.from(new URLSearchParams(router.state.location.searchStr))).toStrictEqual([
+          ['host', '192.168.1.1'],
+        ]);
       });
     });
   });

@@ -53,7 +53,7 @@ function inInterpreter(source: string): unknown {
 describe('embedded interpreter find/findAll', () => {
   test('initializes the injected payload and prototype API without mutating the host', () => {
     const hostHadFindAll = Object.hasOwn(Object.prototype, 'findAll');
-    expect(inInterpreter('[value, typeof Object.prototype.find, typeof Object.prototype.findAll]')).toEqual([
+    expect(inInterpreter('[value, typeof Object.prototype.find, typeof Object.prototype.findAll]')).toStrictEqual([
       {},
       'function',
       'function',
@@ -107,7 +107,7 @@ describe('embedded interpreter find/findAll', () => {
       if (key === 'first') throw new Error('user callback failed');
       return 'truthy';
     });`)
-    ).toEqual([2]);
+    ).toStrictEqual([2]);
   });
 
   test('keeps recursive pattern matching and case sensitivity', () => {
@@ -115,6 +115,6 @@ describe('embedded interpreter find/findAll', () => {
       inInterpreter(`value = {items: [{kind: 'ONE'}, {kind: 'one'}, {kind: 'other'}]};
       [Object.prototype.find.call(null, {kind: 'ONE'}, false) === value.items[0],
        Object.prototype.findAll.call(null, {kind: 'ONE'}, true).length];`)
-    ).toEqual([true, 2]);
+    ).toStrictEqual([true, 2]);
   });
 });

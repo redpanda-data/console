@@ -78,7 +78,7 @@ const DebugBundleLink = ({
         >
           {downloadFilename}
         </Button>
-        {Boolean(showDeleteButton) && (
+        {showDeleteButton && (
           <Tooltip>
             <TooltipTrigger
               render={
@@ -98,7 +98,7 @@ const DebugBundleLink = ({
           </Tooltip>
         )}
       </div>
-      {Boolean(showDatetime) && statusWithFilename.createdAt && (
+      {showDatetime && statusWithFilename.createdAt && (
         <div>Generated {timestampDate(statusWithFilename.createdAt).toLocaleString()}</div>
       )}
     </div>

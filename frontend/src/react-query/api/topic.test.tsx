@@ -64,7 +64,7 @@ describe('useLegacyListTopicsQuery', () => {
     const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data.topics).toEqual([{ topicName: 'orders', isInternal: false }]);
+    expect(result.current.data.topics).toStrictEqual([{ topicName: 'orders', isInternal: false }]);
   });
 });
 

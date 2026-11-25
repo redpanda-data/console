@@ -48,7 +48,7 @@ describe('usePipelineLint', () => {
   test('passes through live server-lint hints for valid YAML', () => {
     mockUseLintQuery.mockReturnValue(lintQueryResult({ data: { lintHints: [hint('missing field')] } }));
     const { result } = renderHook(() => usePipelineLint(VALID_YAML, {}, true));
-    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toEqual(['missing field']);
+    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toStrictEqual(['missing field']);
   });
 
   test('surfaces local YAML syntax errors, superseding save-error hints for the same broken doc', () => {
@@ -67,7 +67,7 @@ describe('usePipelineLint', () => {
     mockUseLintQuery.mockReturnValue(lintQueryResult({ data: { lintHints: [] } }));
     const yaml = 'input:\n  read_until:\n    input:\n      kafka: {}\noutput:\n  drop: {}';
     const { result } = renderHook(() => usePipelineLint(yaml, {}, true));
-    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toEqual([
+    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toStrictEqual([
       'read_until needs a check or an idle_timeout to know when to stop.',
     ]);
   });
@@ -85,13 +85,13 @@ describe('usePipelineLint', () => {
       lintQueryResult({ isError: true, error: new ConnectError('service down', Code.Unavailable) })
     );
     const { result } = renderHook(() => usePipelineLint(VALID_YAML, {}, true));
-    expect(result.current.lintHints).toEqual({});
+    expect(result.current.lintHints).toStrictEqual({});
   });
 
   test('does not run client-side lint when disabled (view mode)', () => {
     mockUseLintQuery.mockReturnValue(lintQueryResult({}));
     const { result } = renderHook(() => usePipelineLint(SYNTAX_ERROR_YAML, {}, false));
-    expect(result.current.lintHints).toEqual({});
+    expect(result.current.lintHints).toStrictEqual({});
   });
 
   test('skips the server lint for blank content instead of surfacing "value is required"', () => {
@@ -100,7 +100,7 @@ describe('usePipelineLint', () => {
     for (const blank of ['', '   \n\t']) {
       const { result } = renderHook(() => usePipelineLint(blank, {}, true));
       expect(mockUseLintQuery).toHaveBeenLastCalledWith(blank, { enabled: false });
-      expect(result.current.lintHints).toEqual({});
+      expect(result.current.lintHints).toStrictEqual({});
       expect(result.current.isLintPending).toBe(false);
     }
   });
@@ -109,6 +109,8 @@ describe('usePipelineLint', () => {
     mockUseLintQuery.mockReturnValue(lintQueryResult({ isPending: true }));
     const saveError = { save0: hint('config_yaml: value is required') };
     const { result } = renderHook(() => usePipelineLint('', saveError, true));
-    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toEqual(['config_yaml: value is required']);
+    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toStrictEqual([
+      'config_yaml: value is required',
+    ]);
   });
 });

@@ -137,7 +137,7 @@ describe('getSourceFenceStep', () => {
   });
 
   test('waits while links resolve or the source’s fence loads', () => {
-    expect(getSourceFenceStep({ source: undefined, link: sasl, resolving: true })).toEqual({
+    expect(getSourceFenceStep({ source: undefined, link: sasl, resolving: true })).toStrictEqual({
       kind: 'loading',
       source: undefined,
     });
@@ -167,7 +167,7 @@ describe('getLagStep', () => {
   test('lists the topics still behind, worst first', () => {
     const lag = getLagStep([topic('a', 3), topic('b', 1204), topic('c', 0)], 'ready');
     expect(lag).toMatchObject({ status: 'draining', syncing: 3, caughtUp: 1 });
-    expect(lag.behind.map((entry) => entry.topicName)).toEqual(['b', 'a']);
+    expect(lag.behind.map((entry) => entry.topicName)).toStrictEqual(['b', 'a']);
   });
 
   test('reports paused and faulted topics, and a faulted one means the link hasn’t caught up', () => {
@@ -185,7 +185,7 @@ describe('getFailoverReadiness', () => {
   const fencedStep = step(cloudSource('fenced'));
 
   test('unlocks failover once the source is fenced and lag is zero', () => {
-    expect(getFailoverReadiness({ topics: caughtUp, fence: fencedStep }).failover).toEqual({
+    expect(getFailoverReadiness({ topics: caughtUp, fence: fencedStep }).failover).toStrictEqual({
       done: false,
       inProgress: 0,
       ready: true,
@@ -224,7 +224,7 @@ describe('getFailoverReadiness', () => {
       fence: fencedStep,
     });
 
-    expect(readiness.failover).toEqual({
+    expect(readiness.failover).toStrictEqual({
       done: false,
       inProgress: 1,
       ready: false,
@@ -262,7 +262,7 @@ describe('getFailoverReadiness', () => {
       fence: fencedStep,
     });
     expect(readiness.failover).toMatchObject({ done: true, ready: false });
-    expect(getFailoverStepStates(readiness)).toEqual({
+    expect(getFailoverStepStates(readiness)).toStrictEqual({
       settings: 'done',
       fence: 'done',
       fenced: 'done',
@@ -306,7 +306,7 @@ describe('getLinkIdentity', () => {
           },
         })
       )
-    ).toEqual({ authentication: 'sasl', principal: 'shadow-orders' });
+    ).toStrictEqual({ authentication: 'sasl', principal: 'shadow-orders' });
     expect(
       getLinkIdentity(
         linkWith({
@@ -315,7 +315,7 @@ describe('getLinkIdentity', () => {
           },
         })
       )
-    ).toEqual({ authentication: 'sasl', principal: 'plain' });
+    ).toStrictEqual({ authentication: 'sasl', principal: 'plain' });
   });
 
   test('a client certificate without SASL is mTLS; neither is no authentication', () => {
@@ -323,9 +323,9 @@ describe('getLinkIdentity', () => {
       getLinkIdentity(
         linkWith({ tlsSettings: { enabled: true, tlsSettings: { case: 'tlsPemSettings', value: { cert: 'PEM' } } } })
       )
-    ).toEqual({ authentication: 'mtls' });
-    expect(getLinkIdentity(linkWith({ tlsSettings: { enabled: true } }))).toEqual({ authentication: 'none' });
-    expect(getLinkIdentity(undefined)).toEqual({});
+    ).toStrictEqual({ authentication: 'mtls' });
+    expect(getLinkIdentity(linkWith({ tlsSettings: { enabled: true } }))).toStrictEqual({ authentication: 'none' });
+    expect(getLinkIdentity(undefined)).toStrictEqual({});
   });
 });
 

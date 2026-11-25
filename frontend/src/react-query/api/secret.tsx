@@ -116,6 +116,7 @@ export const useListSecretsQuery = (
     queryKey: [
       ...createConnectQueryKey({
         schema: SecretService.method.listSecrets,
+        transport,
         cardinality: 'finite',
       }),
       { nameContains: nameContains ?? '' },

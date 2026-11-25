@@ -8,7 +8,7 @@ const decode = (value: unknown) => z.object({ count: z.number() }).parse(value);
 describe('flat session persistence', () => {
   test('decodes existing flat data and supplies the Zustand envelope', () => {
     sessionStorage.setItem('flat-contract', '{"count":0}');
-    expect(createFlatStorage(decode).getItem('flat-contract')).toEqual({ state: { count: 0 }, version: 0 });
+    expect(createFlatStorage(decode).getItem('flat-contract')).toStrictEqual({ state: { count: 0 }, version: 0 });
   });
 
   test('does not pretend a malformed stored value has the caller generic type', () => {

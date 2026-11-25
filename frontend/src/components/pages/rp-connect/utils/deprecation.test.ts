@@ -54,7 +54,7 @@ describe('deprecationNotice', () => {
   test('names the replacement and links its docs', () => {
     const notice = deprecationNotice(KAFKA_FRANZ_INPUT, CATALOG);
     const { docsUrl, ...ref } = notice;
-    expect(ref).toEqual({
+    expect(ref).toStrictEqual({
       name: 'kafka_franz',
       type: 'input',
       replacement: { name: 'redpanda', type: 'input' },
@@ -63,7 +63,7 @@ describe('deprecationNotice', () => {
   });
 
   test('keeps a replacement of another component type', () => {
-    expect(deprecationNotice(JIRA_PROCESSOR, CATALOG).replacement).toEqual({ name: 'jira', type: 'input' });
+    expect(deprecationNotice(JIRA_PROCESSOR, CATALOG).replacement).toStrictEqual({ name: 'jira', type: 'input' });
   });
 
   test('drops a replacement this dataplane does not serve, and links the component’s own docs', () => {
@@ -93,16 +93,16 @@ const usagesIn = (yaml: string) =>
 
 describe('findDeprecatedUsages', () => {
   test('finds nothing when the config uses no deprecated component', () => {
-    expect(usagesIn('input:\n  generate:\n    mapping: root = {}\n')).toEqual([]);
+    expect(usagesIn('input:\n  generate:\n    mapping: root = {}\n')).toStrictEqual([]);
   });
 
   test('points at the component key, whatever keys come before it', () => {
     const [usage] = findDeprecatedUsages('input:\n  label: source\n  kafka_franz:\n    topics: [a]\n', CATALOG);
-    expect(usage.range).toEqual({ startLineNumber: 3, startColumn: 3, endLineNumber: 3, endColumn: 14 });
+    expect(usage.range).toStrictEqual({ startLineNumber: 3, startColumn: 3, endLineNumber: 3, endColumn: 14 });
   });
 
   test('matches by component type, not just name', () => {
-    expect(usagesIn('input:\n  jira: {}\noutput:\n  kafka:\n    topic: a\n')).toEqual(['output:kafka@4']);
+    expect(usagesIn('input:\n  jira: {}\noutput:\n  kafka:\n    topic: a\n')).toStrictEqual(['output:kafka@4']);
   });
 
   test('follows component-typed fields into nested components', () => {
@@ -127,7 +127,7 @@ describe('findDeprecatedUsages', () => {
       '    output:',
       '      kafka: {}',
     ].join('\n');
-    expect(usagesIn(yaml)).toEqual([
+    expect(usagesIn(yaml)).toStrictEqual([
       'input:kafka_franz@4',
       'processor:jira@6',
       'processor:jira@10',
@@ -137,6 +137,6 @@ describe('findDeprecatedUsages', () => {
   });
 
   test('keeps flagging the key while its value is mid-edit', () => {
-    expect(usagesIn('input:\n  kafka_franz: [\n')).toEqual(['input:kafka_franz@2']);
+    expect(usagesIn('input:\n  kafka_franz: [\n')).toStrictEqual(['input:kafka_franz@2']);
   });
 });

@@ -46,11 +46,12 @@ export function discoverVariants() {
   const entries = readdirSync(testsDir, { withFileTypes: true });
 
   for (const entry of entries) {
-    if (entry.isDirectory() && entry.name.startsWith('test-variant-')) {
-      const variant = readVariant(entry.name);
-      if (variant) {
-        variants.push(variant);
-      }
+    if (!(entry.isDirectory() && entry.name.startsWith('test-variant-'))) {
+      continue;
+    }
+    const variant = readVariant(entry.name);
+    if (variant) {
+      variants.push(variant);
     }
   }
 

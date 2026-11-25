@@ -64,7 +64,7 @@ describe('the Console legacy Module Federation app expose', () => {
 
     expect(element.$$typeof).toBe(Symbol.for('react.element'));
     expect(element.type).toBe('div');
-    expect(element.props.style).toEqual({ height: '100%', width: '100%' });
+    expect(element.props.style).toStrictEqual({ height: '100%', width: '100%' });
     expect(typeof element.ref).toBe('function');
   });
 

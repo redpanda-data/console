@@ -27,7 +27,7 @@ test('local E2E builds compile the app once with fixture metadata and no release
       .trim()
       .split('\n')
       .map((line): unknown => JSON.parse(line));
-    expect(commands).toEqual([
+    expect(commands).toStrictEqual([
       {
         tool: 'rsbuild',
         args: ['build'],

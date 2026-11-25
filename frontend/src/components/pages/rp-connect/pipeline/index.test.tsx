@@ -1512,7 +1512,7 @@ describe('the PipelinePage', () => {
         releaseUpdate();
 
         await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/rp-connect/test-pipeline' }));
-        expect(autosaveEntry('test-pipeline')?.serviceAccount).toEqual({
+        expect(autosaveEntry('test-pipeline')?.serviceAccount).toStrictEqual({
           serviceAccountId: 'sa-123',
           secretName: 'ORDERS_SA',
         });
@@ -1572,7 +1572,7 @@ describe('the PipelinePage', () => {
         await addServiceAccountToOutput(user);
         await waitFor(
           () =>
-            expect(rpcnEditorAutosave.get('test-pipeline')?.serviceAccount).toEqual({
+            expect(rpcnEditorAutosave.get('test-pipeline')?.serviceAccount).toStrictEqual({
               serviceAccountId: 'sa-123',
               secretName: 'ORDERS_SA',
             }),

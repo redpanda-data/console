@@ -81,7 +81,7 @@ describe('labelsToMap', () => {
         { key: 'env', value: 'production' },
         { key: 'team', value: 'data' },
       ])
-    ).toEqual({ env: 'production', team: 'data' });
+    ).toStrictEqual({ env: 'production', team: 'data' });
   });
 
   test('skips rows with an empty key or value', () => {
@@ -92,7 +92,7 @@ describe('labelsToMap', () => {
         { key: '', value: 'orphan' },
         { key: 'team', value: 'data' },
       ])
-    ).toEqual({ team: 'data' });
+    ).toStrictEqual({ team: 'data' });
   });
 });
 
@@ -108,7 +108,7 @@ describe('the SCOPE_OPTIONS labels', () => {
   test('each option has a string label and a renderable icon component', () => {
     const expectedLabels = ['AI Gateway', 'MCP Server', 'AI Agent', 'Redpanda Connect', 'Redpanda Cluster'];
 
-    expect(SCOPE_OPTIONS.map((o) => o.label)).toEqual(expectedLabels);
+    expect(SCOPE_OPTIONS.map((o) => o.label)).toStrictEqual(expectedLabels);
 
     for (const option of SCOPE_OPTIONS) {
       // Icons can be functions (lucide) or objects (forwardRef components)

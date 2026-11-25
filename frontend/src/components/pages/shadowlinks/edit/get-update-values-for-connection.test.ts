@@ -65,7 +65,7 @@ describe('getUpdateValuesForConnection', () => {
   test('should return empty fieldMaskPaths when no changes', () => {
     const result = getUpdateValuesForConnection(baseFormValues, baseFormValues);
 
-    expect(result.fieldMaskPaths).toEqual([]);
+    expect(result.fieldMaskPaths).toStrictEqual([]);
   });
 
   describe('bootstrap servers changes', () => {
@@ -116,7 +116,7 @@ describe('getUpdateValuesForConnection', () => {
       const result = getUpdateValuesForConnection(updated, original);
 
       expect(result.fieldMaskPaths).not.toContain('configurations.client_options.bootstrap_servers');
-      expect(result.fieldMaskPaths).toEqual([]);
+      expect(result.fieldMaskPaths).toStrictEqual([]);
     });
   });
 
@@ -460,7 +460,7 @@ describe('getUpdateValuesForConnection', () => {
 
       const result = getUpdateValuesForConnection(values, baseFormValues);
 
-      expect(result.value.bootstrapServers).toEqual(['kafka1:9092', 'kafka2:9092']);
+      expect(result.value.bootstrapServers).toStrictEqual(['kafka1:9092', 'kafka2:9092']);
       expect(result.value.metadataMaxAgeMs).toBe(10_000);
       expect(result.value.connectionTimeoutMs).toBe(1000);
       expect(result.value.retryBackoffMs).toBe(100);

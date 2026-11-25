@@ -9,7 +9,7 @@ test('ignores empty header values, including keyed rows, without changing produc
     { key: '', value: 'value' },
   ]);
 
-  expect(headers.map(({ key, value }) => ({ key, value: new TextDecoder().decode(value) }))).toEqual([
+  expect(headers.map(({ key, value }) => ({ key, value: new TextDecoder().decode(value) }))).toStrictEqual([
     { key: 'name', value: '世界' },
     { key: '', value: 'value' },
   ]);

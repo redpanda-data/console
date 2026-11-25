@@ -220,11 +220,11 @@ describe('rpcn-editor-autosave', () => {
     test('drops anything unparseable instead of failing to load', () => {
       localStorage.setItem(EDITOR_AUTOSAVE_STORAGE_KEY, '{not json');
       useRpcnEditorAutosaveStore.getState().refresh();
-      expect(useRpcnEditorAutosaveStore.getState().entries).toEqual([]);
+      expect(useRpcnEditorAutosaveStore.getState().entries).toStrictEqual([]);
 
       localStorage.setItem(EDITOR_AUTOSAVE_STORAGE_KEY, JSON.stringify([{ targetKey: 'p1' }, 'nonsense', null]));
       useRpcnEditorAutosaveStore.getState().refresh();
-      expect(useRpcnEditorAutosaveStore.getState().entries).toEqual([]);
+      expect(useRpcnEditorAutosaveStore.getState().entries).toStrictEqual([]);
     });
 
     // The browser-local drafts prototype this replaced; superseded by server-side drafts.
@@ -255,18 +255,18 @@ describe('rpcn-editor-autosave', () => {
     });
 
     test('drops an entry written by another version', () => {
-      expect(reloadWith({ ...persisted(), version: AUTOSAVE_ENTRY_VERSION + 1 })).toEqual([]);
+      expect(reloadWith({ ...persisted(), version: AUTOSAVE_ENTRY_VERSION + 1 })).toStrictEqual([]);
       const { version: _version, ...unversioned } = persisted();
-      expect(reloadWith(unversioned)).toEqual([]);
+      expect(reloadWith(unversioned)).toStrictEqual([]);
     });
 
     test('drops an entry whose settings would not survive the form', () => {
-      expect(reloadWith({ ...persisted(), tags: [null] })).toEqual([]);
-      expect(reloadWith({ ...persisted(), tags: [{ key: 'team' }] })).toEqual([]);
+      expect(reloadWith({ ...persisted(), tags: [null] })).toStrictEqual([]);
+      expect(reloadWith({ ...persisted(), tags: [{ key: 'team' }] })).toStrictEqual([]);
       const { computeUnits: _units, ...noUnits } = persisted();
-      expect(reloadWith(noUnits)).toEqual([]);
-      expect(reloadWith({ ...persisted(), description: undefined })).toEqual([]);
-      expect(reloadWith({ ...persisted(), basedOnUpdateTime: 'yesterday' })).toEqual([]);
+      expect(reloadWith(noUnits)).toStrictEqual([]);
+      expect(reloadWith({ ...persisted(), description: undefined })).toStrictEqual([]);
+      expect(reloadWith({ ...persisted(), basedOnUpdateTime: 'yesterday' })).toStrictEqual([]);
     });
   });
 
@@ -305,7 +305,7 @@ describe('rpcn-editor-autosave', () => {
     test('removes the expired buffer from storage rather than only hiding it', () => {
       storeAged(MAX_AUTOSAVE_AGE_MS + 60_000);
 
-      expect(stored()).toEqual([]);
+      expect(stored()).toStrictEqual([]);
     });
   });
 
@@ -318,7 +318,7 @@ describe('rpcn-editor-autosave', () => {
 
       rpcnEditorAutosave.clearAll();
 
-      expect(stored()).toEqual([]);
+      expect(stored()).toStrictEqual([]);
       mockConfig.clusterId = 'cluster-a';
       expect(rpcnEditorAutosave.get('p1')).toBeNull();
     });
@@ -348,7 +348,7 @@ describe('rpcn-editor-autosave', () => {
       rpcnEditorAutosave.save(buffer({ serviceAccount: account }));
       useRpcnEditorAutosaveStore.getState().refresh();
 
-      expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.serviceAccount).toEqual(account);
+      expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.serviceAccount).toStrictEqual(account);
     });
 
     test('keeps a buffer written without one', () => {

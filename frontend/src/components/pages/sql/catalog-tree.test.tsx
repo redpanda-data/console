@@ -113,7 +113,7 @@ describe('the CatalogTree', () => {
 
       expect(screen.getByRole('tree', { name: 'Catalogs' })).toBeInTheDocument();
       const items = screen.getAllByRole('treeitem');
-      expect(items.map((i) => i.getAttribute('aria-level'))).toEqual(['1', '2', '3', '3']);
+      expect(items.map((i) => i.getAttribute('aria-level'))).toStrictEqual(['1', '2', '3', '3']);
       expect(screen.getByRole('treeitem', { name: REDPANDA_CATALOG_RE })).toHaveAttribute('aria-expanded', 'true');
       expect(screen.getByRole('treeitem', { name: ORDERS_RE })).toBeInTheDocument();
     });

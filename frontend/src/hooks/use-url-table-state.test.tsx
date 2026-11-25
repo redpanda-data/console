@@ -32,7 +32,7 @@ describe('url table changes', () => {
     expect(committed?.get('itemSortId')).toBe('size');
     expect(committed?.get('itemSortDesc')).toBe('false');
     expect(committed?.get('itemPage')).toBeNull();
-    expect(settings).toEqual({ pageSize: 10, sortId: 'size', sortDesc: false });
+    expect(settings).toStrictEqual({ pageSize: 10, sortId: 'size', sortDesc: false });
     expect(reportActionError).not.toHaveBeenCalled();
   });
 

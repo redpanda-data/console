@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { render, screen } from 'test-utils';
 

@@ -111,7 +111,7 @@ describe('useClusterFenceStatusQuery', () => {
 
     await waitFor(() => expect(result.current.known).toBe(true));
     expect(result.current.summary).toMatchObject({ phase: 'fenced', exemptPrincipals: ['shadow-orders'] });
-    expect(result.current.brokers).toEqual([
+    expect(result.current.brokers).toStrictEqual([
       { nodeId: 1, status: 'confirmed', copy: { phase: 'fenced', revision: 3n }, blocks: true },
     ]);
     expect(result.current.blocking).toBe(true);
@@ -142,7 +142,7 @@ describe('useClusterFenceStatusQuery', () => {
     await waitFor(() => expect(result.current.known).toBe(true));
     expect(result.current.blocking).toBe(false);
     await act(() => result.current.refetch());
-    await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'fenced', revision: 2n }]));
+    await waitFor(() => expect(result.current.ownCopies).toStrictEqual([{ nodeId: 1, phase: 'fenced', revision: 2n }]));
     expect(result.current.known).toBe(false);
     expect(result.current.blocking).toBe(true);
   });
@@ -175,7 +175,7 @@ describe('useClusterFenceStatusQuery', () => {
       await waitFor(() => expect(result.current.known).toBe(false));
       if (label === 'failing') {
         await waitFor(() =>
-          expect(result.current.ownCopies).toEqual([{ nodeId: 1, errorMessage: 'broker unreachable' }])
+          expect(result.current.ownCopies).toStrictEqual([{ nodeId: 1, errorMessage: 'broker unreachable' }])
         );
       }
       expect(result.current.blocking).toBe(true);
@@ -186,13 +186,13 @@ describe('useClusterFenceStatusQuery', () => {
     const { result } = renderStatusQuery(twoLeaderLosses());
     await waitFor(() => expect(result.current.known).toBe(true));
     await refetchUntil(result, () =>
-      expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'unfenced', revision: 1n }])
+      expect(result.current.ownCopies).toStrictEqual([{ nodeId: 1, phase: 'unfenced', revision: 1n }])
     );
     expect(result.current.blocking).toBe(false);
 
     await refetchUntil(result, () => expect(result.current.summary.phase).toBe('fenced'));
     await refetchUntil(result, () => expect(result.current.known).toBe(false));
-    expect(result.current.ownCopies).toEqual([{ nodeId: 1 }]);
+    expect(result.current.ownCopies).toStrictEqual([{ nodeId: 1, errorMessage: undefined }]);
     expect(result.current.blocking).toBe(true);
   });
 
@@ -214,7 +214,9 @@ describe('useClusterFenceStatusQuery', () => {
     const { result } = renderStatusQuery(transport);
     await waitFor(() => expect(result.current.blocking).toBe(true));
     await act(() => result.current.refetch());
-    await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'unfenced', revision: 4n }]));
+    await waitFor(() =>
+      expect(result.current.ownCopies).toStrictEqual([{ nodeId: 1, phase: 'unfenced', revision: 4n }])
+    );
     expect(result.current.blocking).toBe(false);
   });
 
@@ -341,7 +343,7 @@ describe('useFenceClusterMutation', () => {
       await result.current.mutateAsync({ settings: reviewed, opened: openedAt(4) });
     });
 
-    expect(calls).toEqual(['save', 'fence']);
+    expect(calls).toStrictEqual(['save', 'fence']);
     expect(saveRequests[0]).toMatchObject({
       expectedRevision: 4n,
       updateMask: { paths: ['read_policy'] },
@@ -360,7 +362,7 @@ describe('useFenceClusterMutation', () => {
       await result.current.mutateAsync({ settings: { ...reviewed, ...openedAt(4) }, opened: openedAt(4) });
     });
 
-    expect(calls).toEqual(['fence']);
+    expect(calls).toStrictEqual(['fence']);
     expect(fenceRequests[0]).toMatchObject({ expectedRevision: 4n });
   });
 
@@ -375,7 +377,7 @@ describe('useFenceClusterMutation', () => {
         .catch((error: unknown) => error);
     });
 
-    expect(calls).toEqual(['save']);
+    expect(calls).toStrictEqual(['save']);
     expect(isStaleRevisionError(failure)).toBe(true);
     expect(result.current.savedFence).toBeUndefined();
   });
@@ -391,7 +393,7 @@ describe('useFenceClusterMutation', () => {
       await result.current.mutateAsync({ settings: reviewed, opened: openedAt(4) }).catch(() => undefined);
     });
 
-    expect(calls).toEqual(['save', 'fence']);
+    expect(calls).toStrictEqual(['save', 'fence']);
     expect(result.current.savedFence).toMatchObject({ revision: 5n, exemptPrincipals: ['shadow-orders'] });
     act(() => result.current.reset());
     expect(result.current.savedFence).toBeUndefined();
@@ -461,7 +463,9 @@ describe('useClusterFenceStatusQuery when the status can’t be read', () => {
 
     const { result } = renderHook(() => useClusterFenceStatusQuery(), { wrapper });
 
-    await waitFor(() => expect(result.current.ownCopies).toEqual([{ nodeId: 1, phase: 'fenced', revision: 18n }]));
+    await waitFor(() =>
+      expect(result.current.ownCopies).toStrictEqual([{ nodeId: 1, phase: 'fenced', revision: 18n }])
+    );
     expect(result.current.known).toBe(false);
     expect(result.current.blocking).toBe(true);
   });

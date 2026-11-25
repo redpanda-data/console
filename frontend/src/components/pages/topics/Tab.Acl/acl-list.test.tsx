@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { rs } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 

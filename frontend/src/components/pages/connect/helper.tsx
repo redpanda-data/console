@@ -387,9 +387,7 @@ const connectorMetadata: ConnectorMetadata[] = [
   } as const,
 ];
 
-const connectorMetadataMatchCache: {
-  [className: string]: ConnectorMetadata;
-} = {};
+const connectorMetadataMatchCache: Record<string, ConnectorMetadata> = {};
 
 // Quick and dirty cache: if it has too many entries, remove some
 function trimConnectorMetadataCache() {

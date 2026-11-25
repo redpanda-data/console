@@ -10,6 +10,7 @@
  */
 
 import type { Interceptor } from '@connectrpc/connect';
+import { beforeEach, describe, expect, test } from '@rstest/core';
 import { useQuery } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -476,8 +477,8 @@ describe('the ConsoleApp', () => {
       rerender(<ConsoleApp {...defaultProps} initialPath="/groups" />);
 
       // Router should NOT have been recreated
-      expect(rs.mocked(createRouter).mock.calls.length).toBe(createRouterCallCount);
-      expect(rs.mocked(createMemoryHistory).mock.calls.length).toBe(createMemoryHistoryCallCount);
+      expect(rs.mocked(createRouter)).toHaveBeenCalledTimes(createRouterCallCount);
+      expect(rs.mocked(createMemoryHistory)).toHaveBeenCalledTimes(createMemoryHistoryCallCount);
     });
 
     test('uses first initialPath for memory history, ignores subsequent changes', async () => {
@@ -498,7 +499,7 @@ describe('the ConsoleApp', () => {
 
       // Changing initialPath should not create a new memory history
       rerender(<ConsoleApp {...defaultProps} initialPath="/schema-registry" />);
-      expect(rs.mocked(createMemoryHistory).mock.calls.length).toBe(callCount);
+      expect(rs.mocked(createMemoryHistory)).toHaveBeenCalledTimes(callCount);
     });
   });
 

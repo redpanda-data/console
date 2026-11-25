@@ -70,7 +70,7 @@ describe('computeMetadata', () => {
         { id: '1', key: 'owner', value: 'team-a' },
         { id: '2', key: 'empty', value: '' },
       ])
-    ).toEqual({ properties: { owner: 'team-a' } });
+    ).toStrictEqual({ properties: { owner: 'team-a' } });
     expect(computeMetadata([{ id: '1', key: '', value: '' }])).toBeUndefined();
   });
 });
@@ -104,7 +104,7 @@ describe('addVersionEditorState', () => {
       references: [{ name: 'Car', subject: 'car', version: 1, context: '.staging' }],
     });
     expect(state.schemaText).toBe(JSON.stringify(JSON.parse(AVRO_CAR), undefined, 4));
-    expect(state.metadataProperties.map(({ key, value }) => [key, value])).toEqual([
+    expect(state.metadataProperties.map(({ key, value }) => [key, value])).toStrictEqual([
       ['owner', 'team-a'],
       ['', ''],
     ]);
@@ -118,7 +118,7 @@ describe('addVersionEditorState', () => {
     );
 
     expect(state).toMatchObject({ userInput: ':.staging:orders-value', context: '', schemaText: PROTO_CAR });
-    expect(state.metadataProperties.map(({ key, value }) => [key, value])).toEqual([['', '']]);
+    expect(state.metadataProperties.map(({ key, value }) => [key, value])).toStrictEqual([['', '']]);
   });
 });
 
@@ -129,7 +129,7 @@ describe('subjectOptionsByContext', () => {
       { name: ':.staging:cars-value', isSoftDeleted: false },
     ]);
 
-    expect(grouped.get(DEFAULT_CONTEXT_ID)).toEqual([{ value: 'orders-value' }]);
-    expect(grouped.get('.staging')).toEqual([{ value: 'cars-value' }]);
+    expect(grouped.get(DEFAULT_CONTEXT_ID)).toStrictEqual([{ value: 'orders-value' }]);
+    expect(grouped.get('.staging')).toStrictEqual([{ value: 'cars-value' }]);
   });
 });

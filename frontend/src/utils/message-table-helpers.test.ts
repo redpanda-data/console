@@ -119,7 +119,7 @@ describe('trimSlidingWindow', () => {
       virtualStartIndex: 0,
     });
     expect(result.trimCount).toBe(100);
-    expect(result.messages.length).toBe(150);
+    expect(result.messages).toHaveLength(150);
     expect(result.windowStartPage).toBe(2);
     expect(result.virtualStartIndex).toBe(100);
   });
@@ -181,7 +181,7 @@ describe('trimSlidingWindow', () => {
     expect(result.trimCount).toBe(100);
     expect(result.windowStartPage).toBe(3 + 2);
     expect(result.virtualStartIndex).toBe(200 + 100);
-    expect(result.messages.length).toBe(150);
+    expect(result.messages).toHaveLength(150);
   });
 
   test('returns trimCount 0 when user is on first pages', () => {

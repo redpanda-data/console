@@ -20,6 +20,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 **6 tests** covering list viewing, search, and filtering operations.
 
 #### 1.1 View Topics List
+
 - Navigate to `/topics`
 - Verify page elements visible:
   - Create topic button (testId: `create-topic-button`)
@@ -28,6 +29,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
   - Topics table (testId: `topics-table`)
 
 #### 1.2 Search Topics - Exact Match
+
 - Create test topic with unique name
 - Search for the exact topic name
 - Verify topic is visible in filtered results
@@ -35,18 +37,21 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify original topic is hidden
 
 #### 1.3 Search Topics - Regex Pattern
+
 - Create 3 topics: 2 with same prefix, 1 different
 - Apply regex pattern matching prefix (e.g., `^regex-test.*`)
 - Verify matching topics visible
 - Verify non-matching topic hidden
 
 #### 1.4 Clear Search Filter
+
 - Create test topic
 - Apply search filter that hides the topic
 - Clear the search input
 - Verify topic becomes visible again
 
 #### 1.5 Toggle Show Internal Topics
+
 - Navigate to topics list
 - Uncheck "Show internal topics" checkbox
 - Verify internal topics (e.g., `_schemas`) hidden
@@ -54,6 +59,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify internal topics visible
 
 #### 1.6 Persist Internal Topics Setting
+
 - Check "Show internal topics" checkbox
 - Verify `_schemas` topic visible
 - Reload page
@@ -68,6 +74,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 **7 tests** covering topic creation flows and validation.
 
 #### 2.1 Create Topic with Default Settings
+
 - Navigate to `/topics`
 - Click create topic button (testId: `create-topic-button`)
 - Verify modal opens, topic name field focused
@@ -77,6 +84,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify topic appears in list (testId: `topic-link-{topicName}`)
 
 #### 2.2 Create Topic with Custom Configuration
+
 - Open create topic modal
 - Fill topic name
 - Set partitions to 6 (placeholder: `/partitions/i`)
@@ -86,12 +94,14 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify configuration page loads (testId: `config-group-table`)
 
 #### 2.3 Validate Empty Topic Name
+
 - Open create topic modal
 - Leave topic name empty
 - Verify create button disabled (testId: `onOk-button`)
 - Click cancel to close modal
 
 #### 2.4 Validate Invalid Topic Name Characters
+
 - Open create topic modal
 - Enter invalid topic name with spaces and special chars
 - If button enabled, click shows validation error
@@ -99,6 +109,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Modal remains open
 
 #### 2.5 Validate Replication Factor
+
 - Open create topic modal
 - Enter topic name
 - Try setting replication factor to 999 (placeholder: `/replication/i`)
@@ -106,6 +117,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Cancel modal
 
 #### 2.6 Cancel Topic Creation
+
 - Open create topic modal
 - Fill some values
 - Click Cancel button
@@ -113,6 +125,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify topic not created
 
 #### 2.7 Create and Verify in Multiple Views
+
 - Create topic through modal
 - Verify in topics list
 - Navigate to topic details
@@ -128,6 +141,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 **5 tests** covering topic details navigation and tab functionality.
 
 #### 3.1 Navigate to Topic Details
+
 - Create test topic
 - Navigate to topics list
 - Click topic link (testId: `topic-link-{topicName}`)
@@ -136,6 +150,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify tabs visible (role: `tablist`)
 
 #### 3.2 View Messages Tab (Default)
+
 - Create test topic
 - Click topic link
 - Verify tablist visible
@@ -143,6 +158,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify message-related elements present
 
 #### 3.3 Navigate to Tab via URL Hash
+
 - Create test topic
 - Navigate directly to `/topics/{topicName}#configuration`
 - Verify configuration tab active (testId: `config-group-table`)
@@ -150,6 +166,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify partitions content visible
 
 #### 3.4 View Configuration Tab with Grouped Settings
+
 - Create test topic
 - Navigate to configuration tab
 - Verify config groups visible in expected order:
@@ -160,6 +177,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify groups maintain order
 
 #### 3.5 Navigate Back via Breadcrumb
+
 - Create test topic
 - Navigate to topic details
 - Click "Topics" breadcrumb link
@@ -173,12 +191,14 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 **7 tests** covering message production operations.
 
 #### 4.1 Produce Simple Text Message
+
 - Create test topic
 - Produce message via helper
 - Navigate to messages tab
 - Verify message content visible
 
-#### 4.2 Produce Message with Key *(skipped)*
+#### 4.2 Produce Message with Key _(skipped)_
+
 - Create test topic
 - Navigate to produce page
 - Fill key editor (testId: `produce-key-editor`)
@@ -187,6 +207,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify message produced
 
 #### 4.3 Produce Multiple Messages in Sequence
+
 - Create test topic
 - Produce 3 messages sequentially via UI
 - Each message: navigate to produce, fill editor, click produce
@@ -195,6 +216,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify all 3 messages visible
 
 #### 4.4 Produce Large Message
+
 - Create test topic
 - Navigate to produce page
 - Generate 30KB+ content
@@ -207,6 +229,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify payload content visible (testId: `payload-content`)
 
 #### 4.5 Navigate to Produce Page
+
 - Create test topic
 - Navigate to produce page
 - Verify produce button visible (testId: `produce-button`)
@@ -215,6 +238,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify heading indicates produce/publish
 
 #### 4.6 Handle Empty Message Production
+
 - Create test topic
 - Navigate to produce page
 - Click in value editor but don't enter text
@@ -222,6 +246,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify no crash occurs (wait 2 seconds)
 
 #### 4.7 Clear Editor Between Produces
+
 - Create test topic
 - Navigate to produce page, produce first message
 - Navigate to produce page again
@@ -237,6 +262,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 **8 tests** covering message viewing and filtering operations.
 
 #### 5.1 Expand Message to View Details
+
 - Create topic and produce message
 - Navigate to messages tab
 - Verify message content visible
@@ -245,6 +271,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify metadata visible (Offset/Partition/Timestamp)
 
 #### 5.2 Search Message Content
+
 - Create topic and produce 2 messages (one with keyword, one without)
 - Navigate to messages tab
 - Find search input (placeholder: `/search|filter/i`)
@@ -252,13 +279,15 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify matching message visible
 - (Behavior depends on implementation for non-matching)
 
-#### 5.3 Filter Messages by Partition *(skipped)*
+#### 5.3 Filter Messages by Partition _(skipped)_
+
 - Create topic and produce message
 - Look for partition filter dropdown
 - Select partition 0
 - Verify messages filter to selected partition
 
 #### 5.4 Filter Messages by Offset
+
 - Create topic and produce 3 messages
 - Navigate to messages tab
 - Find offset input (placeholder: `/offset/i`)
@@ -267,6 +296,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify filtered messages visible
 
 #### 5.5 Clear All Filters
+
 - Create topic and produce message
 - Apply search filter
 - Look for clear/reset button (role: `button`, name: `/clear|reset/i`)
@@ -274,12 +304,14 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify message becomes visible again
 
 #### 5.6 Handle Empty Topic
+
 - Create empty topic (no messages)
 - Navigate to messages tab
 - Verify empty state message visible (text: `/No messages|empty/i`)
 - Verify produce button still available
 
 #### 5.7 Handle Rapid Filter Changes
+
 - Create topic and produce message
 - Navigate to messages tab
 - Rapidly change search terms multiple times
@@ -288,6 +320,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify message displays correctly
 
 #### 5.8 Preserve Filters in URL Parameters
+
 - Create topic and produce message
 - Navigate to messages tab
 - Enter search term in quick search and press Enter
@@ -306,6 +339,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 **Note:** Tests use `permissions: ['clipboard-write', 'clipboard-read']`
 
 #### 6.1 Copy Message Value to Clipboard
+
 - Create topic and produce message
 - Navigate to messages tab
 - Expand first message
@@ -314,6 +348,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify success toast visible: "Value copied to clipboard"
 
 #### 6.2 Export Single Message as JSON
+
 - Create topic and produce message
 - Navigate to messages tab
 - Expand first message
@@ -324,6 +359,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Save and verify file content contains message
 
 #### 6.3 Export Single Message as CSV
+
 - Create topic and produce message
 - Navigate to messages tab
 - Expand first message
@@ -334,12 +370,14 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify file content contains message
 
 #### 6.4 Export Message with Special Characters
+
 - Create topic and produce message with special chars (quotes, commas, emojis)
 - Navigate to messages tab
 - Expand message and export as JSON
 - Verify special characters preserved in file
 
 #### 6.5 Open and Cancel Export Dialog
+
 - Create topic and produce message
 - Navigate to messages tab
 - Expand message
@@ -349,6 +387,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify dialog closes
 
 #### 6.6 Handle Large Payload Export
+
 - Create topic
 - Navigate to produce page and create 30KB+ message
 - Verify "Message size exceeds display limit" warning
@@ -359,6 +398,7 @@ E2E tests for the Topics page in Redpanda Console, covering topic management, me
 - Verify payload content loads
 
 #### 6.7 View Message Metadata
+
 - Create topic and produce message
 - Navigate to messages tab
 - Expand first message
@@ -400,6 +440,7 @@ await topicPage.verifyTopicInList(topicName);
 ### Test IDs Used
 
 **Topic List:**
+
 - `create-topic-button` - Create topic button
 - `search-field-input` - Search input field
 - `show-internal-topics-checkbox` - Internal topics toggle
@@ -409,16 +450,19 @@ await topicPage.verifyTopicInList(topicName);
 - `delete-topic-confirm-button` - Confirm delete button
 
 **Topic Creation:**
+
 - `topic-name` - Topic name input field
 - `onOk-button` - Create/submit button
 - `create-topic-success__close-button` - Close success modal
 
 **Topic Details:**
+
 - `config-group-table` - Configuration groups table
 - `produce-record-button` - Produce button in details
 - Use `role='tablist'` for tabs
 
 **Produce Messages:**
+
 - `produce-button` - Produce message button
 - `produce-value-editor` - Value editor (Monaco)
 - `produce-key-editor` - Key editor (Monaco)
@@ -426,11 +470,13 @@ await topicPage.verifyTopicInList(topicName);
 - `payload-content` - Message payload display
 
 **Messages Tab:**
+
 - `message-quick-search-input` - Quick search input
 - `data-table-cell` - Table cells
 - Use `aria-label="Collapse row"` for expand buttons
 
 **Export:**
+
 - `csv_field` - CSV format selection
 - Use `role='dialog'` with `name=/save message/i` for export dialog
 
@@ -441,6 +487,7 @@ All tests use `TopicPage.deleteTopic()` in teardown to clean up created topics.
 ### Skipped Tests
 
 Some tests are marked as `test.skip()`:
+
 - Produce message with key - Needs stable key editor interaction
 - Filter messages by partition - Needs better select control handling
 

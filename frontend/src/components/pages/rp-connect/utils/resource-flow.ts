@@ -61,25 +61,26 @@ function resourceItemEditTarget(key: string, index: number): EditTarget | undefi
 function parseArrayResource(value: unknown[], key: string, sectionId: string): PipelineFlowNode[] {
   const nodes: PipelineFlowNode[] = [];
   for (const [i, item] of value.entries()) {
-    if (isObject(item)) {
-      const itemObj = item;
-      const itemName = firstKey(itemObj);
-      const labelText = extractLabel(itemObj);
-      nodes.push({
-        id: `resource-${key}-${i}`,
-        kind: 'leaf',
-        label: (itemName ?? '') || key,
-        labelText,
-        section: 'resource',
-        parentId: sectionId,
-        resourceKey: key,
-        editTarget: resourceItemEditTarget(key, i),
-        meta:
-          itemName !== null && itemName !== undefined && itemName !== ''
-            ? summarizeComponent(itemName, itemObj[itemName])
-            : undefined,
-      });
+    if (!isObject(item)) {
+      continue;
     }
+    const itemObj = item;
+    const itemName = firstKey(itemObj);
+    const labelText = extractLabel(itemObj);
+    nodes.push({
+      id: `resource-${key}-${i}`,
+      kind: 'leaf',
+      label: (itemName ?? '') || key,
+      labelText,
+      section: 'resource',
+      parentId: sectionId,
+      resourceKey: key,
+      editTarget: resourceItemEditTarget(key, i),
+      meta:
+        itemName !== null && itemName !== undefined && itemName !== ''
+          ? summarizeComponent(itemName, itemObj[itemName])
+          : undefined,
+    });
   }
   return nodes;
 }

@@ -89,7 +89,7 @@ describe('frontend lint policy', () => {
         'noPromiseExecutorReturn',
         'useTailwindStaticClassStrings',
       ])
-    ).toEqual([]);
+    ).toStrictEqual([]);
   });
 });
 
@@ -108,7 +108,9 @@ test('enforces the default ten-statement limit and component appearance policy',
     export function count() { let value = 0; ${'value += 1;'.repeat(8)} return value; }
     export const Example = () => <Button disabled variant="brand" />;
   `);
-  expect(ruleFailures(accepted, ['noExcessiveStatementsPerFunction', 'noTailwindRestyledComponents'])).toEqual([]);
+  expect(ruleFailures(accepted, ['noExcessiveStatementsPerFunction', 'noTailwindRestyledComponents'])).toStrictEqual(
+    []
+  );
 });
 
 test('enforces custom label associations from the Ultracite preset', () => {
@@ -124,7 +126,7 @@ test('enforces custom label associations from the Ultracite preset', () => {
     import { Input } from '../src/components/redpanda-ui/components/input';
     export const Example = () => <><Label htmlFor="field">Field</Label><Input id="field" /></>;
   `);
-  expect(ruleFailures(accepted, ['noLabelWithoutControl'])).toEqual([]);
+  expect(ruleFailures(accepted, ['noLabelWithoutControl'])).toStrictEqual([]);
 });
 
 test.each([
@@ -198,7 +200,9 @@ test('accepts awaited, returned and rejection-handled promises', () => {
     export function save() { return persist(); }
     export function saveInBackground() { persist().catch(error => reportError(error)); }
   `);
-  expect(ruleFailures(result, ['noFloatingPromises', 'noMisusedPromises', 'useAwait', 'noAwaitInLoops'])).toEqual([]);
+  expect(ruleFailures(result, ['noFloatingPromises', 'noMisusedPromises', 'useAwait', 'noAwaitInLoops'])).toStrictEqual(
+    []
+  );
 });
 
 test('accepts POST bodies, global regexes and distinct union members', () => {
@@ -278,7 +282,7 @@ test('requires ordinary error causes while preserving AggregateError cleanup cha
       }
     }
   `);
-  expect(ruleFailures(accepted, ['useErrorCause'])).toEqual([]);
+  expect(ruleFailures(accepted, ['useErrorCause'])).toStrictEqual([]);
 });
 
 test.each([
@@ -298,13 +302,17 @@ test('accepts Sass interpolation, CSS Modules scoping and string YAML keys', () 
   const sass = lint('$brand: red; .card { --card-color: #{$brand}; }', 'probe.scss');
   const module = lint(':global(.host) .card { color: var(--color-foreground); }', 'probe.module.scss');
   const yaml = lint('"true": supported-string-key\n', 'probe.yaml');
-  expect([sass.exitCode, module.exitCode, yaml.exitCode]).toEqual([0, 0, 0]);
+  expect([sass.exitCode, module.exitCode, yaml.exitCode]).toStrictEqual([0, 0, 0]);
 });
 
 test.each([
-  ['README.md', '# Guide\n\nLiteral [ ] stays.\n\n```ts\nconst example: any = null;\n```\n'],
-  ['probe.yaml', 'message: \'[ ]\'\nprocessors:\n - mapping: |\n     root = " [ ] "\n'],
-])('preserves literal text in %s without formatting or checking embedded examples', (filename, source) => {
+  [
+    'README.md',
+    '# Guide\n- Literal [ ] stays.\n\n```ts\nconst example:any=null;\n```\n',
+    '# Guide\n\n- Literal [ ] stays.\n\n```ts\nconst example:any=null;\n```\n',
+  ],
+  ['probe.yaml', 'message: \'[ ]\'\nprocessors:\n - mapping: |\n     root = " [ ] "\n', null],
+])('preserves literal YAML and Markdown code fences in %s', (filename, source, formatted) => {
   const { directory, file } = createLintProject(source, filename);
   try {
     const result = spawnSync([process.execPath, 'run', 'biome', 'check', '--write', '--config-path', directory, file], {
@@ -313,7 +321,7 @@ test.each([
       stderr: 'pipe',
     });
     expect(result.exitCode).toBe(0);
-    expect(readFileSync(file, 'utf8')).toBe(source);
+    expect(readFileSync(file, 'utf8')).toBe(formatted ?? source);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
@@ -363,7 +371,7 @@ test.each([
   ],
 ])('enforces Biome 2.6.8 %s with valid counterexamples', (rule, rejected, accepted) => {
   expect(ruleFailures(lint(rejected), [rule])).toContain(rule);
-  expect(ruleFailures(lint(accepted), [rule])).toEqual([]);
+  expect(ruleFailures(lint(accepted), [rule])).toStrictEqual([]);
 });
 
 test.each([
@@ -378,7 +386,7 @@ test.each([
   ],
 ])('enforces Biome 2.6.8 %s without rejecting explicit values', (rule, filename, rejected, accepted) => {
   expect(ruleFailures(lint(rejected, filename), [rule])).toContain(rule);
-  expect(ruleFailures(lint(accepted, filename), [rule])).toEqual([]);
+  expect(ruleFailures(lint(accepted, filename), [rule])).toStrictEqual([]);
 });
 
 test.each([
@@ -395,7 +403,7 @@ test.each([
     test('notifies readiness', () => { const notify = rs.fn(); notify('ready'); ${assertion} });
   `;
   expect(ruleFailures(lint(source(rejected), 'probe.test.tsx'), [rule])).toContain(rule);
-  expect(ruleFailures(lint(source(accepted), 'probe.test.tsx'), [rule])).toEqual([]);
+  expect(ruleFailures(lint(source(accepted), 'probe.test.tsx'), [rule])).toStrictEqual([]);
 });
 
 test('requires restorable spies for the mock spellings Biome supports', () => {
@@ -405,9 +413,9 @@ test('requires restorable spies for the mock spellings Biome supports', () => {
     test('controls time', () => { ${assignment} });
   `;
   expect(ruleFailures(lint(source('Date.now = jest.fn(() => 10);'), 'probe.test.tsx'), [rule])).toContain(rule);
-  expect(ruleFailures(lint(source('jest.spyOn(Date, "now").mockReturnValue(10);'), 'probe.test.tsx'), [rule])).toEqual(
-    []
-  );
+  expect(
+    ruleFailures(lint(source('jest.spyOn(Date, "now").mockReturnValue(10);'), 'probe.test.tsx'), [rule])
+  ).toStrictEqual([]);
 });
 
 test('tracks conditional promise results and narrowed boolean values', () => {
@@ -420,8 +428,104 @@ test('tracks conditional promise results and narrowed boolean values', () => {
       return Boolean(value);
     }
   `);
-  expect(ruleFailures(rejected, ['noFloatingPromises', 'noUselessTypeConversion'])).toEqual([
+  expect(ruleFailures(rejected, ['noFloatingPromises', 'noUselessTypeConversion'])).toStrictEqual([
     'noFloatingPromises',
     'noUselessTypeConversion',
   ]);
+});
+
+test.each([
+  [
+    'noCanvasToImage',
+    'export function copy(source: CanvasRenderingContext2D, target: CanvasRenderingContext2D) { target.putImageData(source.getImageData(0, 0, 2, 2), 0, 0); }',
+    'export function copy(source: CanvasRenderingContext2D, target: CanvasRenderingContext2D) { target.drawImage(source.canvas, 0, 0); }',
+  ],
+  [
+    'noImmediateMutation',
+    'const entries: string[] = []; entries.push("row"); export { entries };',
+    'export const entries = ["row"];',
+  ],
+  [
+    'noTailwindConflictingClasses',
+    'export const Layout = () => <div className="flex grid" />;',
+    'export const Layout = () => <div className="flex md:grid" />;',
+  ],
+  [
+    'noUselessBind',
+    'export const run = (() => 42).bind(null);',
+    'export const run = function (this: { value: number }) { return this.value; }.bind({ value: 42 });',
+  ],
+  [
+    'noUselessDefaultAssignment',
+    'export const title = ({ label = "empty" }: { label: string }) => label;',
+    'export const title = ({ label = "empty" }: { label?: string }) => label;',
+  ],
+  [
+    'noUselessNestedTernary',
+    'export const shade = (active: boolean, selected: boolean) => active ? (selected ? "high" : "low") : "low";',
+    'export const shade = (active: boolean, selected: boolean) => active && selected ? "high" : "low";',
+  ],
+  [
+    'noUselessSetConstruction',
+    'const left = new Set([1]); const right = new Set([2]); export const all = left.union(new Set(right));',
+    'const left = new Set([1]); const right = new Set([2]); export const all = left.union(right);',
+  ],
+  [
+    'useConsistentIndexedObjectStyle',
+    'export type Counts = { [name: string]: number };',
+    'export type Counts = Record<string, number>;',
+  ],
+  [
+    'useEarlyContinue',
+    'export function collect(values: string[]) { for (const v of values) { if (v !== "") { console.log(v); console.log(v.length); } } }',
+    'export function collect(values: string[]) { for (const v of values) { if (v === "") { continue; } console.log(v); console.log(v.length); } }',
+  ],
+  ['noExcessiveClassesPerFile', 'export class First {} export class Second {}', 'export class First {}'],
+])('enforces the new %s policy', (rule, rejected, accepted) => {
+  expect(ruleFailures(lint(rejected), [rule])).toContain(rule);
+  expect(ruleFailures(lint(accepted), [rule])).toStrictEqual([]);
+});
+
+test.each([
+  ['noExpectToHaveBeenCalledOnce', 'expect(send).toHaveBeenCalledOnce();', 'expect(send).toHaveBeenCalledTimes(1);'],
+  ['noReturnInTest', 'return expect(rows).toHaveLength(1);', 'expect(rows).toHaveLength(1);'],
+  ['useExpectToHaveLength', 'expect(rows.length).toBe(1);', 'expect(rows).toHaveLength(1);'],
+  ['useExpectToStrictEqual', 'expect(rows).toEqual(["done"]);', 'expect(rows).toStrictEqual(["done"]);'],
+])('enforces %s with the Rstest imports', (rule, rejected, accepted) => {
+  const source = (assertion: string) =>
+    [
+      "import { expect, rs, test } from '@rstest/core';",
+      "test('reads a completed row', () => { const rows = ['done']; const send = rs.fn(); send(rows);",
+      assertion,
+      '});',
+    ].join('\n');
+  expect(ruleFailures(lint(source(rejected), 'probe.test.tsx'), [rule])).toContain(rule);
+  expect(ruleFailures(lint(source(accepted), 'probe.test.tsx'), [rule])).toStrictEqual([]);
+});
+
+test('requires explicit test runner imports', () => {
+  const rule = 'noTestGlobals';
+  const source = 'test("reads a row", () => { expect(["done"]).toHaveLength(1); });';
+  expect(ruleFailures(lint(source, 'probe.test.tsx'), [rule])).toContain(rule);
+  expect(
+    ruleFailures(lint(`import { expect, test } from '@rstest/core';\n${source}`, 'probe.test.tsx'), [rule])
+  ).toStrictEqual([]);
+});
+
+test.each([
+  [
+    'useTanstackQueryExhaustiveDependencies',
+    "const useRow = (id: string) => useQuery({ queryKey: ['row'], queryFn: () => Promise.resolve(id) });",
+    "const useRow = (id: string) => useQuery({ queryKey: ['row', id], queryFn: () => Promise.resolve(id) });",
+  ],
+  [
+    'useTanstackQueryMutationPropertyOrder',
+    'const useSave = () => useMutation({ mutationFn: async () => 7, onError: () => 0, onMutate: () => 1 });',
+    'const useSave = () => useMutation({ mutationFn: async () => 7, onMutate: () => 1, onError: () => 0 });',
+  ],
+])('enforces %s without rearranging unrelated keys', (rule, rejected, accepted) => {
+  const source = (declaration: string) =>
+    `import { useMutation, useQuery } from '@tanstack/react-query';\n${declaration}`;
+  expect(ruleFailures(lint(source(rejected)), [rule])).toContain(rule);
+  expect(ruleFailures(lint(source(accepted)), [rule])).toStrictEqual([]);
 });

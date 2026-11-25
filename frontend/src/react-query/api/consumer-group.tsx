@@ -23,10 +23,11 @@ function addListTableFields(data: GetConsumerGroupsResponse) {
   for (const group of consumerGroups) {
     group.lagSum = arraySum(group.topicOffsets, (o) => o.summedLag);
     group.isInUse = group.state.toLowerCase() !== 'empty';
-    if (group.allowedActions && !group.allowedActions.includes('all')) {
-      group.noEditPerms = !group.allowedActions.includes('editConsumerGroup');
-      group.noDeletePerms = !group.allowedActions.includes('deleteConsumerGroup');
+    if (!(group.allowedActions && !group.allowedActions.includes('all'))) {
+      continue;
     }
+    group.noEditPerms = !group.allowedActions.includes('editConsumerGroup');
+    group.noDeletePerms = !group.allowedActions.includes('deleteConsumerGroup');
   }
 }
 

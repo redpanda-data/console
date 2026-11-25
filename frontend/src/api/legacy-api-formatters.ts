@@ -68,9 +68,7 @@ export function normalizeAcls(acls: AclResource[]) {
 
   const specialCaseMap = {
     TRANSACTIONAL_ID: 'TransactionalID',
-  } as {
-    [key: string]: string;
-  };
+  } as Record<string, string>;
   function normalizeStringEnum(str: string): string {
     if (!str) {
       return str;

@@ -160,7 +160,7 @@ describe('the NodeConfigForm — full schema', () => {
 
       const next = lastReported(onConfigChange);
       expect(configValue(next, 'kafka', 'key')).toBe('new-key');
-      expect(configValue(next, 'kafka', 'addresses')).toEqual(['a:9092']);
+      expect(configValue(next, 'kafka', 'addresses')).toStrictEqual(['a:9092']);
       // Untouched optional fields are not written out.
       expect(configValue(next, 'kafka')).not.toHaveProperty('partitioner');
     });
@@ -181,7 +181,7 @@ describe('the NodeConfigForm — full schema', () => {
       await user.type(screen.getByDisplayValue('orig'), '-2');
 
       const next = lastReported(onConfigChange);
-      expect(configValue(next, 'kafka', 'metadata')).toEqual({ include_patterns: ['.*'] });
+      expect(configValue(next, 'kafka', 'metadata')).toStrictEqual({ include_patterns: ['.*'] });
       // Malformed value is preserved exactly — not parseInt-ed to 1000.
       expect(configValue(next, 'kafka', 'batching', 'count')).toBe('1000$');
     });
@@ -353,7 +353,7 @@ describe('the NodeConfigForm — full schema', () => {
 
       const next = lastReported(onConfigChange);
       // The sub-pipeline survives untouched; the scalar edit is written.
-      expect(configValue(next, 'branch', 'processors')).toEqual([{ http: { url: 'http://x' } }]);
+      expect(configValue(next, 'branch', 'processors')).toStrictEqual([{ http: { url: 'http://x' } }]);
       expect(configValue(next, 'branch', 'request_map')).toBe('root = this!');
     });
 
@@ -366,7 +366,7 @@ describe('the NodeConfigForm — full schema', () => {
       await user.type(addresses, 'b:9092\nc:9092');
 
       const next = lastReported(onConfigChange);
-      expect(configValue(next, 'kafka', 'addresses')).toEqual(['b:9092', 'c:9092']);
+      expect(configValue(next, 'kafka', 'addresses')).toStrictEqual(['b:9092', 'c:9092']);
     });
   });
 });
@@ -403,7 +403,7 @@ describe('the NodeConfigForm — list-valued components (switch/try/…)', () =>
 
     await user.type(screen.getByPlaceholderText('Optional identifier for this component'), 'router');
 
-    expect(lastReported(onConfigChange)).toEqual({ label: 'router', switch: value.switch });
+    expect(lastReported(onConfigChange)).toStrictEqual({ label: 'router', switch: value.switch });
   });
 
   test('hides the (misleading) per-case fields and shows a canvas hint instead', () => {
@@ -739,7 +739,7 @@ describe('the NodeConfigForm — topic fields', () => {
 
     // The free-text line (explicit partition syntax) survives; the picked topic is appended.
     const next = lastReported(onConfigChange);
-    expect(configValue(next, 'redpanda', 'topics')).toEqual(['my-topic:0', 'events']);
+    expect(configValue(next, 'redpanda', 'topics')).toStrictEqual(['my-topic:0', 'events']);
   });
 });
 

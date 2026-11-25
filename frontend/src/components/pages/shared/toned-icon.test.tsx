@@ -1,3 +1,4 @@
+import { describe, expect, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import { CheckIcon, ErrorIcon } from 'components/icons';
 import { Spinner } from 'components/redpanda-ui/components/spinner';

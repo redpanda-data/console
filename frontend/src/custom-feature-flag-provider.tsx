@@ -3,9 +3,7 @@ import { createContext, type ReactNode, useCallback, useContext, useMemo, useSta
 
 import { isPresent } from './utils/type-guards';
 
-type FeatureFlags = {
-  [key: string]: boolean;
-};
+type FeatureFlags = Record<string, boolean>;
 
 type FeatureFlagContextType = {
   flags: FeatureFlags;

@@ -46,33 +46,40 @@ describe('stop form model', () => {
 
   test('validates only what the chosen mode uses', () => {
     const base = stopFormState(undefined);
-    expect(problemsIn({ ...base, mode: 'count', limit: '0' })).toEqual(['limit']);
-    expect(problemsIn({ ...base, mode: 'count', limit: '1.5' })).toEqual(['limit']);
-    expect(problemsIn({ ...base, mode: 'count', limit: '10' })).toEqual([]);
-    expect(problemsIn({ ...base, mode: 'check', check: '  ' })).toEqual(['check']);
-    expect(problemsIn({ ...base, mode: 'idle', idle: 'later' })).toEqual(['idle']);
+    expect(problemsIn({ ...base, mode: 'count', limit: '0' })).toStrictEqual(['limit']);
+    expect(problemsIn({ ...base, mode: 'count', limit: '1.5' })).toStrictEqual(['limit']);
+    expect(problemsIn({ ...base, mode: 'count', limit: '10' })).toStrictEqual([]);
+    expect(problemsIn({ ...base, mode: 'check', check: '  ' })).toStrictEqual(['check']);
+    expect(problemsIn({ ...base, mode: 'idle', idle: 'later' })).toStrictEqual(['idle']);
     // An idle value that isn't used doesn't block.
-    expect(problemsIn({ ...base, mode: 'count', limit: '10', idle: 'later' })).toEqual([]);
-    expect(problemsIn({ ...base, mode: 'count', limit: '10', idle: 'later', alsoIdle: true })).toEqual(['idle']);
+    expect(problemsIn({ ...base, mode: 'count', limit: '10', idle: 'later' })).toStrictEqual([]);
+    expect(problemsIn({ ...base, mode: 'count', limit: '10', idle: 'later', alsoIdle: true })).toStrictEqual(['idle']);
   });
 
   test('turns the choice into a draft', () => {
     const base = stopFormState(undefined);
     expect(draftFromStopForm(base)).toBeNull();
-    expect(draftFromStopForm({ ...base, mode: 'count', limit: ' 25 ' })).toEqual({ messageLimit: 25 });
+    expect(draftFromStopForm({ ...base, mode: 'count', limit: ' 25 ' })).toStrictEqual({
+      messageLimit: 25,
+      idleTimeout: undefined,
+      restartInput: undefined,
+    });
     expect(
       draftFromStopForm({ ...base, mode: 'check', check: 'this.x', alsoIdle: true, idle: '1m', restart: true })
-    ).toEqual({
+    ).toStrictEqual({
       check: 'this.x',
       idleTimeout: '1m',
       restartInput: true,
     });
     // Restart goes into the draft only while the form offers it.
-    expect(draftFromStopForm({ ...base, mode: 'idle', idle: '2m', restart: true }, false)).toEqual({
+    expect(draftFromStopForm({ ...base, mode: 'idle', idle: '2m', restart: true }, false)).toStrictEqual({
       idleTimeout: '2m',
+      restartInput: undefined,
     });
-    expect(draftFromStopForm({ ...base, mode: 'check', check: 'this.x', restart: true }, false)).toEqual({
+    expect(draftFromStopForm({ ...base, mode: 'check', check: 'this.x', restart: true }, false)).toStrictEqual({
       check: 'this.x',
+      idleTimeout: undefined,
+      restartInput: undefined,
     });
   });
 
@@ -85,6 +92,6 @@ describe('stop form model', () => {
     expect(offersRestart('idle', natural, set)).toBe(true);
     // So applying the form as loaded writes back what the YAML has.
     const state = stopFormState(set);
-    expect(draftFromStopForm(state, offersRestart(state.mode, natural, set))).toEqual(set);
+    expect(draftFromStopForm(state, offersRestart(state.mode, natural, set))).toStrictEqual(set);
   });
 });

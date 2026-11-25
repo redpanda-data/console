@@ -19,10 +19,10 @@ describe('rpc field validation', () => {
         }),
       },
     ]);
-    expect(getRpcFieldErrors(error)).toEqual({ 'scram.username': 'Unknown user', email: 'Invalid email' });
+    expect(getRpcFieldErrors(error)).toStrictEqual({ 'scram.username': 'Unknown user', email: 'Invalid email' });
   });
 
   test('does not invent field errors when details are absent', () => {
-    expect(getRpcFieldErrors(new ConnectError('Unavailable', Code.Unavailable))).toEqual({});
+    expect(getRpcFieldErrors(new ConnectError('Unavailable', Code.Unavailable))).toStrictEqual({});
   });
 });

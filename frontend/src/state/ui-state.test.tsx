@@ -18,9 +18,9 @@ describe('legacy UI state view', () => {
     uiState.pageTitle = 'Topics';
     expect(useUIStateStore.getState()._pageTitle).toBe('Topics');
     uiState.pageBreadcrumbs = [{ title: 'Topics', linkTo: '/topics' }];
-    expect(useUIStateStore.getState().pageBreadcrumbs).toEqual([{ title: 'Topics', linkTo: '/topics' }]);
+    expect(useUIStateStore.getState().pageBreadcrumbs).toStrictEqual([{ title: 'Topics', linkTo: '/topics' }]);
     uiState.backLink = { title: 'Back', linkTo: '/' };
-    expect(useUIStateStore.getState().backLink).toEqual({ title: 'Back', linkTo: '/' });
+    expect(useUIStateStore.getState().backLink).toStrictEqual({ title: 'Back', linkTo: '/' });
     uiState.serverBuildTimestamp = 123;
     expect(useUIStateStore.getState().serverBuildTimestamp).toBe(123);
   });
@@ -31,6 +31,6 @@ describe('legacy UI state view', () => {
     expect(uiState.selectedClusterName).toBe(selectedClusterName);
     expect(Reflect.set(uiState, 'unexpected', 'ignored')).toBe(true);
     expect(Reflect.get(uiState, 'unexpected')).toBeUndefined();
-    expect(Object.keys(uiState)).toEqual([]);
+    expect(Object.keys(uiState)).toStrictEqual([]);
   });
 });

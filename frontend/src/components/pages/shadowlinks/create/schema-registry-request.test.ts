@@ -235,8 +235,8 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
         })
       );
 
-      expect(options.sourceFilter?.contexts).toEqual(['.prod']);
-      expect(options.sourceFilter?.subjects).toEqual(['orders-value']);
+      expect(options.sourceFilter?.contexts).toStrictEqual(['.prod']);
+      expect(options.sourceFilter?.subjects).toStrictEqual(['orders-value']);
       expect(options.destination?.mapping?.case).toBe('exact');
       if (options.destination?.mapping?.case === 'exact') {
         expect(options.destination.mapping.value.mappings).toMatchObject([{ source: '.prod', destination: '.dr' }]);

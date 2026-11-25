@@ -37,23 +37,28 @@ All containers run on a shared Docker network created by testcontainers:
 ### Port Mappings
 
 **Redpanda:**
+
 - Internal: `redpanda:9092` (Kafka), `redpanda:8081` (Schema Registry), `redpanda:9644` (Admin API)
 - External: `localhost:19092`, `localhost:18081`, `localhost:19644`
 
 **Backend Container:**
+
 - Internal: `console-backend:3000`
 - External: `localhost:3000`
 - Serves both API and compiled frontend (`serveFrontend: true` in config)
 - Connects to Redpanda using internal network addresses
 
 **OwlShop:**
+
 - Internal only (no external ports exposed)
 - Generates test data for Kafka topics
 
 ## Files
 
 ### Dockerfile
+
 **`tests/shared/Dockerfile.backend`** - Multi-stage Docker build (supports both OSS and Enterprise):
+
 1. **Builder stage**:
    - Uses `golang:alpine` with `GOTOOLCHAIN=auto` to support Go 1.25.1+
    - Compiles the Go backend binary (`console-api`)
@@ -69,6 +74,7 @@ All containers run on a shared Docker network created by testcontainers:
 ### Configuration
 
 **`tests/test-variant-console/config/console.config.yaml`** - OSS backend configuration:
+
 - `serveFrontend: true` - Backend serves compiled frontend assets
 - `server.listenPort: 3000` - Single port for API and frontend
 - Internal Docker network addresses (container-to-container):
@@ -79,6 +85,7 @@ All containers run on a shared Docker network created by testcontainers:
 - SASL authentication: `e2euser:very-secret` (SCRAM-SHA-256)
 
 **`tests/test-variant-console-enterprise/config/console.config.yaml`** - Enterprise backend configuration:
+
 - Same as OSS config, plus:
   - `authentication.basic.enabled: true` - Basic auth for enterprise features
   - No `licenseFilepath`: Console asks the Redpanda cluster for its license and runs on the built-in 30-day trial every fresh cluster starts with
@@ -86,7 +93,9 @@ All containers run on a shared Docker network created by testcontainers:
 - Optional: set `REDPANDA_LICENSE_PATH` to a license file to run against a real license instead (passed to Console as `REDPANDA_LICENSE`)
 
 ### Setup Script
+
 **`tests/shared/global-setup.mjs`**:
+
 1. **Build Phase**:
    - Detects OSS vs Enterprise mode from test config
    - **Copies frontend build assets** from `console/frontend/build/` to backend's `pkg/embed/frontend/`:
@@ -115,7 +124,9 @@ All containers run on a shared Docker network created by testcontainers:
    - Saves container IDs to `.testcontainers-state.json` (OSS) or `.testcontainers-state-enterprise.json` (Enterprise)
 
 ### Teardown
+
 **`tests/shared/global-setup.mjs`** returns the normal teardown:
+
 - Stops every tracked container in parallel through live Testcontainers handles
 - Removes the Docker network
 - Cleans up the state file
@@ -138,6 +149,7 @@ recorded resource.
 ## Usage
 
 **Prerequisites:**
+
 - Run `bun run build` to create frontend build artifacts in `frontend/build/`
 - Frontend build is required because backend embeds these assets via Go's `//go:embed` directive
 
@@ -154,21 +166,26 @@ bun run e2e-test:variant console --watch     # Rstest watch mode
 ```
 
 ### First Run
+
 - Builds backend Docker image (~2-3 minutes)
 - Pulls container images (Redpanda, OwlShop)
 - Starts all containers and waits for readiness
 
 ### Subsequent Runs
+
 - Reuses cached Docker image (unless backend source changes)
 - Faster startup (~30-60 seconds)
 
 ### Debugging
+
 Access services during test runs:
+
 - Frontend: http://localhost:3000
 - Redpanda Admin: http://localhost:19644
 - Schema Registry: http://localhost:18081
 
 View container logs:
+
 ```bash
 docker ps                              # Find container IDs
 docker logs <backend-container-id>     # View backend logs
@@ -176,7 +193,9 @@ docker logs <redpanda-container-id>    # View Redpanda logs
 ```
 
 ### Manual Cleanup
+
 If tests fail to clean up:
+
 ```bash
 docker ps -a | grep e2e-test           # Find containers
 docker stop $(docker ps -aq --filter name=e2e)

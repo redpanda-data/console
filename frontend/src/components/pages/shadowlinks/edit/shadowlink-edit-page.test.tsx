@@ -211,10 +211,7 @@ type TestCase = {
   description: string;
   actions: Action[];
   expectedFieldMaskPaths: string[];
-  verify: (
-    updateRequest: Awaited<ReturnType<typeof saveUpdateRequest>>,
-    exp: typeof import('@rstest/core').expect
-  ) => void;
+  verify: (updateRequest: Awaited<ReturnType<typeof saveUpdateRequest>>, exp: typeof expect) => void;
 };
 
 /**
@@ -360,7 +357,7 @@ describe('the ShadowLinkEditPage', () => {
     const updateRequest = await saveUpdateRequest(user);
 
     // Verify field mask includes all expected paths
-    expect(updateRequest?.updateMask?.paths).toEqual(expect.arrayContaining(expectedFieldMaskPaths));
+    expect(updateRequest?.updateMask?.paths).toStrictEqual(expect.arrayContaining(expectedFieldMaskPaths));
 
     // Run custom verification function
     verify(updateRequest, expect);
@@ -375,7 +372,7 @@ describe('the ShadowLinkEditPage', () => {
     await addBootstrapServer(user, screen, 'localhost:9093');
     await user.click(screen.getByText('Save'));
     await waitFor(() => {
-      expect(rs.mocked(toast.error).mock.calls).toEqual([
+      expect(rs.mocked(toast.error).mock.calls).toStrictEqual([
         ['Shadow link update failed', { description: '[permission_denied] Update denied' }],
       ]);
     });
@@ -440,7 +437,7 @@ describe('the ShadowLinkEditPage', () => {
 
       const updateRequest = await saveUpdateRequest(user);
 
-      expect(updateRequest.updateMask?.paths).toEqual(['configurations.schema_registry_sync_options']);
+      expect(updateRequest.updateMask?.paths).toStrictEqual(['configurations.schema_registry_sync_options']);
       expect(
         updateRequest.shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode
       ).toMatchObject({
@@ -492,7 +489,7 @@ describe('the ShadowLinkEditPage', () => {
       const updateRequest = await saveUpdateRequest(user);
 
       // Only the topic change goes out; the untouched SR slice emits no mask.
-      expect(updateRequest.updateMask?.paths).toEqual(['configurations.topic_metadata_sync_options']);
+      expect(updateRequest.updateMask?.paths).toStrictEqual(['configurations.topic_metadata_sync_options']);
     });
   });
 });

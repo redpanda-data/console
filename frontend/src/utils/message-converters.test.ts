@@ -166,7 +166,7 @@ describe('convertListMessageData', () => {
 
   test('empty headers array', () => {
     const result = convertListMessageData(makeMessage({ headers: [] }));
-    expect(result.headers).toEqual([]);
+    expect(result.headers).toStrictEqual([]);
   });
 
   describe('payload content', () => {
@@ -179,8 +179,8 @@ describe('convertListMessageData', () => {
 
       const result = convertListMessageData(msg);
 
-      expect(result.key.payload).toEqual({ id: 1, name: 'test' });
-      expect(result.value.payload).toEqual({ id: 1, name: 'test' });
+      expect(result.key.payload).toStrictEqual({ id: 1, name: 'test' });
+      expect(result.value.payload).toStrictEqual({ id: 1, name: 'test' });
       expect(result.keyJson).toBe(jsonStr);
       expect(result.valueJson).toBe(jsonStr);
     });

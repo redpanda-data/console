@@ -59,7 +59,7 @@ describe('the UnfenceClusterDialog', () => {
     );
 
     await user.click(screen.getByTestId('confirm-unfence-cluster'));
-    expect(mutate.mock.calls[0]?.[0]).toEqual({ expectedRevision: 7n });
+    expect(mutate.mock.calls[0]?.[0]).toStrictEqual({ expectedRevision: 7n });
   });
 
   test('says when someone else re-fenced the cluster', async () => {

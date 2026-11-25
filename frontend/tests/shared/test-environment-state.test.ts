@@ -129,7 +129,7 @@ test('validates crash-recovery state before passing resource IDs or paths to cle
   });
   expect(parsed.redpandaId).toBe('rp-id');
   expect(parsed.backendId).toBe('');
-  expect(parsed.tempPaths).toEqual(['/tmp/owned-test']);
+  expect(parsed.tempPaths).toStrictEqual(['/tmp/owned-test']);
   expect(() => parseSerializedEnvironmentState({ redpandaId: ['not-an-id'] })).toThrow();
   expect(() => parseSerializedEnvironmentState({ tempPaths: [42] })).toThrow();
 });

@@ -9,11 +9,11 @@ const ROOT_CRUMB = { title: 'Schema Registry', linkTo: '/schema-registry' };
 
 describe('decodeSchemaEditTarget', () => {
   test('decodes the subject and context route params', () => {
-    expect(decodeSchemaEditTarget('my%2Fsubject', '.staging%20ctx')).toEqual({
+    expect(decodeSchemaEditTarget('my%2Fsubject', '.staging%20ctx')).toStrictEqual({
       subjectName: 'my/subject',
       contextName: '.staging ctx',
     });
-    expect(decodeSchemaEditTarget()).toEqual({ subjectName: undefined, contextName: undefined });
+    expect(decodeSchemaEditTarget()).toStrictEqual({ subjectName: undefined, contextName: undefined });
   });
 });
 
@@ -34,7 +34,7 @@ describe('schemaEditBreadcrumbs', () => {
     ],
     ['the global config', {}, [{ title: 'Edit Mode', linkTo: '/schema-registry/edit-mode' }]],
   ])('links the page for %s', (_label, target, crumbs) => {
-    expect(schemaEditBreadcrumbs(target, EDIT_MODE)).toEqual([ROOT_CRUMB, ...crumbs]);
+    expect(schemaEditBreadcrumbs(target, EDIT_MODE)).toStrictEqual([ROOT_CRUMB, ...crumbs]);
   });
 
   test('a context wins over a subject', () => {

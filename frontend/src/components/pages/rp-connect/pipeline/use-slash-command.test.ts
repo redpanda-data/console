@@ -54,15 +54,15 @@ describe('the SLASH_TRIGGER_PATTERN', () => {
 describe('detectSlashTrigger', () => {
   describe('returns position when slash is at a valid trigger point', () => {
     test('/ at start of empty line', () => {
-      expect(detectSlashTrigger(mockEditor('/', 2))).toEqual({ lineNumber: 1, column: 1 });
+      expect(detectSlashTrigger(mockEditor('/', 2))).toStrictEqual({ lineNumber: 1, column: 1 });
     });
 
     test('/ at start of line before other content', () => {
-      expect(detectSlashTrigger(mockEditor('/input', 2))).toEqual({ lineNumber: 1, column: 1 });
+      expect(detectSlashTrigger(mockEditor('/input', 2))).toStrictEqual({ lineNumber: 1, column: 1 });
     });
 
     test('/ after a space', () => {
-      expect(detectSlashTrigger(mockEditor('  /', 4))).toEqual({ lineNumber: 1, column: 3 });
+      expect(detectSlashTrigger(mockEditor('  /', 4))).toStrictEqual({ lineNumber: 1, column: 3 });
     });
 
     test('/ after colon (no longer triggers — prevents URL false positives)', () => {
@@ -70,19 +70,19 @@ describe('detectSlashTrigger', () => {
     });
 
     test('/ after colon+space', () => {
-      expect(detectSlashTrigger(mockEditor('key: /', 7))).toEqual({ lineNumber: 1, column: 6 });
+      expect(detectSlashTrigger(mockEditor('key: /', 7))).toStrictEqual({ lineNumber: 1, column: 6 });
     });
 
     test('/ after tab', () => {
-      expect(detectSlashTrigger(mockEditor('\t/', 3))).toEqual({ lineNumber: 1, column: 2 });
+      expect(detectSlashTrigger(mockEditor('\t/', 3))).toStrictEqual({ lineNumber: 1, column: 2 });
     });
 
     test('/ in indented YAML value', () => {
-      expect(detectSlashTrigger(mockEditor('  output: /', 12))).toEqual({ lineNumber: 1, column: 11 });
+      expect(detectSlashTrigger(mockEditor('  output: /', 12))).toStrictEqual({ lineNumber: 1, column: 11 });
     });
 
     test('preserves lineNumber from editor position', () => {
-      expect(detectSlashTrigger(mockEditor('/', 2, 5))).toEqual({ lineNumber: 5, column: 1 });
+      expect(detectSlashTrigger(mockEditor('/', 2, 5))).toStrictEqual({ lineNumber: 5, column: 1 });
     });
   });
 
@@ -148,11 +148,11 @@ describe('detectSlashTrigger', () => {
 
   describe('the YAML pipeline scenarios', () => {
     test('typing / to start a new value after label key', () => {
-      expect(detectSlashTrigger(mockEditor('label: /', 9))).toEqual({ lineNumber: 1, column: 8 });
+      expect(detectSlashTrigger(mockEditor('label: /', 9))).toStrictEqual({ lineNumber: 1, column: 8 });
     });
 
     test('typing / in bloblang mapping after space', () => {
-      expect(detectSlashTrigger(mockEditor('  root = /', 11))).toEqual({ lineNumber: 1, column: 10 });
+      expect(detectSlashTrigger(mockEditor('  root = /', 11))).toStrictEqual({ lineNumber: 1, column: 10 });
     });
 
     test('not triggered in bloblang path expression', () => {
@@ -168,11 +168,11 @@ describe('detectSlashTrigger', () => {
     });
 
     test('triggered at start of indented line', () => {
-      expect(detectSlashTrigger(mockEditor('    /', 6))).toEqual({ lineNumber: 1, column: 5 });
+      expect(detectSlashTrigger(mockEditor('    /', 6))).toStrictEqual({ lineNumber: 1, column: 5 });
     });
 
     test('triggered after YAML list marker', () => {
-      expect(detectSlashTrigger(mockEditor('  - /', 6))).toEqual({ lineNumber: 1, column: 5 });
+      expect(detectSlashTrigger(mockEditor('  - /', 6))).toStrictEqual({ lineNumber: 1, column: 5 });
     });
   });
 });

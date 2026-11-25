@@ -33,7 +33,7 @@ describe('the ThemeModeSwitch', () => {
   test('offers System, Light and Dark, with the stored preference pressed', () => {
     renderSwitch();
 
-    expect(screen.getAllByRole('button').map((option) => option.getAttribute('aria-label'))).toEqual([
+    expect(screen.getAllByRole('button').map((option) => option.getAttribute('aria-label'))).toStrictEqual([
       'System',
       'Light',
       'Dark',

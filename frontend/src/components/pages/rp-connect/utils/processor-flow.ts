@@ -242,21 +242,22 @@ function pushProcessorChildren(nodes: PipelineFlowNode[], procs: ProcessorEntry[
   // `pi` is the entry's ORIGINAL YAML index (unparseable siblings don't shift it).
   for (const [pi, proc] of procs) {
     const procName = firstKey(proc);
-    if (procName !== null && procName !== undefined && procName !== '') {
-      const childNodes = parseComponentWithBranching(procName, proc[procName], {
-        ...ctx,
-        parentId: ctx.parentId,
-        idPrefix: `${ctx.idPrefix}-p${pi}`,
-        depth: ctx.depth + 1,
-        path: [...ctx.path, pi],
-      });
-      // Surface a nested component's `label:` on its node, like top-level processors.
-      const labelText = extractLabel(proc);
-      if (childNodes.length > 0 && labelText !== null && labelText !== undefined && labelText !== '') {
-        childNodes[0] = { ...childNodes[0], labelText };
-      }
-      nodes.push(...childNodes);
+    if (!isNonEmptyString(procName)) {
+      continue;
     }
+    const childNodes = parseComponentWithBranching(procName, proc[procName], {
+      ...ctx,
+      parentId: ctx.parentId,
+      idPrefix: `${ctx.idPrefix}-p${pi}`,
+      depth: ctx.depth + 1,
+      path: [...ctx.path, pi],
+    });
+    // Surface a nested component's `label:` on its node, like top-level processors.
+    const labelText = extractLabel(proc);
+    if (childNodes.length > 0 && labelText !== null && labelText !== undefined && labelText !== '') {
+      childNodes[0] = { ...childNodes[0], labelText };
+    }
+    nodes.push(...childNodes);
   }
 }
 

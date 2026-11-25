@@ -61,7 +61,7 @@ describe('cleanupTestHarness', () => {
       retainedQueries: trackedQueryClients.size,
       retainedRouters: trackedRouters.size,
       retainedTeardowns: trackedTeardowns.size,
-    }).toEqual({
+    }).toStrictEqual({
       clear: 1,
       unmount: 1,
       destroyHistory: 1,

@@ -50,11 +50,11 @@ describe('compute group statistics', () => {
     ]);
 
     expect(statistics.total).toBe(3);
-    expect(statistics.byType).toEqual([
+    expect(statistics.byType).toStrictEqual([
       { type: 'classic', label: 'Classic', count: 2 },
       { type: 'consumer', label: 'Consumer', count: 1 },
     ]);
-    expect(statistics.byState).toEqual([
+    expect(statistics.byState).toStrictEqual([
       { state: 'Stable', count: 2 },
       { state: 'Empty', count: 1 },
     ]);
@@ -63,7 +63,7 @@ describe('compute group statistics', () => {
   test('lists only the types that have groups', () => {
     const statistics = computeGroupStatistics([group('orders', 'classic', 'Stable')]);
 
-    expect(statistics.byType).toEqual([{ type: 'classic', label: 'Classic', count: 1 }]);
+    expect(statistics.byType).toStrictEqual([{ type: 'classic', label: 'Classic', count: 1 }]);
   });
 });
 
@@ -115,7 +115,7 @@ describe('the consumer group type filter', () => {
     expect(screen.queryByRole('link', { name: 'orders' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Go to next page' })).toBeDisabled();
     await waitFor(() =>
-      expect(Object.fromEntries(onUrlUpdate.mock.calls.at(-1)?.[0].searchParams ?? [])).toEqual({
+      expect(Object.fromEntries(onUrlUpdate.mock.calls.at(-1)?.[0].searchParams ?? [])).toStrictEqual({
         pageSize: '1',
         state: 'Stable',
         type: 'classic',

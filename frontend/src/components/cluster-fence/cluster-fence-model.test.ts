@@ -55,8 +55,8 @@ describe('toFencePhase', () => {
 
 test('blocking begins in fencing, not fenced, and stops in unfencing; Fence is accepted from the other two', () => {
   const phases = ['unfenced', 'fencing', 'fenced', 'unfencing'] as const;
-  expect(phases.filter(isBlockingPhase)).toEqual(['fencing', 'fenced']);
-  expect(phases.filter(canFenceFromPhase)).toEqual(['unfenced', 'unfencing']);
+  expect(phases.filter(isBlockingPhase)).toStrictEqual(['fencing', 'fenced']);
+  expect(phases.filter(canFenceFromPhase)).toStrictEqual(['unfenced', 'unfencing']);
 });
 
 describe('getBrokerProgress', () => {
@@ -70,7 +70,7 @@ describe('getBrokerProgress', () => {
         { nodeId: 4, fence: fence(ClusterFenceState.FENCED, 18) },
       ],
     });
-    expect(getBrokerProgress(response)).toEqual([
+    expect(getBrokerProgress(response)).toStrictEqual([
       { nodeId: 1, status: 'confirmed', copy: { phase: 'fencing', revision: 18n }, blocks: true },
       {
         nodeId: 2,
@@ -99,8 +99,8 @@ describe('getBrokerProgress', () => {
         ],
       })
     );
-    expect(current?.copy?.readPolicy).toEqual({ exemptPrincipals: ['shadow-orders'], allowAllReads: true });
-    expect(earlier?.copy?.readPolicy).toEqual({ exemptPrincipals: ['shadow-orders'], allowAllReads: false });
+    expect(current?.copy?.readPolicy).toStrictEqual({ exemptPrincipals: ['shadow-orders'], allowAllReads: true });
+    expect(earlier?.copy?.readPolicy).toStrictEqual({ exemptPrincipals: ['shadow-orders'], allowAllReads: false });
   });
 });
 
@@ -118,7 +118,7 @@ describe('summarizeFence', () => {
           },
         })
       )
-    ).toEqual({
+    ).toStrictEqual({
       phase: 'fenced',
       revision: 29n,
       stateChangedAt: changedAt,
@@ -235,12 +235,12 @@ describe('getReadPolicyWarnings', () => {
     const [warning] = getReadPolicyWarnings(['User:alice', 'bob'], false);
     expect(warning?.severity).toBe('warning');
     expect(warning?.message).toContain('matches nobody');
-    expect(warning?.fix?.principals(['User:alice', 'bob'])).toEqual(['alice', 'bob']);
+    expect(warning?.fix?.principals(['User:alice', 'bob'])).toStrictEqual(['alice', 'bob']);
   });
 
   test('explains the empty name, and says nothing when every reader is allowed', () => {
-    expect(getReadPolicyWarnings(['', 'shadow-orders'], false).map((warning) => warning.id)).toEqual(['blank']);
-    expect(getReadPolicyWarnings([], true)).toEqual([]);
+    expect(getReadPolicyWarnings(['', 'shadow-orders'], false).map((warning) => warning.id)).toStrictEqual(['blank']);
+    expect(getReadPolicyWarnings([], true)).toStrictEqual([]);
   });
 });
 
@@ -251,7 +251,7 @@ describe('linksThatStopFence', () => {
       { name: 'done', state: ShadowLinkState.FAILED_OVER },
       { name: 'moving', state: ShadowLinkState.FAILING_OVER },
     ];
-    expect(linksThatStopFence(links).map((link) => link.name)).toEqual(['active', 'moving']);
+    expect(linksThatStopFence(links).map((link) => link.name)).toStrictEqual(['active', 'moving']);
   });
 });
 

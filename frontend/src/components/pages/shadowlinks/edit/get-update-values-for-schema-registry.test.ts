@@ -60,25 +60,25 @@ describe('getUpdateValuesForSchemaRegistry', () => {
     test('untouched forms emit no mask in any mode', () => {
       for (const build of [noneValues, topicValues, apiValues]) {
         const result = getUpdateValuesForSchemaRegistry(build(), build());
-        expect(result.fieldMaskPaths).toEqual([]);
+        expect(result.fieldMaskPaths).toStrictEqual([]);
       }
     });
 
     test('none to topic emits the mask with the topic oneof', () => {
       const result = getUpdateValuesForSchemaRegistry(topicValues(), noneValues());
-      expect(result.fieldMaskPaths).toEqual([SR_MASK_PATH]);
+      expect(result.fieldMaskPaths).toStrictEqual([SR_MASK_PATH]);
       expect(result.value?.schemaRegistryShadowingMode?.case).toBe('shadowSchemaRegistryTopic');
     });
 
     test('topic to none emits the mask with no value', () => {
       const result = getUpdateValuesForSchemaRegistry(noneValues(), topicValues());
-      expect(result.fieldMaskPaths).toEqual([SR_MASK_PATH]);
+      expect(result.fieldMaskPaths).toStrictEqual([SR_MASK_PATH]);
       expect(result.value).toBeUndefined();
     });
 
     test('none to api emits the mask with the full api oneof', () => {
       const result = getUpdateValuesForSchemaRegistry(apiValues(), noneValues());
-      expect(result.fieldMaskPaths).toEqual([SR_MASK_PATH]);
+      expect(result.fieldMaskPaths).toStrictEqual([SR_MASK_PATH]);
       expect(result.value?.schemaRegistryShadowingMode?.case).toBe('shadowSchemaRegistryApi');
       if (result.value?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryApi') {
         const api = result.value.schemaRegistryShadowingMode.value;
@@ -90,7 +90,7 @@ describe('getUpdateValuesForSchemaRegistry', () => {
 
     test('api to none emits the mask with no value', () => {
       const result = getUpdateValuesForSchemaRegistry(noneValues(), apiValues());
-      expect(result.fieldMaskPaths).toEqual([SR_MASK_PATH]);
+      expect(result.fieldMaskPaths).toStrictEqual([SR_MASK_PATH]);
       expect(result.value).toBeUndefined();
     });
   });
@@ -101,7 +101,7 @@ describe('getUpdateValuesForSchemaRegistry', () => {
         syncBehavior: { ...initialValues.schemaRegistry.syncBehavior, tailInterval: '30s' },
       });
       const result = getUpdateValuesForSchemaRegistry(edited, apiValues());
-      expect(result.fieldMaskPaths).toEqual([SR_MASK_PATH]);
+      expect(result.fieldMaskPaths).toStrictEqual([SR_MASK_PATH]);
       if (result.value?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryApi') {
         expect(result.value.schemaRegistryShadowingMode.value.tailInterval).toMatchObject({ seconds: 30n });
         expect(result.value.schemaRegistryShadowingMode.value.paused).toBe(true);
@@ -123,12 +123,12 @@ describe('getUpdateValuesForSchemaRegistry', () => {
         });
 
       const untouched = getUpdateValuesForSchemaRegistry(disabledTls(), disabledTls());
-      expect(untouched.fieldMaskPaths).toEqual([]);
+      expect(untouched.fieldMaskPaths).toStrictEqual([]);
 
       const edited = disabledTls();
       edited.schemaRegistry.syncBehavior = { ...edited.schemaRegistry.syncBehavior, tailInterval: '30s' };
       const result = getUpdateValuesForSchemaRegistry(edited, disabledTls());
-      expect(result.fieldMaskPaths).toEqual(['configurations.schema_registry_sync_options']);
+      expect(result.fieldMaskPaths).toStrictEqual(['configurations.schema_registry_sync_options']);
       expect(result.value?.schemaRegistryShadowingMode).toMatchObject({
         case: 'shadowSchemaRegistryApi',
         value: { tlsSettings: { enabled: false, tlsSettings: { case: 'tlsFileSettings' } } },
@@ -137,8 +137,8 @@ describe('getUpdateValuesForSchemaRegistry', () => {
 
     test('typing a password emits the mask; an empty field keeps it silent', () => {
       const typed = apiValues({ basicCredentials: { username: 'sr-replicator', password: 'new-secret' } });
-      expect(getUpdateValuesForSchemaRegistry(typed, apiValues()).fieldMaskPaths).toEqual([SR_MASK_PATH]);
-      expect(getUpdateValuesForSchemaRegistry(apiValues(), apiValues()).fieldMaskPaths).toEqual([]);
+      expect(getUpdateValuesForSchemaRegistry(typed, apiValues()).fieldMaskPaths).toStrictEqual([SR_MASK_PATH]);
+      expect(getUpdateValuesForSchemaRegistry(apiValues(), apiValues()).fieldMaskPaths).toStrictEqual([]);
     });
 
     test('scratch values typed into a mode that is not submitted emit no mask', () => {
@@ -148,7 +148,7 @@ describe('getUpdateValuesForSchemaRegistry', () => {
       touredButTopic.schemaRegistry.contexts = ['.scratch'];
 
       const result = getUpdateValuesForSchemaRegistry(touredButTopic, topicValues());
-      expect(result.fieldMaskPaths).toEqual([]);
+      expect(result.fieldMaskPaths).toStrictEqual([]);
       expect(result.value?.schemaRegistryShadowingMode?.case).toBe('shadowSchemaRegistryTopic');
     });
 
@@ -157,7 +157,7 @@ describe('getUpdateValuesForSchemaRegistry', () => {
       replaced.schemaRegistry.mtls.clientKey = { pemContent: 'NEW_KEY_PEM', fileName: 'client.key' };
 
       const result = getUpdateValuesForSchemaRegistry(replaced, apiValues());
-      expect(result.fieldMaskPaths).toEqual([SR_MASK_PATH]);
+      expect(result.fieldMaskPaths).toStrictEqual([SR_MASK_PATH]);
     });
 
     test('removing the stored mtls pair emits the mask without PEM material', () => {
@@ -171,7 +171,7 @@ describe('getUpdateValuesForSchemaRegistry', () => {
       };
 
       const result = getUpdateValuesForSchemaRegistry(removed, apiValues());
-      expect(result.fieldMaskPaths).toEqual([SR_MASK_PATH]);
+      expect(result.fieldMaskPaths).toStrictEqual([SR_MASK_PATH]);
       if (result.value?.schemaRegistryShadowingMode?.case === 'shadowSchemaRegistryApi') {
         expect(result.value.schemaRegistryShadowingMode.value.tlsSettings?.tlsSettings?.case).toBeUndefined();
       }

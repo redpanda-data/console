@@ -28,8 +28,8 @@ describe('primitive utilities', () => {
 });
 
 test('string sorting retains UTF-16 ordering, including numeric strings and non-ASCII text', () => {
-  expect(['ä', 'a', 'Z', '_', 'A', '9'].toSorted(compareStrings)).toEqual(['9', 'A', 'Z', '_', 'a', 'ä']);
-  expect(['2', '10', '1'].toSorted(compareStrings)).toEqual(['1', '10', '2']);
+  expect(['ä', 'a', 'Z', '_', 'A', '9'].toSorted(compareStrings)).toStrictEqual(['9', 'A', 'Z', '_', 'a', 'ä']);
+  expect(['2', '10', '1'].toSorted(compareStrings)).toStrictEqual(['1', '10', '2']);
   expect(compareStrings('same', 'same')).toBe(0);
 });
 

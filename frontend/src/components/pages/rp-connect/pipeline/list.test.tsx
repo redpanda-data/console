@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { createRouterTransport } from '@connectrpc/connect';
+import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import {
   type DeletePipelineRequest,
@@ -199,7 +200,7 @@ describe('the PipelineListPage', () => {
       });
 
       // Default sort puts problems first: error, then running, then stopped.
-      expect(visibleLinkNames()).toEqual(['clickstream-sink', 'orders-enrichment', 'nightly-export']);
+      expect(visibleLinkNames()).toStrictEqual(['clickstream-sink', 'orders-enrichment', 'nightly-export']);
       expect(screen.queryByText('agent-helper')).not.toBeInTheDocument();
     });
 
@@ -273,13 +274,13 @@ describe('the PipelineListPage', () => {
       await user.click(tab('Error'));
 
       await waitFor(() => {
-        expect(visibleLinkNames()).toEqual(['clickstream-sink']);
+        expect(visibleLinkNames()).toStrictEqual(['clickstream-sink']);
       });
 
       await user.click(tab('Stopped'));
 
       await waitFor(() => {
-        expect(visibleLinkNames()).toEqual(['nightly-export']);
+        expect(visibleLinkNames()).toStrictEqual(['nightly-export']);
       });
     });
 
@@ -336,7 +337,7 @@ describe('the PipelineListPage', () => {
       await user.type(screen.getByRole('textbox', { name: SEARCH_INPUT_RE }), 'bbb2');
 
       await waitFor(() => {
-        expect(visibleLinkNames()).toEqual(['clickstream-sink']);
+        expect(visibleLinkNames()).toStrictEqual(['clickstream-sink']);
       });
       expect(tab('All')).toHaveTextContent('1');
       expect(tab('Running')).toHaveTextContent('0');
@@ -471,7 +472,7 @@ describe('the PipelineListPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Runs' }));
     await user.click(await screen.findByRole('option', { name: UNTIL_DONE_RE }));
-    await waitFor(() => expect(visibleLinkNames()).toEqual(['nightly-export']));
+    await waitFor(() => expect(visibleLinkNames()).toStrictEqual(['nightly-export']));
   });
 
   describe('drafts', () => {
@@ -542,7 +543,7 @@ describe('the PipelineListPage', () => {
         // Its connectors are parsed from its YAML like any other row.
         expect(within(row).getByText('generate')).toBeInTheDocument();
         // Drafts sort behind running pipelines but ahead of stopped ones; the error row still leads.
-        expect(visibleLinkNames()).toEqual([
+        expect(visibleLinkNames()).toStrictEqual([
           'clickstream-sink',
           'orders-enrichment',
           'half-built-pipeline',
@@ -597,7 +598,7 @@ describe('the PipelineListPage', () => {
         expect(tab('Stopped')).toHaveTextContent('Stopped1');
 
         await user.click(tab('Drafts'));
-        await waitFor(() => expect(visibleLinkNames()).toEqual(['half-built-pipeline']));
+        await waitFor(() => expect(visibleLinkNames()).toStrictEqual(['half-built-pipeline']));
       });
     });
 
@@ -702,7 +703,7 @@ describe('the PipelineListPage view in the URL', () => {
       transport: buildTransport(),
       initialLocation: `/?tab=running&q=orders&input=${encodeURIComponent(JSON.stringify(['redpanda']))}`,
     });
-    await waitFor(() => expect(visibleLinkNames()).toEqual(['orders-enrichment']));
+    await waitFor(() => expect(visibleLinkNames()).toStrictEqual(['orders-enrichment']));
     expect(tab('Running')).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('textbox', { name: SEARCH_INPUT_RE })).toHaveValue('orders');
     expect(screen.getByRole('button', { name: CLEAR_FILTERS_RE })).toBeInTheDocument();
@@ -725,10 +726,10 @@ describe('the PipelineListPage view in the URL', () => {
     await user.click(tab('Stopped'));
     await user.click(tab('All'));
     await user.type(screen.getByRole('textbox', { name: SEARCH_INPUT_RE }), 'night');
-    await waitFor(() => expect(router.state.location.search).toEqual({ q: 'night' }));
+    await waitFor(() => expect(router.state.location.searchStr).toBe('?q=night'));
 
     await user.click(screen.getByRole('button', { name: CLEAR_FILTERS_RE }));
-    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    await waitFor(() => expect(router.state.location.searchStr).toBe(''));
     expect(screen.getByRole('textbox', { name: SEARCH_INPUT_RE })).toHaveValue('');
   });
 });

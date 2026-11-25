@@ -528,11 +528,14 @@ function collectResourceRefs(
   for (const node of nodes) {
     const resource = isNonEmptyString(node.resourceRef) ? resolve(node, node.resourceRef) : undefined;
     const userBox = resource ? boxes.get(node.id) : undefined;
-    if (resource && userBox) {
-      refs.set(`${node.id}->${resource.id}`, { userId: node.id, resourceId: resource.id });
-      const left = userBox.x - userBox.w / 2;
-      desiredX.set(resource.id, Math.min(desiredX.get(resource.id) ?? Number.POSITIVE_INFINITY, left));
+    if (!(resource && userBox)) {
+      continue;
     }
+    refs.set(`${node.id}->${resource.id}`, { userId: node.id, resourceId: resource.id });
+    desiredX.set(
+      resource.id,
+      Math.min(desiredX.get(resource.id) ?? Number.POSITIVE_INFINITY, userBox.x - userBox.w / 2)
+    );
   }
   return { refs: [...refs.values()], desiredX };
 }
@@ -649,18 +652,18 @@ function placeGraphInserts(
   rfNodes: Node[],
   boxes: Map<string, NodeBox>
 ): { maxX: number; maxY: number } {
-  let maxX = Number.NEGATIVE_INFINITY;
-  let maxY = Number.NEGATIVE_INFINITY;
+  const extent = { maxX: Number.NEGATIVE_INFINITY, maxY: Number.NEGATIVE_INFINITY };
   for (const ins of ctx.inserts) {
     const anchor = boxes.get(ins.anchorId);
-    if (anchor) {
-      const center = { x: anchor.x, y: anchor.y + anchor.h / 2 + 10 + GRAPH_INSERT_H / 2 };
-      rfNodes.push(insertPillNode(ins, center));
-      maxX = Math.max(maxX, center.x + GRAPH_INSERT_W / 2);
-      maxY = Math.max(maxY, center.y + GRAPH_INSERT_H / 2);
+    if (!anchor) {
+      continue;
     }
+    const center = { x: anchor.x, y: anchor.y + anchor.h / 2 + 10 + GRAPH_INSERT_H / 2 };
+    rfNodes.push(insertPillNode(ins, center));
+    extent.maxX = Math.max(extent.maxX, center.x + GRAPH_INSERT_W / 2);
+    extent.maxY = Math.max(extent.maxY, center.y + GRAPH_INSERT_H / 2);
   }
-  return { maxX, maxY };
+  return extent;
 }
 
 function insertPillNode(ins: GraphInsertSpec, center: { x: number; y: number }): Node {

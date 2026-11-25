@@ -16,7 +16,7 @@ import { describe, expect, test } from 'bun:test';
 
 describe('routerDefaults', () => {
   test('preloads on intent while TanStack Query owns caching and route boundaries', () => {
-    expect(routerDefaults).toEqual({
+    expect(routerDefaults).toStrictEqual({
       defaultErrorComponent: RouteError,
       defaultPendingComponent: RoutePending,
       defaultPreload: 'intent',

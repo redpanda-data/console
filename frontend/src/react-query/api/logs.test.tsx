@@ -10,6 +10,7 @@
  */
 
 import { Code, ConnectError } from '@connectrpc/connect';
+import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
@@ -122,7 +123,7 @@ describe('useLogSearch live mode', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3, 2, 1]));
+    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toStrictEqual([3, 2, 1]));
   });
 
   test('keeps one copy of a message both the history and the tail returned', async () => {
@@ -144,7 +145,7 @@ describe('useLogSearch live mode', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3, 2, 1]));
+    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toStrictEqual([3, 2, 1]));
   });
 
   // The tail heartbeats with empty progress while open, which isn't a search in progress.
@@ -193,7 +194,7 @@ describe('useLogSearch live mode', () => {
       }
     );
 
-    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3]));
+    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toStrictEqual([3]));
     await waitFor(() =>
       expect(
         queryClient
@@ -330,7 +331,7 @@ describe('useLogSearch history mode', () => {
 
     await waitFor(() => expect(result.current.phase).toBeNull());
     expect(result.current.error).toBeNull();
-    expect(result.current.messages).toEqual([]);
+    expect(result.current.messages).toStrictEqual([]);
     expect(toast.error).not.toHaveBeenCalled();
   });
 

@@ -193,11 +193,12 @@ function deleteInObj(obj: Record<string, unknown>, path: string[]): void {
 // Drop objects that became empty after clearing their fields, so the YAML stays tidy.
 function pruneEmptyObjects(obj: Record<string, unknown>): void {
   for (const [key, val] of Object.entries(obj)) {
-    if (isObject(val) && !Array.isArray(val)) {
-      pruneEmptyObjects(val);
-      if (Object.keys(val).length === 0) {
-        delete obj[key];
-      }
+    if (!(isObject(val) && !Array.isArray(val))) {
+      continue;
+    }
+    pruneEmptyObjects(val);
+    if (Object.keys(val).length === 0) {
+      delete obj[key];
     }
   }
 }

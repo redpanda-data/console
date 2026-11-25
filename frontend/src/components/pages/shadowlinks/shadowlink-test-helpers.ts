@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { expect } from '@rstest/core';
 import { waitFor } from '@testing-library/react';
 import type userEvent from '@testing-library/user-event';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';

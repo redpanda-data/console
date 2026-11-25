@@ -227,8 +227,8 @@ describe('useGetShadowLinkUnified', () => {
 
     // Verify controlplane overrides are applied
     expect(result.current.data?.shadowRedpandaId).toBe('sr-456');
-    expect(result.current.data?.createdAt).toEqual(new Date('2025-01-01T00:00:00Z'));
-    expect(result.current.data?.updatedAt).toEqual(new Date('2025-01-02T00:00:00Z'));
+    expect(result.current.data?.createdAt).toStrictEqual(new Date('2025-01-01T00:00:00Z'));
+    expect(result.current.data?.updatedAt).toStrictEqual(new Date('2025-01-02T00:00:00Z'));
 
     // Verify state is from controlplane mapping
     expect(result.current.data?.state).toBe(UnifiedShadowLinkState.ACTIVE);

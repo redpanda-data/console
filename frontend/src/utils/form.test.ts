@@ -4,8 +4,8 @@ import { addTopicFormSchema } from '../components/pages/rp-connect/types/wizard'
 
 describe('runtime enum keys', () => {
   test('returns actual enumerable string keys, including an honestly empty list', () => {
-    expect(enumFromKeys({ minutes: 60_000, hours: 3_600_000 })).toEqual(['minutes', 'hours']);
-    expect(enumFromKeys({})).toEqual([]);
+    expect(enumFromKeys({ minutes: 60_000, hours: 3_600_000 })).toStrictEqual(['minutes', 'hours']);
+    expect(enumFromKeys({})).toStrictEqual([]);
   });
 
   test('retention schemas accept unit names, never numeric factor values', () => {

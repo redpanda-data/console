@@ -30,7 +30,7 @@ describe('extractSecretReferences', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toStrictEqual({
       secretName: 'DB_PASSWORD',
       nestedKey: undefined,
       fullReference: '${secrets.DB_PASSWORD}',
@@ -43,7 +43,7 @@ describe('extractSecretReferences', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toStrictEqual({
       secretName: 'API_CREDS',
       nestedKey: 'token',
       fullReference: '${secrets.API_CREDS.token}',
@@ -56,7 +56,7 @@ describe('extractSecretReferences', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toStrictEqual({
       secretName: 'CONFIG',
       nestedKey: 'database.connection.password',
       fullReference: '${secrets.CONFIG.database.connection.password}',
@@ -69,7 +69,7 @@ describe('extractSecretReferences', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toStrictEqual({
       secretName: 'PORT',
       nestedKey: undefined,
       fullReference: '${secrets.PORT:8080}',
@@ -82,7 +82,7 @@ describe('extractSecretReferences', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toStrictEqual({
       secretName: 'CONFIG',
       nestedKey: 'timeout',
       fullReference: '${secrets.CONFIG.timeout:30}',
@@ -125,7 +125,7 @@ describe('extractSecretReferences', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toStrictEqual({
       secretName: 'API_CREDS',
       nestedKey: 'token',
       fullReference: '${secrets.API_CREDS.token}',
@@ -157,14 +157,14 @@ describe('empty and structured secret inputs', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(0);
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
   test('should return empty array for empty string', () => {
     const result = extractSecretReferences('');
 
     expect(result).toHaveLength(0);
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
   test('should handle secret references in complex YAML structure', () => {
@@ -206,7 +206,7 @@ describe('secret reference edge cases', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toStrictEqual({
       secretName: 'API_URL',
       nestedKey: undefined,
       fullReference: '${secrets.API_URL:https://api.example.com/v1}',
@@ -250,7 +250,7 @@ describe('secret reference edge cases', () => {
     const result = extractSecretReferences(yaml);
 
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toStrictEqual({
       secretName: 'TIMESTAMP',
       nestedKey: undefined,
       fullReference: '${secrets.TIMESTAMP:2025-01-01T00:00:00}',
@@ -270,7 +270,7 @@ describe('getUniqueSecretNames', () => {
     const result = getUniqueSecretNames(references);
 
     expect(result).toHaveLength(2);
-    expect(result).toEqual(['API_KEY', 'DB_PASSWORD']);
+    expect(result).toStrictEqual(['API_KEY', 'DB_PASSWORD']);
   });
 
   test('should return sorted array of secret names', () => {
@@ -282,14 +282,14 @@ describe('getUniqueSecretNames', () => {
 
     const result = getUniqueSecretNames(references);
 
-    expect(result).toEqual(['ALPHA', 'BETA', 'ZEBRA']);
+    expect(result).toStrictEqual(['ALPHA', 'BETA', 'ZEBRA']);
   });
 
   test('should return empty array for empty input', () => {
     const result = getUniqueSecretNames([]);
 
     expect(result).toHaveLength(0);
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
   test('should handle single reference', () => {
@@ -297,7 +297,7 @@ describe('getUniqueSecretNames', () => {
 
     const result = getUniqueSecretNames(references);
 
-    expect(result).toEqual(['SINGLE_SECRET']);
+    expect(result).toStrictEqual(['SINGLE_SECRET']);
   });
 
   test('should deduplicate multiple references to same secret', () => {
@@ -310,6 +310,6 @@ describe('getUniqueSecretNames', () => {
     const result = getUniqueSecretNames(references);
 
     expect(result).toHaveLength(1);
-    expect(result).toEqual(['CONFIG']);
+    expect(result).toStrictEqual(['CONFIG']);
   });
 });

@@ -56,8 +56,8 @@ test('keeps native keys, drag, runtime viewport, DOM access and isolated context
   featureFlags,
   testInfo,
 }) => {
-  expect(featureFlags).toEqual({});
-  expect(page.viewportSize()).toEqual({ width: 1280, height: 720 });
+  expect(featureFlags).toStrictEqual({});
+  expect(page.viewportSize()).toStrictEqual({ width: 1280, height: 720 });
   await page.setViewportSize({ width: 640, height: 480 });
   await page.setContent(
     '<input aria-label="Text"><div draggable="true" id="source">Drag</div><div id="target">Drop</div>'
@@ -77,7 +77,7 @@ flaggedTest(
     await page.goto('data:text/html,<script>window.bootFlag=window.__E2E_FEATURE_FLAGS__.TEST_BOOT_FLAG</script>');
     expect(await page.evaluate(() => Reflect.get(window, 'bootFlag') === true)).toBe(true);
     await testInfo.attach('boot.json', { body: '{"ready":true}', contentType: 'application/json' });
-    expect(task.meta.attachments).toEqual([
+    expect(task.meta.attachments).toStrictEqual([
       { name: 'boot.json', path: testInfo.outputPath('boot.json'), contentType: 'application/json' },
     ]);
   }

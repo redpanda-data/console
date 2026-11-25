@@ -24,17 +24,17 @@ const sorted = (specs: ConnectComponentSpec[]) => [...specs].sort(byProminence).
 describe('byProminence', () => {
   test('sorts common components ahead of the long tail', () => {
     // `mapping` is a common processor; `avro` is not.
-    expect(sorted([spec('avro'), spec('mapping')])).toEqual(['mapping', 'avro']);
+    expect(sorted([spec('avro'), spec('mapping')])).toStrictEqual(['mapping', 'avro']);
   });
 
   test('demotes experimental below stable, even when common', () => {
     const result = sorted([spec('mapping', ComponentStatus.EXPERIMENTAL), spec('avro', ComponentStatus.STABLE)]);
     // Stable (even uncommon) sorts above experimental.
-    expect(result).toEqual(['avro', 'mapping']);
+    expect(result).toStrictEqual(['avro', 'mapping']);
   });
 
   test('falls back to alphabetical within the same prominence bucket', () => {
-    expect(sorted([spec('zzz'), spec('aaa')])).toEqual(['aaa', 'zzz']);
+    expect(sorted([spec('zzz'), spec('aaa')])).toStrictEqual(['aaa', 'zzz']);
   });
 });
 
@@ -75,7 +75,7 @@ describe('component aliases', () => {
   });
 
   test('returns no alias terms for a name no fragment matches', () => {
-    expect(aliasTermsForName('totally_unrelated_xyz')).toEqual([]);
+    expect(aliasTermsForName('totally_unrelated_xyz')).toStrictEqual([]);
   });
 
   test('matches fragments on `_`/word boundaries, not mid-token substrings', () => {
@@ -159,17 +159,17 @@ describe('computeSuggested', () => {
   test('resolves the curated names for the allowed types against the catalog', () => {
     const result = computeSuggested(['input'], byName, []).map((c) => c.name);
     // Only the curated input names present in `byName` survive (redpanda/http_client are absent).
-    expect(result).toEqual(['kafka_franz', 'generate', 'file']);
+    expect(result).toStrictEqual(['kafka_franz', 'generate', 'file']);
   });
 
   test('drops anything already shown under Recent', () => {
     const recent = [spec('generate', ComponentStatus.STABLE, 'input')];
     const result = computeSuggested(['input'], byName, recent).map((c) => c.name);
     expect(result).not.toContain('generate');
-    expect(result).toEqual(['kafka_franz', 'file']);
+    expect(result).toStrictEqual(['kafka_franz', 'file']);
   });
 
   test('returns nothing when there are no allowed types', () => {
-    expect(computeSuggested(undefined, byName, [])).toEqual([]);
+    expect(computeSuggested(undefined, byName, [])).toStrictEqual([]);
   });
 });

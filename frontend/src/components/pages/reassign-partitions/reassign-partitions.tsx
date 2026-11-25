@@ -69,10 +69,8 @@ import { Section } from '../../misc/section';
 import { PageComponent, type PageInitHelper } from '../page';
 import { CompactSection } from '../shared/compact-section';
 
-export type PartitionSelection = {
-  // Which partitions are selected?
-  [topicName: string]: number[]; // topicName -> array of partitionIds
-};
+// Selected partition IDs by topic name.
+export type PartitionSelection = Record<string | number, number[]>;
 
 type ReassignPartitionsState = {
   removeThrottleFromTopicsContent: string[] | null;
@@ -668,11 +666,12 @@ class ReassignPartitions extends PageComponent {
     let maxRf = 0;
     const selectedTopicNames = Object.keys(this.state.partitionSelection ?? {});
     for (const topicName of selectedTopicNames) {
-      if (Object.hasOwn(this.state.partitionSelection, topicName)) {
-        const topic = api.topics?.find((x) => x.topicName === topicName);
-        if (topic && topic.replicationFactor > maxRf) {
-          maxRf = topic.replicationFactor;
-        }
+      if (!Object.hasOwn(this.state.partitionSelection, topicName)) {
+        continue;
+      }
+      const topic = api.topics?.find((x) => x.topicName === topicName);
+      if (topic && topic.replicationFactor > maxRf) {
+        maxRf = topic.replicationFactor;
       }
     }
     return maxRf;

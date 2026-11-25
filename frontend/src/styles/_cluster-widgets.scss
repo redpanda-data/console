@@ -227,6 +227,7 @@
   }
 
   // iconButton in a table row is invisible unless hovered
+  // biome-ignore lint/style/noDescendingSpecificity: Row opacity is independent of the nested icon hover and active styles.
   tr:not(:hover) .iconButton {
     opacity: 0;
   }

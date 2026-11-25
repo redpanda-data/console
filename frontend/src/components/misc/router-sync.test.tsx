@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, test } from '@rstest/core';
 import { render } from '@testing-library/react';
 
 import { RouterSync } from './router-sync';

@@ -10,6 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm, useWatch } from 'react-hook-form';
@@ -70,7 +71,7 @@ describe('the TopicConfigTab', () => {
       const state = readFormState();
 
       // Only non-default properties should remain
-      expect(state.topicProperties).toEqual(['segment.bytes', 'flush.ms']);
+      expect(state.topicProperties).toStrictEqual(['segment.bytes', 'flush.ms']);
       expect(state.topicProperties).not.toContain('retention.bytes');
       expect(state.topicProperties).not.toContain('retention.ms');
     });

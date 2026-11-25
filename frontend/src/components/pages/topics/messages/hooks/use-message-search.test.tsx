@@ -134,7 +134,7 @@ describe('useMessageSearch', () => {
       const { result } = renderHook(() => useMessageSearch('test-topic'));
       await act(() => result.current.start(baseParams));
 
-      expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2', '1-7']);
+      expect(result.current.messages.map(messageKey)).toStrictEqual(['0-1', '0-2', '1-7']);
       expect(result.current.phase).toBe('done');
       expect(result.current.bytesConsumed).toBe(1024);
       expect(result.current.elapsedMs).toBe(42);
@@ -153,7 +153,7 @@ describe('useMessageSearch', () => {
       expect(listMessagesMock).toHaveBeenCalledTimes(2);
       expect(requestAt(1).pageToken).toBe('page-2');
       expect(requestAt(1).pageSize).toBe(25);
-      expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2']);
+      expect(result.current.messages.map(messageKey)).toStrictEqual(['0-1', '0-2']);
       expect(result.current.nextPageToken).toBeNull();
     });
 
@@ -165,7 +165,7 @@ describe('useMessageSearch', () => {
 
       scriptStream(dataFrame(2, 9), doneFrame());
       await act(() => result.current.start(baseParams));
-      expect(result.current.messages.map(messageKey)).toEqual(['2-9']);
+      expect(result.current.messages.map(messageKey)).toStrictEqual(['2-9']);
     });
 
     test('start with append:true keeps previous results (live tail restarting after hitting maxResults)', async () => {
@@ -176,7 +176,7 @@ describe('useMessageSearch', () => {
 
       scriptStream(dataFrame(0, 2), doneFrame());
       await act(() => result.current.start(baseParams, { live: true, append: true }));
-      expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2']);
+      expect(result.current.messages.map(messageKey)).toStrictEqual(['0-1', '0-2']);
     });
 
     test('a superseded run must not finalize state (phase/backendPhase/messages) after a newer run replaces it', async () => {
@@ -208,7 +208,7 @@ describe('useMessageSearch', () => {
       await act(() => result.current.loadLargeMessage(0, 2));
 
       const replaced = result.current.messages[1];
-      expect(replaced.value.payload).toEqual({ reloaded: true });
+      expect(JSON.stringify(replaced.value.payload)).toBe('{"reloaded":true}');
       // The one-off fetch must lift the size limit and request the raw payload
       const req = lastRequest();
       expect(req.ignoreMaxSizeLimit).toBe(true);

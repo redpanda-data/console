@@ -37,7 +37,7 @@ test('builds an independent federation-only container without a second SPA entry
   const rsbuild = await createRsbuild({ config: react19Config, cwd: process.cwd() });
   const { origin } = await rsbuild.inspectConfig({ mode: 'production' });
   const [config] = origin.bundlerConfigs;
-  expect(config?.entry).toEqual({});
+  expect(config?.entry).toStrictEqual({});
   expect(config?.output).toMatchObject({ publicPath: 'auto' });
   expect(config?.plugins?.some((plugin) => plugin?.constructor.name === 'HtmlRspackPlugin')).toBe(false);
 });

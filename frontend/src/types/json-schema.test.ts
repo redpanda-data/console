@@ -11,7 +11,7 @@ describe('parseJsonSchema', () => {
       defaultSnippets: [{ body: { auth: {} }, suggestionKind: 15 as const }],
       'x-owner': 'connect',
     };
-    expect(parseJsonSchema(schema)).toEqual(schema);
+    expect(parseJsonSchema(schema)).toStrictEqual(schema);
   });
 
   test.each(

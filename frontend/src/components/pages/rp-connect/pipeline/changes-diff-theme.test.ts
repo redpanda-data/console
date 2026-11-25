@@ -75,7 +75,7 @@ describe('diffTheme', () => {
   test('keeps the editor theme base, syntax rules, and chrome', () => {
     expect(theme.base).toBe(editor.base);
     expect(theme.inherit).toBe(editor.inherit);
-    expect(theme.rules).toEqual(editor.rules);
+    expect(theme.rules).toStrictEqual(editor.rules);
     expect(theme.colors).toMatchObject(editor.colors);
   });
 

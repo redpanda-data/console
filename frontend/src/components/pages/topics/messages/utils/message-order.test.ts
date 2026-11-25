@@ -30,7 +30,7 @@ describe('visiblePageKeys', () => {
         pageIndex: 0,
         pageSize: 10,
       })
-    ).toEqual(['0-2', '0-3', '0-1']);
+    ).toStrictEqual(['0-2', '0-3', '0-1']);
   });
 
   test('ignores sorting and keeps server order when sortingDisabled — matches the table, which also disables sorting in continuous mode', () => {
@@ -41,11 +41,11 @@ describe('visiblePageKeys', () => {
         pageIndex: 0,
         pageSize: 10,
       })
-    ).toEqual(['0-1', '0-2', '0-3']);
+    ).toStrictEqual(['0-1', '0-2', '0-3']);
   });
 
   test('paginates within whichever order was chosen', () => {
-    expect(visiblePageKeys(messages, { sorting: [], sortingDisabled: true, pageIndex: 1, pageSize: 2 })).toEqual([
+    expect(visiblePageKeys(messages, { sorting: [], sortingDisabled: true, pageIndex: 1, pageSize: 2 })).toStrictEqual([
       '0-3',
     ]);
   });
@@ -58,7 +58,7 @@ describe('visiblePageKeys', () => {
         pageIndex: 0,
         pageSize: 10,
       })
-    ).toEqual(['0-1', '0-2', '0-3']);
+    ).toStrictEqual(['0-1', '0-2', '0-3']);
   });
 
   test('rows with an equal timestamp keep their relative (server) order instead of an offset tiebreak the table never applies', () => {
@@ -70,7 +70,7 @@ describe('visiblePageKeys', () => {
         pageIndex: 0,
         pageSize: 10,
       })
-    ).toEqual(['0-5', '0-1', '0-3']);
+    ).toStrictEqual(['0-5', '0-1', '0-3']);
   });
 });
 
@@ -80,7 +80,7 @@ describe('orderForContinuousNewest', () => {
   const partitionGrouped = [msg(0, 1, 100), msg(0, 2, 300), msg(1, 5, 200), msg(1, 6, 400)];
 
   test('sorts newest-first (timestamp desc, offset desc tiebreak) for continuous + newest', () => {
-    expect(orderForContinuousNewest(partitionGrouped, true, 'newest')).toEqual([
+    expect(orderForContinuousNewest(partitionGrouped, true, 'newest')).toStrictEqual([
       msg(1, 6, 400),
       msg(0, 2, 300),
       msg(1, 5, 200),
@@ -95,7 +95,11 @@ describe('orderForContinuousNewest', () => {
 
   test('breaks ties by offset descending', () => {
     const tied = [msg(0, 1, 100), msg(1, 3, 100), msg(0, 2, 100)];
-    expect(orderForContinuousNewest(tied, true, 'newest')).toEqual([msg(1, 3, 100), msg(0, 2, 100), msg(0, 1, 100)]);
+    expect(orderForContinuousNewest(tied, true, 'newest')).toStrictEqual([
+      msg(1, 3, 100),
+      msg(0, 2, 100),
+      msg(0, 1, 100),
+    ]);
   });
 });
 
@@ -120,7 +124,7 @@ describe('orderForContinuousNewest composed with applyDisplayWindow (topic-messa
     const ordered = orderForContinuousNewest(newestPageFirst, true, 'newest');
     const { rows, trimmed } = applyDisplayWindow(ordered, 4);
 
-    expect(rows.map((m) => m.timestamp)).toEqual([30, 20, 10, 0]);
+    expect(rows.map((m) => m.timestamp)).toStrictEqual([30, 20, 10, 0]);
     // What got trimmed is the newest side — the footer reports "newer trimmed" for this scope.
     expect(trimmed).toBe(6);
   });
@@ -129,7 +133,7 @@ describe('orderForContinuousNewest composed with applyDisplayWindow (topic-messa
     const ordered = orderForContinuousNewest(newestPageFirst, true, 'newest');
     const { rows, trimmed } = applyDisplayWindow(ordered, 20);
 
-    expect(rows.map((m) => m.timestamp)).toEqual([140, 130, 120, 110, 100, 40, 30, 20, 10, 0]);
+    expect(rows.map((m) => m.timestamp)).toStrictEqual([140, 130, 120, 110, 100, 40, 30, 20, 10, 0]);
     expect(trimmed).toBe(0);
   });
 });

@@ -21,14 +21,14 @@ describe('tablesForNamespace', () => {
 
     const merged = tablesForNamespace(namespace([seeded, table('users')]), [fetched, table('cars')]);
 
-    expect(names(merged)).toEqual(['orders', 'users', 'cars']);
+    expect(names(merged)).toStrictEqual(['orders', 'users', 'cars']);
     expect(merged[0]?.topicName).toBe('orders-topic');
   });
 
   test('ignores fetched tables from other namespaces', () => {
     const merged = tablesForNamespace(namespace([]), [table('audit', { namespaceName: 'internal' })]);
 
-    expect(merged).toEqual([]);
+    expect(merged).toStrictEqual([]);
   });
 });
 
@@ -51,7 +51,7 @@ describe('namespaceTables', () => {
     expect(view.paginate).toBe(false);
     expect(view.remaining).toBe(0);
     expect(view.searching).toBe(true);
-    expect(names(view.visible)).toEqual(names(many.slice(0, 10)));
+    expect(names(view.visible)).toStrictEqual(names(many.slice(0, 10)));
     expect(view.all).toHaveLength(many.length);
   });
 

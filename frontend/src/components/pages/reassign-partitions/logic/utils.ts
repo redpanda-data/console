@@ -221,11 +221,12 @@ export function topicAssignmentsToReassignmentRequest(
   }[] = [];
   const topicNames = Object.keys(topicAssignments ?? {});
   for (const t of topicNames) {
-    if (Object.hasOwn(topicAssignments, t)) {
-      const topicAssignment = topicAssignments[t];
-      const partitions = reassignmentPartitions(topicAssignment);
-      topics.push({ topicName: t, partitions });
+    if (!Object.hasOwn(topicAssignments, t)) {
+      continue;
     }
+    const topicAssignment = topicAssignments[t];
+    const partitions = reassignmentPartitions(topicAssignment);
+    topics.push({ topicName: t, partitions });
   }
 
   return { topics };

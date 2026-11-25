@@ -68,7 +68,7 @@ type UseLogSearchReturn = {
   refresh: () => void;
 };
 
-const logHistoryKey = (pipelineId: string) => ['log-history', pipelineId] as const;
+const logHistoryKey = (pipelineId: string, serverless: boolean) => ['log-history', pipelineId, serverless] as const;
 
 // biome-ignore lint/suspicious/noEmptyBlockStatements: intentional no-op for live mode refresh
 const noop = () => {};
@@ -231,7 +231,8 @@ function useLogHistory(opts: { pipelineId: string; serverless: boolean; enabled:
   }, [phase]);
 
   const query = useTanstackQuery<TopicMessage[]>({
-    queryKey: logHistoryKey(opts.pipelineId),
+    // biome-ignore lint/nursery/useTanstackQueryExhaustiveDependencies: The refs and setter report streaming progress; only the pipeline and serverless mode identify the request.
+    queryKey: logHistoryKey(opts.pipelineId, opts.serverless),
     queryFn: ({ signal }) => {
       messagesRef.current = [];
       progressRef.current = ZERO_PROGRESS;

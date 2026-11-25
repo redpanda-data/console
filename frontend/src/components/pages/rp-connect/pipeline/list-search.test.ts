@@ -21,22 +21,26 @@ import { describe, expect, test } from 'bun:test';
 
 describe('the list search params', () => {
   test('keep only the list keys that parse', () => {
-    expect(readPipelineListSearch({ tab: 'running', q: 'orders', page: 2, runs: ['finite'], defaultTab: 'x' })).toEqual(
-      { tab: 'running', q: 'orders', page: 2, runs: ['finite'] }
+    expect(
+      readPipelineListSearch({ tab: 'running', q: 'orders', page: 2, runs: ['finite'], defaultTab: 'x' })
+    ).toStrictEqual({ tab: 'running', q: 'orders', page: 2, runs: ['finite'] });
+    expect(JSON.stringify(readPipelineListSearch({ tab: 'nope', page: -1, sort: 'tags', input: 'redpanda' }))).toBe(
+      '{}'
     );
-    expect(readPipelineListSearch({ tab: 'nope', page: -1, sort: 'tags', input: 'redpanda' })).toEqual({});
-    expect(readPipelineListSearch(undefined)).toEqual({});
+    expect(readPipelineListSearch(undefined)).toStrictEqual({});
   });
 
   test('become the table’s filters: the tab’s states, the name search and each facet', () => {
-    expect(columnFiltersFromSearch({ tab: 'stopped', q: 'night', input: ['redpanda'], runs: ['finite'] })).toEqual([
+    expect(
+      columnFiltersFromSearch({ tab: 'stopped', q: 'night', input: ['redpanda'], runs: ['finite'] })
+    ).toStrictEqual([
       { id: 'state', value: expect.any(Array) },
       { id: 'name', value: 'night' },
       { id: 'inputs', value: ['redpanda'] },
       { id: 'end', value: ['finite'] },
     ]);
     // The All tab filters nothing, and a blank search isn't a filter.
-    expect(columnFiltersFromSearch({ tab: 'all', q: '  ' })).toEqual([]);
+    expect(columnFiltersFromSearch({ tab: 'all', q: '  ' })).toStrictEqual([]);
   });
 
   test('take the facets back from the table, clearing the ones it no longer filters', () => {
@@ -46,21 +50,21 @@ describe('the list search params', () => {
         { id: 'tags', value: ['env:prod'] },
         { id: 'end', value: [] },
       ])
-    ).toEqual({ input: undefined, output: undefined, tag: ['env:prod'], runs: undefined });
+    ).toStrictEqual({ input: undefined, output: undefined, tag: ['env:prod'], runs: undefined });
   });
 
   test('hold a sort only when it isn’t the default', () => {
-    expect(sortingFromSearch({})).toEqual([{ id: 'state', desc: false }]);
-    expect(sortingFromSearch({ sort: 'name' })).toEqual([{ id: 'name', desc: false }]);
-    expect(sortSearchFromSorting([{ id: 'state', desc: false }])).toEqual({ sort: undefined, desc: undefined });
-    expect(sortSearchFromSorting([{ id: 'name', desc: true }])).toEqual({ sort: 'name', desc: true });
-    expect(sortSearchFromSorting([])).toEqual({ sort: undefined, desc: undefined });
+    expect(sortingFromSearch({})).toStrictEqual([{ id: 'state', desc: false }]);
+    expect(sortingFromSearch({ sort: 'name' })).toStrictEqual([{ id: 'name', desc: false }]);
+    expect(sortSearchFromSorting([{ id: 'state', desc: false }])).toStrictEqual({ sort: undefined, desc: undefined });
+    expect(sortSearchFromSorting([{ id: 'name', desc: true }])).toStrictEqual({ sort: 'name', desc: true });
+    expect(sortSearchFromSorting([])).toStrictEqual({ sort: undefined, desc: undefined });
   });
 
   test('drop keys left at their default, and keep keys the list doesn’t own', () => {
     expect(
       nextPipelineListSearch({ defaultTab: 'redpanda-connect', q: 'a' }, { q: '', tab: 'all', page: 1, input: [] })
-    ).toEqual({ defaultTab: 'redpanda-connect' });
-    expect(nextPipelineListSearch({}, { tab: 'error', page: 3 })).toEqual({ tab: 'error', page: 3 });
+    ).toStrictEqual({ defaultTab: 'redpanda-connect' });
+    expect(nextPipelineListSearch({}, { tab: 'error', page: 3 })).toStrictEqual({ tab: 'error', page: 3 });
   });
 });

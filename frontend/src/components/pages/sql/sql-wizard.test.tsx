@@ -98,7 +98,7 @@ describe('the SqlWizard', () => {
 
     await pickTopicAndContinue('orders');
 
-    expect(screen.getAllByRole('term').map((term) => term.textContent)).toEqual(['Catalog', 'Source topic']);
+    expect(screen.getAllByRole('term').map((term) => term.textContent)).toStrictEqual(['Catalog', 'Source topic']);
     expect(screen.getAllByRole('definition')[1]).toHaveTextContent('orders');
     expect(screen.getByRole('figure', { name: 'This will run' })).toContainElement(screen.getByTestId('sql-preview'));
   });

@@ -399,10 +399,11 @@ const processResourceAcls = (resource: ListACLsResponse['resources'][number], ho
 
   for (const acl of resource.acls) {
     const hostData = hostsMap.get(acl.host);
-    if (hostData) {
-      const rule = getOrCreateRule(hostData, ruleKey, target);
-      rule.operations[getOperationNameFromGRPC(acl.operation)] = getOperationTypeFromGRPC(acl.permissionType);
+    if (!hostData) {
+      continue;
     }
+    const rule = getOrCreateRule(hostData, ruleKey, target);
+    rule.operations[getOperationNameFromGRPC(acl.operation)] = getOperationTypeFromGRPC(acl.permissionType);
   }
 };
 

@@ -575,7 +575,7 @@ describe('the AddUserStep', () => {
       await user.click(screen.getByTestId('submit'));
 
       await waitFor(() =>
-        expect(capturedResult).toEqual({ success: true, data: { authMethod: 'service-account', existing: true } })
+        expect(capturedResult).toStrictEqual({ success: true, data: { authMethod: 'service-account', existing: true } })
       );
     });
   });
@@ -679,7 +679,7 @@ describe('the AddUserStep', () => {
         await user.click(screen.getByTestId('submit'));
 
         await waitFor(() => expect(captured.result).toMatchObject({ success: true }));
-        expect(topicGrants(createACLMock)).toEqual([
+        expect(topicGrants(createACLMock)).toStrictEqual([
           [
             expect.objectContaining({ principal: 'User:no-perms-user', operation: ACL_Operation.ALL }),
             expect.anything(),
@@ -721,7 +721,7 @@ describe('the AddUserStep', () => {
       await user.click(screen.getByTestId('submit'));
 
       await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
-      expect(topicGrants(createACLMock)).toEqual([]);
+      expect(topicGrants(createACLMock)).toStrictEqual([]);
     });
 
     test('11. has permissions alert when user has ACLs', async () => {
@@ -758,7 +758,7 @@ describe('the AddUserStep', () => {
       expect(screen.queryByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeNull();
       await user.click(screen.getByTestId('submit'));
       await waitFor(() => expect(captured.result).toMatchObject({ success: true }));
-      expect(topicGrants(createACLMock)).toEqual([]);
+      expect(topicGrants(createACLMock)).toStrictEqual([]);
     });
     test.each([
       ['a prefixed', 'my-', ACL_ResourcePatternType.PREFIXED],

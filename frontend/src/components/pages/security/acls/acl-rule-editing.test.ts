@@ -31,13 +31,13 @@ describe('getNextRuleResourceType', () => {
 describe('createAllowAllRules', () => {
   test('adds Schema Registry resource types only when the API is available', () => {
     expect(createAllowAllRules(false, 10).map((rule) => rule.resourceType)).not.toContain(ResourceTypeSubject);
-    expect(createAllowAllRules(true, 10).map((rule) => rule.id)).toEqual([10, 11, 12, 13, 14, 15]);
+    expect(createAllowAllRules(true, 10).map((rule) => rule.id)).toStrictEqual([10, 11, 12, 13, 14, 15]);
   });
 
   test('allows every operation of each rule', () => {
     for (const rule of createAllowAllRules(true, 1)) {
       expect(rule.mode).toBe(ModeAllowAll);
-      expect(new Set(Object.values(rule.operations))).toEqual(new Set([OperationTypeAllow]));
+      expect(new Set(Object.values(rule.operations))).toStrictEqual(new Set([OperationTypeAllow]));
     }
   });
 });
@@ -66,7 +66,7 @@ describe('permission edits', () => {
   test('a mode sets every operation of the rule', () => {
     const change = getPermissionModeChange(createRule(1, ResourceTypeTopic), ModeDenyAll);
     expect(change.mode).toBe(ModeDenyAll);
-    expect(new Set(Object.values(change.operations ?? {}))).toEqual(new Set([OperationTypeDeny]));
+    expect(new Set(Object.values(change.operations ?? {}))).toStrictEqual(new Set([OperationTypeDeny]));
   });
 
   test('an operation that breaks the mode turns the rule custom', () => {

@@ -462,7 +462,7 @@ function PipelineCommandPopover({
 }) {
   // Position the popover using Monaco's coordinate API (rendered outside Monaco's DOM)
   const position = useAnchorPosition(editorInstance, slashPosition, open);
-  const anchorStyle: CSSProperties & { [key: `--pipeline-${string}`]: string } = {
+  const anchorStyle: CSSProperties & Record<`--pipeline-${string}`, string> = {
     '--pipeline-menu-top': `${position?.top ?? 0}px`,
     '--pipeline-menu-left': `${position?.left ?? 0}px`,
     '--pipeline-menu-visibility': position ? 'visible' : 'hidden',

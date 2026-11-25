@@ -51,7 +51,7 @@ import type { StopConditionDraft } from '../utils/read-until';
 import type { EditTarget } from '../utils/yaml-edit-target';
 
 const invisibleHandle = 'console-flow-handle !w-1.5 !h-1.5 !border-0 !bg-transparent !min-w-0 !min-h-0';
-type FlowStyleVars = CSSProperties & { [key: `--flow-${string}`]: string | number | undefined };
+type FlowStyleVars = CSSProperties & Record<`--flow-${string}`, string | number | undefined>;
 const FLOW_CARD_STYLE: FlowStyleVars = { '--flow-card-width': `${FLOW_CARD_WIDTH}px` };
 
 // Applied to the card body, never the RF node wrapper, whose `transform` drives positioning.

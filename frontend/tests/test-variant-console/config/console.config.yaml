@@ -1,7 +1,7 @@
 serveFrontend: true
 
 kafka:
-  brokers: ["redpanda:9092"]
+  brokers: [ "redpanda:9092" ]
   sasl:
     enabled: true
     mechanism: SCRAM-SHA-256
@@ -11,12 +11,12 @@ kafka:
 
 schemaRegistry:
   enabled: true
-  urls: ["http://redpanda:8081"]
+  urls: [ "http://redpanda:8081" ]
 
 redpanda:
   adminApi:
     enabled: true
-    urls: ["http://redpanda:9644"]
+    urls: [ "http://redpanda:9644" ]
 
 kafkaConnect:
   enabled: true
@@ -28,4 +28,4 @@ kafkaConnect:
 
 server:
   listenPort: 3000
-  allowedOrigins: ["http://localhost:3000", "http://localhost:3001"]
+  allowedOrigins: [ "http://localhost:3000", "http://localhost:3001" ]

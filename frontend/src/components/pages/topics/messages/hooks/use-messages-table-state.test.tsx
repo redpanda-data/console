@@ -89,14 +89,14 @@ describe('useMessagesTableState', () => {
     test('filters the loaded rows by the typed quick search', () => {
       const { result } = renderTableState({ urlState: urlStateWith({ quickSearch: 'shipped' }) });
 
-      expect(result.current.filteredMessages.map((m) => m.offset)).toEqual([2]);
-      expect(result.current.tableData.map((m) => m.offset)).toEqual([2]);
+      expect(result.current.filteredMessages.map((m) => m.offset)).toStrictEqual([2]);
+      expect(result.current.tableData.map((m) => m.offset)).toStrictEqual([2]);
     });
 
     test('continuous paging puts every windowed row on one page', () => {
       const { result } = renderTableState({ continuousActive: true });
 
-      expect(result.current.pagination).toEqual({ pageIndex: 0, pageSize: 3 });
+      expect(result.current.pagination).toStrictEqual({ pageIndex: 0, pageSize: 3 });
     });
 
     test('a page index past the last page is clamped once the search is done', () => {

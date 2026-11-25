@@ -74,7 +74,7 @@ describe('test runner policy', () => {
         /\.(?:test|spec|cases)\.tsx?$|\/(?:rstest|bun)\.setup(?:\.unit)?\.ts$/.test(fileURLToPath(file))
       )
     ).toBe(true);
-    expect(findVitestUsages(testFiles)).toEqual([]);
+    expect(findVitestUsages(testFiles)).toStrictEqual([]);
     expect(packageJson.devDependencies?.vitest).toBeUndefined();
     expect(packageJson.devDependencies?.['@vitest/ui']).toBeUndefined();
     expect(packageJson.devDependencies?.['@vitest/coverage-v8']).toBeUndefined();
@@ -91,7 +91,7 @@ describe('test runner policy', () => {
       'vitest.setup.integration.ts',
     ];
 
-    expect(legacyFiles.filter((file) => existsSync(new URL(file, frontendRoot)))).toEqual([]);
+    expect(legacyFiles.filter((file) => existsSync(new URL(file, frontendRoot)))).toStrictEqual([]);
   });
 
   test('keeps frontend testing guidance aligned with Rstest', () => {
@@ -103,7 +103,7 @@ describe('test runner policy', () => {
       /vitest|bun run test:ui/i.test(readFileSync(file, 'utf8')) ? [fileURLToPath(file)] : []
     );
 
-    expect(staleGuidance).toEqual([]);
+    expect(staleGuidance).toStrictEqual([]);
     expect(packageJson.scripts?.['test:ui']).toBeUndefined();
   });
 });

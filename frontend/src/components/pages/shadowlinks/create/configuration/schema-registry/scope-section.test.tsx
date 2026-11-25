@@ -10,6 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { type DeepPartial, useForm } from 'react-hook-form';
@@ -98,15 +99,15 @@ describe('the ScopeSection', () => {
     await user.type(screen.getByTestId('sr-subjects-input-field'), ':.prod:orders-value{enter}');
 
     await waitFor(() => {
-      expect(latest.values?.schemaRegistry?.contexts).toEqual(['.prod']);
-      expect(latest.values?.schemaRegistry?.subjects).toEqual([':.prod:orders-value']);
+      expect(latest.values?.schemaRegistry?.contexts).toStrictEqual(['.prod']);
+      expect(latest.values?.schemaRegistry?.subjects).toStrictEqual([':.prod:orders-value']);
     });
 
     // Removing a chip updates form state
     const chip = screen.getByTestId('sr-contexts-input-chip-.prod');
     await user.click(within(chip).getByRole('button', { name: 'Remove tag' }));
     await waitFor(() => {
-      expect(latest.values?.schemaRegistry?.contexts).toEqual([]);
+      expect(latest.values?.schemaRegistry?.contexts).toStrictEqual([]);
     });
   });
 

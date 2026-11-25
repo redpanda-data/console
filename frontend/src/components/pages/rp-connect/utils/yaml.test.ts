@@ -279,7 +279,7 @@ output:
 
       const parsed: unknown = parseYaml(configString(mergedYaml));
       // The scanner config must stay wrapped in its name — `scanner: { avro: {…} }`, not the bare fields.
-      expect(Object.keys(configRecord(configValue(parsed, 'input', 'file', 'scanner')))).toEqual(['avro']);
+      expect(Object.keys(configRecord(configValue(parsed, 'input', 'file', 'scanner')))).toStrictEqual(['avro']);
     });
 
     test('refuses a scanner when the config has no input', () => {
@@ -313,7 +313,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['generate']);
+        expect(result.inputs).toStrictEqual(['generate']);
       });
 
       test('parses a kafka input', () => {
@@ -330,7 +330,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['kafka']);
+        expect(result.inputs).toStrictEqual(['kafka']);
       });
     });
 
@@ -365,7 +365,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['amqp_0_9', 'kafka']);
+        expect(result.inputs).toStrictEqual(['amqp_0_9', 'kafka']);
       });
 
       test('handles broker with empty inputs array', () => {
@@ -379,7 +379,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual([]);
+        expect(result.inputs).toStrictEqual([]);
       });
     });
 
@@ -403,7 +403,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['file', 'generate']);
+        expect(result.inputs).toStrictEqual(['file', 'generate']);
       });
 
       test('extracts child inputs from sequence with sharded join', () => {
@@ -436,7 +436,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['file', 'file']);
+        expect(result.inputs).toStrictEqual(['file', 'file']);
       });
     });
   });
@@ -456,8 +456,8 @@ output:
     topic: my_topic
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['generate']);
-        expect(result.outputs).toEqual(['kafka']);
+        expect(result.inputs).toStrictEqual(['generate']);
+        expect(result.outputs).toStrictEqual(['kafka']);
       });
 
       test('parses a drop output', () => {
@@ -470,7 +470,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['drop']);
+        expect(result.outputs).toStrictEqual(['drop']);
       });
     });
 
@@ -491,7 +491,7 @@ output:
     - resource: general_processor
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['resource', 'resource']);
+        expect(result.outputs).toStrictEqual(['resource', 'resource']);
       });
 
       // A member's own processors can come before its output, as they can on an input.
@@ -503,12 +503,12 @@ output:
       - processors: [{ mapping: root = this }]
         kafka_franz: { topic: a }
 `;
-        expect(componentsOf(yaml).outputs).toEqual(['kafka_franz']);
+        expect(componentsOf(yaml).outputs).toStrictEqual(['kafka_franz']);
         const switched = componentsOf(
           'output:\n  switch:\n    cases:\n      - output: { processors: [], drop: {} }\n'
         ).outputs;
-        expect(switched).toEqual(['drop']);
-        expect(componentsOf('output:\n  fallback:\n    - processors: []\n      stdout: {}\n').outputs).toEqual([
+        expect(switched).toStrictEqual(['drop']);
+        expect(componentsOf('output:\n  fallback:\n    - processors: []\n      stdout: {}\n').outputs).toStrictEqual([
           'stdout',
         ]);
       });
@@ -531,7 +531,7 @@ output:
           target_address: queue:/my_queue
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['kafka', 'http_client', 'amqp_1']);
+        expect(result.outputs).toStrictEqual(['kafka', 'http_client', 'amqp_1']);
       });
 
       test('handles broker with empty outputs array', () => {
@@ -542,7 +542,7 @@ output:
     outputs: []
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual([]);
+        expect(result.outputs).toStrictEqual([]);
       });
 
       test('handles broker with batching config', () => {
@@ -563,7 +563,7 @@ output:
       period: 1s
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['kafka', 'redis_streams']);
+        expect(result.outputs).toStrictEqual(['kafka', 'redis_streams']);
       });
     });
 
@@ -597,7 +597,7 @@ output:
                 root.type = this.type | "unknown"
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub', 'redis_streams']);
+        expect(result.outputs).toStrictEqual(['amqp_1', 'gcp_pubsub', 'redis_streams']);
       });
 
       test('handles switch with continue flag', () => {
@@ -621,7 +621,7 @@ output:
             topic: that_i_dont_want_to_hang_with
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub']);
+        expect(result.outputs).toStrictEqual(['amqp_1', 'gcp_pubsub']);
       });
     });
 
@@ -645,7 +645,7 @@ output:
         path: /usr/local/benthos/everything_failed.jsonl
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['http_client', 'http_client', 'file']);
+        expect(result.outputs).toStrictEqual(['http_client', 'http_client', 'file']);
       });
 
       test('extracts outputs from fallback with dynamodb and file', () => {
@@ -665,7 +665,7 @@ output:
         path: /usr/local/benthos/failed_stuff.jsonl
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['aws_dynamodb', 'file']);
+        expect(result.outputs).toStrictEqual(['aws_dynamodb', 'file']);
       });
     });
   });
@@ -687,7 +687,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['mapping']);
+      expect(result.processors).toStrictEqual(['mapping']);
     });
 
     test('parses log processor', () => {
@@ -706,7 +706,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['log']);
+      expect(result.processors).toStrictEqual(['log']);
     });
 
     test('parses switch processor', () => {
@@ -729,7 +729,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['switch']);
+      expect(result.processors).toStrictEqual(['switch']);
     });
 
     test('parses resource processor', () => {
@@ -746,7 +746,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['resource']);
+      expect(result.processors).toStrictEqual(['resource']);
     });
 
     test('parses catch processor', () => {
@@ -766,7 +766,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['catch']);
+      expect(result.processors).toStrictEqual(['catch']);
     });
 
     test('parses try processor', () => {
@@ -785,7 +785,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['try']);
+      expect(result.processors).toStrictEqual(['try']);
     });
 
     test('parses multiple processors in pipeline', () => {
@@ -824,9 +824,9 @@ output:
     topic: output_topic
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['kafka']);
-      expect(result.processors).toEqual(['mapping', 'log', 'switch', 'catch', 'try', 'resource']);
-      expect(result.outputs).toEqual(['kafka']);
+      expect(result.inputs).toStrictEqual(['kafka']);
+      expect(result.processors).toStrictEqual(['mapping', 'log', 'switch', 'catch', 'try', 'resource']);
+      expect(result.outputs).toStrictEqual(['kafka']);
     });
   });
 
@@ -845,7 +845,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['generate']);
+      expect(result.inputs).toStrictEqual(['generate']);
     });
 
     test('skips label on single output and returns component name', () => {
@@ -861,7 +861,7 @@ output:
     key: ""
 `;
       const result = componentsOf(yaml);
-      expect(result.outputs).toEqual(['redpanda']);
+      expect(result.outputs).toStrictEqual(['redpanda']);
     });
 
     test('skips label on both input and output', () => {
@@ -892,8 +892,8 @@ output:
     max_in_flight: 0
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['generate']);
-      expect(result.outputs).toEqual(['redpanda']);
+      expect(result.inputs).toStrictEqual(['generate']);
+      expect(result.outputs).toStrictEqual(['redpanda']);
     });
 
     test('skips label on processor items', () => {
@@ -918,7 +918,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['branch', 'mapping']);
+      expect(result.processors).toStrictEqual(['branch', 'mapping']);
     });
 
     test('skips label on broker child inputs', () => {
@@ -942,7 +942,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['kafka', 'amqp_0_9']);
+      expect(result.inputs).toStrictEqual(['kafka', 'amqp_0_9']);
     });
 
     test('skips label on broker child outputs', () => {
@@ -961,7 +961,7 @@ output:
           url: http://example.com/post
 `;
       const result = componentsOf(yaml);
-      expect(result.outputs).toEqual(['kafka', 'http_client']);
+      expect(result.outputs).toStrictEqual(['kafka', 'http_client']);
     });
 
     test('skips label on fallback child outputs', () => {
@@ -977,7 +977,7 @@ output:
         path: /usr/local/benthos/failed.jsonl
 `;
       const result = componentsOf(yaml);
-      expect(result.outputs).toEqual(['http_client', 'file']);
+      expect(result.outputs).toStrictEqual(['http_client', 'file']);
     });
 
     test('skips label on switch case outputs', () => {
@@ -1000,7 +1000,7 @@ output:
             topic: mikes_bars
 `;
       const result = componentsOf(yaml);
-      expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub']);
+      expect(result.outputs).toStrictEqual(['amqp_1', 'gcp_pubsub']);
     });
 
     test('full pipeline with labels everywhere', () => {
@@ -1046,15 +1046,15 @@ output:
           url: http://example.com/webhook
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['kafka', 'generate']);
-      expect(result.processors).toEqual(['mapping', 'branch']);
-      expect(result.outputs).toEqual(['kafka', 'http_client']);
+      expect(result.inputs).toStrictEqual(['kafka', 'generate']);
+      expect(result.processors).toStrictEqual(['mapping', 'branch']);
+      expect(result.outputs).toStrictEqual(['kafka', 'http_client']);
     });
   });
 
   describe('edge cases', () => {
     test('returns empty for an empty config', () => {
-      expect(componentsOf('')).toEqual({ inputs: [], processors: [], outputs: [] });
+      expect(componentsOf('')).toStrictEqual({ inputs: [], processors: [], outputs: [] });
     });
 
     test('handles config with no output', () => {
@@ -1064,9 +1064,9 @@ input:
     mapping: 'root = {}'
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['generate']);
-      expect(result.outputs).toEqual([]);
-      expect(result.processors).toEqual([]);
+      expect(result.inputs).toStrictEqual(['generate']);
+      expect(result.outputs).toStrictEqual([]);
+      expect(result.processors).toStrictEqual([]);
     });
 
     test('handles config with no processors', () => {
@@ -1079,7 +1079,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual([]);
+      expect(result.processors).toStrictEqual([]);
     });
 
     test('handles config with no input', () => {
@@ -1092,9 +1092,9 @@ pipeline:
     - mapping: 'root = this'
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual([]);
-      expect(result.processors).toEqual(['mapping']);
-      expect(result.outputs).toEqual(['drop']);
+      expect(result.inputs).toStrictEqual([]);
+      expect(result.processors).toStrictEqual(['mapping']);
+      expect(result.outputs).toStrictEqual(['drop']);
     });
 
     test('full pipeline with broker input, multiple processors, and broker output', () => {
@@ -1131,19 +1131,19 @@ output:
           url: http://example.com/webhook
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['kafka', 'amqp_0_9']);
-      expect(result.processors).toEqual(['mapping', 'log']);
-      expect(result.outputs).toEqual(['kafka', 'http_client']);
+      expect(result.inputs).toStrictEqual(['kafka', 'amqp_0_9']);
+      expect(result.processors).toStrictEqual(['mapping', 'log']);
+      expect(result.outputs).toStrictEqual(['kafka', 'http_client']);
     });
   });
 
   describe('extractAllTopics', () => {
     test('returns empty for empty string', () => {
-      expect(extractAllTopics('')).toEqual([]);
+      expect(extractAllTopics('')).toStrictEqual([]);
     });
 
     test('returns empty for invalid YAML', () => {
-      expect(extractAllTopics('{{not valid')).toEqual([]);
+      expect(extractAllTopics('{{not valid')).toStrictEqual([]);
     });
 
     test('extracts topic from kafka input', () => {
@@ -1155,7 +1155,7 @@ input:
       - events
       - orders
 `;
-      expect(extractAllTopics(yaml)).toEqual(['events', 'orders']);
+      expect(extractAllTopics(yaml)).toStrictEqual(['events', 'orders']);
     });
 
     test('extracts topic from kafka output', () => {
@@ -1165,7 +1165,7 @@ output:
     addresses: [localhost:9092]
     topic: processed_events
 `;
-      expect(extractAllTopics(yaml)).toEqual(['processed_events']);
+      expect(extractAllTopics(yaml)).toStrictEqual(['processed_events']);
     });
 
     test('extracts topics from multiple components', () => {
@@ -1193,7 +1193,7 @@ output:
   kafka:
     topic: shared_topic
 `;
-      expect(extractAllTopics(yaml)).toEqual(['shared_topic']);
+      expect(extractAllTopics(yaml)).toStrictEqual(['shared_topic']);
     });
 
     test('returns without crashing on a circular alias config', () => {
@@ -1201,7 +1201,7 @@ output:
   b: *x
   topic: looped
 `;
-      expect(extractAllTopics(yaml)).toEqual(['looped']);
+      expect(extractAllTopics(yaml)).toStrictEqual(['looped']);
     });
 
     test('resolves merge keys so merged topics are found', () => {
@@ -1341,7 +1341,7 @@ input:
           const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
           const component = configValue(parseYaml(result ?? ''), 'output', 'redpanda');
           expect(Object.keys(configRecord(component))[0]).toBe('seed_brokers');
-          expect(component).toEqual({
+          expect(component).toStrictEqual({
             seed_brokers: [brokersVariable],
             tls: { enabled: true },
             topic: 'orders',
@@ -1392,8 +1392,8 @@ output:
 `;
           const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
           const component = configValue(parseYaml(result ?? '', { merge: true }), 'output', 'redpanda');
-          expect(configValue(component, 'seed_brokers')).toEqual([brokersVariable]);
-          expect(configValue(component, 'tls')).toEqual({ enabled: false });
+          expect(configValue(component, 'seed_brokers')).toStrictEqual([brokersVariable]);
+          expect(configValue(component, 'tls')).toStrictEqual({ enabled: false });
         });
       });
 
@@ -1402,14 +1402,18 @@ output:
           const result = patchRedpandaConfig('output:\n  redpanda:\n    seed_brokers: []\n', 'output', 'redpanda', {
             sasl,
           });
-          expect(configValue(parseYaml(result ?? ''), 'output', 'redpanda', 'seed_brokers')).toEqual([brokersVariable]);
+          expect(configValue(parseYaml(result ?? ''), 'output', 'redpanda', 'seed_brokers')).toStrictEqual([
+            brokersVariable,
+          ]);
         });
 
         test('replaces a placeholder broker list that names no broker', () => {
           const result = patchRedpandaConfig('output:\n  redpanda:\n    seed_brokers: [""]\n', 'output', 'redpanda', {
             sasl,
           });
-          expect(configValue(parseYaml(result ?? ''), 'output', 'redpanda', 'seed_brokers')).toEqual([brokersVariable]);
+          expect(configValue(parseYaml(result ?? ''), 'output', 'redpanda', 'seed_brokers')).toStrictEqual([
+            brokersVariable,
+          ]);
         });
 
         test('keeps brokers that come from a merge key', () => {
@@ -1421,9 +1425,9 @@ output:
     topic: orders
 `;
           const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-          expect(configValue(parseYaml(result ?? '', { merge: true }), 'output', 'redpanda', 'seed_brokers')).toEqual([
-            'broker-0:9092',
-          ]);
+          expect(
+            configValue(parseYaml(result ?? '', { merge: true }), 'output', 'redpanda', 'seed_brokers')
+          ).toStrictEqual(['broker-0:9092']);
         });
       });
 
@@ -1461,7 +1465,7 @@ output:
         const topicOnly = patchRedpandaConfig('output:\n  redpanda: {}\n', 'output', 'redpanda', {
           topicName: 'orders',
         });
-        expect(configValue(parseYaml(topicOnly ?? ''), 'output', 'redpanda')).toEqual({ topic: 'orders' });
+        expect(configValue(parseYaml(topicOnly ?? ''), 'output', 'redpanda')).toStrictEqual({ topic: 'orders' });
 
         const franz = patchRedpandaConfig('output:\n  kafka_franz:\n    topic: orders\n', 'output', 'kafka_franz', {
           sasl,
@@ -1561,7 +1565,7 @@ output:
   stdout: {}`;
     const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
     expect(result.parseError).toBe(false);
-    expect(result.topics).toEqual(['my-topic', 'other-topic']);
+    expect(result.topics).toStrictEqual(['my-topic', 'other-topic']);
   });
 
   test('extracts singular topic from output section', () => {
@@ -1572,12 +1576,15 @@ output:
     topic: my-output-topic`;
     const result = extractConnectorTopics(yaml, 'output', 'kafka_franz');
     expect(result.parseError).toBe(false);
-    expect(result.topics).toEqual(['my-output-topic']);
+    expect(result.topics).toStrictEqual(['my-output-topic']);
   });
 
   test('returns undefined topics for empty YAML', () => {
-    expect(extractConnectorTopics('', 'input', 'kafka_franz')).toEqual({ topics: undefined, parseError: false });
-    expect(extractConnectorTopics('   ', 'input', 'kafka_franz')).toEqual({ topics: undefined, parseError: false });
+    expect(extractConnectorTopics('', 'input', 'kafka_franz')).toStrictEqual({ topics: undefined, parseError: false });
+    expect(extractConnectorTopics('   ', 'input', 'kafka_franz')).toStrictEqual({
+      topics: undefined,
+      parseError: false,
+    });
   });
 
   test('resolves topics pulled in via a YAML merge anchor', () => {
@@ -1594,7 +1601,7 @@ output:
   stdout: {}`;
     const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
     expect(result.parseError).toBe(false);
-    expect(result.topics).toEqual(['anchored-topic']);
+    expect(result.topics).toStrictEqual(['anchored-topic']);
   });
 
   test('returns undefined topics when component has no topic config', () => {
@@ -1623,7 +1630,7 @@ output:
       - ""`;
     const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
     expect(result.parseError).toBe(false);
-    expect(result.topics).toEqual(['valid-topic']);
+    expect(result.topics).toStrictEqual(['valid-topic']);
   });
 
   test('returns undefined topics when all topics are empty strings', () => {
@@ -1702,11 +1709,11 @@ output:
   describe('reading and editing components', () => {
     describe('getComponentAt', () => {
       test('reads the input component', () => {
-        expect(getComponentAt(pipelineYaml, { kind: 'input' })).toEqual({ generate: { mapping: 'root = {}' } });
+        expect(getComponentAt(pipelineYaml, { kind: 'input' })).toStrictEqual({ generate: { mapping: 'root = {}' } });
       });
 
       test('reads a processor by index', () => {
-        expect(getComponentAt(pipelineYaml, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+        expect(getComponentAt(pipelineYaml, { kind: 'processor', index: 1 })).toStrictEqual({ mapping: 'root = this' });
       });
 
       test('returns undefined on parse failure', () => {
@@ -1718,11 +1725,13 @@ output:
       test('replaces a processor config in place', () => {
         const next = setComponentAt(pipelineYaml, { kind: 'processor', index: 0 }, { log: { message: 'changed' } });
         expect(next).not.toBeNull();
-        expect(getComponentAt(configString(next), { kind: 'processor', index: 0 })).toEqual({
+        expect(getComponentAt(configString(next), { kind: 'processor', index: 0 })).toStrictEqual({
           log: { message: 'changed' },
         });
         // Sibling processor is untouched.
-        expect(getComponentAt(configString(next), { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+        expect(getComponentAt(configString(next), { kind: 'processor', index: 1 })).toStrictEqual({
+          mapping: 'root = this',
+        });
       });
 
       test('returns null on parse failure', () => {
@@ -1763,17 +1772,17 @@ output:
       };
 
       test('is read and written inside its wrapper, which keeps its stop condition', () => {
-        expect(getComponentAt(wrapped, member)).toEqual({ kafka_franz: { topics: ['a'] } });
+        expect(getComponentAt(wrapped, member)).toStrictEqual({ kafka_franz: { topics: ['a'] } });
         const next = configString(setComponentAt(wrapped, member, { kafka_franz: { topics: ['b'] } }));
-        expect(configValue(parseYaml(next), 'input', 'read_until', 'input', 'broker', 'inputs', 0)).toEqual({
+        expect(configValue(parseYaml(next), 'input', 'read_until', 'input', 'broker', 'inputs', 0)).toStrictEqual({
           read_until: { check: 'counter() >= 5', input: { kafka_franz: { topics: ['b'] } } },
         });
-        expect(Object.keys(getComponentAt(wrapped, { kind: 'input' }) ?? {})).toEqual(['broker']);
+        expect(Object.keys(getComponentAt(wrapped, { kind: 'input' }) ?? {})).toStrictEqual(['broker']);
       });
 
       test('is deleted with its wrapper', () => {
         const next = configString(removeComponentAt(wrapped, member));
-        expect(configValue(parseYaml(next), 'input', 'read_until', 'input', 'broker', 'inputs')).toEqual([]);
+        expect(configValue(parseYaml(next), 'input', 'read_until', 'input', 'broker', 'inputs')).toStrictEqual([]);
       });
 
       test('an input resource keeps its read_until, as the canvas shows it', () => {
@@ -1784,7 +1793,7 @@ output:
       input: { generate: { mapping: root = 1 } }
 `;
         const target: EditTarget = { kind: 'path', path: ['input_resources', 0], componentType: 'input' };
-        expect(Object.keys(getComponentAt(resource, target) ?? {})).toEqual(['label', 'read_until']);
+        expect(Object.keys(getComponentAt(resource, target) ?? {})).toStrictEqual(['label', 'read_until']);
       });
     });
 
@@ -1837,13 +1846,15 @@ output:
       };
 
       test('reads a nested component by path', () => {
-        expect(getComponentAt(nestedYaml, httpTarget)).toEqual({ http: { url: 'http://old' } });
+        expect(getComponentAt(nestedYaml, httpTarget)).toStrictEqual({ http: { url: 'http://old' } });
       });
 
       test('replaces a nested component in place, leaving siblings intact', () => {
         const next = setComponentAt(nestedYaml, httpTarget, { http: { url: 'http://new', verb: 'POST' } });
         expect(next).not.toBeNull();
-        expect(getComponentAt(configString(next), httpTarget)).toEqual({ http: { url: 'http://new', verb: 'POST' } });
+        expect(getComponentAt(configString(next), httpTarget)).toStrictEqual({
+          http: { url: 'http://new', verb: 'POST' },
+        });
         // The branch's request_map/result_map are untouched.
         const parsed: unknown = parseYaml(configString(next));
         expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'request_map')).toBe('root = this');
@@ -1853,7 +1864,7 @@ output:
         const next = removeComponentAt(nestedYaml, httpTarget);
         expect(next).not.toBeNull();
         const parsed: unknown = parseYaml(configString(next));
-        expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'processors')).toEqual([]);
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'processors')).toStrictEqual([]);
         expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'request_map')).toBe('root = this');
       });
 
@@ -1870,7 +1881,7 @@ output:
           componentType: 'processor',
         });
         const parsed: unknown = parseYaml(configString(next));
-        expect(configValue(parsed, 'pipeline', 'processors', 0, 'try')).toEqual([]);
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'try')).toStrictEqual([]);
       });
 
       test('removing the only processor of a switch case keeps the case and its check', () => {
@@ -1888,7 +1899,7 @@ output:
           componentType: 'processor',
         });
         const parsed: unknown = parseYaml(configString(next));
-        expect(configValue(parsed, 'pipeline', 'processors', 0, 'switch', 0)).toEqual({
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'switch', 0)).toStrictEqual({
           check: 'this.x == 1',
           processors: [],
         });
@@ -1921,7 +1932,7 @@ output:
       test('appends to a new cache_resources array', () => {
         const next = appendResource(pipelineYaml, 'cache_resources', { label: 'c', memory: {} });
         const parsed: unknown = parseYaml(configString(next));
-        expect(configValue(parsed, 'cache_resources')).toEqual([{ label: 'c', memory: {} }]);
+        expect(configValue(parsed, 'cache_resources')).toStrictEqual([{ label: 'c', memory: {} }]);
       });
     });
 
@@ -1943,9 +1954,9 @@ output:
         expect(next).not.toBeNull();
         const parsed: unknown = parseYaml(configString(next));
         const case0 = configValue(parsed, 'pipeline', 'processors', 0, 'switch', 0, 'processors');
-        expect(case0).toEqual([{ log: { message: 'first' } }, { mapping: 'root = this' }]);
+        expect(case0).toStrictEqual([{ log: { message: 'first' } }, { mapping: 'root = this' }]);
         // The other case is untouched.
-        expect(configValue(parsed, 'pipeline', 'processors', 0, 'switch', 1, 'processors')).toEqual([
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'switch', 1, 'processors')).toStrictEqual([
           { mapping: 'root = that' },
         ]);
       });
@@ -1961,7 +1972,7 @@ output:
           mapping: 'root = x',
         });
         const parsed: unknown = parseYaml(configString(next));
-        expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'processors')).toEqual([
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'processors')).toStrictEqual([
           { mapping: 'root = x' },
         ]);
         expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'request_map')).toBe('root = this');
@@ -1974,7 +1985,7 @@ output:
         });
         const parsed: unknown = parseYaml(configString(next));
         expect(configValue(parsed, 'pipeline', 'processors', 0, 'switch')).toHaveLength(3);
-        expect(configArray(configValue(parsed, 'pipeline', 'processors', 0, 'switch')).at(-1)).toEqual({
+        expect(configArray(configValue(parsed, 'pipeline', 'processors', 0, 'switch')).at(-1)).toStrictEqual({
           check: '',
           processors: [],
         });
@@ -2016,9 +2027,9 @@ rate_limit_resources:
     local: { count: 1, interval: 1s }`;
 
       test('listResourceLabels returns labels per kind', () => {
-        expect(listResourceLabels(withResources, 'cache')).toEqual(['dedupe']);
-        expect(listResourceLabels(withResources, 'rate_limit')).toEqual(['limiter']);
-        expect(listResourceLabels('output:\n  drop: {}', 'cache')).toEqual([]);
+        expect(listResourceLabels(withResources, 'cache')).toStrictEqual(['dedupe']);
+        expect(listResourceLabels(withResources, 'rate_limit')).toStrictEqual(['limiter']);
+        expect(listResourceLabels('output:\n  drop: {}', 'cache')).toStrictEqual([]);
       });
 
       test('createResourceAndReturnLabel adds the chosen impl and returns its label', () => {
@@ -2161,7 +2172,7 @@ output_resources:
     test('removes a processor and keeps the rest', () => {
       const next = removeComponentAt(pipelineYaml, { kind: 'processor', index: 0 });
       const parsed: unknown = parseYaml(configString(next));
-      expect(configValue(parsed, 'pipeline', 'processors')).toEqual([{ mapping: 'root = this' }]);
+      expect(configValue(parsed, 'pipeline', 'processors')).toStrictEqual([{ mapping: 'root = this' }]);
     });
 
     test('prunes the pipeline key when the last processor is removed', () => {
@@ -2211,7 +2222,7 @@ output_resources:
       // drop has no config fields; the generated object must still carry `drop: {}` — without it
       // the insert writes an output with only a label, which renders as an empty placeholder.
       const step = buildInsertableComponent('drop', 'output', Object.values(mockComponents));
-      expect(step?.drop).toEqual({});
+      expect(step?.drop).toStrictEqual({});
     });
   });
 
@@ -2221,7 +2232,7 @@ output_resources:
         topicName: 'new-topic',
       });
       const parsed: unknown = parseYaml(configString(next));
-      expect(configValue(parsed, 'input', 'redpanda', 'topics')).toEqual(['existing', 'new-topic']);
+      expect(configValue(parsed, 'input', 'redpanda', 'topics')).toStrictEqual(['existing', 'new-topic']);
     });
 
     test('does not duplicate a topic already in the list', () => {
@@ -2229,7 +2240,7 @@ output_resources:
         topicName: 'existing',
       });
       const parsed: unknown = parseYaml(configString(next));
-      expect(configValue(parsed, 'input', 'redpanda', 'topics')).toEqual(['existing']);
+      expect(configValue(parsed, 'input', 'redpanda', 'topics')).toStrictEqual(['existing']);
     });
 
     test('appending preserves non-string entries and comments in the topics list', () => {
@@ -2241,7 +2252,7 @@ output_resources:
       );
       expect(next).toContain('# keep me');
       const parsed: unknown = parseYaml(configString(next));
-      expect(configValue(parsed, 'input', 'redpanda', 'topics')).toEqual([123, 'existing', 'new-topic']);
+      expect(configValue(parsed, 'input', 'redpanda', 'topics')).toStrictEqual([123, 'existing', 'new-topic']);
     });
 
     // The dialog grants the group it shows, so the input has to read as that one.
@@ -2289,7 +2300,7 @@ output_resources:
       });
 
       const parsed: unknown = parseYaml(configString(yaml));
-      expect(configValue(parsed, 'output', ['drop', true])).toEqual({});
+      expect(configValue(parsed, 'output', ['drop', true])).toStrictEqual({});
     });
   });
 });
@@ -2306,13 +2317,13 @@ output:
   drop: {}`;
 
   test('the list names the wrapped input, not the wrapper', () => {
-    expect(componentsOf(wrapped).inputs).toEqual(['redpanda']);
+    expect(componentsOf(wrapped).inputs).toStrictEqual(['redpanda']);
     const broker = `input:
   broker:
     inputs:
       - read_until: { idle_timeout: 5s, input: { kafka: {} } }
       - aws_s3: {}`;
-    expect(componentsOf(broker).inputs).toEqual(['kafka', 'aws_s3']);
+    expect(componentsOf(broker).inputs).toStrictEqual(['kafka', 'aws_s3']);
   });
 
   test('patches topics and SASL into the wrapped input, stripping its placeholder', () => {
@@ -2323,15 +2334,18 @@ output:
       })
     );
     const inner = configValue(parseYaml(result), 'input', 'read_until', 'input', 'redpanda');
-    expect(configValue(inner, 'topics')).toEqual(['orders']);
-    expect(configValue(inner, 'sasl')).toEqual([{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }]);
+    expect(configValue(inner, 'topics')).toStrictEqual(['orders']);
+    expect(configValue(inner, 'sasl')).toStrictEqual([{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }]);
     expect(result).not.toContain('# topics:');
     expect(configValue(parseYaml(result), 'input', 'redpanda')).toBeUndefined();
   });
 
   test('reads the wrapped input’s topics', () => {
     const withTopics = wrapped.replace('# topics: Required - topics to read from', 'topics: [a, b]');
-    expect(extractConnectorTopics(withTopics, 'input', 'redpanda')).toEqual({ topics: ['a', 'b'], parseError: false });
+    expect(extractConnectorTopics(withTopics, 'input', 'redpanda')).toStrictEqual({
+      topics: ['a', 'b'],
+      parseError: false,
+    });
   });
 });
 
@@ -2365,8 +2379,8 @@ output:
   drop: {}`;
     const result = configString(patchRedpandaConfig(yaml, 'input', 'redpanda', { topicName: 'orders' }));
     const input = configRecord(configValue(parseYaml(result, { merge: true }), 'input'));
-    expect(Object.keys(input)).toEqual(['read_until']);
-    expect(configValue(input, 'read_until', 'input', 'redpanda')).toEqual({
+    expect(Object.keys(input)).toStrictEqual(['read_until']);
+    expect(configValue(input, 'read_until', 'input', 'redpanda')).toStrictEqual({
       seed_brokers: ['a'],
       consumer_group: 'g',
       topics: ['orders'],

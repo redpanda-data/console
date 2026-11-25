@@ -285,15 +285,14 @@ function collectDirectProperties(
   const results: CollectedProperty[] = [];
   const source = enumerablePropertySource(property.value);
   for (const key of Object.keys(source)) {
-    if (Object.hasOwn(source, key)) {
-      const value = source[key];
-      if (value === null || typeof value === 'function') {
-        continue;
-      }
-      if (segment === '*' || isMatch(segment, key, value)) {
-        results.push({ path: [...property.path, key], value });
-      }
+    if (!Object.hasOwn(source, key)) {
+      continue;
     }
+    const value = source[key];
+    if (value === null || typeof value === 'function' || (segment !== '*' && !isMatch(segment, key, value))) {
+      continue;
+    }
+    results.push({ path: [...property.path, key], value });
   }
   return results;
 }

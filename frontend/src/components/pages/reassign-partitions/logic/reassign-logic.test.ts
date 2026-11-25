@@ -100,7 +100,7 @@ describe('computeReassignments', () => {
       brokers
     );
 
-    expect(replicaIds(result)).toEqual(EXPECTED_ALL_BROKERS);
+    expect(replicaIds(result)).toStrictEqual(EXPECTED_ALL_BROKERS);
     expect(error).not.toHaveBeenCalled();
     // Two balancing rounds: the second swaps leaders without lowering the skew, which ends the loop.
     expect(debug).toHaveBeenCalledWith('leader skew in cluster', {
@@ -116,7 +116,7 @@ describe('computeReassignments', () => {
   test('moves every replica onto the selected target brokers', () => {
     const result = computeReassignments(apiData, [select(alpha, alphaPartitions)], [brokers[2], brokers[3]]);
 
-    expect(replicaIds(result)).toEqual(EXPECTED_RACK_B);
+    expect(replicaIds(result)).toStrictEqual(EXPECTED_RACK_B);
     // Rack b alone now hosts every replica, so losing it takes each partition offline.
     expect(error).toHaveBeenCalledWith('Issues in topic "alpha" (RF: 2) (4 issues).');
     expect(table).toHaveBeenCalledWith(

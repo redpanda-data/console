@@ -31,7 +31,7 @@ test('legacy consumer-group queries retain full details and derive list fields',
   const { result } = renderHook(() => useLegacyListConsumerGroupsFullQuery(), { wrapper: queryClientWrapper });
 
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  expect(result.current.data.consumerGroups).toEqual([
+  expect(result.current.data.consumerGroups).toStrictEqual([
     { ...group, lagSum: 9, isInUse: true, noEditPerms: false, noDeletePerms: true },
   ]);
   expect(fetch).toHaveBeenCalledWith(
@@ -46,7 +46,7 @@ test('legacy connector queries preserve their configured response', async () => 
   const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
   const { result } = renderHook(() => useKafkaConnectConnectorsQuery(), { wrapper: queryClientWrapper });
 
-  await waitFor(() => expect(result.current.data).toEqual(connectors));
+  await waitFor(() => expect(result.current.data).toStrictEqual(connectors));
   expect(result.current.isLoading).toBe(false);
   expect(fetch).toHaveBeenCalledWith(
     `${config.restBasePath}/kafka-connect/connectors`,

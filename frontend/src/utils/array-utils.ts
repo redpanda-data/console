@@ -21,11 +21,12 @@ export function arrayRemove<T>(array: T[], obj: T): boolean {
 export function arrayRemoveAll<T>(array: T[], selector: (x: T) => boolean): number {
   let count = 0;
   for (let i = 0; i < array.length; i++) {
-    if (selector(array[i])) {
-      array.splice(i, 1);
-      count += 1;
-      i -= 1;
+    if (!selector(array[i])) {
+      continue;
     }
+    array.splice(i, 1);
+    count += 1;
+    i -= 1;
   }
   return count;
 }
@@ -89,13 +90,13 @@ export function arrayMinBy<T>(array: T[], selector: (x: T) => number) {
     return;
   }
   let bestIndex = 0;
-  let bestVal = selector(array[0]);
-  for (let i = 1; i < array.length; i++) {
+  for (let i = 1, bestVal = selector(array[0]); i < array.length; i++) {
     const x = selector(array[i]);
-    if (x < bestVal) {
-      bestIndex = i;
-      bestVal = x;
+    if (!(x < bestVal)) {
+      continue;
     }
+    bestIndex = i;
+    bestVal = x;
   }
   return array[bestIndex];
 }
@@ -105,13 +106,13 @@ export function arrayMaxBy<T>(array: T[], selector: (x: T) => number) {
     return;
   }
   let bestIndex = 0;
-  let bestVal = selector(array[0]);
-  for (let i = 1; i < array.length; i++) {
+  for (let i = 1, bestVal = selector(array[0]); i < array.length; i++) {
     const x = selector(array[i]);
-    if (x > bestVal) {
-      bestIndex = i;
-      bestVal = x;
+    if (!(x > bestVal)) {
+      continue;
     }
+    bestIndex = i;
+    bestVal = x;
   }
   return array[bestIndex];
 }
@@ -217,10 +218,11 @@ function distinctByKey<T>(array: T[], keySelector: (item: T) => unknown): T[] {
   const ar: T[] = [];
   for (const item of array) {
     const key = keySelector(item);
-    if (!set.has(key)) {
-      set.add(key);
-      ar.push(item);
+    if (set.has(key)) {
+      continue;
     }
+    set.add(key);
+    ar.push(item);
   }
   return ar;
 }

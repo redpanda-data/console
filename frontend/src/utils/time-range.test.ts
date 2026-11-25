@@ -22,12 +22,12 @@ describe('getEvenlySpacedTimeTicks', () => {
 
   test('produces evenly spaced ticks', () => {
     const ticks = getEvenlySpacedTimeTicks(0, 100, 5);
-    expect(ticks).toEqual([0, 25, 50, 75, 100]);
+    expect(ticks).toStrictEqual([0, 25, 50, 75, 100]);
   });
 
   test('falls back to a single tick for degenerate ranges', () => {
-    expect(getEvenlySpacedTimeTicks(500, 500)).toEqual([500]);
-    expect(getEvenlySpacedTimeTicks(800, 500)).toEqual([800]);
-    expect(getEvenlySpacedTimeTicks(0, 100, 1)).toEqual([0]);
+    expect(getEvenlySpacedTimeTicks(500, 500)).toStrictEqual([500]);
+    expect(getEvenlySpacedTimeTicks(800, 500)).toStrictEqual([800]);
+    expect(getEvenlySpacedTimeTicks(0, 100, 1)).toStrictEqual([0]);
   });
 });

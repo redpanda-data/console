@@ -65,6 +65,6 @@ describe('useClientFilters — partition range-check', () => {
   test('quick search still applies a valid partition filter when partitionCount is known', () => {
     const messages = [makeMsg({ partitionID: 0, offset: 1 }), makeMsg({ partitionID: 1, offset: 2 })];
     const { result } = renderHook(() => useClientFilters(messages, 'partition:1', [], 3));
-    expect(result.current).toEqual([messages[1]]);
+    expect(result.current).toStrictEqual([messages[1]]);
   });
 });

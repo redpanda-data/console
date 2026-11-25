@@ -321,11 +321,12 @@ function findObject(ctx: ObjectSearchContext, obj: unknown): boolean {
 function findInChildObjects(ctx: ObjectSearchContext, obj: Record<string, unknown>): boolean {
   const propertyNames = Object.keys(obj ?? {});
   for (const key of propertyNames) {
-    if (Object.hasOwn(obj, key)) {
-      const propValue = obj[key];
-      if (typeof propValue === 'object' && findObject(ctx, propValue)) {
-        return true;
-      }
+    if (!Object.hasOwn(obj, key)) {
+      continue;
+    }
+    const propValue = obj[key];
+    if (typeof propValue === 'object' && findObject(ctx, propValue)) {
+      return true;
     }
   }
 

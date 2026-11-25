@@ -100,11 +100,12 @@ function generateObjectDefault(schema: JsonSchemaType): JsonObject {
   const result: JsonObject = {};
   const schemaProperties = Object.entries(schema.properties ?? {});
   for (const [key, property] of schemaProperties) {
-    if (isPropertyRequired(key, schema)) {
-      const value = generateDefaultFromJsonSchema(property, key, schema);
-      if (value !== undefined) {
-        result[key] = value;
-      }
+    if (!isPropertyRequired(key, schema)) {
+      continue;
+    }
+    const value = generateDefaultFromJsonSchema(property, key, schema);
+    if (value !== undefined) {
+      result[key] = value;
     }
   }
   return result;

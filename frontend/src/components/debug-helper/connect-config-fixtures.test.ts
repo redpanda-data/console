@@ -62,9 +62,9 @@ describe('the Connect config fixtures', () => {
 
   test('each stop-condition fixture ends as it says', () => {
     const tagged = CONNECT_CONFIG_FIXTURES.filter((f) => f.tags.includes('stops')).map((f) => f.id);
-    expect(tagged.sort(compareStrings)).toEqual(Object.keys(EXPECTED_END).sort(compareStrings));
+    expect(tagged.sort(compareStrings)).toStrictEqual(Object.keys(EXPECTED_END).sort(compareStrings));
     for (const [id, status] of Object.entries(EXPECTED_END)) {
-      expect([id, summarizePipelineEndYaml(yamlOf(id)).status]).toEqual([id, status]);
+      expect([id, summarizePipelineEndYaml(yamlOf(id)).status]).toStrictEqual([id, status]);
     }
   });
 
@@ -73,7 +73,7 @@ describe('the Connect config fixtures', () => {
   });
 
   test('every trap never stops', () => {
-    expect(memberNodes(yamlOf('edge-stop-condition-traps')).map((n) => n.endBehavior?.kind)).toEqual([
+    expect(memberNodes(yamlOf('edge-stop-condition-traps')).map((n) => n.endBehavior?.kind)).toStrictEqual([
       'continuous',
       'continuous',
       'continuous',
@@ -83,11 +83,11 @@ describe('the Connect config fixtures', () => {
 
   test('a stop condition around the broker sits on the broker, beside a member’s own', () => {
     const { nodes } = parsePipelineFlowTree(yamlOf('stops-broker-own-condition'));
-    expect(nodes.find((n) => n.id === 'input-broker')?.stopSlot?.condition).toEqual({
+    expect(nodes.find((n) => n.id === 'input-broker')?.stopSlot?.condition).toStrictEqual({
       check: 'counter() >= 50000',
       idleTimeout: '2m',
     });
-    expect(memberNodes(yamlOf('stops-broker-own-condition')).map((n) => n.stopSlot?.condition)).toEqual([
+    expect(memberNodes(yamlOf('stops-broker-own-condition')).map((n) => n.stopSlot?.condition)).toStrictEqual([
       undefined,
       undefined,
       { idleTimeout: '10m' },
@@ -96,11 +96,11 @@ describe('the Connect config fixtures', () => {
 
   test('the aliased and env-var members are read-only', () => {
     const locked = memberNodes(yamlOf('edge-read-only-stop-conditions')).map((n) => Boolean(n.stopSlot?.locked));
-    expect(locked).toEqual([false, true, false, true, true]);
+    expect(locked).toStrictEqual([false, true, false, true, true]);
   });
 
   test('the incomplete stop conditions are reported locally', () => {
-    expect(localStopConditionLintHints(yamlOf('invalid-incomplete-stop-conditions')).map((h) => h.hint)).toEqual([
+    expect(localStopConditionLintHints(yamlOf('invalid-incomplete-stop-conditions')).map((h) => h.hint)).toStrictEqual([
       'read_until needs a check or an idle_timeout to know when to stop.',
       'idle_timeout must be a duration such as 30s, 5m or 1h.',
       'read_until needs an input to read from.',

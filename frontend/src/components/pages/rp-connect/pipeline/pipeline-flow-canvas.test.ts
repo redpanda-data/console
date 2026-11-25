@@ -57,22 +57,22 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
       noMeasure,
       (n) => n.id === 'marker'
     );
-    expect(geom?.body).toEqual({ minX: 500, minY: 0, maxX: 1200, maxY: 680 }); // outputs + join
-    expect(geom?.entry).toEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 }); // just the entry marker
+    expect(geom?.body).toStrictEqual({ minX: 500, minY: 0, maxX: 1200, maxY: 680 }); // outputs + join
+    expect(geom?.entry).toStrictEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 }); // just the entry marker
   });
 
   test('has a null entry when nothing is flagged', () => {
     const a = node('a', 0, 0);
     const b = node('b', 500, 300);
     const geom = scopeBounds([a, b], scope('a', 'b'), noMeasure);
-    expect(geom?.body).toEqual({ minX: 0, minY: 0, maxX: 700, maxY: 380 });
+    expect(geom?.body).toStrictEqual({ minX: 0, minY: 0, maxX: 700, maxY: 380 });
     expect(geom?.entry).toBeNull();
   });
 
   test('ignores nodes outside the scope; returns null when the scope is only the entry', () => {
     const marker = node('marker', 0, 300, 'flowSplit');
     const outsider = node('outsider', 5000, 5000); // NOT in scope — must not stretch the bounds
-    expect(scopeBounds([marker, outsider], scope('marker'), noMeasure)?.body).toEqual({
+    expect(scopeBounds([marker, outsider], scope('marker'), noMeasure)?.body).toStrictEqual({
       minX: 0,
       minY: 300,
       maxX: 200,
@@ -178,14 +178,14 @@ describe('selectionTargetForNode', () => {
   };
 
   test('selects an editable node directly', () => {
-    expect(selectionTargetForNode(switchNode, [switchNode, caseNode])).toEqual({
+    expect(selectionTargetForNode(switchNode, [switchNode, caseNode])).toStrictEqual({
       id: 'proc-0',
       target: { kind: 'processor', index: 0 },
     });
   });
 
   test('walks up from a structural node (no editTarget) to select its parent', () => {
-    expect(selectionTargetForNode(caseNode, [switchNode, caseNode])).toEqual({
+    expect(selectionTargetForNode(caseNode, [switchNode, caseNode])).toStrictEqual({
       id: 'proc-0',
       target: { kind: 'processor', index: 0 },
     });
@@ -202,7 +202,7 @@ describe('selectionTargetForNode', () => {
         editTarget: { kind: 'switchCase', path: ['pipeline', 'processors', 0, 'switch', 0] },
       },
     };
-    expect(selectionTargetForNode(editableCase, [switchNode, editableCase])).toEqual({
+    expect(selectionTargetForNode(editableCase, [switchNode, editableCase])).toStrictEqual({
       id: 'proc-0-case-1',
       target: { kind: 'switchCase', path: ['pipeline', 'processors', 0, 'switch', 0] },
     });

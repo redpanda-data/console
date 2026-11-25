@@ -44,7 +44,7 @@ const summarize = (savedYaml: string, editedYaml: string) =>
 
 describe('summarizeComponentChanges', () => {
   test('reports nothing when the documents match', () => {
-    expect(summarize(config(), config())).toEqual([]);
+    expect(summarize(config(), config())).toStrictEqual([]);
   });
 
   test('reports a swapped component as changed, not added and removed', () => {
@@ -108,30 +108,30 @@ describe('summarizeSettingsChanges', () => {
   const saved = { name: 'orders', description: 'the orders pipeline', computeUnits: 1, tags: [] };
 
   test('reports nothing when the settings match what is saved', () => {
-    expect(summarizeSettingsChanges(saved, { ...saved })).toEqual([]);
+    expect(summarizeSettingsChanges(saved, { ...saved })).toStrictEqual([]);
   });
 
   test('states both sides of a changed setting', () => {
     const changes = summarizeSettingsChanges(saved, { ...saved, computeUnits: 3 });
 
-    expect(changes).toEqual([{ key: 'computeUnits', label: 'Compute units', from: '1', to: '3' }]);
+    expect(changes).toStrictEqual([{ key: 'computeUnits', label: 'Compute units', from: '1', to: '3' }]);
   });
 
   test('lists changes in the order the settings dialog shows them', () => {
     const changes = summarizeSettingsChanges(saved, { ...saved, computeUnits: 3, name: 'renamed' });
 
-    expect(changes.map((c) => c.key)).toEqual(['name', 'computeUnits']);
+    expect(changes.map((c) => c.key)).toStrictEqual(['name', 'computeUnits']);
   });
 
   test('names an empty value rather than showing a gap', () => {
     const changes = summarizeSettingsChanges({}, { description: 'why', tags: [{ key: 'env', value: 'dev' }] });
 
-    expect(changes.map((c) => c.from)).toEqual(['not set', 'none']);
+    expect(changes.map((c) => c.from)).toStrictEqual(['not set', 'none']);
   });
 
   // A field the form has never populated is not a change from an empty one.
   test('treats an absent value and an empty one as the same', () => {
-    expect(summarizeSettingsChanges({ description: '' }, {})).toEqual([]);
+    expect(summarizeSettingsChanges({ description: '' }, {})).toStrictEqual([]);
   });
 
   // Trimming here would report no change for one the server would store.

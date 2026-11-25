@@ -40,7 +40,7 @@ describe('the TokenManager', () => {
 
       // All promises should resolve to the same value
       const results = await Promise.all(promises);
-      expect(results).toEqual(['deduplicated-token', 'deduplicated-token', 'deduplicated-token']);
+      expect(results).toStrictEqual(['deduplicated-token', 'deduplicated-token', 'deduplicated-token']);
     });
 
     test('allows new refresh after previous completes', async () => {

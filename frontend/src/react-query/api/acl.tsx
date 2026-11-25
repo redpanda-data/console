@@ -136,16 +136,17 @@ export const useListACLAsPrincipalGroups = () =>
       select: (response) => {
         const groupsAcl = response.resources.reduce((acc, r) => {
           for (const a of r.acls) {
-            if (!acc.has(`${a.principal}:${a.host}`)) {
-              const [principalType, principalName] = (a.principal ?? '').split(':');
-              acc.set(`${a.principal}:${a.host}`, {
-                host: a.host,
-                principal: a.principal,
-                principalType,
-                principalName: principalName || '',
-                hasAcl: true,
-              });
+            if (acc.has(`${a.principal}:${a.host}`)) {
+              continue;
             }
+            const [principalType, principalName] = (a.principal ?? '').split(':');
+            acc.set(`${a.principal}:${a.host}`, {
+              host: a.host,
+              principal: a.principal,
+              principalType,
+              principalName: principalName || '',
+              hasAcl: true,
+            });
           }
           return acc;
         }, new Map<string, SimpleAcl>());

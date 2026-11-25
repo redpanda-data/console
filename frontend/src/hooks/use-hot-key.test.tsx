@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
 
 import { useHotKey } from './use-hot-key';

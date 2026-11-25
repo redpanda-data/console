@@ -481,9 +481,7 @@ function getMarks(partition: Partition) {
 }
 
 function formatMarks(marks: number[]) {
-  return marks.reduce<{
-    [index: string]: string;
-  }>((acc, it) => {
+  return marks.reduce<Record<string, string>>((acc, it) => {
     const key = it.toFixed(0);
     const value = prettyNumber(it);
     acc[key] = value;

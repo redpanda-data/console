@@ -14,9 +14,7 @@ import * as Cookies from 'es-cookie';
 
 import { isAnalyticsEnabled } from '../utils/analytics';
 
-type Fields = {
-  [key: string]: string | number;
-};
+type Fields = Record<string, string | number>;
 
 // HubSpot Configuration Constants
 export const HUBSPOT_REGION = 'na1';

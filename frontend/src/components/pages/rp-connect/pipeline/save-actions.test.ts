@@ -124,24 +124,24 @@ describe('primaryRunIntent', () => {
 
 describe('alternateRunIntents', () => {
   test('offers a start for anything not deployed yet', () => {
-    expect(alternateRunIntents(creating)).toEqual(['start']);
-    expect(alternateRunIntents(draft)).toEqual(['start']);
+    expect(alternateRunIntents(creating)).toStrictEqual(['start']);
+    expect(alternateRunIntents(draft)).toStrictEqual(['start']);
   });
 
   test('offers a stop when editing a live pipeline', () => {
-    expect(alternateRunIntents(running)).toEqual(['stopped']);
-    expect(alternateRunIntents({ ...running, state: Pipeline_State.STARTING })).toEqual(['stopped']);
+    expect(alternateRunIntents(running)).toStrictEqual(['stopped']);
+    expect(alternateRunIntents({ ...running, state: Pipeline_State.STARTING })).toStrictEqual(['stopped']);
   });
 
   test('offers a start when editing an idle pipeline', () => {
-    expect(alternateRunIntents(stopped)).toEqual(['start']);
-    expect(alternateRunIntents({ ...stopped, state: Pipeline_State.ERROR })).toEqual(['start']);
-    expect(alternateRunIntents({ ...stopped, state: Pipeline_State.COMPLETED })).toEqual(['start']);
+    expect(alternateRunIntents(stopped)).toStrictEqual(['start']);
+    expect(alternateRunIntents({ ...stopped, state: Pipeline_State.ERROR })).toStrictEqual(['start']);
+    expect(alternateRunIntents({ ...stopped, state: Pipeline_State.COMPLETED })).toStrictEqual(['start']);
   });
 
   test('offers nothing while the state is unknown', () => {
-    expect(alternateRunIntents(unknownState)).toEqual([]);
-    expect(alternateRunIntents({ ...unknownState, state: Pipeline_State.UNSPECIFIED })).toEqual([]);
+    expect(alternateRunIntents(unknownState)).toStrictEqual([]);
+    expect(alternateRunIntents({ ...unknownState, state: Pipeline_State.UNSPECIFIED })).toStrictEqual([]);
   });
 });
 

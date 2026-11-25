@@ -751,19 +751,19 @@ afterAll(() => {
 test.each(Object.entries(clusters))('%s fixtures report exactly the expected console rules', (_name, cases) => {
   const actual = cases.map((fixture) => ({ file: fixture.file, reports: reportsFor(mixed, fixture.file) }));
   const expected = cases.map((fixture) => ({ file: fixture.file, reports: fixture.reports.toSorted(compareStrings) }));
-  expect(actual).toEqual(expected);
+  expect(actual).toStrictEqual(expected);
 });
 
 test('fails the script with error-severity diagnostics after linting every fixture', () => {
   expect(mixed.files).toBe(fixtures.length);
   expect(mixed.diagnostics.length).toBeGreaterThan(0);
-  expect(mixed.diagnostics.filter((diagnostic) => diagnostic.severity !== 'error')).toEqual([]);
+  expect(mixed.diagnostics.filter((diagnostic) => diagnostic.severity !== 'error')).toStrictEqual([]);
   expect(mixed.exitCode).toBe(1);
 });
 
 test('keeps test-only rules out of product code and passes the negative controls cleanly', () => {
-  expect(reportsFor(mixed, scopeControl.file)).toEqual([]);
-  expect(clean.diagnostics).toEqual([]);
+  expect(reportsFor(mixed, scopeControl.file)).toStrictEqual([]);
+  expect(clean.diagnostics).toStrictEqual([]);
   expect(clean.files).toBe(fixtures.filter((fixture) => fixture.reports.length === 0).length);
   expect(clean.stderr).not.toMatch(CRASH_OUTPUT);
   expect(clean.exitCode).toBe(0);

@@ -297,7 +297,7 @@ describe('the VisualEditorPanel', () => {
       const user = userEvent.setup();
       renderPanel({ components: DEPRECATION_COMPONENTS, yamlContent: CACHE_YAML });
 
-      expect(JSON.parse(screen.getByTestId('flow-canvas').getAttribute('data-deprecations') ?? '[]')).toEqual([
+      expect(JSON.parse(screen.getByTestId('flow-canvas').getAttribute('data-deprecations') ?? '[]')).toStrictEqual([
         ['resource-cache_resources-0', [MEMORY_DEPRECATION]],
       ]);
 

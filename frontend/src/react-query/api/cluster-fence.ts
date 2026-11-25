@@ -111,7 +111,15 @@ const useBrokerOwnCopies = (enabled: boolean, brokers: BrokerProgress[], since: 
   );
   const results = useQueries({
     queries: targets.map((nodeId) => ({
-      queryKey: ['cluster-fence-broker-status', nodeId ?? 'self', since],
+      queryKey: [
+        ...createConnectQueryKey({
+          schema: getClusterFenceBrokerStatus,
+          transport,
+          input: { nodeId },
+          cardinality: 'finite',
+        }),
+        since,
+      ],
       queryFn: () => callUnaryMethod(transport, getClusterFenceBrokerStatus, { nodeId }),
       enabled,
       retry: false,

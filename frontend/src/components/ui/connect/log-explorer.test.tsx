@@ -1,4 +1,5 @@
 import { create } from '@bufbuild/protobuf';
+import { beforeEach, describe, expect, test } from '@rstest/core';
 import { userEvent } from '@testing-library/user-event';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
 import type React from 'react';
@@ -140,7 +141,7 @@ describe('log explorer', () => {
       renderExplorer();
       // With messages and no filters, rows render — the filter mismatch branch is NOT hit
       const rows = screen.getAllByRole('row');
-      expect(rows.length).toBe(2); // 1 header + 1 data
+      expect(rows).toHaveLength(2); // 1 header + 1 data
       expect(screen.queryByText('No messages match the current filters')).not.toBeInTheDocument();
     });
 
@@ -208,7 +209,7 @@ describe('log explorer', () => {
       renderExplorer();
       // Should show 10 data rows on first page (+ 1 header row)
       const rows = screen.getAllByRole('row');
-      expect(rows.length).toBe(11); // 1 header + 10 data
+      expect(rows).toHaveLength(11); // 1 header + 10 data
     });
 
     test('resets to the first page when switching to live mode', async () => {

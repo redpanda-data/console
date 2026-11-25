@@ -79,7 +79,7 @@ describe('applySchemaToSlots', () => {
       const template = buildTemplate([slot({ id: 'note', kind: 'string', section: 'options', label: 'Note' })]);
 
       const [result] = applySchemaToSlots(template, components);
-      expect(result).toEqual(template.slots[0]);
+      expect(result).toStrictEqual(template.slots[0]);
       expect(result.description).toBeUndefined();
     });
 
@@ -89,7 +89,7 @@ describe('applySchemaToSlots', () => {
       ]);
 
       const [result] = applySchemaToSlots(template, components);
-      expect(result).toEqual(template.slots[0]);
+      expect(result).toStrictEqual(template.slots[0]);
       expect(result.description).toBeUndefined();
     });
 
@@ -99,7 +99,7 @@ describe('applySchemaToSlots', () => {
       ]);
 
       const [result] = applySchemaToSlots(template, components);
-      expect(result).toEqual(template.slots[0]);
+      expect(result).toStrictEqual(template.slots[0]);
     });
   });
 

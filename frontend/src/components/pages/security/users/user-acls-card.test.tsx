@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
+
 import { UserAclsCard } from './user-acls-card';
 import { renderWithFileRoutes, screen } from '../../../../test-utils';
 import type { AclDetail } from '../shared/acl-model';

@@ -1,5 +1,6 @@
 import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, test } from '@rstest/core';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { deleteSecret } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import {

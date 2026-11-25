@@ -354,10 +354,7 @@ const fillSchemaRegistryApiConnection = async (user: ReturnType<typeof userEvent
 type CreateTestCase = {
   description: string;
   actions: CreateAction[];
-  verify: (
-    createRequest: Awaited<ReturnType<typeof submitCreateForm>>,
-    exp: typeof import('@rstest/core').expect
-  ) => void;
+  verify: (createRequest: Awaited<ReturnType<typeof submitCreateForm>>, exp: typeof expect) => void;
 };
 
 /**
@@ -594,7 +591,7 @@ describe('the ShadowLinkCreatePage', () => {
     try {
       await submitCreateForm(user);
       await waitFor(() => {
-        expect(rs.mocked(toast.error).mock.calls).toEqual([
+        expect(rs.mocked(toast.error).mock.calls).toStrictEqual([
           ['Shadow link create failed', { description: '[unavailable] Create unavailable' }],
         ]);
         expect(screen.getByRole('button', { name: 'Create shadow link' })).toBeEnabled();

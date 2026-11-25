@@ -85,7 +85,7 @@ describe('useSlashCommand', () => {
       act(() => fireContentChange('/'));
 
       expect(result.current.isOpen).toBe(true);
-      expect(result.current.slashPosition).toEqual({ lineNumber: 1, column: 3 });
+      expect(result.current.slashPosition).toStrictEqual({ lineNumber: 1, column: 3 });
     });
 
     test('does not open menu when / is typed mid-word', () => {
@@ -117,7 +117,7 @@ describe('useSlashCommand', () => {
       // Fire another slash while open — should be ignored
       act(() => fireContentChange('/'));
       expect(result.current.isOpen).toBe(true);
-      expect(result.current.slashPosition).toEqual({ lineNumber: 1, column: 3 });
+      expect(result.current.slashPosition).toStrictEqual({ lineNumber: 1, column: 3 });
     });
   });
 

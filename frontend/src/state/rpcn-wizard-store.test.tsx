@@ -60,7 +60,7 @@ describe('the RPCN Wizard Store', () => {
           result.current.setWizardData(wizardData);
         });
 
-        expect(result.current.input).toEqual(wizardData.input);
+        expect(result.current.input).toStrictEqual(wizardData.input);
       });
 
       test('should merge wizard data on multiple sets', () => {
@@ -78,8 +78,8 @@ describe('the RPCN Wizard Store', () => {
           });
         });
 
-        expect(result.current.input).toEqual({ connectionName: 'redpanda', connectionType: 'input' });
-        expect(result.current.output).toEqual({ connectionName: 'kafka_franz', connectionType: 'output' });
+        expect(result.current.input).toStrictEqual({ connectionName: 'redpanda', connectionType: 'input' });
+        expect(result.current.output).toStrictEqual({ connectionName: 'kafka_franz', connectionType: 'output' });
       });
 
       test('should reset wizard data completely', () => {
@@ -121,7 +121,7 @@ describe('the RPCN Wizard Store', () => {
           });
         }).not.toThrow();
 
-        expect(result.current.input).toEqual({ connectionName: 'new', connectionType: 'input' });
+        expect(result.current.input).toStrictEqual({ connectionName: 'new', connectionType: 'input' });
       });
     });
 

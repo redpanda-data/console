@@ -153,7 +153,7 @@ describe('the AclsTab', () => {
     await user.click(await screen.findByRole('menuitem', { name: SORT_ASC }));
 
     const names = screen.getAllByTestId(ACL_ROW_TESTID).map((el) => el.textContent);
-    expect(names).toEqual([...names].sort(compareStrings));
+    expect(names).toStrictEqual([...names].sort(compareStrings));
   });
 
   test('keeps the name filter when a failed refetch recovers', async () => {

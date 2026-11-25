@@ -13,9 +13,9 @@ const validConfig = {
 describe('test variant configuration', () => {
   test('preserves variant-specific settings and valid port mappings', () => {
     const config = { ...validConfig, customSetting: 'retained', isKafka: true };
-    expect(parseVariantConfig(config)).toEqual(config);
-    expect(parseVariantPorts({ backend: 65_535 })).toEqual({ backend: 65_535 });
-    expect(parseVariantPorts({})).toEqual({});
+    expect(parseVariantConfig(config)).toStrictEqual(config);
+    expect(parseVariantPorts({ backend: 65_535 })).toStrictEqual({ backend: 65_535 });
+    expect(parseVariantPorts({})).toStrictEqual({});
   });
 
   test.each([

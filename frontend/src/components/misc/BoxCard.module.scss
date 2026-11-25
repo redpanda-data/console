@@ -34,6 +34,7 @@
 }
 
 .hoverable:hover,
+// biome-ignore lint/style/noDescendingSpecificity: The earlier .active:hover sets border color, not padding or border width.
 .active,
 .medium {
   padding: 15px;

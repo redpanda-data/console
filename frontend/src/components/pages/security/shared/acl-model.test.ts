@@ -82,7 +82,7 @@ describe('getAclFromAclListResponse', () => {
       const result = getAclFromAclListResponse(response);
 
       expect(result).toHaveLength(1);
-      expect(result[0].sharedConfig).toEqual({
+      expect(result[0].sharedConfig).toStrictEqual({
         principal: 'User:alice',
         host: '192.168.1.1',
       });
@@ -156,11 +156,11 @@ describe('getAclFromAclListResponse', () => {
 
       expect(result).toHaveLength(2);
 
-      expect(hostOperations(result, '192.168.1.1', ['READ', 'WRITE'])).toEqual({
+      expect(hostOperations(result, '192.168.1.1', ['READ', 'WRITE'])).toStrictEqual({
         principal: 'User:alice',
         operations: { READ: OperationTypeAllow, WRITE: undefined },
       });
-      expect(hostOperations(result, '192.168.1.2', ['WRITE', 'READ'])).toEqual({
+      expect(hostOperations(result, '192.168.1.2', ['WRITE', 'READ'])).toStrictEqual({
         principal: 'User:alice',
         operations: { WRITE: OperationTypeDeny, READ: undefined },
       });
@@ -240,7 +240,7 @@ describe('getAclFromAclListResponse', () => {
       const result = getAclFromAclListResponse(response);
 
       expect(result).toHaveLength(3);
-      expect(new Set(result.map((r) => r.sharedConfig.host))).toEqual(new Set(['host-a', 'host-b', 'host-c']));
+      expect(new Set(result.map((r) => r.sharedConfig.host))).toStrictEqual(new Set(['host-a', 'host-b', 'host-c']));
 
       const hostA = result.find((r) => r.sharedConfig.host === 'host-a');
       expect(hostA?.rules[0].operations.CREATE).toBe(OperationTypeAllow);
@@ -463,7 +463,7 @@ describe('getAclFromAclListResponse', () => {
 
       const result = getAclFromAclListResponse(response);
 
-      expect(result).toEqual([]);
+      expect(result).toStrictEqual([]);
     });
 
     test('should handle wildcard host', () => {
@@ -540,8 +540,8 @@ describe('getAclFromAclListResponse', () => {
       expect(result).toHaveLength(2);
 
       // Each host should have 2 rules with IDs 0 and 1
-      expect(hostRuleIds(result, 'host-a')).toEqual([0, 1]);
-      expect(hostRuleIds(result, 'host-b')).toEqual([0, 1]);
+      expect(hostRuleIds(result, 'host-a')).toStrictEqual([0, 1]);
+      expect(hostRuleIds(result, 'host-b')).toStrictEqual([0, 1]);
     });
   });
 });

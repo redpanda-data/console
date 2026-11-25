@@ -6,9 +6,9 @@ describe('topic filter session boundary', () => {
   test('round-trips complete filter state without losing code or inactive flags', () => {
     const filter = createFilterEntry({ id: 'filter', code: 'return false', isActive: false });
     setTopicFilters('events', [filter]);
-    expect(getTopicFilters('events')).toEqual([filter]);
+    expect(getTopicFilters('events')).toStrictEqual([filter]);
     clearTopicFilters('events');
-    expect(getTopicFilters('events')).toEqual([]);
+    expect(getTopicFilters('events')).toStrictEqual([]);
     clearAllTopicFilters();
   });
 
@@ -16,7 +16,7 @@ describe('topic filter session boundary', () => {
     const warning = spyOn(console, 'warn').mockImplementation(() => undefined);
     try {
       sessionStorage.setItem('topic-filters', '{"events":[{"id":1}]}');
-      expect(getTopicFilters('events')).toEqual([]);
+      expect(getTopicFilters('events')).toStrictEqual([]);
       expect(warning).toHaveBeenCalledTimes(1);
     } finally {
       warning.mockRestore();

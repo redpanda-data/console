@@ -6,7 +6,7 @@ describe('assignDeep', () => {
   test('merges nested objects', () => {
     const target = { a: { b: 1, c: 2 }, d: 3 };
     assignDeep(target, { a: { b: 9 } });
-    expect(target).toEqual({ a: { b: 9, c: 2 }, d: 3 });
+    expect(target).toStrictEqual({ a: { b: 9, c: 2 }, d: 3 });
   });
 
   test('replaces arrays wholesale instead of merging index-by-index', () => {
@@ -23,9 +23,9 @@ describe('assignDeep', () => {
     const b = { id: 'b', visible: false };
     const target = { cols: [a, b] };
     assignDeep(target, { cols: [b, a] });
-    expect(a).toEqual({ id: 'a', visible: true });
-    expect(b).toEqual({ id: 'b', visible: false });
-    expect(target.cols.map((c) => c.id)).toEqual(['b', 'a']);
+    expect(a).toStrictEqual({ id: 'a', visible: true });
+    expect(b).toStrictEqual({ id: 'b', visible: false });
+    expect(target.cols.map((c) => c.id)).toStrictEqual(['b', 'a']);
   });
 });
 
@@ -67,21 +67,21 @@ test('property search stops without evaluating getters after the first match', (
       throw new Error('Must not read later properties');
     },
   });
-  expect(collectElements(input, (key) => key === 'first', true)).toEqual([
+  expect(collectElements(input, (key) => key === 'first', true)).toStrictEqual([
     { propertyName: 'first', path: [], value: 7 },
   ]);
 });
 
 test('property search retains UTF-16 indices for a string root and ignores nullish roots', () => {
   const text = 'A😀B';
-  expect(collectElements(text, () => true, false).map((property) => property.value)).toEqual([
+  expect(collectElements(text, () => true, false).map((property) => property.value)).toStrictEqual([
     text[0],
     text[1],
     text[2],
     text[3],
   ]);
-  expect(collectElements(null, () => true, false)).toEqual([]);
-  expect(collectElements(undefined, () => true, false)).toEqual([]);
+  expect(collectElements(null, () => true, false)).toStrictEqual([]);
+  expect(collectElements(undefined, () => true, false)).toStrictEqual([]);
 });
 
 describe('oidc error metadata', () => {
@@ -119,8 +119,8 @@ test('message-key suggestions preserve string indices and skip null payloads', (
     valueJson: '"abc"',
   };
   const nullMessage = { ...message, value: { ...message.value, payload: null, isPayloadNull: true } };
-  expect(getAllMessageKeys([nullMessage])).toEqual([]);
-  expect(getAllMessageKeys([message, nullMessage])).toEqual([
+  expect(getAllMessageKeys([nullMessage])).toStrictEqual([]);
+  expect(getAllMessageKeys([message, nullMessage])).toStrictEqual([
     { propertyName: '0', path: ['0'], fullPath: '.0' },
     { propertyName: '1', path: ['1'], fullPath: '.1' },
     { propertyName: '2', path: ['2'], fullPath: '.2' },

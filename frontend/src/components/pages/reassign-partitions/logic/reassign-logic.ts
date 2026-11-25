@@ -45,11 +45,7 @@ export type TopicPartitions = {
 };
 
 // Result of a reassignment computation. Tells you what brokers to use for each partition in each topic.
-export type TopicAssignments = {
-  [topicName: string]: {
-    [partitionId: number]: PartitionAssignments;
-  };
-};
+export type TopicAssignments = Record<string | number, Record<number, PartitionAssignments>>;
 export type PartitionAssignments = {
   partition: Partition;
   brokers: Broker[]; // brokers the replicas are on; meaning length is always equal to the replicationFactor
@@ -210,9 +206,7 @@ function computeTopicAssignments(
   topicPartitions: TopicPartitions,
   targetBrokers: ExBroker[],
   allBrokers: ExBroker[],
-  resultAssignments: {
-    [partitionId: number]: PartitionAssignments;
-  }
+  resultAssignments: Record<number, PartitionAssignments>
 ) {
   const { topic, partitions } = topicPartitions;
 
@@ -644,12 +638,13 @@ function brokerUsage(partitions: Partition[], brokerId: number, fallbackSize: (p
     usage.replicas += replicasOnBroker;
     usage.leader += p.leader === brokerId ? 1 : 0;
 
-    if (replicasOnBroker > 0) {
-      // This broker hosts a replica of this partition, find the size of its log dir on this broker.
-      // using 'first()' because each broker has exactly one logDirEntry (or maybe zero if broker is offline)
-      const logDirEntry = arrayFirst(p.partitionLogDirs, (x) => !x.error && x.brokerId === brokerId);
-      usage.size += logDirEntry ? logDirEntry.size : fallbackSize(p);
+    if (replicasOnBroker === 0) {
+      continue;
     }
+    // This broker hosts a replica of this partition, find the size of its log dir on this broker.
+    // using 'first()' because each broker has exactly one logDirEntry (or maybe zero if broker is offline)
+    const logDirEntry = arrayFirst(p.partitionLogDirs, (x) => !x.error && x.brokerId === brokerId);
+    usage.size += logDirEntry ? logDirEntry.size : fallbackSize(p);
   }
   return usage;
 }

@@ -113,7 +113,7 @@ describe('fromControlplaneShadowLink schema registry sync options', () => {
     });
 
     expect(api.sourceUrl).toBe('https://sr.example.com');
-    expect(api.basicAuth).toEqual({ username: 'sr-user', passwordSet: true, passwordSetAt });
+    expect(api.basicAuth).toStrictEqual({ username: 'sr-user', passwordSet: true, passwordSetAt });
     // The password must never reach the unified model
     expect(api.basicAuth && 'password' in api.basicAuth).toBe(false);
     expect(api).toMatchObject({
@@ -124,8 +124,11 @@ describe('fromControlplaneShadowLink schema registry sync options', () => {
       unsupportedSchemaFeaturePolicy: UnsupportedSchemaFeaturePolicy.REMOVE,
       paused: true,
     });
-    expect(api.sourceFilter).toEqual({ contexts: ['.prod'], subjects: ['orders-value'] });
-    expect(api.destinationMapping).toEqual({ case: 'exact', mappings: [{ source: '.prod', destination: '.dr' }] });
+    expect(api.sourceFilter).toStrictEqual({ contexts: ['.prod'], subjects: ['orders-value'] });
+    expect(api.destinationMapping).toStrictEqual({
+      case: 'exact',
+      mappings: [{ source: '.prod', destination: '.dr' }],
+    });
   });
 
   test('should normalize unset API values to undefined', () => {
@@ -158,7 +161,7 @@ describe('fromControlplaneShadowLink schema registry sync options', () => {
       },
     });
 
-    expect(api.destinationMapping).toEqual({ case: 'identity' });
+    expect(api.destinationMapping).toStrictEqual({ case: 'identity' });
   });
 });
 
@@ -170,7 +173,7 @@ describe('fromControlplaneShadowLink role sync options', () => {
 
     const result = fromControlplaneShadowLink(shadowLink);
 
-    expect(result.configurations?.roleSyncOptions?.roleNameFilters).toEqual([
+    expect(result.configurations?.roleSyncOptions?.roleNameFilters).toStrictEqual([
       { name: 'admin-*', patternType: PatternType.PREFIXED, filterType: FilterType.INCLUDE },
     ]);
   });
@@ -219,7 +222,7 @@ describe('buildDefaultFormValuesFromControlplane role hydration', () => {
     const formValues = buildDefaultFormValuesFromControlplane(buildShadowLink(undefined, roleSyncOptions));
 
     expect(formValues.rolesMode).toBe(expected.rolesMode);
-    expect(formValues.roles).toEqual(expected.roles);
+    expect(formValues.roles).toStrictEqual(expected.roles);
     expect(FormSchema.safeParse(formValues).success).toBe(true);
   });
 });
@@ -254,7 +257,7 @@ describe('buildDefaultFormValuesFromControlplane schema registry hydration', () 
     expect(formValues.schemaRegistry.sourceUrl).toBe('https://sr.example.com');
     expect(formValues.schemaRegistry.mtls.existingKeyConfigured).toBe(true);
     expect(formValues.schemaRegistry.destinationContextsMode).toBe('map');
-    expect(formValues.schemaRegistry.contextMappings).toEqual([{ source: '.prod', destination: '.dr' }]);
+    expect(formValues.schemaRegistry.contextMappings).toStrictEqual([{ source: '.prod', destination: '.dr' }]);
     expect(formValues.schemaRegistry.syncBehavior.fullSyncInterval).toBe('5m');
     expect(formValues.schemaRegistry.paused).toBe(true);
     // The hydrated form must be submittable without touching unrelated fields.
@@ -271,7 +274,7 @@ describe('buildDefaultFormValuesFromControlplane schema registry hydration', () 
 
     const noneValues = buildDefaultFormValuesFromControlplane(buildShadowLink(undefined));
     expect(noneValues.enableSchemaRegistrySync).toBe(false);
-    expect(noneValues.schemaRegistry).toEqual(initialValues.schemaRegistry);
+    expect(noneValues.schemaRegistry).toStrictEqual(initialValues.schemaRegistry);
     expect(FormSchema.safeParse(noneValues).success).toBe(true);
   });
 });
@@ -322,12 +325,12 @@ test('hydrates both decoded authentication oneofs without asserting the SDK shap
       },
     },
   });
-  expect(buildDefaultFormValuesFromControlplane(scram).scramCredentials).toEqual({
+  expect(buildDefaultFormValuesFromControlplane(scram).scramCredentials).toStrictEqual({
     username: 'test-user',
     password: 'test-password',
     mechanism: ScramMechanism.SCRAM_SHA_512,
   });
-  expect(buildDefaultFormValuesFromControlplane(plain).plainCredentials).toEqual({
+  expect(buildDefaultFormValuesFromControlplane(plain).plainCredentials).toStrictEqual({
     username: 'plain-user',
     password: 'plain-password',
   });
@@ -348,8 +351,12 @@ test('retains legacy JSON credentials and the absent-SCRAM-mechanism default', (
   const plain = buildDefaultFormValuesFromControlplane(
     legacyAuthLink({ plainConfiguration: { username: 'legacy-plain', password: 'test' } })
   );
-  expect(scram.scramCredentials).toEqual({ username: 'legacy', password: '', mechanism: ScramMechanism.SCRAM_SHA_256 });
-  expect(plain.plainCredentials).toEqual({ username: 'legacy-plain', password: 'test' });
+  expect(scram.scramCredentials).toStrictEqual({
+    username: 'legacy',
+    password: '',
+    mechanism: ScramMechanism.SCRAM_SHA_256,
+  });
+  expect(plain.plainCredentials).toStrictEqual({ username: 'legacy-plain', password: 'test' });
 });
 
 test('rejects malformed wire credentials instead of passing objects into authentication inputs', () => {

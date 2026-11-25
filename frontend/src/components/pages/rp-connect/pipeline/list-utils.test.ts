@@ -23,7 +23,7 @@ import { describe, expect, test } from 'bun:test';
 
 describe('aggregateConnectors', () => {
   test('collapses duplicates into counts, preserving first-appearance order', () => {
-    expect(aggregateConnectors(['redpanda', 'redpanda', 's3', 'redpanda', 'http_client'])).toEqual([
+    expect(aggregateConnectors(['redpanda', 'redpanda', 's3', 'redpanda', 'http_client'])).toStrictEqual([
       { name: 'redpanda', count: 3 },
       { name: 's3', count: 1 },
       { name: 'http_client', count: 1 },
@@ -31,11 +31,11 @@ describe('aggregateConnectors', () => {
   });
 
   test('returns an empty array for no connectors', () => {
-    expect(aggregateConnectors([])).toEqual([]);
+    expect(aggregateConnectors([])).toStrictEqual([]);
   });
 
   test('keeps single connectors at count 1', () => {
-    expect(aggregateConnectors(['generate'])).toEqual([{ name: 'generate', count: 1 }]);
+    expect(aggregateConnectors(['generate'])).toStrictEqual([{ name: 'generate', count: 1 }]);
   });
 });
 
@@ -67,7 +67,7 @@ describe('countPipelinesPerTab', () => {
       Pipeline_State.ERROR,
       Pipeline_State.UNSPECIFIED,
     ]);
-    expect(counts).toEqual({ all: 5, draft: 0, running: 2, stopped: 1, error: 1 });
+    expect(counts).toStrictEqual({ all: 5, draft: 0, running: 2, stopped: 1, error: 1 });
   });
 
   test('counts drafts into the drafts tab and the total, never into a run state', () => {
@@ -77,7 +77,7 @@ describe('countPipelinesPerTab', () => {
       Pipeline_State.RUNNING,
       Pipeline_State.STOPPED,
     ]);
-    expect(counts).toEqual({ all: 4, draft: 2, running: 1, stopped: 1, error: 0 });
+    expect(counts).toStrictEqual({ all: 4, draft: 2, running: 1, stopped: 1, error: 0 });
   });
 });
 
@@ -89,12 +89,12 @@ describe('stateFilterValues', () => {
 
   test('filters the Drafts tab on the draft state alone', () => {
     const drafts = PIPELINE_STATE_TABS.find((t) => t.id === 'draft');
-    expect(drafts && stateFilterValues(drafts)).toEqual([String(Pipeline_State.DRAFT)]);
+    expect(drafts && stateFilterValues(drafts)).toStrictEqual([String(Pipeline_State.DRAFT)]);
   });
 
   test('stringifies pipeline states to match the status column accessor', () => {
     const running = PIPELINE_STATE_TABS.find((t) => t.id === 'running');
-    expect(running && stateFilterValues(running)).toEqual([
+    expect(running && stateFilterValues(running)).toStrictEqual([
       String(Pipeline_State.RUNNING),
       String(Pipeline_State.STARTING),
     ]);

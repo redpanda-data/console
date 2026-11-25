@@ -120,7 +120,7 @@ test('saving during a suspended transition edits only the committed document and
     expect(screen.queryByText('Loading next document')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Save inspector edit' }));
-    expect(onCommit.mock.calls.map(([yaml]) => yaml)).toEqual([COMMITTED_YAML, COMMITTED_YAML + INSPECTOR_EDIT]);
+    expect(onCommit.mock.calls.map(([yaml]) => yaml)).toStrictEqual([COMMITTED_YAML, COMMITTED_YAML + INSPECTOR_EDIT]);
     expect(screen.getByTestId('committed-yaml').textContent).toBe(COMMITTED_YAML + INSPECTOR_EDIT);
   } finally {
     await act(async () => {

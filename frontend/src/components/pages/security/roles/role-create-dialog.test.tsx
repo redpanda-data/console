@@ -65,7 +65,7 @@ describe('role creation honors the actual cluster fence', () => {
       );
       await user.type(screen.getByLabelText('Role name'), 'analytics-writer{Enter}');
       expect(screen.getByRole('button', { name: 'Create', exact: true })).toBeDisabled();
-      expect(creates).toEqual([]);
+      expect(creates).toStrictEqual([]);
     }
   );
 

@@ -59,7 +59,7 @@ describe('consumer group state cell', () => {
 
   test('the filter options list the classic and the consumer states', () => {
     const labels = consumerGroupStateFilterOptions.map((o) => o.label);
-    expect(labels).toEqual([
+    expect(labels).toStrictEqual([
       'Stable',
       'Assigning',
       'Reconciling',
@@ -72,14 +72,14 @@ describe('consumer group state cell', () => {
   });
 
   test('each group type lists its own states in lifecycle order', () => {
-    expect(consumerGroupStatesByType.classic).toEqual([
+    expect(consumerGroupStatesByType.classic).toStrictEqual([
       'empty',
       'preparingrebalance',
       'completingrebalance',
       'stable',
       'dead',
     ]);
-    expect(consumerGroupStatesByType.consumer).toEqual(['empty', 'assigning', 'reconciling', 'stable', 'dead']);
+    expect(consumerGroupStatesByType.consumer).toStrictEqual(['empty', 'assigning', 'reconciling', 'stable', 'dead']);
   });
   test.each(lifecycleCases)(
     'shows the $groupType lifecycle and highlights its active state',

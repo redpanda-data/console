@@ -51,12 +51,12 @@ describe('useJsFilters', () => {
     const saved = createFilterEntry({ id: 'saved', name: 'Saved filter' });
     setTopicFilters('orders', [saved]);
     const { result } = renderHook(() => useJsFilters('orders'));
-    expect(result.current.jsFilters.map((f) => f.id)).toEqual(['saved']);
+    expect(result.current.jsFilters.map((f) => f.id)).toStrictEqual(['saved']);
 
     const added = createFilterEntry({ id: 'added' });
     act(() => result.current.setJsFilters((prev) => [...prev, added]));
 
-    expect(getTopicFilters('orders').map((f) => f.id)).toEqual(['saved', 'added']);
+    expect(getTopicFilters('orders').map((f) => f.id)).toStrictEqual(['saved', 'added']);
   });
 
   test('the editor dialog starts closed and opens seeded', () => {
@@ -65,6 +65,6 @@ describe('useJsFilters', () => {
 
     act(() => result.current.setJsDialog({ filter: null, seedCode: 'value.ok' }));
 
-    expect(result.current.jsDialog).toEqual({ filter: null, seedCode: 'value.ok' });
+    expect(result.current.jsDialog).toStrictEqual({ filter: null, seedCode: 'value.ok' });
   });
 });

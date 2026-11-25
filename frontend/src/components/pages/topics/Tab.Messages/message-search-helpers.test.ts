@@ -51,13 +51,13 @@ describe('getSearchErrorMessage', () => {
   });
 
   test('wraps a non-Error rejection in an Error', () => {
-    expect(toDisplayError('aborted')).toEqual(new Error('aborted'));
+    expect(toDisplayError('aborted')).toStrictEqual(new Error('aborted'));
   });
 });
 
 describe('buildFilterCode', () => {
   test('returns no program without an active filter', () => {
-    expect(buildFilterCode([filter({ isActive: false })])).toEqual({ filterCode: '', functionCount: 0 });
+    expect(buildFilterCode([filter({ isActive: false })])).toStrictEqual({ filterCode: '', functionCount: 0 });
   });
 
   test('names each active filter and requires all of them', () => {
@@ -104,12 +104,12 @@ describe('getVisibleMessages', () => {
   });
 
   test('matches the quick search against offsets and payload JSON', () => {
-    expect(getVisibleMessages(messages, 'SHIPPED', false).map((m) => m.offset)).toEqual([2]);
-    expect(getVisibleMessages(messages, '3', false).map((m) => m.offset)).toEqual([3]);
+    expect(getVisibleMessages(messages, 'SHIPPED', false).map((m) => m.offset)).toStrictEqual([2]);
+    expect(getVisibleMessages(messages, '3', false).map((m) => m.offset)).toStrictEqual([3]);
   });
 
   test('orders newest first when asked', () => {
-    expect(getVisibleMessages(messages, 'created', true).map((m) => m.offset)).toEqual([3, 1]);
+    expect(getVisibleMessages(messages, 'created', true).map((m) => m.offset)).toStrictEqual([3, 1]);
   });
 });
 
@@ -124,7 +124,13 @@ describe('getPageWindow', () => {
         pageSize: 10,
         hasNextPage: true,
       })
-    ).toEqual({ localPageIndex: 1, loadedPages: 3, hasMoreData: false, boundedLocalPageIndex: 1, tablePageIndex: 1 });
+    ).toStrictEqual({
+      localPageIndex: 1,
+      loadedPages: 3,
+      hasMoreData: false,
+      boundedLocalPageIndex: 1,
+      tablePageIndex: 1,
+    });
   });
 
   test('stays on the last loaded page while the next one loads', () => {
@@ -137,7 +143,13 @@ describe('getPageWindow', () => {
         pageSize: 10,
         hasNextPage: true,
       })
-    ).toEqual({ localPageIndex: 2, loadedPages: 2, hasMoreData: true, boundedLocalPageIndex: 2, tablePageIndex: 1 });
+    ).toStrictEqual({
+      localPageIndex: 2,
+      loadedPages: 2,
+      hasMoreData: true,
+      boundedLocalPageIndex: 2,
+      tablePageIndex: 1,
+    });
   });
 });
 
@@ -147,7 +159,7 @@ describe('computeLoadMoreNeed', () => {
   test('loads when the viewed page is not filled yet', () => {
     expect(
       computeLoadMoreNeed({ ...base, pageIndex: 2, loadedCount: 20, lastLoadMore: { pageIndex: 1, total: 20 } })
-    ).toEqual({ needsMoreMessages: true, totalVirtualMessages: 20 });
+    ).toStrictEqual({ needsMoreMessages: true, totalVirtualMessages: 20 });
   });
 
   test('loads ahead on the last loaded page once per page', () => {

@@ -14,14 +14,14 @@ import { expect, test } from 'bun:test';
 test('keeps unconfigured registry responses empty without treating malformed array entries as subjects', () => {
   expect(parseRegistryMode({ isConfigured: false })).toBeNull();
   expect(parseRegistryCompatibility({ isConfigured: false })).toBeNull();
-  expect(parseRegistryContexts({ isConfigured: false })).toEqual([]);
-  expect(parseRegistrySubjects({ isConfigured: false })).toEqual([]);
-  expect(parseRegistryUsages({ isConfigured: false })).toEqual([]);
+  expect(parseRegistryContexts({ isConfigured: false })).toStrictEqual([]);
+  expect(parseRegistrySubjects({ isConfigured: false })).toStrictEqual([]);
+  expect(parseRegistryUsages({ isConfigured: false })).toStrictEqual([]);
   expect(() => parseRegistrySubjects([{ name: 'orders', isSoftDeleted: 'false' }])).toThrow();
 });
 
 test('keeps inherited context settings and validates configured mode values', () => {
-  expect(parseRegistryContexts([{ name: '.orders' }])).toEqual([
+  expect(parseRegistryContexts([{ name: '.orders' }])).toStrictEqual([
     { name: '.orders', mode: 'DEFAULT', compatibility: 'DEFAULT' },
   ]);
   expect(parseRegistryMode({ mode: 'READONLY' })).toBe('READONLY');
@@ -50,7 +50,7 @@ test('preserves reference metadata and protobuf message information while reject
       },
     ],
   } satisfies z.input<typeof subjectDetailsSchema>;
-  expect(subjectDetailsSchema.parse(details)).toEqual(details);
+  expect(subjectDetailsSchema.parse(details)).toStrictEqual(details);
   expect(() =>
     subjectDetailsSchema.parse({ ...details, schemas: [{ ...details.schemas[0], references: 'common' }] })
   ).toThrow();
@@ -66,13 +66,15 @@ test('preserves unknown subject and context settings reported by the backend', (
     schemas: [],
     ...unavailable,
   } satisfies z.input<typeof subjectDetailsSchema>;
-  expect(subjectDetailsSchema.parse(subject)).toEqual(subject);
-  expect(parseRegistryContexts([{ name: '.orders', ...unavailable }])).toEqual([{ name: '.orders', ...unavailable }]);
+  expect(subjectDetailsSchema.parse(subject)).toStrictEqual(subject);
+  expect(parseRegistryContexts([{ name: '.orders', ...unavailable }])).toStrictEqual([
+    { name: '.orders', ...unavailable },
+  ]);
 });
 
 test('keeps valid references when a failed lookup returns null usages', () => {
   const valid = { schemaId: 2, usages: [{ subject: 'orders', version: 1 }] };
-  expect(referencedBySchema.parse([{ schemaId: 0, error: 'lookup failed', usages: null }, valid])).toEqual([
+  expect(referencedBySchema.parse([{ schemaId: 0, error: 'lookup failed', usages: null }, valid])).toStrictEqual([
     { schemaId: 0, error: 'lookup failed', usages: [] },
     valid,
   ]);

@@ -113,7 +113,7 @@ function mergeShardBlobs(run: CoverageRun, directory: string) {
 
 function expectMatchingTotals(actual: CoverageSummary, expected: CoverageSummary) {
   for (const metric of ['lines', 'functions', 'statements', 'branches'] as const) {
-    expect(actual.total[metric]).toEqual(expected.total[metric]);
+    expect(actual.total[metric]).toStrictEqual(expected.total[metric]);
   }
 }
 

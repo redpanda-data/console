@@ -2,7 +2,7 @@
 serveFrontend: true
 
 kafka:
-  brokers: ["dest-cluster:9092"]
+  brokers: [ "dest-cluster:9092" ]
   sasl:
     enabled: true
     mechanism: SCRAM-SHA-256
@@ -19,15 +19,15 @@ authentication:
 redpanda:
   adminApi:
     enabled: true
-    urls: ["http://dest-cluster:9644"]
+    urls: [ "http://dest-cluster:9644" ]
 
 schemaRegistry:
   enabled: true
-  urls: ["http://dest-cluster:8081"]
+  urls: [ "http://dest-cluster:8081" ]
 
 server:
   listenPort: 3000
-  allowedOrigins: ["http://localhost:3001"]
+  allowedOrigins: [ "http://localhost:3001" ]
 
 authorization:
   roleBindings:

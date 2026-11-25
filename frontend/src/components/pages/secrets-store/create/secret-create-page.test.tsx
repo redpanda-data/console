@@ -1,6 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import type { Interceptor } from '@connectrpc/connect';
 import { createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, test } from '@rstest/core';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { createSecret, listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';

@@ -170,8 +170,8 @@ for (const [route, heading] of [
     const sizes = await measure(scripts);
     await attachJson(testInfo, 'cold-assets.json', sizes);
     await attachScreenshot(page, testInfo, 'route.png');
-    expect(errors).toEqual([]);
-    expect(monacoScripts(scripts)).toEqual([]);
+    expect(errors).toStrictEqual([]);
+    expect(monacoScripts(scripts)).toStrictEqual([]);
     expect(sizes.totals.raw).toBeLessThan(4_700_000);
   });
 }
@@ -183,7 +183,7 @@ test('documentation downloads its renderer only when selected', async ({ page, e
   await expectRenderedMarkdown(page);
   const deferred = await measureScriptsLoadedSince(scripts, before);
   await attachJson(testInfo, 'documentation-assets.json', deferred);
-  expect(errors).toEqual([]);
+  expect(errors).toStrictEqual([]);
   await captureSettledDocumentation(page, testInfo);
   expect(deferred.assets.map((asset) => asset.path)).toContain(rendererChunk);
   await expectDocumentationRevisitLoadsNoScripts(page, scripts);
@@ -197,7 +197,7 @@ test('produce Record mounts the local editor and JSON worker on demand', async (
   expectSameOriginWorkers(page, workers);
   await testInfo.attach('workers.json', { body: JSON.stringify(workers), contentType: 'application/json' });
   expect([...scripts].some((path) => path.includes('monaco'))).toBe(true);
-  expect(errors).toEqual([]);
+  expect(errors).toStrictEqual([]);
   await attachScreenshot(page, testInfo, 'producer.png');
 });
 
@@ -206,8 +206,8 @@ test('documentation direct links load without Messages or an editor', async ({ p
   await page.goto('/topics/bundle-test#documentation');
   await expect(tab(page, 'Documentation')).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('heading', { name: 'Bundle documentation' })).toBeVisible();
-  expect(monacoScripts(scripts)).toEqual([]);
-  expect(errors).toEqual([]);
+  expect(monacoScripts(scripts)).toStrictEqual([]);
+  expect(errors).toStrictEqual([]);
 });
 
 test('a rejected Documentation chunk keeps Messages available and reload recovers', async ({ page, testInfo }) => {
@@ -230,6 +230,6 @@ test('the pipeline YAML editor loads local validation on demand', async ({ page,
   await page.keyboard.insertText('input: ]');
   await expect(editor.locator('.squiggly-error').first()).toBeVisible();
   expectSameOriginWorkers(page, workers);
-  expect(errors).toEqual([]);
+  expect(errors).toStrictEqual([]);
   await attachScreenshot(page, testInfo, 'yaml.png');
 });

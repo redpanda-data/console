@@ -24,7 +24,7 @@ function describeValue(value: Payload): string {
 
 export const MessageMetaData = (props: { msg: TopicMessage; topicName?: string }) => {
   const msg = props.msg;
-  const data: { [k: string]: React.ReactNode } = {
+  const data: Record<string, React.ReactNode> = {
     Partition: msg.partitionID,
     Offset: numberToThousandsString(msg.offset),
     Key: msg.key.isPayloadNull ? 'Null' : `${titleCase(msg.key.encoding ?? 'unknown')} (${prettyBytes(msg.key.size)})`,

@@ -295,7 +295,7 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.updateMask?.paths).toEqual(['role_sync_options']);
+      expect(result.updateMask?.paths).toStrictEqual(['role_sync_options']);
       expect(result.shadowLink?.roleSyncOptions?.roleNameFilters).toMatchObject([{ name: 'test-role' }]);
     });
 
@@ -311,7 +311,7 @@ describe('buildControlplaneUpdateRequest', () => {
       });
 
       expect(result.shadowLink?.roleSyncOptions).toBeUndefined();
-      expect(result.updateMask?.paths).toEqual([]);
+      expect(result.updateMask?.paths).toStrictEqual([]);
     });
 
     test('should have empty updateMask paths when no changes from original', () => {
@@ -319,7 +319,7 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.updateMask?.paths).toEqual([]);
+      expect(result.updateMask?.paths).toStrictEqual([]);
     });
 
     test('should preserve original interval and paused when role filters change', () => {
@@ -364,7 +364,7 @@ describe('buildControlplaneUpdateRequest', () => {
       });
 
       // Controlplane uses flat structure - properties directly on shadowLink
-      expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['changed:9092']);
+      expect(result.shadowLink?.clientOptions?.bootstrapServers).toStrictEqual(['changed:9092']);
       expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toMatchObject([
         {
           name: 'my-topic',
@@ -406,7 +406,7 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['kafka1:9092', 'kafka2:9092']);
+      expect(result.shadowLink?.clientOptions?.bootstrapServers).toStrictEqual(['kafka1:9092', 'kafka2:9092']);
     });
   });
 
@@ -426,7 +426,7 @@ describe('buildControlplaneUpdateRequest', () => {
       expect(result.updateMask?.paths).toContain('client_options');
       expect(result.updateMask?.paths).toContain('topic_metadata_sync_options');
       expect(result.updateMask?.paths?.length).toBe(2);
-      expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['new:9092']);
+      expect(result.shadowLink?.clientOptions?.bootstrapServers).toStrictEqual(['new:9092']);
       expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toMatchObject([
         { name: 'topic1' },
       ]);
@@ -461,7 +461,7 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.updateMask?.paths?.toSorted(compareStrings)).toEqual(
+      expect(result.updateMask?.paths?.toSorted(compareStrings)).toStrictEqual(
         [
           'client_options',
           'topic_metadata_sync_options',
@@ -472,7 +472,7 @@ describe('buildControlplaneUpdateRequest', () => {
         ].toSorted(compareStrings)
       );
       expect(result.updateMask?.paths?.length).toBe(6);
-      expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['new:9092']);
+      expect(result.shadowLink?.clientOptions?.bootstrapServers).toStrictEqual(['new:9092']);
       expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toMatchObject([
         { name: 'topic1' },
       ]);
@@ -592,7 +592,7 @@ describe('buildDataplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.shadowLink?.configurations?.clientOptions?.bootstrapServers).toEqual([
+      expect(result.shadowLink?.configurations?.clientOptions?.bootstrapServers).toStrictEqual([
         'kafka1:9092',
         'kafka2:9092',
       ]);
@@ -661,7 +661,7 @@ describe('buildDataplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.updateMask?.paths).toEqual([]);
+      expect(result.updateMask?.paths).toStrictEqual([]);
     });
   });
 
@@ -690,8 +690,8 @@ describe('buildDataplaneUpdateRequest', () => {
         roleSyncSupported: false,
       });
 
-      expect(result.updateMask?.paths).toEqual(['configurations.client_options']);
-      expect(result.shadowLink?.configurations?.clientOptions?.bootstrapServers).toEqual(['changed:9092']);
+      expect(result.updateMask?.paths).toStrictEqual(['configurations.client_options']);
+      expect(result.shadowLink?.configurations?.clientOptions?.bootstrapServers).toStrictEqual(['changed:9092']);
       expect(result.shadowLink?.configurations?.roleSyncOptions).toBeUndefined();
     });
   });
@@ -740,7 +740,7 @@ describe('schema registry api mode through both builders', () => {
       roleSyncSupported: true,
     });
 
-    expect(request.updateMask?.paths).toEqual(['schema_registry_sync_options']);
+    expect(request.updateMask?.paths).toStrictEqual(['schema_registry_sync_options']);
     const mode = request.shadowLink?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
     expect(mode?.case).toBe('shadowSchemaRegistryApi');
     if (mode?.case === 'shadowSchemaRegistryApi') {
@@ -754,7 +754,7 @@ describe('schema registry api mode through both builders', () => {
       roleSyncSupported: true,
     });
 
-    expect(request.updateMask?.paths).toEqual(['configurations.schema_registry_sync_options']);
+    expect(request.updateMask?.paths).toStrictEqual(['configurations.schema_registry_sync_options']);
     const mode = request.shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
     expect(mode?.case).toBe('shadowSchemaRegistryApi');
     if (mode?.case === 'shadowSchemaRegistryApi') {

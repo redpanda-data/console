@@ -10,7 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { rs } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';

@@ -150,11 +150,11 @@ export class ReassignmentTracker {
   ) {
     for (const r of liveReassignments) {
       const existingState = arrayFirst(this.trackingReassignments, (x) => x.id === r.id);
-      if (existingState === null) {
-        // console.log('adding new state', { id: r.id, reassignment: r });
-        const state = this.createReassignmentState(r);
-        this.trackingReassignments.push(state);
+      if (existingState !== null) {
+        continue;
       }
+      const state = this.createReassignmentState(r);
+      this.trackingReassignments.push(state);
     }
   }
 
@@ -169,12 +169,13 @@ export class ReassignmentTracker {
         continue; // no need to the ones already marked as completed
       }
       const live = arrayFirst(liveReassignments, (x) => x.id === r.id);
-      if (!live) {
-        // this tracked reassignment does not exist in the live assignments anymore
-        r.actualTimeCompleted = new Date();
-        r.progressPercent = 100;
-        r.remaining = { value: 0, timestamp: new Date() };
+      if (live) {
+        continue;
       }
+      // this tracked reassignment does not exist in the live assignments anymore
+      r.actualTimeCompleted = new Date();
+      r.progressPercent = 100;
+      r.remaining = { value: 0, timestamp: new Date() };
     }
   }
 
@@ -225,10 +226,7 @@ export class ReassignmentTracker {
 
   // compute a stable ID for a PartitionReassignment
   computeId(r: PartitionReassignments): string {
-    const id: unknown[] = [];
-    id.push(r.topicName);
-
-    return toJson(id);
+    return toJson([r.topicName]);
   }
 
   stop() {

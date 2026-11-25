@@ -80,7 +80,7 @@ describe('the ClusterFenceSettingsDialog', () => {
     await user.type(screen.getByLabelText('Exempt users'), 'shadow-telemetry{Enter}');
     await user.click(save);
 
-    expect(mutate.mock.calls[0]?.[0]).toEqual({
+    expect(mutate.mock.calls[0]?.[0]).toStrictEqual({
       settings: {
         exemptPrincipals: ['shadow-orders', 'shadow-telemetry'],
         allowAllReads: false,

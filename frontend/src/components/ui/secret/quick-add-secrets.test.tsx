@@ -78,7 +78,7 @@ async function finishRequiredBatch(scenario: ReturnType<typeof renderRequiredSec
 
 function expectPartialCreation(scenario: ReturnType<typeof renderRequiredSecrets>) {
   expect(scenario.onUpdateEditorContent).toHaveBeenCalledExactlyOnceWith('api-key', 'API_KEY');
-  expect(scenario.onError.mock.calls).toEqual([[['Failed to create secret BAD: Not allowed']]]);
+  expect(scenario.onError.mock.calls).toStrictEqual([[['Failed to create secret BAD: Not allowed']]]);
   expect(
     scenario.requests.map(({ request }) => ({
       id: request?.id,
@@ -86,7 +86,7 @@ function expectPartialCreation(scenario: ReturnType<typeof renderRequiredSecrets
       scopes: request?.scopes,
       labels: request?.labels,
     }))
-  ).toEqual([
+  ).toStrictEqual([
     { id: 'API_KEY', value: 'api-value', scopes: [Scope.REDPANDA_CONNECT], labels: {} },
     { id: 'BAD', value: 'retry-value', scopes: [Scope.REDPANDA_CONNECT], labels: {} },
     { id: 'SLOW', value: 'slow-value', scopes: [Scope.REDPANDA_CONNECT], labels: {} },
@@ -96,8 +96,8 @@ function expectPartialCreation(scenario: ReturnType<typeof renderRequiredSecrets
 }
 
 function expectRequiredRetry(scenario: ReturnType<typeof renderRequiredSecrets>) {
-  expect(scenario.requests.map(({ request }) => request?.id)).toEqual(['API_KEY', 'BAD', 'SLOW', 'BAD']);
-  expect(scenario.requests[3]?.request?.secretData).toEqual(new TextEncoder().encode('retry-value'));
+  expect(scenario.requests.map(({ request }) => request?.id)).toStrictEqual(['API_KEY', 'BAD', 'SLOW', 'BAD']);
+  expect(scenario.requests[3]?.request?.secretData).toStrictEqual(new TextEncoder().encode('retry-value'));
   expect(scenario.onSecretsCreated).toHaveBeenCalledTimes(2);
   expect(screen.queryByText('Required secrets are missing')).not.toBeInTheDocument();
 }
@@ -157,7 +157,7 @@ function expectCustomFailure(
 async function retryCustomSecret(scenario: ReturnType<typeof renderCustomSecrets>) {
   await scenario.user.click(screen.getByRole('button', { name: 'Create Secret' }));
   await waitFor(() => expect(scenario.onSecretsCreated).toHaveBeenCalledExactlyOnceWith(['NEXT_KEY']));
-  expect(scenario.requests.map(({ request }) => ({ id: request?.id, scopes: request?.scopes }))).toEqual([
+  expect(scenario.requests.map(({ request }) => ({ id: request?.id, scopes: request?.scopes }))).toStrictEqual([
     { id: 'NEXT_KEY', scopes: [Scope.MCP_SERVER] },
     { id: 'NEXT_KEY', scopes: [Scope.MCP_SERVER] },
   ]);

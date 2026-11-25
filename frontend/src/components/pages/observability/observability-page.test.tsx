@@ -13,6 +13,7 @@ import { create } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import type { Interceptor } from '@connectrpc/connect';
 import { createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, test } from '@rstest/core';
 import type { ExecuteRangeQueryRequest } from 'protogen/redpanda/api/dataplane/v1alpha3/observability_pb';
 import {
   DataPointSchema,

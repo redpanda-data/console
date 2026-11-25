@@ -89,9 +89,7 @@ export type PipelineForm = UseFormReturn<PipelineFormValues>;
 /** Route and feature-flag inputs the page branches on. */
 export function usePipelinePageConfig() {
   const { mode, pipelineId } = usePipelineMode();
-  const search = useSearch({ strict: false }) as {
-    serverless?: string;
-  };
+  const search = useSearch({ strict: false });
   return {
     mode,
     pipelineId,

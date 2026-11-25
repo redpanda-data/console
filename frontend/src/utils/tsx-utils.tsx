@@ -99,7 +99,7 @@ type QuickTableOptions = {
 };
 type QuickTableEntry = { key: React.ReactNode; value: React.ReactNode };
 type QuickTableData = QuickTableEntry[] | [React.ReactNode, React.ReactNode][] | Record<string, React.ReactNode>;
-type HelperStyleVars = CSSProperties & { [key: `--console-${string}`]: string | number | undefined };
+type HelperStyleVars = CSSProperties & Record<`--console-${string}`, string | number | undefined>;
 
 function cssLength(value: string | number | undefined): string | undefined {
   return typeof value === 'number' ? `${value}px` : value;

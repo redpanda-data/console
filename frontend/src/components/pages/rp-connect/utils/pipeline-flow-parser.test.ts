@@ -42,7 +42,7 @@ describe('parsePipelineFlowTree', () => {
 
     test('returns empty nodes with error for invalid YAML', () => {
       const result = parsePipelineFlowTree('{{{');
-      expect(result.nodes).toEqual([]);
+      expect(result.nodes).toStrictEqual([]);
       expect(result.error).toBeDefined();
     });
 
@@ -318,7 +318,7 @@ output:
       const leaf = result.nodes.find((n) => n.label === 'kafka_franz');
       expect(leaf).toBeDefined();
       // The real case is the SECOND array entry: its edit path must keep index 1, not shift to 0.
-      expect(leaf?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
+      expect(leaf?.caseEditTarget).toStrictEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
     });
 
     test('renders a check-only switch-output case as an empty, condition-editable case node', () => {
@@ -342,8 +342,8 @@ output:
         condition: 'this.region == "us"',
         isCase: true,
       });
-      expect(emptyCase?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
-      expect(emptyCase?.editTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
+      expect(emptyCase?.caseEditTarget).toStrictEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
+      expect(emptyCase?.editTarget).toStrictEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
     });
 
     test('labels a bodyless switch-output case with a null-skipping counter, not the raw YAML index', () => {
@@ -357,7 +357,7 @@ output:
       const { nodes } = parsePipelineFlowTree(yaml);
       const emptyCase = nodes.find((n) => n.isCase === true);
       expect(emptyCase).toMatchObject({ kind: 'group', label: 'case 1' });
-      expect(emptyCase?.caseEditTarget).toEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
+      expect(emptyCase?.caseEditTarget).toStrictEqual({ kind: 'switchCase', path: ['output', 'switch', 'cases', 1] });
     });
 
     test('parses fallback output with children', () => {
@@ -391,7 +391,7 @@ output:
         parentId: 'output-fallback',
       });
       // The fallback grows by appending a tier — an "Add output" affordance on the group.
-      expect(outputNodes[1].insertSlot).toEqual({ containerPath: ['output', 'fallback'], accepts: 'output' });
+      expect(outputNodes[1].insertSlot).toStrictEqual({ containerPath: ['output', 'fallback'], accepts: 'output' });
       // Later tiers route "on failure" of the prior; tier 0 is the primary (no condition).
       expect(outputNodes[2]).not.toHaveProperty('isErrorPath', true);
       expect(outputNodes[3]).toMatchObject({ condition: 'on failure', isErrorPath: true });
@@ -525,7 +525,7 @@ pipeline:
       // The leaves are the real mapping processors, not the case `check` strings.
       const leaves = procNodes.filter((n) => n.kind === 'leaf');
       expect(leaves).toHaveLength(2);
-      expect(leaves.map((n) => n.label)).toEqual(['mapping', 'mapping']);
+      expect(leaves.map((n) => n.label)).toStrictEqual(['mapping', 'mapping']);
       // The case carries an editable routing condition, not a broken processor edit target.
       const firstCase = procNodes.find((n) => n.kind === 'group' && n.parentId === 'proc-0');
       expect(firstCase?.caseEditTarget?.kind).toBe('switchCase');
@@ -655,7 +655,7 @@ pipeline:
         expect(groupNode?.label).toBe(procType);
         const leafNodes = nodes.filter((n) => n.kind === 'leaf' && n.section === 'processor');
         expect(leafNodes).toHaveLength(2);
-        expect(leafNodes.map((n) => n.label)).toEqual(['mapping', 'log']);
+        expect(leafNodes.map((n) => n.label)).toStrictEqual(['mapping', 'log']);
       }
     });
   });
@@ -671,10 +671,10 @@ input:
 `;
       const { nodes } = parsePipelineFlowTree(yaml);
       const leaf = nodes.find((n) => n.kind === 'leaf' && n.section === 'input' && n.label !== 'none');
-      expect(leaf?.topics).toEqual(['orders', 'events']);
+      expect(leaf?.topics).toStrictEqual(['orders', 'events']);
       // …and the topics reach the laid-out card data, where they render as chips.
       const card = computeGraphLayout(nodes).rfNodes.find((n) => n.id === leaf?.id);
-      expect(present(card, 'the laid-out input card').data.topics).toEqual(['orders', 'events']);
+      expect(present(card, 'the laid-out input card').data.topics).toStrictEqual(['orders', 'events']);
     });
 
     test('summarizes nested leaves too (a processor inside a container shows its config)', () => {
@@ -686,7 +686,7 @@ output:
   drop: {}`;
       const { nodes } = parsePipelineFlowTree(yaml);
       const http = nodes.find((n) => n.label === 'http');
-      expect(http?.meta).toEqual([
+      expect(http?.meta).toStrictEqual([
         { label: 'url', value: 'http://api/enrich' },
         { label: 'verb', value: 'POST' },
       ]);
@@ -836,7 +836,7 @@ output:
       const { nodes } = parsePipelineFlowTree(yaml);
       const input = nodes.find((n) => n.id === 'input-0');
       expect(input?.missingTopic).toBeUndefined();
-      expect(input?.topics).toEqual(['my-topic']);
+      expect(input?.topics).toStrictEqual(['my-topic']);
     });
   });
 });
@@ -945,14 +945,14 @@ output:
         .map((e) => e.data?.insertIndex)
         .filter((i): i is number => typeof i === 'number')
         .sort((a, b) => a - b);
-      expect(spineIndices).toEqual([0, 1, 2]);
+      expect(spineIndices).toStrictEqual([0, 1, 2]);
     });
   });
 
   describe('node data and resource lane', () => {
     test('carries edit targets and metadata onto the flow nodes', () => {
-      expect(byId('proc-0')?.data.editTarget).toEqual({ kind: 'processor', index: 0 });
-      expect(byId('proc-0')?.data.meta).toEqual([{ label: 'message', value: 'hi' }]);
+      expect(byId('proc-0')?.data.editTarget).toStrictEqual({ kind: 'processor', index: 0 });
+      expect(byId('proc-0')?.data.meta).toStrictEqual([{ label: 'message', value: 'hi' }]);
     });
 
     test('surfaces the `label:` on nested and container nodes, not just top-level leaves', () => {
@@ -1075,7 +1075,7 @@ output:
         layout.rfNodes.find((n) => n.id === 'output-switch-0'),
         'the output card'
       );
-      expect(outputCard.data.editTarget).toEqual({
+      expect(outputCard.data.editTarget).toStrictEqual({
         kind: 'path',
         path: ['output', 'switch', 'cases', 0, 'output'],
         componentType: 'output',
@@ -1139,7 +1139,7 @@ output:
       const case1 = nodes.find((n) => n.id === 'proc-0-case-1');
       // The case is an isCase wrapper carrying its condition, selectable via a switchCase target.
       expect(case1).toMatchObject({ isCase: true, condition: 'this.region == "eu"', parentId: 'proc-0' });
-      expect(case1?.editTarget).toEqual({ kind: 'switchCase', path: ['pipeline', 'processors', 0, 'switch', 0] });
+      expect(case1?.editTarget).toStrictEqual({ kind: 'switchCase', path: ['pipeline', 'processors', 0, 'switch', 0] });
       // The default case carries no condition.
       expect(nodes.find((n) => n.id === 'proc-0-case-2')).toMatchObject({ isCase: true, isDefault: true });
       // The parent switch IS selectable.
@@ -1201,19 +1201,19 @@ output:
       const { nodes } = parsePipelineFlowTree(ENRICHMENT);
       const byId = (id: string) => nodes.find((n) => n.id === id);
       // http inside the first branch.
-      expect(byId('proc-1-processors-p0')?.editTarget).toEqual({
+      expect(byId('proc-1-processors-p0')?.editTarget).toStrictEqual({
         kind: 'path',
         path: ['pipeline', 'processors', 1, 'branch', 'processors', 0],
         componentType: 'processor',
       });
       // An output inside the switch is editable as an output at its case path.
-      expect(byId('output-switch-0')?.editTarget).toEqual({
+      expect(byId('output-switch-0')?.editTarget).toStrictEqual({
         kind: 'path',
         path: ['output', 'switch', 'cases', 0, 'output'],
         componentType: 'output',
       });
       // Top-level processors keep the convenience index target.
-      expect(byId('proc-0')?.editTarget).toEqual({ kind: 'processor', index: 0 });
+      expect(byId('proc-0')?.editTarget).toStrictEqual({ kind: 'processor', index: 0 });
     });
 
     test('gives nested containers insert slots and switches an add-case slot', () => {
@@ -1233,22 +1233,22 @@ output:
       const byId = (id: string) => nodes.find((n) => n.id === id);
 
       // The switch node can append a structural case.
-      expect(byId('proc-0')?.addChildSlot).toEqual({
+      expect(byId('proc-0')?.addChildSlot).toStrictEqual({
         containerPath: ['pipeline', 'processors', 0, 'switch'],
         section: 'processor',
       });
       // Each case (including the empty second one) accepts processor inserts.
-      expect(byId('proc-0-case-1')?.insertSlot).toEqual({
+      expect(byId('proc-0-case-1')?.insertSlot).toStrictEqual({
         containerPath: ['pipeline', 'processors', 0, 'switch', 0, 'processors'],
         accepts: 'processor',
       });
-      expect(byId('proc-0-case-2')?.insertSlot).toEqual({
+      expect(byId('proc-0-case-2')?.insertSlot).toStrictEqual({
         containerPath: ['pipeline', 'processors', 0, 'switch', 1, 'processors'],
         accepts: 'processor',
       });
       // The branch container accepts processor inserts.
       const branch = nodes.find((n) => n.kind === 'group' && n.label === 'branch');
-      expect(branch?.insertSlot).toEqual({
+      expect(branch?.insertSlot).toStrictEqual({
         containerPath: ['pipeline', 'processors', 1, 'branch', 'processors'],
         accepts: 'processor',
       });
@@ -1264,7 +1264,7 @@ output:
   drop: {}`;
       const { nodes } = parsePipelineFlowTree(yaml);
       const broker = nodes.find((n) => n.kind === 'group' && n.label === 'broker');
-      expect(broker?.insertSlot).toEqual({ containerPath: ['input', 'broker', 'inputs'], accepts: 'input' });
+      expect(broker?.insertSlot).toStrictEqual({ containerPath: ['input', 'broker', 'inputs'], accepts: 'input' });
     });
 
     test('renders an empty broker output as a fillable group, not a dead-end leaf', () => {
@@ -1275,7 +1275,7 @@ output:
       const { nodes } = parsePipelineFlowTree(yaml);
       const broker = nodes.find((n) => n.section === 'output' && n.label === 'broker');
       expect(broker).toMatchObject({ id: 'output-broker', kind: 'group', editTarget: { kind: 'output' } });
-      expect(broker?.insertSlot).toEqual({ containerPath: ['output', 'broker', 'outputs'], accepts: 'output' });
+      expect(broker?.insertSlot).toStrictEqual({ containerPath: ['output', 'broker', 'outputs'], accepts: 'output' });
       // No phantom child nodes for the empty array.
       expect(nodes.filter((n) => n.parentId === 'output-broker')).toHaveLength(0);
     });
@@ -1287,7 +1287,7 @@ output:
       const { nodes } = parsePipelineFlowTree(yaml);
       const sw = nodes.find((n) => n.section === 'output' && n.label === 'switch');
       expect(sw).toMatchObject({ id: 'output-switch', kind: 'group' });
-      expect(sw?.addChildSlot).toEqual({ containerPath: ['output', 'switch', 'cases'], section: 'output' });
+      expect(sw?.addChildSlot).toStrictEqual({ containerPath: ['output', 'switch', 'cases'], section: 'output' });
     });
 
     test('gives an empty input broker (no inputs key yet) an insert slot', () => {
@@ -1298,7 +1298,7 @@ output:
       const { nodes } = parsePipelineFlowTree(yaml);
       const broker = nodes.find((n) => n.section === 'input' && n.label === 'broker');
       expect(broker).toMatchObject({ id: 'input-broker', kind: 'group' });
-      expect(broker?.insertSlot).toEqual({ containerPath: ['input', 'broker', 'inputs'], accepts: 'input' });
+      expect(broker?.insertSlot).toStrictEqual({ containerPath: ['input', 'broker', 'inputs'], accepts: 'input' });
     });
 
     test('gives empty processor containers (try, branch) insert slots', () => {
@@ -1311,12 +1311,12 @@ output:
   drop: {}`;
       const { nodes } = parsePipelineFlowTree(yaml);
       const tryNode = nodes.find((n) => n.kind === 'group' && n.label === 'try');
-      expect(tryNode?.insertSlot).toEqual({
+      expect(tryNode?.insertSlot).toStrictEqual({
         containerPath: ['pipeline', 'processors', 0, 'try'],
         accepts: 'processor',
       });
       const branch = nodes.find((n) => n.kind === 'group' && n.label === 'branch');
-      expect(branch?.insertSlot).toEqual({
+      expect(branch?.insertSlot).toStrictEqual({
         containerPath: ['pipeline', 'processors', 1, 'branch', 'processors'],
         accepts: 'processor',
       });
@@ -1334,7 +1334,7 @@ output:
       const { nodes } = parsePipelineFlowTree(yaml);
       const case1 = nodes.find((n) => n.id === 'proc-0-case-1');
       expect(case1).toMatchObject({ isCase: true, condition: 'this.x == 1' });
-      expect(case1?.insertSlot).toEqual({
+      expect(case1?.insertSlot).toStrictEqual({
         containerPath: ['pipeline', 'processors', 0, 'switch', 0, 'processors'],
         accepts: 'processor',
       });
@@ -1425,13 +1425,17 @@ output_resources:
         const { nodes } = parsePipelineFlowTree(yaml);
         const inputRes = nodes.find((n) => n.id === 'resource-input_resources-0');
         expect(inputRes).toMatchObject({ section: 'resource', label: 'generate', labelText: 'my_input' });
-        expect(inputRes?.editTarget).toEqual({ kind: 'path', path: ['input_resources', 0], componentType: 'input' });
-        expect(nodes.find((n) => n.id === 'resource-processor_resources-0')?.editTarget).toEqual({
+        expect(inputRes?.editTarget).toStrictEqual({
+          kind: 'path',
+          path: ['input_resources', 0],
+          componentType: 'input',
+        });
+        expect(nodes.find((n) => n.id === 'resource-processor_resources-0')?.editTarget).toStrictEqual({
           kind: 'path',
           path: ['processor_resources', 0],
           componentType: 'processor',
         });
-        expect(nodes.find((n) => n.id === 'resource-output_resources-0')?.editTarget).toEqual({
+        expect(nodes.find((n) => n.id === 'resource-output_resources-0')?.editTarget).toStrictEqual({
           kind: 'path',
           path: ['output_resources', 0],
           componentType: 'output',
@@ -1652,7 +1656,7 @@ output:
       const { nodes } = parsePipelineFlowTree(yaml);
       const input = nodes.find((n) => n.id === 'input-0');
       expect(input?.label).toBe('kafka');
-      expect(input?.topics).toEqual(['orders']);
+      expect(input?.topics).toStrictEqual(['orders']);
       expect(input?.missingTopic).toBeUndefined();
     });
 
@@ -1683,7 +1687,7 @@ pipeline:
 output:
   drop: {}`;
     const seq = mainFlowSequence(parsePipelineFlowTree(yaml).nodes).map((n) => n.id);
-    expect(seq).toEqual(['input-0', 'proc-0', 'proc-1', 'output-0']);
+    expect(seq).toStrictEqual(['input-0', 'proc-0', 'proc-1', 'output-0']);
   });
 });
 
@@ -1729,63 +1733,65 @@ describe('shouldOfferTemplate', () => {
 
 describe('summarizeComponent', () => {
   test('surfaces preferred fields for known components', () => {
-    expect(summarizeComponent('log', { level: 'INFO', message: 'hi' })).toEqual([
+    expect(summarizeComponent('log', { level: 'INFO', message: 'hi' })).toStrictEqual([
       { label: 'level', value: 'INFO' },
       { label: 'message', value: 'hi' },
     ]);
   });
 
   test('handles bare-string configs like mappings', () => {
-    expect(summarizeComponent('mapping', 'root = this.foo')).toEqual([{ label: 'expr', value: 'root = this.foo' }]);
+    expect(summarizeComponent('mapping', 'root = this.foo')).toStrictEqual([
+      { label: 'expr', value: 'root = this.foo' },
+    ]);
   });
 
   test('falls back to the first scalar fields for unknown components', () => {
     const meta = summarizeComponent('mystery', { label: 'x', alpha: 1, beta: 'two', nested: {} });
-    expect(meta).toEqual([
+    expect(meta).toStrictEqual([
       { label: 'alpha', value: '1' },
       { label: 'beta', value: 'two' },
     ]);
   });
 
   test('omits topic(s) from meta — they render as chips instead', () => {
-    expect(summarizeComponent('redpanda', { topics: ['orders'], consumer_group: 'g1' })).toEqual([
+    expect(summarizeComponent('redpanda', { topics: ['orders'], consumer_group: 'g1' })).toStrictEqual([
       { label: 'group', value: 'g1' },
     ]);
-    expect(summarizeComponent('redpanda', { topic: 'orders' })).toEqual([]);
+    expect(summarizeComponent('redpanda', { topic: 'orders' })).toStrictEqual([]);
   });
 
   test('surfaces role-appropriate fields across input/processor/output/resource', () => {
-    expect(summarizeComponent('aws_s3', { bucket: 'b', prefix: 'p/', region: 'us' })).toEqual([
+    expect(summarizeComponent('aws_s3', { bucket: 'b', prefix: 'p/', region: 'us' })).toStrictEqual([
       { label: 'bucket', value: 'b' },
       { label: 'prefix', value: 'p/' },
     ]);
-    expect(summarizeComponent('sql_insert', { driver: 'postgres', table: 'events' })).toEqual([
+    expect(summarizeComponent('sql_insert', { driver: 'postgres', table: 'events' })).toStrictEqual([
       { label: 'driver', value: 'postgres' },
       { label: 'table', value: 'events' },
     ]);
     // rate_limit `local` engine — count is the key fact.
-    expect(summarizeComponent('local', { count: 1000, interval: '1s' })).toEqual([
+    expect(summarizeComponent('local', { count: 1000, interval: '1s' })).toStrictEqual([
       { label: 'count', value: '1000' },
       { label: 'interval', value: '1s' },
     ]);
   });
 
   test('shortens verbose keys and prefers identifying fields in the fallback', () => {
-    expect(summarizeComponent('kafka_franz', { consumer_group: 'g' })).toEqual([{ label: 'group', value: 'g' }]);
+    expect(summarizeComponent('kafka_franz', { consumer_group: 'g' })).toStrictEqual([{ label: 'group', value: 'g' }]);
     // Unknown component: salient-named fields win over a leading boolean.
-    expect(summarizeComponent('mystery_conn', { enabled: true, host: 'h1', retries: 3 })).toEqual([
+    expect(summarizeComponent('mystery_conn', { enabled: true, host: 'h1', retries: 3 })).toStrictEqual([
       { label: 'host', value: 'h1' },
     ]);
   });
 
   test('surfaces the model for AI components and the key field for vector / cloud sinks', () => {
-    expect(summarizeComponent('openai_chat_completion', { model: 'gpt-4o', api_key: 'sk-xyz' })).toEqual([
+    expect(summarizeComponent('openai_chat_completion', { model: 'gpt-4o', api_key: 'sk-xyz' })).toStrictEqual([
       { label: 'model', value: 'gpt-4o' },
     ]);
-    expect(summarizeComponent('qdrant', { collection_name: 'docs', grpc_host: 'x' })).toEqual([
+    expect(summarizeComponent('qdrant', { collection_name: 'docs', grpc_host: 'x' })).toStrictEqual([
       { label: 'collection', value: 'docs' },
     ]);
-    expect(summarizeComponent('gcp_bigquery', { dataset: 'analytics', table: 'events' })).toEqual([
+    expect(summarizeComponent('gcp_bigquery', { dataset: 'analytics', table: 'events' })).toStrictEqual([
       { label: 'dataset', value: 'analytics' },
       { label: 'table', value: 'events' },
     ]);
@@ -1793,17 +1799,17 @@ describe('summarizeComponent', () => {
 
   test('never surfaces credentials or generic infra knobs as fallback meta', () => {
     // An unmapped component: `model` (salient) wins; api_key / region are skipped.
-    expect(summarizeComponent('mystery_ai', { model: 'foo', api_key: 'secret', region: 'us' })).toEqual([
+    expect(summarizeComponent('mystery_ai', { model: 'foo', api_key: 'secret', region: 'us' })).toStrictEqual([
       { label: 'model', value: 'foo' },
     ]);
     // All-noise config yields nothing rather than leaking a secret-ish field name.
-    expect(summarizeComponent('mystery_creds', { api_key: 'x', region: 'us', tls: true })).toEqual([]);
+    expect(summarizeComponent('mystery_creds', { api_key: 'x', region: 'us', tls: true })).toStrictEqual([]);
   });
 });
 
 describe('the SECTION_LABEL', () => {
   test('maps every section to a human label', () => {
-    expect(SECTION_LABEL).toEqual({
+    expect(SECTION_LABEL).toStrictEqual({
       input: 'Input',
       processor: 'Processor',
       output: 'Output',
@@ -1839,9 +1845,9 @@ output:
 
   test('gives an unwrapped input an empty slot and its own end', () => {
     const input = parsePipelineFlowTree('input:\n  aws_s3: { bucket: b }').nodes.find((n) => n.id === 'input-0');
-    expect(input?.editTarget).toEqual({ kind: 'input' });
+    expect(input?.editTarget).toStrictEqual({ kind: 'input' });
     expect(input?.stopSlot).toMatchObject({ path: ['input'], ownEnd: { kind: 'natural' } });
-    expect(Object.keys(input?.stopSlot ?? {}).sort((a, b) => a.localeCompare(b))).toEqual(['ownEnd', 'path']);
+    expect(Object.keys(input?.stopSlot ?? {}).sort((a, b) => a.localeCompare(b))).toStrictEqual(['ownEnd', 'path']);
     expect(input?.endBehavior?.kind).toBe('natural');
   });
 

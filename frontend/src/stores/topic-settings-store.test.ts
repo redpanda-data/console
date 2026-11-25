@@ -70,10 +70,10 @@ describe('useTopicSettingsStore messages view settings', () => {
 
   test('getMessageColumns falls back to defaults when unset or empty', () => {
     const store = useTopicSettingsStore.getState();
-    expect(store.getMessageColumns('unknown-topic')).toEqual(DEFAULT_MESSAGE_COLUMNS);
+    expect(store.getMessageColumns('unknown-topic')).toStrictEqual(DEFAULT_MESSAGE_COLUMNS);
 
     store.setMessageColumns('topic-a', []);
-    expect(useTopicSettingsStore.getState().getMessageColumns('topic-a')).toEqual(DEFAULT_MESSAGE_COLUMNS);
+    expect(useTopicSettingsStore.getState().getMessageColumns('topic-a')).toStrictEqual(DEFAULT_MESSAGE_COLUMNS);
   });
 
   test('setMessageColumns stores order and visibility; missing columns are restored on read', () => {
@@ -83,9 +83,9 @@ describe('useTopicSettingsStore messages view settings', () => {
     ];
     useTopicSettingsStore.getState().setMessageColumns('topic-a', columns);
     const result = useTopicSettingsStore.getState().getMessageColumns('topic-a');
-    expect(result.slice(0, 2)).toEqual(columns);
+    expect(result.slice(0, 2)).toStrictEqual(columns);
     // columns absent from the stored value come back so they stay reachable in settings
-    expect(result.map((c) => c.id).sort(compareStrings)).toEqual(
+    expect(result.map((c) => c.id).sort(compareStrings)).toStrictEqual(
       DEFAULT_MESSAGE_COLUMNS.map((c) => c.id).sort(compareStrings)
     );
   });
@@ -101,7 +101,7 @@ describe('useTopicSettingsStore messages view settings', () => {
       .getMessageColumns('topic-a')
       .map((c) => c.id);
     // first occurrences kept in order, missing defaults appended
-    expect(ids.slice(0, 2)).toEqual(['offset', 'key']);
+    expect(ids.slice(0, 2)).toStrictEqual(['offset', 'key']);
     expect(new Set(ids).size).toBe(DEFAULT_MESSAGE_COLUMNS.length);
   });
 
@@ -134,8 +134,8 @@ describe('useTopicSettingsStore messages view settings', () => {
 
     const state = useTopicSettingsStore.getState();
     expect(state.getRowDensity('topic-a')).toBe(DEFAULT_ROW_DENSITY);
-    expect(state.getMessageColumns('topic-a')).toEqual(DEFAULT_MESSAGE_COLUMNS);
-    expect(state.getPreviewTags('topic-a')).toEqual([]);
+    expect(state.getMessageColumns('topic-a')).toStrictEqual(DEFAULT_MESSAGE_COLUMNS);
+    expect(state.getPreviewTags('topic-a')).toStrictEqual([]);
     expect(state.getSearchParams('topic-a')?.keyDeserializer).toBe(PayloadEncoding.UNSPECIFIED);
     expect(state.getSearchParams('topic-a')?.valueDeserializer).toBe(PayloadEncoding.UNSPECIFIED);
   });
@@ -181,7 +181,7 @@ describe('persisted topic and global preferences', () => {
     });
     expect(topic?.searchParams.pageSize).toBe(37);
     expect(topic?.searchParams.continuousPaginationEnabled).toBe(false);
-    expect(topic?.previewTags).toEqual([
+    expect(topic?.previewTags).toStrictEqual([
       {
         id: 'old-tag',
         isActive: true,
@@ -193,7 +193,7 @@ describe('persisted topic and global preferences', () => {
       },
     ]);
     expect(topic?.rowDensity).toBe('compact');
-    expect(topic?.messageColumns).toEqual([{ id: 'key', visible: false }]);
+    expect(topic?.messageColumns).toStrictEqual([{ id: 'key', visible: false }]);
   });
 
   test('rejects malformed roots and topic entries instead of asserting their shape', () => {
@@ -210,7 +210,7 @@ describe('persisted topic and global preferences', () => {
     );
     expect(decoded?.brokerList.pageSize).toBe(73);
     expect(decoded?.brokerList.quickSearch).toBe('brokers');
-    expect(decoded?.kafkaConnect.tasks).toEqual({ pageSize: 42, quickSearch: 'tasks' });
+    expect(decoded?.kafkaConnect.tasks).toStrictEqual({ pageSize: 42, quickSearch: 'tasks' });
   });
 
   test('creates independent mutable defaults for every topic', () => {
@@ -222,7 +222,7 @@ describe('persisted topic and global preferences', () => {
       throw new Error('Expected a default message column');
     }
     column.visible = false;
-    expect(second.searchParams.sorting).toEqual([]);
+    expect(second.searchParams.sorting).toStrictEqual([]);
     expect(second.messageColumns?.[0]?.visible).toBe(true);
   });
 

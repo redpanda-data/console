@@ -76,6 +76,6 @@ test('allows a state setter called by an asynchronous effect subscription', () =
   const result = lint(
     component('const timer = setTimeout(() => synchronize(id, setValue), 10); return () => clearTimeout(timer);')
   );
-  expect(result.rules).toEqual([]);
+  expect(result.rules).toStrictEqual([]);
   expect(result.exitCode).toBe(0);
 });

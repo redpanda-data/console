@@ -39,8 +39,8 @@ describe('role edit compatibility route', () => {
     const { router, redirect } = await loadLegacyRoleRouter(role, query);
     expect(redirect.status).toBe(307);
     expect(redirect.options).toMatchObject({ to: '/security/roles/$roleName/update', replace: true });
-    expect(redirect.options.params).toEqual({ roleName: role });
-    expect(redirect.options.search).toEqual(search);
+    expect({ ...redirect.options.params }).toStrictEqual({ roleName: role });
+    expect({ ...redirect.options.search }).toStrictEqual(search);
     expect(router.state.location.pathname).toBe(`/security/roles/${role}/details`);
   });
 });

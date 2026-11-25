@@ -38,8 +38,8 @@ describe('array operations', () => {
   });
   test('retains null-filter and truthy-filter semantics', () => {
     const values = [0, false, '', null, undefined, 'present'];
-    expect(arrayFilterNull(values)).toEqual([0, false, '', undefined, 'present']);
-    expect(arrayFilterFalsy(values)).toEqual(['present']);
+    expect(arrayFilterNull(values)).toStrictEqual([0, false, '', undefined, 'present']);
+    expect(arrayFilterFalsy(values)).toStrictEqual(['present']);
   });
   test('counts and sums only present array entries', () => {
     const values = [2];
@@ -72,39 +72,39 @@ describe('array operations', () => {
       { key: first, value: 3 },
     ];
     const groups = arrayGroupBy(values, (item) => item.key);
-    expect([...groups.keys()]).toEqual([first, second]);
-    expect(groups.get(first)).toEqual([values[0], values[2]]);
-    expect(arrayGroupInto(values, (item) => item.key)).toEqual([
+    expect([...groups.keys()]).toStrictEqual([first, second]);
+    expect(groups.get(first)).toStrictEqual([values[0], values[2]]);
+    expect(arrayGroupInto(values, (item) => item.key)).toStrictEqual([
       { key: first, items: [values[0], values[2]] },
       { key: second, items: [values[1]] },
     ]);
   });
   test('retains distinct selection and set-operation ordering', () => {
     const values = [{ id: 1 }, { id: 2 }, { id: 1 }];
-    expect(arrayDistinct(values, (item) => item.id)).toEqual([values[0], values[1]]);
-    expect(arrayDistinct([1, 1, 2])).toEqual([1, 2]);
-    expect(arrayExcept([1, 1, 2], [2])).toEqual([1, 1]);
-    expect(arrayIntersection([1, 2], [2, 2, 1])).toEqual([2, 2, 1]);
+    expect(arrayDistinct(values, (item) => item.id)).toStrictEqual([values[0], values[1]]);
+    expect(arrayDistinct([1, 1, 2])).toStrictEqual([1, 2]);
+    expect(arrayExcept([1, 1, 2], [2])).toStrictEqual([1, 1]);
+    expect(arrayIntersection([1, 2], [2, 2, 1])).toStrictEqual([2, 2, 1]);
   });
   test('mutates the same array when removing and updating items', () => {
     const values = [1, 2, 3, 4];
     expect(arrayRemove(values, 9)).toBe(false);
     expect(arrayRemove(values, 2)).toBe(true);
     expect(arrayRemoveAll(values, (value) => value % 2 === 0)).toBe(1);
-    expect(values).toEqual([1, 3]);
-    expect(arrayUpdateWith(values, [3, 5])).toEqual({ added: 1, removed: 1 });
-    expect(values).toEqual([3, 5]);
+    expect(values).toStrictEqual([1, 3]);
+    expect(arrayUpdateWith(values, [3, 5])).toStrictEqual({ added: 1, removed: 1 });
+    expect(values).toStrictEqual([3, 5]);
   });
   test('keeps shared item order and adds distinct values', () => {
     const values = [1, 2];
-    expect(arrayUpdateWith(values, [2, 1])).toEqual({ added: 0, removed: 0 });
-    expect(values).toEqual([1, 2]);
+    expect(arrayUpdateWith(values, [2, 1])).toStrictEqual({ added: 0, removed: 0 });
+    expect(values).toStrictEqual([1, 2]);
     arrayPushDistinct(values, 2, 3);
-    expect(values).toEqual([1, 2, 3]);
+    expect(values).toStrictEqual([1, 2, 3]);
   });
   test('joins, maps and sorts without mutating the source', () => {
     const values = [3, 1, 2];
-    expect(arrayGenericJoin(values, () => 0)).toEqual([3, 0, 1, 0, 2]);
+    expect(arrayGenericJoin(values, () => 0)).toStrictEqual([3, 0, 1, 0, 2]);
     expect(arrayJoinStr(['', null, 'a', undefined, 'b'], ',')).toBe('a,b');
     expect(
       arrayToMap(
@@ -112,15 +112,15 @@ describe('array operations', () => {
         (value) => value,
         (value) => String(value)
       )
-    ).toEqual(
+    ).toStrictEqual(
       new Map([
         [3, '3'],
         [1, '1'],
         [2, '2'],
       ])
     );
-    expect(arrayOrderBy(values, (value) => value)).toEqual([1, 2, 3]);
-    expect(values).toEqual([3, 1, 2]);
+    expect(arrayOrderBy(values, (value) => value)).toStrictEqual([1, 2, 3]);
+    expect(values).toStrictEqual([3, 1, 2]);
     expect(arrayIsEqual(['a', 'b'], ['a', 'b'])).toBe(true);
     expect(arrayIsEqual(['a', 'b'], ['b', 'a'])).toBe(false);
   });
@@ -130,9 +130,9 @@ test('nullable inputs preserve optional-chain results', () => {
   expect(arraySum(undefined, (value: number) => value)).toBeUndefined();
   expect(arraySum([], (value: number) => value)).toBe(0);
   expect(arrayGroupInto(null, (value: number) => value)).toBeUndefined();
-  expect(arrayGroupInto([], (value: number) => value)).toEqual([]);
+  expect(arrayGroupInto([], (value: number) => value)).toStrictEqual([]);
   expect(arrayDistinct(undefined)).toBeUndefined();
-  expect(arrayDistinct([])).toEqual([]);
+  expect(arrayDistinct([])).toStrictEqual([]);
   expect(arrayFilterNull(null)).toBeUndefined();
-  expect(arrayFilterNull([])).toEqual([]);
+  expect(arrayFilterNull([])).toStrictEqual([]);
 });

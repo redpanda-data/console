@@ -30,6 +30,7 @@ import {
   ConnectClusterStore,
   type ConnectorPropertiesStore,
   ConnectorValidationError,
+  type Secret,
 } from '../../../state/connect/state';
 import { uiState } from '../../../state/ui-state';
 import { type ClusterConnectors, type ConnectorValidationResult, DataType } from '../../../types/kafka-connect';
@@ -325,6 +326,13 @@ function applyEditedConfig(
   }
 }
 
+// The JSON view may provide a value without having populated the secret field.
+function fillMissingSecretValue(secret: Secret, valueFromJson: unknown) {
+  if (!secret.value && Boolean(valueFromJson)) {
+    secret.value = String(valueFromJson);
+  }
+}
+
 function syncSecretsFromJson(
   connectorRef: ConnectorPropertiesStore | undefined,
   parsedUpdatedConfig: ConfigObject | null
@@ -335,18 +343,12 @@ function syncSecretsFromJson(
   }
 
   for (const p of connectorRef.propsByName.values()) {
-    if (p.entry.definition.type === DataType.Password) {
-      const secret = secrets.getSecret(p.name);
-      // secret.extractSecretId(property.value);
-      secret.extractSecretId(typeof p.value === 'string' ? p.value : '');
-
-      // In case the secret has not been populated (because the user only used the JSON view to modify the connector),
-      // we need to copy the values from the json into the secrets
-      const valueFromJson = parsedUpdatedConfig?.[p.name];
-      if (!secret.value && Boolean(valueFromJson)) {
-        secret.value = String(valueFromJson);
-      }
+    if (p.entry.definition.type !== DataType.Password) {
+      continue;
     }
+    const secret = secrets.getSecret(p.name);
+    secret.extractSecretId(typeof p.value === 'string' ? p.value : '');
+    fillMissingSecretValue(secret, parsedUpdatedConfig?.[p.name]);
   }
 }
 

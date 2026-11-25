@@ -13,7 +13,7 @@ import { isObject } from './type-guards';
 
 export type JsonValue = string | number | boolean | null | undefined | JsonValue[] | { [key: string]: JsonValue };
 
-export type JsonObject = { [key: string]: JsonValue };
+export type JsonObject = Record<string, JsonValue>;
 
 export type DataType =
   | 'string'

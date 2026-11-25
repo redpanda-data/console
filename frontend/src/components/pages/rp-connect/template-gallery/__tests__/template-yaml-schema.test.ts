@@ -122,7 +122,7 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
         expect(
           unknownPaths,
           `template "${template.id}": ${type} "${componentName}" has fields not in schema: ${unknownPaths.join(', ')}`
-        ).toEqual([]);
+        ).toStrictEqual([]);
       }
     }
   );
@@ -194,7 +194,7 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
         expect(
           missing,
           `template "${template.id}": ${type} "${componentName}" omits required field(s): ${missing.join(', ')}`
-        ).toEqual([]);
+        ).toStrictEqual([]);
       }
     }
   );
@@ -225,7 +225,7 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     if (!isSeq(tables)) {
       throw new Error('Expected the template tables sequence');
     }
-    expect(tables.toJSON()).toEqual(['users', 'orders', 'invoices']);
+    expect(tables.toJSON()).toStrictEqual(['users', 'orders', 'invoices']);
   });
 
   test('a blank list slot still drops the whole sequence key', () => {

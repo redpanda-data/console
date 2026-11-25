@@ -14,58 +14,61 @@ import { describe, expect, test } from 'bun:test';
 
 describe('parsePrincipalFromParam', () => {
   test('bare name defaults to User principal type', () => {
-    expect(parsePrincipalFromParam('alice')).toEqual({ principalType: 'User', principalName: 'alice' });
+    expect(parsePrincipalFromParam('alice')).toStrictEqual({ principalType: 'User', principalName: 'alice' });
   });
 
   test('the User: prefix is parsed correctly', () => {
-    expect(parsePrincipalFromParam('User:alice')).toEqual({ principalType: 'User', principalName: 'alice' });
+    expect(parsePrincipalFromParam('User:alice')).toStrictEqual({ principalType: 'User', principalName: 'alice' });
   });
 
   test('the Group: prefix is parsed correctly', () => {
-    expect(parsePrincipalFromParam('Group:mygroup')).toEqual({ principalType: 'Group', principalName: 'mygroup' });
+    expect(parsePrincipalFromParam('Group:mygroup')).toStrictEqual({
+      principalType: 'Group',
+      principalName: 'mygroup',
+    });
   });
 
   test('the RedpandaRole: prefix is parsed correctly', () => {
-    expect(parsePrincipalFromParam('RedpandaRole:some-role')).toEqual({
+    expect(parsePrincipalFromParam('RedpandaRole:some-role')).toStrictEqual({
       principalType: 'RedpandaRole',
       principalName: 'some-role',
     });
   });
 
   test('only the first colon is used as the separator', () => {
-    expect(parsePrincipalFromParam('User:alice:with:colons')).toEqual({
+    expect(parsePrincipalFromParam('User:alice:with:colons')).toStrictEqual({
       principalType: 'User',
       principalName: 'alice:with:colons',
     });
   });
 
   test('group with colon in name uses first colon as separator', () => {
-    expect(parsePrincipalFromParam('Group:team:a')).toEqual({ principalType: 'Group', principalName: 'team:a' });
+    expect(parsePrincipalFromParam('Group:team:a')).toStrictEqual({ principalType: 'Group', principalName: 'team:a' });
   });
 });
 
 describe('resolveAclSearchParams', () => {
   test('returns sharedConfig with User principal for principalType=User', () => {
     const result = resolveAclSearchParams({ principalType: 'User', principalName: 'alice' });
-    expect(result.sharedConfig).toEqual({ principal: 'User:alice', host: '*' });
+    expect(result.sharedConfig).toStrictEqual({ principal: 'User:alice', host: '*' });
     expect(result.principalType).toBe('User:');
   });
 
   test('returns sharedConfig with RedpandaRole principal', () => {
     const result = resolveAclSearchParams({ principalType: 'RedpandaRole', principalName: 'admin' });
-    expect(result.sharedConfig).toEqual({ principal: 'RedpandaRole:admin', host: '*' });
+    expect(result.sharedConfig).toStrictEqual({ principal: 'RedpandaRole:admin', host: '*' });
     expect(result.principalType).toBe('RedpandaRole:');
   });
 
   test('returns sharedConfig with Group principal', () => {
     const result = resolveAclSearchParams({ principalType: 'Group', principalName: 'team-a' });
-    expect(result.sharedConfig).toEqual({ principal: 'Group:team-a', host: '*' });
+    expect(result.sharedConfig).toStrictEqual({ principal: 'Group:team-a', host: '*' });
     expect(result.principalType).toBe('Group:');
   });
 
   test('is case-insensitive for principalType', () => {
     const result = resolveAclSearchParams({ principalType: 'USER', principalName: 'bob' });
-    expect(result.sharedConfig).toEqual({ principal: 'User:bob', host: '*' });
+    expect(result.sharedConfig).toStrictEqual({ principal: 'User:bob', host: '*' });
     expect(result.principalType).toBe('User:');
   });
 

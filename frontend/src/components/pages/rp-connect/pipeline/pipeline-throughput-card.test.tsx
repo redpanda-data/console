@@ -12,6 +12,7 @@
 import { create } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import {
   DataPointSchema,
@@ -293,7 +294,7 @@ describe('the PipelineThroughputCard', () => {
 
     // Every range query call must include the pipeline_id filter
     for (const call of executeRangeQueryMock.mock.calls) {
-      expect(call[0].params?.filters).toEqual({ pipeline_id: PIPELINE_ID });
+      expect(call[0].params?.filters).toStrictEqual({ pipeline_id: PIPELINE_ID });
     }
   });
 

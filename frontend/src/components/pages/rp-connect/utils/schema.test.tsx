@@ -58,8 +58,8 @@ function expectKafkaDefaultedFields(outputConfig: unknown) {
   // Optional fields with real (string-serialized) defaults are emitted with those defaults.
   expect(configValue(outputConfig, 'partitioner')).toBe('fnv1a_hash');
   expect(configValue(outputConfig, 'compression')).toBe('none');
-  expect(configValue(outputConfig, 'batching')).toEqual({ count: 0 });
-  expect(configValue(outputConfig, 'backoff')).toEqual({ initial_interval: '1s' });
+  expect(configValue(outputConfig, 'batching')).toStrictEqual({ count: 0 });
+  expect(configValue(outputConfig, 'backoff')).toStrictEqual({ initial_interval: '1s' });
 
   // Optional fields whose default didn't survive serialization are omitted, not zero-filled.
   expect(configValue(outputConfig, 'key')).toBeUndefined();
@@ -67,7 +67,7 @@ function expectKafkaDefaultedFields(outputConfig: unknown) {
   expect(configValue(outputConfig, 'metadata')).toBeUndefined();
 
   // TLS returns { enabled: true } for Redpanda component
-  expect(configValue(outputConfig, 'tls')).toEqual({ enabled: true });
+  expect(configValue(outputConfig, 'tls')).toStrictEqual({ enabled: true });
 
   // Advanced fields hidden
   expect(configValue(outputConfig, 'client_id')).toBeUndefined();
@@ -273,7 +273,7 @@ describe('generateDefaultValue', () => {
           componentName: 'redpanda',
         });
 
-        expect(result).toEqual(['example']);
+        expect(result).toStrictEqual(['example']);
       });
 
       test('topics array field without wizard data returns sentinel for required field', () => {
@@ -362,7 +362,7 @@ describe('generateDefaultValue', () => {
           children: [],
         });
 
-        expect(generateDefaultValue(spec, {})).toEqual({});
+        expect(generateDefaultValue(spec, {})).toStrictEqual({});
       });
 
       test('still omits an empty non-root object field', () => {
@@ -543,7 +543,7 @@ describe('generateDefaultValue', () => {
         });
 
         // Should return { enabled: true } directly, not recurse into children
-        expect(result).toEqual({ enabled: true });
+        expect(result).toStrictEqual({ enabled: true });
       });
 
       test('the TLS does NOT return { enabled: true } for non-Redpanda components', () => {
@@ -721,7 +721,7 @@ describe('generateDefaultValue', () => {
         const inputConfig = configValue(config, ['input', true], ['redpanda', true]);
 
         expect(inputConfig).toBeDefined();
-        expect(configValue(inputConfig, 'topics')).toEqual(['example']);
+        expect(configValue(inputConfig, 'topics')).toStrictEqual(['example']);
         expect(configValue(inputConfig, 'seed_brokers')).toBeDefined();
 
         // Optional consumer_group has no serialized default → omitted, engine default applies.
@@ -1361,7 +1361,7 @@ describe('generateDefaultValue with enriched ground-truth specs', () => {
 
       // Advanced fields stay hidden; Redpanda connection default keeps TLS on.
       expect(configValue(inputConfig, 'client_id')).toBeUndefined();
-      expect(configValue(inputConfig, 'tls')).toEqual({ enabled: true });
+      expect(configValue(inputConfig, 'tls')).toStrictEqual({ enabled: true });
     });
 
     test('generate input keeps its surviving string default and required mapping', () => {
@@ -1417,7 +1417,7 @@ describe('generateDefaultValue with enriched ground-truth specs', () => {
       // degraded ladder: string scalar, no default, not optional → required.
       const result = schemaToConfig(enrichedComponent('processor', 'mapping'), false);
       const config: unknown = result?.config;
-      expect(configValue(config, ['pipeline', true], ['processors', true])).toEqual([
+      expect(configValue(config, ['pipeline', true], ['processors', true])).toStrictEqual([
         { mapping: SENTINEL_REQUIRED_FIELD },
       ]);
     });
@@ -1451,7 +1451,7 @@ describe('generateDefaultValue with enriched ground-truth specs', () => {
       };
       const result = schemaToConfig(switchLike, false);
       const config: unknown = result?.config;
-      expect(configValue(config, ['pipeline', true], ['processors', true])).toEqual([{ switch: [] }]);
+      expect(configValue(config, ['pipeline', true], ['processors', true])).toStrictEqual([{ switch: [] }]);
     });
 
     test('root array-of-objects config seeds a scaffold object when a case field is required', () => {
@@ -1475,7 +1475,7 @@ describe('generateDefaultValue with enriched ground-truth specs', () => {
       };
       const result = schemaToConfig(withRequiredChild, false);
       const config: unknown = result?.config;
-      expect(configValue(config, ['pipeline', true], ['processors', true])).toEqual([
+      expect(configValue(config, ['pipeline', true], ['processors', true])).toStrictEqual([
         { switch_like: [{ condition: SENTINEL_REQUIRED_FIELD }] },
       ]);
     });

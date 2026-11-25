@@ -84,7 +84,7 @@ describe('connect overview mount', () => {
     renderPage(true);
 
     await waitFor(() =>
-      expect(useApiStore.getState().connectConnectors).toEqual({ isConfigured: false, clusters: null })
+      expect(useApiStore.getState().connectConnectors).toStrictEqual({ isConfigured: false, clusters: null })
     );
     expect(toastError).not.toHaveBeenCalled();
   });

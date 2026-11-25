@@ -30,9 +30,7 @@ const storedFiltersSchema = z.record(
 
 const SESSION_STORAGE_KEY = 'topic-filters';
 
-type TopicFiltersMap = {
-  [topicName: string]: FilterEntry[];
-};
+type TopicFiltersMap = Record<string, FilterEntry[]>;
 
 /**
  * Get all filters from sessionStorage

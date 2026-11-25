@@ -28,7 +28,7 @@ import { describe, expect, test } from 'bun:test';
 describe('parseSubjectContext', () => {
   test('extracts context and display name from prefixed subject', () => {
     const result = parseSubjectContext(':.staging:my-topic');
-    expect(result).toEqual({
+    expect(result).toStrictEqual({
       context: 'staging',
       displayName: 'my-topic',
       qualifiedName: ':.staging:my-topic',
@@ -37,7 +37,7 @@ describe('parseSubjectContext', () => {
 
   test('returns default context for unprefixed subject', () => {
     const result = parseSubjectContext('my-topic');
-    expect(result).toEqual({
+    expect(result).toStrictEqual({
       context: 'default',
       displayName: 'my-topic',
       qualifiedName: 'my-topic',
@@ -46,7 +46,7 @@ describe('parseSubjectContext', () => {
 
   test('handles dots in context name', () => {
     const result = parseSubjectContext(':.deep.ctx:subject');
-    expect(result).toEqual({
+    expect(result).toStrictEqual({
       context: 'deep.ctx',
       displayName: 'subject',
       qualifiedName: ':.deep.ctx:subject',
@@ -55,7 +55,7 @@ describe('parseSubjectContext', () => {
 
   test('empty context after dot does not match prefix pattern', () => {
     const result = parseSubjectContext(':.:subject');
-    expect(result).toEqual({
+    expect(result).toStrictEqual({
       context: 'default',
       displayName: ':.:subject',
       qualifiedName: ':.:subject',
@@ -96,12 +96,12 @@ describe('pickSubjectForContext', () => {
   ];
 
   test('prefers the subject of the given context', () => {
-    expect(pickSubjectForContext(subjects, '.outgo')).toEqual({ subject: ':.outgo:convoy-value', version: 3 });
-    expect(pickSubjectForContext(subjects, '.')).toEqual({ subject: 'orders-value', version: 1 });
+    expect(pickSubjectForContext(subjects, '.outgo')).toStrictEqual({ subject: ':.outgo:convoy-value', version: 3 });
+    expect(pickSubjectForContext(subjects, '.')).toStrictEqual({ subject: 'orders-value', version: 1 });
   });
 
   test('falls back to the first subject when none matches', () => {
-    expect(pickSubjectForContext(subjects, '.other')).toEqual({ subject: 'orders-value', version: 1 });
+    expect(pickSubjectForContext(subjects, '.other')).toStrictEqual({ subject: 'orders-value', version: 1 });
     expect(pickSubjectForContext([], '.outgo')).toBeUndefined();
   });
 });
@@ -109,7 +109,7 @@ describe('pickSubjectForContext', () => {
 describe('deriveContexts', () => {
   test('empty inputs returns single All entry', () => {
     const result = deriveContexts([], []);
-    expect(result).toEqual([
+    expect(result).toStrictEqual([
       {
         id: ALL_CONTEXT_ID,
         label: 'All',
@@ -130,14 +130,14 @@ describe('deriveContexts', () => {
     );
 
     expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({
+    expect(result[0]).toStrictEqual({
       id: DEFAULT_CONTEXT_ID,
       label: 'Default',
       subjectCount: 2,
       mode: 'READWRITE',
       compatibility: 'BACKWARD',
     });
-    expect(result[1]).toEqual({
+    expect(result[1]).toStrictEqual({
       id: ALL_CONTEXT_ID,
       label: 'All',
       subjectCount: 2,
@@ -160,7 +160,7 @@ describe('deriveContexts', () => {
       ]
     );
 
-    expect(result.map((c) => c.id)).toEqual([DEFAULT_CONTEXT_ID, '.dev', '.staging', ALL_CONTEXT_ID]);
+    expect(result.map((c) => c.id)).toStrictEqual([DEFAULT_CONTEXT_ID, '.dev', '.staging', ALL_CONTEXT_ID]);
   });
 
   test('soft-deleted subjects excluded from counts', () => {
@@ -283,22 +283,22 @@ describe('buildQualifiedReferences', () => {
 
   test('default parent + default ref → unqualified subject', () => {
     const result = buildQualifiedReferences([ref(DEFAULT_CONTEXT_ID, 'aaaa')], DEFAULT_CONTEXT_ID);
-    expect(result).toEqual([{ name: 'ref1', subject: 'aaaa', version: 1 }]);
+    expect(result).toStrictEqual([{ name: 'ref1', subject: 'aaaa', version: 1 }]);
   });
 
   test('named parent + same-context ref → qualified with context', () => {
     const result = buildQualifiedReferences([ref('.supertest', 'aaaa')], '.supertest');
-    expect(result).toEqual([{ name: 'ref1', subject: ':.supertest:aaaa', version: 1 }]);
+    expect(result).toStrictEqual([{ name: 'ref1', subject: ':.supertest:aaaa', version: 1 }]);
   });
 
   test('named parent + default ref → explicitly qualified as `:.:subject`', () => {
     const result = buildQualifiedReferences([ref(DEFAULT_CONTEXT_ID, 'aaaa')], '.supertest');
-    expect(result).toEqual([{ name: 'ref1', subject: ':.:aaaa', version: 1 }]);
+    expect(result).toStrictEqual([{ name: 'ref1', subject: ':.:aaaa', version: 1 }]);
   });
 
   test('named parent + empty-string context ref → explicitly qualified as `:.:subject`', () => {
     const result = buildQualifiedReferences([ref('', 'aaaa')], '.supertest');
-    expect(result).toEqual([{ name: 'ref1', subject: ':.:aaaa', version: 1 }]);
+    expect(result).toStrictEqual([{ name: 'ref1', subject: ':.:aaaa', version: 1 }]);
   });
 
   test('filters out refs with missing name or subject', () => {
@@ -306,6 +306,6 @@ describe('buildQualifiedReferences', () => {
       [ref(DEFAULT_CONTEXT_ID, ''), { name: '', subject: 'aaaa', version: 1, context: DEFAULT_CONTEXT_ID }],
       DEFAULT_CONTEXT_ID
     );
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 });

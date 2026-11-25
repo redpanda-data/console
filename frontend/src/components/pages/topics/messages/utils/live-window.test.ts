@@ -23,13 +23,13 @@ describe('applyDisplayWindow', () => {
   test('trims the oldest rows (front) and reports the trimmed count', () => {
     const rows = Array.from({ length: 10 }, (_, i) => i);
     const result = applyDisplayWindow(rows, 4);
-    expect(result.rows).toEqual([6, 7, 8, 9]);
+    expect(result.rows).toStrictEqual([6, 7, 8, 9]);
     expect(result.trimmed).toBe(6);
   });
 
   test('handles cap equal to length', () => {
     const rows = [1, 2];
-    expect(applyDisplayWindow(rows, 2)).toEqual({ rows, trimmed: 0 });
+    expect(applyDisplayWindow(rows, 2)).toStrictEqual({ rows, trimmed: 0 });
   });
 
   // Regression: continuous + "Newest" orders newest-first, and "Load more" pages sort to the
@@ -41,7 +41,7 @@ describe('applyDisplayWindow', () => {
     const withOlderPage = [...firstThreePages, ...Array.from({ length: 4 }, (_, i) => -1 - i)];
     const result = applyDisplayWindow(withOlderPage, 4);
     // The freshly fetched older page is what the window shows — the frontier advanced.
-    expect(result.rows).toEqual([-1, -2, -3, -4]);
+    expect(result.rows).toStrictEqual([-1, -2, -3, -4]);
     expect(result.trimmed).toBe(10);
   });
 });

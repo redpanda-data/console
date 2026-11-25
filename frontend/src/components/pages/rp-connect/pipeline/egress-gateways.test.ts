@@ -36,7 +36,7 @@ describe('egressGatewayOptions', () => {
       gateway('gw-unselected', 'rejected', ServerlessEgressGatewayStatus_Phase.REJECTED),
     ];
 
-    expect(egressGatewayOptions(gateways, ['gw-pending', 'gw-gone'])).toEqual([
+    expect(egressGatewayOptions(gateways, ['gw-pending', 'gw-gone'])).toStrictEqual([
       { id: 'gw-a', label: 'alpha', available: true },
       { id: 'gw-b', label: 'beta', available: true },
       { id: 'gw-pending', label: 'pending (not available)', available: false },
@@ -45,7 +45,7 @@ describe('egressGatewayOptions', () => {
   });
 
   test('labels selected gateways by ID until the gateways load', () => {
-    expect(egressGatewayOptions(undefined, ['gw-a'])).toEqual([{ id: 'gw-a', label: 'gw-a', available: false }]);
+    expect(egressGatewayOptions(undefined, ['gw-a'])).toStrictEqual([{ id: 'gw-a', label: 'gw-a', available: false }]);
   });
 });
 
@@ -53,7 +53,7 @@ describe('egressWrite', () => {
   test('leaves the stored gateways alone unless the selection changed', () => {
     expect(egressWrite([], [])).toBeUndefined();
     expect(egressWrite(['gw-b', 'gw-a'], ['gw-a', 'gw-b'])).toBeUndefined();
-    expect(egressWrite(['gw-a'], [])?.gatewayRefs.map((ref) => ref.id)).toEqual(['gw-a']);
-    expect(egressWrite([], ['gw-a'])?.gatewayRefs).toEqual([]);
+    expect(egressWrite(['gw-a'], [])?.gatewayRefs.map((ref) => ref.id)).toStrictEqual(['gw-a']);
+    expect(egressWrite([], ['gw-a'])?.gatewayRefs).toStrictEqual([]);
   });
 });

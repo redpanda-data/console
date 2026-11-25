@@ -73,7 +73,7 @@ describe('zustand automatic-reset wrapper', () => {
     );
     const listener = rs.fn<(count: number, previous: number) => void>();
     const unsubscribe = store.subscribe((state) => state.count, listener);
-    expect([store.getState().count, store.getInitialState().count, store.persist.getOptions().name]).toEqual([
+    expect([store.getState().count, store.getInitialState().count, store.persist.getOptions().name]).toStrictEqual([
       8,
       1,
       'zustand-reset-contract',

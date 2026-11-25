@@ -41,13 +41,13 @@ describe('mapLintHintsToNodes', () => {
   test('attaches a hint to the most specific (nested) node whose YAML range contains its line', () => {
     const byNode = mapLintHintsToNodes(yaml, [hint(8, 'bad url')]);
     // Line 8 is inside the http leaf (nested in branch), not the branch container.
-    expect(byNode.get('proc-1-processors-p0')?.map((h) => h.hint)).toEqual(['bad url']);
+    expect(byNode.get('proc-1-processors-p0')?.map((h) => h.hint)).toStrictEqual(['bad url']);
     expect(byNode.has('proc-1')).toBe(false);
   });
 
   test('attaches a hint to a top-level processor', () => {
     const byNode = mapLintHintsToNodes(yaml, [hint(3, 'bad mapping')]);
-    expect(byNode.get('proc-0')?.map((h) => h.hint)).toEqual(['bad mapping']);
+    expect(byNode.get('proc-0')?.map((h) => h.hint)).toStrictEqual(['bad mapping']);
   });
 
   test('groups multiple hints by node', () => {
@@ -73,7 +73,7 @@ describe('mapLintHintsToNodes', () => {
 output:
   drop: {}`;
     const byNode = mapLintHintsToNodes(switchYaml, [hint(4, 'expected end quote')]);
-    expect(byNode.get('proc-0-case-1-p0')?.map((h) => h.hint)).toEqual(['expected end quote']);
+    expect(byNode.get('proc-0-case-1-p0')?.map((h) => h.hint)).toStrictEqual(['expected end quote']);
     expect(byNode.has('proc-0-case-1')).toBe(false);
   });
 
@@ -110,7 +110,7 @@ describe('nodeLineRanges', () => {
   test('ends a node on its last content line, not the line below', () => {
     const ranges = nodeLineRanges(yaml);
     // The single-line mapping is line 3 only — not extending to `- branch:` below (trailing-newline over-select bug).
-    expect(ranges.find((r) => r.id === 'proc-0')).toEqual({ id: 'proc-0', start: 3, end: 3, span: 0 });
+    expect(ranges.find((r) => r.id === 'proc-0')).toStrictEqual({ id: 'proc-0', start: 3, end: 3, span: 0 });
     // The branch container spans its own block (lines 4–9), stopping before `output:`.
     expect(ranges.find((r) => r.id === 'proc-1')).toMatchObject({ start: 4, end: 9 });
   });
@@ -165,9 +165,9 @@ describe('mergeLintHints', () => {
 
 describe('localYamlLintHints', () => {
   test('returns no hints for valid (or blank) YAML', () => {
-    expect(localYamlLintHints('')).toEqual([]);
-    expect(localYamlLintHints('   \n')).toEqual([]);
-    expect(localYamlLintHints('input:\n  generate: {}\noutput:\n  drop: {}')).toEqual([]);
+    expect(localYamlLintHints('')).toStrictEqual([]);
+    expect(localYamlLintHints('   \n')).toStrictEqual([]);
+    expect(localYamlLintHints('input:\n  generate: {}\noutput:\n  drop: {}')).toStrictEqual([]);
   });
 
   test('reports a YAML syntax error as an error hint with a clean single-line message', () => {
@@ -191,32 +191,36 @@ describe('localStopConditionLintHints', () => {
   const hintsFor = (config: string) => localStopConditionLintHints(config).map((h) => [h.line, h.hint]);
 
   test('flags a read_until with nothing to stop on, on its own line', () => {
-    expect(hintsFor('input:\n  read_until:\n    input:\n      kafka: {}\n')).toEqual([
+    expect(hintsFor('input:\n  read_until:\n    input:\n      kafka: {}\n')).toStrictEqual([
       [2, 'read_until needs a check or an idle_timeout to know when to stop.'],
     ]);
   });
 
   test('flags one with no input, and an idle_timeout that is not a duration', () => {
-    expect(hintsFor('input:\n  broker:\n    inputs:\n      - read_until:\n          idle_timeout: 30\n')).toEqual([
-      [4, 'read_until needs an input to read from.'],
-      [5, 'idle_timeout must be a duration such as 30s, 5m or 1h.'],
-    ]);
+    expect(hintsFor('input:\n  broker:\n    inputs:\n      - read_until:\n          idle_timeout: 30\n')).toStrictEqual(
+      [
+        [4, 'read_until needs an input to read from.'],
+        [5, 'idle_timeout must be a duration such as 30s, 5m or 1h.'],
+      ]
+    );
   });
 
   test('accepts a complete one, an env var timeout, and anything outside the inputs', () => {
-    expect(hintsFor('input:\n  read_until:\n    idle_timeout: 30s\n    input:\n      kafka: {}\n')).toEqual([]);
+    expect(hintsFor('input:\n  read_until:\n    idle_timeout: 30s\n    input:\n      kafka: {}\n')).toStrictEqual([]);
     // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal Connect env var reference, not a JS template
-    expect(hintsFor('input:\n  read_until:\n    idle_timeout: ${IDLE}\n    input:\n      kafka: {}\n')).toEqual([]);
-    expect(hintsFor('pipeline:\n  processors:\n    - mapping: |\n        root.read_until = {}\n')).toEqual([]);
+    expect(hintsFor('input:\n  read_until:\n    idle_timeout: ${IDLE}\n    input:\n      kafka: {}\n')).toStrictEqual(
+      []
+    );
+    expect(hintsFor('pipeline:\n  processors:\n    - mapping: |\n        root.read_until = {}\n')).toStrictEqual([]);
   });
 
   test('flags a timeout Connect accepts but never acts on', () => {
-    expect(hintsFor('input:\n  read_until:\n    idle_timeout: 0s\n    input:\n      kafka: {}\n')).toEqual([
+    expect(hintsFor('input:\n  read_until:\n    idle_timeout: 0s\n    input:\n      kafka: {}\n')).toStrictEqual([
       [3, 'An idle_timeout of 0 never fires. Use a duration such as 30s.'],
     ]);
     expect(
       hintsFor('input:\n  read_until:\n    check: this.done\n    idle_timeout: -1s\n    input:\n      kafka: {}\n')
-    ).toEqual([[4, 'A negative idle_timeout is ignored. Use a duration such as 30s.']]);
+    ).toStrictEqual([[4, 'A negative idle_timeout is ignored. Use a duration such as 30s.']]);
   });
 
   test('reports nothing, rather than throwing, when a wrapper expands past the alias limit', () => {
@@ -230,32 +234,32 @@ describe('localStopConditionLintHints', () => {
       levels.push(`${name}: &${name} [${aliases}]`);
     }
     const bomb = `${levels.join('\n')}\ninput:\n  read_until:\n    idle_timeout: 5s\n    input:\n      generate:\n        mapping: [*d, *d, *d, *d, *d, *d, *d, *d, *d, *d]\n`;
-    expect(localStopConditionLintHints(bomb)).toEqual([]);
+    expect(localStopConditionLintHints(bomb)).toStrictEqual([]);
   });
 
   test('reads the wrapper as Connect does: merge keys, a scalar check, a null input', () => {
     const merged =
       'base: &base\n  idle_timeout: 30s\ninput:\n  read_until:\n    <<: *base\n    input:\n      kafka: {}\n';
-    expect(hintsFor(merged)).toEqual([]);
-    expect(hintsFor('input:\n  read_until:\n    check: true\n    input:\n      kafka: {}\n')).toEqual([]);
-    expect(hintsFor('input:\n  read_until:\n    check: this.done\n    input: null\n')).toEqual([
+    expect(hintsFor(merged)).toStrictEqual([]);
+    expect(hintsFor('input:\n  read_until:\n    check: true\n    input:\n      kafka: {}\n')).toStrictEqual([]);
+    expect(hintsFor('input:\n  read_until:\n    check: this.done\n    input: null\n')).toStrictEqual([
       [2, 'read_until needs an input to read from.'],
     ]);
   });
 
   test('flags an empty read_until, and an input with no component', () => {
-    expect(hintsFor('input:\n  read_until:\n')).toEqual([
+    expect(hintsFor('input:\n  read_until:\n')).toStrictEqual([
       [2, 'read_until needs a check or an idle_timeout to know when to stop.'],
       [2, 'read_until needs an input to read from.'],
     ]);
-    expect(hintsFor('input:\n  read_until:\n    idle_timeout: 5s\n    input: {}\n')).toEqual([
+    expect(hintsFor('input:\n  read_until:\n    idle_timeout: 5s\n    input: {}\n')).toStrictEqual([
       [2, 'read_until needs an input to read from.'],
     ]);
   });
 
   test('lands on the input it wraps, as any hint on the wrapper’s own lines does', () => {
     const wrapped = 'input:\n  read_until:\n    input:\n      kafka: {}\noutput:\n  drop: {}';
-    expect([...mapLintHintsToNodes(wrapped, localStopConditionLintHints(wrapped)).keys()]).toEqual(['input-0']);
-    expect([...mapLintHintsToNodes(wrapped, [hint(3, 'bad duration')]).keys()]).toEqual(['input-0']);
+    expect([...mapLintHintsToNodes(wrapped, localStopConditionLintHints(wrapped)).keys()]).toStrictEqual(['input-0']);
+    expect([...mapLintHintsToNodes(wrapped, [hint(3, 'bad duration')]).keys()]).toStrictEqual(['input-0']);
   });
 });

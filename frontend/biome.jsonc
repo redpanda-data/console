@@ -98,6 +98,9 @@
         "useArraySome": "error"
       },
       "correctness": {
+        // Keep Console's unused-binding checks for rest destructuring.
+        "noUnusedVariables": { "level": "error", "options": { "ignoreRestSiblings": false } },
+        "noUnusedFunctionParameters": { "level": "error", "options": { "ignoreRestSiblings": false } },
         // Catch-all tsconfig paths still resolve as npm packages in Biome 2.6.7.
         "noUndeclaredDependencies": "off",
         "useImageSize": "off",
@@ -131,9 +134,33 @@
         "noDelete": "off",
         "noAwaitInLoops": "error",
         "noSyncScripts": "error",
-        "noReExportAll": "error"
+        "noReExportAll": "error",
+        // Ultracite made these optional; keep Console’s existing import restrictions.
+        "noBarrelFile": "error",
+        "noNamespaceImport": "error"
       },
       "nursery": {
+        // Biome 2.6.9: applicable to Console and its existing test runners.
+        // Native typed Oxlint already owns array deletion.
+        "noArrayDelete": "off",
+        "noCanvasToImage": "error",
+        "noExpectToHaveBeenCalledOnce": "error",
+        "noImmediateMutation": "error",
+        "noReturnInTest": "error",
+        "noTailwindConflictingClasses": "error",
+        "noTestGlobals": "error",
+        "noUselessBind": "error",
+        "noUselessDefaultAssignment": "error",
+        "noUselessNestedTernary": "error",
+        "noUselessSetConstruction": "error",
+        "useConsistentIndexedObjectStyle": "error",
+        "useEarlyContinue": "error",
+        // Equality matchers use Object.is; explicit === assertions can intentionally differ.
+        "useExpectEqualityMatcher": "off",
+        "useExpectToHaveLength": "error",
+        "useExpectToStrictEqual": "error",
+        "useTanstackQueryExhaustiveDependencies": "error",
+        "useTanstackQueryMutationPropertyOrder": "error",
         "noBufferConstructor": "error",
         "noConfusingArraySplice": "error",
         "noDynamicRequire": { "level": "error", "options": { "checkDynamicImports": true } },
@@ -367,6 +394,11 @@
         "useTailwindShorthandClasses": "error"
       },
       "style": {
+        // Keep the established inline style for mixed type/value imports.
+        "useImportType": {
+          "level": "error",
+          "options": { "style": "auto" }
+        },
         // Positional captures and UTF-16 matching are parser contracts, not mechanical style fixes.
         "useNamedCaptureGroup": "off",
         "useUnicodeRegex": "off",
@@ -487,6 +519,7 @@
         "noPlaywrightWaitForTimeout": "error"
       },
       "a11y": {
+        "useValidAriaRole": { "level": "error", "options": { "ignoreNonDom": false } },
         "noLabelWithoutControl": {
           "level": "error",
           "options": {
@@ -551,12 +584,85 @@
     }
   },
   "markdown": {
-    "formatter": { "enabled": false },
+    "formatter": { "enabled": true, "formatEmbeds": false },
     "linter": { "enabled": true },
     "analyzeEmbeds": false
   },
   "yaml": { "formatter": { "enabled": false } },
   "overrides": [
+    {
+      // Format authored test configuration, not the literal YAML pipeline templates shown to users.
+      "includes": ["tests/**/*.yaml", "tests/**/*.yml"],
+      "yaml": { "formatter": { "enabled": true } }
+    },
+    // Cap existing groups of coupled legacy classes at their current size; new modules allow one.
+    {
+      "includes": [
+        "src/components/pages/connect/kafka-connect-tab.tsx",
+        "src/components/pages/consumers/modals.tsx",
+        "src/components/pages/page.ts",
+        "src/components/pages/reassign-partitions/step1-partitions.tsx",
+        "src/components/pages/rp-connect/pipeline/pipeline-flow-canvas.render.test.tsx",
+        "src/components/pages/schemas/schema-create.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveClassesPerFile": {
+              "level": "error",
+              "options": {
+                "maxClasses": 2
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/utils/utils.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveClassesPerFile": {
+              "level": "error",
+              "options": {
+                "maxClasses": 3
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/components/pages/reassign-partitions/components/active-reassignments.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveClassesPerFile": {
+              "level": "error",
+              "options": {
+                "maxClasses": 6
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/state/connect/state.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveClassesPerFile": {
+              "level": "error",
+              "options": {
+                "maxClasses": 8
+              }
+            }
+          }
+        }
+      }
+    },
     {
       "includes": ["**/*.module.scss"],
       "css": { "parser": { "cssModules": true } },

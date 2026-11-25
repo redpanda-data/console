@@ -23,13 +23,13 @@ describe('imperative application navigation', () => {
   test('updates the path and clears API errors before pushing', () => {
     appGlobal.historyPush('/after');
     expect(uiState.pathName).toBe('/after');
-    expect(api.errors).toEqual([]);
+    expect(api.errors).toStrictEqual([]);
     expect(navigate).toHaveBeenCalledWith('/after');
   });
   test('preserves replace semantics', () => {
     appGlobal.historyReplace('/after');
     expect(uiState.pathName).toBe('/after');
-    expect(api.errors).toEqual([]);
+    expect(api.errors).toStrictEqual([]);
     expect(navigate).toHaveBeenCalledWith('/after', { replace: true });
   });
   test('does not clear errors or notify a host for the same normalized path', () => {

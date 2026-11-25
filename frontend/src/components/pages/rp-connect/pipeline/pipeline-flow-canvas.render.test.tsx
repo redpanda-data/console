@@ -376,7 +376,7 @@ output:
   test('gives every input card a row saying how it stops, and sums them up on the broker', async () => {
     render(<PipelineFlowCanvas configYaml={BROKER_YAML} />);
     const rows = await screen.findAllByTestId('stop-row');
-    expect(rows.map((r) => r.textContent).sort(compareStrings)).toEqual(
+    expect(rows.map((r) => r.textContent).sort(compareStrings)).toStrictEqual(
       [
         'Stopsafter 30s idle',
         'Stopswhen its data runs out',

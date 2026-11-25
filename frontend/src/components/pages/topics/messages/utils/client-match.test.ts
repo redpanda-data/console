@@ -112,7 +112,7 @@ describe('distinctFieldValues', () => {
   ];
 
   test('returns count-sorted distinct values', () => {
-    expect(distinctFieldValues(messages, 'partition', '')).toEqual([
+    expect(distinctFieldValues(messages, 'partition', '')).toStrictEqual([
       { value: '0', count: 2 },
       { value: '1', count: 1 },
       { value: '2', count: 1 },
@@ -120,7 +120,7 @@ describe('distinctFieldValues', () => {
   });
 
   test('filters by typed query', () => {
-    expect(distinctFieldValues(messages, 'partition', '2')).toEqual([{ value: '2', count: 1 }]);
+    expect(distinctFieldValues(messages, 'partition', '2')).toStrictEqual([{ value: '2', count: 1 }]);
   });
 });
 
@@ -131,11 +131,11 @@ describe('valuePaths', () => {
   ];
 
   test('collects nested dotted paths across rows', () => {
-    expect(valuePaths(messages)).toEqual(['address', 'address.city', 'address.zip', 'name', 'version']);
+    expect(valuePaths(messages)).toStrictEqual(['address', 'address.city', 'address.zip', 'name', 'version']);
   });
 
   test('prefix matches sort before substring matches', () => {
-    expect(valuePaths(messages, 'address')).toEqual(['address', 'address.city', 'address.zip']);
+    expect(valuePaths(messages, 'address')).toStrictEqual(['address', 'address.city', 'address.zip']);
     expect(valuePaths(messages, 'city')[0]).toBe('address.city');
   });
 });

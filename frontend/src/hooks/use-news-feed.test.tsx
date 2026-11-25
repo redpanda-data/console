@@ -59,12 +59,12 @@ describe('news feed wire decoding', () => {
     rs.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json(realNewsFeed));
     const { result } = renderNewsFeed();
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.map((item) => item.id)).toEqual([
+    expect(result.current.data?.map((item) => item.id)).toStrictEqual([
       '68d2fc0e27d71c42507b6870',
       '68d2e5cc70aa04dc479c30ec',
       '68b9e934b729aee05b3d2777',
     ]);
-    expect(result.current.data?.map((item) => item.fieldData['cta-button-variant'])).toEqual([
+    expect(result.current.data?.map((item) => item.fieldData['cta-button-variant'])).toStrictEqual([
       'solid-brand',
       'ghost',
       null,

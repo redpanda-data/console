@@ -111,10 +111,11 @@ function addUnseenHints(
 ): void {
   for (const [key, hint] of entries) {
     const signature = `${hint.line}:${hint.column}:${hint.hint}`;
-    if (!seen.has(signature)) {
-      seen.add(signature);
-      merged[`${keyPrefix}${key}`] = hint;
+    if (seen.has(signature)) {
+      continue;
     }
+    seen.add(signature);
+    merged[`${keyPrefix}${key}`] = hint;
   }
 }
 

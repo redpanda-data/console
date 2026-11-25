@@ -25,7 +25,7 @@ describe('createMemoryStorage', () => {
   test('implements the Storage contract without retaining values after clear', () => {
     const storage = createStorageWithTwoItems();
 
-    expect(storage.length).toBe(2);
+    expect(storage).toHaveLength(2);
     expect(storage.getItem('first')).toBe('one');
     expect(storage.key(1)).toBe('second');
 
@@ -33,7 +33,7 @@ describe('createMemoryStorage', () => {
     expect(storage.getItem('first')).toBeNull();
 
     storage.clear();
-    expect(storage.length).toBe(0);
+    expect(storage).toHaveLength(0);
     expect(storage.key(0)).toBeNull();
   });
 });

@@ -140,11 +140,7 @@ function getValueTypeOptions(entry: ConfigEntryExtended): Array<{
   const valueTypeOptions: Array<{
     label: string;
     value: Inputs['valueType'];
-  }> = [];
-  valueTypeOptions.push({
-    label: 'Default',
-    value: 'default',
-  });
+  }> = [{ label: 'Default', value: 'default' }];
   if (hasInfiniteValue === true) {
     valueTypeOptions.push({
       label: 'Infinite',

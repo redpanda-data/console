@@ -342,7 +342,7 @@ describe('the ClusterFenceSourcePanel', () => {
         const { router } = renderAt(`/shadowlinks?tab=source&action=${action}&principal=shadow-telemetry`);
 
         await user.click(await screen.findByRole('button', { name: 'Cancel' }));
-        await waitFor(() => expect(router.state.location.search).toEqual({ tab: 'source' }));
+        await waitFor(() => expect(router.state.location.searchStr).toBe('?tab=source'));
         expect(screen.queryByTestId(testId)).not.toBeInTheDocument();
       }
     );

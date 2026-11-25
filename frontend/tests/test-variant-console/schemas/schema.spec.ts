@@ -99,11 +99,11 @@ function describeSubjectListSuites() {
       await page.goto('/schema-registry');
       await page.getByPlaceholder('Filter by subject name or schema ID...').fill('7');
       await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).getByText('com.shop.v1.avro.Address').waitFor();
-      expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toEqual(1);
+      expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toStrictEqual(1);
 
       await page.getByPlaceholder('Filter by subject name or schema ID...').fill('1');
       await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).getByText('shop/v1/customer.proto').waitFor();
-      expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toEqual(1);
+      expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toStrictEqual(1);
     });
 
     test("should show 'Schema search help'", async ({ page }) => {
@@ -119,7 +119,7 @@ function describeSubjectListSuites() {
       await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).getByText('com.shop.v1.avro.Address').waitFor({
         timeout: 1000,
       });
-      expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toEqual(1);
+      expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toStrictEqual(1);
     });
 
     test('should filter on schema name by regexp', async ({ page }) => {
@@ -131,7 +131,7 @@ function describeSubjectListSuites() {
       await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).getByText('com.shop.v1.avro.Customer').waitFor({
         timeout: 1000,
       });
-      expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toEqual(2);
+      expect(await page.getByTestId(SCHEMA_REGISTRY_TABLE_NAME_TESTID).count()).toStrictEqual(2);
     });
   });
 

@@ -10,7 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { rs } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';

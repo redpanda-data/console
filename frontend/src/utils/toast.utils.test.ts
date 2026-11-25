@@ -274,7 +274,7 @@ describe('showToast', () => {
     showToast({ resourceName: 'db-password', status: 'success' });
     showToast({ status: 'success' });
     const ids = add.mock.calls.map(([options]) => options.id);
-    expect(ids).toEqual(['secret-update_db-password', 'secret-update', 'db-password', undefined]);
+    expect(ids).toStrictEqual(['secret-update_db-password', 'secret-update', 'db-password', undefined]);
   });
 });
 
