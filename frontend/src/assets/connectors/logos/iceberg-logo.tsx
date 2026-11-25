@@ -1,15 +1,20 @@
-import type { CSSProperties, SVGProps } from 'react';
+import type { SVGProps } from 'react';
 
+import { cn } from '../../../components/redpanda-ui/lib/utils';
 import IcebergMark from '../iceberg.png';
 
-// Wraps the bundled raster mark with the same prop shape as the inline-SVG
-// logos so it drops into componentLogoMap unchanged. Swap for a real SVG once
-// the official brand-kit vector is available.
-export const IcebergLogo = ({ className, style }: Pick<SVGProps<SVGSVGElement>, 'className' | 'style'>) => (
-  <img
-    alt="Apache Iceberg"
-    className={className}
-    src={IcebergMark}
-    style={{ objectFit: 'contain', ...(style as CSSProperties) }}
-  />
+// Preserve the raster brand mark while honoring the SVG logo map's sizing contract.
+export const IcebergLogo = ({ className, width = 600, height, ...props }: SVGProps<SVGSVGElement>) => (
+  <svg
+    aria-label="Apache Iceberg"
+    className={cn('max-w-full', height === undefined && 'h-auto', className)}
+    height={height ?? 600}
+    role="img"
+    viewBox="0 0 600 600"
+    width={width}
+    {...props}
+  >
+    <title>Apache Iceberg</title>
+    <image height="600" href={IcebergMark} preserveAspectRatio="xMidYMid meet" width="600" />
+  </svg>
 );

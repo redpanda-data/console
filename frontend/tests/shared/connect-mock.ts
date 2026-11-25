@@ -66,6 +66,9 @@ function connectCodeToHttpStatus(code: ConnectErrorCode): number {
       return 503;
     case 'unimplemented':
       return 501;
+    case 'data_loss':
+    case 'internal':
+    case 'unknown':
     default:
       return 500;
   }
@@ -89,7 +92,6 @@ const DEBUG_CONNECT_MOCK = false;
 export async function mockConnectError(args: MockConnectErrorArgs): Promise<void> {
   const { page, urlGlob, code, message = `mocked ${code}`, times } = args;
   if (DEBUG_CONNECT_MOCK) {
-    // biome-ignore lint/suspicious/noConsole: diagnostic gated behind DEBUG_CONNECT_MOCK
     console.log(`[connect-mock] registering route glob=${urlGlob} code=${code}`);
   }
   await page.route(
@@ -97,7 +99,6 @@ export async function mockConnectError(args: MockConnectErrorArgs): Promise<void
     (route) => {
       if (DEBUG_CONNECT_MOCK) {
         const req = route.request();
-        // biome-ignore lint/suspicious/noConsole: diagnostic gated behind DEBUG_CONNECT_MOCK
         console.log(
           `[connect-mock] route FIRED url=${req.url()} method=${req.method()} body=${(req.postData() ?? '').slice(0, 200)}`
         );

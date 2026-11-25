@@ -113,7 +113,7 @@ describe('withYamlDocumentation', () => {
         },
       },
     });
-    expect(schema).toEqual(original);
+    expect(schema).toStrictEqual(original);
   });
 
   test('preserves upstream documentation and validation without inventing fields', () => {
@@ -145,7 +145,7 @@ describe('withYamlDocumentation', () => {
         },
       },
     };
-    expect(withYamlDocumentation(schema, [component('input', 'Replacement')])).toEqual(schema);
+    expect(withYamlDocumentation(schema, [component('input', 'Replacement')])).toStrictEqual(schema);
   });
 
   test('keeps deprecated components out of completion but still validates them', () => {

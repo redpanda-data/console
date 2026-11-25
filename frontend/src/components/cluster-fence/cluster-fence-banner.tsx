@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/comp
 import { Button } from 'components/redpanda-ui/components/button';
 import { InfoIcon, TriangleAlertIcon } from 'lucide-react';
 import { type BrokerOwnCopy, useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
+import { isObject } from 'utils/type-guards';
 
 import {
   type BrokerProgress,
@@ -53,7 +54,7 @@ const describeOwnCopies = (copies: BrokerOwnCopy[], lastRead: FencePhase): strin
     const broker = nodeId === undefined ? 'a broker' : `broker ${nodeId}`;
     return [`${broker} reports ${FENCE_PHASE_LABEL[phase].toLowerCase()}`];
   });
-  const blockingCount = copies.filter((copy) => copy.phase && isBlockingPhase(copy.phase)).length;
+  const blockingCount = copies.filter((copy) => copy.phase !== undefined && isBlockingPhase(copy.phase)).length;
   let consequence = '';
   if (blockingCount > 0) {
     consequence =
@@ -85,7 +86,8 @@ const bannerTitle = (known: boolean, summary: FenceSummary, brokers: BrokerProgr
 export const ClusterFenceBanner = () => {
   const { known, summary, brokers, blocking, ownCopies } = useClusterFenceStatusQuery();
   const location = useLocation();
-  const onFenceTab = location.pathname === '/shadowlinks' && (location.search as { tab?: string }).tab === 'source';
+  const onFenceTab =
+    location.pathname === '/shadowlinks' && isObject(location.search) && location.search.tab === 'source';
   const { phase } = summary;
   if (onFenceTab || !(known ? hasFenceActivity(phase) : blocking)) {
     return null;

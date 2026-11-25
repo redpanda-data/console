@@ -37,10 +37,11 @@ const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'ke
 
 // A copied payload drops its normalized form, and its raw bytes become a plain array for JSON.
 function preparePayloadForCopy(payload: Payload) {
-  payload.normalizedPayload = undefined;
-  if (payload.rawBytes) {
-    payload.rawBytes = Array.from(payload.rawBytes) as Uint8Array & number[];
-  }
+  return {
+    ...payload,
+    normalizedPayload: undefined,
+    rawBytes: payload.rawBytes ? Array.from(payload.rawBytes) : undefined,
+  };
 }
 
 function getMessageAsString(value: string | TopicMessage): string {
@@ -54,19 +55,15 @@ function getMessageAsString(value: string | TopicMessage): string {
     valueBinHexPreview: undefined,
     keyJson: undefined,
     valueJson: undefined,
-  } as Partial<TopicMessage>;
-  if (obj.key) {
-    preparePayloadForCopy(obj.key);
-  }
-  if (obj.value) {
-    preparePayloadForCopy(obj.value);
-  }
+    key: preparePayloadForCopy(value.key),
+    value: preparePayloadForCopy(value.value),
+  };
 
   return JSON.stringify(obj, null, 4);
 }
 
-function getPayloadAsString(value: string | Uint8Array | object): string {
-  if (value === null) {
+function getPayloadAsString(value: unknown): string {
+  if (value === null || value === undefined) {
     return '';
   }
 
@@ -78,12 +75,12 @@ function getPayloadAsString(value: string | Uint8Array | object): string {
     return JSON.stringify(Array.from(value), null, 4);
   }
 
-  return JSON.stringify(value, null, 4);
+  return JSON.stringify(value, null, 4) ?? '';
 }
 
 export function onCopyValue(original: TopicMessage) {
   navigator.clipboard
-    .writeText(getPayloadAsString((original.value.payload ?? original.value.rawBytes) as string | Uint8Array | object))
+    .writeText(getPayloadAsString(original.value.payload ?? original.value.rawBytes))
     .then(() => {
       toast.success('Value copied to clipboard');
     })
@@ -92,7 +89,7 @@ export function onCopyValue(original: TopicMessage) {
 
 export function onCopyKey(original: TopicMessage) {
   navigator.clipboard
-    .writeText(getPayloadAsString((original.key.payload ?? original.key.rawBytes) as string | Uint8Array | object))
+    .writeText(getPayloadAsString(original.key.payload ?? original.key.rawBytes))
     .then(() => {
       toast.success('Key copied to clipboard');
     })
@@ -148,15 +145,16 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
         isDeserializerActive(keyDeserializer) ? (
           <div className="inline-flex items-center gap-2">
             Key{' '}
-            <button
+            <Button
               onClick={(e) => {
                 onShowDeserializers();
                 e.stopPropagation(); // don't sort
               }}
               type="button"
+              variant="unstyled"
             >
               <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[keyDeserializer]}</Badge>
-            </button>
+            </Button>
           </div>
         ) : (
           'Key'
@@ -177,15 +175,16 @@ function buildDataColumns(options: MessageColumnOptions): Record<DataColumnKey, 
         isDeserializerActive(valueDeserializer) ? (
           <div className="inline-flex items-center gap-2">
             Value{' '}
-            <button
+            <Button
               onClick={(e) => {
                 onShowDeserializers();
                 e.stopPropagation(); // don't sort
               }}
               type="button"
+              variant="unstyled"
             >
               <Badge>Deserializer: {PAYLOAD_ENCODING_LABELS[valueDeserializer]}</Badge>
-            </button>
+            </Button>
           </div>
         ) : (
           'Value'

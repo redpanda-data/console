@@ -51,7 +51,7 @@ import {
   Quota_ValueType,
 } from '../../../protogen/redpanda/api/dataplane/v1/quota_pb';
 import { prettyBytes, prettyNumber } from '../../../utils/utils';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -103,7 +103,7 @@ function SortableHeader({
         <span>{title}</span>
         {renderSortIcon(column.getIsSorted())}
       </Button>
-      {tooltip ? <InfoTooltip>{tooltip}</InfoTooltip> : null}
+      {Boolean(tooltip) ? <InfoTooltip>{tooltip}</InfoTooltip> : null}
     </div>
   );
 }
@@ -176,7 +176,7 @@ const toQuotaRow = (quota: ListQuotasResponse_QuotaEntry): QuotaRow => {
 
   return {
     entityType: mapEntityTypeToDisplay(entityType),
-    entityName: entityName || undefined,
+    entityName: (entityName ?? '') || undefined,
     producerRate: getRate(quota.values, Quota_ValueType.PRODUCER_BYTE_RATE),
     consumerRate: getRate(quota.values, Quota_ValueType.CONSUMER_BYTE_RATE),
     controllerMutationRate: getRate(quota.values, Quota_ValueType.CONTROLLER_MUTATION_RATE),
@@ -307,7 +307,7 @@ const QuotasList = () => {
             ))}
           </TableHeader>
           <TableBody>
-            {rows.length ? (
+            {rows.length > 0 ? (
               rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
@@ -331,4 +331,4 @@ const QuotasList = () => {
   );
 };
 
-export default QuotasList;
+export { QuotasList };

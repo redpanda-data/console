@@ -1,5 +1,6 @@
 import { CLOUD_MANAGED_TAG_KEYS } from 'components/constants';
-import { config } from 'config';
+
+import { config } from '../runtime-config';
 
 export type ServiceAccountResourceType = 'mcp' | 'agent' | 'pipeline';
 
@@ -22,7 +23,7 @@ export function addServiceAccountTags(
 export function generateServiceAccountName(displayName: string, resourceType: ServiceAccountResourceType): string {
   const clusterType = config.isServerless ? 'serverless' : 'cluster';
   const sanitizedName = displayName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  return `${clusterType}-${config.clusterId}-${resourceType}-${sanitizedName}-sa`;
+  return `${clusterType}-${String(config.clusterId)}-${resourceType}-${sanitizedName}-sa`;
 }
 
 /**
@@ -30,5 +31,5 @@ export function generateServiceAccountName(displayName: string, resourceType: Se
  */
 export function getServiceAccountNamePrefix(resourceType: ServiceAccountResourceType): string {
   const clusterType = config.isServerless ? 'serverless' : 'cluster';
-  return `${clusterType}-${config.clusterId}-${resourceType}-`;
+  return `${clusterType}-${String(config.clusterId)}-${resourceType}-`;
 }

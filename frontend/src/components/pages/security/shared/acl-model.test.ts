@@ -27,7 +27,6 @@ import {
   ModeAllowAll,
   ModeCustom,
   ModeDenyAll,
-  type OperationType,
   OperationTypeAllow,
   OperationTypeDeny,
   ResourcePatternTypeLiteral,
@@ -39,28 +38,16 @@ import { describe, expect, test } from 'bun:test';
 
 const findHost = (result: AclDetail[], host: string) => result.find((r) => r.sharedConfig.host === host);
 
-/** Asserts the host's principal and the permission of each operation of its first rule (`undefined`: not set). */
-const expectHostOperations = (
-  result: AclDetail[],
-  host: string,
-  principal: string,
-  operations: Record<string, OperationType | undefined>
-) => {
+const hostOperations = (result: AclDetail[], host: string, operations: string[]) => {
   const hostResult = findHost(result, host);
-  expect(hostResult).toBeDefined();
-  expect(hostResult?.sharedConfig.principal).toBe(principal);
-  for (const [operation, value] of Object.entries(operations)) {
-    expect(hostResult?.rules[0].operations[operation]).toBe(value);
-  }
+  return {
+    principal: hostResult?.sharedConfig.principal,
+    operations: Object.fromEntries(
+      operations.map((operation) => [operation, hostResult?.rules[0]?.operations[operation]])
+    ),
+  };
 };
-
-const expectHostRuleIds = (result: AclDetail[], host: string, ids: number[]) => {
-  const rules = findHost(result, host)?.rules;
-  expect(rules).toHaveLength(ids.length);
-  for (const [index, id] of ids.entries()) {
-    expect(rules?.[index].id).toBe(id);
-  }
-};
+const hostRuleIds = (result: AclDetail[], host: string) => findHost(result, host)?.rules.map((rule) => rule.id);
 
 const buildRule = (id: number): Rule => ({
   id,
@@ -95,7 +82,7 @@ describe('getAclFromAclListResponse', () => {
       const result = getAclFromAclListResponse(response);
 
       expect(result).toHaveLength(1);
-      expect(result[0].sharedConfig).toEqual({
+      expect(result[0].sharedConfig).toStrictEqual({
         principal: 'User:alice',
         host: '192.168.1.1',
       });
@@ -169,8 +156,14 @@ describe('getAclFromAclListResponse', () => {
 
       expect(result).toHaveLength(2);
 
-      expectHostOperations(result, '192.168.1.1', 'User:alice', { READ: OperationTypeAllow, WRITE: undefined });
-      expectHostOperations(result, '192.168.1.2', 'User:alice', { WRITE: OperationTypeDeny, READ: undefined });
+      expect(hostOperations(result, '192.168.1.1', ['READ', 'WRITE'])).toStrictEqual({
+        principal: 'User:alice',
+        operations: { READ: OperationTypeAllow, WRITE: undefined },
+      });
+      expect(hostOperations(result, '192.168.1.2', ['WRITE', 'READ'])).toStrictEqual({
+        principal: 'User:alice',
+        operations: { WRITE: OperationTypeDeny, READ: undefined },
+      });
     });
 
     test('should group multiple resources by host correctly', () => {
@@ -247,7 +240,7 @@ describe('getAclFromAclListResponse', () => {
       const result = getAclFromAclListResponse(response);
 
       expect(result).toHaveLength(3);
-      expect(result.map((r) => r.sharedConfig.host)).toEqual(expect.arrayContaining(['host-a', 'host-b', 'host-c']));
+      expect(new Set(result.map((r) => r.sharedConfig.host))).toStrictEqual(new Set(['host-a', 'host-b', 'host-c']));
 
       const hostA = result.find((r) => r.sharedConfig.host === 'host-a');
       expect(hostA?.rules[0].operations.CREATE).toBe(OperationTypeAllow);
@@ -470,7 +463,7 @@ describe('getAclFromAclListResponse', () => {
 
       const result = getAclFromAclListResponse(response);
 
-      expect(result).toEqual([]);
+      expect(result).toStrictEqual([]);
     });
 
     test('should handle wildcard host', () => {
@@ -547,8 +540,8 @@ describe('getAclFromAclListResponse', () => {
       expect(result).toHaveLength(2);
 
       // Each host should have 2 rules with IDs 0 and 1
-      expectHostRuleIds(result, 'host-a', [0, 1]);
-      expectHostRuleIds(result, 'host-b', [0, 1]);
+      expect(hostRuleIds(result, 'host-a')).toStrictEqual([0, 1]);
+      expect(hostRuleIds(result, 'host-b')).toStrictEqual([0, 1]);
     });
   });
 });

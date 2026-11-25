@@ -85,7 +85,7 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
       ]) {
         const result = mapSchemaRegistrySyncOptionsToFormValues(options);
         expect(result.enableSchemaRegistrySync).toBe(false);
-        expect(result.schemaRegistry).toEqual(initialValues.schemaRegistry);
+        expect(result.schemaRegistry).toStrictEqual(initialValues.schemaRegistry);
       }
     });
 
@@ -96,13 +96,16 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
         })
       );
       expect(result.enableSchemaRegistrySync).toBe(true);
-      expect(result.schemaRegistry).toEqual({ ...initialValues.schemaRegistry, mode: SCHEMA_REGISTRY_MODE.TOPIC });
+      expect(result.schemaRegistry).toStrictEqual({
+        ...initialValues.schemaRegistry,
+        mode: SCHEMA_REGISTRY_MODE.TOPIC,
+      });
     });
 
     test('maps a minimal api message to api defaults', () => {
       const result = mapSchemaRegistrySyncOptionsToFormValues(apiSyncOptions({ sourceUrl: 'http://sr.example.com' }));
       expect(result.enableSchemaRegistrySync).toBe(false);
-      expect(result.schemaRegistry).toEqual({
+      expect(result.schemaRegistry).toStrictEqual({
         ...initialValues.schemaRegistry,
         mode: SCHEMA_REGISTRY_MODE.API,
         sourceUrl: 'http://sr.example.com',
@@ -123,7 +126,7 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
         })
       );
       expect(result.schemaRegistry.authMethod).toBe(SR_AUTH_METHOD.BASIC);
-      expect(result.schemaRegistry.basicCredentials).toEqual({ username: 'sr-replicator', password: '' });
+      expect(result.schemaRegistry.basicCredentials).toStrictEqual({ username: 'sr-replicator', password: '' });
     });
   });
 
@@ -142,8 +145,8 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
         })
       );
       expect(result.schemaRegistry.useTls).toBe(true);
-      expect(result.schemaRegistry.mtls.ca).toEqual({ pemContent: 'CA_PEM', fileName: '' });
-      expect(result.schemaRegistry.mtls.clientCert).toEqual({ pemContent: 'CERT_PEM', fileName: '' });
+      expect(result.schemaRegistry.mtls.ca).toStrictEqual({ pemContent: 'CA_PEM', fileName: '' });
+      expect(result.schemaRegistry.mtls.clientCert).toStrictEqual({ pemContent: 'CERT_PEM', fileName: '' });
       expect(result.schemaRegistry.mtls.clientKey).toBeUndefined();
       expect(result.schemaRegistry.mtls.existingKeyConfigured).toBe(true);
       expect(result.schemaRegistry.mtls.existingKeyFingerprint).toBe('abc123=');
@@ -173,7 +176,7 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
           },
         })
       );
-      expect(result.schemaRegistry.mtls.clientKey).toEqual({ pemContent: 'KEY_PEM', fileName: '' });
+      expect(result.schemaRegistry.mtls.clientKey).toStrictEqual({ pemContent: 'KEY_PEM', fileName: '' });
       expect(result.schemaRegistry.mtls.existingKeyConfigured).toBe(false);
     });
 
@@ -190,7 +193,7 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
           },
         })
       );
-      expect(result.schemaRegistry.mtls.filePaths).toEqual({
+      expect(result.schemaRegistry.mtls.filePaths).toStrictEqual({
         caPath: '/etc/tls/ca.pem',
         keyPath: '/etc/tls/client.key',
         certPath: '/etc/tls/client.pem',
@@ -220,7 +223,7 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
         apiSyncOptions({ sourceUrl: 'https://sr.example.com', tlsSettings: { enabled: true } })
       );
       expect(result.schemaRegistry.useTls).toBe(true);
-      expect(result.schemaRegistry.mtls).toEqual(initialValues.schemaRegistry.mtls);
+      expect(result.schemaRegistry.mtls).toStrictEqual(initialValues.schemaRegistry.mtls);
     });
   });
 
@@ -230,7 +233,7 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
         apiSyncOptions({ sourceUrl: 'http://sr.example.com', sourceFilter: { contexts: [], subjects: [] } })
       );
       expect(result.schemaRegistry.scopeMode).toBe('all');
-      expect(result.schemaRegistry.contexts).toEqual([]);
+      expect(result.schemaRegistry.contexts).toStrictEqual([]);
     });
 
     test('maps a populated source filter to specify scope', () => {
@@ -241,8 +244,8 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
         })
       );
       expect(result.schemaRegistry.scopeMode).toBe('specify');
-      expect(result.schemaRegistry.contexts).toEqual(['.prod']);
-      expect(result.schemaRegistry.subjects).toEqual(['orders-value', ':.prod:orders-value']);
+      expect(result.schemaRegistry.contexts).toStrictEqual(['.prod']);
+      expect(result.schemaRegistry.subjects).toStrictEqual(['orders-value', ':.prod:orders-value']);
     });
 
     test('maps identity, unset, and empty-exact destinations to preserve', () => {
@@ -256,7 +259,7 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
           apiSyncOptions({ sourceUrl: 'http://sr.example.com', destination })
         );
         expect(result.schemaRegistry.destinationContextsMode).toBe('preserve');
-        expect(result.schemaRegistry.contextMappings).toEqual([]);
+        expect(result.schemaRegistry.contextMappings).toStrictEqual([]);
       }
     });
 
@@ -270,7 +273,7 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
         })
       );
       expect(result.schemaRegistry.destinationContextsMode).toBe('map');
-      expect(result.schemaRegistry.contextMappings).toEqual([{ source: '.prod', destination: '.dr' }]);
+      expect(result.schemaRegistry.contextMappings).toStrictEqual([{ source: '.prod', destination: '.dr' }]);
     });
 
     test('maps sync behavior fields including cluster defaults', () => {
@@ -283,7 +286,7 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
           unsupportedSchemaFeaturePolicy: UnsupportedSchemaFeaturePolicy.REMOVE,
         })
       );
-      expect(result.schemaRegistry.syncBehavior).toEqual({
+      expect(result.schemaRegistry.syncBehavior).toStrictEqual({
         tailInterval: '10s',
         fullSyncInterval: '5m',
         maxSourceRequestRate: '30',
@@ -296,7 +299,7 @@ describe('mapSchemaRegistrySyncOptionsToFormValues', () => {
         const result = mapSchemaRegistrySyncOptionsToFormValues(
           apiSyncOptions({ sourceUrl: 'http://sr.example.com', unsupportedSchemaFeaturePolicy: policy })
         );
-        expect(result.schemaRegistry.syncBehavior).toEqual({
+        expect(result.schemaRegistry.syncBehavior).toStrictEqual({
           tailInterval: '',
           fullSyncInterval: '',
           maxSourceRequestRate: '',

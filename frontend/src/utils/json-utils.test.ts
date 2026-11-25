@@ -9,20 +9,20 @@
  * by the Apache License, Version 2.0
  */
 
-import { deepParseJson, tryParseJson } from './json-utils';
+import { deepParseJson, getValueAtPath, type JsonValue, tryParseJson, updateValueAtPath } from './json-utils';
 import { describe, expect, test } from 'bun:test';
 
 describe('tryParseJson', () => {
   test('should parse valid JSON object strings', () => {
     const result = tryParseJson('{"city":"Singapore","temp":28}');
     expect(result.success).toBe(true);
-    expect(result.data).toEqual({ city: 'Singapore', temp: 28 });
+    expect(result.data).toStrictEqual({ city: 'Singapore', temp: 28 });
   });
 
   test('should parse valid JSON array strings', () => {
     const result = tryParseJson('[1,2,3]');
     expect(result.success).toBe(true);
-    expect(result.data).toEqual([1, 2, 3]);
+    expect(result.data).toStrictEqual([1, 2, 3]);
   });
 
   test('should not parse plain strings', () => {
@@ -65,12 +65,12 @@ describe('deepParseJson', () => {
   describe('the JSON string parsing', () => {
     test('should parse JSON object strings', () => {
       const result = deepParseJson('{"city":"Singapore","temp":28}');
-      expect(result).toEqual({ city: 'Singapore', temp: 28 });
+      expect(result).toStrictEqual({ city: 'Singapore', temp: 28 });
     });
 
     test('should parse JSON array strings', () => {
       const result = deepParseJson('[1,2,3]');
-      expect(result).toEqual([1, 2, 3]);
+      expect(result).toStrictEqual([1, 2, 3]);
     });
 
     test('should not parse malformed JSON strings', () => {
@@ -86,7 +86,7 @@ describe('deepParseJson', () => {
         description: 'Weather data',
       };
       const result = deepParseJson(input);
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         text: { city: 'Singapore', temp: 28 },
         description: 'Weather data',
       });
@@ -97,7 +97,7 @@ describe('deepParseJson', () => {
         level1: '{"level2":"{\\"level3\\":\\"value\\"}"}',
       };
       const result = deepParseJson(input);
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         level1: { level2: { level3: 'value' } },
       });
     });
@@ -111,7 +111,7 @@ describe('deepParseJson', () => {
         null: null,
       };
       const result = deepParseJson(input);
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         jsonString: { data: 'value' },
         plainString: 'hello',
         number: 42,
@@ -128,7 +128,7 @@ describe('deepParseJson', () => {
         { type: 'text', text: '{"temp":28}' },
       ];
       const result = deepParseJson(input);
-      expect(result).toEqual([
+      expect(result).toStrictEqual([
         { type: 'text', text: { city: 'Singapore' } },
         { type: 'text', text: { temp: 28 } },
       ]);
@@ -137,13 +137,13 @@ describe('deepParseJson', () => {
     test('should handle arrays with mixed types', () => {
       const input = ['{"data":"value"}', 'plain string', 42, true, null];
       const result = deepParseJson(input);
-      expect(result).toEqual([{ data: 'value' }, 'plain string', 42, true, null]);
+      expect(result).toStrictEqual([{ data: 'value' }, 'plain string', 42, true, null]);
     });
 
     test('should handle nested arrays', () => {
       const input = [['{"a":1}', '{"b":2}'], ['{"c":3}']];
       const result = deepParseJson(input);
-      expect(result).toEqual([[{ a: 1 }, { b: 2 }], [{ c: 3 }]]);
+      expect(result).toStrictEqual([[{ a: 1 }, { b: 2 }], [{ c: 3 }]]);
     });
   });
 
@@ -156,7 +156,7 @@ describe('deepParseJson', () => {
         },
       ];
       const result = deepParseJson(input);
-      expect(result).toEqual([
+      expect(result).toStrictEqual([
         {
           type: 'text',
           text: {
@@ -184,7 +184,7 @@ describe('deepParseJson', () => {
       };
       const result = deepParseJson(input);
       // In this case, the text is not a JSON string, so it should remain as-is
-      expect(result).toEqual(input);
+      expect(result).toStrictEqual(input);
     });
   });
 
@@ -197,11 +197,11 @@ describe('deepParseJson', () => {
     });
 
     test('should handle empty objects', () => {
-      expect(deepParseJson({})).toEqual({});
+      expect(deepParseJson({})).toStrictEqual({});
     });
 
     test('should handle empty arrays', () => {
-      expect(deepParseJson([])).toEqual([]);
+      expect(deepParseJson([])).toStrictEqual([]);
     });
 
     test('should handle empty string', () => {
@@ -215,7 +215,7 @@ describe('deepParseJson', () => {
         'key.with.dots': '{"data":"value"}',
       };
       const result = deepParseJson(input);
-      expect(result).toEqual({
+      expect(result).toStrictEqual({
         'key-with-dashes': { data: 'value' },
         key_with_underscores: { data: 'value' },
         'key.with.dots': { data: 'value' },
@@ -226,12 +226,52 @@ describe('deepParseJson', () => {
   describe('non-object types as root', () => {
     test('should handle JSON string as root', () => {
       const result = deepParseJson('{"key":"value"}');
-      expect(result).toEqual({ key: 'value' });
+      expect(result).toStrictEqual({ key: 'value' });
     });
 
     test('should handle array JSON string as root', () => {
       const result = deepParseJson('[1,2,3]');
-      expect(result).toEqual([1, 2, 3]);
+      expect(result).toStrictEqual([1, 2, 3]);
     });
+  });
+});
+
+test('rejects non-integer array indices when updating JSON paths', () => {
+  expect(() => updateValueAtPath([null], ['1.5'], 'value')).toThrow(RangeError);
+});
+
+const JSON_PATH_CASES: { input: JsonValue; path: string[]; expected: JsonValue }[] = [
+  { input: { a: [{ b: 'found' }] }, path: ['a', '0', 'b'], expected: 'found' },
+  { input: { a: undefined }, path: ['a'], expected: undefined },
+  { input: { a: null }, path: ['a'], expected: null },
+  { input: { a: null }, path: ['a', 'b'], expected: 'fallback' },
+  { input: [undefined], path: ['0'], expected: undefined },
+  { input: [1], path: ['-1'], expected: 'fallback' },
+  { input: [1], path: ['1'], expected: 'fallback' },
+  { input: [1], path: ['NaN'], expected: 'fallback' },
+];
+
+describe('getValueAtPath', () => {
+  test.each(JSON_PATH_CASES)('preserves found, missing and nullish path values: %j', ({ input, path, expected }) => {
+    expect(getValueAtPath(input, path, 'fallback')).toStrictEqual(expected);
+  });
+
+  test('preserves returned identity and reads an existing fractional array property', () => {
+    const values: JsonValue[] = [1, 2];
+    values[1.5] = 3;
+    expect(getValueAtPath(values, [])).toBe(values);
+    expect(getValueAtPath(values, ['1.5'])).toBe(3);
+  });
+
+  test('snapshots the remaining path before invoking a property getter', () => {
+    const path = ['first', 'target'];
+    const input = {
+      get first() {
+        path[1] = 'replacement';
+        return { target: 'found', replacement: 'wrong' };
+      },
+    };
+    expect(getValueAtPath(input, path)).toBe('found');
+    expect(path[1]).toBe('replacement');
   });
 });

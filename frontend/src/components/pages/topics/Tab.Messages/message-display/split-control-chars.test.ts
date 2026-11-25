@@ -14,22 +14,22 @@ import { describe, expect, test } from 'bun:test';
 
 describe('splitControlChars', () => {
   test('keeps printable text as one run', () => {
-    expect(splitControlChars('hello')).toEqual(['hello']);
+    expect(splitControlChars('hello')).toStrictEqual(['hello']);
   });
 
   test('splits control characters out as char codes, in order', () => {
-    expect(splitControlChars('a\tb\n\nc')).toEqual(['a', 9, 'b', 10, 10, 'c']);
+    expect(splitControlChars('a\tb\n\nc')).toStrictEqual(['a', 9, 'b', 10, 10, 'c']);
   });
 
   test('returns no parts for an empty string', () => {
-    expect(splitControlChars('')).toEqual([]);
+    expect(splitControlChars('')).toStrictEqual([]);
   });
 
   test('reads at most maxLength characters', () => {
-    expect(splitControlChars('ab\ncd', 3)).toEqual(['ab', 10]);
+    expect(splitControlChars('ab\ncd', 3)).toStrictEqual(['ab', 10]);
   });
 
   test('always reads the first character, even for a zero maxLength', () => {
-    expect(splitControlChars('abc', 0)).toEqual(['a']);
+    expect(splitControlChars('abc', 0)).toStrictEqual(['a']);
   });
 });

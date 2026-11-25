@@ -11,23 +11,22 @@
 
 import { describe, expect, test } from '@rstest/core';
 
-import type { TemplateSlot } from '../pipeline-template-types';
+import type { StringSlot } from '../pipeline-template-types';
 import { buildSchema } from '../template-form-panel';
 import { mysqlCdcTemplate } from '../templates/mysql-cdc';
 
 const NAME = { __pipelineName: 'p' };
 
-const listSlot = (overrides: Partial<TemplateSlot> = {}): TemplateSlot =>
-  ({
-    id: 'tables',
-    kind: 'string',
-    section: 'source',
-    label: 'Source tables',
-    required: true,
-    list: true,
-    entryPattern: { regex: /^[a-zA-Z0-9_$]+$/, message: 'bare identifiers only' },
-    ...overrides,
-  }) as TemplateSlot;
+const listSlot = (overrides: Partial<StringSlot> = {}): StringSlot => ({
+  id: 'tables',
+  kind: 'string',
+  section: 'source',
+  label: 'Source tables',
+  required: true,
+  list: true,
+  entryPattern: { regex: /^[a-zA-Z0-9_$]+$/, message: 'bare identifiers only' },
+  ...overrides,
+});
 
 describe('buildSchema slot validation', () => {
   test('entryPattern validates every comma-separated entry', () => {

@@ -3,10 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLiveTailLoop } from './use-live-tail-loop';
 import type { MessageSearchParams, MessageSearchResult } from './use-message-search';
 import type { MessagesUrlState } from './use-messages-url-state';
-import { isServerless } from '../../../../../config';
+import { isServerless } from '../../../../../runtime-config';
 import { appGlobal } from '../../../../../state/app-global';
 import { useApiStoreHook } from '../../../../../state/backend-api';
-import { type FilterEntry, PartitionOffsetOrigin } from '../../../../../state/ui';
+import type { FilterEntry } from '../../../../../state/ui';
+import { PartitionOffsetOrigin } from '../../../../../types/topic-settings';
 import { buildFilterInterpreterCode } from '../utils/js-filters';
 
 /**

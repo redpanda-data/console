@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { expect } from '@rstest/core';
 import { waitFor } from '@testing-library/react';
 import type userEvent from '@testing-library/user-event';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -175,9 +176,9 @@ const nextTopicFilterIndex = async (
   user: ReturnType<typeof userEvent.setup>,
   scr: typeof import('@testing-library/react').screen
 ) => {
-  const existingNameInputs = scr.queryAllByTestId(TOPIC_FILTER_NAME_PATTERN);
-  const firstValue = (existingNameInputs[0] as HTMLInputElement | undefined)?.value;
-  if (!firstValue) {
+  const existingNameInputs = scr.queryAllByTestId<HTMLInputElement>(TOPIC_FILTER_NAME_PATTERN);
+  const firstValue = existingNameInputs[0]?.value;
+  if (!(firstValue !== null && firstValue !== undefined && firstValue !== '')) {
     return 0;
   }
 
@@ -463,7 +464,7 @@ export const addTopicFilterCreate = async (
   name: string,
   options?: { patternType?: PatternType; filterType?: FilterType }
 ) => {
-  const { patternType = PatternType.LITERAL, filterType = FilterType.INCLUDE } = options || {};
+  const { patternType = PatternType.LITERAL, filterType = FilterType.INCLUDE } = options ?? {};
 
   await openTopicFiltersInSpecifyMode(user, scr);
   const filterIndex = await nextTopicFilterIndex(user, scr);

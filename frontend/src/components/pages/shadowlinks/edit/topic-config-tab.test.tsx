@@ -10,10 +10,12 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm, useWatch } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
+import { z } from 'zod';
 
 import { TopicConfigTab } from './topic-config-tab';
 import { getDefaultProperties } from './topic-properties-config';
@@ -44,7 +46,10 @@ const renderTopicConfigTab = (overrides: Partial<FormValues>) => {
 };
 
 // The form state the wrapper mirrors into the DOM
-const readFormState = () => JSON.parse(screen.getByTestId('form-state').textContent || '{}');
+const readFormState = () =>
+  z
+    .object({ topicProperties: z.array(z.string()) })
+    .parse(JSON.parse(screen.getByTestId('form-state').textContent || '{}'));
 
 describe('the TopicConfigTab', () => {
   describe('exclude default properties toggle', () => {
@@ -66,7 +71,7 @@ describe('the TopicConfigTab', () => {
       const state = readFormState();
 
       // Only non-default properties should remain
-      expect(state.topicProperties).toEqual(['segment.bytes', 'flush.ms']);
+      expect(state.topicProperties).toStrictEqual(['segment.bytes', 'flush.ms']);
       expect(state.topicProperties).not.toContain('retention.bytes');
       expect(state.topicProperties).not.toContain('retention.ms');
     });
@@ -89,19 +94,19 @@ describe('the TopicConfigTab', () => {
       const state = readFormState();
 
       // Should contain all default properties plus the existing ones
-      expect(state.topicProperties).toEqual(
-        expect.arrayContaining([
-          'segment.bytes',
-          'flush.ms',
-          'retention.bytes',
-          'retention.ms',
-          'delete.retention.ms',
-          'min.compaction.lag.ms',
-          'max.compaction.lag.ms',
-          'replication.factor',
-          'compression.type',
-        ])
-      );
+      for (const expected of [
+        'segment.bytes',
+        'flush.ms',
+        'retention.bytes',
+        'retention.ms',
+        'delete.retention.ms',
+        'min.compaction.lag.ms',
+        'max.compaction.lag.ms',
+        'replication.factor',
+        'compression.type',
+      ]) {
+        expect(state.topicProperties).toContain(expected);
+      }
     });
   });
 });

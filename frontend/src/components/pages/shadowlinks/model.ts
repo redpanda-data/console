@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ShadowLink_State as ControlplaneShadowLinkState } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
+import { ShadowLink_State as ControlplaneShadowLinkState } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import {
   type ShadowLinkState as CoreShadowLinkState,
   ShadowLinkState,
@@ -264,21 +264,22 @@ export type UnifiedShadowLink = {
 // ============================================================================
 
 /**
- * Map console API state (3 states) to unified state
+ * Map console API state (6 states) to unified state
  */
 export function mapConsoleStateToUnified(state: CoreShadowLinkState): UnifiedShadowLinkState {
   // CoreShadowLinkState: UNSPECIFIED=0, ACTIVE=1, PAUSED=2, FAILING_OVER=3, FAILED_OVER=4, FAILOVER_FAULTED=5
   switch (state) {
-    case 1: // ACTIVE
+    case ShadowLinkState.ACTIVE:
       return UnifiedShadowLinkState.ACTIVE;
-    case 2: // PAUSED
+    case ShadowLinkState.PAUSED:
       return UnifiedShadowLinkState.PAUSED;
-    case 3: // FAILING_OVER
+    case ShadowLinkState.FAILING_OVER:
       return UnifiedShadowLinkState.FAILING_OVER;
-    case 4: // FAILED_OVER
+    case ShadowLinkState.FAILED_OVER:
       return UnifiedShadowLinkState.FAILED_OVER;
-    case 5: // FAILOVER_FAULTED
+    case ShadowLinkState.FAILOVER_FAULTED:
       return UnifiedShadowLinkState.FAILOVER_FAULTED;
+    case ShadowLinkState.UNSPECIFIED:
     default:
       return UnifiedShadowLinkState.UNSPECIFIED;
   }
@@ -290,18 +291,19 @@ export function mapConsoleStateToUnified(state: CoreShadowLinkState): UnifiedSha
 export function mapControlplaneStateToUnified(state: ControlplaneShadowLinkState): UnifiedShadowLinkState {
   // ControlplaneShadowLinkState: UNSPECIFIED=0, CREATING=1, CREATION_FAILED=2, DELETING=3, DELETION_FAILED=4, ACTIVE=5, PAUSED=6
   switch (state) {
-    case 1: // CREATING
+    case ControlplaneShadowLinkState.CREATING:
       return UnifiedShadowLinkState.CREATING;
-    case 2: // CREATION_FAILED
+    case ControlplaneShadowLinkState.CREATION_FAILED:
       return UnifiedShadowLinkState.CREATION_FAILED;
-    case 3: // DELETING
+    case ControlplaneShadowLinkState.DELETING:
       return UnifiedShadowLinkState.DELETING;
-    case 4: // DELETION_FAILED
+    case ControlplaneShadowLinkState.DELETION_FAILED:
       return UnifiedShadowLinkState.DELETION_FAILED;
-    case 5: // ACTIVE
+    case ControlplaneShadowLinkState.ACTIVE:
       return UnifiedShadowLinkState.ACTIVE;
-    case 6: // PAUSED
+    case ControlplaneShadowLinkState.PAUSED:
       return UnifiedShadowLinkState.PAUSED;
+    case ControlplaneShadowLinkState.UNSPECIFIED:
     default:
       return UnifiedShadowLinkState.UNSPECIFIED;
   }
@@ -324,6 +326,7 @@ export function getShadowLinkStateLabel(state: ShadowLinkState): string {
       return 'Failed over';
     case ShadowLinkState.FAILOVER_FAULTED:
       return 'Failover stopped';
+    case ShadowLinkState.UNSPECIFIED:
     default:
       return 'Unknown';
   }

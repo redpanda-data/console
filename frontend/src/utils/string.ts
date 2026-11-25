@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { isNonEmptyString } from './string-utils';
+
 const CAMEL_CASE_REGEX = /([A-Z])/g;
 const FIRST_CHAR_REGEX = /^\w/;
 const WHITESPACE_REGEX = /\s+/;
@@ -47,7 +49,7 @@ export const getTextPreview = (content: string, maxLines: number): string => {
 
 /** First and last word's initials, upper-cased: `'John B Doe'` -> `'JD'`. Empty for blank input. */
 export const getUserInitials = (displayName: string | undefined | null): string => {
-  if (!displayName?.trim()) {
+  if (!isNonEmptyString(displayName?.trim())) {
     return '';
   }
 

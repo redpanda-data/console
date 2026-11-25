@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { Input } from 'components/redpanda-ui/components/input';
 import type { JSX } from 'react';
 
 import styles from './HiddenRadioList.module.scss';
@@ -45,8 +46,9 @@ export function HiddenRadioList<ValueType>({
         return (
           <li key={String(option.value)}>
             <label>
-              <input
+              <Input
                 checked={checked}
+                containerClassName="sr-only"
                 disabled={disabled}
                 name={name}
                 onChange={() => onChange(option.value)}

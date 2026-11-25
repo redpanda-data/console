@@ -11,8 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import RpConnectSecretCreate from '../../../components/pages/rp-connect/secrets/secrets-create';
-
+import { RpConnectSecretCreate } from '../../../components/pages/rp-connect/secrets/secrets-create';
 export const Route = createFileRoute('/rp-connect/secrets/create')({
   staticData: {
     title: 'Create Connector Secret',

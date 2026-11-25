@@ -14,9 +14,7 @@
  * Provides sidebar item generation and visibility management.
  */
 
-import type { LucideIcon } from 'lucide-react';
 import { Database } from 'lucide-react';
-import type { JSX, ReactNode, SVGProps } from 'react';
 
 import { type AppFeature, AppFeatures } from './env';
 import {
@@ -33,9 +31,10 @@ import {
   ShieldCheckIcon,
   ShieldIcon,
 } from '../components/icons';
-import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../config';
+import { isEmbedded, isFeatureFlagEnabled, isServerless } from '../runtime-config';
 import { api } from '../state/backend-api';
 import { Feature, isSupported, shouldHideIfNotSupported } from '../state/supported-features';
+import type { SidebarIconComponent } from '../types/navigation';
 
 const SidebarSection = {
   STREAMING: 'Streaming',
@@ -44,13 +43,11 @@ const SidebarSection = {
 
 type SidebarSectionName = (typeof SidebarSection)[keyof typeof SidebarSection];
 
-type SidebarItemIcon = LucideIcon | ((props: SVGProps<SVGSVGElement>) => JSX.Element);
-
 // Shape the sidebar renders each nav link from. Grouping lives on SidebarGroupedItems, not here.
 type NavLinkProps = {
   title: string;
   to: string;
-  icon: SidebarItemIcon;
+  icon: SidebarIconComponent;
   isDisabled?: boolean;
   disabledText?: string;
 };
@@ -58,8 +55,8 @@ type NavLinkProps = {
 // Sidebar item definition
 export type SidebarItem = {
   path: string;
-  title: string | ReactNode;
-  icon?: SidebarItemIcon;
+  title: string;
+  icon?: SidebarIconComponent;
   visibilityCheck?: () => MenuItemState;
   group: SidebarSectionName;
 };
@@ -321,7 +318,7 @@ function processSidebarItem(item: SidebarItem): NavLinkProps | null {
   const disabledText = getDisabledText(visibility.disabledReasons);
 
   return {
-    title: String(item.title),
+    title: item.title,
     to: item.path,
     icon: item.icon,
     isDisabled: !isEnabled,
@@ -369,10 +366,13 @@ export function createGroupedSidebarItems(): SidebarGroupedItems[] {
     }
   }
 
-  return SECTION_ORDER.map((section) => ({
-    group: section,
-    items: groupMap.get(section) ?? [],
-  })).filter((g) => g.items.length > 0);
+  return SECTION_ORDER.flatMap((section) => {
+    const sidebarGroup = {
+      group: section,
+      items: groupMap.get(section) ?? [],
+    };
+    return sidebarGroup.items.length > 0 ? [sidebarGroup] : [];
+  });
 }
 
 /**

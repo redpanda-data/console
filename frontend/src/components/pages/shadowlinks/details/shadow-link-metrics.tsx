@@ -15,6 +15,8 @@ import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { RefreshCw } from 'lucide-react';
 import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { SHORT_LIVED_CACHE_STALE_TIME } from '../../../../react-query/react-query.utils';
 import { type UnifiedShadowLink, type UnifiedShadowLinkState, UnifiedShadowLinkStateLabel } from '../model';
@@ -30,7 +32,7 @@ const MetricCardRefreshButton = ({ isFetching, onRefresh }: { isFetching: boolea
   ) : (
     <span className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 motion-reduce:transition-none">
       <Button aria-label="Refresh metrics" onClick={onRefresh} size="icon" variant="ghost">
-        <RefreshCw className="h-4 w-4" />
+        <RefreshCw className="size-4" />
       </Button>
     </span>
   );
@@ -79,7 +81,7 @@ export const ShadowLinkMetrics = ({ shadowLink }: ShadowLinkMetricsProps) => {
     );
   }
 
-  const onRefresh = () => refetch();
+  const onRefresh = asyncEvent(() => refetch(), reportActionError);
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

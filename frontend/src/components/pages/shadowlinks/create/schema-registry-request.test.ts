@@ -101,6 +101,7 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
       const options = buildShadowSchemaRegistryApiOptions(
         createApiFormValues({
           authMethod: SR_AUTH_METHOD.BASIC,
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
           basicCredentials: { username: 'sr-replicator', password: '${secrets.SR_PASSWORD}' },
         })
       );
@@ -109,6 +110,7 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
       if (options.authOptions?.authOptions?.case === 'basic') {
         // The SecretSelector already stores the reference; the builder must not
         // re-wrap or unwrap it.
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
         expect(options.authOptions.authOptions.value.password).toBe('${secrets.SR_PASSWORD}');
       }
     });
@@ -121,6 +123,7 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
           mtls: {
             ...initialValues.schemaRegistry.mtls,
             clientCert: { pemContent: 'CERT_PEM', fileName: 'client.pem' },
+            // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
             clientKey: { pemContent: '${secrets.SR_MTLS_CLIENT_KEY}', fileName: '' },
           },
         })
@@ -128,6 +131,7 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
 
       expect(options.tlsSettings?.tlsSettings?.case).toBe('tlsPemSettings');
       if (options.tlsSettings?.tlsSettings?.case === 'tlsPemSettings') {
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
         expect(options.tlsSettings.tlsSettings.value.key).toBe('${secrets.SR_MTLS_CLIENT_KEY}');
         expect(options.tlsSettings.tlsSettings.value.cert).toBe('CERT_PEM');
       }
@@ -231,8 +235,8 @@ describe('buildShadowSchemaRegistryApiOptions', () => {
         })
       );
 
-      expect(options.sourceFilter?.contexts).toEqual(['.prod']);
-      expect(options.sourceFilter?.subjects).toEqual(['orders-value']);
+      expect(options.sourceFilter?.contexts).toStrictEqual(['.prod']);
+      expect(options.sourceFilter?.subjects).toStrictEqual(['orders-value']);
       expect(options.destination?.mapping?.case).toBe('exact');
       if (options.destination?.mapping?.case === 'exact') {
         expect(options.destination.mapping.value.mappings).toMatchObject([{ source: '.prod', destination: '.dr' }]);

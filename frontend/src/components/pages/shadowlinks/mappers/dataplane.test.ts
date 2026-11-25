@@ -38,7 +38,7 @@ const mapApiOptions = (
   const mode =
     fromDataplaneShadowLink(shadowLink).configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
   if (mode?.case !== 'shadowSchemaRegistryApi') {
-    throw new Error(`expected shadowSchemaRegistryApi, got ${mode?.case}`);
+    throw new Error(`expected shadowSchemaRegistryApi, got ${mode?.case ?? 'unset'}`);
   }
   return mode.value;
 };
@@ -106,7 +106,7 @@ describe('fromDataplaneShadowLink schema registry sync options', () => {
     });
 
     expect(api.sourceUrl).toBe('https://sr.example.com');
-    expect(api.basicAuth).toEqual({ username: 'sr-user', passwordSet: true, passwordSetAt });
+    expect(api.basicAuth).toStrictEqual({ username: 'sr-user', passwordSet: true, passwordSetAt });
     // The password must never reach the unified model
     expect(api.basicAuth && 'password' in api.basicAuth).toBe(false);
     expect(api).toMatchObject({
@@ -120,8 +120,11 @@ describe('fromDataplaneShadowLink schema registry sync options', () => {
       unsupportedSchemaFeaturePolicy: UnsupportedSchemaFeaturePolicy.REMOVE,
       paused: true,
     });
-    expect(api.sourceFilter).toEqual({ contexts: ['.prod'], subjects: ['orders-value'] });
-    expect(api.destinationMapping).toEqual({ case: 'exact', mappings: [{ source: '.prod', destination: '.dr' }] });
+    expect(api.sourceFilter).toStrictEqual({ contexts: ['.prod'], subjects: ['orders-value'] });
+    expect(api.destinationMapping).toStrictEqual({
+      case: 'exact',
+      mappings: [{ source: '.prod', destination: '.dr' }],
+    });
   });
 
   test('should normalize unset API values to undefined', () => {
@@ -168,7 +171,7 @@ describe('fromDataplaneShadowLink schema registry sync options', () => {
       },
     });
 
-    expect(api.destinationMapping).toEqual({ case: 'identity' });
+    expect(api.destinationMapping).toStrictEqual({ case: 'identity' });
   });
 });
 
@@ -189,7 +192,7 @@ describe('fromDataplaneShadowLink role sync options', () => {
 
     const result = fromDataplaneShadowLink(shadowLink);
 
-    expect(result.configurations?.roleSyncOptions).toEqual({
+    expect(result.configurations?.roleSyncOptions).toStrictEqual({
       roleNameFilters: [
         { name: 'my-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
         { name: 'prefix-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
@@ -225,7 +228,7 @@ describe('buildDefaultFormValues role hydration', () => {
     const formValues = buildDefaultFormValues(shadowLink);
 
     expect(formValues.rolesMode).toBe('all');
-    expect(formValues.roles).toEqual([]);
+    expect(formValues.roles).toStrictEqual([]);
   });
 
   test('hydrates specific filters as specify mode', () => {
@@ -245,7 +248,7 @@ describe('buildDefaultFormValues role hydration', () => {
     const formValues = buildDefaultFormValues(shadowLink);
 
     expect(formValues.rolesMode).toBe('specify');
-    expect(formValues.roles).toEqual([
+    expect(formValues.roles).toStrictEqual([
       { name: 'my-role', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
       { name: 'prefix-', patternType: PatternType.PREFIX, filterType: FilterType.EXCLUDE },
     ]);
@@ -262,7 +265,7 @@ describe('buildDefaultFormValues role hydration', () => {
 
     // Keeps role sync disabled: an untouched edit produces no role diff
     expect(formValues.rolesMode).toBe('specify');
-    expect(formValues.roles).toEqual([]);
+    expect(formValues.roles).toStrictEqual([]);
   });
 });
 
@@ -322,7 +325,7 @@ describe('buildDefaultFormValues schema registry hydration', () => {
 
     const noneValues = buildDefaultFormValues(buildLinkWithConnection(undefined));
     expect(noneValues.enableSchemaRegistrySync).toBe(false);
-    expect(noneValues.schemaRegistry).toEqual(initialValues.schemaRegistry);
+    expect(noneValues.schemaRegistry).toStrictEqual(initialValues.schemaRegistry);
     expect(FormSchema.safeParse(noneValues).success).toBe(true);
   });
 });

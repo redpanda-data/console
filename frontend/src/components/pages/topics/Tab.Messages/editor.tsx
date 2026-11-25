@@ -12,8 +12,10 @@
 import type { BeforeMount, OnChange, OnMount } from '@monaco-editor/react';
 import type { editor, languages, Uri } from 'monaco-editor';
 import { type FC, useRef, useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
-import KowlEditor, { type IStandaloneCodeEditor } from '../../../misc/kowl-editor';
+import { type IStandaloneCodeEditor, KowlEditor } from '../../../misc/kowl-editor';
 
 type FilterEditorProps = {
   value: string;
@@ -35,7 +37,7 @@ async function tryTranspile(
     if (result?.outputFiles?.[0]?.text) {
       return result.outputFiles[0].text;
     }
-  } catch (_error) {
+  } catch {
     // Intentionally ignore transpilation errors and fall back to original code
   }
   return fallback;
@@ -48,7 +50,7 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
 
   const editorRef = useRef<undefined | IStandaloneCodeEditor>(undefined);
 
-  const handleOnMount: OnMount = async (editorInstance, monacoInstance) => {
+  const handleOnMount: OnMount = asyncEvent(async (editorInstance, monacoInstance) => {
     editorRef.current = editorInstance;
     if (!isEditorReady) {
       const uri = editorRef.current?.getModel()?.uri;
@@ -58,7 +60,7 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
       setTsWorkerClient(client);
     }
     setIsEditorReady(true);
-  };
+  }, reportActionError);
 
   const handleBeforeMount: BeforeMount = (monaco) => {
     const libSource = `
@@ -95,21 +97,26 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
     }
   };
 
-  const getEditorValue = async () => editorRef.current?.getValue();
+  const getEditorValue = () => editorRef.current?.getValue();
 
-  const handleValueChange: OnChange = async () => {
-    const editorValue = (await getEditorValue()) ?? '';
+  const handleValueChange: OnChange = asyncEvent(async () => {
+    const editorValue = getEditorValue() ?? '';
     const formattedEditorUri = editorUri?.toString();
 
     let transpiledCode = editorValue; // Fallback to original code if transpilation fails
 
-    if (formattedEditorUri && tsWorkerClient) {
+    if (
+      formattedEditorUri !== null &&
+      formattedEditorUri !== undefined &&
+      formattedEditorUri !== '' &&
+      tsWorkerClient
+    ) {
       transpiledCode = await tryTranspile(tsWorkerClient, formattedEditorUri, editorValue);
     }
 
     // Always call onValueChange, even if transpilation failed
     onValueChange(editorValue, transpiledCode);
-  };
+  }, reportActionError);
 
   return (
     <KowlEditor
@@ -125,4 +132,4 @@ const FilterEditor: FC<FilterEditorProps> = ({ value, onValueChange }) => {
   );
 };
 
-export default FilterEditor;
+export { FilterEditor };

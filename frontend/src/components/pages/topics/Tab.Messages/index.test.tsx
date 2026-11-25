@@ -13,11 +13,15 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter } from 'nuqs/adapters/testing';
 import { CompressionType, type Payload, type Topic, type TopicMessage } from 'state/rest-interfaces';
-import { renderWithFileRoutes, screen, waitFor, within } from 'test-utils';
 
+import { renderWithFileRoutes, screen, waitFor, within } from '../../../../test-utils';
 import { TopicMessageView } from '.';
 
-const { startSearchMock } = rs.hoisted(() => ({ startSearchMock: rs.fn() }));
+const { startSearchMock, fence } = rs.hoisted(() => ({ startSearchMock: rs.fn(), fence: { read: false } }));
+
+rs.mock('components/cluster-fence/use-cluster-fence-guard', () => ({
+  useClusterFenceGuard: () => ({ reasonFor: () => undefined, isFencedRead: () => fence.read }),
+}));
 
 rs.mock('../../../../state/backend-api', () => {
   const actual = rs.requireActual<typeof import('../../../../state/backend-api')>('../../../../state/backend-api');
@@ -78,6 +82,7 @@ function renderView() {
 describe('topicMessageView', () => {
   beforeEach(() => {
     startSearchMock.mockReset();
+    fence.read = false;
   });
 
   test('searches the topic on mount and lists the returned messages', async () => {
@@ -120,6 +125,21 @@ describe('topicMessageView', () => {
     expect(await screen.findByText('Backend Error')).toBeVisible();
     expect(screen.getByText('broker unavailable')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Retry Search' })).toBeVisible();
+  });
+
+  test('explains a fenced legacy search and retries without losing the raw failure', async () => {
+    const user = userEvent.setup();
+    fence.read = true;
+    startSearchMock
+      .mockRejectedValueOnce(new Error('[POLICY_VIOLATION] fetch rejected'))
+      .mockResolvedValue([buildMessage(1, 'order-1', 'created')]);
+    renderView();
+
+    expect(await screen.findByText('Reading is blocked while this cluster is fenced')).toBeVisible();
+    expect(screen.getByTestId('messages-error-detail')).toHaveTextContent('[POLICY_VIOLATION] fetch rejected');
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('order-1')).toBeVisible();
+    expect(screen.queryByTestId('messages-error')).not.toBeInTheDocument();
   });
 
   test('offers the add filter and settings menus', async () => {

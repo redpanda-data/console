@@ -16,7 +16,7 @@ import { SchemaContextSelect, schemaContextOptions } from './schema-context-sele
 
 describe('schemaContextOptions', () => {
   test('lists automatic, default and the named contexts sorted', () => {
-    expect(schemaContextOptions(['.staging', '.', '.outgo'], '').map((o) => o.label)).toEqual([
+    expect(schemaContextOptions(['.staging', '.', '.outgo'], '').map((o) => o.label)).toStrictEqual([
       'Automatic (topic config)',
       'Default',
       '.outgo',
@@ -26,7 +26,7 @@ describe('schemaContextOptions', () => {
 
   test('keeps a value that is not in the list selectable', () => {
     const options = schemaContextOptions(['.'], '.gone');
-    expect(options.at(-1)).toEqual({ value: '.gone', label: '.gone' });
+    expect(options.at(-1)).toStrictEqual({ value: '.gone', label: '.gone' });
   });
 });
 

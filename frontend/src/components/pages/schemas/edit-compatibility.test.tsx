@@ -12,13 +12,22 @@
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderWithFileRoutes, screen } from 'test-utils';
+import { toast } from 'sonner';
+import { api } from 'state/backend-api';
+import { useSupportedFeaturesStore } from 'state/supported-features';
+
+import {
+  createSchemaRegistryFixture,
+  createSchemaRegistryUser,
+  createSchemaSubject,
+} from './__fixtures__/schema-registry';
+import { EditSchemaCompatibilityPage } from './edit-compatibility';
+import { renderWithFileRoutes, screen, waitFor } from '../../../test-utils';
+
+rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
 // Real navigate() resolves once the route commits.
 const mockNavigate = rs.fn(() => Promise.resolve());
-const mockMutateGlobal = rs.fn();
-const mockMutateSubject = rs.fn();
-const mockMutateContext = rs.fn();
 
 rs.mock('@tanstack/react-router', () => {
   const actual = rs.requireActual<typeof import('@tanstack/react-router')>('@tanstack/react-router');
@@ -28,70 +37,14 @@ rs.mock('@tanstack/react-router', () => {
   };
 });
 
-rs.mock('react-query/api/schema-registry', () => ({
-  ...rs.requireActual<typeof import('react-query/api/schema-registry')>('react-query/api/schema-registry'),
-  useSchemaModeQuery: rs.fn(() => ({
-    data: 'READWRITE',
-    isLoading: false,
-  })),
-  useSchemaCompatibilityQuery: rs.fn(() => ({
-    data: 'BACKWARD',
-    isLoading: false,
-  })),
-  useSchemaDetailsQuery: rs.fn((_subject: string | undefined, _opts?: { enabled?: boolean }) => ({
-    data: undefined,
-    isLoading: false,
-  })),
-  useUpdateGlobalCompatibilityMutation: rs.fn(() => ({
-    mutate: mockMutateGlobal,
-    isPending: false,
-  })),
-  useUpdateSubjectCompatibilityMutation: rs.fn(() => ({
-    mutate: mockMutateSubject,
-    isPending: false,
-  })),
-  useSchemaRegistryContextsQuery: rs.fn(() => ({
-    data: [],
-    isLoading: false,
-  })),
-  useUpdateContextCompatibilityMutation: rs.fn(() => ({
-    mutate: mockMutateContext,
-    isPending: false,
-  })),
-}));
-
-rs.mock('state/backend-api', () => {
-  const actual = rs.requireActual<typeof import('state/backend-api')>('state/backend-api');
-  return {
-    ...actual,
-    api: {
-      ...actual.api,
-      userData: { canManageSchemaRegistry: true },
-    },
-  };
-});
-
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
-
-import {
-  useSchemaCompatibilityQuery,
-  useSchemaDetailsQuery,
-  useSchemaModeQuery,
-  useSchemaRegistryContextsQuery,
-} from 'react-query/api/schema-registry';
-import { api } from 'state/backend-api';
-import { useSupportedFeaturesStore } from 'state/supported-features';
-
-import EditSchemaCompatibilityPage from './edit-compatibility';
+let fixture = createSchemaRegistryFixture();
 
 describe('the EditSchemaCompatibilityPage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
+    fixture = createSchemaRegistryFixture();
+    api.userData = createSchemaRegistryUser();
+    rs.spyOn(globalThis, 'fetch').mockImplementation(fixture.fetch);
   });
 
   afterEach(() => {
@@ -103,24 +56,22 @@ describe('the EditSchemaCompatibilityPage', () => {
       const user = userEvent.setup();
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
 
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
+      await user.click(await screen.findByTestId('edit-compatibility-save-btn'));
 
-      expect(mockMutateGlobal).toHaveBeenCalledWith(
-        'BACKWARD',
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
+      await waitFor(() => {
+        expect(fixture.write).toHaveBeenCalledWith('config', 'PUT', JSON.stringify({ compatibility: 'BACKWARD' }));
+      });
     });
 
     test('calls navigate on cancel', async () => {
       const user = userEvent.setup();
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
 
-      await user.click(screen.getByTestId('edit-compatibility-cancel-btn'));
+      await user.click(await screen.findByTestId('edit-compatibility-cancel-btn'));
 
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/schema-registry' });
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({ to: '/schema-registry' });
+      });
     });
 
     test('does not show schema preview panel', async () => {
@@ -143,41 +94,23 @@ describe('the EditSchemaCompatibilityPage', () => {
     const subjectName = 'my-test-subject';
 
     beforeEach(() => {
-      rs.mocked(useSchemaDetailsQuery).mockReturnValue({
-        data: {
-          name: subjectName,
-          mode: 'READWRITE',
-          compatibility: 'BACKWARD',
-          latestActiveVersion: 1,
-          schemas: {
-            first: () => ({
-              version: 1,
-              id: 1,
-              type: 'AVRO',
-              schema: '{"type":"record","name":"Test","fields":[]}',
-              isSoftDeleted: false,
-            }),
-            count: () => 1,
-          },
-        } as never,
-        isLoading: false,
-      } as never);
+      fixture.state.details = createSchemaSubject(subjectName);
     });
 
     test('calls subject mutation on save', async () => {
       const user = userEvent.setup();
       renderWithFileRoutes(<EditSchemaCompatibilityPage subjectName={subjectName} />);
 
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
+      await user.click(await screen.findByTestId('edit-compatibility-save-btn'));
 
-      expect(mockMutateSubject).toHaveBeenCalledWith(
-        { subjectName, mode: 'BACKWARD' },
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
-      expect(mockMutateGlobal).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(fixture.write).toHaveBeenCalledWith(
+          'config/my-test-subject',
+          'PUT',
+          JSON.stringify({ compatibility: 'BACKWARD' })
+        );
+      });
+      expect(fixture.write).toHaveBeenCalledTimes(1);
     });
 
     test('shows subject name in schema preview panel', async () => {
@@ -190,10 +123,12 @@ describe('the EditSchemaCompatibilityPage', () => {
       const user = userEvent.setup();
       renderWithFileRoutes(<EditSchemaCompatibilityPage subjectName={subjectName} />);
 
-      await user.click(screen.getByTestId('edit-compatibility-cancel-btn'));
+      await user.click(await screen.findByTestId('edit-compatibility-cancel-btn'));
 
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}`,
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({
+          to: `/schema-registry/subjects/${encodeURIComponent(subjectName)}`,
+        });
       });
     });
   });
@@ -223,10 +158,7 @@ describe('the EditSchemaCompatibilityPage', () => {
     });
 
     test('shows context name in header when editing context compatibility', async () => {
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }],
-        isLoading: false,
-      } as never);
+      fixture.state.contexts = [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }];
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
 
@@ -236,112 +168,91 @@ describe('the EditSchemaCompatibilityPage', () => {
     test('calls context mutation on save', async () => {
       const user = userEvent.setup();
 
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }],
-        isLoading: false,
-      } as never);
+      fixture.state.contexts = [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }];
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
 
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
+      await user.click(await screen.findByTestId('edit-compatibility-save-btn'));
 
-      expect(mockMutateContext).toHaveBeenCalledWith(
-        { contextName: '.test', mode: 'FULL' },
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
-      expect(mockMutateGlobal).not.toHaveBeenCalled();
-      expect(mockMutateSubject).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(fixture.write).toHaveBeenCalledWith(
+          'config/%3A.test%3A',
+          'PUT',
+          JSON.stringify({ compatibility: 'FULL' })
+        );
+      });
+      expect(fixture.write).toHaveBeenCalledTimes(1);
     });
 
     test('defaults to DEFAULT when context compatibility is undefined', async () => {
       const user = userEvent.setup();
 
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.new-ctx', mode: 'READWRITE', compatibility: undefined }],
-        isLoading: false,
-      } as never);
+      fixture.state.contexts = [{ name: '.new-ctx', mode: 'READWRITE', compatibility: undefined }];
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".new-ctx" />);
 
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
+      await user.click(await screen.findByTestId('edit-compatibility-save-btn'));
 
-      expect(mockMutateContext).toHaveBeenCalledWith(
-        { contextName: '.new-ctx', mode: 'DEFAULT' },
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-          onError: expect.any(Function),
-        })
-      );
+      await waitFor(() => {
+        expect(fixture.write).toHaveBeenCalledWith('config/%3A.new-ctx%3A', 'DELETE', undefined);
+      });
     });
 
     test('navigates to schema-registry with context search param on cancel', async () => {
       const user = userEvent.setup();
 
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }],
-        isLoading: false,
-      } as never);
+      fixture.state.contexts = [{ name: '.test', mode: 'READWRITE', compatibility: 'BACKWARD' }];
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
 
-      await user.click(screen.getByTestId('edit-compatibility-cancel-btn'));
+      await user.click(await screen.findByTestId('edit-compatibility-cancel-btn'));
 
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/schema-registry',
-        search: { context: '.test' },
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({
+          to: '/schema-registry',
+          search: { context: '.test' },
+        });
       });
     });
 
     test('calls onSuccess callback which shows toast and navigates', async () => {
       const user = userEvent.setup();
 
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }],
-        isLoading: false,
-      } as never);
+      fixture.state.contexts = [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }];
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
 
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
+      await user.click(await screen.findByTestId('edit-compatibility-save-btn'));
 
-      const mutateCall = mockMutateContext.mock.calls[0];
-      const callbacks = mutateCall[1];
-      callbacks.onSuccess();
-
-      expect(mockNavigate).toHaveBeenCalledWith({
-        to: '/schema-registry',
-        search: { context: '.test' },
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({
+          to: '/schema-registry',
+          search: { context: '.test' },
+        });
       });
     });
 
     test('calls onError callback which shows error toast', async () => {
+      fixture.write.mockResolvedValue(new Response('Server error', { status: 500 }));
       const user = userEvent.setup();
 
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }],
-        isLoading: false,
-      } as never);
+      fixture.state.contexts = [{ name: '.test', mode: 'READWRITE', compatibility: 'FULL' }];
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
 
-      await user.click(screen.getByTestId('edit-compatibility-save-btn'));
+      await user.click(await screen.findByTestId('edit-compatibility-save-btn'));
 
-      const mutateCall = mockMutateContext.mock.calls[0];
-      const callbacks = mutateCall[1];
-      // Should not throw
-      callbacks.onError(new Error('Server error'));
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to update compatibility mode', {
+          description: 'Error: Server error',
+        });
+      });
     });
   });
 
   describe('loading and edge cases', () => {
     test('shows skeleton while loading mode', () => {
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-      } as never);
+      fixture.pending.add('mode');
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
 
@@ -350,10 +261,7 @@ describe('the EditSchemaCompatibilityPage', () => {
     });
 
     test('shows skeleton while loading compatibility', () => {
-      rs.mocked(useSchemaCompatibilityQuery).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-      } as never);
+      fixture.pending.add('compatibility');
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
 
@@ -361,14 +269,8 @@ describe('the EditSchemaCompatibilityPage', () => {
     });
 
     test('shows skeleton while loading subject details', () => {
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: 'READWRITE',
-        isLoading: false,
-      } as never);
-      rs.mocked(useSchemaDetailsQuery).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-      } as never);
+      fixture.state.mode = 'READWRITE';
+      fixture.pending.add('details');
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage subjectName="test-subject" />);
 
@@ -378,10 +280,7 @@ describe('the EditSchemaCompatibilityPage', () => {
     test('shows skeleton while loading contexts', () => {
       useSupportedFeaturesStore.setState({ schemaRegistryContexts: true });
 
-      rs.mocked(useSchemaRegistryContextsQuery).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-      } as never);
+      fixture.pending.add('contexts');
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage contextName=".test" />);
 
@@ -395,32 +294,24 @@ describe('the EditSchemaCompatibilityPage', () => {
 
     test('disables save button when user lacks permission', async () => {
       // Ensure mocks are in correct state
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: 'READWRITE',
-        isLoading: false,
-      } as never);
-      rs.mocked(useSchemaCompatibilityQuery).mockReturnValue({
-        data: 'BACKWARD',
-        isLoading: false,
-      } as never);
+      fixture.state.mode = 'READWRITE';
+      fixture.state.compatibility = 'BACKWARD';
 
-      (api as Record<string, unknown>).userData = { canManageSchemaRegistry: false };
+      api.userData = createSchemaRegistryUser(false);
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
 
       const saveBtn = await screen.findByTestId('edit-compatibility-save-btn');
       expect(saveBtn).toHaveAttribute('disabled');
 
-      (api as Record<string, unknown>).userData = { canManageSchemaRegistry: true };
+      api.userData = createSchemaRegistryUser();
     });
 
-    test('shows not configured page when schema registry is not configured', () => {
-      rs.mocked(useSchemaModeQuery).mockReturnValue({
-        data: null,
-        isLoading: false,
-      } as never);
+    test('shows not configured page when schema registry is not configured', async () => {
+      fixture.state.mode = null;
 
       renderWithFileRoutes(<EditSchemaCompatibilityPage />);
+      expect(await screen.findByTestId('schema-not-configured')).toBeInTheDocument();
 
       expect(screen.queryByTestId('edit-compatibility-description')).not.toBeInTheDocument();
     });

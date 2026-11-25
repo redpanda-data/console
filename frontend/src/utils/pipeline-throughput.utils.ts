@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { isPresent } from './type-guards';
 export type TimeSeriesResult = { values: { timestamp?: { seconds: bigint }; value?: number }[]; name?: string };
 // null values mark no-data gaps so recharts breaks the line (see insertGapMarkers).
 export type MergedPoint = { timestamp: number; ingress: number | null; egress: number | null };
@@ -56,7 +57,7 @@ export function insertGapMarkers(points: MergedPoint[]): MergedPoint[] {
   for (let i = 0; i < points.length; i++) {
     result.push(points[i]);
     const next = points[i + 1];
-    if (next && next.timestamp - points[i].timestamp > step * 1.5) {
+    if (isPresent(next) && next.timestamp - points[i].timestamp > step * 1.5) {
       result.push({ timestamp: points[i].timestamp + step, ingress: null, egress: null });
     }
   }

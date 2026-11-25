@@ -56,9 +56,9 @@ const LazyEditor = lazy(() => import('./monaco-editor'));
 const LazyDiffEditor = lazy(() => import('./monaco-editor').then((m) => ({ default: m.DiffEditor })));
 
 // The theme comes after the caller's props: it is built from the tokens, so a caller cannot pin one.
-export default function KowlEditor(props: KowlEditorProps) {
+export function KowlEditor(props: KowlEditorProps) {
   const { options: givenOptions, beforeMount, ...rest } = props;
-  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
+  const options = { ...defaultOptions, ...givenOptions };
   const monacoTheme = useMonacoTheme();
 
   return (
@@ -81,7 +81,7 @@ export default function KowlEditor(props: KowlEditorProps) {
 
 export function KowlDiffEditor(props: KowlDiffEditorProps) {
   const { options: givenOptions, beforeMount, ...rest } = props;
-  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
+  const options = { ...defaultOptions, ...givenOptions };
   const monacoTheme = useMonacoTheme();
 
   return (

@@ -9,13 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
+import { LOGS_TOPIC_NAME, LogsTab } from './connector-logs-tab';
+import 'components/legacy-layout.css';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { ConfigPage } from './dynamic-ui/components';
 import { appGlobal } from '../../../state/app-global';
-import { api, createMessageSearch, type MessageSearch, type MessageSearchRequest } from '../../../state/backend-api';
+import { api } from '../../../state/backend-api';
 import { ConnectClusterStore, type Property } from '../../../state/connect/state';
 import {
   type ClusterConnectorInfo,
@@ -23,14 +25,10 @@ import {
   type ConnectorError,
   DataType,
   PropertyImportance,
-  type Topic,
-  type TopicMessage,
-} from '../../../state/rest-interfaces';
-import { TimestampDisplay } from '../../../utils/tsx-utils';
-import { SearchInput } from '../../misc/search-input';
+} from '../../../types/kafka-connect';
 import { PageComponent, type PageInitHelper } from '../page';
 import './helper';
-import { AlertIcon, ChevronDownIcon, ChevronRightIcon, WarningIcon } from 'components/icons';
+import { AlertIcon, WarningIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
@@ -50,33 +48,29 @@ import {
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
+import { reportActionError } from 'utils/toast.utils';
 
 import { getConnectorFriendlyName } from './connector-box-card';
 import { ConfirmModal, NotConfigured, statusColors, TaskState } from './helper';
-import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';
-import { PartitionOffsetOrigin } from '../../../state/ui';
-import { sanitizeString } from '../../../utils/filter-helper';
-import { delay, encodeBase64, titleCase } from '../../../utils/utils';
-import PageContent from '../../misc/page-content';
-import Section from '../../misc/section';
-import Tabs from '../../misc/tabs/tabs';
-import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
-import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
-
-// Stable identity keeps an expanded row on its message when the list is filtered or refreshed.
-const LOGS_TABLE_OPTIONS = {
-  enableHiding: false,
-  initialState: { pagination: { pageIndex: 0, pageSize: 10 } },
-  getRowId: (message: TopicMessage) => `${message.partitionID}-${message.offset}`,
-};
+import { arrayOrderBy } from '../../../utils/array-utils';
+import { nonzeroNumber } from '../../../utils/number-utils';
+import { delay, titleCase } from '../../../utils/utils';
+import { PageContent } from '../../misc/page-content';
+import { Section } from '../../misc/section';
+import { Tabs } from '../../misc/tabs/tabs';
 
 // Ten a page (the Registry default) is the legacy page size for this table.
 const TASKS_TABLE_OPTIONS = { enableHiding: false };
 
-const LOGS_TOPIC_NAME = '__redpanda.connectors_logs';
-
-export type UpdatingConnectorData = { clusterName: string; connectorName: string };
-export type RestartingTaskData = { clusterName: string; connectorName: string; taskId: number };
+export type UpdatingConnectorData = {
+  clusterName: string;
+  connectorName: string;
+};
+export type RestartingTaskData = {
+  clusterName: string;
+  connectorName: string;
+  taskId: number;
+};
 type LocalConnectorState = {
   pausingConnector: ClusterConnectorInfo | null;
   restartingConnector: ClusterConnectorInfo | null;
@@ -182,17 +176,17 @@ const ConnectorActions = ({ connectClusterStore, connector, connectorName, setS 
   return (
     <div className="flex flex-row items-center gap-3">
       {/* [Pause/Resume] */}
-      {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) ? (
+      {connectClusterStore.validateConnectorState(connectorName, ['RUNNING', 'PAUSED']) === true ? (
         <NoEditPermissionTooltip canEdit={canEdit}>
           <Button
             className="min-w-32"
-            disabled={!canEdit}
+            disabled={!(canEdit === true)}
             onClick={() => {
               setS({ pausingConnector: connector });
             }}
             variant="outline"
           >
-            {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'}
+            {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) === true ? 'Pause' : 'Resume'}
           </Button>
         </NoEditPermissionTooltip>
       ) : null}
@@ -201,7 +195,7 @@ const ConnectorActions = ({ connectClusterStore, connector, connectorName, setS 
       <NoEditPermissionTooltip canEdit={canEdit}>
         <Button
           className="min-w-32"
-          disabled={!canEdit}
+          disabled={!(canEdit === true)}
           onClick={() => {
             setS({ restartingConnector: connector });
           }}
@@ -215,7 +209,7 @@ const ConnectorActions = ({ connectClusterStore, connector, connectorName, setS 
       <NoEditPermissionTooltip canEdit={canEdit}>
         <Button
           className="min-w-32"
-          disabled={!canEdit}
+          disabled={!(canEdit === true)}
           onClick={() => {
             setS({ deletingConnector: connectorName });
           }}
@@ -234,8 +228,10 @@ const ConnectorTabs = ({
   connector,
   connectorName,
   setS,
-}: ConnectorSectionProps & { clusterName: string }) => {
-  const logsTopic = api.topics?.first((x) => x.topicName === LOGS_TOPIC_NAME);
+}: ConnectorSectionProps & {
+  clusterName: string;
+}) => {
+  const logsTopic = api.topics?.find((x) => x.topicName === LOGS_TOPIC_NAME);
   const connectorStore = connectClusterStore.getConnectorStore(connectorName);
   const canEdit = connectClusterStore.canEdit;
 
@@ -272,7 +268,7 @@ const ConnectorTabs = ({
                 <NoEditPermissionTooltip canEdit={canEdit}>
                   <Button
                     className="w-[200px]"
-                    disabled={!canEdit}
+                    disabled={!(canEdit === true)}
                     onClick={() => {
                       setS({ updatingConnector: { clusterName, connectorName } });
                     }}
@@ -294,7 +290,7 @@ const ConnectorTabs = ({
           ) : (
             <Tooltip delayDuration={150}>
               {/* The disabled trigger sets `aria-disabled:pointer-events-none`, which cascades —
-                  without re-enabling them here the tooltip could never open. */}
+                              without re-enabling them here the tooltip could never open. */}
               <TooltipTrigger render={<span className="pointer-events-auto">Logs</span>} />
               <TooltipContent side="top">{`Logs topic '${LOGS_TOPIC_NAME}' does not exist.`}</TooltipContent>
             </Tooltip>
@@ -330,12 +326,12 @@ const ConnectorConfirmModals = ({
       }}
       content={(c) => (
         <>
-          {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Pause' : 'Resume'} connector{' '}
-          <strong>{c.name}</strong>?
+          {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) === true ? 'Pause' : 'Resume'}{' '}
+          connector <strong>{c.name}</strong>?
         </>
       )}
       onOk={async (c) => {
-        if (connectClusterStore.validateConnectorState(connectorName, ['RUNNING'])) {
+        if (connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) === true) {
           await api.pauseConnector(clusterName, c.name);
         } else {
           await api.resumeConnector(clusterName, c.name);
@@ -345,8 +341,8 @@ const ConnectorConfirmModals = ({
       }}
       successMessage={(c) => (
         <>
-          {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) ? 'Resumed' : 'Paused'} connector{' '}
-          <strong>{c.name}</strong>
+          {connectClusterStore.validateConnectorState(connectorName, ['RUNNING']) === true ? 'Resumed' : 'Paused'}{' '}
+          connector <strong>{c.name}</strong>
         </>
       )}
       target={() => $state.pausingConnector}
@@ -461,19 +457,15 @@ const ConfigOverviewTab = (p: {
   return (
     <div
       // The template areas are inline: Tailwind has no arbitrary grid-template-areas utility.
-      className="grid items-start gap-6"
-      style={{
-        gridTemplateAreas: '"errors errors" "health details" "tasks details"',
-        gridTemplateRows: 'auto',
-      }}
+      className="console-connector-layout grid items-start gap-6"
     >
-      <div className="flex flex-col gap-2" style={{ gridArea: 'errors' }}>
+      <div className="console-connector-errors flex flex-col gap-2">
         {connector.errors.map((e) => (
           <ConnectorErrorModal error={e} key={e.title} />
         ))}
       </div>
 
-      <Section style={{ gridArea: 'health' }}>
+      <Section className="console-connector-health">
         <div className="m-1 flex flex-row gap-4">
           <div className={cn('w-[5px] rounded-full', statusColors[connector.status])} />
 
@@ -484,11 +476,11 @@ const ConfigOverviewTab = (p: {
         </div>
       </Section>
 
-      <Section className="min-w-[500px]" padding="compact" style={{ gridArea: 'tasks' }}>
+      <Section className="console-connector-tasks min-w-[500px]" padding="compact">
         <div className="mt-2 mb-6 flex items-center gap-2">
           <h3 className="text-body-lg font-semibold text-strong uppercase">Tasks</h3>
           <div className="font-normal opacity-50">
-            ({connectClusterStore.getConnectorTasks(connectorName)?.length || 0})
+            ({nonzeroNumber(connectClusterStore.getConnectorTasks(connectorName)?.length) ?? 0})
           </div>
         </div>
         <DataTable<ClusterConnectorTaskInfo>
@@ -501,7 +493,7 @@ const ConfigOverviewTab = (p: {
         />
       </Section>
 
-      <Section padding="compact" style={{ gridArea: 'details' }}>
+      <Section className="console-connector-details" padding="compact">
         <h3 className="mt-2 pb-6 text-body-lg font-semibold text-strong uppercase">Connector Details</h3>
 
         <ConnectorDetails clusterName={p.clusterName} connectClusterStore={connectClusterStore} connector={connector} />
@@ -539,9 +531,7 @@ const ConnectorErrorModal = (p: { error: ConnectorError }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const isError = p.error.type === 'ERROR';
-
-  const hasConnectorLogs = api.topics?.any((x) => x.topicName === LOGS_TOPIC_NAME);
-
+  const hasConnectorLogs = api.topics?.some((x) => x.topicName === LOGS_TOPIC_NAME);
   return (
     <>
       <Alert
@@ -585,8 +575,10 @@ const ConnectorErrorModal = (p: { error: ConnectorError }) => {
     </>
   );
 };
-
-class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connector: string }> {
+class KafkaConnectorDetails extends PageComponent<{
+  clusterName: string;
+  connector: string;
+}> {
   initPage(p: PageInitHelper): void {
     const clusterName = decodeURIComponent(this.props.clusterName);
     const connector = decodeURIComponent(this.props.connector);
@@ -614,7 +606,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
 
     // refresh topics so we know whether or not we can show the "go to error logs topic" button in the connector details error popup
     // and show the logs tab
-    api.refreshTopics(force);
+    api.refreshTopics(force).catch(reportActionError);
   }
 
   render() {
@@ -624,10 +616,6 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
     if (api.connectConnectors?.isConfigured === false) {
       return <NotConfigured />;
     }
-
-    // Touch observables so PageComponent's Reaction tracks them for re-renders.
-    void api.topics;
-
     return (
       <PageContent>
         <KafkaConnectorMain clusterName={clusterName} connectorName={connectorName} refreshData={this.refreshData} />
@@ -636,7 +624,7 @@ class KafkaConnectorDetails extends PageComponent<{ clusterName: string; connect
   }
 }
 
-export default KafkaConnectorDetails;
+export { KafkaConnectorDetails };
 
 // Visible, non-secret, high-importance properties with a value; the name is already the title.
 function isConnectorDetailsProperty(x: Property): boolean {
@@ -657,10 +645,10 @@ const ConnectorDetails = (p: {
   const store = p.connectClusterStore.getConnectorStore(p.connector.name);
 
   const allProps = [...(store?.propsByName.values() ?? [])];
-
-  const items = allProps.filter(isConnectorDetailsProperty).orderBy((x) => {
+  const items = arrayOrderBy(allProps.filter(isConnectorDetailsProperty), (x) => {
     let i = 0;
-    for (const s of store?.connectorStepDefinitions ?? []) {
+    const connectorSteps = store?.connectorStepDefinitions ?? [];
+    for (const s of connectorSteps) {
       for (const g of s.groups) {
         for (const configKey of g.config_keys) {
           if (configKey === x.name) {
@@ -681,8 +669,8 @@ const ConnectorDetails = (p: {
     };
 
     // Try to undo mapping
-    if (e.entry.metadata.recommended_values?.length) {
-      const match = e.entry.metadata.recommended_values.find((x) => x.value === e.value);
+    if ((e.entry.metadata.recommended_values?.length ?? 0) > 0) {
+      const match = e.entry.metadata.recommended_values?.find((x) => x.value === e.value);
       if (match) {
         r.value = String(match.display_name);
       }
@@ -702,7 +690,7 @@ const ConnectorDetails = (p: {
         <React.Fragment key={x.name}>
           <div className="font-semibold whitespace-nowrap">{x.name}</div>
           <ElementTooltip content={x.value}>
-            <div className="overflow-hidden text-ellipsis whitespace-nowrap">{x.value}</div>
+            <div className="truncate">{x.value}</div>
           </ElementTooltip>
         </React.Fragment>
       ))}
@@ -721,7 +709,7 @@ const NoEditPermissionTooltip = ({
   canEdit: boolean | null | undefined;
   children: React.ReactElement;
 }) => {
-  if (canEdit) {
+  if (canEdit === true) {
     return children;
   }
 
@@ -735,262 +723,3 @@ const NoEditPermissionTooltip = ({
     </Tooltip>
   );
 };
-
-type ConnectorLogs = {
-  messages: TopicMessage[];
-  isComplete: boolean;
-  loadLargeMessage: (partitionID: number, offset: number) => Promise<void>;
-  refresh: () => void;
-};
-
-type ConnectorLogState = { messages: TopicMessage[]; isComplete: boolean };
-
-const EMPTY_CONNECTOR_LOGS: ConnectorLogState = { messages: [], isComplete: false };
-
-// Stops the running log search and starts a fresh one for `connectorName`.
-function restartConnectorLogSearch(
-  searchRef: React.RefObject<MessageSearch | null>,
-  connectorName: string,
-  setLogState: React.Dispatch<React.SetStateAction<ConnectorLogState>>
-) {
-  searchRef.current?.stopSearch();
-  const search = createMessageSearch();
-  searchRef.current = search;
-  executeMessageSearch(search, LOGS_TOPIC_NAME, connectorName)
-    .catch((x) => {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('error loading connector logs', x);
-    })
-    .finally(() => {
-      setLogState({ messages: [...search.messages], isComplete: true });
-    });
-}
-
-// Streams the connector's log messages from the logs topic, restarting for another connector or on refresh.
-function useConnectorLogs(connectorName: string): ConnectorLogs {
-  const [logState, setLogState] = useState<ConnectorLogState>(EMPTY_CONNECTOR_LOGS);
-  const searchRef = useRef<MessageSearch | null>(null);
-
-  useEffect(() => {
-    queueMicrotask(() => setLogState(EMPTY_CONNECTOR_LOGS));
-    restartConnectorLogSearch(searchRef, connectorName, setLogState);
-    return () => {
-      // `refresh` may have replaced the search this run started, so stop whichever is current.
-      searchRef.current?.stopSearch();
-    };
-  }, [connectorName]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const search = searchRef.current;
-      if (search) {
-        setLogState((prev) => ({ ...prev, messages: [...search.messages] }));
-      }
-    }, 200);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadLargeMessage = async (partitionID: number, offset: number) => {
-    const search = createMessageSearch();
-    const searchReq: MessageSearchRequest = {
-      filterInterpreterCode: '',
-      maxResults: 1,
-      partitionId: partitionID,
-      startOffset: offset,
-      startTimestamp: 0,
-      topicName: searchRef.current?.searchRequest?.topicName ?? LOGS_TOPIC_NAME,
-      includeRawPayload: true,
-      ignoreSizeLimit: true,
-      keyDeserializer: PayloadEncoding.UNSPECIFIED,
-      valueDeserializer: PayloadEncoding.UNSPECIFIED,
-    };
-    const result = await search.startSearch(searchReq);
-
-    if (result && result.length === 1) {
-      setLogState((prev) => {
-        const updated = [...prev.messages];
-        const idx = updated.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
-        if (idx > -1) {
-          updated[idx] = result[0];
-        }
-        return { ...prev, messages: updated };
-      });
-    } else {
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error('LoadLargeMessage: messages response is empty', { result });
-      throw new Error("LoadLargeMessage: Couldn't load the message content, the response was empty");
-    }
-  };
-
-  return {
-    messages: logState.messages,
-    isComplete: logState.isComplete,
-    loadLargeMessage,
-    refresh: () => {
-      setLogState(EMPTY_CONNECTOR_LOGS);
-      restartConnectorLogSearch(searchRef, connectorName, setLogState);
-    },
-  };
-}
-
-function useLogMessageColumns(topic: Topic | undefined): DataTableColumnDef<TopicMessage>[] {
-  // Memoised: a new columns array per render makes the table re-create every header and cell, which
-  // this tab would do every 200 ms while logs stream (the sort menu could never stay open).
-  return useMemo(
-    () => [
-      // The Registry DataTable renders no expander column for `subComponent`.
-      {
-        id: 'expander',
-        enableSorting: false,
-        cell: ({ row }) =>
-          row.getCanExpand() ? (
-            <Button
-              aria-expanded={row.getIsExpanded()}
-              aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
-              onClick={row.getToggleExpandedHandler()}
-              size="icon-xs"
-              variant="ghost"
-            >
-              {row.getIsExpanded() ? <ChevronDownIcon className="size-4" /> : <ChevronRightIcon className="size-4" />}
-            </Button>
-          ) : null,
-      },
-      {
-        id: 'timestamp',
-        header: ({ column }) => <DataTableColumnHeader column={column} title="Timestamp" />,
-        accessorKey: 'timestamp',
-        cell: ({
-          row: {
-            original: { timestamp },
-          },
-        }) => (
-          <span className="whitespace-nowrap">
-            <TimestampDisplay format="default" unixEpochMillisecond={timestamp} />
-          </span>
-        ),
-      },
-      {
-        id: 'value',
-        header: 'Value',
-        accessorKey: 'value',
-        // A decoded preview; sorting the raw value means nothing.
-        enableSorting: false,
-        // The Registry DataTable ignores column sizes; a viewport-wide max-content hands this column the slack.
-        cell: ({ row: { original } }) => (
-          <div className="w-screen max-w-full">
-            <MessagePreview
-              isCompactTopic={topic ? topic.cleanupPolicy.includes('compact') : false}
-              msg={original}
-              previewFields={() => []}
-            />
-          </div>
-        ),
-      },
-    ],
-    [topic]
-  );
-}
-
-const LogsTab = (p: {
-  clusterName: string;
-  connectClusterStore: ConnectClusterStore;
-  connector: ClusterConnectorInfo;
-}) => {
-  const topic = api.topics?.first((x) => x.topicName === LOGS_TOPIC_NAME);
-  const { messages, isComplete, loadLargeMessage, refresh } = useConnectorLogs(p.connector.name);
-  const [logsQuickSearch, setLogsQuickSearch] = useState('');
-  const messageTableColumns = useLogMessageColumns(topic);
-
-  const filteredMessages = messages.filter((x) => {
-    if (!logsQuickSearch) {
-      return true;
-    }
-    return isFilterMatch(logsQuickSearch, x);
-  });
-
-  return (
-    <>
-      <div className="my-4">The logs below are for the last three hours.</div>
-
-      <Section className="min-w-[800px]">
-        <div className="mb-6 flex">
-          <SearchInput
-            containerClassName="w-[230px]"
-            onChange={setLogsQuickSearch}
-            placeholder="Search..."
-            value={logsQuickSearch}
-          />
-          <div className="ml-auto">
-            <Button onClick={refresh} variant="outline">
-              Refresh logs
-            </Button>
-          </div>
-        </div>
-
-        <DataTable<TopicMessage>
-          columns={messageTableColumns}
-          data={filteredMessages}
-          emptyText="No messages"
-          isLoading={!isComplete}
-          pagination={filteredMessages.length > 0}
-          subComponent={({ row: { original } }) => (
-            <ExpandedMessage
-              loadLargeMessage={() => loadLargeMessage(original.partitionID, original.offset)}
-              msg={original}
-            />
-          )}
-          tableOptions={LOGS_TABLE_OPTIONS}
-        />
-      </Section>
-    </>
-  );
-};
-
-function isFilterMatch(str: string, m: TopicMessage) {
-  const lowerStr = str.toLowerCase();
-  if (m.offset.toString().toLowerCase().includes(lowerStr)) {
-    return true;
-  }
-  if (m.keyJson?.toLowerCase().includes(lowerStr)) {
-    return true;
-  }
-  if (m.valueJson?.toLowerCase().includes(lowerStr)) {
-    return true;
-  }
-  return false;
-}
-
-function executeMessageSearch(search: MessageSearch, topicName: string, connectorKey: string) {
-  const filterCode: string = `return key == "${connectorKey}";`;
-
-  const lastXHours = 5;
-  const startTime = new Date();
-  startTime.setHours(startTime.getHours() - lastXHours);
-
-  const request = {
-    topicName,
-    partitionId: -1,
-
-    startOffset: PartitionOffsetOrigin.Timestamp,
-    startTimestamp: startTime.getTime(),
-    maxResults: 1000,
-    filterInterpreterCode: encodeBase64(sanitizeString(filterCode)),
-    includeRawPayload: false,
-
-    keyDeserializer: PayloadEncoding.UNSPECIFIED,
-    valueDeserializer: PayloadEncoding.UNSPECIFIED,
-  } as MessageSearchRequest;
-
-  try {
-    return search.startSearch(request).catch((err) => {
-      const msg = (err as Error).message ?? String(err);
-      // biome-ignore lint/suspicious/noConsole: intentional console usage
-      console.error(`error in connectorLogsMessageSearch: ${msg}`);
-      return [];
-    });
-  } catch (error: unknown) {
-    // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error(`error in connectorLogsMessageSearch: ${(error as Error).message ?? String(error)}`);
-    return Promise.resolve([]);
-  }
-}

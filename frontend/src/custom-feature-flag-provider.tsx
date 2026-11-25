@@ -1,9 +1,9 @@
 import { FEATURE_FLAGS } from 'components/constants';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 
-type FeatureFlags = {
-  [key: string]: boolean;
-};
+import { isPresent } from './utils/type-guards';
+
+type FeatureFlags = Record<string, boolean>;
 
 type FeatureFlagContextType = {
   flags: FeatureFlags;
@@ -58,7 +58,7 @@ export const CustomFeatureFlagProvider = ({
 export const useBooleanFlagValue = (key: keyof typeof FEATURE_FLAGS, defaultValue = false): boolean => {
   const context = useContext(FeatureFlagContext);
 
-  if (!context) {
+  if (!isPresent(context)) {
     // throw new Error('useBooleanFlagValue must be used within a CustomFeatureFlagProvider');
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('useBooleanFlagValue must be used within a CustomFeatureFlagProvider');
@@ -71,7 +71,7 @@ export const useBooleanFlagValue = (key: keyof typeof FEATURE_FLAGS, defaultValu
 export const useFeatureFlags = (): FeatureFlagContextType => {
   const context = useContext(FeatureFlagContext);
 
-  if (!context) {
+  if (!isPresent(context)) {
     // throw new Error('useFeatureFlags must be used within a CustomFeatureFlagProvider');
     // biome-ignore lint/suspicious/noConsole: intentional console usage
     console.warn('useFeatureFlags must be used within a CustomFeatureFlagProvider');

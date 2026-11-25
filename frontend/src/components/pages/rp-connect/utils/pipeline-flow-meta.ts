@@ -11,6 +11,8 @@
 
 import { pluralizeWithNumber } from 'utils/string';
 
+import { isObject } from '../../../../utils/type-guards';
+
 // A metadata line shown on an expanded pipeline node card.
 export type NodeMetaEntry = { label: string; value: string };
 
@@ -267,7 +269,8 @@ function fallbackFields(record: Record<string, unknown>): NodeMetaEntry[] {
 
 function preferredFields(componentName: string, record: Record<string, unknown>): NodeMetaEntry[] {
   const meta: NodeMetaEntry[] = [];
-  for (const key of PREFERRED_FIELDS[componentName] ?? []) {
+  const preferredKeys = PREFERRED_FIELDS[componentName] ?? [];
+  for (const key of preferredKeys) {
     if (meta.length >= MAX_META) {
       break;
     }
@@ -284,10 +287,10 @@ export function summarizeComponent(componentName: string, config: unknown): Node
   if (typeof config === 'string') {
     return config.trim() ? [{ label: 'expr', value: truncate(config.split('\n')[0]) }] : [];
   }
-  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+  if (!isObject(config) || Array.isArray(config)) {
     return [];
   }
-  const record = config as Record<string, unknown>;
+  const record = config;
   const meta = preferredFields(componentName, record);
   return (meta.length === 0 ? fallbackFields(record) : meta).slice(0, MAX_META);
 }

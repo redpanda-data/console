@@ -30,6 +30,9 @@ import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { asyncEvent } from 'utils/async-event';
+import { isNonEmptyString } from 'utils/string-utils';
+import { reportActionError } from 'utils/toast.utils';
 
 import {
   ShadowLinkEmptyState,
@@ -39,7 +42,7 @@ import {
   ShadowLinkNoPermissionState,
   ShadowLinkUnavailableState,
 } from './shadowlink-empty-state';
-import { isEmbedded } from '../../../../config';
+import { isEmbedded } from '../../../../runtime-config';
 import { getBasePath } from '../../../../utils/env';
 import { hasFenceActivity } from '../../../cluster-fence/cluster-fence-model';
 import { ClusterFenceSourcePanel } from '../../../cluster-fence/cluster-fence-source-panel';
@@ -151,7 +154,11 @@ const ShadowLinkCreateEmptyState = () => {
       />
     );
   }
-  return <ShadowLinkEmptyState onCreateClick={() => navigate({ to: '/shadowlinks/create' })} />;
+  return (
+    <ShadowLinkEmptyState
+      onCreateClick={asyncEvent(() => navigate({ to: '/shadowlinks/create' }), reportActionError)}
+    />
+  );
 };
 
 type ShadowLinkListFallbackOptions = {
@@ -200,7 +207,7 @@ const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLi
         size="sm"
         variant="outline"
       >
-        <RefreshCw className="h-4 w-4" />
+        <RefreshCw className="size-4" />
       </Button>
 
       <Tooltip delayDuration={0}>
@@ -208,22 +215,22 @@ const ShadowLinkListToolbar = ({ isLoading, hasShadowLink, onRefresh }: ShadowLi
           render={
             <span className="inline-block">
               <Button
-                disabled={hasShadowLink || Boolean(fencedReason)}
-                onClick={() => navigate({ to: '/shadowlinks/create' })}
+                disabled={hasShadowLink || isNonEmptyString(fencedReason)}
+                onClick={asyncEvent(() => navigate({ to: '/shadowlinks/create' }), reportActionError)}
                 size="sm"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="size-4" />
                 Create shadow link
               </Button>
             </span>
           }
         />
-        {Boolean(hasShadowLink) && (
+        {hasShadowLink && (
           <TooltipContent>
             <p>Only one shadowlink can be created at this time</p>
           </TooltipContent>
         )}
-        {fencedReason ? <TooltipContent>{fencedReason}</TooltipContent> : null}
+        {isNonEmptyString(fencedReason) ? <TooltipContent>{fencedReason}</TooltipContent> : null}
       </Tooltip>
     </div>
   );
@@ -248,7 +255,7 @@ const ShadowLinksOnThisCluster = () => {
   const fallback = getShadowLinkListFallback({
     error,
     isEmpty: !isLoading && shadowLinks.length === 0,
-    onRetry: () => refetch(),
+    onRetry: asyncEvent(() => refetch(), reportActionError),
   });
 
   if (fallback) {
@@ -266,7 +273,7 @@ const ShadowLinksOnThisCluster = () => {
         <ShadowLinkListToolbar
           hasShadowLink={shadowLinks.length > 0}
           isLoading={isLoading}
-          onRefresh={() => refetch()}
+          onRefresh={asyncEvent(() => refetch(), reportActionError)}
         />
       </div>
       <Table>
@@ -282,7 +289,10 @@ const ShadowLinksOnThisCluster = () => {
         <TableBody>
           <ShadowLinkTableRows
             columns={createColumns}
-            handleRowClick={(shadowLinkName) => navigate({ to: `/shadowlinks/${shadowLinkName}` })}
+            handleRowClick={asyncEvent(
+              (shadowLinkName) => navigate({ to: `/shadowlinks/${shadowLinkName}` }),
+              reportActionError
+            )}
             isLoading={isLoading}
             table={table}
           />
@@ -316,7 +326,7 @@ const opensOnFence = (
     return true;
   }
   const statusRead = !isLoading && (known || isError);
-  if (!statusRead || topology?.resolving) {
+  if (!statusRead || topology?.resolving === true) {
     return;
   }
   return !topology && known;
@@ -396,11 +406,12 @@ export const ShadowLinkListPage = () => {
   return (
     <Tabs
       onValueChange={(value) => {
-        navigate({ to: '/shadowlinks', search: { tab: value as ShadowLinksTab }, replace: true }).catch(
-          (error: unknown) => {
-            toast.error('Failed to open the shadow links tab', { description: String(error) });
-          }
-        );
+        if (typeof value !== 'string' || (value !== 'links' && value !== 'source')) {
+          return;
+        }
+        navigate({ to: '/shadowlinks', search: { tab: value }, replace: true }).catch((error: unknown) => {
+          toast.error('Failed to open the shadow links tab', { description: String(error) });
+        });
       }}
       value={tab}
     >

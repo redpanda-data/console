@@ -2,6 +2,8 @@ import { expect, step, test } from '../../shared/e2e';
 import { createClientIdQuota, createUserQuota, deleteClientIdQuota, deleteUserQuota } from '../../shared/quota.utils';
 import { QuotaPage } from '../utils/quota-page';
 
+const MATCH_REGEX = /^100$/;
+
 test.describe('quotas - Display and Data Verification', () => {
   test('should display quota with all rate types configured', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
@@ -29,7 +31,7 @@ test.describe('quotas - Display and Data Verification', () => {
       const row = page.locator('tr').filter({ hasText: quotaClientId });
       await expect(row.locator('td').filter({ hasText: '10 MiB' })).toBeVisible();
       await expect(row.locator('td').filter({ hasText: '5 MiB' })).toBeVisible();
-      await expect(row.locator('td').filter({ hasText: /^100$/ })).toBeVisible();
+      await expect(row.locator('td').filter({ hasText: MATCH_REGEX })).toBeVisible();
     });
 
     await step('Cleanup', async () => {
@@ -113,7 +115,9 @@ test.describe('quotas - Display and Data Verification', () => {
       await deleteClientIdQuota(quotaClientId);
     });
   });
+});
 
+test.describe('quotas - table headers and reload', () => {
   test('should display quotas table with correct column headers', async ({ page }) => {
     const quotaPage = new QuotaPage(page);
 

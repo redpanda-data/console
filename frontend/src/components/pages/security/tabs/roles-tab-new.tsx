@@ -33,8 +33,9 @@ import type { FC } from 'react';
 import { useState } from 'react';
 import { columnMeta } from 'utils/data-table-column-meta';
 import { docsLinks } from 'utils/docs-links';
+import { stringValue } from 'utils/type-guards';
 
-import ErrorResult from '../../../../components/misc/error-result';
+import { ErrorResult } from '../../../../components/misc/error-result';
 import { useDeleteRoleMutation } from '../../../../react-query/api/security';
 import { FeatureLicenseNotification } from '../../../license/feature-license-notification';
 import { NullFallbackBoundary } from '../../../misc/null-fallback-boundary';
@@ -147,14 +148,14 @@ export const RolesTabNew: FC = () => {
                 )}
               />
               {Boolean(createRole.reason) && <TooltipContent>{createRole.reason}</TooltipContent>}
-              {createRole.fencedReason ? <TooltipContent>{createRole.fencedReason}</TooltipContent> : null}
+              {Boolean(createRole.fencedReason) && <TooltipContent>{createRole.fencedReason}</TooltipContent>}
             </Tooltip>
           }
         >
           <ListLayoutSearchInput
             onChange={(e) => table.getColumn('name')?.setFilterValue(e.target.value || undefined)}
             placeholder="Filter by name (regexp)..."
-            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+            value={stringValue(table.getColumn('name')?.getFilterValue()) ?? ''}
           />
         </ListLayoutFilters>
 
@@ -219,9 +220,9 @@ const RoleActions = ({ roleName, memberCount }: { roleName: string; memberCount:
             <Button
               data-testid={`role-actions-button-${roleName}`}
               render={
-                <button type="button">
-                  <MoreHorizontalIcon className="h-4 w-4" />
-                </button>
+                <Button type="button" variant="unstyled">
+                  <MoreHorizontalIcon className="size-4" />
+                </Button>
               }
               size="icon-sm"
               variant="ghost"

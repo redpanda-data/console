@@ -36,4 +36,4 @@ type RegistryColumnMeta = NonNullable<Extract<DataTableColumnDef<Record<string, 
 export const columnMeta = (meta: ConsoleColumnMeta) => meta as RegistryColumnMeta;
 
 /** Read them back off a column definition. */
-export const readColumnMeta = (meta: unknown): ConsoleColumnMeta => (meta ?? {}) as ConsoleColumnMeta;
+export const readColumnMeta = (meta: unknown): ConsoleColumnMeta => meta ?? {};

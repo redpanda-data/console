@@ -22,7 +22,8 @@ import {
 import { RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
-import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { asyncEvent } from 'utils/async-event';
+import { formatToastErrorMessageGRPC, reportActionError, showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
 import { PipelineStatus } from './pipelines-list';
@@ -42,24 +43,29 @@ import {
   pipelinesApi,
 } from '../../../state/backend-api';
 import type { TopicMessage } from '../../../state/rest-interfaces';
-import { PartitionOffsetOrigin } from '../../../state/ui';
+import { PartitionOffsetOrigin } from '../../../types/topic-settings';
+import { arrayFirst } from '../../../utils/array-utils';
 import { sanitizeString } from '../../../utils/filter-helper';
 import { isFilterMatch } from '../../../utils/message-table-helpers';
+import { nonzeroNumber } from '../../../utils/number-utils';
 import { DefaultSkeleton, quickTable, TimestampDisplay } from '../../../utils/tsx-utils';
+import { isPresent } from '../../../utils/type-guards';
 import { decodeURIComponentPercents, delay, encodeBase64 } from '../../../utils/utils';
-import PageContent from '../../misc/page-content';
-import PipelinesYamlEditor from '../../misc/pipelines-yaml-editor';
+import { PageContent } from '../../misc/page-content';
+import { PipelinesYamlEditor } from '../../misc/pipelines-yaml-editor';
 import { SearchInput } from '../../misc/search-input';
-import Section from '../../misc/section';
-import Tabs from '../../misc/tabs/tabs';
+import { Section } from '../../misc/section';
+import { Tabs } from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
 import { ExpandedMessage } from '../topics/Tab.Messages/message-display/expanded-message';
 import { MessagePreview } from '../topics/Tab.Messages/message-display/message-preview';
 
-class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
+class RpConnectPipelinesDetails extends PageComponent<{
+  pipelineId: string;
+}> {
   initPage(p: PageInitHelper): void {
     const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
-    const pipeline = pipelinesApi.pipelines?.first((x) => x.id === pipelineId);
+    const pipeline = pipelinesApi.pipelines?.find((x) => x.id === pipelineId);
     p.title = pipeline?.displayName ?? pipelineId;
     p.addBreadcrumb('Redpanda Connect', '/connect-clusters');
     p.addBreadcrumb(pipelineId, `/rp-connect/${pipelineId}`);
@@ -69,7 +75,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   }
 
   refreshData(_force: boolean) {
-    pipelinesApi.refreshPipelines(_force);
+    pipelinesApi.refreshPipelines(_force).catch(reportActionError);
   }
 
   render() {
@@ -77,8 +83,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
       return DefaultSkeleton;
     }
     const pipelineId = decodeURIComponentPercents(this.props.pipelineId);
-    const pipeline = pipelinesApi.pipelines.first((x) => x.id === pipelineId);
-
+    const pipeline = arrayFirst(pipelinesApi.pipelines, (x) => x.id === pipelineId);
     if (!pipeline) {
       return DefaultSkeleton;
     }
@@ -87,7 +92,7 @@ class RpConnectPipelinesDetails extends PageComponent<{ pipelineId: string }> {
   }
 }
 
-export default RpConnectPipelinesDetails;
+export { RpConnectPipelinesDetails };
 
 const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: Pipeline; pipelineId: string }) => {
   const [isChangingPauseState, setIsChangingPauseState] = useState(false);
@@ -109,7 +114,7 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
             { key: 'Resources', value: <PipelineResources resources={pipeline.resources} /> },
             ...(pipeline.url ? [{ key: 'URL', value: pipeline.url }] : []),
           ],
-          { gapHeight: '.5rem', keyStyle: { fontWeight: 600 } }
+          { gapHeight: '.5rem', keyClassName: 'font-semibold' }
         )}
       </div>
 
@@ -123,61 +128,46 @@ const RpConnectPipelinesDetailsContent = ({ pipeline, pipelineId }: { pipeline: 
           aria-label={isStopped ? 'Start' : 'Stop'}
           disabled={isChangingPauseState || isTransitioningState}
           isLoading={isChangingPauseState}
-          onClick={() => {
+          onClick={asyncEvent(async () => {
             setIsChangingPauseState(true);
-
-            const changePromise = isStopped
-              ? pipelinesApi.startPipeline(pipeline.id)
-              : pipelinesApi.stopPipeline(pipeline.id);
-
-            changePromise
-              .then(() => {
-                showToast({
-                  status: 'success',
-                  duration: 4000,
-                  title: `Pipeline ${isStopped ? 'started' : 'stopped'}`,
-                });
-
-                // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
-                watchPipelineUpdates(pipeline.id).catch(console.error);
-              })
-              .catch((err) => {
-                showToast({
-                  status: 'error',
-                  title: `Failed to ${isStopped ? 'start' : 'stop'} pipeline`,
-                  description: String(err),
-                });
-              })
-              .finally(() => {
-                setIsChangingPauseState(false);
+            try {
+              if (isStopped) {
+                await pipelinesApi.startPipeline(pipeline.id);
+              } else {
+                await pipelinesApi.stopPipeline(pipeline.id);
+              }
+              showToast({ status: 'success', duration: 4000, title: `Pipeline ${isStopped ? 'started' : 'stopped'}` });
+              // Watching owns its lifetime; failures remain visible without keeping the action pending.
+              watchPipelineUpdates(pipeline.id).catch(reportActionError);
+            } catch (pauseStateError) {
+              showToast({
+                status: 'error',
+                title: `Failed to ${isStopped ? 'start' : 'stop'} pipeline`,
+                description: String(pauseStateError),
               });
-          }}
+            } finally {
+              setIsChangingPauseState(false);
+            }
+          }, reportActionError)}
           variant="outline"
         >
           {isStopped ? 'Start' : 'Stop'}
         </Button>
         <Button
           onClick={() => {
-            openDeleteModal(pipeline.displayName, () => {
-              pipelinesApi
-                .deletePipeline(pipeline.id)
-                .then(() => {
-                  showToast({
-                    status: 'success',
-                    duration: 4000,
-                    title: 'Pipeline deleted',
-                  });
-                  pipelinesApi.refreshPipelines(true);
+            openDeleteModal(
+              pipeline.displayName,
+              asyncEvent(async () => {
+                try {
+                  await pipelinesApi.deletePipeline(pipeline.id);
+                  showToast({ status: 'success', duration: 4000, title: 'Pipeline deleted' });
+                  pipelinesApi.refreshPipelines(true).catch(reportActionError);
                   appGlobal.historyPush('/connect-clusters');
-                })
-                .catch((err) => {
-                  showToast({
-                    status: 'error',
-                    title: 'Failed to delete pipeline',
-                    description: String(err),
-                  });
-                });
-            });
+                } catch (deleteError) {
+                  showToast({ status: 'error', title: 'Failed to delete pipeline', description: String(deleteError) });
+                }
+              }, reportActionError)
+            );
           }}
           variant="destructive-outline"
         >
@@ -217,23 +207,21 @@ const PIPELINE_TRANSITION_POLL_DELAYS = [200, 400, 1000, 1000, 1000, 5000];
 
 /**
  * Refreshes the pipeline list until the pipeline leaves its starting/stopping state, or is gone. Each
- * poll backs off from the previous one and reads the list it refreshed, so attempts recurse in order.
+ * poll backs off from the previous one and inspects only the list it refreshed.
  */
 async function watchPipelineUpdates(pipelineId: string, attempt = 0): Promise<void> {
-  await delay(PIPELINE_TRANSITION_POLL_DELAYS[Math.min(PIPELINE_TRANSITION_POLL_DELAYS.length - 1, attempt)]);
-
-  await pipelinesApi.refreshPipelines(true);
-  // if we can't find the pipeline we're checking anymore it got deleted
-  const p = pipelinesApi.pipelines?.first((x) => x.id === pipelineId);
-  if (!p) {
-    return;
+  let currentAttempt = attempt;
+  while (true) {
+    // biome-ignore lint/performance/noAwaitInLoops: Polls back off in order while the same pipeline transition is pending.
+    await delay(PIPELINE_TRANSITION_POLL_DELAYS[Math.min(PIPELINE_TRANSITION_POLL_DELAYS.length - 1, currentAttempt)]);
+    // Inspect only the list produced by this completed refresh.
+    await pipelinesApi.refreshPipelines(true);
+    const pipeline = pipelinesApi.pipelines?.find((entry) => entry.id === pipelineId);
+    if (!pipeline || (pipeline.state !== Pipeline_State.STARTING && pipeline.state !== Pipeline_State.STOPPING)) {
+      return;
+    }
+    currentAttempt++;
   }
-
-  // if its no longer in a transition state, we're done
-  if (p.state !== Pipeline_State.STARTING && p.state !== Pipeline_State.STOPPING) {
-    return;
-  }
-  return watchPipelineUpdates(pipelineId, attempt + 1);
 }
 
 const PipelineEditor = (p: { pipeline: Pipeline }) => {
@@ -271,7 +259,10 @@ const LOGS_TABLE_OPTIONS = {
 const PIPELINE_LOGS_TOPIC = '__redpanda.connect.logs';
 
 function usePipelineLogMessages(pipelineId: string) {
-  const [logState, setLogState] = useState<{ messages: TopicMessage[]; isComplete: boolean }>({
+  const [logState, setLogState] = useState<{
+    messages: TopicMessage[];
+    isComplete: boolean;
+  }>({
     messages: [],
     isComplete: false,
   });
@@ -284,9 +275,11 @@ function usePipelineLogMessages(pipelineId: string) {
     const search = createMessageSearch();
     searchRef.current = search;
     queueMicrotask(() => setLogState({ messages: [], isComplete: false }));
-    executeMessageSearch(search, PIPELINE_LOGS_TOPIC, pipelineId).finally(() => {
-      setLogState({ messages: [...search.messages], isComplete: true });
-    });
+    executeMessageSearch(search, PIPELINE_LOGS_TOPIC, pipelineId)
+      .finally(() => {
+        setLogState({ messages: [...search.messages], isComplete: true });
+      })
+      .catch(reportActionError);
     return () => {
       search.stopSearch();
     };
@@ -323,7 +316,7 @@ function usePipelineLogMessages(pipelineId: string) {
     };
     const loadedMessages = await search.startSearch(searchReq);
 
-    if (loadedMessages && loadedMessages.length === 1) {
+    if (isPresent(loadedMessages) && loadedMessages.length === 1) {
       setLogState((prev) => {
         const idx = prev.messages.findIndex((x) => x.partitionID === partitionID && x.offset === offset);
         if (idx === -1) {
@@ -346,8 +339,7 @@ function usePipelineLogMessages(pipelineId: string) {
 }
 
 export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
-  const topic = api.topics?.first((x) => x.topicName === PIPELINE_LOGS_TOPIC);
-
+  const topic = api.topics?.find((x) => x.topicName === PIPELINE_LOGS_TOPIC);
   const { messages, isComplete, loadLargeMessage, refresh } = usePipelineLogMessages(pipeline.id);
   const [logsQuickSearch, setLogsQuickSearch] = useState('');
 
@@ -399,7 +391,13 @@ export const LogsTab = ({ pipeline }: { pipeline: Pipeline }) => {
   );
 
   const renderSubComponent = useCallback(
-    ({ row: { original } }: { row: { original: TopicMessage } }) => (
+    ({
+      row: { original },
+    }: {
+      row: {
+        original: TopicMessage;
+      };
+    }) => (
       <ExpandedMessage
         loadLargeMessage={() => loadLargeMessage(original.partitionID, original.offset)}
         msg={original}
@@ -494,7 +492,7 @@ export const PipelineResources = (p: { resources?: Pipeline_Resources }) => {
   const tasks = cpuToTasks(r.cpuShares);
   return (
     <div className="flex gap-4">
-      {tasks || '-'} Compute Units ({r.cpuShares} CPU / {r.memoryShares} Memory)
+      {nonzeroNumber(tasks) ?? '-'} Compute Units ({r.cpuShares} CPU / {r.memoryShares} Memory)
     </div>
   );
 };

@@ -1,6 +1,12 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "extends": ["ultracite/biome/core", "ultracite/biome/react"],
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/tanstack",
+    "ultracite/biome/type-aware",
+    "ultracite/biome/playwright"
+  ],
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -19,22 +25,24 @@
       "!**/out/**/*",
       "!**/coverage/**/*",
       "!**/.nyc_output/**/*",
-      "!**/*.css",
       "!**/*.svg",
       "!**/*.html",
-      // Keep the pre-2.6 file scope; Markdown, YAML, and SCSS need separate adoption.
-      "!**/*.{md,mdx,yaml,yml,scss}",
+      "!**/*.mdx",
+      "!**/.claude",
+      // Agent import loaders are not authored application documentation.
+      "!**/AGENTS.md",
+      "!**/CLAUDE.md",
       "!**/tests/global-setup.mjs",
       "!**/tests/console",
       "!**/tests/console-enterprise",
       "!**/components/redpanda-ui",
       "!**/assets/rp-connect-schema-full.json",
-      "!**/components/ui"
+      "!**/assets/fonts"
     ]
   },
   "formatter": {
     "enabled": true,
-    "formatWithErrors": true,
+    "formatWithErrors": false,
     "indentStyle": "space",
     "indentWidth": 2,
     "lineEnding": "lf",
@@ -61,62 +69,360 @@
     "rules": {
       "preset": "recommended",
       "complexity": {
-        "useMathMinMax": "error"
+        "useMathMinMax": "error",
+        "noExtraBooleanCast": "off",
+        "noUselessSwitchCase": "off",
+        "useLiteralKeys": "off",
+        "noImportantStyles": "error",
+        "noDivRegex": "error",
+        "noVoid": "error",
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": {
+            "maxAllowedComplexity": 15
+          }
+        },
+        "noExcessiveLinesPerFunction": {
+          "level": "error",
+          "options": {
+            "maxLines": 120,
+            "skipBlankLines": true,
+            "skipIifes": true
+          }
+        },
+        "noUselessReturn": "error",
+        "noExcessiveNestedCallbacks": "error",
+        "noUnnecessaryTemplateExpression": "error",
+        "useRegexpTest": "error",
+        "noPlaywrightUselessAwait": "error",
+        "useArraySome": "error"
       },
       "correctness": {
-        // tsconfig maps "*" to src/*, so this rule reads every internal import
-        // (`components/…`, `utils/…`) as an undeclared npm package.
+        // Keep Console's unused-binding checks for rest destructuring.
+        "noUnusedVariables": { "level": "error", "options": { "ignoreRestSiblings": false } },
+        "noUnusedFunctionParameters": { "level": "error", "options": { "ignoreRestSiblings": false } },
+        // Catch-all tsconfig paths still resolve as npm packages in Biome 2.6.7.
         "noUndeclaredDependencies": "off",
         "useImageSize": "off",
-        "useJsonImportAttributes": "error" // this may slow down the linting process
+        "useJsonImportAttributes": "error",
+        "usePlaywrightValidDescribeCallback": "error",
+        "noPrivateImports": "error",
+        "noNodejsModules": "error",
+        "noUnusedInstantiation": "error",
+        "noRestrictedElements": {
+          "level": "error",
+          "options": {
+            "elements": {
+              "button": "Use the <Button> component from 'components/redpanda-ui/components/button' instead of native <button>.",
+              "input": "Use the <Input> component from 'components/redpanda-ui/components/input' instead of native <input>.",
+              "textarea": "Use the <Textarea> component from 'components/redpanda-ui/components/textarea' instead of native <textarea>.",
+              "select": "Use the <Select> component from 'components/redpanda-ui/components/select' instead of native <select>.",
+              "table": "Use the <Table> components from 'components/redpanda-ui/components/table' instead of native <table>."
+            }
+          }
+        },
+        "useImportExtensions": "off",
+        "noUnresolvedImports": "off",
+        "noComponentHookFactories": "error",
+        "noJsxNamespace": "error",
+        "noPlaywrightMissingAwait": "error",
+        "useReactAsyncServerFunction": "error" // this may slow down the linting process
       },
       "performance": {
         "noJsxPropsBind": "off", // React Compiler (rsbuild.config.ts) memoizes inline callbacks
-        "useDomNodeTextContent": "error"
+        "useDomNodeTextContent": "error",
+        "noDelete": "off",
+        "noAwaitInLoops": "error",
+        "noSyncScripts": "error",
+        "noReExportAll": "error",
+        // Ultracite made these optional; keep Console’s existing import restrictions.
+        "noBarrelFile": "error",
+        "noNamespaceImport": "error"
       },
       "nursery": {
+        // Biome 2.6.9: applicable to Console and its existing test runners.
+        // Native typed Oxlint already owns array deletion.
+        "noArrayDelete": "off",
+        "noCanvasToImage": "error",
+        "noExpectToHaveBeenCalledOnce": "error",
+        "noImmediateMutation": "error",
+        "noReturnInTest": "error",
+        "noTailwindConflictingClasses": "error",
+        "noTestGlobals": "error",
+        "noUselessBind": "error",
+        "noUselessDefaultAssignment": "error",
+        "noUselessNestedTernary": "error",
+        "noUselessSetConstruction": "error",
+        "useConsistentIndexedObjectStyle": "error",
+        "useEarlyContinue": "error",
+        // Equality matchers use Object.is; explicit === assertions can intentionally differ.
+        "useExpectEqualityMatcher": "off",
+        "useExpectToHaveLength": "error",
+        "useExpectToStrictEqual": "error",
+        "useTanstackQueryExhaustiveDependencies": "error",
+        "useTanstackQueryMutationPropertyOrder": "error",
+        "noBufferConstructor": "error",
+        "noConfusingArraySplice": "error",
+        "noDynamicRequire": { "level": "error", "options": { "checkDynamicImports": true } },
+        "noLateCurrentTargetAccess": "error",
+        "noMisusedSpread": "error",
+        // Existing color/arbitrary-value gates own class policy; an empty restriction map would be inert.
+        "noTailwindRestrictedClasses": "off",
+        "noTripleSlashReference": "error",
+        "noYamlEmptyMapKeys": "error",
+        "noYamlEmptyMapValues": "error",
+        "noYamlEmptySequenceEntries": "error",
+        "useCalledWith": "error",
+        "useExpectToHaveBeenCalled": "error",
+        "useExpectToHaveBeenCalledTimes": "error",
+        "usePackageJsonValidLicense": "error",
+        "useSpyOn": "error",
+        "useTopLevelRequire": "error",
+        "useValidNamespaceImports": "error",
+        // Preserve JSON/React nulls, keyed Record deletion, and immutable React/Query projections.
+        "noNull": "off",
+        "noDynamicDelete": "off",
+        "noMapSpread": "off",
+        // Native disabled controls enforce interaction/submission behavior; ARIA alone does not.
+        "noDisabledAttribute": "off",
+        // Sass false and null are distinct. Motion has no universal minimum, especially reduced motion.
+        "noScssNullComparison": "off",
+        "noShortTimeValues": "off",
+        // Keep established flag/helper names and intentional ordered-locator assertions.
+        "useConsistentBooleanName": "off",
+        "noDanglingUnderscore": "off",
+        "noPlaywrightNthMethods": "off",
+        // The SPA is architecture-neutral and targets ES2025 without an Iterator.zip polyfill.
+        "usePackageJsonCpu": "off",
+        "useIteratorZip": "off",
+        // The stricter typed Oxlint gate owns unsafe returns, including imported generic APIs.
+        "noUnsafeReturn": "off",
+        "noMissingScssInterpolation": "error",
+        "useConsistentHeadingLevel": "error",
+        "useFencedCodeLanguage": "error",
+        "useSingleTopLevelHeading": "error",
+        "useTopLevelHeading": "error",
+        "noUnreadableForOfExpression": "error",
         "noAccidentalBitwiseOperators": "error",
         "noArgumentsCallerOrCallee": "error",
+        "noArrayForEach": "error",
+        "noArrayMethodsOnArguments": "error",
+        "noArraySortForMinMax": "error",
+        "noAsyncPromiseFinally": "error",
+        "noAwaitInPromiseMethods": "error",
+        "noBooleanSortComparator": "error",
+        "noChainedComparison": "error",
+        "noConsoleSpaces": "error",
+        "noConstantComparisons": "error",
         "noDoubleComparison": "error",
+        "noDuplicateTypeConstituents": "error",
+        "noEagerArrayMethodsInLoops": "error",
+        "noErasingOperation": "error",
+        "noExcessiveNestedBlocks": "error",
         "noExcessiveStatementsPerFunction": "error",
-        "noFloatingPromises": { "level": "error", "fix": "none" },
+        "noFloatingPromises": {
+          "level": "error",
+          "fix": "none"
+        },
+        "noInvalidFetchOptions": "error",
+        "noInvalidRemoveEventListener": "error",
         "noInvalidThis": "error",
-        "noMisusedPromises": { "level": "error", "fix": "none" },
+        "noLateEventControl": "error",
+        "noMagicArrayFlatDepth": "error",
+        "noMismatchedMapKey": "error",
+        "noMissingThrow": "error",
+        "noMisusedPromises": {
+          "level": "error",
+          "fix": "none"
+        },
+        "noNegatedArrayPredicate": "error",
         "noNestedSwitch": "error",
         "noNestedTemplateLiterals": "error",
+        "noNewArray": "error",
+        "noNewRequire": "error",
+        "noNumberArgumentOutOfRange": "error",
         "noObjectConstructor": "error",
+        "noObjectLiteralComparison": "error",
+        "noObsoleteAttributes": "error",
         "noOctal": "error",
+        "noPathConcat": "error",
+        "noPlaywrightUnsafeReferences": "error",
         "noProcessExit": "error",
         "noPromiseExecutorReturn": "error",
+        "noReactDirectStateMutation": "error",
+        "noRedundantTypeConstituents": "error",
+        "noReturnArrayPush": "error",
+        "noSharedBranchCode": "error",
+        "noSinglePromiseInPromiseMethods": "error",
+        "noSubtractionComparison": "error",
+        "noSyncMethods": {
+          "level": "error",
+          "options": {
+            // These functions synchronize UI state rather than performing blocking I/O.
+            "ignore": [
+              "installDarkModeAvailabilitySync",
+              "selectWithoutCursorSync",
+              "useEditorNodeSync",
+              "useExistingTopicSync",
+              "useSearchRefSync",
+              "useSettingsFormSync"
+            ]
+          }
+        },
         "noTailwindLegacyUtilities": "error",
         "noTailwindRestyledComponents": "error",
+        "noTanstackQueryRestDestructuring": "error",
+        "noTanstackQueryVoidQueryFn": "error",
+        "noUninvokedArrayCallback": "error",
+        "noUnnecessaryStringTrim": "error",
+        "noUnreadableIife": "error",
+        "noUnresolvedDefaultImport": "error",
         "noUnsafeUnaryMinus": "error",
         "noUselessAssignment": "error",
+        "noUselessAwait": "error",
         "noUselessCall": "error",
         "noUselessDateGetTime": "error",
+        "noUselessFallbackInSpread": "error",
+        "noUselessLengthCheck": "error",
+        "noUselessParameterPropertyAssignment": "error",
+        "noUselessQualifier": "error",
+        "noUselessSplice": "error",
+        "noUselessSpread": "error",
+        "noUselessTypeAssertion": "error",
         "noZeroFractions": "error",
+        "useAccessorPairs": "error",
+        "useAtomicUpdates": "error",
         "useBigintLiterals": "error",
+        "useBlockStatementOverIife": "error",
         "useCapitalizedConstructors": "error",
+        "useCatchErrorName": {
+          "level": "error",
+          "options": {
+            // Keep errors distinct when an outer error is already in scope.
+            "ignore": ["confirmError", "decodeError", "deleteError", "loginError", "pauseStateError"]
+          }
+        },
         "useConsistentJsonFileRead": "error",
-        "useExhaustiveSwitchCases": "error", // this may slow down the linting process
+        "useConsistentTupleLabels": "error",
+        "useConsistentUnicodeBom": "error",
+        "useExhaustiveSwitchCases": "error",
+        "useExpectToContain": "error",
+        "useGlobalRegexInMatchAll": "error",
+        "useGlobalRegexInReplaceAll": "error",
         "useLowercaseTestTitle": "error",
         "useMatchingFunctionName": "error",
+        "useMathAbs": "error",
+        "useMathTrunc": "error",
         "useNamedFunction": "error",
+        "useObjectFromEntries": "error",
+        "usePackageJsonEngines": "error",
+        "usePackageJsonValidCpu": "error",
+        "usePackageJsonValidEngines": "error",
+        "useSetSize": "error",
         "useSimplifiedBooleanReturn": "error",
         "useTailwindStaticClassStrings": "error",
-        "useUnaryMinus": "error"
+        "useTailwindVariablesShorthand": "error",
+        "useTanstackQueryInfiniteQueryPropertyOrder": "error",
+        "useTanstackQueryStableQueryClient": "error",
+        "useUnaryMinus": "error",
+        "useValidCharacterComparison": "error",
+        "useWhileLoopCondition": "error",
+        "noBaseToString": "error",
+        "noBunModules": "error",
+        "noDuplicateMapKeys": "error",
+        "noExcessiveSelectorComplexity": {
+          "level": "error",
+          "options": {
+            "maxIds": 0
+          }
+        },
+        "noExtendNative": "error",
+        "noImpliedEval": "error",
+        "noInvalidFileInputAccept": "error",
+        "noInvalidPropertyInitValue": "error",
+        "noJsonUnsafeValues": "error",
+        "noMeaninglessVoidOperator": "error",
+        "noMisplacedListElements": "error",
+        "noNegationInEqualityCheck": "error",
+        "noNonScalableViewport": "error",
+        "noObsoleteTags": "error",
+        "noPseudoElementInFunctionalPseudoClass": "error",
+        "noReactObjectTypeAsDefaultProp": "error",
+        "noReturnInFinally": "error",
+        "noSelfImport": "error",
+        "noSelfNestedLayer": "error",
+        "noTailwindRawColors": "error",
+        "noThisOutsideOfClass": "error",
+        "noUnmodifiedLoopCondition": "error",
+        "noUnsafeIframeSandbox": "error",
+        "noUnsafePlusOperands": "error",
+        "noUselessRecursion": "error",
+        "noUselessTypeConversion": "error",
+        "noXorAsExponentiation": "error",
+        "noYamlBooleanKeys": "error",
+        "noZeroLengthUnit": "error",
+        "useAwaitThenable": "error",
+        "useConsistentFontWeightNotation": "error",
+        "useConsistentLightnessNotation": {
+          "level": "error",
+          "options": {
+            "notation": "number"
+          }
+        },
+        "useControlLabel": "error",
+        "useDisposables": "error",
+        "useFlatMathMinMax": "error",
+        "useIncludes": "error",
+        "useLogicalProperties": "error",
+        "useModernMathApis": "error",
+        "useNamedLayer": "error",
+        "useNullishCoalescing": {
+          "level": "error",
+          "options": {
+            "ignorePrimitives": true
+          }
+        },
+        "usePromiseRejectErrors": "error",
+        "useReactCompiler": {
+          "level": "error",
+          "options": {
+            "compilationMode": "annotation"
+          }
+        },
+        "useRegexpExec": "error",
+        "useStringStartsEndsWith": "error",
+        "useTailwindShorthandClasses": "error"
       },
       "style": {
-        "noDefaultExport": "off",
+        // Keep the established inline style for mixed type/value imports.
+        "useImportType": {
+          "level": "error",
+          "options": { "style": "auto" }
+        },
+        // Positional captures and UTF-16 matching are parser contracts, not mechanical style fixes.
+        "useNamedCaptureGroup": "off",
+        "useUnicodeRegex": "off",
+        // MobX, React, and embedded consumers call these methods through instance contracts.
+        "useThisInClassMethods": "off",
+        "noDefaultExport": "error",
         "noRestrictedImports": {
           "level": "error",
           "options": {
             "paths": {
+              "moment": "Use date-fns instead of moment.",
+              "lodash": "Use native JS methods or specific lodash subpackages (e.g., lodash/get).",
+              "classnames": "Use clsx or the cn utility instead.",
               "mobx": "Deprecated — use Zustand instead",
+              "mobx-react": "Use React state for client state or TanStack Query for server state.",
               "mobx-react-lite": "Deprecated — use Zustand instead",
               "yup": "Deprecated — use Zod instead"
             },
             "patterns": [
+              {
+                "group": ["**/shadcn/toggle-group"],
+                "importNamePattern": "ToggleGroup",
+                "message": "Use components/toggle-group for accessible grouping. Frozen ToggleGroupItem remains available."
+              },
               {
                 "group": [
                   "vitest",
@@ -138,14 +444,98 @@
             "style": "type"
           }
         },
-        "useReactFunctionComponents": "off"
+        "useReactFunctionComponents": "off",
+        "noNestedTernary": "off",
+        "noIncrementDecrement": "off",
+        "noProcessEnv": "error",
+        "useConsistentMethodSignatures": "off",
+        "useDestructuring": "off",
+        "useErrorCause": "error",
+        "noExcessiveLinesPerFile": {
+          "level": "error",
+          "options": {
+            "maxLines": 700,
+            "skipBlankLines": true
+          }
+        },
+        "useExplicitLengthCheck": "error",
+        "noCommonJs": "error",
+        "useSingleVarDeclarator": "error",
+        "useConsistentTestIt": {
+          "level": "error",
+          "options": {
+            "function": "test",
+            "withinDescribe": "test"
+          }
+        },
+        "useDomQuerySelector": "error",
+        "useTestHooksOnTop": "error",
+        "noPlaywrightElementHandle": "error",
+        "noPlaywrightEval": "error",
+        "noPlaywrightWaitForSelector": "error",
+        "noTopLevelLiterals": "error",
+        "useReduceTypeParameter": "error",
+        "useTestHooksInOrder": "error",
+        "useVarsOnTop": "error"
       },
       "suspicious": {
         "noConsole": "error",
         "noFocusedTests": "error",
-        "noReactForwardRef": "off",
+        "noReactForwardRef": "error",
         "noDeprecatedImports": "error",
-        "noImportCycles": "off"
+        "noImportCycles": "error",
+        "noConditionalExpect": "off",
+        "useExpect": "off",
+        "useBaseline": {
+          "level": "error",
+          "options": {
+            "available": "newly",
+            "allowPropertyValues": {
+              "font-family": ["ui-sans-serif"],
+              "background-clip": ["text"]
+            },
+            "allowProperties": ["user-select"]
+          }
+        },
+        "noEqualsToNull": "off",
+        "noLeakedRender": "off",
+        "noNestedPromises": "error",
+        "noReturnAssign": "error",
+        "noShadow": "error",
+        "noUnnecessaryConditions": "off",
+        "useArraySortCompare": "error",
+        "noForIn": "error",
+        "noSkippedTests": "error",
+        "noDuplicateTestHooks": "error",
+        "noJsxLeakedDollar": "error",
+        "noLoopFunc": "error",
+        "noReactStringRefs": "error",
+        "noEmptyObjectKeys": "error",
+        "noIdenticalTestTitle": "error",
+        "noPlaywrightForceOption": "error",
+        "noPlaywrightNetworkidle": "error",
+        "noPlaywrightPagePause": "error",
+        "noPlaywrightWaitForNavigation": "error",
+        "noPlaywrightWaitForTimeout": "error"
+      },
+      "a11y": {
+        "useValidAriaRole": { "level": "error", "options": { "ignoreNonDom": false } },
+        "noLabelWithoutControl": {
+          "level": "error",
+          "options": {
+            "inputComponents": ["Input", "Select", "Textarea", "Checkbox", "Radio"],
+            "labelComponents": ["Label"]
+          }
+        }
+      },
+      "security": {
+        "noSecrets": {
+          "level": "error",
+          "options": {
+            "entropyThreshold": 80
+          }
+        },
+        "useIframeSandbox": "error"
       }
     }
   },
@@ -190,78 +580,133 @@
     },
     "parser": {
       "allowWrongLineComments": false,
-      "cssModules": false,
       "tailwindDirectives": true
     }
   },
+  "markdown": {
+    "formatter": { "enabled": true, "formatEmbeds": false },
+    "linter": { "enabled": true },
+    "analyzeEmbeds": false
+  },
+  "yaml": { "formatter": { "enabled": false } },
   "overrides": [
     {
-      // TODO(lint-debt): rules with violations that predate the Biome 2.5 / Ultracite 8
-      // upgrade, held at "warn" so new errors and config mistakes still fail `bun run lint`.
-      // The lint follow-up fixes these and deletes this block. Kept first so the
-      // file-specific overrides below still win.
-      "includes": ["**"],
+      // Format authored test configuration, not the literal YAML pipeline templates shown to users.
+      "includes": ["tests/**/*.yaml", "tests/**/*.yml"],
+      "yaml": { "formatter": { "enabled": true } }
+    },
+    // Cap existing groups of coupled legacy classes at their current size; new modules allow one.
+    {
+      "includes": [
+        "src/components/pages/connect/kafka-connect-tab.tsx",
+        "src/components/pages/consumers/modals.tsx",
+        "src/components/pages/page.ts",
+        "src/components/pages/reassign-partitions/step1-partitions.tsx",
+        "src/components/pages/rp-connect/pipeline/pipeline-flow-canvas.render.test.tsx",
+        "src/components/pages/schemas/schema-create.tsx"
+      ],
       "linter": {
         "rules": {
-          "a11y": {
-            "noNoninteractiveElementInteractions": "warn",
-            "noNoninteractiveTabindex": "warn",
-            "noStaticElementInteractions": "warn",
-            "useAriaPropsSupportedByRole": "warn",
-            "useButtonType": "warn",
-            "useSemanticElements": "warn"
-          },
-          "complexity": {
-            "noExcessiveCognitiveComplexity": "warn",
-            "noRedundantDefaultExport": "warn",
-            "noUselessCatchBinding": "warn",
-            "noUselessFragments": "warn",
-            "noVoid": "warn",
-            "useLiteralKeys": "warn"
-          },
-          "correctness": {
-            "noUnusedFunctionParameters": "warn",
-            "noUnusedVariables": "warn",
-            "useYield": "warn"
-          },
-          "performance": {
-            "noBarrelFile": "warn",
-            "useTopLevelRegex": "warn"
-          },
           "style": {
-            "noIncrementDecrement": "warn",
-            "noNestedTernary": "warn",
-            "noNonNullAssertion": "warn",
-            "noParameterProperties": "warn",
-            "noSubstr": "warn",
-            "useConsistentMethodSignatures": "warn",
-            "useConsistentTypeDefinitions": {
-              "level": "warn",
+            "noExcessiveClassesPerFile": {
+              "level": "error",
               "options": {
-                "style": "type"
+                "maxClasses": 2
               }
-            },
-            "useDestructuring": "warn",
-            "useErrorCause": "warn",
-            "useReadonlyClassProperties": "warn"
-          },
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/utils/utils.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveClassesPerFile": {
+              "level": "error",
+              "options": {
+                "maxClasses": 3
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/components/pages/reassign-partitions/components/active-reassignments.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveClassesPerFile": {
+              "level": "error",
+              "options": {
+                "maxClasses": 6
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/state/connect/state.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveClassesPerFile": {
+              "level": "error",
+              "options": {
+                "maxClasses": 8
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.module.scss"],
+      "css": { "parser": { "cssModules": true } },
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnknownPseudoClass": { "level": "error", "options": { "ignore": ["global", "local"] } }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/components/ui/secret/secret-utils.test.ts",
+        "src/components/ui/secret/secret-detection.test.ts",
+        "src/components/ui/secret/secret-selector.test.tsx"
+      ],
+      "linter": {
+        "rules": {
           "suspicious": {
-            "noArrayIndexKey": "warn",
-            "noAssignInExpressions": "warn",
-            "noBitwiseOperators": "warn",
-            "noDeprecatedImports": "warn",
-            "noDoubleEquals": "warn",
-            "noEmptyBlockStatements": "warn",
-            "noEmptySource": "warn",
-            "noEqualsToNull": "warn",
-            "noForIn": "warn",
-            "noLeakedRender": "warn",
-            "noNestedPromises": "warn",
-            "noShadow": "warn",
-            "noTemplateCurlyInString": "warn",
-            "noUnnecessaryConditions": "warn",
-            "useErrorMessage": "warn",
-            "useIterableCallbackReturn": "warn"
+            // These fixtures assert literal Redpanda secret interpolation, not JavaScript interpolation.
+            "noTemplateCurlyInString": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/utils/env.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            // The application environment adapter is the only runtime process.env boundary.
+            "noProcessEnv": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/federation/**", "src/inject-app.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            // Federated consumers load these public default exports by contract.
+            "noDefaultExport": "off"
           }
         }
       }
@@ -269,18 +714,20 @@
     {
       "includes": ["**/*.{test,spec}.{ts,tsx,js,jsx}", "**/__tests__/**/*", "rstest.setup*.ts", "**/*-test-helpers.ts"],
       "javascript": {
-        // rstest `globals: true` injects these at runtime (typed via @rstest/core/globals)
         "globals": ["rs", "test", "it", "expect", "describe", "beforeEach", "afterEach", "beforeAll", "afterAll"]
       },
       "linter": {
         "rules": {
+          "nursery": {
+            "noSyncMethods": "off"
+          },
           "performance": {
             "noNamespaceImport": "off"
           },
+          "style": {},
           "suspicious": {
             "noConsole": "off",
-            // Ultracite's own test exemption, which the lint-debt block above would otherwise override
-            "noExplicitAny": "off"
+            "noExplicitAny": "error"
           }
         }
       }
@@ -289,6 +736,9 @@
       "includes": ["**/scripts/**/*", "**/bin/**/*", "*.mjs", "*.cjs", "**/tests/**/*", "**/tests/*.sh"],
       "linter": {
         "rules": {
+          "nursery": {
+            "noSyncMethods": "off"
+          },
           "suspicious": {
             "noConsole": "off"
           }
@@ -336,6 +786,144 @@
         "rules": {
           "style": {
             "useFilenamingConvention": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/**"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "noProcessExit": "off"
+          },
+          "suspicious": {
+            "noConsole": "off",
+            "noTemplateCurlyInString": "off"
+          },
+          "performance": {
+            "noNamespaceImport": "off",
+            "useTopLevelRegex": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.test.*", "**/*.spec.*", "**/__tests__/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off",
+            "noExplicitAny": "error"
+          },
+          "correctness": {
+            "noRestrictedElements": "off"
+          },
+          "performance": {
+            "noNamespaceImport": "off",
+            "useTopLevelRegex": "off"
+          },
+          "nursery": {
+            "noFloatingPromises": "error"
+          },
+          "complexity": {
+            "noVoid": "off",
+            "noExcessiveLinesPerFunction": "off"
+          },
+          "style": {
+            "noExcessiveLinesPerFile": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "*.config.*",
+        "*.shared.*",
+        "*.setup.*",
+        "scripts/**",
+        "e2e/**",
+        "src/**/*.test.*",
+        "src/**/*.spec.*"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noNodejsModules": "off"
+          },
+          "style": {
+            "noDefaultExport": "off",
+            "noProcessEnv": "off",
+            "noExcessiveLinesPerFile": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.d.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.test.*", "**/*.spec.*", "**/*.setup.*", "**/__tests__/**"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "useAwaitThenable": "off"
+          },
+          "correctness": {
+            "noComponentHookFactories": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "*.config.*",
+        "*.shared.*",
+        "*.setup.*",
+        "scripts/**",
+        "e2e/**",
+        "src/**/*.test.*",
+        "src/**/*.spec.*",
+        "src/__tests__/expect-to-match-object.ts"
+      ],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "noBunModules": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "tests/**",
+        "lint-rules/**",
+        "**/*.config.*",
+        "**/*.setup.*",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "src/test-utils.tsx",
+        "bun.setup.ts"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noNodejsModules": "off"
+          },
+          "nursery": {
+            "noBunModules": "off"
+          },
+          "style": {
+            "noDefaultExport": "off",
+            "noProcessEnv": "off",
+            "noExcessiveLinesPerFile": "off"
           }
         }
       }

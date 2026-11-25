@@ -10,16 +10,17 @@ import { type BuilderContent, Content, fetchOneEntry, isPreviewing } from '@buil
 import { builderCustomComponents } from 'components/builder-io/builder-custom-components';
 import { BUILDER_API_KEY } from 'components/constants';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
-import { isEmbedded } from 'config';
 import { useEffect, useState } from 'react';
 import { api } from 'state/backend-api';
+
+import { isEmbedded } from '../../runtime-config';
 
 /**
  * NurturePanel displays Builder.io content for resources and updates.
  * Returns null in embedded mode - use conditional rendering at the route level
  * to avoid loading Builder.io dependencies in federated bundles.
  */
-export default function NurturePanel() {
+export function NurturePanel() {
   const embedded = isEmbedded();
   const platform = api.isRedpanda ? 'redpanda' : 'kafka';
   const { content, isLoading, hasError, modelName } = useNurtureContent(embedded, platform);

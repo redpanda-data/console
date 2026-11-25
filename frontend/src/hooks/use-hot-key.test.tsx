@@ -9,12 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
 
 import { useHotKey } from './use-hot-key';
 
 describe('useHotKey', () => {
-  it('calls onTrigger when key combo matches', () => {
+  test('calls onTrigger when key combo matches', () => {
     const onTrigger = rs.fn();
     renderHook(() => useHotKey({ key: 'p', modifiers: ['meta', 'shift'], onTrigger }));
 
@@ -22,7 +23,7 @@ describe('useHotKey', () => {
     expect(onTrigger).toHaveBeenCalledTimes(1);
   });
 
-  it('does not trigger without required modifiers', () => {
+  test('does not trigger without required modifiers', () => {
     const onTrigger = rs.fn();
     renderHook(() => useHotKey({ key: 'p', modifiers: ['meta', 'shift'], onTrigger }));
 
@@ -30,7 +31,7 @@ describe('useHotKey', () => {
     expect(onTrigger).not.toHaveBeenCalled();
   });
 
-  it('does not trigger when enabled is false', () => {
+  test('does not trigger when enabled is false', () => {
     const onTrigger = rs.fn();
     renderHook(() => useHotKey({ key: 'p', modifiers: ['meta', 'shift'], enabled: false, onTrigger }));
 
@@ -38,7 +39,7 @@ describe('useHotKey', () => {
     expect(onTrigger).not.toHaveBeenCalled();
   });
 
-  it('treats ctrl as meta on non-mac', () => {
+  test('treats ctrl as meta on non-mac', () => {
     const onTrigger = rs.fn();
     renderHook(() => useHotKey({ key: 'p', modifiers: ['meta', 'shift'], onTrigger }));
 
@@ -46,7 +47,7 @@ describe('useHotKey', () => {
     expect(onTrigger).toHaveBeenCalledTimes(1);
   });
 
-  it('cleans up listener on unmount', () => {
+  test('cleans up listener on unmount', () => {
     const onTrigger = rs.fn();
     const { unmount } = renderHook(() => useHotKey({ key: 'p', modifiers: ['meta'], onTrigger }));
 
@@ -56,7 +57,7 @@ describe('useHotKey', () => {
     expect(onTrigger).not.toHaveBeenCalled();
   });
 
-  it('uses latest onTrigger without re-subscribing', () => {
+  test('uses latest onTrigger without re-subscribing', () => {
     const first = rs.fn();
     const second = rs.fn();
     const { rerender } = renderHook(({ cb }) => useHotKey({ key: 'k', modifiers: ['meta'], onTrigger: cb }), {
@@ -70,7 +71,7 @@ describe('useHotKey', () => {
     expect(second).toHaveBeenCalledTimes(1);
   });
 
-  it('does not trigger from typing targets when ignoreWhenTyping is set', () => {
+  test('does not trigger from typing targets when ignoreWhenTyping is set', () => {
     const onTrigger = rs.fn();
     renderHook(() => useHotKey({ key: 'Escape', ignoreWhenTyping: true, onTrigger }));
 

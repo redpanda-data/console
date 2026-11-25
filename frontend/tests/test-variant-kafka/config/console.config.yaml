@@ -1,7 +1,7 @@
 serveFrontend: true
 
 kafka:
-  brokers: ["kafka:9092"]
+  brokers: [ "kafka:9092" ]
   sasl:
     enabled: true
     mechanism: PLAIN
@@ -17,4 +17,4 @@ redpanda:
 
 server:
   listenPort: 3000
-  allowedOrigins: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"]
+  allowedOrigins: [ "http://localhost:3000", "http://localhost:3001", "http://localhost:3002" ]

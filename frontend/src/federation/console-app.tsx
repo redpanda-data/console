@@ -9,8 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// Array prototype extensions (must be imported early)
-import '../utils/array-extensions';
 // Installs `navigator.clipboard` where the browser withholds it — see app.tsx.
 import 'clipboard-polyfill/overwrite-globals';
 
@@ -45,7 +43,7 @@ import '../globals.css';
 import { Code, ConnectError, type Interceptor, type Transport } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { QueryClient } from '@tanstack/react-query';
-import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
+import { type AnyRoute, createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import { protobufRegistry } from 'protobuf-registry';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
 import { toast } from 'sonner';
@@ -57,10 +55,12 @@ import type { ConsoleAppProps } from './types';
 import { NotFoundPage } from '../components/misc/not-found-page';
 import { Alert, AlertDescription } from '../components/redpanda-ui/components/alert';
 import { Button } from '../components/redpanda-ui/components/button';
-import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, config, getGrpcBasePath, setup } from '../config';
+import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, setup } from '../config';
 import { routeTree } from '../routeTree.gen';
+import { config, getGrpcBasePath } from '../runtime-config';
 import { installUISettingsSideEffects } from '../state/ui';
 import { useClusterFenceStore } from '../stores/cluster-fence-store';
+import { isNonEmptyString } from '../utils/string-utils';
 
 /**
  * Re-root the generated route tree onto Console's federated root.
@@ -71,7 +71,7 @@ import { useClusterFenceStore } from '../stores/cluster-fence-store';
  * Console-unique path that cannot collide. Standalone and legacy-embedded entries keep `routeTree`.
  */
 function createFederatedRouteTree() {
-  const childRoutes = routeTree.children ? Object.values(routeTree.children) : [];
+  const childRoutes = routeTree.children ? Object.values<AnyRoute>({ ...routeTree.children }) : [];
   for (const child of childRoutes) {
     child.options.getParentRoute = () => federatedRootRoute;
   }
@@ -84,13 +84,17 @@ const federatedRouteTree = createFederatedRouteTree();
  * Creates an interceptor that refreshes the token on 401 and retries the request.
  * Uses TokenManager for deduplication and abort support.
  */
+function isUnauthenticatedError(error: unknown): error is ConnectError {
+  return error instanceof ConnectError && error.code === Code.Unauthenticated;
+}
+
 function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor {
   return (next) => async (request) => {
     try {
       return await next(request);
     } catch (error) {
       // Only handle Unauthenticated errors
-      if (!(error instanceof ConnectError && error.code === Code.Unauthenticated)) {
+      if (!isUnauthenticatedError(error)) {
         throw error;
       }
 
@@ -98,13 +102,14 @@ function createTokenRefreshInterceptor(tokenManager: TokenManager): Interceptor 
       try {
         await tokenManager.refresh();
       } catch {
-        throw error; // Throw original error if refresh fails
+        // biome-ignore lint/style/useErrorCause: authentication callers must receive the original Unauthenticated response, not the token-refresh failure.
+        throw error;
       }
 
       // Retry the request with refreshed token.
       // Header mutation is necessary because the original request was created
       // with the old token by addBearerTokenInterceptor on the first attempt.
-      if (config.jwt) {
+      if (isNonEmptyString(config.jwt)) {
         request.header.set('Authorization', `Bearer ${config.jwt}`);
       }
       return await next(request);
@@ -151,13 +156,15 @@ class ConsoleErrorBoundary extends Component<
             {this.state.error ? (
               <p className="mt-1 font-mono text-body-sm text-subtle">{this.state.error.message}</p>
             ) : null}
-            <button
+            <Button
+              // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
               className="mt-4 rounded-md bg-surface-informative px-4 py-2 text-body font-medium text-informative-foreground hover:bg-surface-informative-hover"
               onClick={this.handleRetry}
               type="button"
+              variant="unstyled"
             >
               Try Again
-            </button>
+            </Button>
           </div>
         </div>
       );
@@ -263,6 +270,7 @@ export function ConsoleApp(props: ConsoleAppProps) {
   return <ConsoleAppInner key={props.clusterId} {...props} />;
 }
 
+// biome-ignore lint/complexity/noRedundantDefaultExport: Module Federation ReactApp consumers use the default export; retain the existing named API too.
 export default ConsoleApp;
 
 function FederatedInitialization({
@@ -355,9 +363,9 @@ function useFederatedInitialization({
       setIsInitialized(true);
     };
 
-    initialize().catch((cause: unknown) => {
+    initialize().catch((error: unknown) => {
       if (!cancelled) {
-        const initializationError = cause instanceof Error ? cause : new Error(String(cause));
+        const initializationError = error instanceof Error ? error : new Error(String(error));
         setFailure({ attempt, error: initializationError });
         notifyInitializationError(initializationError);
       }
@@ -447,7 +455,7 @@ function useHostNavigation(
     };
   }, [router, onRouteChange]);
   useEffect(() => {
-    if (!(navigateTo && isInitialized && router)) {
+    if (!(isInitialized && isNonEmptyString(navigateTo))) {
       return;
     }
 

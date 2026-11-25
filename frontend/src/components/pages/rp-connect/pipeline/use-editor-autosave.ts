@@ -13,8 +13,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { type AttachedServiceAccount, autosaveTargetKey, rpcnEditorAutosave } from 'state/rpcn-editor-autosave';
 
+import type { PipelineFormValues } from './use-pipeline-document-recovery';
 import type { usePipelineEditorStoreApi } from './use-pipeline-editor-store';
-import type { PipelineFormValues } from '.';
 
 export const AUTOSAVE_DEBOUNCE_MS = 1000;
 

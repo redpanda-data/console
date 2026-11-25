@@ -62,9 +62,9 @@ describe('the Schema Create - Normalize Parameter', () => {
 
     // Test that it serializes correctly to JSON
     const serialized = JSON.stringify(request);
-    const deserialized = JSON.parse(serialized);
+    const deserialized: unknown = JSON.parse(serialized);
 
-    expect(deserialized).toEqual({
+    expect(deserialized).toStrictEqual({
       schema: '{"type": "record", "name": "car", "fields": [{"name": "model", "type": "string"}]}',
       schemaType: 'PROTOBUF',
       references: [{ name: 'ref1', subject: 'subject1', version: 1 }],

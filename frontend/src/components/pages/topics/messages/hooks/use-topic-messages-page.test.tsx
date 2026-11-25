@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
-import { createFilterEntry } from 'state/ui';
 import { getTopicFilters, setTopicFilters } from 'utils/topic-filters-session';
 
 import { useDetailPresentation, useJsFilters } from './use-topic-messages-page';
+import { createFilterEntry } from '../../../../../types/topic-settings';
 import { readDetailViewState } from '../detail/detail-view-state';
 
 describe('useDetailPresentation', () => {
@@ -12,19 +12,19 @@ describe('useDetailPresentation', () => {
   });
 
   test('remembers the expanded preference for the next mount', () => {
-    const first = renderHook(() => useDetailPresentation(rs.fn()));
+    const first = renderHook(() => useDetailPresentation(rs.fn(() => Promise.resolve(new URLSearchParams()))));
     expect(first.result.current.detailExpanded).toBe(false);
 
     act(() => first.result.current.setDetailExpanded(true));
     expect(first.result.current.detailExpanded).toBe(true);
     expect(readDetailViewState().expanded).toBe(true);
 
-    const second = renderHook(() => useDetailPresentation(rs.fn()));
+    const second = renderHook(() => useDetailPresentation(rs.fn(() => Promise.resolve(new URLSearchParams()))));
     expect(second.result.current.detailExpanded).toBe(true);
   });
 
   test('persists the docked width without re-rendering', () => {
-    const { result } = renderHook(() => useDetailPresentation(rs.fn()));
+    const { result } = renderHook(() => useDetailPresentation(rs.fn(() => Promise.resolve(new URLSearchParams()))));
 
     act(() => result.current.handleDetailPanelResize({ asPercentage: 41, inPixels: 400 }));
 
@@ -33,7 +33,7 @@ describe('useDetailPresentation', () => {
   });
 
   test('closing clears the selected message', () => {
-    const setSelectedKey = rs.fn();
+    const setSelectedKey = rs.fn(() => Promise.resolve(new URLSearchParams()));
     const { result } = renderHook(() => useDetailPresentation(setSelectedKey));
 
     act(() => result.current.handleDetailClose());
@@ -51,12 +51,12 @@ describe('useJsFilters', () => {
     const saved = createFilterEntry({ id: 'saved', name: 'Saved filter' });
     setTopicFilters('orders', [saved]);
     const { result } = renderHook(() => useJsFilters('orders'));
-    expect(result.current.jsFilters.map((f) => f.id)).toEqual(['saved']);
+    expect(result.current.jsFilters.map((f) => f.id)).toStrictEqual(['saved']);
 
     const added = createFilterEntry({ id: 'added' });
     act(() => result.current.setJsFilters((prev) => [...prev, added]));
 
-    expect(getTopicFilters('orders').map((f) => f.id)).toEqual(['saved', 'added']);
+    expect(getTopicFilters('orders').map((f) => f.id)).toStrictEqual(['saved', 'added']);
   });
 
   test('the editor dialog starts closed and opens seeded', () => {
@@ -65,6 +65,6 @@ describe('useJsFilters', () => {
 
     act(() => result.current.setJsDialog({ filter: null, seedCode: 'value.ok' }));
 
-    expect(result.current.jsDialog).toEqual({ filter: null, seedCode: 'value.ok' });
+    expect(result.current.jsDialog).toStrictEqual({ filter: null, seedCode: 'value.ok' });
   });
 });

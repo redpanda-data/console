@@ -22,6 +22,7 @@ import type { ConfigPageProps } from './components';
 import { TopicInput } from './forms/topic-input';
 import { PropertyComponent } from './property-component';
 import type { PropertyGroup } from '../../../../state/connect/state';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 
 const topicsFields = ['topics', 'topics.regex'];
 
@@ -43,7 +44,7 @@ export const PropertyGroupComponent = (props: {
   if (g.group.name === 'Transforms') {
     // Transforms + its sub groups
     const subGroups = props.allGroups
-      .filter((subGroup) => subGroup.group.name?.startsWith('Transforms: '))
+      .filter((subGroup) => subGroup.group.name?.startsWith('Transforms: ') === true)
       .sort((a, b) => props.allGroups.indexOf(a) - props.allGroups.indexOf(b));
 
     return (
@@ -60,7 +61,7 @@ export const PropertyGroupComponent = (props: {
                   <div className="flex items-center gap-4">
                     {/* The group name was rendered twice here before the migration. */}
                     <span className="text-heading-sm font-semibold">{subGroup.group.name}</span>
-                    <span className="issuesTag">{subGroup.propertiesWithErrors.length} issues</span>
+                    <span>{subGroup.propertiesWithErrors.length} issues</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -87,7 +88,7 @@ export const PropertyGroupComponent = (props: {
       {Boolean(g.group.description) && (
         <p className="mt-4 text-body">
           {g.group.description}
-          {g.group.documentation_link ? (
+          {isNonEmptyString(g.group.documentation_link) ? (
             <>
               {' '}
               <Link href={g.group.documentation_link}>Documentation</Link>
@@ -100,7 +101,7 @@ export const PropertyGroupComponent = (props: {
         {
           <TopicInput
             connectorType={props.connectorType}
-            properties={g.properties.filter((p) => topicsFields.any((v) => v === p.name))}
+            properties={g.properties.filter((p) => topicsFields.includes(p.name))}
           />
         }
         {filteredProperties

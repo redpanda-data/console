@@ -47,7 +47,7 @@ export const DeleteUserConfirmModal: FC<DeleteUserConfirmModalProps> = ({
 
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : uncontrolledOpen;
-  const setOpen = isControlled ? onOpenChange! : setUncontrolledOpen;
+  const setOpen = isControlled ? onOpenChange : setUncontrolledOpen;
 
   const close = () => {
     setOpen(false);

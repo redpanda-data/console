@@ -9,11 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { beforeEach, describe, expect, it, rs } from '@rstest/core';
-
-// Hoisted so the module factory below can close over it (rs.mock is lifted to the top of the file).
-const { mockConfig } = rs.hoisted(() => ({ mockConfig: { clusterId: 'cluster-a' } }));
-rs.mock('config', () => ({ config: mockConfig }));
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 
 import {
   AUTOSAVE_ENTRY_VERSION,
@@ -29,6 +25,11 @@ import {
   selectAutosaveEntry,
   useRpcnEditorAutosaveStore,
 } from './rpcn-editor-autosave';
+import { isObject, isUnknownArray } from '../utils/type-guards';
+
+// Hoisted so the module factory below can close over it (rs.mock is lifted to the top of the file).
+const { mockConfig } = rs.hoisted(() => ({ mockConfig: { clusterId: 'cluster-a' } }));
+rs.mock('runtime-config', () => ({ config: mockConfig }));
 
 const buffer = (overrides: Partial<EditorAutosaveInput> = {}): EditorAutosaveInput => ({
   targetKey: CREATE_AUTOSAVE_TARGET,
@@ -43,7 +44,13 @@ const buffer = (overrides: Partial<EditorAutosaveInput> = {}): EditorAutosaveInp
 // Buffer ages are measured from this instant, which every test pins as the system time.
 const NOW = new Date(2026, 0, 15, 12);
 
-const stored = () => JSON.parse(localStorage.getItem(EDITOR_AUTOSAVE_STORAGE_KEY) ?? '[]');
+const stored = (): Record<string, unknown>[] => {
+  const value: unknown = JSON.parse(localStorage.getItem(EDITOR_AUTOSAVE_STORAGE_KEY) ?? '[]');
+  if (!(isUnknownArray(value) && value.every(isObject))) {
+    throw new Error('Expected persisted autosave objects');
+  }
+  return value;
+};
 
 // Saves a full per-cluster set of buffers for each cluster in turn, one second apart, oldest first.
 function saveFullBufferSetPerCluster(clusterIds: string[]) {
@@ -70,13 +77,13 @@ describe('rpcn-editor-autosave', () => {
   });
 
   describe('targets and clusters', () => {
-    it('keys the create page and each pipeline separately', () => {
+    test('keys the create page and each pipeline separately', () => {
       expect(autosaveTargetKey(undefined)).toBe(CREATE_AUTOSAVE_TARGET);
       expect(autosaveTargetKey('')).toBe(CREATE_AUTOSAVE_TARGET);
       expect(autosaveTargetKey('pipeline-1')).toBe('pipeline-1');
     });
 
-    it('survives a reload, which is the entire point', () => {
+    test('survives a reload, which is the entire point', () => {
       rpcnEditorAutosave.save(buffer({ configYaml: 'input:\n  mid_sentence' }));
 
       // A fresh read of storage, as a reloaded page would do.
@@ -87,7 +94,7 @@ describe('rpcn-editor-autosave', () => {
     });
 
     // One buffer per editor, not a history: the point is the last thing typed, not every version of it.
-    it('replaces the buffer for a target rather than accumulating', () => {
+    test('replaces the buffer for a target rather than accumulating', () => {
       rpcnEditorAutosave.save(buffer({ configYaml: 'first' }));
       rpcnEditorAutosave.save(buffer({ configYaml: 'second' }));
 
@@ -95,7 +102,7 @@ describe('rpcn-editor-autosave', () => {
       expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.configYaml).toBe('second');
     });
 
-    it('keeps a buffer per pipeline', () => {
+    test('keeps a buffer per pipeline', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1', configYaml: 'one' }));
       rpcnEditorAutosave.save(buffer({ targetKey: 'p2', configYaml: 'two' }));
 
@@ -103,7 +110,7 @@ describe('rpcn-editor-autosave', () => {
       expect(rpcnEditorAutosave.get('p2')?.configYaml).toBe('two');
     });
 
-    it('never offers one cluster its work from another', () => {
+    test('never offers one cluster its work from another', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1', configYaml: 'from cluster a' }));
 
       mockConfig.clusterId = 'cluster-b';
@@ -116,7 +123,7 @@ describe('rpcn-editor-autosave', () => {
       expect(rpcnEditorAutosave.get('p1')?.configYaml).toBe('from cluster a');
     });
 
-    it('clears only the target it is asked to clear', () => {
+    test('clears only the target it is asked to clear', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
       rpcnEditorAutosave.save(buffer({ targetKey: 'p2' }));
 
@@ -128,7 +135,7 @@ describe('rpcn-editor-autosave', () => {
   });
 
   describe('capacity', () => {
-    it('evicts the stalest buffers past the cap', () => {
+    test('evicts the stalest buffers past the cap', () => {
       for (let i = 0; i < MAX_AUTOSAVE_BUFFERS + 3; i++) {
         // Distinct timestamps, so "stalest" is well-defined.
         rs.setSystemTime(new Date(2026, 0, 1, 0, 0, i));
@@ -136,29 +143,29 @@ describe('rpcn-editor-autosave', () => {
       }
       rs.useRealTimers();
 
-      const entries = stored() as Array<{ targetKey: string }>;
+      const entries = stored();
       expect(entries).toHaveLength(MAX_AUTOSAVE_BUFFERS);
       expect(entries.map((e) => e.targetKey)).not.toContain('p0');
       expect(entries.map((e) => e.targetKey)).toContain(`p${MAX_AUTOSAVE_BUFFERS + 2}`);
     });
 
     // Ten per cluster with an uncapped tail is no cap at all against the origin's storage budget.
-    it('caps buffers across clusters, newest kept', () => {
+    test('caps buffers across clusters, newest kept', () => {
       saveFullBufferSetPerCluster(['cluster-a', 'cluster-b', 'cluster-c']);
       rs.useRealTimers();
 
-      const entries = stored() as Array<{ targetKey: string; clusterId: string }>;
+      const entries = stored();
       expect(entries).toHaveLength(MAX_AUTOSAVE_BUFFERS_TOTAL);
       expect(entries.some((e) => e.clusterId === 'cluster-a')).toBe(false);
       expect(entries.filter((e) => e.clusterId === 'cluster-c')).toHaveLength(MAX_AUTOSAVE_BUFFERS);
     });
 
-    it('refuses a config too large to keep, rather than blowing the storage quota', () => {
+    test('refuses a config too large to keep, rather than blowing the storage quota', () => {
       expect(rpcnEditorAutosave.save(buffer({ configYaml: 'x'.repeat(MAX_AUTOSAVE_YAML_BYTES + 1) }))).toBe(false);
       expect(stored()).toHaveLength(0);
     });
 
-    it('reports a refusal when storage is unavailable, instead of pretending it saved', () => {
+    test('reports a refusal when storage is unavailable, instead of pretending it saved', () => {
       const setItem = rs.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
         throw new Error('quota exceeded');
       });
@@ -170,7 +177,7 @@ describe('rpcn-editor-autosave', () => {
   });
 
   describe('storage consistency', () => {
-    it('does not let a buffer it failed to clear come back and offer to overwrite the save', () => {
+    test('does not let a buffer it failed to clear come back and offer to overwrite the save', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
       const setItem = rs.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
         throw new Error('quota exceeded');
@@ -185,7 +192,7 @@ describe('rpcn-editor-autosave', () => {
     });
 
     // Another tab's buffer must not be clobbered by this tab's stale snapshot.
-    it('writes through storage rather than over an in-memory snapshot', () => {
+    test('writes through storage rather than over an in-memory snapshot', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
       // Simulate another tab: write directly, leaving this store's state behind.
       const otherTab = [
@@ -210,18 +217,18 @@ describe('rpcn-editor-autosave', () => {
       expect(rpcnEditorAutosave.get('p2')?.configYaml).toBe('from the other tab');
     });
 
-    it('drops anything unparseable instead of failing to load', () => {
+    test('drops anything unparseable instead of failing to load', () => {
       localStorage.setItem(EDITOR_AUTOSAVE_STORAGE_KEY, '{not json');
       useRpcnEditorAutosaveStore.getState().refresh();
-      expect(useRpcnEditorAutosaveStore.getState().entries).toEqual([]);
+      expect(useRpcnEditorAutosaveStore.getState().entries).toStrictEqual([]);
 
       localStorage.setItem(EDITOR_AUTOSAVE_STORAGE_KEY, JSON.stringify([{ targetKey: 'p1' }, 'nonsense', null]));
       useRpcnEditorAutosaveStore.getState().refresh();
-      expect(useRpcnEditorAutosaveStore.getState().entries).toEqual([]);
+      expect(useRpcnEditorAutosaveStore.getState().entries).toStrictEqual([]);
     });
 
     // The browser-local drafts prototype this replaced; superseded by server-side drafts.
-    it('cleans up the storage the old local-drafts prototype left behind', () => {
+    test('cleans up the storage the old local-drafts prototype left behind', () => {
       localStorage.setItem('rpcn-pipeline-drafts', JSON.stringify([{ id: 'old', configYaml: 'x' }]));
 
       useRpcnEditorAutosaveStore.getState().refresh();
@@ -234,7 +241,7 @@ describe('rpcn-editor-autosave', () => {
   describe('shape guard', () => {
     const persisted = () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1', tags: [{ key: 'team', value: 'data' }] }));
-      return stored()[0] as Record<string, unknown>;
+      return stored()[0];
     };
 
     const reloadWith = (entry: Record<string, unknown>) => {
@@ -243,23 +250,23 @@ describe('rpcn-editor-autosave', () => {
       return useRpcnEditorAutosaveStore.getState().entries;
     };
 
-    it('keeps an entry of the current shape', () => {
+    test('keeps an entry of the current shape', () => {
       expect(reloadWith(persisted())).toHaveLength(1);
     });
 
-    it('drops an entry written by another version', () => {
-      expect(reloadWith({ ...persisted(), version: AUTOSAVE_ENTRY_VERSION + 1 })).toEqual([]);
+    test('drops an entry written by another version', () => {
+      expect(reloadWith({ ...persisted(), version: AUTOSAVE_ENTRY_VERSION + 1 })).toStrictEqual([]);
       const { version: _version, ...unversioned } = persisted();
-      expect(reloadWith(unversioned)).toEqual([]);
+      expect(reloadWith(unversioned)).toStrictEqual([]);
     });
 
-    it('drops an entry whose settings would not survive the form', () => {
-      expect(reloadWith({ ...persisted(), tags: [null] })).toEqual([]);
-      expect(reloadWith({ ...persisted(), tags: [{ key: 'team' }] })).toEqual([]);
+    test('drops an entry whose settings would not survive the form', () => {
+      expect(reloadWith({ ...persisted(), tags: [null] })).toStrictEqual([]);
+      expect(reloadWith({ ...persisted(), tags: [{ key: 'team' }] })).toStrictEqual([]);
       const { computeUnits: _units, ...noUnits } = persisted();
-      expect(reloadWith(noUnits)).toEqual([]);
-      expect(reloadWith({ ...persisted(), description: undefined })).toEqual([]);
-      expect(reloadWith({ ...persisted(), basedOnUpdateTime: 'yesterday' })).toEqual([]);
+      expect(reloadWith(noUnits)).toStrictEqual([]);
+      expect(reloadWith({ ...persisted(), description: undefined })).toStrictEqual([]);
+      expect(reloadWith({ ...persisted(), basedOnUpdateTime: 'yesterday' })).toStrictEqual([]);
     });
   });
 
@@ -281,13 +288,13 @@ describe('rpcn-editor-autosave', () => {
       useRpcnEditorAutosaveStore.getState().refresh();
     };
 
-    it('keeps a buffer that is merely old', () => {
+    test('keeps a buffer that is merely old', () => {
       storeAged(MAX_AUTOSAVE_AGE_MS - 60_000);
 
       expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)).not.toBeNull();
     });
 
-    it('never offers a buffer past the cap', () => {
+    test('never offers a buffer past the cap', () => {
       storeAged(MAX_AUTOSAVE_AGE_MS + 60_000);
 
       expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)).toBeNull();
@@ -295,15 +302,15 @@ describe('rpcn-editor-autosave', () => {
 
     // The point of the cap is that the stored YAML goes away, not just that it stops
     // being offered — someone who never opens the editor again writes nothing to evict it.
-    it('removes the expired buffer from storage rather than only hiding it', () => {
+    test('removes the expired buffer from storage rather than only hiding it', () => {
       storeAged(MAX_AUTOSAVE_AGE_MS + 60_000);
 
-      expect(stored()).toEqual([]);
+      expect(stored()).toStrictEqual([]);
     });
   });
 
   describe('clearAll', () => {
-    it('drops buffers from every cluster, for logout', () => {
+    test('drops buffers from every cluster, for logout', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
       mockConfig.clusterId = 'cluster-b';
       rpcnEditorAutosave.save(buffer({ targetKey: 'p2' }));
@@ -311,7 +318,7 @@ describe('rpcn-editor-autosave', () => {
 
       rpcnEditorAutosave.clearAll();
 
-      expect(stored()).toEqual([]);
+      expect(stored()).toStrictEqual([]);
       mockConfig.clusterId = 'cluster-a';
       expect(rpcnEditorAutosave.get('p1')).toBeNull();
     });
@@ -320,13 +327,13 @@ describe('rpcn-editor-autosave', () => {
   describe('basedOnUpdateTime', () => {
     // Staleness compares this against the pipeline's current update_time, both server
     // values. Round-tripping it is the whole contract the editor relies on.
-    it('round-trips the pipeline version the edits were based on', () => {
+    test('round-trips the pipeline version the edits were based on', () => {
       rpcnEditorAutosave.save(buffer({ basedOnUpdateTime: 1_700_000_000_123 }));
 
       expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.basedOnUpdateTime).toBe(1_700_000_000_123);
     });
 
-    it('accepts a buffer with no baseline, as the create page has none', () => {
+    test('accepts a buffer with no baseline, as the create page has none', () => {
       rpcnEditorAutosave.save(buffer({ basedOnUpdateTime: null }));
 
       expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.basedOnUpdateTime).toBeNull();
@@ -337,14 +344,14 @@ describe('rpcn-editor-autosave', () => {
     const account = { serviceAccountId: 'sa-123', secretName: 'ORDERS_SA' };
 
     // The config only names the login mechanism; the account it logs in with is stored beside it.
-    it('round-trips the account the edits attached', () => {
+    test('round-trips the account the edits attached', () => {
       rpcnEditorAutosave.save(buffer({ serviceAccount: account }));
       useRpcnEditorAutosaveStore.getState().refresh();
 
-      expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.serviceAccount).toEqual(account);
+      expect(rpcnEditorAutosave.get(CREATE_AUTOSAVE_TARGET)?.serviceAccount).toStrictEqual(account);
     });
 
-    it('keeps a buffer written without one', () => {
+    test('keeps a buffer written without one', () => {
       rpcnEditorAutosave.save(buffer());
       useRpcnEditorAutosaveStore.getState().refresh();
 
@@ -353,11 +360,11 @@ describe('rpcn-editor-autosave', () => {
   });
 
   describe('selectAutosaveEntry', () => {
-    it('returns nothing without a target', () => {
+    test('returns nothing without a target', () => {
       expect(selectAutosaveEntry([], undefined)).toBeNull();
     });
 
-    it('finds the buffer this cluster holds for a target', () => {
+    test('finds the buffer this cluster holds for a target', () => {
       rpcnEditorAutosave.save(buffer({ targetKey: 'p1' }));
       const { entries } = useRpcnEditorAutosaveStore.getState();
       expect(selectAutosaveEntry(entries, 'p1')?.targetKey).toBe('p1');

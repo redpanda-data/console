@@ -9,8 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
-import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
+import { getComponentLogo } from 'assets/connectors/component-logo-map';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Card } from 'components/redpanda-ui/components/card';
 import { ArrowRight, type LucideIcon, SignalHigh, SignalLow, SignalMedium, Waypoints } from 'lucide-react';
 
@@ -33,13 +34,13 @@ const setupTierFor = (minutes: number): SetupTier => {
 
 const ComponentIcon = ({ name, override }: { name: string; override?: string }) => {
   const resolvedName = override ?? name;
-  const inner = componentLogoMap[resolvedName as ComponentName] ? (
-    <ConnectorLogo className="h-5 w-5" name={resolvedName as ComponentName} />
+  const inner = getComponentLogo(resolvedName) ? (
+    <ConnectorLogo className="size-5" name={resolvedName} />
   ) : (
-    <TonedIcon className="h-5 w-5" icon={Waypoints} tone="muted" />
+    <TonedIcon className="size-5" icon={Waypoints} tone="muted" />
   );
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-background">{inner}</div>
+    <div className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-background">{inner}</div>
   );
 };
 
@@ -51,24 +52,26 @@ export type TemplateTileProps = {
 export const TemplateTile = ({ template, onSelect }: TemplateTileProps) => {
   const { label: tierLabel, Icon: TierIcon } = setupTierFor(template.setupTimeMinutes);
   return (
-    <button
-      className="group h-full w-full cursor-pointer rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    <Button
+      // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+      className="group size-full cursor-pointer rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       data-testid={`template-tile-${template.id}`}
       onClick={() => onSelect(template)}
       type="button"
+      variant="unstyled"
     >
       <Card className="h-full" size="full" variant="standard">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <ComponentIcon name={template.source.component} override={template.source.logoOverride} />
-            <TonedIcon aria-hidden className="h-3.5 w-3.5 shrink-0" icon={ArrowRight} tone="muted" />
+            <TonedIcon aria-hidden className="size-3.5 shrink-0" icon={ArrowRight} tone="muted" />
             <ComponentIcon name={template.sink.component} override={template.sink.logoOverride} />
           </div>
           <span
             className="flex shrink-0 items-center gap-0.5 text-body-sm leading-none text-muted-foreground"
             data-testid={`template-tile-tier-${template.id}`}
           >
-            <TierIcon aria-hidden className="h-3.5 w-3.5" />
+            <TierIcon aria-hidden className="size-3.5" />
             {tierLabel}
           </span>
         </div>
@@ -77,6 +80,6 @@ export const TemplateTile = ({ template, onSelect }: TemplateTileProps) => {
           <span className="line-clamp-2 text-body-sm leading-snug text-muted-foreground">{template.description}</span>
         </div>
       </Card>
-    </button>
+    </Button>
   );
 };

@@ -31,7 +31,7 @@ function isHookCallee(sourceCode: SourceCode, callee: Node) {
   }
   const member = memberPath(target);
   const property = member?.path.at(-1);
-  if (!(member && property)) {
+  if (!(member && property !== null && property !== undefined && property !== '')) {
     return false;
   }
   return HOOK_NAME.test(property) || (property === 'use' && importOf(sourceCode, member.root)?.source === 'react');

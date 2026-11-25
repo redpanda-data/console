@@ -52,7 +52,7 @@ function abbreviateUnit(unit: string): string {
   }
 
   // Truncate to 3 chars
-  return normalized.substring(0, 3);
+  return normalized.slice(0, 3);
 }
 
 /**
@@ -97,7 +97,7 @@ function formatNumber(value: number): { formatted: string; scale: string } {
  * Format a number with its unit
  */
 export function formatWithUnit(value: number, unit: string | undefined): string {
-  if (!unit) {
+  if (!(unit !== null && unit !== undefined && unit !== '')) {
     const { formatted, scale } = formatNumber(value);
     return `${formatted}${scale}`;
   }

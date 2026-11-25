@@ -324,7 +324,7 @@ describe('getUpdateValuesForTopics', () => {
       const result = getUpdateValuesForTopics(updated, original);
 
       expect(result.fieldMaskPaths).not.toContain('configurations.topic_metadata_sync_options');
-      expect(result.fieldMaskPaths).toEqual([]);
+      expect(result.fieldMaskPaths).toStrictEqual([]);
     });
   });
 
@@ -371,7 +371,7 @@ describe('getUpdateValuesForTopics', () => {
         patternType: PatternType.PREFIX,
         filterType: FilterType.EXCLUDE,
       });
-      expect(result.value.syncedShadowTopicProperties).toEqual(['cleanup.policy', 'retention.ms']);
+      expect(result.value.syncedShadowTopicProperties).toStrictEqual(['cleanup.policy', 'retention.ms']);
     });
   });
 
@@ -390,7 +390,7 @@ describe('getUpdateValuesForTopics', () => {
       expect(result.value.autoCreateShadowTopicFilters[0].name).toBe('*');
       expect(result.value.autoCreateShadowTopicFilters[0].patternType).toBe(PatternType.LITERAL);
       expect(result.value.autoCreateShadowTopicFilters[0].filterType).toBe(FilterType.INCLUDE);
-      expect(result.value.syncedShadowTopicProperties).toEqual(['cleanup.policy']);
+      expect(result.value.syncedShadowTopicProperties).toStrictEqual(['cleanup.policy']);
     });
 
     test('should build correct schema for specify mode with multiple topics', () => {
@@ -421,7 +421,7 @@ describe('getUpdateValuesForTopics', () => {
       expect(result.value.autoCreateShadowTopicFilters[1].name).toBe('topic.*');
       expect(result.value.autoCreateShadowTopicFilters[1].patternType).toBe(PatternType.PREFIX);
       expect(result.value.autoCreateShadowTopicFilters[1].filterType).toBe(FilterType.EXCLUDE);
-      expect(result.value.syncedShadowTopicProperties).toEqual([]);
+      expect(result.value.syncedShadowTopicProperties).toStrictEqual([]);
     });
 
     test('should build correct schema with topic properties', () => {
@@ -438,7 +438,11 @@ describe('getUpdateValuesForTopics', () => {
       expect(result.value.autoCreateShadowTopicFilters[0].name).toBe('*');
       expect(result.value.autoCreateShadowTopicFilters[0].patternType).toBe(PatternType.LITERAL);
       expect(result.value.autoCreateShadowTopicFilters[0].filterType).toBe(FilterType.INCLUDE);
-      expect(result.value.syncedShadowTopicProperties).toEqual(['cleanup.policy', 'retention.ms', 'compression.type']);
+      expect(result.value.syncedShadowTopicProperties).toStrictEqual([
+        'cleanup.policy',
+        'retention.ms',
+        'compression.type',
+      ]);
     });
 
     test('should build correct schema with empty topic properties', () => {
@@ -461,7 +465,7 @@ describe('getUpdateValuesForTopics', () => {
       expect(result.value.autoCreateShadowTopicFilters[0].name).toBe('topic1');
       expect(result.value.autoCreateShadowTopicFilters[0].patternType).toBe(PatternType.LITERAL);
       expect(result.value.autoCreateShadowTopicFilters[0].filterType).toBe(FilterType.INCLUDE);
-      expect(result.value.syncedShadowTopicProperties).toEqual([]);
+      expect(result.value.syncedShadowTopicProperties).toStrictEqual([]);
     });
   });
 
@@ -510,7 +514,7 @@ describe('getUpdateValuesForTopics', () => {
 
         const result = buildDefaultTopicsValues(shadowLink);
 
-        expect(result.topics).toEqual([]);
+        expect(result.topics).toStrictEqual([]);
       });
 
       test('should extract topicProperties from shadowLink.syncedShadowTopicProperties', () => {
@@ -533,7 +537,7 @@ describe('getUpdateValuesForTopics', () => {
 
         const result = buildDefaultTopicsValues(shadowLink);
 
-        expect(result.topicProperties).toEqual(['retention.bytes', 'compression.type']);
+        expect(result.topicProperties).toStrictEqual(['retention.bytes', 'compression.type']);
       });
 
       test('should extract excludeDefault from topicMetadataSyncOptions', () => {
@@ -605,7 +609,7 @@ describe('getUpdateValuesForTopics', () => {
 
         const result = buildDefaultTopicsValues(shadowLink);
 
-        expect(result.topics).toEqual([
+        expect(result.topics).toStrictEqual([
           {
             name: 'my-topic',
             patternType: PatternType.LITERAL,
@@ -640,12 +644,12 @@ describe('getUpdateValuesForTopics', () => {
         const result = buildDefaultTopicsValues(shadowLink);
 
         expect(result.topics).toHaveLength(2);
-        expect(result.topics[0]).toEqual({
+        expect(result.topics[0]).toStrictEqual({
           name: 'topic-1',
           patternType: PatternType.LITERAL,
           filterType: FilterType.INCLUDE,
         });
-        expect(result.topics[1]).toEqual({
+        expect(result.topics[1]).toStrictEqual({
           name: 'topic-2',
           patternType: PatternType.PREFIX,
           filterType: FilterType.EXCLUDE,
@@ -697,7 +701,7 @@ describe('getUpdateValuesForTopics', () => {
 
         const result = buildDefaultTopicsValues(shadowLink);
 
-        expect(result.topicProperties).toEqual([]);
+        expect(result.topicProperties).toStrictEqual([]);
       });
 
       test('should handle missing topicMetadataSyncOptions gracefully', () => {
@@ -711,8 +715,8 @@ describe('getUpdateValuesForTopics', () => {
         const result = buildDefaultTopicsValues(shadowLink);
 
         expect(result.topicsMode).toBe('specify');
-        expect(result.topics).toEqual([]);
-        expect(result.topicProperties).toEqual([]);
+        expect(result.topics).toStrictEqual([]);
+        expect(result.topicProperties).toStrictEqual([]);
         expect(result.excludeDefault).toBe(false);
       });
     });

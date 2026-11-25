@@ -115,7 +115,7 @@ test.describe('kafka Connect Connector Lifecycle', () => {
     const base = CONNECT_BASE;
 
     // Delete any existing connector and wait for it to be fully removed
-    await request.delete(`${base}/connectors/${CONNECTOR_NAME}`).catch(() => {});
+    await request.delete(`${base}/connectors/${CONNECTOR_NAME}`).catch(() => undefined);
     await retryAssertion(
       async () => {
         const res = await request.get(`${base}/connectors/${CONNECTOR_NAME}`).catch(() => null);
@@ -171,7 +171,10 @@ test.describe('kafka Connect Connector Lifecycle', () => {
 
     const response = await confirmConfigUpdate(page);
     expect(response.ok()).toBe(true);
-    expect(response.request().postDataJSON()?.['config']['emit.heartbeats.interval.seconds']).toBe('33');
+    const submittedRequest = z
+      .object({ config: z.record(z.string(), z.unknown()) })
+      .parse(response.request().postDataJSON());
+    expect(submittedRequest.config['emit.heartbeats.interval.seconds']).toBe('33');
 
     // Navigate back and open JSON view to verify the change
     await openConnectorConfiguration(page);

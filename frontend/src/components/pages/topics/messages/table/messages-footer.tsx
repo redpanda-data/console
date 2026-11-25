@@ -160,7 +160,7 @@ export const MessagesFooter = ({
                 Load {loadMoreCount} more
               </Button>
             )}
-            <div aria-hidden="true" className="h-px w-px" data-testid="messages-load-more-sentinel" ref={sentinelRef} />
+            <div aria-hidden="true" className="size-px" data-testid="messages-load-more-sentinel" ref={sentinelRef} />
           </div>
         ) : (
           <nav className="flex items-center gap-2" data-testid="messages-pagination">

@@ -1,4 +1,8 @@
 /** biome-ignore-all lint/performance/useTopLevelRegex: e2e test */
+
+import { isNonzeroNumber } from '../../../src/utils/number-utils';
+import { isNonEmptyString } from '../../../src/utils/string-utils';
+import { isObject, isPresent } from '../../../src/utils/type-guards';
 import type { Locator, Page } from '../../shared/e2e';
 import { expect, retryAssertion } from '../../shared/e2e';
 
@@ -43,7 +47,7 @@ const isChevronButton = (button: Element) => {
 
 // Checks the buttons recursively in DOM order and stops at the first chevron button.
 const findFirstChevronButton = async ([btn, ...remainingButtons]: Locator[]): Promise<Locator | undefined> => {
-  if (!btn) {
+  if (!isPresent(btn)) {
     return;
   }
   if (await btn.evaluate(isChevronButton)) {
@@ -89,8 +93,10 @@ const readDestinationContainerId = (
   stateFilePath: string
 ) => {
   try {
-    const state = JSON.parse(readFileSync(stateFilePath, 'utf-8'));
-    return state.destRedpandaId as string | undefined;
+    const state: unknown = JSON.parse(readFileSync(stateFilePath, 'utf-8'));
+    return isObject(state) && typeof state.destRedpandaId === 'string' && state.destRedpandaId !== ''
+      ? state.destRedpandaId
+      : undefined;
   } catch {
     // Try next file
   }
@@ -99,9 +105,10 @@ const readDestinationContainerId = (
 /** Reads the destination container ID from the testcontainers state file. */
 const findContainerIdInStateFiles = async () => {
   const { readFileSync, existsSync } = await import('node:fs');
-  for (const stateFilePath of await getStateFileCandidates()) {
+  const stateFileCandidates = await getStateFileCandidates();
+  for (const stateFilePath of stateFileCandidates) {
     const containerId = existsSync(stateFilePath) ? readDestinationContainerId(readFileSync, stateFilePath) : undefined;
-    if (containerId) {
+    if (containerId !== null && containerId !== undefined && containerId !== '') {
       console.log(`  Found container ID in ${stateFilePath}`);
       return containerId;
     }
@@ -128,7 +135,7 @@ const findContainerIdByPort = async (
 
 const findDestinationContainerId = async (execAsync: ExecAsync) => {
   const containerId = await findContainerIdInStateFiles();
-  if (containerId) {
+  if (containerId !== null && containerId !== undefined && containerId !== '') {
     return containerId;
   }
   console.log('  Could not read state file, trying to find container by port...');
@@ -231,7 +238,7 @@ export class ShadowlinkPage {
     await this.setToggle('tls-toggle', false);
 
     // Configure SASL if provided.
-    if (params.username && params.password) {
+    if (isNonEmptyString(params.username) && isNonEmptyString(params.password)) {
       await this.fillScramCredentials(params.username, params.password, params.mechanism);
     }
 
@@ -295,7 +302,7 @@ export class ShadowlinkPage {
     }
 
     // Configure sync interval
-    if (params.syncInterval) {
+    if (isNonzeroNumber(params.syncInterval)) {
       await this.page.getByTestId('shadowlink-sync-interval-input').fill(params.syncInterval.toString());
     }
 
@@ -314,11 +321,10 @@ export class ShadowlinkPage {
     // Wait for filters container to be visible
     await this.page.getByTestId('topics-filters-container').waitFor({ state: 'visible' });
 
-    // Chained in order: filter card `i` exists only after the previous cards were added
-    await topicFilters.reduce<Promise<unknown>>(
-      (previousFilter, filter, i) => previousFilter.then(() => this.fillTopicFilter(filter, i)),
-      Promise.resolve()
-    );
+    for (const [index, filter] of topicFilters.entries()) {
+      // biome-ignore lint/performance/noAwaitInLoops: Each filter card exists only after the preceding card was added.
+      await this.fillTopicFilter(filter, index);
+    }
   }
 
   private async fillTopicFilter(filter: TopicFilter, i: number) {
@@ -372,7 +378,9 @@ export class ShadowlinkPage {
     await this.page.goto(this.shadowBackendURL);
 
     // Wait for home page to load - look for common elements
-    await expect(this.page.getByRole('heading', { name: /overview|dashboard|home/i })).toBeVisible({ timeout: 10_000 });
+    await expect(this.page.getByRole('heading', { name: /overview|dashboard|home/i })).toBeVisible({
+      timeout: 10_000,
+    });
 
     // Verify shadowlink section appears with retry logic
     // The Shadow Cluster section may take time to appear after shadowlink creation
@@ -409,7 +417,7 @@ export class ShadowlinkPage {
       async () => {
         const topicCountElement = this.page.getByTestId('shadowlink-topic-count');
         const text = await topicCountElement.textContent();
-        const count = Number.parseInt(text || '0', 10);
+        const count = Number.parseInt((text ?? '') || '0', 10);
         expect(count).toBe(expectedCount);
       },
       { timeout }
@@ -471,13 +479,10 @@ export class ShadowlinkPage {
     // Clear existing filters - look for delete/trash buttons in elevated cards
     await this.clearTopicFilters();
 
-    // Add new filters
-    // After deleting all filters, we need to add new ones by clicking "Add filter" for each,
-    // chained in order because each filter fills the card its own click just added
-    await filters.reduce<Promise<unknown>>(
-      (previousFilter, filter, filterIndex) => previousFilter.then(() => this.addTopicFilter(filter, filterIndex)),
-      Promise.resolve()
-    );
+    for (const [filterIndex, filter] of filters.entries()) {
+      // biome-ignore lint/performance/noAwaitInLoops: Each click adds the card that this filter fills before the next is added.
+      await this.addTopicFilter(filter, filterIndex);
+    }
 
     await this.fillSourcePasswordForSave();
 
@@ -546,11 +551,11 @@ export class ShadowlinkPage {
 
   // Checks the buttons recursively in DOM order and stops at the first trash button it clicks.
   private async clickFirstTrashButtonOf([btn, ...remainingButtons]: Locator[]): Promise<boolean> {
-    if (!btn) {
+    if (!isPresent(btn)) {
       return false;
     }
     try {
-      if (await btn.evaluate(isTrashButton)) {
+      if ((await btn.evaluate(isTrashButton)) === true) {
         await btn.click();
         return true; // Re-query buttons on the next call
       }
@@ -665,15 +670,13 @@ export class ShadowlinkPage {
     try {
       const execAsync = await createExecAsync();
       const containerId = await findDestinationContainerId(execAsync);
-      if (!containerId) {
+      if (!(containerId !== null && containerId !== undefined && containerId !== '')) {
         console.log('  No destination cluster container found, skipping cleanup');
         return;
       }
       await deleteReplicatedTopics(execAsync, containerId.trim());
     } catch (error) {
-      console.log(
-        `  Warning: Could not clean up destination topics: ${error instanceof Error ? error.message : String(error)}`
-      );
+      console.log('  Warning: Could not clean up destination topics:', error);
     }
   }
 

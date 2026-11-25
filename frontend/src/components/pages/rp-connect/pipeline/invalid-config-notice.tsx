@@ -9,27 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { cva, type VariantProps } from 'class-variance-authority';
 import { Alert } from 'components/redpanda-ui/components/alert';
-import { cn } from 'components/redpanda-ui/lib/utils';
 import { TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
-
-// `w-auto` overrides the Alert's `w-full`, so the notice stays content-width when floated over the canvas.
-const invalidConfigNoticeVariants = cva('w-auto', {
-  variants: {
-    variant: {
-      default: '',
-      // Floated over the canvas: tighter padding, and a shadow and blur to lift it off the graph.
-      floating: 'px-3 py-1.5 text-body shadow-sm backdrop-blur-sm',
-      // Inline in the sidebar outline.
-      compact: 'px-2.5 py-2 text-body-sm',
-    },
-  },
-  defaultVariants: {
-    variant: 'default',
-  },
-});
+import './pipeline-editor.css';
 
 /**
  * Warning banner for a pipeline config that can't be shown as-is, shared by the visual canvas and the
@@ -40,14 +23,21 @@ export function InvalidConfigNotice({
   children,
   className,
   variant,
-}: { children: ReactNode; className?: string } & VariantProps<typeof invalidConfigNoticeVariants>) {
+}: {
+  children: ReactNode;
+  className?: string;
+  variant?: 'default' | 'floating' | 'compact' | null;
+}) {
   return (
-    <Alert
-      className={cn(invalidConfigNoticeVariants({ variant }), className)}
-      icon={<TriangleAlert />}
-      variant="warning"
-    >
-      <span className="col-start-2">{children}</span>
-    </Alert>
+    <div className={className}>
+      <Alert
+        className="pipeline-invalid-notice"
+        data-notice-variant={variant}
+        icon={<TriangleAlert />}
+        variant="warning"
+      >
+        <span className="col-start-2">{children}</span>
+      </Alert>
+    </div>
   );
 }

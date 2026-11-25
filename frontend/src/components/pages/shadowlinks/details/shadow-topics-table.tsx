@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import 'components/legacy-layout.css';
 import { useNavigate } from '@tanstack/react-router';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
@@ -23,13 +24,17 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import type { ComponentStyleVars } from 'components/style-vars';
 import { Info, RefreshCw, X } from 'lucide-react';
 import type { ShadowTopic } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { ShadowTopicStatusBadge } from './shadow-topic-status-badge';
+import { isPresent } from '../../../../utils/type-guards';
 
 type ShadowTopicsTableProps = {
   topics: ShadowTopic[] | undefined;
@@ -122,7 +127,7 @@ const VirtualizedRows = ({
     );
   }
 
-  if (isFetching) {
+  if (isFetching === true) {
     return <LoadingRow columnsLength={columnsLength} message="Loading topics..." />;
   }
 
@@ -171,13 +176,13 @@ const useVirtualTopicRows = ({
   useEffect(() => {
     const [lastItem] = [...virtualRows].reverse();
 
-    if (!lastItem) {
+    if (!isPresent(lastItem)) {
       return;
     }
 
     // When last visible item is near the end, fetch more
-    const canFetch = hasNextPage && !isFetchingNextPage && nextPageError === null;
-    if (lastItem.index >= rowCount - 1 && canFetch && getNextTopicPage) {
+    const canFetch = hasNextPage === true && !(isFetchingNextPage === true) && nextPageError === null;
+    if (lastItem.index >= rowCount - 1 && canFetch === true && getNextTopicPage) {
       getNextTopicPage().catch((error: unknown) => {
         setNextPageError(error instanceof Error ? error.message : String(error));
       });
@@ -224,7 +229,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
               <Tooltip>
                 <TooltipTrigger
                   data-testid="max-offset-lag-info-icon"
-                  render={<TonedIcon className="h-4 w-4" icon={Info} tone="muted" />}
+                  render={<TonedIcon className="size-4" icon={Info} tone="muted" />}
                 />
                 <TooltipContent>
                   <p>Maximum offset difference between source and replica topic partitions</p>
@@ -249,7 +254,10 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
             return (
               <div className="flex items-center justify-end gap-2">
                 <Button
-                  onClick={() => navigate({ to: `/topics/${topic.topicName}?pageSize=10` })}
+                  onClick={asyncEvent(
+                    () => navigate({ to: `/topics/${topic.topicName}?pageSize=10` }),
+                    reportActionError
+                  )}
                   size="sm"
                   type="button"
                   variant="outline"
@@ -306,12 +314,12 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
                   onChange={(e) => changeTopicNameFilter(e.target.value)}
                   placeholder="Filter topics by name..."
                   type="text"
-                  value={topicNameFilter || ''}
+                  value={(topicNameFilter ?? '') || ''}
                 />
               </div>
               {Boolean(topicNameFilter) && (
                 <Button aria-label="Clear filter" onClick={() => changeTopicNameFilter('')} size="sm" variant="ghost">
-                  <X className="h-4 w-4" />
+                  <X className="size-4" />
                 </Button>
               )}
               <Button
@@ -322,7 +330,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
                 size="icon"
                 variant="ghost"
               >
-                <RefreshCw className="h-5 w-5" />
+                <RefreshCw className="size-5" />
               </Button>
             </div>
           </CardAction>
@@ -339,7 +347,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
             - Separate tables allow independent scroll behavior while keeping columns aligned
           */}
           <div className="relative">
-            <Table className="" style={{ tableLayout: 'fixed', width: '100%' }} variant={'simple'}>
+            <Table className="w-full table-fixed" variant={'simple'}>
               {/*
                 colgroup enforces fixed column widths to prevent browser from recalculating
                 when new rows are added via pagination/infinite scroll. Both header and body
@@ -347,12 +355,16 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
               */}
               <colgroup>
                 {table.getAllColumns().map((column) => (
-                  <col key={column.id} style={{ width: `${column.getSize()}px` }} />
+                  <col
+                    className="console-variable-width"
+                    key={column.id}
+                    style={{ '--console-width': `${column.getSize()}px` } as ComponentStyleVars}
+                  />
                 ))}
               </colgroup>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} style={{ borderBottom: 'none', borderRadius: 0 }}>
+                  <TableRow className="console-shadow-table-header" key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <TableHead key={header.id}>
                         {header.isPlaceholder ? null : <table.FlexRender header={header} />}
@@ -363,16 +375,24 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
               </TableHeader>
             </Table>
             <div className="max-h-[600px] overflow-y-auto" ref={tableContainerRef}>
-              <Table style={{ tableLayout: 'fixed', width: '100%' }}>
+              <Table className="w-full table-fixed">
                 <colgroup>
                   {table.getAllColumns().map((column) => (
-                    <col key={column.id} style={{ width: `${column.getSize()}px` }} />
+                    <col
+                      className="console-variable-width"
+                      key={column.id}
+                      style={{ '--console-width': `${column.getSize()}px` } as ComponentStyleVars}
+                    />
                   ))}
                 </colgroup>
                 <TableBody>
                   {paddingTop > 0 && (
                     <TableRow>
-                      <TableCell colSpan={columns.length} style={{ height: `${paddingTop}px` }} />
+                      <TableCell
+                        className="console-variable-height"
+                        colSpan={columns.length}
+                        style={{ '--console-height': `${paddingTop}px` } as ComponentStyleVars}
+                      />
                     </TableRow>
                   )}
                   <VirtualizedRows
@@ -387,7 +407,11 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
                   />
                   {paddingBottom > 0 && (
                     <TableRow>
-                      <TableCell colSpan={columns.length} style={{ height: `${paddingBottom}px` }} />
+                      <TableCell
+                        className="console-variable-height"
+                        colSpan={columns.length}
+                        style={{ '--console-height': `${paddingBottom}px` } as ComponentStyleVars}
+                      />
                     </TableRow>
                   )}
                 </TableBody>

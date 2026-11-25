@@ -27,8 +27,9 @@ import { useMemo } from 'react';
 
 import { useEgressGatewayNames } from './egress-gateway-field';
 import { isEgressGatewayPickerEnabled } from './egress-gateways';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { cpuToTasks } from '../tasks';
-import { extractAllTopics } from '../utils/yaml';
+import { extractAllTopics } from '../utils/yaml-redpanda';
 
 type DetailsDialogProps = {
   open: boolean;
@@ -70,7 +71,7 @@ const renderValue = (value: string | undefined, children: React.ReactNode | unde
     return children;
   }
   const hasValue = Boolean(value?.length);
-  const displayValue = hasValue ? (value as string) : EMPTY_PLACEHOLDER;
+  const displayValue = value !== undefined && value !== '' ? value : EMPTY_PLACEHOLDER;
   return (
     <div
       className={cn(
@@ -95,7 +96,7 @@ const DetailRow = ({ label, value, children, copyable = false, wrap = false }: D
         <div className="min-w-0 flex-1">{renderValue(value, children, wrap)}</div>
         {showCopy ? (
           <span className="inline-flex shrink-0 opacity-0 transition-opacity group-hover/row:opacity-100">
-            <CopyButton content={value as string} size="sm" variant="ghost" />
+            <CopyButton content={value} size="sm" variant="ghost" />
           </span>
         ) : null}
       </div>
@@ -147,11 +148,17 @@ const ReferenceList = ({ items }: { items: string[] }) => {
 export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }: DetailsDialogProps) {
   const configYaml = pipeline?.configYaml;
   const secrets = useMemo(
-    () => (configYaml ? getUniqueSecretNames(extractSecretReferences(configYaml)) : []),
+    () =>
+      configYaml !== null && configYaml !== undefined && configYaml !== ''
+        ? getUniqueSecretNames(extractSecretReferences(configYaml))
+        : [],
     [configYaml]
   );
 
-  const topics = useMemo(() => (configYaml ? extractAllTopics(configYaml) : []), [configYaml]);
+  const topics = useMemo(
+    () => (configYaml !== null && configYaml !== undefined && configYaml !== '' ? extractAllTopics(configYaml) : []),
+    [configYaml]
+  );
 
   const visibleTags = useMemo(
     () => Object.entries(pipeline?.tags ?? {}).filter(([k]) => !isSystemTag(k)),
@@ -159,6 +166,7 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }:
   );
 
   const gatewayNames = useEgressGatewayNames();
+  const gatewayRefs = pipeline?.egress?.gatewayRefs ?? [];
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -185,7 +193,9 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }:
                   <DetailRow copyable label="Service account" value={pipeline.serviceAccount.clientId} />
                 ) : null}
                 <DetailRow label={<ComputeUnitsLabel />} value={`${cpuToTasks(pipeline.resources?.cpuShares) ?? 0}`} />
-                {pipeline.status?.error ? <DetailRow label="Status" value={pipeline.status.error} wrap /> : null}
+                {isNonEmptyString(pipeline.status?.error) ? (
+                  <DetailRow label="Status" value={pipeline.status.error} wrap />
+                ) : null}
               </section>
 
               <Separator />
@@ -201,11 +211,9 @@ export function DetailsDialog({ open, onOpenChange, pipeline, onRequestDelete }:
                 <DetailRow label="Tags">
                   <ReferenceList items={visibleTags.map(([k, v]) => `${k}: ${v}`)} />
                 </DetailRow>
-                {isEgressGatewayPickerEnabled() && pipeline.egress?.gatewayRefs.length ? (
+                {isEgressGatewayPickerEnabled() && gatewayRefs.length > 0 ? (
                   <DetailRow label="Egress gateways">
-                    <ReferenceList
-                      items={pipeline.egress.gatewayRefs.map((ref) => gatewayNames.get(ref.id) ?? ref.id)}
-                    />
+                    <ReferenceList items={gatewayRefs.map((ref) => gatewayNames.get(ref.id) ?? ref.id)} />
                   </DetailRow>
                 ) : null}
               </section>

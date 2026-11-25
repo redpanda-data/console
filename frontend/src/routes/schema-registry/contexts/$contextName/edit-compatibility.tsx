@@ -11,8 +11,7 @@
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
 
-import EditSchemaCompatibilityPage from '../../../../components/pages/schemas/edit-compatibility';
-
+import { EditSchemaCompatibilityPage } from '../../../../components/pages/schemas/edit-compatibility';
 export const Route = createFileRoute('/schema-registry/contexts/$contextName/edit-compatibility')({
   staticData: {
     title: 'Edit Compatibility',

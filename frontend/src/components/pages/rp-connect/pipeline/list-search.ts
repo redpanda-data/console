@@ -13,11 +13,13 @@ import type { ColumnFiltersState, SortingState } from '@tanstack/react-table';
 import { z } from 'zod';
 
 import { PIPELINE_STATE_TABS, type PipelineStateTabId, stateFilterValues } from './list-utils';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { isUnknownArray } from '../../../../utils/type-guards';
 
 // The list's view as URL search params, so a view can be linked and survives a reload. Every key is
 // optional and drops out when it holds its default; a value that doesn't parse is ignored.
 
-const TAB_IDS = PIPELINE_STATE_TABS.map((tab) => tab.id) as [PipelineStateTabId, ...PipelineStateTabId[]];
+const TAB_IDS = ['all', 'draft', 'running', 'stopped', 'error'] as const satisfies PipelineStateTabId[];
 const SORTABLE_COLUMNS = ['state', 'name'] as const;
 const values = z.array(z.string()).optional().catch(undefined);
 export const DEFAULT_PAGE_SIZE = 20;
@@ -62,11 +64,11 @@ export function columnFiltersFromSearch(search: PipelineListSearch): ColumnFilte
   if (states) {
     filters.push({ id: 'state', value: states });
   }
-  if (search.q?.trim()) {
+  if (isNonEmptyString(search.q?.trim())) {
     filters.push({ id: 'name', value: search.q });
   }
   const facets = Object.entries(FILTER_KEYS).flatMap(([id, key]) =>
-    search[key]?.length ? [{ id, value: search[key] }] : []
+    (search[key]?.length ?? 0) > 0 ? [{ id, value: search[key] }] : []
   );
   return [...filters, ...facets];
 }
@@ -78,7 +80,12 @@ export function facetSearchFromFilters(
   return Object.fromEntries(
     Object.entries(FILTER_KEYS).map(([id, key]) => {
       const value = filters.find((filter) => filter.id === id)?.value;
-      return [key, Array.isArray(value) && value.length > 0 ? (value as string[]) : undefined];
+      return [
+        key,
+        isUnknownArray(value) && value.length > 0 && value.every((entry): entry is string => typeof entry === 'string')
+          ? value
+          : undefined,
+      ];
     })
   );
 }

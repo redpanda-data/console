@@ -13,26 +13,16 @@ import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core'
 import { waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ComponentProps, useState } from 'react';
-import { act, screen } from 'test-utils';
+import { useApiStore } from 'state/backend-api';
+import { useSupportedFeaturesStore } from 'state/supported-features';
+
+import { GroupDetails } from './group-details';
+import { act, renderWithFileRoutes, screen } from '../../../test-utils';
+import type { GroupDescription } from '../../../types/consumer-groups';
 
 const { refreshConsumerGroupMock, refreshConsumerGroupAclsMock } = rs.hoisted(() => ({
   refreshConsumerGroupMock: rs.fn(),
   refreshConsumerGroupAclsMock: rs.fn(),
-}));
-
-rs.mock('state/ui-state', () => ({
-  setPageHeader: rs.fn(),
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
-
-rs.mock('state/app-global', () => ({
-  appGlobal: {
-    onRefresh: null,
-    historyPush: rs.fn(),
-  },
 }));
 
 rs.mock('state/backend-api', () => {
@@ -48,22 +38,14 @@ rs.mock('state/backend-api', () => {
   };
 });
 
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
+rs.mock('runtime-config', () => {
+  const actual = rs.requireActual<typeof import('runtime-config')>('runtime-config');
   return {
     ...actual,
     config: { jwt: '' },
     isFeatureFlagEnabled: rs.fn(() => false),
   };
 });
-
-import { useApiStore } from 'state/backend-api';
-import type { GroupDescription } from 'state/rest-interfaces';
-import { useSupportedFeaturesStore } from 'state/supported-features';
-import { renderWithFileRoutes } from 'test-utils';
-
-import GroupDetails from './group-details';
-
 const TOPIC = 'test-topic';
 const GROUP_ID = 'test-group';
 
@@ -99,7 +81,12 @@ const mockGroup: GroupDescription = {
 
 const renderGroupDetails = (search: { tab?: 'topics' | 'members' | 'acl' } = {}) =>
   renderWithFileRoutes(
-    <GroupDetails groupId={GROUP_ID} matchedPath={`/groups/${GROUP_ID}`} onSearchChange={() => {}} search={search} />
+    <GroupDetails
+      groupId={GROUP_ID}
+      matchedPath={`/groups/${GROUP_ID}`}
+      onSearchChange={() => undefined}
+      search={search}
+    />
   );
 
 type GroupSearch = ComponentProps<typeof GroupDetails>['search'];

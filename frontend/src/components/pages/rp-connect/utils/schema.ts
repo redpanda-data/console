@@ -9,6 +9,8 @@ import { rpcnWizardStore } from 'state/rpcn-wizard-store';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
 import { isConsumerGroupField, isPasswordField, isSchemaRegistryUrlField, isTopicField, isUserField } from './wizard';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { isObject, isPresent } from '../../../../utils/type-guards';
 import {
   getContextualVariableSyntax,
   getSecretSyntax,
@@ -42,24 +44,20 @@ export function componentStatusToString(status: ComponentStatus): string {
 }
 
 /** Maps component type to its plural proto ComponentList key and its YAML config key. */
-const COMPONENT_TYPE_MAPPINGS: Record<
+const COMPONENT_TYPE_MAPPINGS = {
+  buffer: { type: 'buffer', listKey: 'buffers', yamlKey: 'buffer' },
+  cache: { type: 'cache', listKey: 'caches', yamlKey: 'cache_resources' },
+  input: { type: 'input', listKey: 'inputs', yamlKey: 'input' },
+  output: { type: 'output', listKey: 'outputs', yamlKey: 'output' },
+  processor: { type: 'processor', listKey: 'processors', yamlKey: 'pipeline' },
+  rate_limit: { type: 'rate_limit', listKey: 'rateLimits', yamlKey: 'rate_limit_resources' },
+  metrics: { type: 'metrics', listKey: 'metrics', yamlKey: 'metrics' },
+  tracer: { type: 'tracer', listKey: 'tracers', yamlKey: 'tracer' },
+  scanner: { type: 'scanner', listKey: 'scanners', yamlKey: 'scanner' },
+} as const satisfies Record<
   Exclude<ConnectComponentType, 'custom'>,
-  { listKey: keyof ComponentList; yamlKey: ConnectConfigKey }
-> = {
-  buffer: { listKey: 'buffers', yamlKey: 'buffer' },
-  cache: { listKey: 'caches', yamlKey: 'cache_resources' },
-  input: { listKey: 'inputs', yamlKey: 'input' },
-  output: { listKey: 'outputs', yamlKey: 'output' },
-  processor: { listKey: 'processors', yamlKey: 'pipeline' },
-  rate_limit: { listKey: 'rateLimits', yamlKey: 'rate_limit_resources' },
-  metrics: { listKey: 'metrics', yamlKey: 'metrics' },
-  tracer: { listKey: 'tracers', yamlKey: 'tracer' },
-  scanner: { listKey: 'scanners', yamlKey: 'scanner' },
-};
-
-const typeToYamlConfigKey: Record<Exclude<ConnectComponentType, 'custom'>, ConnectConfigKey> = Object.fromEntries(
-  Object.entries(COMPONENT_TYPE_MAPPINGS).map(([type, { yamlKey }]) => [type, yamlKey])
-) as Record<Exclude<ConnectComponentType, 'custom'>, ConnectConfigKey>;
+  { type: ConnectComponentType; listKey: keyof ComponentList; yamlKey: ConnectConfigKey }
+>;
 
 /** `type` scopes the search to one list to disambiguate names shared across types (e.g. `redpanda`). Omitted = first match. */
 export function findComponentByName(
@@ -69,8 +67,8 @@ export function findComponentByName(
 ): ComponentSpec | undefined {
   const mappings = type ? [COMPONENT_TYPE_MAPPINGS[type]] : Object.values(COMPONENT_TYPE_MAPPINGS);
   for (const { listKey } of mappings) {
-    const list = componentList[listKey] as ComponentSpec[] | undefined;
-    if (!list) {
+    const list = componentList[listKey];
+    if (!isPresent(list)) {
       continue;
     }
     const found = list.find((c) => c.name === name);
@@ -100,10 +98,10 @@ export function resolveFieldByPath(root: RawFieldSpec | undefined, path: string)
 
 export function parseSchema(componentList: ComponentList): ConnectComponentSpec[] {
   try {
-    return Object.entries(COMPONENT_TYPE_MAPPINGS).flatMap(([componentType, { listKey }]) =>
-      ((componentList[listKey] as ComponentSpec[]) || []).map((comp) => ({
+    return Object.values(COMPONENT_TYPE_MAPPINGS).flatMap(({ type, listKey }) =>
+      (componentList[listKey] ?? []).map((comp) => ({
         ...comp,
-        type: componentType as Exclude<ConnectComponentType, 'custom'>,
+        type,
         config: comp.config,
       }))
     );
@@ -123,7 +121,7 @@ const generateRedpandaTopLevelConfig = (): Record<string, unknown> => {
   const userData = rpcnWizardStore.getUserData();
   const redpandaConfig: Record<string, unknown> = {};
 
-  if (userData?.username) {
+  if (isNonEmptyString(userData?.username)) {
     const secretIds = userSecretIds(userData.username);
 
     redpandaConfig.sasl = [
@@ -174,10 +172,18 @@ function redpandaCommonConfig(
   switch (componentSpec.type) {
     case 'input':
     case 'output':
-      config[typeToYamlConfigKey[componentSpec.type]] = {
+      config[COMPONENT_TYPE_MAPPINGS[componentSpec.type].yamlKey] = {
         [componentSpec.name]: connectionConfig,
       };
       break;
+    case 'buffer':
+    case 'cache':
+    case 'custom':
+    case 'metrics':
+    case 'processor':
+    case 'rate_limit':
+    case 'scanner':
+    case 'tracer':
     default:
       break;
   }
@@ -195,7 +201,7 @@ function componentSectionConfig(
   switch (componentSpec.type) {
     case 'input':
     case 'output':
-      config[typeToYamlConfigKey[componentSpec.type]] = {
+      config[COMPONENT_TYPE_MAPPINGS[componentSpec.type].yamlKey] = {
         label: '',
         [componentSpec.name]: connectionConfig,
       };
@@ -203,7 +209,7 @@ function componentSectionConfig(
     case 'buffer':
     case 'metrics':
     case 'tracer':
-      config[typeToYamlConfigKey[componentSpec.type]] = {
+      config[COMPONENT_TYPE_MAPPINGS[componentSpec.type].yamlKey] = {
         [componentSpec.name]: connectionConfig,
       };
       break;
@@ -220,7 +226,7 @@ function componentSectionConfig(
 
     case 'cache':
     case 'rate_limit':
-      config[typeToYamlConfigKey[componentSpec.type]] = [
+      config[COMPONENT_TYPE_MAPPINGS[componentSpec.type].yamlKey] = [
         {
           label: componentSpec.name,
           [componentSpec.name]: connectionConfig,
@@ -232,6 +238,7 @@ function componentSectionConfig(
       // Scanners are embedded in inputs, so return the config directly.
       return { [componentSpec.name]: connectionConfig };
 
+    case 'custom':
     default:
       break;
   }
@@ -251,19 +258,21 @@ function populateWizardFields(
   const topicData = rpcnWizardStore.getTopicData();
   const userData = rpcnWizardStore.getUserData();
 
-  if (isTopicField(spec.name) && topicData?.topicName) {
+  if (isTopicField(spec.name) && isNonEmptyString(topicData?.topicName)) {
     return spec.kind === 'array' ? [topicData.topicName] : topicData.topicName;
   }
 
-  if (isConsumerGroupField(spec.name) && userData?.consumerGroup) {
+  if (isConsumerGroupField(spec.name) && isNonEmptyString(userData?.consumerGroup)) {
     return userData.consumerGroup;
   }
 
   // Only inject user/password secret refs in SASL context, to avoid leaking into TLS client_certs.
   if (
-    componentName &&
+    componentName !== null &&
+    componentName !== undefined &&
+    componentName !== '' &&
     REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName) &&
-    userData?.username &&
+    isNonEmptyString(userData?.username) &&
     parentName?.toLowerCase() === 'sasl'
   ) {
     return saslSecretRef(spec.name, userData.username);
@@ -286,7 +295,15 @@ function populateContextualVariables(
   componentName?: string,
   parentName?: string
 ): string | string[] | undefined {
-  if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
+  if (
+    !(
+      spec.name &&
+      componentName !== null &&
+      componentName !== undefined &&
+      componentName !== '' &&
+      REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)
+    )
+  ) {
     return;
   }
 
@@ -301,7 +318,15 @@ function populateConnectionDefaults(
   componentName?: string,
   parentName?: string
 ): string | boolean | string[] | Record<string, unknown> | undefined {
-  if (!(spec.name && componentName && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName))) {
+  if (
+    !(
+      spec.name &&
+      componentName !== null &&
+      componentName !== undefined &&
+      componentName !== '' &&
+      REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(componentName)
+    )
+  ) {
     return;
   }
 
@@ -317,7 +342,8 @@ function populateConnectionDefaults(
   }
 }
 
-const isRedpandaComponent = (name?: string): boolean => !!name && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(name);
+const isRedpandaComponent = (name?: string): boolean =>
+  name !== null && name !== undefined && name !== '' && REDPANDA_TOPIC_AND_USER_COMPONENTS.includes(name);
 
 function shouldShowField(params: {
   spec: RawFieldSpec;
@@ -334,7 +360,7 @@ function shouldShowField(params: {
   // Redpanda SASL: show when wizard has user data (even though it's advanced)
   if (isRedpandaComponent(componentName) && spec.name === 'sasl') {
     const userData = rpcnWizardStore.getUserData();
-    return !!userData?.username;
+    return isNonEmptyString(userData?.username);
   }
 
   return !(spec.advanced && !showAdvancedFields);
@@ -412,8 +438,8 @@ function convertDefaultValue(defaultValue: string, type: string, kind?: string):
 
 function parseStructuredDefault(defaultValue: string): unknown {
   try {
-    const parsed = JSON.parse(defaultValue);
-    if (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) {
+    const parsed: unknown = JSON.parse(defaultValue);
+    if (Array.isArray(parsed) || isObject(parsed)) {
       return parsed;
     }
   } catch {
@@ -445,7 +471,7 @@ export function checkRequired(spec: RawFieldSpec, ancestorOptional?: boolean): b
   if (spec.optional === true || spec.defaultValue || mayHaveLostDefault(spec, ancestorOptional)) {
     return false;
   }
-  if (!spec.children?.length) {
+  if (!(isPresent(spec.children) && spec.children.length > 0)) {
     return true;
   }
   // Object: required if any child is required.
@@ -471,7 +497,7 @@ const SCALAR_FIELD_TYPES = new Set<string>(['string', 'int', 'float', 'bool']);
 const COMPONENT_FIELD_TYPES = new Set<string>(CONNECT_COMPONENT_TYPE.filter((t) => t !== 'custom'));
 
 export function fieldHasOptions(spec: RawFieldSpec): boolean {
-  return (spec.annotatedOptions?.length ?? 0) > 0;
+  return isPresent(spec.annotatedOptions) && spec.annotatedOptions.length > 0;
 }
 
 // A scalar string that links to a cache/rate_limit resource by label rather than nesting a component.
@@ -480,7 +506,7 @@ export function isResourceRefField(spec: RawFieldSpec): boolean {
     Boolean(spec.name) &&
     spec.kind === 'scalar' &&
     (spec.type === 'cache' || spec.type === 'rate_limit') &&
-    !(spec.children?.length ?? 0)
+    !Boolean(spec.children?.length ?? 0)
   );
 }
 
@@ -504,7 +530,8 @@ export function isObjectGroupField(spec: RawFieldSpec): boolean {
   return (
     Boolean(spec.name) &&
     (spec.kind === 'scalar' || (spec.kind === '' && spec.type === 'object')) &&
-    (spec.children?.length ?? 0) > 0
+    isPresent(spec.children) &&
+    spec.children.length > 0
   );
 }
 
@@ -569,7 +596,7 @@ export function generateDefaultValue(spec: RawFieldSpec, options: GenerateDefaul
     return populated;
   }
 
-  if (!shouldShowField({ spec, showAdvancedFields: !!showAdvancedFields, componentName })) {
+  if (!shouldShowField({ spec, showAdvancedFields: showAdvancedFields === true, componentName })) {
     return;
   }
 

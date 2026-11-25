@@ -10,18 +10,23 @@
  */
 
 import {
+  type ListShadowLinksRequest,
   ListShadowLinksResponseSchema,
   ShadowLinkListItemSchema,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { listShadowLinks } from '@buf/redpandadata_cloud.connectrpc_query-es/redpanda/api/controlplane/v1/shadow_link-ShadowLinkService_connectquery';
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { beforeEach, describe, expect, type Mock, rs, test } from '@rstest/core';
 import { renderHook, waitFor } from '@testing-library/react';
-import { connectQueryWrapper } from 'test-utils';
+import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
+
+import { useControlplaneListShadowLinksQuery } from './shadowlink';
+import { config, isEmbedded } from '../../../runtime-config';
+import { connectQueryWrapper } from '../../../test-utils';
 
 // Mock config module
-rs.mock('config', () => ({
+rs.mock('runtime-config', () => ({
   isEmbedded: rs.fn(),
   config: {
     clusterId: 'default',
@@ -33,11 +38,6 @@ rs.mock('config', () => ({
 rs.mock('hooks/use-controlplane-transport', () => ({
   useControlplaneTransport: rs.fn(),
 }));
-
-import { config, isEmbedded } from 'config';
-import { useControlplaneTransport } from 'hooks/use-controlplane-transport';
-
-import { useControlplaneListShadowLinksQuery } from './shadowlink';
 
 const mockIsEmbedded = rs.mocked(isEmbedded);
 const mockConfig = rs.mocked(config);
@@ -51,7 +51,10 @@ type ListTestCase = {
   shouldMakeRequest: boolean;
 };
 
-const listShadowLinksTransport = (clusterId: string, mockListShadowLinks: ReturnType<typeof rs.fn>) => {
+const listShadowLinksTransport = (
+  clusterId: string,
+  mockListShadowLinks: Mock<(request: ListShadowLinksRequest) => void>
+) => {
   const mockShadowLinks = [
     create(ShadowLinkListItemSchema, {
       id: 'sl-1',
@@ -71,7 +74,7 @@ const listShadowLinksTransport = (clusterId: string, mockListShadowLinks: Return
 };
 
 const renderListShadowLinksHook = (testCase: ListTestCase) => {
-  const mockListShadowLinks = rs.fn();
+  const mockListShadowLinks = rs.fn<(request: ListShadowLinksRequest) => void>();
   const transport = listShadowLinksTransport(testCase.clusterId, mockListShadowLinks);
   mockUseControlplaneTransport.mockReturnValue(transport);
 
@@ -92,13 +95,7 @@ const expectListRequestMade = async ({ result, mockListShadowLinks }: ListHookRe
 
   // Verify request was made with correct filter
   expect(mockListShadowLinks).toHaveBeenCalledTimes(1);
-  expect(mockListShadowLinks).toHaveBeenCalledWith(
-    expect.objectContaining({
-      filter: expect.objectContaining({
-        shadowRedpandaId: clusterId,
-      }),
-    })
-  );
+  expect(mockListShadowLinks.mock.calls[0]?.[0].filter?.shadowRedpandaId).toBe(clusterId);
   expect(result.current.data?.shadowLinks).toHaveLength(1);
 };
 

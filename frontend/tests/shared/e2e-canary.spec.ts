@@ -56,8 +56,8 @@ test('keeps native keys, drag, runtime viewport, DOM access and isolated context
   featureFlags,
   testInfo,
 }) => {
-  expect(featureFlags).toEqual({});
-  expect(page.viewportSize()).toEqual({ width: 1280, height: 720 });
+  expect(featureFlags).toStrictEqual({});
+  expect(page.viewportSize()).toStrictEqual({ width: 1280, height: 720 });
   await page.setViewportSize({ width: 640, height: 480 });
   await page.setContent(
     '<input aria-label="Text"><div draggable="true" id="source">Drag</div><div id="target">Drop</div>'
@@ -75,9 +75,9 @@ flaggedTest(
   'sets feature flags before application scripts and retains artifact metadata',
   async ({ page, testInfo, task }) => {
     await page.goto('data:text/html,<script>window.bootFlag=window.__E2E_FEATURE_FLAGS__.TEST_BOOT_FLAG</script>');
-    expect(await page.evaluate(() => Reflect.get(window, 'bootFlag'))).toBe(true);
+    expect(await page.evaluate(() => Reflect.get(window, 'bootFlag') === true)).toBe(true);
     await testInfo.attach('boot.json', { body: '{"ready":true}', contentType: 'application/json' });
-    expect(task.meta.attachments).toEqual([
+    expect(task.meta.attachments).toStrictEqual([
       { name: 'boot.json', path: testInfo.outputPath('boot.json'), contentType: 'application/json' },
     ]);
   }
@@ -105,6 +105,8 @@ test('quota navigation honors baseURL before the first page navigation', async (
   }
 });
 
+const assertQuotasURL = (page: Page) => expect(page).toHaveURL(appURL('/quotas?page=1'), { timeout: 50 });
+
 test('uRL assertions retain the configured origin and exact path/query', async ({ browser, playwright }) => {
   const context = await browser.newContext(playwright.contextOptions);
   try {
@@ -114,7 +116,7 @@ test('uRL assertions retain the configured origin and exact path/query', async (
     await expect(page).toHaveURL(appURL('/quotas?page=1'), { timeout: 50 });
     await expect(page).not.toHaveURL(appURL('/quotas?page=2'), { timeout: 50 });
     await page.goto('http://wrong-origin.test/quotas?page=1');
-    await expect(expect(page).toHaveURL(appURL('/quotas?page=1'), { timeout: 50 })).rejects.toThrow('Expected page');
+    await expect(assertQuotasURL(page)).rejects.toThrow('Expected page');
   } finally {
     await context.close();
   }

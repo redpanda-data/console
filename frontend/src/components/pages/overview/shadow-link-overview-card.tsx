@@ -16,6 +16,8 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components
 import type { ListShadowLinksResponse_ShadowLink } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
 import React, { type FC } from 'react';
 import { useGetShadowLinkQuery, useListShadowLinksQuery } from 'react-query/api/shadowlink';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
 import { ShadowLinkDiagram } from '../shadowlinks/details/shadow-link-diagram';
@@ -42,7 +44,7 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
         <CardTitle>Shadow Cluster</CardTitle>
         <CardAction>
           <Button
-            onClick={() => navigate({ to: `/shadowlinks/${shadowLink.name}` })}
+            onClick={asyncEvent(() => navigate({ to: `/shadowlinks/${shadowLink.name}` }), reportActionError)}
             size="sm"
             testId="go-to-shadow-link-button"
             variant="outline"

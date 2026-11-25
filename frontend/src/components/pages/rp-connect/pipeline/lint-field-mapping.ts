@@ -10,16 +10,15 @@
  */
 
 import type { LintHint } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
-import { isMap, isScalar, LineCounter, parseDocument, type Scalar, type YAMLMap } from 'yaml';
+import { isMap, isNode, isScalar, LineCounter, parseDocument, type Scalar, type YAMLMap } from 'yaml';
 
-import { type EditTarget, targetComponentPath } from '../utils/yaml';
+import { targetComponentPath } from '../utils/yaml-component-editing';
+import type { EditTarget } from '../utils/yaml-edit-target';
 
 /** Field/group key (`path.join('/')`) → the lint messages anchored to it. */
 export type FieldLintErrors = ReadonlyMap<string, string[]>;
 
 type FieldSegment = { key: string; depth: number; startLine: number; endLine: number };
-
-type RangedNode = { range?: [number, number, number] | null } | null | undefined;
 
 // A mapping key a field can anchor to: a string scalar with a source range.
 type RangedStringKey = Scalar<string> & { range: [number, number, number] };
@@ -30,7 +29,7 @@ function isRangedStringKey(key: unknown): key is RangedStringKey {
 
 // The segment one mapping pair covers: from its key's line through the end of its value.
 function pairSegment(keyNode: RangedStringKey, value: unknown, path: string[], lineCounter: LineCounter): FieldSegment {
-  const valueRange = (value as RangedNode)?.range;
+  const valueRange = isNode(value) ? value.range : undefined;
   // Value-end (range[1]), not node-end (range[2]) — node-end swallows trailing blank lines,
   // which would bleed a hint on the next sibling's line into this field.
   const endOffset = valueRange ? valueRange[1] : keyNode.range[1];
@@ -185,7 +184,7 @@ function anchoredToKeys(keys: string[], message: string): ResolvedHint | undefin
 // path noted in the message; undefined when no ancestor is rendered.
 function lineAnchoredHint(message: string, lineKey: string, fieldKeys: ReadonlySet<string>): ResolvedHint | undefined {
   const lineAnchor = nearestRenderedAncestor(lineKey, fieldKeys);
-  if (!lineAnchor) {
+  if (!(lineAnchor !== null && lineAnchor !== undefined && lineAnchor !== '')) {
     return;
   }
   const remainder = lineKey === lineAnchor ? '' : lineKey.slice(lineAnchor.length + 1).replaceAll('/', '.');
@@ -203,7 +202,10 @@ function resolveHint(hint: LintHint, segments: readonly FieldSegment[], fieldKey
     return named;
   }
   const lineKey = hint.line > 0 ? fieldKeyForLine(segments, hint.line) : undefined;
-  const lineAnchored = lineKey ? lineAnchoredHint(hint.hint, lineKey, fieldKeys) : undefined;
+  const lineAnchored =
+    lineKey !== null && lineKey !== undefined && lineKey !== ''
+      ? lineAnchoredHint(hint.hint, lineKey, fieldKeys)
+      : undefined;
   return (
     lineAnchored ??
     anchoredToKeys(fieldKeysMentioned(hint.hint, fieldKeys), hint.hint) ?? {

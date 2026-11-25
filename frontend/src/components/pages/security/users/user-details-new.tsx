@@ -92,7 +92,7 @@ export const UserDetailsPageNew = ({ userName }: UserDetailsPageProps) => {
             <KeyRoundIcon />
             Change Password
           </Button>
-          {Boolean(isServiceAccount) && (
+          {isServiceAccount && (
             <Button onClick={() => setIsDeleteModalOpen(true)} variant="destructive">
               <Trash2Icon />
               Delete User

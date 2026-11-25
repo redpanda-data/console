@@ -11,7 +11,7 @@ import { scripts } from '../package.json';
 
 const execute = promisify(execFile);
 const bunExecutable = process.env.npm_execpath;
-if (!bunExecutable) {
+if (!(bunExecutable !== null && bunExecutable !== undefined && bunExecutable !== '')) {
   throw new Error('Run build command tests through bun run');
 }
 
@@ -26,8 +26,8 @@ test('local E2E builds compile the app once with fixture metadata and no release
     const commands: unknown[] = (await readFile(log, 'utf8'))
       .trim()
       .split('\n')
-      .map((line) => JSON.parse(line));
-    expect(commands).toEqual([
+      .map((line): unknown => JSON.parse(line));
+    expect(commands).toStrictEqual([
       {
         tool: 'rsbuild',
         args: ['build'],

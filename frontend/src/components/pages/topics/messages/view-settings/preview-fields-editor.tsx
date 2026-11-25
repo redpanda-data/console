@@ -112,8 +112,9 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
                 value={tag.pattern}
               />
               <ElementTooltip content="Remove">
-                <button
+                <Button
                   aria-label="Remove"
+                  // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                   className="flex size-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                   onClick={() =>
                     setPreviewTags(
@@ -122,9 +123,10 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
                     )
                   }
                   type="button"
+                  variant="unstyled"
                 >
                   <XIcon className="size-3.5" />
-                </button>
+                </Button>
               </ElementTooltip>
             </div>
           ))}
@@ -154,7 +156,11 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
 
       <OptionRow
         label="Matching"
-        onChange={(v) => setPreviewTagsCaseSensitive(topicName, v as 'caseSensitive' | 'ignoreCase')}
+        onChange={(v) => {
+          if (v === 'caseSensitive' || v === 'ignoreCase') {
+            setPreviewTagsCaseSensitive(topicName, v);
+          }
+        }}
         options={[
           { value: 'ignoreCase', label: 'Ignore case' },
           { value: 'caseSensitive', label: 'Case sensitive' },
@@ -163,7 +169,11 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
       />
       <OptionRow
         label="Multiple results"
-        onChange={(v) => setPreviewMultiResultMode(topicName, v as 'showOnlyFirst' | 'showAll')}
+        onChange={(v) => {
+          if (v === 'showOnlyFirst' || v === 'showAll') {
+            setPreviewMultiResultMode(topicName, v);
+          }
+        }}
         options={[
           { value: 'showOnlyFirst', label: 'First result' },
           { value: 'showAll', label: 'Show all' },
@@ -172,7 +182,11 @@ export const PreviewFieldsEditor = ({ topicName, valuePathHints }: { topicName: 
       />
       <OptionRow
         label="Wrapping"
-        onChange={(v) => setPreviewDisplayMode(topicName, v as 'single' | 'wrap' | 'rows')}
+        onChange={(v) => {
+          if (v === 'single' || v === 'wrap' || v === 'rows') {
+            setPreviewDisplayMode(topicName, v);
+          }
+        }}
         options={[
           { value: 'single', label: 'Single' },
           { value: 'wrap', label: 'Wrap' },

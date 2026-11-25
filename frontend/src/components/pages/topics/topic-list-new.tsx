@@ -30,6 +30,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'reac
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
+import { reportActionError } from 'utils/toast.utils';
+import { stringValue } from 'utils/type-guards';
 
 import { CreateTopicDialog } from './create-topic-dialog';
 import { TopicListPagination } from './topic-list-pagination';
@@ -39,6 +41,8 @@ import { api } from '../../../state/backend-api';
 import { type Topic, type TopicAction, TopicActions } from '../../../state/rest-interfaces';
 import { uiSettings } from '../../../state/ui';
 import { setPageHeader } from '../../../state/ui-state';
+import { arraySum } from '../../../utils/array-utils';
+import { isPresent } from '../../../utils/type-guards';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { renderLogDirSummary } from '../../misc/common';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
@@ -67,7 +71,7 @@ const nameFilterFn = (row: DataTableRow<Topic>, columnId: string, filterValue: s
   }
 };
 
-type SetPageIndex = (pageIndex: number) => unknown;
+type SetPageIndex = ReturnType<typeof useTopicListPagination>['setPageIndex'];
 
 // Registers the page header and the global refresh handler for the topic list.
 function useTopicListPage(refetchTopics: () => unknown) {
@@ -76,8 +80,10 @@ function useTopicListPage(refetchTopics: () => unknown) {
   }, []);
 
   const refreshData = useCallback(() => {
-    api.refreshClusterOverview();
-    api.refreshClusterHealth().catch(() => {});
+    api.refreshClusterOverview().catch(reportActionError);
+    api.refreshClusterHealth().catch(() => {
+      // Best-effort: clusters without the debug-bundle endpoint reject this call.
+    });
     refetchTopics();
   }, [refetchTopics]);
 
@@ -97,7 +103,7 @@ function useShowInternalTopics() {
       getDefaultValue: () => uiSettings.topicList.hideInternalTopics,
     },
     'showInternal',
-    parseAsBoolean
+    parseAsBoolean.withDefault(uiSettings.topicList.hideInternalTopics).withOptions({ clearOnDefault: false })
   );
 }
 
@@ -116,8 +122,10 @@ function useDeleteTopic(onDeleted: () => void) {
         setTopicToDelete(null);
         onDeleted();
       })
-      .catch((err: Error) => {
-        toast.error('Failed to delete topic', { description: err.message });
+      .catch((error: unknown) => {
+        toast.error('Failed to delete topic', {
+          description: error instanceof Error ? error.message : 'The request failed.',
+        });
       })
       .finally(() => setDeletionPending(false));
   };
@@ -128,7 +136,7 @@ function useDeleteTopic(onDeleted: () => void) {
 function useVisibleTopics(topics: Topic[] | undefined, showInternalTopics: boolean | null) {
   const allTopics = useMemo(() => {
     let filtered = topics ?? [];
-    if (!showInternalTopics) {
+    if (!(showInternalTopics === true)) {
       filtered = filtered.filter((x) => !(x.isInternal || x.topicName.startsWith('_')));
     }
     return filtered;
@@ -137,8 +145,8 @@ function useVisibleTopics(topics: Topic[] | undefined, showInternalTopics: boole
   const statistics = useMemo(
     () => ({
       topicCount: allTopics.length,
-      partitionCount: allTopics.sum((x) => x.partitionCount),
-      replicaCount: allTopics.sum((x) => x.partitionCount * x.replicationFactor),
+      partitionCount: arraySum(allTopics, (x) => x.partitionCount),
+      replicaCount: arraySum(allTopics, (x) => x.partitionCount * x.replicationFactor),
     }),
     [allTopics]
   );
@@ -164,8 +172,12 @@ function useTopicListPagination() {
 
   const handlePaginationChange = (updater: Updater<PaginationState>) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater;
-    void setPageIndex(next.pageIndex);
-    setPageSize(next.pageSize);
+    setPageIndex(next.pageIndex).catch((navigationError: unknown) => {
+      toast.error('Failed to update list URL', {
+        description: navigationError instanceof Error ? navigationError.message : String(navigationError),
+      });
+    });
+    setPageSize(next.pageSize).catch(reportActionError);
   };
 
   return { pageIndex, setPageIndex, pagination, handlePaginationChange };
@@ -199,13 +211,17 @@ function useTopicListSorting(setPageIndex: SetPageIndex) {
   const handleSortingChange = (updater: Updater<SortingState>) => {
     const next = typeof updater === 'function' ? updater(sorting) : updater;
     if (next.length > 0) {
-      setSortId(next[0].id);
-      setSortDesc(next[0].desc);
+      setSortId(next[0].id).catch(reportActionError);
+      setSortDesc(next[0].desc).catch(reportActionError);
     } else {
-      setSortId('');
-      setSortDesc(false);
+      setSortId('').catch(reportActionError);
+      setSortDesc(false).catch(reportActionError);
     }
-    void setPageIndex(0);
+    setPageIndex(0).catch((navigationError: unknown) => {
+      toast.error('Failed to update list URL', {
+        description: navigationError instanceof Error ? navigationError.message : String(navigationError),
+      });
+    });
   };
 
   return { sorting, handleSortingChange };
@@ -220,9 +236,13 @@ function useTopicNameFilter(setPageIndex: SetPageIndex) {
   const handleColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
     const next = typeof updater === 'function' ? updater(columnFilters) : updater;
     setColumnFilters(next);
-    void setPageIndex(0);
+    setPageIndex(0).catch((navigationError: unknown) => {
+      toast.error('Failed to update list URL', {
+        description: navigationError instanceof Error ? navigationError.message : String(navigationError),
+      });
+    });
     const nameFilter = next.find((f) => f.id === 'topicName');
-    setSearchValue((nameFilter?.value as string) || null);
+    setSearchValue((stringValue(nameFilter?.value) ?? '') || null).catch(reportActionError);
   };
 
   return { columnFilters, handleColumnFiltersChange };
@@ -241,7 +261,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
             className="min-w-0 wrap-anywhere whitespace-normal"
             data-testid={`topic-link-${topic.topicName}`}
             params={{ topicName: encodeURIComponent(topic.topicName) }}
-            search={{} as never}
+            search={{}}
             to="/topics/$topicName"
           >
             <TopicName topic={topic} />
@@ -290,7 +310,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
                 size="icon-sm"
                 variant="ghost"
               >
-                <MoreHorizontalIcon className="h-4 w-4" />
+                <MoreHorizontalIcon className="size-4" />
               </Button>
             }
           />
@@ -350,7 +370,11 @@ function useTopicListTable({
       }
       const lastPageIndex = Math.max(0, pageCount - 1);
       if (pageIndex < 0 || pageIndex > lastPageIndex) {
-        void setPageIndex(Math.max(0, Math.min(pageIndex, lastPageIndex)));
+        setPageIndex(Math.max(0, Math.min(pageIndex, lastPageIndex))).catch((navigationError: unknown) => {
+          toast.error('Failed to update list URL', {
+            description: navigationError instanceof Error ? navigationError.message : String(navigationError),
+          });
+        });
       }
     },
     [isReady, pageCount, pageIndex, setPageIndex]
@@ -378,8 +402,8 @@ const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreate
   if (showSkeleton) {
     return [0, 1, 2, 3, 4].map((i) => (
       <TableRow key={i}>
-        {Array.from({ length: columnCount }, (_col, colIdx) => (
-          <TableCell key={colIdx}>
+        {table.getAllLeafColumns().map((column) => (
+          <TableCell key={column.id}>
             <Skeleton variant="text" width="md" />
           </TableCell>
         ))}
@@ -387,7 +411,7 @@ const TopicTableBody = ({ table, columnCount, showSkeleton, isFiltered, onCreate
     ));
   }
 
-  if (table.getRowModel().rows.length) {
+  if (table.getRowModel().rows.length > 0) {
     return table.getRowModel().rows.map((row) => (
       <TableRow key={row.id}>
         {row.getVisibleCells().map((cell) => {
@@ -448,11 +472,11 @@ const TopicList: FC = () => {
     isReady: !(isLoading || isError),
   });
 
-  if (isError && error) {
+  if (isError && isPresent(error)) {
     return (
       <Alert variant="destructive">
         <AlertTitle>Failed to load topics</AlertTitle>
-        <AlertDescription>{(error as Error).message}</AlertDescription>
+        <AlertDescription>{error.message}</AlertDescription>
       </Alert>
     );
   }
@@ -474,7 +498,7 @@ const TopicList: FC = () => {
         resourceName={topicToDelete?.topicName ?? ''}
         resourceType="Topic"
       >
-        {topicToDelete?.isInternal ? (
+        {topicToDelete?.isInternal === true ? (
           <Alert className="mb-3" variant="destructive">
             <AlertTitle>Warning</AlertTitle>
             <AlertDescription>
@@ -517,25 +541,27 @@ const TopicList: FC = () => {
               data-testid="search-field-input"
               onChange={(e) => table.getColumn('topicName')?.setFilterValue(e.target.value || undefined)}
               placeholder="Filter by name (regexp)..."
-              value={(table.getColumn('topicName')?.getFilterValue() as string) ?? ''}
+              value={stringValue(table.getColumn('topicName')?.getFilterValue()) ?? ''}
             >
               <InputStart>
-                {!(table.getColumn('topicName')?.getFilterValue() as string) && (
+                {!(stringValue(table.getColumn('topicName')?.getFilterValue()) ?? '') && (
                   <span className="text-muted-foreground" data-testid="search-field-search-icon">
-                    <Search className="h-4 w-4" />
+                    <Search className="size-4" />
                   </span>
                 )}
               </InputStart>
               <InputEnd className="pointer-events-auto">
-                {(table.getColumn('topicName')?.getFilterValue() as string) && (
-                  <button
+                {(stringValue(table.getColumn('topicName')?.getFilterValue()) ?? '') && (
+                  <Button
+                    // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                     className="text-muted-foreground hover:text-foreground"
                     data-testid="search-field-reset-icon"
                     onClick={() => table.getColumn('topicName')?.setFilterValue(undefined)}
                     type="button"
+                    variant="unstyled"
                   >
-                    <X className="h-4 w-4" />
-                  </button>
+                    <X className="size-4" />
+                  </Button>
                 )}
               </InputEnd>
             </ListLayoutSearchInput>
@@ -544,8 +570,12 @@ const TopicList: FC = () => {
             <Checkbox
               checked={showInternalTopics}
               onCheckedChange={(checked) => {
-                void setPageIndex(0);
-                setShowInternalTopics(checked === true);
+                setPageIndex(0).catch((navigationError: unknown) => {
+                  toast.error('Failed to update list URL', {
+                    description: navigationError instanceof Error ? navigationError.message : String(navigationError),
+                  });
+                });
+                setShowInternalTopics(checked === true).catch(reportActionError);
               }}
               testId="show-internal-topics-checkbox"
             />
@@ -604,7 +634,7 @@ const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
           <TooltipTrigger
             render={
               <span className="inline-flex text-destructive">
-                <AlertCircle aria-hidden="true" className="h-4 w-4" />
+                <AlertCircle aria-hidden="true" className="size-4" />
               </span>
             }
           />
@@ -618,7 +648,7 @@ const TopicHealthIcons = ({ topic }: { topic: Topic }) => {
           <TooltipTrigger
             render={
               <span className="inline-flex text-warning">
-                <AlertTriangle aria-hidden="true" className="h-4 w-4" />
+                <AlertTriangle aria-hidden="true" className="size-4" />
               </span>
             }
           />
@@ -635,7 +665,7 @@ const iconAllowed = <span className="text-success">✓</span>;
 const iconForbidden = <span className="text-destructive">✗</span>;
 const iconClosedEye = (
   <span className="ml-1 inline-block opacity-50">
-    <EyeOff aria-hidden="true" className="inline h-3.5 w-3.5" />
+    <EyeOff aria-hidden="true" className="inline size-3.5" />
   </span>
 );
 
@@ -708,4 +738,4 @@ function hasDeletePrivilege() {
   return true;
 }
 
-export default TopicList;
+export { TopicList };

@@ -11,19 +11,19 @@
 
 import { buildFilterInterpreterCode, visibleJsFilters } from './js-filters';
 import { describe, expect, test } from 'bun:test';
-import { createFilterEntry } from '../../../../../state/ui';
+import { createFilterEntry } from '../../../../../types/topic-settings';
 import { decodeBase64 } from '../../../../../utils/utils';
 
 describe('visibleJsFilters', () => {
   test('shows active filters when JS filters can be used', () => {
     const active = createFilterEntry({ id: 'a', isActive: true });
     const inactive = createFilterEntry({ id: 'b', isActive: false });
-    expect(visibleJsFilters([active, inactive], true)).toEqual([active]);
+    expect(visibleJsFilters([active, inactive], true)).toStrictEqual([active]);
   });
 
   test('hides all chips when disabled (e.g. continuous mode), even active ones', () => {
     const active = createFilterEntry({ id: 'a', isActive: true });
-    expect(visibleJsFilters([active], false)).toEqual([]);
+    expect(visibleJsFilters([active], false)).toStrictEqual([]);
   });
 });
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@rstest/core';
+import { describe, expect, test } from '@rstest/core';
 import { render } from '@testing-library/react';
 
 import { PageColumn } from './page-column';
@@ -26,18 +26,24 @@ const Harness = ({ erroring = false }: { erroring?: boolean }) => (
   </div>
 );
 
-const column = (container: HTMLElement) => container.querySelector('.pt-8') as HTMLElement;
+const column = (container: HTMLElement) => {
+  const element = container.querySelector('.pt-8');
+  if (!(element instanceof HTMLElement)) {
+    throw new Error('Page column is missing');
+  }
+  return element;
+};
 const readVar = (el: HTMLElement) => el.style.getPropertyValue(PAGE_TOP_VAR);
 
 describe('the PageColumn', () => {
   // happy-dom does no layout, so every offsetTop is 0 — the padding is the observable part.
-  it("publishes an offset including the column's own top padding", () => {
+  test("publishes an offset including the column's own top padding", () => {
     const { container } = render(<Harness />);
 
     expect(readVar(column(container))).toBe(`${PADDING_TOP}px`);
   });
 
-  it('re-measures when the column remounts after an error page', () => {
+  test('re-measures when the column remounts after an error page', () => {
     const { container, rerender } = render(<Harness erroring={true} />);
 
     rerender(<Harness />);
@@ -45,7 +51,7 @@ describe('the PageColumn', () => {
     expect(readVar(column(container))).toBe(`${PADDING_TOP}px`);
   });
 
-  it('clears the variable on unmount, so no stale height survives the page', () => {
+  test('clears the variable on unmount, so no stale height survives the page', () => {
     const { container, unmount } = render(<Harness />);
     const el = column(container);
     expect(readVar(el)).toBe(`${PADDING_TOP}px`);

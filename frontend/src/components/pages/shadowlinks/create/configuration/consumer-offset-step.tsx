@@ -38,7 +38,9 @@ export const ConsumerOffsetStep = () => {
   });
 
   const handleModeChange = (mode: string) => {
-    setValue('consumersMode', mode as 'all' | 'specify');
+    if (mode === 'all' || mode === 'specify') {
+      setValue('consumersMode', mode);
+    }
 
     // Auto-expand when switching to specify mode
     if (mode === 'specify') {

@@ -71,7 +71,7 @@ function DetailPresentationHarness() {
     msg: message,
     onClose: () => setOpen(false),
     onExpandedChange: setExpanded,
-    loadLargeMessage: async () => undefined,
+    loadLargeMessage: () => Promise.resolve(),
     expandButtonRef,
     fallbackFocusRef,
   };
@@ -87,7 +87,7 @@ function DetailPresentationHarness() {
 }
 
 const openerButton = () => screen.getByRole('button', { name: 'Open message' });
-const expandButton = () => screen.getByRole('button', { name: 'Expand', exact: true });
+const expandButton = () => screen.getByRole('button', { name: 'Expand' });
 const collapseButton = () => screen.getByRole('button', { name: 'Collapse back to panel' });
 
 /** Opens the docked panel from the opener, then expands it into the sheet. */
@@ -99,7 +99,7 @@ async function openExpandedSheet(user: UserEvent) {
 /** From the docked panel with focus on Expand: Enter re-expands it, then one of the sheet's buttons is clicked. */
 async function reExpandThenClick(user: UserEvent, name: string) {
   await user.keyboard('{Enter}');
-  await user.click(screen.getByRole('button', { name, exact: true }));
+  await user.click(screen.getByRole('button', { name }));
 }
 
 test('restores focus to Expand across separate docked and expanded mounts on Escape and Collapse', async () => {

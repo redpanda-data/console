@@ -1,25 +1,27 @@
+import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import { act, render, waitFor } from '@testing-library/react';
 import * as React from 'react';
 
+import type { JsonViewEditorProps } from './json-view-editor';
+import type { IStandaloneCodeEditor } from './kowl-editor';
 import { KowlJsonView } from './kowl-json-view';
 
 const { editorLayoutSpy, editorPropsSpy } = rs.hoisted(() => ({
-  editorLayoutSpy: rs.fn(),
-  editorPropsSpy: rs.fn(),
+  editorLayoutSpy: rs.fn<IStandaloneCodeEditor['layout']>(),
+  editorPropsSpy: rs.fn<(props: JsonViewEditorProps) => void>(),
 }));
 
-rs.mock('./kowl-editor', () => {
-  const MockKowlEditor = MockMockKowlEditor;
+rs.mock('./json-view-editor', () => {
+  const MockEditor = MockJsonViewEditor;
 
   return {
     __esModule: true,
-    default: MockKowlEditor,
+    JsonViewEditor: MockEditor,
   };
 });
 
 describe('the KowlJsonView', () => {
-  let originalResizeObserver: typeof ResizeObserver | undefined;
-  let resizeCallback: ResizeObserverCallback | undefined;
+  let resizeCallback: (() => void) | undefined;
   let currentSize = { width: 640, height: 384 };
   let getBoundingClientRectSpy: ReturnType<typeof rs.spyOn>;
 
@@ -35,13 +37,15 @@ describe('the KowlJsonView', () => {
     });
     rs.stubGlobal('cancelAnimationFrame', rs.fn());
 
-    originalResizeObserver = globalThis.ResizeObserver;
-    class ResizeObserverMock {
+    class ResizeObserverMock implements ResizeObserver {
+      unobserve = rs.fn();
+      static current: ResizeObserverMock;
       observe = rs.fn();
       disconnect = rs.fn();
 
       constructor(callback: ResizeObserverCallback) {
-        resizeCallback = callback;
+        resizeCallback = () => callback([], this);
+        ResizeObserverMock.current = this;
       }
     }
 
@@ -62,12 +66,6 @@ describe('the KowlJsonView', () => {
   afterEach(() => {
     rs.unstubAllGlobals();
     getBoundingClientRectSpy.mockRestore();
-
-    if (originalResizeObserver) {
-      globalThis.ResizeObserver = originalResizeObserver;
-    } else {
-      (globalThis as typeof globalThis & { ResizeObserver?: typeof ResizeObserver }).ResizeObserver = undefined;
-    }
   });
 
   test('uses the lightweight read-only monaco preset and manually lays out the editor', async () => {
@@ -77,7 +75,7 @@ describe('the KowlJsonView', () => {
       expect(editorLayoutSpy).toHaveBeenCalledWith({ width: 640, height: 384 });
     });
 
-    expect(editorPropsSpy).toHaveBeenCalled();
+    expect(editorPropsSpy).toHaveBeenCalledWith(expect.objectContaining({ value: '{\n    "market": "BSEX"\n}' }));
     expect(editorPropsSpy.mock.lastCall?.[0].options).toMatchObject({
       readOnly: true,
       domReadOnly: true,
@@ -118,7 +116,7 @@ describe('the KowlJsonView', () => {
     });
 
     act(() => {
-      resizeCallback?.([] as ResizeObserverEntry[], {} as ResizeObserver);
+      resizeCallback?.();
     });
 
     await waitFor(() => {
@@ -128,7 +126,7 @@ describe('the KowlJsonView', () => {
     currentSize = { width: 800, height: 480 };
 
     act(() => {
-      resizeCallback?.([] as ResizeObserverEntry[], {} as ResizeObserver);
+      resizeCallback?.();
     });
 
     await waitFor(() => {
@@ -142,7 +140,7 @@ describe('the KowlJsonView', () => {
     render(<KowlJsonView escapeLatin1 srcObj={{ v: 'ÛN' }} />);
 
     await waitFor(() => {
-      const value = editorPropsSpy.mock.lastCall?.[0].value as string;
+      const value = editorPropsSpy.mock.lastCall?.[0].value;
       expect(value).toContain('\\u00db');
       expect(value).not.toContain('Û');
     });
@@ -152,14 +150,14 @@ describe('the KowlJsonView', () => {
     render(<KowlJsonView srcObj={{ v: 'ÛN' }} />);
 
     await waitFor(() => {
-      const value = editorPropsSpy.mock.lastCall?.[0].value as string;
+      const value = editorPropsSpy.mock.lastCall?.[0].value;
       expect(value).toContain('Û');
       expect(value).not.toContain('\\u00db');
     });
   });
 });
 
-function MockMockKowlEditor(props: any) {
+function MockJsonViewEditor(props: JsonViewEditorProps) {
   editorPropsSpy(props);
   React.useEffect(() => {
     props.onMount?.({

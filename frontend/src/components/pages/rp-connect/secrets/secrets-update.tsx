@@ -3,20 +3,22 @@ import { Button } from 'components/redpanda-ui/components/button';
 import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
 
 import { Scope, UpdateSecretRequestSchema } from '../../../../protogen/redpanda/api/dataplane/v1/secret_pb';
 import { appGlobal } from '../../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../../state/backend-api';
-import { showToast } from '../../../../utils/toast.utils';
+import { reportActionError, showToast } from '../../../../utils/toast.utils';
 import { DefaultSkeleton } from '../../../../utils/tsx-utils';
 import { base64ToUInt8Array, encodeBase64 } from '../../../../utils/utils';
-import PageContent from '../../../misc/page-content';
+import { PageContent } from '../../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../../page';
 import { formatPipelineError } from '../errors';
 
 const returnToListTab = '/connect-clusters?defaultTab=redpanda-connect-secret';
-
-class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
+class RpConnectSecretUpdate extends PageComponent<{
+  secretId: string;
+}> {
   initPage(p: PageInitHelper) {
     p.title = 'Update secret';
     p.addBreadcrumb('Redpanda Connect Secret Manager', '/rp-connect/secrets/update');
@@ -27,7 +29,7 @@ class RpConnectSecretUpdate extends PageComponent<{ secretId: string }> {
   }
 
   refreshData(_force: boolean) {
-    rpcnSecretManagerApi.refreshSecrets(_force);
+    rpcnSecretManagerApi.refreshSecrets(_force).catch(reportActionError);
   }
 
   render() {
@@ -47,38 +49,35 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
     appGlobal.historyPush(returnToListTab);
   };
 
-  const updateSecret = () => {
+  const updateSecret = async () => {
     setIsUpdating(true);
 
-    rpcnSecretManagerApi
-      .update(
+    try {
+      await rpcnSecretManagerApi.update(
         secretId,
         create(UpdateSecretRequestSchema, {
           id: secretId,
           secretData: base64ToUInt8Array(encodeBase64(secret)),
           scopes: [Scope.REDPANDA_CONNECT],
         })
-      )
-      .then(() => {
-        showToast({
-          status: 'success',
-          duration: 4000,
-          title: 'Secret updated',
-          id: 'secret-update-success',
-        });
-        pipelinesApi.refreshPipelines(true);
-        appGlobal.historyPush(returnToListTab);
-      })
-      .catch((err) => {
-        showToast({
-          status: 'error',
-          title: 'Failed to update secret',
-          description: formatPipelineError(err),
-        });
-      })
-      .finally(() => {
-        setIsUpdating(false);
+      );
+      showToast({
+        status: 'success',
+        duration: 4000,
+        title: 'Secret updated',
+        id: 'secret-update-success',
       });
+      pipelinesApi.refreshPipelines(true).catch(reportActionError);
+      appGlobal.historyPush(returnToListTab);
+    } catch (error) {
+      showToast({
+        status: 'error',
+        title: 'Failed to update secret',
+        description: formatPipelineError(error),
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const isSecretEmpty = secret.trim().length === 0;
@@ -128,7 +127,7 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
             aria-label="Update secret"
             disabled={isSecretEmpty}
             isLoading={isUpdating}
-            onClick={updateSecret}
+            onClick={asyncEvent(updateSecret, reportActionError)}
             testId="submit-update-secret"
           >
             Update secret
@@ -142,4 +141,4 @@ const RpConnectSecretUpdateContent = ({ secretId }: { secretId: string }) => {
   );
 };
 
-export default RpConnectSecretUpdate;
+export { RpConnectSecretUpdate };

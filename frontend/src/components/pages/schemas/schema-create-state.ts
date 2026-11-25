@@ -1,3 +1,5 @@
+import { isObject } from 'utils/type-guards';
+
 import { buildQualifiedSubjectName, contextNameToId, parseSubjectContext } from './schema-context-utils';
 import {
   type SchemaRegistrySubject,
@@ -49,8 +51,10 @@ function matchRecordName(schemaText: string, regex: RegExp): string {
 // Avro and JSON schemas carry the record name in a top-level `name` field.
 function jsonRecordName(schemaText: string): string {
   try {
-    const { name } = JSON.parse(schemaText);
-    return name;
+    const parsed: unknown = JSON.parse(schemaText);
+    if (isObject(parsed) && typeof parsed.name === 'string') {
+      return parsed.name;
+    }
   } catch {
     // no op - schema may be incomplete during editing
   }
@@ -140,7 +144,7 @@ export function addVersionEditorState(
     strategy: 'CUSTOM',
     userInput,
     keyOrValue: undefined,
-    format: schema.type as 'AVRO' | 'PROTOBUF',
+    format: schema.type,
     schemaText,
     references: schema.references.map((r) => ({ ...r, id: crypto.randomUUID(), context: contextId })),
     normalize: false,

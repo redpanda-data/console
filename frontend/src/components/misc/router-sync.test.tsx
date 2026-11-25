@@ -9,7 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { beforeEach, describe, expect, test } from '@rstest/core';
 import { render } from '@testing-library/react';
+
+import { RouterSync } from './router-sync';
+import { config, isEmbedded } from '../../runtime-config';
 
 const mockNavigate = rs.fn();
 const mockLocation = { pathname: '/topics', searchStr: '' };
@@ -21,7 +25,7 @@ rs.mock('@tanstack/react-router', () => ({
   useRouter: () => mockRouter,
 }));
 
-rs.mock('../../config', () => ({
+rs.mock('../../runtime-config', () => ({
   config: {
     jwt: undefined as string | undefined,
     clusterId: undefined as string | undefined,
@@ -46,9 +50,6 @@ rs.mock('../../state/backend-api', () => ({
     errors: [],
   },
 }));
-
-import { RouterSync } from './router-sync';
-import { config, isEmbedded } from '../../config';
 
 describe('the RouterSync', () => {
   beforeEach(() => {
@@ -96,12 +97,16 @@ describe('the RouterSync', () => {
 
     render(<RouterSync />);
 
-    const consoleEvents = dispatchSpy.mock.calls.filter(
-      ([event]) => event instanceof CustomEvent && event.type === '[console] navigated'
-    );
+    const consoleEvents = navigatedEvents(dispatchSpy.mock.calls);
     expect(consoleEvents).toHaveLength(1);
-    expect((consoleEvents[0][0] as CustomEvent).detail).toBe('/schema-registry');
+    expect(consoleEvents[0].detail).toBe('/schema-registry');
 
     dispatchSpy.mockRestore();
   });
 });
+
+function navigatedEvents(calls: [Event][]): CustomEvent<unknown>[] {
+  return calls.flatMap(([event]) =>
+    event instanceof CustomEvent && event.type === '[console] navigated' ? [event] : []
+  );
+}

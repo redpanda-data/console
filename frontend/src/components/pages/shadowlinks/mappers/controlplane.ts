@@ -15,11 +15,25 @@
  */
 
 import type { ShadowLink as ControlplaneShadowLink } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
+import {
+  type NameFilter as ControlplaneNameFilter,
+  NameFilterSchema as ControlplaneNameFilterSchema,
+  ScramConfigSchema as ControlplaneScramConfigSchema,
+} from '@buf/redpandadata_core.bufbuild_es/redpanda/core/admin/v2/shadow_link_pb';
+import { fromBinary, fromJson, toBinary } from '@bufbuild/protobuf';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
-import { FilterType, PatternType, ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
+import {
+  FilterType,
+  NameFilterSchema,
+  PatternType,
+  ScramConfigSchema,
+  ScramMechanism,
+} from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
+import { z } from 'zod';
 
 import { mapSchemaRegistrySyncOptions, mapSchemaRegistrySyncOptionsToFormValues } from './schema-registry';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { AUTH_METHOD, type FormValues, TLS_MODE } from '../create/model';
 import {
   mapControlplaneStateToUnified,
@@ -42,7 +56,7 @@ type ControlplaneClientOptions = NonNullable<ControlplaneShadowLink['clientOptio
 function mapControlplaneTlsSettings(
   tlsSettings: ControlplaneClientOptions['tlsSettings']
 ): UnifiedTLSSettings | undefined {
-  if (!tlsSettings?.enabled) {
+  if (!(tlsSettings?.enabled === true)) {
     return;
   }
   return {
@@ -272,36 +286,47 @@ type RawPlainConfig = { username?: string; password?: string };
 
 type ControlplaneAuthConfig = NonNullable<ControlplaneClientOptions['authenticationConfiguration']>;
 
-// Fallback: config sits directly on authConfig (JSON wire format) when response isn't fully deserialized.
+const rawAuthSchema = z.object({
+  scramConfiguration: z
+    .object({
+      username: z.string().optional(),
+      password: z.string().optional(),
+      scramMechanism: z.union([z.number().int(), z.string()]).optional(),
+    })
+    .optional(),
+  plainConfiguration: z.object({ username: z.string().optional(), password: z.string().optional() }).optional(),
+});
+
+// Legacy callers can still supply the JSON shape, with fields outside the decoded oneof.
 const extractWireAuthConfigs = (
-  authConfig: ControlplaneAuthConfig
+  authConfig: unknown
 ): { scramConfig?: RawScramConfig; plainConfig?: RawPlainConfig } => {
-  const raw = authConfig as unknown as {
-    scramConfiguration?: RawScramConfig;
-    plainConfiguration?: RawPlainConfig;
-  };
+  const raw = rawAuthSchema.parse(authConfig);
   if (raw.scramConfiguration) {
-    return { scramConfig: raw.scramConfiguration };
+    const { username, password, scramMechanism } = raw.scramConfiguration;
+    // The protobuf JSON decoder preserves open numeric enums and validates enum names.
+    const scramConfig = fromJson(ScramConfigSchema, {
+      ...(username === undefined ? {} : { username }),
+      ...(password === undefined ? {} : { password }),
+      scramMechanism: scramMechanism ?? ScramMechanism.SCRAM_SHA_256,
+    });
+    return { scramConfig };
   }
-  if (raw.plainConfiguration) {
-    return { plainConfig: raw.plainConfiguration };
-  }
-  return {};
+  return { plainConfig: raw.plainConfiguration };
 };
 
 const extractRawAuthConfigs = (
-  authConfig: NonNullable<ControlplaneShadowLink['clientOptions']>['authenticationConfiguration'] | undefined
+  authConfig: ControlplaneAuthConfig | undefined
 ): { scramConfig?: RawScramConfig; plainConfig?: RawPlainConfig } => {
   if (!authConfig) {
     return {};
   }
-  // The controlplane SDK type does not yet declare plainConfiguration in the oneof, so we widen via cast.
-  const oneof = authConfig.authentication as { case?: string; value?: unknown } | undefined;
+  const oneof = authConfig.authentication;
   if (oneof?.case === 'scramConfiguration') {
-    return { scramConfig: oneof.value as RawScramConfig };
+    return { scramConfig: fromBinary(ScramConfigSchema, toBinary(ControlplaneScramConfigSchema, oneof.value)) };
   }
   if (oneof?.case === 'plainConfiguration') {
-    return { plainConfig: oneof.value as RawPlainConfig };
+    return { plainConfig: oneof.value };
   }
   return extractWireAuthConfigs(authConfig);
 };
@@ -322,15 +347,15 @@ const extractControlplaneAuthSettings = (
     authMethod,
     scramCredentials: scramConfig
       ? {
-          username: scramConfig.username || '',
-          password: scramConfig.password || '',
+          username: (scramConfig.username ?? '') || '',
+          password: (scramConfig.password ?? '') || '',
           mechanism: scramConfig.scramMechanism ?? ScramMechanism.SCRAM_SHA_256,
         }
       : undefined,
     plainCredentials: plainConfig
       ? {
-          username: plainConfig.username || '',
-          password: plainConfig.password || '',
+          username: (plainConfig.username ?? '') || '',
+          password: (plainConfig.password ?? '') || '',
         }
       : undefined,
   };
@@ -385,9 +410,9 @@ const buildControlplaneConnectionValues = (
     useTls: Boolean(tlsSettings?.enabled),
     mtlsMode: TLS_MODE.PEM,
     mtls: {
-      ca: tlsSettings?.ca ? { pemContent: tlsSettings.ca } : undefined,
-      clientCert: tlsSettings?.cert ? { pemContent: tlsSettings.cert } : undefined,
-      clientKey: tlsSettings?.key ? { pemContent: tlsSettings.key } : undefined,
+      ca: isNonEmptyString(tlsSettings?.ca) ? { pemContent: tlsSettings.ca } : undefined,
+      clientCert: isNonEmptyString(tlsSettings?.cert) ? { pemContent: tlsSettings.cert } : undefined,
+      clientKey: isNonEmptyString(tlsSettings?.key) ? { pemContent: tlsSettings.key } : undefined,
     },
     advanceClientOptions: {
       metadataMaxAgeMs: clientOptions?.metadataMaxAgeMs ?? 10_000,
@@ -401,6 +426,12 @@ const buildControlplaneConnectionValues = (
   };
 };
 
+// These are two generated versions of the same protobuf message. Decode the wire contract
+// instead of asserting the packages' nominal enum types; open-enum unknown values survive.
+function localNameFilter(filter: ControlplaneNameFilter) {
+  return fromBinary(NameFilterSchema, toBinary(ControlplaneNameFilterSchema, filter));
+}
+
 /**
  * Build topics form values from controlplane shadow link
  */
@@ -408,7 +439,7 @@ const buildControlplaneTopicsValues = (
   shadowLink: ControlplaneShadowLink
 ): Pick<FormValues, 'topicsMode' | 'topics' | 'topicProperties' | 'excludeDefault'> => {
   const topicMetadataSyncOptions = shadowLink.topicMetadataSyncOptions;
-  const filters = topicMetadataSyncOptions?.autoCreateShadowTopicFilters ?? [];
+  const filters = (topicMetadataSyncOptions?.autoCreateShadowTopicFilters ?? []).map(localNameFilter);
 
   const isAllMode = isAllNameFilter(filters);
 
@@ -433,7 +464,7 @@ const buildControlplaneConsumerGroupsValues = (
   shadowLink: ControlplaneShadowLink
 ): Pick<FormValues, 'enableConsumerOffsetSync' | 'consumersMode' | 'consumers'> => {
   const consumerOffsetSyncOptions = shadowLink.consumerOffsetSyncOptions;
-  const groupFilters = consumerOffsetSyncOptions?.groupFilters ?? [];
+  const groupFilters = (consumerOffsetSyncOptions?.groupFilters ?? []).map(localNameFilter);
 
   const isAllMode = isAllNameFilter(groupFilters);
 
@@ -457,7 +488,7 @@ const buildControlplaneConsumerGroupsValues = (
  * untouched edit form never emits a role_sync_options mask.
  */
 const buildControlplaneRolesValues = (shadowLink: ControlplaneShadowLink): Pick<FormValues, 'rolesMode' | 'roles'> => {
-  const roleNameFilters = shadowLink.roleSyncOptions?.roleNameFilters ?? [];
+  const roleNameFilters = (shadowLink.roleSyncOptions?.roleNameFilters ?? []).map(localNameFilter);
 
   const isAllMode = isAllNameFilter(roleNameFilters);
 

@@ -33,7 +33,7 @@ test('loads ACLs and roles, then role members, on mount and on every app refresh
   expect(refreshAcls).toHaveBeenCalledTimes(1);
   expect(refreshRoles).toHaveBeenCalledTimes(1);
 
-  appGlobal.onRefresh();
+  await appGlobal.onRefresh();
 
   await waitFor(() => expect(refreshRoleMembers).toHaveBeenCalledTimes(2));
   expect(refreshAcls).toHaveBeenCalledTimes(2);
@@ -64,11 +64,11 @@ const userWithoutAclAccess: UserData = {
 };
 
 // The permission check runs before the first await, so any load would already have started.
-test('loads nothing for a user who cannot list ACLs', () => {
+test('loads nothing for a user who cannot list ACLs', async () => {
   useApiStore.setState({ userData: userWithoutAclAccess });
 
   renderHook(() => useRefreshUserAccessData());
-  appGlobal.onRefresh();
+  await appGlobal.onRefresh();
 
   expect(refreshAcls).not.toHaveBeenCalled();
   expect(refreshRoles).not.toHaveBeenCalled();

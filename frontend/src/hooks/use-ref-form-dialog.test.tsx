@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, describe, expect, it, rs } from '@rstest/core';
+import { afterEach, describe, expect, rs, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
 
 import { type RefFormSubmittable, useRefFormDialog } from './use-ref-form-dialog';
@@ -19,7 +19,7 @@ rs.mock('sonner', () => ({ toast: { error: rs.fn() } }));
 // Import after mock so we get the mocked version
 const getToastError = async () => {
   const { toast } = await import('sonner');
-  return toast.error as ReturnType<typeof rs.fn>;
+  return toast.error;
 };
 
 // Renders the hook around a form whose submit is `triggerSubmit`, with the dialog already open.
@@ -32,7 +32,7 @@ function renderOpenDialog(
   const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess, ...options }));
 
   act(() => {
-    result.current.open();
+    result.current.open(true);
   });
 
   return { result, onSuccess };
@@ -52,7 +52,7 @@ describe('useRefFormDialog', () => {
     rs.useRealTimers();
   });
 
-  it('starts closed and not submitting', () => {
+  test('starts closed and not submitting', () => {
     const ref = { current: null };
     const onSuccess = rs.fn();
 
@@ -63,7 +63,7 @@ describe('useRefFormDialog', () => {
     expect(result.current.target).toBeNull();
   });
 
-  it('opens with target and derives isOpen', () => {
+  test('opens with target and derives isOpen', () => {
     const ref = { current: null };
     const onSuccess = rs.fn();
 
@@ -77,21 +77,21 @@ describe('useRefFormDialog', () => {
     expect(result.current.target).toBe('my-target');
   });
 
-  it('defaults target to true when open is called without argument', () => {
+  test('supports an explicit boolean target', () => {
     const ref = { current: null };
     const onSuccess = rs.fn();
 
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 
     act(() => {
-      result.current.open();
+      result.current.open(true);
     });
 
     expect(result.current.isOpen).toBe(true);
     expect(result.current.target).toBe(true);
   });
 
-  it('close resets all state', () => {
+  test('close resets all state', () => {
     const ref = { current: null };
     const onSuccess = rs.fn();
 
@@ -112,7 +112,7 @@ describe('useRefFormDialog', () => {
     expect(result.current.target).toBeNull();
   });
 
-  it('calls onSuccess and closes on successful submit', async () => {
+  test('calls onSuccess and closes on successful submit', async () => {
     const data = { id: 42 };
     const triggerSubmit = rs.fn().mockResolvedValue({ success: true, data });
     const ref = { current: { triggerSubmit } };
@@ -121,7 +121,7 @@ describe('useRefFormDialog', () => {
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 
     act(() => {
-      result.current.open();
+      result.current.open(true);
     });
 
     await act(async () => {
@@ -133,7 +133,7 @@ describe('useRefFormDialog', () => {
     expect(result.current.isSubmitting).toBe(false);
   });
 
-  it('keeps dialog open on failed submit', async () => {
+  test('keeps dialog open on failed submit', async () => {
     const triggerSubmit = rs.fn().mockResolvedValue({ success: false });
     const ref = { current: { triggerSubmit } };
     const onSuccess = rs.fn();
@@ -141,7 +141,7 @@ describe('useRefFormDialog', () => {
     const { result } = renderHook(() => useRefFormDialog({ ref, onSuccess }));
 
     act(() => {
-      result.current.open();
+      result.current.open(true);
     });
 
     await act(async () => {
@@ -153,7 +153,7 @@ describe('useRefFormDialog', () => {
     expect(result.current.isSubmitting).toBe(false);
   });
 
-  it('aborts in-flight submit when close is called', async () => {
+  test('aborts in-flight submit when close is called', async () => {
     let resolveSubmit!: (value: { success: boolean; data?: unknown }) => void;
     const inflightPromise = new Promise<{ success: boolean; data?: unknown }>((resolve) => {
       resolveSubmit = resolve;
@@ -182,7 +182,7 @@ describe('useRefFormDialog', () => {
     expect(result.current.isOpen).toBe(false);
   });
 
-  it('shows timeout toast and closes on timeout', async () => {
+  test('shows timeout toast and closes on timeout', async () => {
     rs.useFakeTimers();
 
     const neverResolves = new Promise<never>(() => {
@@ -205,7 +205,7 @@ describe('useRefFormDialog', () => {
     expect(result.current.isSubmitting).toBe(false);
   });
 
-  it('does nothing when submit is called while closed', async () => {
+  test('does nothing when submit is called while closed', async () => {
     const triggerSubmit = rs.fn().mockResolvedValue({ success: true, data: {} });
     const ref = { current: { triggerSubmit } };
     const onSuccess = rs.fn();
@@ -221,4 +221,16 @@ describe('useRefFormDialog', () => {
     expect(onSuccess).not.toHaveBeenCalled();
     expect(result.current.isOpen).toBe(false);
   });
+});
+
+test.each([false, 0, '', null])('submits present falsy form data: %j', async (data) => {
+  const triggerSubmit = rs
+    .fn<RefFormSubmittable<unknown>['triggerSubmit']>()
+    .mockResolvedValue({ success: true, data });
+  const { result, onSuccess } = renderOpenDialog(triggerSubmit);
+  await act(async () => {
+    await result.current.submit();
+  });
+  expect(onSuccess).toHaveBeenCalledWith(data, true);
+  expect(result.current.isOpen).toBe(false);
 });

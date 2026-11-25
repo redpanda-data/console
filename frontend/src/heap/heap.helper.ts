@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { isNonEmptyString } from '../utils/string-utils';
 // Heap Analytics Configuration Constants
 export const HEAP_APP_ID = '328327039';
 
@@ -39,7 +40,7 @@ declare global {
  * @param userData - User data to track in Heap
  */
 export const trackHeapUser = (userData: HeapUserData) => {
-  if (window.heap && userData.email) {
+  if (window.heap && isNonEmptyString(userData.email)) {
     window.heap.identify(userData.email);
 
     const { email: _email, ...userProperties } = userData;

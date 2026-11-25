@@ -12,6 +12,7 @@
 import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../state/ui';
 import { wrapFilterFragment } from '../../../../utils/filter-helper';
+import { nonzeroNumber } from '../../../../utils/number-utils';
 
 // A rejection during a search that's being torn down by navigation isn't guaranteed to be a
 // proper Error, so never assume `.message` exists on it.
@@ -35,7 +36,7 @@ export function toDisplayError(error: unknown): Error {
  */
 export function buildFilterCode(filters: FilterEntry[]): { filterCode: string; functionCount: number } {
   const activeFilters = filters.filter(
-    (searchParam) => searchParam.isActive && searchParam.code && searchParam.transpiledCode
+    (searchParam) => searchParam.isActive && Boolean(searchParam.code) && Boolean(searchParam.transpiledCode)
   );
   if (activeFilters.length === 0) {
     return { filterCode: '', functionCount: 0 };
@@ -85,8 +86,10 @@ function matchesQuickSearch(message: TopicMessage, quickSearch: string): boolean
  * desc as a cross-partition tiebreak). Otherwise the streamed order is kept and the table sorts.
  */
 export function getVisibleMessages(messages: TopicMessage[], quickSearch: string, newestFirst: boolean) {
-  const matching = quickSearch ? messages.filter((m) => matchesQuickSearch(m, quickSearch)) : messages;
-  return newestFirst ? [...matching].sort((a, b) => b.timestamp - a.timestamp || b.offset - a.offset) : matching;
+  const matching = quickSearch ? messages.filter((m) => matchesQuickSearch(m, quickSearch) === true) : messages;
+  return newestFirst
+    ? [...matching].sort((a, b) => nonzeroNumber(b.timestamp - a.timestamp) ?? b.offset - a.offset)
+    : matching;
 }
 
 /**

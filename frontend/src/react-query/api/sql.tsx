@@ -35,6 +35,8 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1alpha3/sql-SQLService_connectquery';
 import { MAX_PAGE_SIZE, type MessageInit } from 'react-query/react-query.utils';
 
+import { isNonEmptyString } from '../../utils/string-utils';
+
 type SqlQueryOptions = {
   enabled?: boolean;
 };
@@ -92,7 +94,7 @@ export const useTopicIcebergQuery = (topicName: string, options?: SqlQueryOption
     enabled: options?.enabled !== false && Boolean(topicName),
   });
   const mode = result.data?.configurations.find((c) => c.name === 'redpanda.iceberg.mode')?.value;
-  return { ...result, isIceberg: Boolean(mode && mode !== 'disabled') };
+  return { ...result, isIceberg: isNonEmptyString(mode) && mode !== 'disabled' };
 };
 
 // Errors surface inline (run panel / wizard), so no toast on failure.

@@ -10,14 +10,15 @@
  */
 
 import { createFileRoute } from '@tanstack/react-router';
-import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { lazy } from 'react';
 import { z } from 'zod';
 
-import RpConnectPipelinesCreate from '../../components/pages/rp-connect/pipelines-create';
+import { RpConnectPipelinesCreate } from '../../components/pages/rp-connect/pipelines-create';
+import { isEmbedded, isFeatureFlagEnabled } from '../../runtime-config';
 
-const PipelinePage = lazy(() => import('../../components/pages/rp-connect/pipeline'));
-
+const PipelinePage = lazy(() =>
+  import('../../components/pages/rp-connect/pipeline').then((loadedModule) => ({ default: loadedModule.PipelinePage }))
+);
 const searchSchema = z.object({
   serverless: z.string().optional().catch(undefined),
 });

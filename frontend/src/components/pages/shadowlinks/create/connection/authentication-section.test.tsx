@@ -10,18 +10,21 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { rs } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
+import { ScramMechanism } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { AuthenticationSection } from './authentication-section';
 import { AUTH_METHOD, FormSchema, type FormValues, initialValues } from '../model';
 
 const VIEW_REQUIRED_ACLS_RE = /view required acls/i;
 
-rs.mock('config', () => ({
+rs.mock('runtime-config', () => ({
   isEmbedded: rs.fn(() => false),
   isFeatureFlagEnabled: rs.fn(() => false),
 }));
@@ -39,7 +42,7 @@ const TestWrapper = ({ defaultValues = initialValues }: { defaultValues?: FormVa
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={asyncEvent(form.handleSubmit(onSubmit), reportActionError)}>
         <AuthenticationSection />
         <button data-testid="submit-button" type="submit">
           Submit
@@ -127,7 +130,7 @@ describe('the AuthenticationSection', () => {
         scramCredentials: {
           username: '',
           password: '',
-          mechanism: initialValues.scramCredentials?.mechanism || 0,
+          mechanism: initialValues.scramCredentials?.mechanism ?? ScramMechanism.UNSPECIFIED,
         },
       };
 

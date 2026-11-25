@@ -1,6 +1,7 @@
 import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
-import type { ConnectComponentSpec, ConnectComponentType } from '../types/schema';
+import { isObject, isUnknownArray } from '../../../../utils/type-guards';
+import { CONNECT_COMPONENT_TYPE, type ConnectComponentSpec, type ConnectComponentType } from '../types/schema';
 
 const RECENTS_KEY = 'rpcn-recent-components';
 const MAX_RECENTS = 6;
@@ -59,8 +60,16 @@ export function readRecents(): RecentEntry[] {
   }
   try {
     const raw = window.localStorage.getItem(RECENTS_KEY);
-    const parsed = raw ? (JSON.parse(raw) as RecentEntry[]) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed: unknown = raw !== null && raw !== undefined && raw !== '' ? JSON.parse(raw) : [];
+    return isUnknownArray(parsed)
+      ? parsed.flatMap((entry) => {
+          if (!isObject(entry) || typeof entry.name !== 'string') {
+            return [];
+          }
+          const type = CONNECT_COMPONENT_TYPE.find((candidate) => candidate === entry.type);
+          return type === undefined ? [] : [{ name: entry.name, type }];
+        })
+      : [];
   } catch {
     return [];
   }
@@ -119,7 +128,7 @@ export const COMPONENT_ALIASES: Record<string, string[]> = {
 // `rate_limit` whole, but not a fragment buried mid-token (`log` in `catalog`) — names are snake_case.
 function nameContainsToken(name: string, fragment: string): boolean {
   let from = 0;
-  for (;;) {
+  while (true) {
     const at = name.indexOf(fragment, from);
     if (at === -1) {
       return false;
@@ -198,7 +207,7 @@ function withArticles(labels: string[]): string {
   if (labeled.length <= 1) {
     return labeled[0] ?? '';
   }
-  return `${labeled.slice(0, -1).join(', ')} or ${labeled.at(-1)}`;
+  return `${labeled.slice(0, -1).join(', ')} or ${labeled.at(-1) ?? ''}`;
 }
 
 // Empty-state copy; a type-locked miss that exists as another type is called out ("it exists as an input").
@@ -224,7 +233,8 @@ export function computeSuggested(
 ): ConnectComponentSpec[] {
   const names = new Set((allowedTypes ?? []).flatMap((t) => SUGGESTED_BY_TYPE[t] ?? []));
   const recentNames = new Set(recentComponents.map((c) => c.name));
-  return [...names]
-    .map((n) => byName.get(n))
-    .filter((c): c is ConnectComponentSpec => c !== undefined && !recentNames.has(c.name));
+  return [...names].flatMap((n) => {
+    const suggestedComponent = byName.get(n);
+    return suggestedComponent !== undefined && !recentNames.has(suggestedComponent.name) ? [suggestedComponent] : [];
+  });
 }

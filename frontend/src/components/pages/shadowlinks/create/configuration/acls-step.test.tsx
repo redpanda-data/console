@@ -10,6 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';

@@ -9,12 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { Code, ConnectError } from '@connectrpc/connect';
+import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
+import { AuthenticationService } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
 
-import RequireAuth from './require-auth';
-import { config as appConfig } from '../config';
+import { RequireAuth } from './require-auth';
+import { config as appConfig } from '../runtime-config';
 import { useApiStore } from '../state/backend-api';
 import { render } from '../test-utils';
 import { AppFeatures } from '../utils/env';
@@ -33,9 +34,18 @@ describe('the RequireAuth', () => {
     AppFeatures.SINGLE_SIGN_ON = true;
     // getIdentity() never settles - tests drive userData/userDataError directly
     // instead of racing a real fetch.
-    appConfig.authenticationClient = {
-      getIdentity: () => new Promise(() => {}),
-    } as unknown as typeof appConfig.authenticationClient;
+    appConfig.authenticationClient = createClient(
+      AuthenticationService,
+      createRouterTransport((router) => {
+        router.rpc(
+          AuthenticationService.method.getIdentity,
+          () =>
+            new Promise(() => {
+              // State is driven explicitly by the test while this legitimate RPC remains pending.
+            })
+        );
+      })
+    );
     act(() => {
       useApiStore.setState({ userData: undefined, userDataError: null, isUserDataFetchInProgress: false });
     });

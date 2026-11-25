@@ -13,16 +13,15 @@ import type { Transport } from '@connectrpc/connect';
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
-import AnnouncementBar from 'components/builder-io/announcement-bar';
+import { AnnouncementBar } from 'components/builder-io/announcement-bar';
 import { Toaster } from 'components/redpanda-ui/components/sonner';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
-import { isEmbedded } from 'config';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 
 import { ClusterFenceBanner } from '../components/cluster-fence/cluster-fence-banner';
 import { DebugHelper } from '../components/debug-helper/debug-helper';
-import AppFooter from '../components/layout/footer';
-import AppPageHeader from '../components/layout/header';
+import { AppFooter } from '../components/layout/footer';
+import { AppPageHeader } from '../components/layout/header';
 import { PageColumn } from '../components/layout/page-column';
 import { SidebarLayout } from '../components/layout/sidebar';
 import { LicenseNotification } from '../components/license/license-notification';
@@ -32,8 +31,9 @@ import { ErrorModalsRenderer } from '../components/misc/error-modal';
 import { NullFallbackBoundary } from '../components/misc/null-fallback-boundary';
 import { RouterSync } from '../components/misc/router-sync';
 import { SidebarInset } from '../components/redpanda-ui/components/sidebar';
-import RequireAuth from '../components/require-auth';
+import { RequireAuth } from '../components/require-auth';
 import { useThemeAppearance } from '../hooks/use-theme-appearance';
+import { isEmbedded } from '../runtime-config';
 import { IsDev } from '../utils/env';
 import { ModalContainer } from '../utils/modal-container';
 
@@ -58,7 +58,16 @@ function RootLayout() {
         {IsDev ? <DebugHelper /> : null}
       </NuqsAdapter>
 
-      {IsDev ? <TanStackRouterDevtools position="bottom-right" /> : null}
+      {IsDev ? (
+        <TanStackRouterDevtools
+          position="bottom-right"
+          toggleButtonProps={{
+            className: 'console-router-devtools-toggle',
+            // Public integration props override the library's inline viewport coordinates.
+            style: { right: 12, bottom: 36, transform: 'scale(0.85)', transformOrigin: 'bottom right' },
+          }}
+        />
+      ) : null}
     </>
   );
 }
@@ -80,7 +89,7 @@ function SelfHostedLayout() {
             past the viewport, adding a horizontal scrollbar. */}
         <SidebarInset className="min-w-0">
           {/* Centered page column; `page-expanded-*` release the gutter and cap (globals.css). */}
-          <div className="page-expanded-flush page-expanded-uncap container mx-auto flex max-w-[1500px] flex-1 flex-col px-12 transition-[max-width,padding] duration-300 ease-in-out">
+          <div className="page-expanded-flush page-expanded-uncap container mx-auto flex max-w-[1500px] flex-1 flex-col px-12 page-width-transition duration-300 ease-in-out">
             <AppContent />
           </div>
         </SidebarInset>

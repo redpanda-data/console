@@ -96,7 +96,7 @@ const inputs = (overrides: Partial<TopologyInputs> = {}): TopologyInputs => ({
 
 describe('buildShadowLinkTopology', () => {
   test('resolves a Cloud source with its fence still loading, and one Cloud doesn’t manage', () => {
-    expect(buildShadowLinkTopology(inputs())).toEqual({
+    expect(buildShadowLinkTopology(inputs())).toStrictEqual({
       clusterName: 'dr-cluster',
       readers: [],
       sources: {
@@ -110,11 +110,11 @@ describe('buildShadowLinkTopology', () => {
 
   test('never calls a source external before every candidate cluster is in', () => {
     const partial = buildShadowLinkTopology(inputs({ candidates: { clusters: [], complete: false, failed: false } }));
-    expect(partial.sources).toEqual({});
+    expect(partial.sources).toStrictEqual({});
     expect(partial.resolving).toBe(true);
 
     const failed = buildShadowLinkTopology(inputs({ candidates: { clusters: [], complete: false, failed: true } }));
-    expect(failed.sources).toEqual({});
+    expect(failed.sources).toStrictEqual({});
     expect(failed.resolving).toBe(false);
   });
 
@@ -127,7 +127,7 @@ describe('buildShadowLinkTopology', () => {
         ]),
       })
     );
-    expect(Object.keys(topology.sources)).toEqual(['vendor-dr']);
+    expect(Object.keys(topology.sources)).toStrictEqual(['vendor-dr']);
     expect(topology.resolving).toBe(false);
   });
 
@@ -137,7 +137,7 @@ describe('buildShadowLinkTopology', () => {
         inputs({ clusterId: 'prod', self, candidates: { clusters: [], complete: false, failed: false } })
       );
 
-    expect(onProd(ready(prod)).readers.map((reader) => reader.linkName)).toEqual(['orders-dr']);
+    expect(onProd(ready(prod)).readers.map((reader) => reader.linkName)).toStrictEqual(['orders-dr']);
     expect(onProd({ status: 'pending' })).toMatchObject({ readers: [], resolving: true });
     expect(onProd({ status: 'failed' })).toMatchObject({ readers: [], resolving: false, readersIncomplete: true });
   });
@@ -157,7 +157,7 @@ describe('buildShadowLinkTopology', () => {
         links: { items: [listItem(toProd, ShadowLink_State.CREATING)], loading: false, complete: true },
       })
     );
-    expect(topology.readers).toEqual([]);
+    expect(topology.readers).toStrictEqual([]);
   });
 
   test('a list that stopped part way through may be missing readers', () => {
@@ -170,7 +170,7 @@ describe('buildShadowLinkTopology', () => {
 
 test('withPeerFences fills in each Cloud source’s fence, keeping others as they are', () => {
   const topology = buildShadowLinkTopology(inputs());
-  expect(sourceClusterIds(topology)).toEqual(['prod']);
+  expect(sourceClusterIds(topology)).toStrictEqual(['prod']);
 
   const fenced = withPeerFences(topology, new Map([['prod', { status: 'unavailable', reason: 'forbidden' } as const]]));
   expect(fenced.sources['orders-dr']).toMatchObject({ fence: { status: 'unavailable', reason: 'forbidden' } });
@@ -201,13 +201,13 @@ describe('clusters that share a host, as local ones do', () => {
   test('a link to another cluster on the same host doesn’t read from this one', () => {
     const exactToA = onB(linkFrom(30_092), { clusters: [a, c], complete: true, failed: false });
     expect(needsOtherClusters(exactToA)).toBe(true);
-    expect(buildShadowLinkTopology(exactToA).readers).toEqual([]);
+    expect(buildShadowLinkTopology(exactToA).readers).toStrictEqual([]);
   });
 
   test('an exact match needs no other cluster', () => {
     const exactToB = onB(linkFrom(31_092), { clusters: [], complete: false, failed: false });
     expect(needsOtherClusters(exactToB)).toBe(false);
-    expect(buildShadowLinkTopology(exactToB).readers.map((reader) => reader.linkName)).toEqual(['a-to-c']);
+    expect(buildShadowLinkTopology(exactToB).readers.map((reader) => reader.linkName)).toStrictEqual(['a-to-c']);
   });
 
   test('a host-only match waits for the other clusters, then counts only if none of them claims it', () => {
@@ -218,7 +218,7 @@ describe('clusters that share a host, as local ones do', () => {
     });
     expect(
       buildShadowLinkTopology(onB(otherPort, { clusters: [a, c], complete: true, failed: false })).readers
-    ).toEqual([]);
+    ).toStrictEqual([]);
     expect(
       buildShadowLinkTopology(
         onB(otherPort, { clusters: [cluster('a', 'elsewhere:9092')], complete: true, failed: false })

@@ -15,6 +15,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { SimpleMultiSelect } from 'components/redpanda-ui/components/multi-select';
 import { useEffect, useId, useMemo, useState } from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
 import { api } from '../../../../../state/backend-api';
 import type { Property } from '../../../../../state/connect/state';
@@ -31,12 +32,12 @@ const incrementErrorIndex = (property: Property) => {
 function useTopicSelection(properties: Property[]) {
   const propsMap = useMemo(() => new Map(properties.map((prop) => [prop.name, prop])), [properties]);
   const topicsRegex = properties.find((x) => x.name === 'topics.regex');
-  const initialSelection = topicsRegex?.value ? 'topics.regex' : 'topics';
+  const initialSelection = Boolean(topicsRegex?.value) ? 'topics.regex' : 'topics';
 
   const [selected, setSelected] = useState(initialSelection);
 
   useEffect(() => {
-    api.refreshTopics();
+    api.refreshTopics().catch(reportActionError);
   }, []);
 
   return { propsMap, selected, setSelected };
@@ -58,7 +59,7 @@ function propertyErrorDisplay(property: Property) {
 }
 
 function topicChoices(property: Property) {
-  const selectedTopics = property.value ? property.value.toString().split(',').filter(Boolean) : [];
+  const selectedTopics = Boolean(property.value) ? String(property.value).split(',').filter(Boolean) : [];
   // Union, not just `api.topics`: a chip for a topic that has since been deleted (or one rendered
   // before the topic list resolves) is only removable if its value is among the options.
   const topicOptions = [...new Set([...(api.topics?.map((x) => x.topicName) ?? []), ...selectedTopics])];
@@ -125,7 +126,7 @@ export const TopicInput = (p: { properties: Property[]; connectorType: 'sink' | 
           />
         )}
 
-        {Boolean(showErrors) && <FieldError onClick={cycleError}>{errorToShow}</FieldError>}
+        {showErrors && <FieldError onClick={cycleError}>{errorToShow}</FieldError>}
       </Field>
     </div>
   );

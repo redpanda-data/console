@@ -65,5 +65,5 @@ test('pipeline YAML exposes field documentation and preserves syntax validation'
   await page.setViewportSize({ width: 390, height: 844 });
   await expectIntervalHelpOnHover(page, editor);
   await attachFullPageScreenshot(page, testInfo, 'yaml-field-help-mobile.png');
-  expect(errors).toEqual([]);
+  expect(errors).toStrictEqual([]);
 });

@@ -51,7 +51,7 @@ export const RoleAclGroupRow = ({ roleName, colSpan }: { roleName: string; colSp
   <TableRow>
     <TableCell colSpan={colSpan}>
       <div className="flex items-center gap-1.5">
-        <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
+        <ShieldIcon className="size-3.5 shrink-0" />
         <span className="font-medium tracking-wide uppercase">Via Role: {roleName}</span>
       </div>
     </TableCell>

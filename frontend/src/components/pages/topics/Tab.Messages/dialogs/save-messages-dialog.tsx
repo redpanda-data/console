@@ -25,16 +25,13 @@ import { useState } from 'react';
 import type { Payload, TopicMessage } from '../../../../../state/rest-interfaces';
 import type { DataColumnKey } from '../../../../../state/ui';
 import { toJson } from '../../../../../utils/json-utils';
+import { nonzeroNumber } from '../../../../../utils/number-utils';
 import { base64FromUInt8Array } from '../../../../../utils/utils';
 
 // Define the column order as a constant
 const COLUMN_ORDER: DataColumnKey[] = ['timestamp', 'partitionID', 'offset', 'key', 'value', 'keySize', 'valueSize'];
 
-function cleanPayload(p: Payload, includeRawContent: boolean): Payload | undefined {
-  if (!p) {
-    return;
-  }
-
+function cleanPayload(p: Payload, includeRawContent: boolean) {
   const cleanedPayload = {
     payload: p.payload,
     rawPayload: includeRawContent && p.rawBytes ? base64FromUInt8Array(p.rawBytes) : undefined,
@@ -42,16 +39,16 @@ function cleanPayload(p: Payload, includeRawContent: boolean): Payload | undefin
     isPayloadNull: p.isPayloadNull,
     schemaId: 0,
     size: p.size,
-  } as Payload;
+  };
 
-  if (p.schemaId && p.schemaId !== 0) {
+  if (Boolean(p.schemaId) && p.schemaId !== 0) {
     cleanedPayload.schemaId = p.schemaId;
   }
 
   return cleanedPayload;
 }
 
-function cleanMessage(src: TopicMessage, includeRawContent: boolean): Partial<TopicMessage> {
+function cleanMessage(src: TopicMessage, includeRawContent: boolean) {
   return {
     partitionID: src.partitionID,
     offset: src.offset,
@@ -60,15 +57,20 @@ function cleanMessage(src: TopicMessage, includeRawContent: boolean): Partial<To
     isTransactional: src.isTransactional,
     headers: src.headers.map((h) => ({
       key: h.key,
-      value: cleanPayload(h.value, includeRawContent) as Payload,
+      value: cleanPayload(h.value, includeRawContent),
     })),
     key: cleanPayload(src.key, includeRawContent),
     value: cleanPayload(src.value, includeRawContent),
   };
 }
 
-function csvHeaders(firstMessage: TopicMessage): string[] {
-  const headers: string[] = [...COLUMN_ORDER];
+type CleanMessage = ReturnType<typeof cleanMessage>;
+type CleanPayload = ReturnType<typeof cleanPayload>;
+
+type CsvColumn = DataColumnKey | 'compression' | 'isTransactional';
+
+function csvHeaders(firstMessage: CleanMessage): CsvColumn[] {
+  const headers: CsvColumn[] = [...COLUMN_ORDER];
 
   // Add other common fields that might not be in COLUMN_ORDER
   if (firstMessage.compression && !headers.includes('compression')) {
@@ -82,15 +84,15 @@ function csvHeaders(firstMessage: TopicMessage): string[] {
 }
 
 // Commas inside a payload would split the cell, so they become semicolons.
-function csvPayloadCell(payload: Payload | undefined): string {
+function csvPayloadCell(payload: CleanPayload | undefined): string {
   if (!payload) {
     return '';
   }
-  const content = payload.payload || '';
+  const content = Boolean(payload.payload) ? payload.payload : '';
   return typeof content === 'object' ? JSON.stringify(content).replace(/,/g, ';') : String(content).replace(/,/g, ';');
 }
 
-function csvCell(message: TopicMessage, header: string): string | number | boolean {
+function csvCell(message: CleanMessage, header: CsvColumn): string | number | boolean {
   if (header === 'key') {
     return csvPayloadCell(message.key);
   }
@@ -98,17 +100,17 @@ function csvCell(message: TopicMessage, header: string): string | number | boole
     return csvPayloadCell(message.value);
   }
   if (header === 'keySize') {
-    return message.key?.size || '';
+    return nonzeroNumber(message.key?.size) ?? '';
   }
   if (header === 'valueSize') {
-    return message.value?.size || '';
+    return nonzeroNumber(message.value?.size) ?? '';
   }
   // For other simple fields like partitionID, offset, timestamp, compression, isTransactional
-  const messageValue = (message as Record<string, unknown>)[header];
-  return messageValue !== undefined && messageValue !== null ? (messageValue as string | number | boolean) : '';
+  const messageValue = message[header];
+  return messageValue ?? '';
 }
 
-function convertToCSV(messagesToConvert: TopicMessage[]): string {
+function convertToCSV(messagesToConvert: CleanMessage[]): string {
   if (messagesToConvert.length === 0) {
     return '';
   }
@@ -160,7 +162,7 @@ export const SaveMessagesDialog = ({
     if (format === 'json') {
       downloadFile(toJson(cleaned, 4), 'application/json', 'messages.json');
     } else if (format === 'csv') {
-      downloadFile(convertToCSV(cleaned as TopicMessage[]), 'text/csv', 'messages.csv');
+      downloadFile(convertToCSV(cleaned), 'text/csv', 'messages.csv');
     }
 
     onClose();
@@ -182,7 +184,14 @@ export const SaveMessagesDialog = ({
         <DialogBody>
           <div>Select the format in which you want to save {count === 1 ? 'the message' : 'all messages'}</div>
           <div className="py-2">
-            <RadioGroup onValueChange={(val) => setFormat(val as 'json' | 'csv')} value={format}>
+            <RadioGroup
+              onValueChange={(val: unknown) => {
+                if (val === 'json' || val === 'csv') {
+                  setFormat(val);
+                }
+              }}
+              value={format}
+            >
               <div className="flex items-center gap-2">
                 <RadioGroupItem id="format-json" value="json" />
                 <label htmlFor="format-json">JSON</label>

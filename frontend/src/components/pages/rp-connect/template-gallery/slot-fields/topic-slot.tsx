@@ -12,16 +12,17 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { SimpleFormField } from 'components/redpanda-ui/components/form';
 import { TopicSelector } from 'components/ui/topic/topic-selector';
-import { config, isEmbedded } from 'config';
 import { ExternalLink, Plus } from 'lucide-react';
 import type { Control, FieldValues } from 'react-hook-form';
 
+import { config, isEmbedded } from '../../../../../runtime-config';
+import { isNonEmptyString } from '../../../../../utils/string-utils';
 import type { TopicSlot } from '../pipeline-template-types';
 
 // Embedded mode: `/clusters/<id>/topics`. Standalone: `/topics`.
 const buildTopicsHref = () => {
   const query = '?showInternal=true';
-  if (isEmbedded() && config.clusterId) {
+  if (isEmbedded() && isNonEmptyString(config.clusterId)) {
     return `/clusters/${config.clusterId}/topics/${query}`;
   }
   return `/topics/${query}`;
@@ -48,7 +49,7 @@ export const TopicSlotField = ({ slot, control, onRequestCreateTopic }: TopicSlo
         <div className="flex-1" data-testid={`slot-${slot.id}`}>
           <TopicSelector
             onTopicsChange={(topics) => field.onChange(topics[0] ?? '')}
-            selectedTopics={field.value ? [field.value] : []}
+            selectedTopics={typeof field.value === 'string' && field.value !== '' ? [field.value] : []}
           />
         </div>
         {onRequestCreateTopic ? (
@@ -58,7 +59,7 @@ export const TopicSlotField = ({ slot, control, onRequestCreateTopic }: TopicSlo
             type="button"
             variant="outline"
           >
-            <Plus className="h-4 w-4" /> Create topic
+            <Plus className="size-4" /> Create topic
           </Button>
         ) : (
           <a
@@ -69,7 +70,7 @@ export const TopicSlotField = ({ slot, control, onRequestCreateTopic }: TopicSlo
             target="_blank"
           >
             Create a new topic
-            <ExternalLink aria-hidden className="h-3 w-3" />
+            <ExternalLink aria-hidden className="size-3" />
           </a>
         )}
       </div>

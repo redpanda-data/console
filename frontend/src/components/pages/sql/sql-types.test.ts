@@ -102,7 +102,7 @@ describe('withFetchedTables', () => {
   test('fills fetched tables into their namespace', () => {
     const enriched = withFetchedTables(catalog, [{ name: 'cars', catalogNamespace: 'public', topic: 'cars-topic' }]);
 
-    expect(enriched.namespaces).toEqual([
+    expect(enriched.namespaces).toStrictEqual([
       {
         id: 'rp.public',
         name: 'public',
@@ -116,7 +116,7 @@ describe('withFetchedTables', () => {
   test('adds namespaces that only the fetched tables name, and keeps seeded tables otherwise', () => {
     const enriched = withFetchedTables(catalog, [{ name: 'audit', catalogNamespace: 'internal' }]);
 
-    expect(enriched.namespaces.map((ns) => [ns.id, ns.tables.map((t) => t.name)])).toEqual([
+    expect(enriched.namespaces.map((ns) => [ns.id, ns.tables.map((t) => t.name)])).toStrictEqual([
       ['rp.public', []],
       ['rp.internal', ['audit']],
     ]);

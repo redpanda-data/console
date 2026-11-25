@@ -26,7 +26,7 @@ export function FadePresence({
   className?: string;
 }) {
   const reducedMotion = useReducedMotion();
-  const hidden = reducedMotion ? { opacity: 0 } : { opacity: 0, y: 2, scale: 0.98 };
+  const hidden = reducedMotion === true ? { opacity: 0 } : { opacity: 0, y: 2, scale: 0.98 };
 
   return (
     <AnimatePresence initial={false}>

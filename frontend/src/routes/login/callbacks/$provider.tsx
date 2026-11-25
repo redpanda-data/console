@@ -11,8 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import LoginCompletePage from '../../../components/misc/login-complete';
-
+import { LoginComplete as LoginCompletePage } from '../../../components/misc/login-complete';
 export const Route = createFileRoute('/login/callbacks/$provider')({
   component: LoginCompletePage,
 });

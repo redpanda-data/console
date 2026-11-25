@@ -288,7 +288,7 @@ describe('getUpdateValuesForRoles', () => {
 
       const result = getUpdateValuesForRoles(updated, original);
 
-      expect(result.fieldMaskPaths).toEqual([]);
+      expect(result.fieldMaskPaths).toStrictEqual([]);
     });
   });
 

@@ -117,22 +117,32 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
           value={query}
         >
           <InputStart>
-            <TonedIcon className="h-4 w-4" icon={Search} tone="muted" />
+            <TonedIcon className="size-4" icon={Search} tone="muted" />
           </InputStart>
           {query.length > 0 ? (
             <InputEnd>
-              <button
+              <Button
                 aria-label="Clear search"
+                // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                 className="text-muted-foreground hover:text-foreground"
                 onClick={() => setQuery('')}
                 type="button"
+                variant="unstyled"
               >
-                <X className="h-4 w-4" />
-              </button>
+                <X className="size-4" />
+              </Button>
             </InputEnd>
           ) : null}
         </Input>
-        <Tabs onValueChange={(value) => setActiveFilter(value as CategoryFilter)} value={activeFilter}>
+        <Tabs
+          onValueChange={(value) => {
+            const filter = FILTER_OPTIONS.find((option) => option === value);
+            if (filter !== undefined) {
+              setActiveFilter(filter);
+            }
+          }}
+          value={activeFilter}
+        >
           <TabsList className="h-9 w-fit" variant="underline">
             {FILTER_OPTIONS.map((filter) => (
               <TabsTrigger
@@ -154,7 +164,7 @@ export const TemplateGalleryGrid = ({ onSelect }: TemplateGalleryGridProps) => {
           className="flex flex-col items-center gap-3 rounded-lg border border-dashed py-16 text-center"
           data-testid="template-gallery-empty"
         >
-          <TonedIcon aria-hidden className="h-6 w-6" icon={Search} tone="muted" />
+          <TonedIcon aria-hidden className="size-6" icon={Search} tone="muted" />
           <div className="text-body font-medium">No templates match your search</div>
           {hasFiltersActive ? (
             <Button onClick={clearFilters} size="sm" variant="outline">

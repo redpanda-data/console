@@ -31,7 +31,7 @@ export const queryToObj = (str: string) => {
  *
  * @deprecated Prefer `navigate({ search: { … } })` for type-safe search params.
  */
-export const objToQuery = (obj: { [key: string]: unknown }) => {
+export const objToQuery = (obj: Record<string, unknown>) => {
   // '?' + queryString.stringify(obj, stringifyOptions)
   const query = new URLSearchParams();
   for (const [k, v] of Object.entries(obj)) {

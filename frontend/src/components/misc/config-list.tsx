@@ -32,8 +32,7 @@ export function ConfigList({
   valueDisplay: ValueDisplay;
   renderTooltip?: (e: ConfigEntry, content: JSX.Element) => JSX.Element;
 }) {
-  const allTypesUnknown = configEntries.all((x) => equalsIgnoreCase(x.type, 'unknown'));
-
+  const allTypesUnknown = configEntries.every((x) => equalsIgnoreCase(x.type, 'unknown'));
   // The Registry DataTable renders no expander column for `subComponent`.
   const expanderColumn: DataTableColumnDef<ConfigEntry> = {
     id: 'expander',
@@ -56,7 +55,11 @@ export function ConfigList({
       header: 'Configuration',
       accessorKey: 'name',
       cell: ({ row: { original: record } }) => {
-        let name = <div className={styles.nameText}>{record.name}</div>;
+        let name = (
+          <div className={styles.nameText} data-config-modified={record.isExplicitlySet === true}>
+            {record.name}
+          </div>
+        );
         if (renderTooltip) {
           name = renderTooltip(record, name);
         }
@@ -141,16 +144,16 @@ export function ConfigList({
 
   return (
     <DataTable<ConfigEntry>
+      className="console-config-table"
       columns={[expanderColumn, ...tableColumns]}
       data={configEntries}
       getRowCanExpand={(row) =>
         (row.original.synonyms?.filter((x) => x.source !== row.original.source).length ?? 0) > 0
       }
       pagination={false}
-      rowClassName={(row) => (row.original.isExplicitlySet ? styles.overidden : styles.default)}
       sorting={false}
       subComponent={({ row }) => {
-        if (!row.original.synonyms?.filter((x) => x.source !== row.original.source).length) {
+        if (!((row.original.synonyms?.filter((x) => x.source !== row.original.source).length ?? 0) > 0)) {
           return null;
         }
         return (

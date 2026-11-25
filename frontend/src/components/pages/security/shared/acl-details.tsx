@@ -12,6 +12,8 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { getRuleDataTestId, parsePrincipal, type Rule, type SharedConfig } from './acl-model';
 import { OperationsBadge } from './operations-badge';
@@ -85,7 +87,10 @@ export function ACLDetails({ sharedConfig, rules, isSimpleView = false }: ACLDet
                 <CardHeader>
                   <CardTitle data-testid={'acl-rules-length'} level={3}>
                     {isSimpleView ? (
-                      <Button onClick={() => navigate({ to: getGoTo(sharedConfig) })} variant="link">
+                      <Button
+                        onClick={asyncEvent(() => navigate({ to: getGoTo(sharedConfig) }), reportActionError)}
+                        variant="link"
+                      >
                         {sharedConfig.principal}
                       </Button>
                     ) : (

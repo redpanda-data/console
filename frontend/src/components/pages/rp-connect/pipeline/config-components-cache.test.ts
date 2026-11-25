@@ -18,11 +18,11 @@ describe('parseConfigComponentsCached', () => {
   test('reads the component names and how the pipeline ends from one parse', () => {
     expect(
       parseConfigComponentsCached('input:\n  generate:\n    count: 5\n    mapping: root = 1\noutput:\n  drop: {}\n')
-    ).toEqual({ inputs: ['generate'], processors: [], outputs: ['drop'], end: 'finite' });
+    ).toStrictEqual({ inputs: ['generate'], processors: [], outputs: ['drop'], end: 'finite' });
   });
 
   test('an empty or unparseable config has no components and no answer', () => {
-    expect(parseConfigComponentsCached('')).toEqual(NO_FACTS);
-    expect(parseConfigComponentsCached('{{{{not valid yaml')).toEqual(NO_FACTS);
+    expect(parseConfigComponentsCached('')).toStrictEqual(NO_FACTS);
+    expect(parseConfigComponentsCached('{{{{not valid yaml')).toStrictEqual(NO_FACTS);
   });
 });

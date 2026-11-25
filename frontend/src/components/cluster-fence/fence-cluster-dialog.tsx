@@ -37,6 +37,8 @@ import {
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import {
@@ -220,7 +222,7 @@ const FenceClusterForm = ({ onClose }: { onClose: () => void }) => {
   });
 
   return (
-    <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
+    <form className="flex min-h-0 flex-1 flex-col" onSubmit={asyncEvent(handleSubmit, reportActionError)}>
       <DialogHeader align="left">
         <DialogTitle>Fence {clusterName ?? 'this cluster'}?</DialogTitle>
         <DialogDescription>

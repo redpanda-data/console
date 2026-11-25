@@ -42,7 +42,7 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
       <TableCell align="right">
         <div className="flex items-center justify-end gap-2">
           <Button onClick={onToggle} size="sm" testId={`toggle-acl-${rowKey}`} variant="outline">
-            {isExpanded ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {isExpanded ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </Button>
           <Button
             onClick={(e) => {
@@ -59,7 +59,7 @@ const AclTableRow = ({ acl, isExpanded, onToggle }: AclTableRowProps) => {
             testId={`edit-acl-${rowKey}`}
             variant="outline"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="size-4" />
           </Button>
         </div>
       </TableCell>

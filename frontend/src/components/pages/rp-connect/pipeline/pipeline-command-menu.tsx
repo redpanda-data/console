@@ -33,14 +33,17 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { extractSecretReferences, getUniqueSecretNames } from 'components/ui/secret/secret-detection';
-import type { editor } from 'monaco-editor';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useListSecretsQuery } from 'react-query/api/secret';
 import { useListTopicsQuery } from 'react-query/api/topic';
 import { useListUsersQuery } from 'react-query/api/user';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
+import type { CommandEditor } from './pipeline-editor-port';
+import { compareStrings, isNonEmptyString } from '../../../../utils/string-utils';
 import { AddSecretsDialog } from '../onboarding/add-secrets-dialog';
 import { AddTopicStep } from '../onboarding/add-topic-step';
 import { AddUserStep } from '../onboarding/add-user-step';
@@ -53,7 +56,7 @@ import type {
   UserStepSubmissionData,
   UserStepSubmissionResult,
 } from '../types/wizard';
-import { extractAllTopics } from '../utils/yaml';
+import { extractAllTopics } from '../utils/yaml-redpanda';
 
 /**
  * Compute the pixel position of a line/column in the Monaco editor using
@@ -61,14 +64,15 @@ import { extractAllTopics } from '../utils/yaml';
  * Re-syncs on editor scroll and window resize.
  * (Rule 4: external system sync — Monaco coordinate API)
  */
-const HIDDEN_STYLE: React.CSSProperties = { position: 'fixed', visibility: 'hidden' };
+type AnchorPosition = { top: number; left: number };
+const HIDDEN_POSITION: null = null;
 
 function useAnchorPosition(
-  editorInstance: editor.IStandaloneCodeEditor | null,
+  editorInstance: CommandEditor | null,
   slashPosition: { lineNumber: number; column: number } | null,
   open: boolean
 ) {
-  const [style, setStyle] = useState<React.CSSProperties>(HIDDEN_STYLE);
+  const [style, setStyle] = useState<AnchorPosition | null>(HIDDEN_POSITION);
   const isActive = !!(editorInstance && slashPosition && open);
 
   useEffect(() => {
@@ -80,16 +84,13 @@ function useAnchorPosition(
       const coords = editorInstance.getScrolledVisiblePosition(slashPosition);
       const editorDom = editorInstance.getDomNode();
       if (!(coords && editorDom)) {
-        setStyle((prev) => ({ ...prev, visibility: 'hidden' }));
+        setStyle(HIDDEN_POSITION);
         return;
       }
       const editorRect = editorDom.getBoundingClientRect();
       setStyle({
-        position: 'fixed',
         top: editorRect.top + coords.top + coords.height,
         left: editorRect.left + coords.left,
-        zIndex: 50,
-        visibility: 'visible',
       });
     };
 
@@ -105,7 +106,7 @@ function useAnchorPosition(
   }, [editorInstance, slashPosition, open]);
 
   if (!isActive) {
-    return HIDDEN_STYLE;
+    return HIDDEN_POSITION;
   }
   return style;
 }
@@ -124,7 +125,7 @@ function useClickOutside(open: boolean, onClose: () => void) {
     }
 
     const handleMouseDown = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (containerRef.current && e.target instanceof Node && !containerRef.current.contains(e.target)) {
         onClose();
       }
     };
@@ -146,7 +147,7 @@ const CONTEXTUAL_VARIABLES = Object.values(REDPANDA_CONTEXTUAL_VARIABLES);
 type SharedProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editorInstance: editor.IStandaloneCodeEditor | null;
+  editorInstance: CommandEditor | null;
   hideInternal?: boolean;
   yamlContent?: string;
   initialFilter?: FilterValue;
@@ -166,7 +167,7 @@ type PopoverVariantProps = SharedProps & {
 
 export type PipelineCommandMenuProps = DialogVariantProps | PopoverVariantProps;
 
-function insertAtCursor(editorInstance: editor.IStandaloneCodeEditor, text: string) {
+function insertAtCursor(editorInstance: CommandEditor, text: string) {
   const position = editorInstance.getPosition();
   if (!position) {
     return;
@@ -189,7 +190,7 @@ function insertAtCursor(editorInstance: editor.IStandaloneCodeEditor, text: stri
   }
 }
 
-function replaceSecretInEditor(editorInstance: editor.IStandaloneCodeEditor | null, oldName: string, newName: string) {
+function replaceSecretInEditor(editorInstance: CommandEditor | null, oldName: string, newName: string) {
   if (!editorInstance) {
     return;
   }
@@ -207,8 +208,8 @@ function replaceSecretInEditor(editorInstance: editor.IStandaloneCodeEditor | nu
 function CommandGroupHeading({ children, separator }: { children: React.ReactNode; separator?: boolean }) {
   return (
     <>
-      {separator ? <Separator /> : null}
-      <h5 className="pt-3 pb-3 pl-2 text-body-sm font-semibold tracking-caption-wide text-muted-foreground uppercase">
+      {separator === true ? <Separator /> : null}
+      <h5 className="py-3 pl-2 text-body-sm font-semibold tracking-caption-wide text-muted-foreground uppercase">
         {children}
       </h5>
     </>
@@ -252,8 +253,8 @@ function CommandMenuContent({
           <ToggleGroup
             attached={false}
             onValueChange={([v]) => {
-              if (v) {
-                onFilterChange(v as FilterValue);
+              if (v === 'all' || v === 'variables' || v === 'secrets' || v === 'topics' || v === 'users') {
+                onFilterChange(v);
               }
             }}
             value={[activeFilter]}
@@ -353,7 +354,7 @@ function useCmdkInputAutoFocus(clickOutsideRef: ReturnType<typeof useClickOutsid
           if (abortFocusRef.current) {
             return;
           }
-          const input = node.querySelector('input[cmdk-input]') as HTMLInputElement | null;
+          const input = node.querySelector<HTMLInputElement>('input[cmdk-input]');
           if (input && document.activeElement !== input) {
             input.focus();
           }
@@ -412,7 +413,7 @@ function useCommandMenuTopics(open: boolean, yamlContent: string, hideInternal: 
   const yamlTopics = useMemo(() => extractAllTopics(yamlContent), [yamlContent]);
   return useMemo(() => {
     const merged = new Set([...clusterTopics, ...yamlTopics]);
-    return [...merged].sort();
+    return [...merged].sort(compareStrings);
   }, [clusterTopics, yamlTopics]);
 }
 
@@ -438,9 +439,9 @@ function handlePopoverKeyDown(e: React.KeyboardEvent<HTMLDivElement>, close: () 
   }
   if (e.key === 'Tab') {
     e.preventDefault();
-    const selected = (e.currentTarget as HTMLElement).querySelector('[cmdk-item][aria-selected="true"]');
+    const selected = e.currentTarget.querySelector<HTMLElement>('[cmdk-item][aria-selected="true"]');
     if (selected) {
-      (selected as HTMLElement).click();
+      selected.click();
     }
   }
 }
@@ -453,20 +454,25 @@ function PipelineCommandPopover({
   onOpenChange,
   children,
 }: {
-  editorInstance: editor.IStandaloneCodeEditor | null;
+  editorInstance: CommandEditor | null;
   slashPosition: { lineNumber: number; column: number } | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
 }) {
   // Position the popover using Monaco's coordinate API (rendered outside Monaco's DOM)
-  const anchorStyle = useAnchorPosition(editorInstance, slashPosition, open);
+  const position = useAnchorPosition(editorInstance, slashPosition, open);
+  const anchorStyle: CSSProperties & Record<`--pipeline-${string}`, string> = {
+    '--pipeline-menu-top': `${position?.top ?? 0}px`,
+    '--pipeline-menu-left': `${position?.left ?? 0}px`,
+    '--pipeline-menu-visibility': position ? 'visible' : 'hidden',
+  };
   const clickOutsideRef = useClickOutside(open, () => onOpenChange(false));
   const popoverRef = useCmdkInputAutoFocus(clickOutsideRef);
 
   return open
     ? createPortal(
-        <div ref={popoverRef} style={anchorStyle}>
+        <div className="pipeline-command-anchor" ref={popoverRef} style={anchorStyle}>
           <Command
             className="w-[340px]"
             loop
@@ -490,7 +496,7 @@ function PipelineCommandDialog({
   onOpenChange,
   children,
 }: {
-  editorInstance: editor.IStandaloneCodeEditor | null;
+  editorInstance: CommandEditor | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
@@ -533,16 +539,16 @@ function settleTopicCreation(
   onCreated: (name: string) => void
 ) {
   if (!result.success) {
-    if (result.error) {
+    if (isNonEmptyString(result.error)) {
       toast.error(result.error);
     }
     return;
   }
-  if (result.message) {
+  if (isNonEmptyString(result.message)) {
     toast.success(result.message);
   }
   close();
-  if (result.data?.topicName) {
+  if (isNonEmptyString(result.data?.topicName)) {
     onCreated(result.data.topicName);
   }
 }
@@ -575,7 +581,12 @@ function CreateTopicDialog({ open, onOpenChange, onCreated }: CreateSubDialogPro
           <Button disabled={isSubmitting} onClick={() => onOpenChange(false)} variant="ghost">
             Cancel
           </Button>
-          <Button disabled={isSubmitting} isLoading={isSubmitting} onClick={handleCreate} variant="primary">
+          <Button
+            disabled={isSubmitting}
+            isLoading={isSubmitting}
+            onClick={asyncEvent(handleCreate, reportActionError)}
+            variant="primary"
+          >
             Create
           </Button>
         </DialogFooter>
@@ -625,7 +636,12 @@ function CreateUserDialog({ open, onOpenChange, onCreated }: CreateSubDialogProp
           <Button disabled={isSubmitting} onClick={() => onOpenChange(false)} variant="ghost">
             Cancel
           </Button>
-          <Button className="min-w-[70px]" disabled={isSubmitting} onClick={handleCreate} variant="primary">
+          <Button
+            className="min-w-[70px]"
+            disabled={isSubmitting}
+            onClick={asyncEvent(handleCreate, reportActionError)}
+            variant="primary"
+          >
             {isSubmitting ? <Spinner /> : 'Create'}
           </Button>
         </DialogFooter>
@@ -646,7 +662,7 @@ function CommandMenuSubDialogs({
   onSubDialogChange: (dialog: SubDialog | null) => void;
   secrets: string[];
   missingSecrets: string[];
-  editorInstance: editor.IStandaloneCodeEditor | null;
+  editorInstance: CommandEditor | null;
   onSelect: (text: string) => void;
 }) {
   const close = () => onSubDialogChange(null);

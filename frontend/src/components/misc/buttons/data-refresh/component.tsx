@@ -17,9 +17,13 @@ import { useEffect, useRef, useState } from 'react';
 
 import { appGlobal } from '../../../../state/app-global';
 import { api, REST_CACHE_DURATION_SEC } from '../../../../state/backend-api';
+import { asyncEvent } from '../../../../utils/async-event';
+import { reportActionError } from '../../../../utils/toast.utils';
 import { prettyMilliseconds } from '../../../../utils/utils';
 
 const AUTO_REFRESH_INTERVAL_SECS = 10;
+// Read the current page callback when invoked, and own both synchronous and asynchronous failures.
+const requestRefresh = asyncEvent(() => appGlobal.onRefresh(), reportActionError);
 
 export const DataRefreshButton = () => {
   const [isActive, setIsActive] = useState(false);
@@ -61,7 +65,7 @@ export const DataRefreshButton = () => {
     if (newActive) {
       stateRef.current.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
     } else {
-      appGlobal.onRefresh();
+      requestRefresh();
     }
     setIsActive(newActive);
   };
@@ -99,7 +103,7 @@ export const DataRefreshButton = () => {
           <Tooltip>
             <TooltipTrigger
               render={
-                <Button aria-label="Force refresh" onClick={() => appGlobal.onRefresh()} size="icon-sm" variant="ghost">
+                <Button aria-label="Force refresh" onClick={requestRefresh} size="icon-sm" variant="ghost">
                   <RefreshCw />
                 </Button>
               }
@@ -123,11 +127,11 @@ export const DataRefreshButton = () => {
     </TooltipProvider>
   );
 };
-
-export default DataRefreshButton;
-
 function getRemainingRefreshSeconds(
-  state: { isActive: boolean; nextRefresh: number },
+  state: {
+    isActive: boolean;
+    nextRefresh: number;
+  },
   currentRequests: number
 ): number {
   if (state.isActive && currentRequests === 0) {
@@ -136,7 +140,7 @@ function getRemainingRefreshSeconds(
       return Math.ceil(timeUntilRefresh / 1000);
     }
     state.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;
-    appGlobal.onRefresh();
+    requestRefresh();
   } else if (state.isActive && currentRequests > 0) {
     // Active requests — delay the next refresh
     state.nextRefresh = Date.now() + AUTO_REFRESH_INTERVAL_SECS * 1000;

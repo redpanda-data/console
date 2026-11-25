@@ -12,19 +12,16 @@
 import React, { Component } from 'react';
 
 export class IndeterminateCheckbox extends Component<{
-  originalCheckbox: React.ReactNode;
+  originalCheckbox: React.ReactElement<{ checked?: boolean; indeterminate?: boolean }>;
   getCheckState: () => { checked: boolean; indeterminate: boolean };
 }> {
   render() {
     const state = this.props.getCheckState();
 
-    const clone = React.cloneElement(
-      this.props.originalCheckbox as React.ReactElement<{ checked?: boolean; indeterminate?: boolean }>,
-      {
-        checked: state.checked,
-        indeterminate: state.indeterminate,
-      }
-    );
+    const clone = React.cloneElement(this.props.originalCheckbox, {
+      checked: state.checked,
+      indeterminate: state.indeterminate,
+    });
     return clone;
   }
 }

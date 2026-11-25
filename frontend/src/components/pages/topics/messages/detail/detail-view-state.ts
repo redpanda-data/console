@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { isObject } from 'utils/type-guards';
 export type DetailSectionKey = 'metadata' | 'key' | 'headers' | 'value';
 
 /** Every persisted preference of the message detail, stored as one object. */
@@ -36,14 +37,26 @@ const STORAGE_KEY = 'messages.detailView';
 export const readDetailViewState = (): DetailViewState => {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
+    if (!(raw !== null && raw !== undefined && raw !== '')) {
       return DEFAULT_DETAIL_VIEW_STATE;
     }
-    const parsed = JSON.parse(raw) as Partial<DetailViewState>;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isObject(parsed)) {
+      return DEFAULT_DETAIL_VIEW_STATE;
+    }
+    const sections = isObject(parsed.sections) ? parsed.sections : {};
     return {
-      ...DEFAULT_DETAIL_VIEW_STATE,
-      ...parsed,
-      sections: { ...DEFAULT_DETAIL_VIEW_STATE.sections, ...parsed.sections },
+      expanded: typeof parsed.expanded === 'boolean' ? parsed.expanded : DEFAULT_DETAIL_VIEW_STATE.expanded,
+      sheetWidth: typeof parsed.sheetWidth === 'number' ? parsed.sheetWidth : DEFAULT_DETAIL_VIEW_STATE.sheetWidth,
+      panelSizePct:
+        typeof parsed.panelSizePct === 'number' ? parsed.panelSizePct : DEFAULT_DETAIL_VIEW_STATE.panelSizePct,
+      sections: {
+        metadata:
+          typeof sections.metadata === 'boolean' ? sections.metadata : DEFAULT_DETAIL_VIEW_STATE.sections.metadata,
+        key: typeof sections.key === 'boolean' ? sections.key : DEFAULT_DETAIL_VIEW_STATE.sections.key,
+        headers: typeof sections.headers === 'boolean' ? sections.headers : DEFAULT_DETAIL_VIEW_STATE.sections.headers,
+        value: typeof sections.value === 'boolean' ? sections.value : DEFAULT_DETAIL_VIEW_STATE.sections.value,
+      },
     };
   } catch {
     return DEFAULT_DETAIL_VIEW_STATE;

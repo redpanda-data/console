@@ -71,7 +71,8 @@ import {
   pipelineListEmptyText,
 } from './list-utils';
 import { PIPELINE_END_RUNS } from './pipeline-end-chip';
-import { TabKafkaConnect } from '../../connect/overview';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { TabKafkaConnect } from '../../connect/kafka-connect-tab';
 
 // Module scope: the query hook memoizes on request identity. Asked for unconditionally because the
 // flag gates making drafts, not seeing the ones already made — turning it back off must not strand a
@@ -108,7 +109,7 @@ const listErrorMessageFor = (error: { message: string } | null, hasNextPage: boo
   if (!error) {
     return null;
   }
-  return hasNextPage
+  return hasNextPage === true
     ? `Failed to load all pipelines: ${error.message}`
     : `Couldn't refresh pipelines: ${error.message}`;
 };
@@ -124,17 +125,13 @@ const usePipelineListData = () => {
   });
   const invalidatePipelineQueries = useInvalidatePipelineQueries();
   useEffect(() => {
-    appGlobal.onRefresh = () => {
-      invalidatePipelineQueries();
-    };
+    appGlobal.onRefresh = () => invalidatePipelineQueries();
   }, [invalidatePipelineQueries]);
 
   const pipelines = useMemo(
     () =>
-      (pipelinesData?.pipelines || [])
-        .filter(
-          (pipeline): pipeline is APIPipeline => !!pipeline && pipeline.tags?.__redpanda_cloud_pipeline_type !== 'agent'
-        )
+      (pipelinesData?.pipelines ?? [])
+        .filter((pipeline): pipeline is APIPipeline => pipeline.tags?.__redpanda_cloud_pipeline_type !== 'agent')
         .map(toPipelineRow),
     [pipelinesData]
   );
@@ -147,8 +144,8 @@ const usePipelineListData = () => {
     error,
     // isLoading stays true until every page is drained, so render page one and stream the rest in behind
     // it. A mid-drain error halts the drain for good, so it replaces the spinner.
-    isInitialLoading: isLoading && pipelines.length === 0 && !error,
-    isLoadingMorePages: isLoading && pipelines.length > 0 && !error,
+    isInitialLoading: isLoading && pipelines.length === 0 && error === null,
+    isLoadingMorePages: isLoading && pipelines.length > 0 && error === null,
     listErrorMessage: listErrorMessageFor(error, hasNextPage),
   };
 };
@@ -184,10 +181,7 @@ const reportSearchUpdateFailure = (error: unknown) => {
 const usePipelineListSearch = () => {
   const navigate = useNavigate();
   const router = useRouter();
-  const rawSearch = useRouterState({ select: (s) => (s.resolvedLocation ?? s.location).search }) as Record<
-    string,
-    unknown
-  >;
+  const rawSearch = useRouterState({ select: (s) => (s.resolvedLocation ?? s.location).search });
   const search = useMemo(() => readPipelineListSearch(rawSearch), [rawSearch]);
   const update = useCallback(
     (patch: SearchPatch, { keepPage = false }: { keepPage?: boolean } = {}) => {
@@ -358,7 +352,15 @@ const CreatePipelineButton = () => {
 };
 
 const PipelineStateTabsBar = ({ tabs }: { tabs: PipelineStateTabsState }) => (
-  <Tabs onValueChange={(value) => tabs.handleTabChange(value as PipelineStateTabId)} value={tabs.activeTab}>
+  <Tabs
+    onValueChange={(value) => {
+      const tab = PIPELINE_STATE_TABS.find((entry) => entry.id === value);
+      if (tab) {
+        tabs.handleTabChange(tab.id);
+      }
+    }}
+    value={tabs.activeTab}
+  >
     <TabsList className="[&_[data-slot=tabs-trigger]]:w-auto" variant="underline">
       {tabs.visibleTabs.map((tab) => (
         <TabsTrigger
@@ -410,7 +412,7 @@ const PipelineListToolbar = ({
         value={nameSearch.search}
       >
         <InputStart>
-          <TonedIcon className="h-4 w-4" icon={Search} tone="muted" />
+          <TonedIcon className="size-4" icon={Search} tone="muted" />
         </InputStart>
       </Input>
       <DataTableFacetedFilter column={table.getColumn('inputs')} options={inputOptions} title="Input" />
@@ -433,7 +435,7 @@ const PipelineListToolbar = ({
 const isRowNavigationClick = (event: MouseEvent<HTMLTableRowElement>): boolean =>
   !isModifiedClick(event) &&
   isRowActivationClick(event.target, event.currentTarget) &&
-  !window.getSelection()?.toString();
+  !isNonEmptyString(window.getSelection()?.toString());
 
 const PipelineListTable = ({
   table,
@@ -513,7 +515,7 @@ const PipelineListPageContent = () => {
   if (list.error && list.pipelines.length === 0) {
     return (
       <div className="flex items-center justify-center gap-2 py-8 text-destructive">
-        <AlertCircle className="h-4 w-4" />
+        <AlertCircle className="size-4" />
         Error loading pipelines: {list.error.message}
       </div>
     );
@@ -552,7 +554,7 @@ const PipelineListPageContent = () => {
       </FadePresence>
       <FadePresence show={Boolean(list.listErrorMessage) && list.pipelines.length > 0}>
         <div className="flex items-center gap-2 text-body text-destructive">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           {list.listErrorMessage}
         </div>
       </FadePresence>

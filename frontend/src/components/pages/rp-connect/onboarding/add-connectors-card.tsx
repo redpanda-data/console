@@ -43,13 +43,14 @@ export const AddConnectorsCard = memo(
     hideInputOutput?: boolean;
     editorContent?: string;
   }) => {
-    const inputSupportsScanner = editorContent
-      ? SCANNER_SUPPORTED_INPUTS.some((inputType) => {
-          // Match input: <inputType>: pattern
-          const regex = new RegExp(`input:\\s*\n\\s*${inputType}:`);
-          return regex.test(editorContent);
-        })
-      : false;
+    const inputSupportsScanner =
+      editorContent !== null && editorContent !== undefined && editorContent !== ''
+        ? SCANNER_SUPPORTED_INPUTS.some((inputType) => {
+            // Match input: <inputType>: pattern
+            const regex = new RegExp(`input:\\s*\n\\s*${inputType}:`);
+            return regex.test(editorContent);
+          })
+        : false;
 
     return (
       <div className="border-t !border-border p-4">
@@ -59,13 +60,13 @@ export const AddConnectorsCard = memo(
             {allowedConnectorTypes.map((connectorType) => (
               <AddConnectorButton key={connectorType} onClick={onAddConnector} type={connectorType} />
             ))}
-            {Boolean(inputSupportsScanner) && <AddConnectorButton onClick={onAddConnector} type="scanner" />}
+            {inputSupportsScanner && <AddConnectorButton onClick={onAddConnector} type="scanner" />}
           </div>
-          {hideInputOutput || (hasInput && hasOutput) ? null : (
+          {hideInputOutput === true || (hasInput === true && hasOutput === true) ? null : (
             <div className="flex flex-col gap-2">
               <Separator className="mb-2" />
-              {!hasInput && <AddConnectorButton onClick={onAddConnector} type="input" variant="outline" />}
-              {!hasOutput && <AddConnectorButton onClick={onAddConnector} type="output" variant="outline" />}
+              {!(hasInput === true) && <AddConnectorButton onClick={onAddConnector} type="input" variant="outline" />}
+              {!(hasOutput === true) && <AddConnectorButton onClick={onAddConnector} type="output" variant="outline" />}
             </div>
           )}
         </div>

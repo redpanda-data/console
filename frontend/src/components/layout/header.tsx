@@ -16,11 +16,11 @@ import { Fragment } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { ThemeModeSwitch } from './theme-mode-switch';
-import { isEmbedded, isFeatureFlagEnabled } from '../../config';
+import { isEmbedded, isFeatureFlagEnabled } from '../../runtime-config';
 import { api, useApiStoreHook } from '../../state/backend-api';
 import { type BreadcrumbEntry, useUIStateStore } from '../../state/ui-state';
 import { isDarkModeAvailable } from '../../theme-init';
-import DataRefreshButton from '../misc/buttons/data-refresh/component';
+import { DataRefreshButton } from '../misc/buttons/data-refresh/component';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -54,7 +54,7 @@ function BreadcrumbHeaderRow({ useNewSidebar, breadcrumbItems }: BreadcrumbHeade
           <Breadcrumb>
             <BreadcrumbList>
               {breadcrumbItems.map((item, index) => (
-                <Fragment key={`${index}-${item.linkTo}`}>
+                <Fragment key={item.linkTo}>
                   {index > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
                     {index === breadcrumbItems.length - 1 ? (
@@ -108,10 +108,10 @@ function AppPageHeader() {
 
   return (
     // Expanded pages release #mainLayout's gutter; keep the header off the viewport edge.
-    <div className="page-expanded-inset transition-[padding] duration-300 ease-in-out">
+    <div className="page-expanded-inset transition-all duration-300 ease-in-out">
       <BreadcrumbHeaderRow breadcrumbItems={breadcrumbItems} useNewSidebar={!isEmbedded()} />
       {/* Title + actions row. Hidden for breadcrumb-only headers (e.g. the SQL
-          studio, which carries its own title bar and toolbar). */}
+            studio, which carries its own title bar and toolbar). */}
       {!hideTitleRow && (
         <div className="flex items-center justify-between pt-6">
           <div className="flex flex-col gap-1">
@@ -120,7 +120,7 @@ function AppPageHeader() {
                 className="-ml-2 w-fit"
                 render={
                   <Link to={backLink.linkTo}>
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="size-4" />
                     {backLink.title}
                   </Link>
                 }
@@ -128,26 +128,26 @@ function AppPageHeader() {
               />
             )}
             <div className="flex items-center">
-              {pageTitle ? (
+              {Boolean(pageTitle) ? (
                 <h1
                   className={cn(
                     'mr-2 text-heading-xl',
-                    lastBreadcrumb?.options?.canBeTruncated ? 'break-spaces break-all' : 'nowrap'
+                    lastBreadcrumb?.options?.canBeTruncated === true ? 'break-all whitespace-break-spaces' : 'nowrap'
                   )}
                 >
                   {pageTitle}
                 </h1>
               ) : null}
-              {lastBreadcrumb?.options?.canBeCopied ? (
+              {lastBreadcrumb?.options?.canBeCopied === true ? (
                 <CopyButton content={lastBreadcrumb.title} variant="ghost" />
               ) : null}
-              {Boolean(showRefresh) && <DataRefreshButton />}
+              {showRefresh && <DataRefreshButton />}
             </div>
           </div>
           <div className="flex items-center gap-2">
             {!isEmbedded() &&
               api.isRedpanda &&
-              (api.userData?.canViewDebugBundle ? (
+              (api.userData?.canViewDebugBundle === true ? (
                 <RegistryButton render={<Link to="/debug-bundle">Debug bundle</Link>} variant="ghost" />
               ) : (
                 <TooltipProvider>
@@ -173,7 +173,7 @@ function AppPageHeader() {
   );
 }
 
-export default AppPageHeader;
+export { AppPageHeader };
 
 /**
  * Whether the matched route draws its own title bar (`staticData.breadcrumbOnlyHeader`).
@@ -187,7 +187,7 @@ function useRouteOwnsTitleRow() {
 
   const [matchedRoutes] = router.getMatchedRoutes(pathname);
 
-  return matchedRoutes.some((route) => route.options.staticData?.breadcrumbOnlyHeader);
+  return matchedRoutes.some((route) => route.options.staticData?.breadcrumbOnlyHeader === true);
 }
 
 /**
@@ -212,8 +212,8 @@ function useShouldShowRefresh() {
   const matchRoute = useMatchRoute();
   const connector = matchRoute({ to: '/connect-clusters/$clusterName/$connector' });
   return !(
-    (connector && connector.connector === 'create-connector') ||
-    refreshHiddenRoutes.some((route) => matchRoute(route))
+    (connector !== false && connector.connector === 'create-connector') ||
+    refreshHiddenRoutes.some((route) => matchRoute(route) !== false)
   );
 }
 
@@ -223,9 +223,9 @@ function useShouldHideHeader() {
 
   // Hide header when PipelinePage renders (it has its own header/breadcrumbs)
   const isPipelineRoute =
-    matchRoute({ to: '/rp-connect/$pipelineId' }) ||
-    matchRoute({ to: '/rp-connect/$pipelineId/edit' }) ||
-    matchRoute({ to: '/rp-connect/create' });
+    matchRoute({ to: '/rp-connect/$pipelineId' }) !== false ||
+    matchRoute({ to: '/rp-connect/$pipelineId/edit' }) !== false ||
+    matchRoute({ to: '/rp-connect/create' }) !== false;
 
   /**
    * Flag is cloud-only (schema requires embedded mode).
@@ -249,7 +249,12 @@ function useShouldHideHeader() {
 
 function getBreadcrumbItems(pageBreadcrumbs: BreadcrumbEntry[], selectedClusterName: string | null): BreadcrumbEntry[] {
   const items = [...pageBreadcrumbs];
-  if (!isEmbedded() && selectedClusterName) {
+  if (
+    !isEmbedded() &&
+    selectedClusterName !== null &&
+    selectedClusterName !== undefined &&
+    selectedClusterName !== ''
+  ) {
     items.unshift({ heading: '', title: 'Cluster', linkTo: '/' });
   }
   return items;

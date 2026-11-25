@@ -11,6 +11,8 @@
 
 import type { ExecuteRangeQueryResponse } from 'protogen/redpanda/api/dataplane/v1alpha3/observability_pb';
 
+import { isPresent } from '../../../../utils/type-guards';
+
 export const CHART_COLORS = [
   'var(--color-chart-1)',
   'var(--color-chart-2)',
@@ -47,7 +49,7 @@ export function transformTimeSeriesData(results: ExecuteRangeQueryResponse['resu
   timestamp: number;
   [key: string]: number;
 }> {
-  if (!results || results.length === 0) {
+  if (!isPresent(results) || results.length === 0) {
     return [];
   }
 

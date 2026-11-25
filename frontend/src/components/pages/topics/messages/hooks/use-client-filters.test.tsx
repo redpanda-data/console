@@ -14,22 +14,23 @@ import { renderHook } from '@testing-library/react';
 
 import { matchesQuickSearch, useClientFilters } from './use-client-filters';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
+import { createTopicMessage } from '../message-test-helpers';
 
 const makeMsg = (overrides: { offset?: number; partitionID?: number; value?: unknown }): TopicMessage =>
-  ({
+  createTopicMessage({
     partitionID: overrides.partitionID ?? 0,
     offset: overrides.offset ?? 1,
     timestamp: 0,
     compression: 'uncompressed',
     isTransactional: false,
     headers: [],
-    key: { payload: 'k', isPayloadNull: false, size: 1 },
-    value: { payload: overrides.value ?? {}, isPayloadNull: false, size: 1 },
+    key: { payload: 'k', isPayloadNull: false, size: 1, schemaId: 0 },
+    value: { payload: overrides.value ?? {}, isPayloadNull: false, size: 1, schemaId: 0 },
     keyJson: JSON.stringify('k'),
     valueJson: JSON.stringify(overrides.value ?? {}),
     keyBinHexPreview: '',
     valueBinHexPreview: '',
-  }) as TopicMessage;
+  });
 
 describe('matchesQuickSearch — partition range-check', () => {
   test('an out-of-range partition token stays live text (no filter applied) when partitionCount is known', () => {
@@ -64,6 +65,6 @@ describe('useClientFilters — partition range-check', () => {
   test('quick search still applies a valid partition filter when partitionCount is known', () => {
     const messages = [makeMsg({ partitionID: 0, offset: 1 }), makeMsg({ partitionID: 1, offset: 2 })];
     const { result } = renderHook(() => useClientFilters(messages, 'partition:1', [], 3));
-    expect(result.current).toEqual([messages[1]]);
+    expect(result.current).toStrictEqual([messages[1]]);
   });
 });

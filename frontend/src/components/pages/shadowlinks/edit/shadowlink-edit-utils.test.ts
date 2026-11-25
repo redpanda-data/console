@@ -77,7 +77,7 @@ const createMockShadowLink = (): ShadowLink =>
         aclFilters: [],
       }),
     }),
-  }) as ShadowLink;
+  });
 
 describe('buildDataplaneUpdateRequest', () => {
   const mockShadowLink = createMockShadowLink();
@@ -93,8 +93,8 @@ describe('buildDataplaneUpdateRequest', () => {
       roleSyncSupported: true,
     });
 
-    expect(request.updateMask?.paths).toEqual(['configurations.client_options']);
-    expect(request.shadowLink?.configurations?.clientOptions?.bootstrapServers).toEqual([
+    expect(request.updateMask?.paths).toStrictEqual(['configurations.client_options']);
+    expect(request.shadowLink?.configurations?.clientOptions?.bootstrapServers).toStrictEqual([
       'localhost:9092',
       'localhost:9093',
     ]);
@@ -151,21 +151,21 @@ describe('buildDataplaneUpdateRequest', () => {
     expect(request.updateMask?.paths).toContain('configurations.consumer_offset_sync_options');
     expect(request.updateMask?.paths).toContain('configurations.security_sync_options');
 
-    expect(request.shadowLink?.configurations?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
+    expect(request.shadowLink?.configurations?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toStrictEqual([
       create(NameFilterSchema, {
         name: 'my-topic',
         patternType: PatternType.LITERAL,
         filterType: FilterType.INCLUDE,
       }),
     ]);
-    expect(request.shadowLink?.configurations?.consumerOffsetSyncOptions?.groupFilters).toEqual([
+    expect(request.shadowLink?.configurations?.consumerOffsetSyncOptions?.groupFilters).toStrictEqual([
       create(NameFilterSchema, {
         name: 'my-consumer',
         patternType: PatternType.LITERAL,
         filterType: FilterType.INCLUDE,
       }),
     ]);
-    expect(request.shadowLink?.configurations?.securitySyncOptions?.aclFilters).toEqual([
+    expect(request.shadowLink?.configurations?.securitySyncOptions?.aclFilters).toStrictEqual([
       create(ACLFilterSchema, {
         resourceFilter: {
           resourceType: ACLResource.ACL_RESOURCE_ANY,
@@ -197,9 +197,9 @@ describe('buildDataplaneUpdateRequest', () => {
       roleSyncSupported: true,
     });
 
-    expect(request.updateMask?.paths).toEqual(['configurations.topic_metadata_sync_options']);
+    expect(request.updateMask?.paths).toStrictEqual(['configurations.topic_metadata_sync_options']);
     expect(request.shadowLink?.configurations?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toHaveLength(3);
-    expect(request.shadowLink?.configurations?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
+    expect(request.shadowLink?.configurations?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toStrictEqual([
       create(NameFilterSchema, {
         name: 'exact-topic',
         patternType: PatternType.LITERAL,
@@ -227,14 +227,14 @@ describe('buildDataplaneUpdateRequest', () => {
     });
 
     expect(request.updateMask?.paths).toHaveLength(4);
-    expect(request.updateMask?.paths).toEqual(
-      expect.arrayContaining([
-        'configurations.client_options.metadata_max_age_ms',
-        'configurations.client_options.connection_timeout_ms',
-        'configurations.client_options.retry_backoff_ms',
-        'configurations.client_options.fetch_wait_max_ms',
-      ])
-    );
+    for (const expected of [
+      'configurations.client_options.metadata_max_age_ms',
+      'configurations.client_options.connection_timeout_ms',
+      'configurations.client_options.retry_backoff_ms',
+      'configurations.client_options.fetch_wait_max_ms',
+    ]) {
+      expect(request.updateMask?.paths).toContain(expected);
+    }
 
     expect(request.shadowLink?.configurations?.clientOptions).toMatchObject({
       metadataMaxAgeMs: 30_000,

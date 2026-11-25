@@ -1,10 +1,12 @@
 import { spawnSync } from 'bun';
+import { z } from 'zod';
 
 import { afterAll, beforeAll, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { compareStrings } from '../src/utils/string-utils';
 
 // Each fixture is linted through `bun run lint:policy` in an OS-temp project whose
 // config extends the checked-in one, so the real script, config and plugin run.
@@ -25,6 +27,14 @@ const CRASH_OUTPUT = /panic|failed to (load|parse)|error running/i;
 const times = (rule: string, count: number) => Array.from({ length: count }, () => rule);
 
 const suppressions: Fixture[] = [
+  {
+    file: 'suppression-unicode-path.ts',
+    reports: [S],
+    source: `
+// biome-ignore lint/style/noRestrictedImports(🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀/alpha/beta): todo
+export const value = 1;
+`,
+  },
   {
     file: 'suppression-missing.tsx',
     reports: times(S, 7),
@@ -632,7 +642,50 @@ test('not a test file', () => undefined, 5000);
 `,
 };
 
-const clusters = { suppressions, tooltips, hooks, waits, clocks, skips, helpers };
+const unstyledButtons: Fixture[] = [
+  {
+    file: 'unstyled-inside-invalid.tsx',
+    reports: ['unstyled-button-exception'],
+    source: `
+import { Button } from 'components/redpanda-ui/components/button';
+export const Control = () => <Button variant="ghost" className={
+// biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+'bg-primary'} />;
+`,
+  },
+  {
+    file: 'unstyled-valid.tsx',
+    reports: [],
+    source: `
+import { Button } from 'components/redpanda-ui/components/button';
+export const Control = () => <Button variant="unstyled"
+// biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+className="bg-primary" />;
+`,
+  },
+  {
+    file: 'unstyled-invalid.tsx',
+    reports: ['unstyled-button-exception'],
+    source: `
+import { Button } from 'components/redpanda-ui/components/button';
+export const Control = () => <Button variant="ghost"
+// biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+className="bg-primary" />;
+`,
+  },
+  {
+    file: 'unstyled-dynamic.tsx',
+    reports: ['unstyled-button-exception'],
+    source: `
+import { Button } from 'components/redpanda-ui/components/button';
+export const Control = ({ variant }: { variant: 'ghost' | 'unstyled' }) => <Button variant={variant}
+// biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+className="bg-primary" />;
+`,
+  },
+];
+
+const clusters = { suppressions, tooltips, hooks, waits, clocks, skips, helpers, unstyledButtons };
 const fixtures = [...Object.values(clusters).flat(), scopeControl];
 let project = '';
 let mixed: PolicyRun;
@@ -640,10 +693,15 @@ let clean: PolicyRun;
 
 function createProject() {
   const directory = mkdtempSync(join(tmpdir(), 'console-lint-policy-'));
-  const { scripts } = JSON.parse(readFileSync(join(frontendRoot, 'package.json'), 'utf8'));
+  const { scripts } = z
+    .object({ scripts: z.record(z.string(), z.string()) })
+    .parse(JSON.parse(readFileSync(join(frontendRoot, 'package.json'), 'utf8')));
   symlinkSync(join(frontendRoot, 'node_modules'), join(directory, 'node_modules'), 'dir');
   writeFileSync(join(directory, 'package.json'), JSON.stringify({ private: true, scripts }));
-  writeFileSync(join(directory, '.oxlintrc.json'), JSON.stringify({ extends: [join(frontendRoot, '.oxlintrc.json')] }));
+  writeFileSync(
+    join(directory, 'oxlint.policy.json'),
+    JSON.stringify({ extends: [join(frontendRoot, 'oxlint.policy.json')] })
+  );
   for (const fixture of fixtures) {
     mkdirSync(dirname(join(directory, fixture.file)), { recursive: true });
     writeFileSync(join(directory, fixture.file), fixture.source);
@@ -659,21 +717,31 @@ function runPolicy(files: string[]): PolicyRun {
   });
   const stderr = result.stderr.toString();
   const output = result.stdout.toString();
-  const report = JSON.parse(output.slice(output.indexOf('{')));
+  const report = z
+    .object({
+      number_of_files: z.number(),
+      diagnostics: z.array(
+        z.object({ code: z.string().optional(), message: z.string(), severity: z.string(), filename: z.string() })
+      ),
+    })
+    .parse(JSON.parse(output.slice(output.indexOf('{'))));
   return { exitCode: result.exitCode, stderr, files: report.number_of_files, diagnostics: report.diagnostics };
 }
 
 function reportsFor(run: PolicyRun, file: string) {
   return run.diagnostics
-    .filter((diagnostic) => diagnostic.filename === file)
-    .map((diagnostic) => diagnostic.code?.replace(CONSOLE_CODE, '$1') ?? `uncoded: ${diagnostic.message}`)
-    .sort();
+    .flatMap((diagnostic) =>
+      diagnostic.filename === file
+        ? [diagnostic.code?.replace(CONSOLE_CODE, '$1') ?? `uncoded: ${diagnostic.message}`]
+        : []
+    )
+    .sort(compareStrings);
 }
 
 beforeAll(() => {
   project = createProject();
   mixed = runPolicy(fixtures.map((fixture) => fixture.file));
-  clean = runPolicy(fixtures.filter((fixture) => fixture.reports.length === 0).map((fixture) => fixture.file));
+  clean = runPolicy(fixtures.flatMap((fixture) => (fixture.reports.length === 0 ? [fixture.file] : [])));
 });
 
 afterAll(() => {
@@ -682,21 +750,30 @@ afterAll(() => {
 
 test.each(Object.entries(clusters))('%s fixtures report exactly the expected console rules', (_name, cases) => {
   const actual = cases.map((fixture) => ({ file: fixture.file, reports: reportsFor(mixed, fixture.file) }));
-  const expected = cases.map((fixture) => ({ file: fixture.file, reports: fixture.reports.toSorted() }));
-  expect(actual).toEqual(expected);
+  const expected = cases.map((fixture) => ({ file: fixture.file, reports: fixture.reports.toSorted(compareStrings) }));
+  expect(actual).toStrictEqual(expected);
 });
 
 test('fails the script with error-severity diagnostics after linting every fixture', () => {
   expect(mixed.files).toBe(fixtures.length);
   expect(mixed.diagnostics.length).toBeGreaterThan(0);
-  expect(mixed.diagnostics.filter((diagnostic) => diagnostic.severity !== 'error')).toEqual([]);
+  expect(mixed.diagnostics.filter((diagnostic) => diagnostic.severity !== 'error')).toStrictEqual([]);
   expect(mixed.exitCode).toBe(1);
 });
 
 test('keeps test-only rules out of product code and passes the negative controls cleanly', () => {
-  expect(reportsFor(mixed, scopeControl.file)).toEqual([]);
-  expect(clean.diagnostics).toEqual([]);
+  expect(reportsFor(mixed, scopeControl.file)).toStrictEqual([]);
+  expect(clean.diagnostics).toStrictEqual([]);
   expect(clean.files).toBe(fixtures.filter((fixture) => fixture.reports.length === 0).length);
   expect(clean.stderr).not.toMatch(CRASH_OUTPUT);
   expect(clean.exitCode).toBe(0);
+});
+
+test('runs focused policy checks beside suppressions owned by the full typed gate', () => {
+  const result = spawnSync(
+    [process.execPath, 'run', 'lint:policy', '--', 'src/state/backend-api.ts', 'src/utils/json-utils.ts'],
+    { cwd: frontendRoot, stdout: 'pipe', stderr: 'pipe' }
+  );
+  expect(result.stdout.toString() + result.stderr.toString()).not.toContain('Unused oxlint-disable directive');
+  expect(result.exitCode).toBe(0);
 });

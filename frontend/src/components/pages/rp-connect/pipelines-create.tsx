@@ -20,26 +20,29 @@ import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redp
 import { Input } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
-import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, PlusIcon, Sparkles } from 'lucide-react';
 import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
 import { AnimatePresence, motion } from 'motion/react';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
 import { docsLinks } from 'utils/docs-links';
+import { reportActionError } from 'utils/toast.utils';
 
 import { formatPipelineError } from './errors';
 import { SecretsQuickAdd } from './secrets/secrets-quick-add';
 import { clampTasks, cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { TemplateGalleryDialog } from './template-gallery/template-gallery-dialog';
 import { getContextualVariableSyntax, REDPANDA_CONTEXTUAL_VARIABLES } from './types/constants';
+import { isFeatureFlagEnabled } from '../../../runtime-config';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import PageContent from '../../misc/page-content';
-import PipelinesYamlEditor from '../../misc/pipelines-yaml-editor';
-import Tabs from '../../misc/tabs/tabs';
+import { isObject } from '../../../utils/type-guards';
+import { PageContent } from '../../misc/page-content';
+import { PipelinesYamlEditor } from '../../misc/pipelines-yaml-editor';
+import { Tabs } from '../../misc/tabs/tabs';
 import { PageComponent, type PageInitHelper } from '../page';
 
 const exampleContent = `
@@ -53,12 +56,12 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
     p.addBreadcrumb('Create Pipeline', '');
 
     this.refreshData(true);
-    rpcnSecretManagerApi.refreshSecrets(true);
+    rpcnSecretManagerApi.refreshSecrets(true).catch(reportActionError);
     appGlobal.onRefresh = () => this.refreshData(true);
   }
 
   refreshData(_force: boolean) {
-    pipelinesApi.refreshPipelines(_force);
+    pipelinesApi.refreshPipelines(_force).catch(reportActionError);
   }
 
   render() {
@@ -69,7 +72,7 @@ class RpConnectPipelinesCreate extends PageComponent<{}> {
   }
 }
 
-export default RpConnectPipelinesCreate;
+export { RpConnectPipelinesCreate };
 
 type PipelineCreateInput = {
   configYaml: string;
@@ -92,7 +95,7 @@ const useCreatePipeline = () => {
           description,
           displayName,
           resources: {
-            cpuShares: tasksToCPU(tasks) || '0',
+            cpuShares: (tasksToCPU(tasks) ?? '') || '0',
             memoryShares: '0', // still required by API but unused
           },
           tags: {
@@ -103,15 +106,15 @@ const useCreatePipeline = () => {
       .then(async (r) => {
         toast.success('Pipeline created');
         const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
-        if (retUnits && tasks !== retUnits) {
+        if (retUnits !== null && retUnits !== undefined && Boolean(retUnits) && tasks !== retUnits) {
           toast.warning(`Pipeline has been resized to use ${retUnits} compute units`);
         }
         await pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush('/connect-clusters');
       })
-      .catch((err) => {
+      .catch((error: unknown) => {
         toast.error('Failed to create pipeline', {
-          description: formatPipelineError(ConnectError.from(err)),
+          description: formatPipelineError(ConnectError.from(error)),
         });
       })
       .finally(() => {
@@ -217,7 +220,7 @@ const RpConnectPipelinesCreateContent = () => {
           {Boolean(isCreating) && <Spinner />}
           {isCreating ? 'Creating...' : 'Create'}
         </Button>
-        <Link search={{} as never} to="/connect-clusters">
+        <Link search={{}} to="/connect-clusters">
           <Button variant="link">Cancel</Button>
         </Link>
       </div>
@@ -302,7 +305,7 @@ const TemplateGalleryStart = ({ editorContent, onApplyTemplate, onRestoreYaml }:
 
       <TemplateGalleryDialog
         onClose={(stashedYaml) => {
-          if (stashedYaml) {
+          if (stashedYaml !== null && stashedYaml !== undefined && stashedYaml !== '') {
             onRestoreYaml(stashedYaml);
           }
           setIsTemplateDialogOpen(false);
@@ -329,7 +332,7 @@ const QuickActions = ({ editorInstance, resetAutocompleteSecrets }: QuickActions
   const closeAddSecret = () => setIsAddSecretOpen(false);
 
   if (editorInstance === null) {
-    return <div className="min-w-[300px]" />;
+    return <div className="w-full" />;
   }
 
   const onAddSecret = (secretNotation: string) => {
@@ -468,37 +471,45 @@ export const PipelineEditor = (p: {
           title: 'Configuration',
           content: () => (
             <div>
-              <div className="flex min-h-[400px] gap-7">
+              <div
+                className={
+                  p.isDisabled === true
+                    ? 'grid min-h-[400px] grid-cols-1 gap-7'
+                    : 'grid min-h-[400px] grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_300px]'
+                }
+              >
                 <PipelinesYamlEditor
                   defaultPath="config.yaml"
                   defaultValue={p.yaml}
+                  height="400px"
                   language="yaml"
                   onChange={(e) => {
                     // Propagate empty content too — clearing the editor must
                     // flip `isEditorPristine` so the template CTA can re-appear.
                     p.onChange?.(e ?? '');
                   }}
-                  onMount={async (editorRef, monacoInst) => {
+                  onMount={asyncEvent(async (editorRef, monacoInst) => {
                     setEditorInstance(editorRef);
                     setMonaco(monacoInst);
                     await registerSecretsAutocomplete(monacoInst, setSecretAutocomplete);
                     registerContextualVariablesAutocomplete(monacoInst, setContextualVarsAutocomplete);
-                  }}
+                  }, reportActionError)}
                   options={{
                     readOnly: p.isDisabled,
                   }}
                   path="config.yaml"
+                  wrapperProps={{ className: 'kowlEditor flex min-w-0 w-full' }}
                 />
 
-                {!p.isDisabled && (
+                {!(p.isDisabled === true) && (
                   <QuickActions
                     editorInstance={editorInstance}
-                    resetAutocompleteSecrets={async () => {
+                    resetAutocompleteSecrets={asyncEvent(async () => {
                       if (secretAutocomplete && monaco) {
                         secretAutocomplete.dispose();
                         await registerSecretsAutocomplete(monaco, setSecretAutocomplete);
                       }
-                    }}
+                    }, reportActionError)}
                   />
                 )}
               </div>
@@ -536,10 +547,10 @@ const isKafkaConnectPipeline = (value: string | undefined): boolean => {
   if (value === undefined) {
     return false;
   }
-  let json: object;
+  let json: unknown;
   try {
     json = JSON.parse(value);
-  } catch (_e) {
+  } catch {
     return false;
   }
 
@@ -552,7 +563,5 @@ const isKafkaConnectPipeline = (value: string | undefined): boolean => {
     'errors.log.enable',
   ];
 
-  const matchCount = kafkaConfigKeys.filter((key) => Object.keys(json).includes(key)).length;
-
-  return matchCount > 0;
+  return isObject(json) && kafkaConfigKeys.some((key) => Object.hasOwn(json, key));
 };

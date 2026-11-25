@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { compareStrings } from 'utils/string-utils';
+
 export type SecretReference = {
   secretName: string;
   nestedKey?: string;
@@ -24,44 +26,33 @@ export type SecretReference = {
  * - ${secrets.SECRET_NAME.nested.key}
  * - ${secrets.SECRET_NAME.nested.key:default-value}
  */
+function parseSecretReference(fullReference: string, referencePath: string): SecretReference {
+  const separator = referencePath.indexOf(':');
+  const secretPath = separator >= 0 ? referencePath.slice(0, separator) : referencePath;
+  const [secretName, ...nestedParts] = secretPath.split('.');
+  return {
+    secretName,
+    nestedKey: nestedParts.join('.') || undefined,
+    fullReference,
+    defaultValue: separator >= 0 ? referencePath.slice(separator + 1) : undefined,
+  };
+}
+
 export function extractSecretReferences(yamlContent: string): SecretReference[] {
-  const secretReferences: SecretReference[] = [];
-
-  // Regex to match ${secrets.SOMETHING} patterns
+  const references: SecretReference[] = [];
   const secretPattern = /\$\{secrets\.([^}]+)\}/g;
-  let match: RegExpExecArray | null = secretPattern.exec(yamlContent);
-
-  while (match !== null) {
-    const fullReference = match[0];
-    let secretPath = match[1];
-    let defaultValue: string | undefined;
-    if (secretPath.includes(":")) {
-      const idx = secretPath.indexOf(":");
-      defaultValue = secretPath.substring(idx + 1);
-      secretPath = secretPath.substring(0, idx);
+  const matches = yamlContent.matchAll(secretPattern);
+  for (const match of matches) {
+    const reference = parseSecretReference(match[0], match[1]);
+    if (
+      references.every(
+        (existing) => existing.secretName !== reference.secretName || existing.nestedKey !== reference.nestedKey
+      )
+    ) {
+      references.push(reference);
     }
-    // Split by dot to get secret name and nested keys
-    const pathParts = secretPath.split('.');
-    const secretName = pathParts[0];
-    const nestedKey = pathParts.slice(1).join('.');
-
-    // Check if we already have this secret reference
-    const existing = secretReferences.find((ref) => ref.secretName === secretName && (ref.nestedKey ?? "") === nestedKey);
-
-    if (!existing) {
-      secretReferences.push({
-        secretName,
-        nestedKey: nestedKey || undefined,
-        fullReference,
-        defaultValue,
-      });
-    }
-
-    // Get the next match
-    match = secretPattern.exec(yamlContent);
   }
-
-  return secretReferences;
+  return references;
 }
 
 /**
@@ -72,5 +63,5 @@ export function getUniqueSecretNames(references: SecretReference[]): string[] {
   for (const ref of references) {
     uniqueNames.add(ref.secretName);
   }
-  return Array.from(uniqueNames).sort();
+  return Array.from(uniqueNames).sort(compareStrings);
 }

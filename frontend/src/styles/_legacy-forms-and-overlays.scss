@@ -1,0 +1,414 @@
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+@use 'sass:math';
+@use 'legacy-layout-mixins' as layout;
+
+@mixin styles {
+  .dynamicInputs {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr 1fr;
+    row-gap: 1.5em;
+    column-gap: 1.2em;
+
+    align-items: end;
+
+    .none {
+      opacity: 0.5;
+    }
+
+    .short {
+      grid-column: 1 / span 1;
+    }
+
+    .medium {
+      grid-column: 1 / span 2;
+    }
+
+    .long {
+      grid-column: 1 / span 3;
+    }
+  }
+
+  .inputWrapper {
+    position: relative;
+    display: inline-block;
+    inline-size: 100%;
+
+    &::after {
+      @include layout.beforeAfter();
+      pointer-events: none;
+
+      border: 1px solid hsl(0deg, 100%, 65%);
+      border-radius: 2px;
+      box-shadow: 0 0 3px 1px #ffaeae;
+
+      opacity: 0;
+      $scaleY: 1.5;
+      $scaleFactor: 20;
+      $scaleX: math.div($scaleY - 1, $scaleFactor) + 1;
+
+      transform: scale($scaleX, $scaleY);
+
+      transition:
+        opacity 150ms ease-out,
+        transform 250ms ease-out;
+    }
+
+    .validationFeedback {
+      position: absolute;
+
+      // position at top
+      inset-block-start: 100%;
+      inset-inline-start: 0;
+      z-index: 1;
+      min-inline-size: 10px;
+      max-inline-size: 100%;
+      padding-block: 3px 2px;
+      padding-inline: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: Verdana, 'Segoe UI', Tahoma, Geneva, sans-serif;
+
+      font-size: 11px;
+      line-height: 1.5;
+      color: hsl(0deg, 100%, 50%);
+      word-break: break-all;
+
+      // Single line, unless clicked
+      white-space: nowrap;
+
+      user-select: none;
+
+      // style
+      background: hsla(0deg, 100%, 87%, 0.8);
+
+      border-radius: 0 0 2px 2px;
+
+      // animate
+      opacity: 0;
+      transform: translateY(-30%);
+      transition:
+        opacity 150ms ease-out,
+        transform 250ms ease-out;
+
+      &:active {
+        overflow: visible;
+        white-space: normal;
+      }
+
+      .errorCount {
+        display: inline-block;
+        padding-block: 0;
+        padding-block-end: 1px;
+        padding-inline: 4px;
+        margin-inline-end: 4px;
+        font-size: 10px;
+        color: white;
+
+        background: hsl(5deg, 100%, 50%);
+        border-radius: 16px;
+
+        transform: translateY(-1px);
+      }
+    }
+  }
+
+  .dynamicInputs > div {
+    .importanceTag {
+      // Can't find a style that looks good and doesn't overload the UI at the moment.
+      display: none;
+      padding-block: 1px;
+      padding-inline: 6px;
+
+      margin-block-start: 2px;
+
+      margin-inline-start: auto;
+
+      font-size: 0.7em;
+      font-weight: 500;
+      text-transform: capitalize;
+
+      user-select: none;
+      border-radius: 4px;
+
+      // default hidden
+      opacity: 1;
+      transition: opacity 300ms ease-out;
+
+      &.high {
+        color: rgba(0, 123, 255, 0.726);
+        background: rgba(0, 123, 255, 0.1);
+      }
+
+      &.low {
+        color: #777;
+        background: rgba(119, 119, 119, 0.035);
+      }
+    }
+
+    &:hover,
+    &:focus-within {
+      .importanceTag {
+        opacity: 1;
+      }
+    }
+  }
+
+  .iconSelectOption {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+
+    svg {
+      block-size: 1em;
+      margin: 0;
+    }
+  }
+
+  .stringList {
+    display: flex;
+    flex-direction: column;
+
+    .createEntryRow {
+      display: flex;
+      gap: 0.5em;
+      align-items: center;
+      block-size: 29px;
+
+      margin-block: 6px;
+      margin-inline: 0;
+
+      & > input,
+      & > button {
+        block-size: 100%;
+      }
+    }
+
+    .reorderableList {
+      .draggableItem {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+
+        block-size: 32px;
+
+        margin-block-end: 4px;
+        overflow: hidden;
+
+        background: var(--color-surface-recess);
+        border-radius: 3px;
+
+        .dragHandle {
+          display: inline-flex;
+
+          place-items: center;
+          align-self: stretch;
+          inline-size: 28px;
+          padding-block-start: 1px;
+          margin-inline-start: 2px;
+          color: var(--color-subtle);
+
+          transform: scale(0.8);
+        }
+
+        input {
+          block-size: 28px;
+        }
+
+        .deleteButton {
+          display: inline-flex;
+          place-items: center;
+          align-self: stretch;
+          inline-size: 32px;
+          padding-inline-end: 2px;
+
+          color: var(--color-subtle);
+          cursor: pointer;
+
+          opacity: 0; // only visible on hover
+          transition: opacity 300ms;
+
+          & > svg {
+            transform: scale(1.1);
+          }
+
+          &:hover {
+            color: var(--color-foreground);
+            background: var(--color-surface-subtle);
+          }
+        }
+
+        &:hover > .deleteButton {
+          opacity: 1;
+          transition: opacity 120ms;
+        }
+      }
+    }
+  }
+
+  .monaco-editor.vs {
+    .decorationsOverviewRuler {
+      position: relative;
+      box-sizing: content-box;
+      background: #eee;
+
+      border-inline-start: 1px solid #0001;
+      opacity: 1;
+    }
+
+    .margin-view-overlays {
+      border-inline-end: solid 1px #0001;
+    }
+  }
+
+  .noArrow {
+    display: none;
+  }
+
+  .kowlEditor {
+    flex-grow: 1;
+
+    border: 1px solid var(--color-border);
+    border-radius: 2px;
+  }
+
+  .editorLoading {
+    position: absolute;
+    inset-block: 0;
+    inset-inline: 0;
+    display: flex;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4em;
+    font-weight: 600;
+    color: transparent;
+    background: var(--color-surface-recess);
+    animation: 0.5s ease-out 0.1s fadein;
+  }
+
+  @keyframes fadein {
+    from {
+      color: white;
+    }
+
+    to {
+      color: hsl(0deg 0% 80%);
+    }
+  }
+
+  .configPropDescription {
+    padding-inline: 1em 2em;
+    font-size: 12px;
+    font-style: italic;
+    color: hsl(208deg 3% 50%);
+    background: #f7f7f7;
+    border-inline-start: 3px solid hsl(0deg 0% 85%);
+
+    &.unknownConfigProp {
+      color: hsl(0deg 50% 59%);
+      background: hsl(0deg 100% 97%);
+      border-color: hsl(0deg 100% 85%);
+      opacity: 0.7;
+    }
+  }
+
+  .flipX {
+    transform: rotateX(180deg);
+  }
+
+  .inputWrapper.hasError {
+    border-radius: 8px;
+
+    &::after {
+      border-radius: 8px;
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .validationFeedback {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  // In @layer base so spacing utilities on these elements still apply.
+  @layer base {
+    p,
+    dl,
+    dd,
+    ol,
+    ul,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5 {
+      margin-block-end: 0;
+    }
+  }
+
+  .BreadcrumbHeading,
+  .BreadcrumbText {
+    font-feature-settings: kern;
+    line-height: 18.375px;
+  }
+
+  $borderRadius: 8px;
+
+  .controlChar {
+    display: inline-block;
+    padding-block: 0;
+    padding-block-end: 0.05em;
+    padding-inline: 2px;
+    margin: 0;
+    margin-inline-end: 1px;
+    font-family: monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: hsl(0, 0%, 90%);
+    white-space: nowrap;
+
+    user-select: none;
+    background: hsl(357deg 71% 59%);
+    border-radius: 3px;
+  }
+
+  // Console's toasts sit top-right, above the host's modals (z-index 1400). The registry
+  // viewport is bottom-anchored, so this mirrors toast.tsx with the vertical signs flipped; it goes
+  // when the registry grows a position prop. Keyed on the console test id to spare a host viewport.
+  [data-slot='toast-viewport'][data-testid='console-toasts'] {
+    inset-block: 1rem auto;
+    z-index: 1500;
+
+    [data-slot='toast'] {
+      --offset-y: calc(var(--toast-offset-y) + var(--toast-index) * var(--gap) + var(--toast-swipe-movement-y));
+      inset-block: 0 auto;
+      transform: translateX(var(--toast-swipe-movement-x))
+        translateY(
+          calc(var(--toast-swipe-movement-y) + var(--toast-index) * var(--peek) + var(--shrink) * var(--height))
+        )
+        scale(var(--scale));
+      transform-origin: top;
+
+      &[data-expanded] {
+        transform: translateX(var(--toast-swipe-movement-x)) translateY(var(--offset-y));
+      }
+
+      &[data-starting-style],
+      &[data-ending-style]:not([data-limited]):not([data-swipe-direction]) {
+        transform: translateY(-150%);
+      }
+    }
+  }
+}

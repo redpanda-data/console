@@ -2,7 +2,7 @@ import { expect, onTestFinished, rs, test } from '@rstest/core';
 import { render, waitFor } from '@testing-library/react';
 import { useEffect, useState } from 'react';
 
-import PipelinesYamlEditor from './pipelines-yaml-editor';
+import { PipelinesYamlEditor } from './pipelines-yaml-editor';
 
 const { yamlUpdate } = rs.hoisted(() => ({ yamlUpdate: rs.fn() }));
 

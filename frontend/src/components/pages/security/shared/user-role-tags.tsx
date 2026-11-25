@@ -11,15 +11,17 @@
 
 import { useNavigate } from '@tanstack/react-router';
 import { TagsValue } from 'components/redpanda-ui/components/tags';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { rolesApi } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { usePrincipalHasAcls } from '../hooks/use-principal-has-acls';
 
 const getPrincipalRoleNames = (userName: string, principalType: 'User' | 'Group') =>
-  [...rolesApi.roleMembers]
-    .filter(([, members]) => members.any((m) => m.name === userName && m.principalType === principalType))
-    .map(([roleName]) => roleName);
+  [...rolesApi.roleMembers].flatMap(([roleName, members]) =>
+    members.some((member) => member.name === userName && member.principalType === principalType) ? [roleName] : []
+  );
 
 export const UserRoleTags = ({
   userName,
@@ -45,12 +47,14 @@ export const UserRoleTags = ({
       {hasAcls && (
         <TagsValue
           key={`acl-${userName}`}
-          onClick={() => navigate({ to: `/security/acls/${userName}/details` })}
+          onClick={asyncEvent(() => navigate({ to: `/security/acls/${userName}/details` }), reportActionError)}
         >{`${principalType}:${userName}`}</TagsValue>
       )}
       {visibleRoles.map((r) => (
         <div key={r}>
-          <TagsValue onClick={() => navigate({ to: `/security/roles/${r}/details` })}>{`RedpandaRole:${r}`}</TagsValue>
+          <TagsValue
+            onClick={asyncEvent(() => navigate({ to: `/security/roles/${r}/details` }), reportActionError)}
+          >{`RedpandaRole:${r}`}</TagsValue>
         </div>
       ))}
       {Boolean(featureRolesApi) && !hasAcls && visibleRoles.length === 0 && <p key="no-roles">No roles</p>}

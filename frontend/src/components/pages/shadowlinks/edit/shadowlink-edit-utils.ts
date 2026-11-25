@@ -11,7 +11,9 @@
 
 import {
   type ShadowLink as ControlplaneShadowLink,
+  ShadowLinkClientOptionsSchema as CpShadowLinkClientOptionsSchema,
   ShadowLinkUpdateSchema as CpShadowLinkUpdateSchema,
+  TLSSettingsSchema as CpTLSSettingsSchema,
   UpdateShadowLinkRequestSchema as CpUpdateShadowLinkRequestSchema,
 } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
 import { create, equals } from '@bufbuild/protobuf';
@@ -40,9 +42,11 @@ import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protog
 import {
   TLSFileSettingsSchema,
   TLSPEMSettingsSchema,
+  type TLSSettings,
   TLSSettingsSchema,
 } from 'protogen/redpanda/core/common/v1/tls_pb';
 
+import { compareStrings, isNonEmptyString } from '../../../../utils/string-utils';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, TLS_MODE } from '../create/model';
 import { buildSchemaRegistrySyncOptions } from '../create/schema-registry-request';
@@ -86,8 +90,8 @@ export const arraysEqual = (a: string[], b: string[]): boolean => {
   }
 
   // Sort both arrays and compare element by element
-  const sortedA = [...a].sort();
-  const sortedB = [...b].sort();
+  const sortedA = [...a].sort(compareStrings);
+  const sortedB = [...b].sort(compareStrings);
 
   return sortedA.every((val, idx) => val === sortedB[idx]);
 };
@@ -96,17 +100,18 @@ export const arraysEqual = (a: string[], b: string[]): boolean => {
  * Build TLS settings based on mTLS configuration
  * mTLS is determined by presence of certificates
  */
+const hasTlsCertificates = (values: FormValues): boolean =>
+  [values.mtls.ca, values.mtls.clientCert, values.mtls.clientKey].some((certificate) =>
+    isNonEmptyString(values.mtlsMode === TLS_MODE.FILE_PATH ? certificate?.filePath : certificate?.pemContent)
+  );
+
 export const buildTLSSettings = (
   values: FormValues
 ):
   | { case: 'tlsFileSettings'; value: ReturnType<typeof create<typeof TLSFileSettingsSchema>> }
   | { case: 'tlsPemSettings'; value: ReturnType<typeof create<typeof TLSPEMSettingsSchema>> }
   | undefined => {
-  // Check if any certificates are provided
-  const hasCertificates =
-    values.mtlsMode === TLS_MODE.FILE_PATH
-      ? Boolean(values.mtls.ca?.filePath || values.mtls.clientCert?.filePath || values.mtls.clientKey?.filePath)
-      : Boolean(values.mtls.ca?.pemContent || values.mtls.clientCert?.pemContent || values.mtls.clientKey?.pemContent);
+  const hasCertificates = hasTlsCertificates(values);
 
   if (!hasCertificates) {
     return;
@@ -116,9 +121,9 @@ export const buildTLSSettings = (
     return {
       case: 'tlsFileSettings' as const,
       value: create(TLSFileSettingsSchema, {
-        caPath: values.mtls.ca?.filePath || undefined,
-        keyPath: values.mtls.clientKey?.filePath || undefined,
-        certPath: values.mtls.clientCert?.filePath || undefined,
+        caPath: (values.mtls.ca?.filePath ?? '') || undefined,
+        keyPath: (values.mtls.clientKey?.filePath ?? '') || undefined,
+        certPath: (values.mtls.clientCert?.filePath ?? '') || undefined,
       }),
     };
   }
@@ -126,9 +131,9 @@ export const buildTLSSettings = (
   return {
     case: 'tlsPemSettings' as const,
     value: create(TLSPEMSettingsSchema, {
-      ca: values.mtls.ca?.pemContent || undefined,
-      key: values.mtls.clientKey?.pemContent || undefined,
-      cert: values.mtls.clientCert?.pemContent || undefined,
+      ca: (values.mtls.ca?.pemContent ?? '') || undefined,
+      key: (values.mtls.clientKey?.pemContent ?? '') || undefined,
+      cert: (values.mtls.clientCert?.pemContent ?? '') || undefined,
     }),
   };
 };
@@ -205,8 +210,16 @@ export const buildClientOptions = (values: FormValues) =>
 const hasTlsChanged = (values: FormValues, originalValues: FormValues): boolean => {
   const hasCertificates =
     values.mtlsMode === TLS_MODE.FILE_PATH
-      ? Boolean(values.mtls.ca?.filePath || values.mtls.clientCert?.filePath || values.mtls.clientKey?.filePath)
-      : Boolean(values.mtls.ca?.pemContent || values.mtls.clientCert?.pemContent || values.mtls.clientKey?.pemContent);
+      ? Boolean(
+          (values.mtls.ca?.filePath ?? '') ||
+            isNonEmptyString(values.mtls.clientCert?.filePath) ||
+            values.mtls.clientKey?.filePath
+        )
+      : Boolean(
+          (values.mtls.ca?.pemContent ?? '') ||
+            isNonEmptyString(values.mtls.clientCert?.pemContent) ||
+            values.mtls.clientKey?.pemContent
+        );
 
   const tlsChanged =
     values.useTls !== originalValues.useTls ||
@@ -247,9 +260,9 @@ const getConnectionFieldMaskPaths = (values: FormValues, originalValues: FormVal
     // briefly opened, and those must not trigger a payload update.
     ...(hasAuthChanged(values, originalValues) ? ['configurations.client_options.authentication_configuration'] : []),
     // Compare advanced client options
-    ...ADVANCED_CLIENT_OPTION_MASK_PATHS.filter(
-      ([option]) => values.advanceClientOptions[option] !== originalValues.advanceClientOptions[option]
-    ).map(([, path]) => path),
+    ...ADVANCED_CLIENT_OPTION_MASK_PATHS.flatMap(([option, path]) =>
+      values.advanceClientOptions[option] === originalValues.advanceClientOptions[option] ? [] : [path]
+    ),
   ];
 };
 
@@ -473,13 +486,13 @@ export const getUpdateValuesForACLs = (
               resourceFilter: {
                 resourceType: acl.resourceType,
                 patternType: acl.resourcePattern,
-                name: acl.resourceName || '',
+                name: (acl.resourceName ?? '') || '',
               },
               accessFilter: {
-                principal: acl.principal || '',
+                principal: (acl.principal ?? '') || '',
                 operation: acl.operation,
                 permissionType: acl.permissionType,
-                host: acl.host || '',
+                host: (acl.host ?? '') || '',
               },
             })
           ),
@@ -576,6 +589,23 @@ const getCategoryUpdates = (
  * Uses create() with buf core schemas to build properly typed Message instances
  * that are compatible with the controlplane API.
  */
+function buildControlplaneTlsSettings(settings: TLSSettings | undefined) {
+  if (!settings) {
+    return;
+  }
+  if (settings.tlsSettings.case === 'tlsFileSettings') {
+    throw new Error('Controlplane shadow links require PEM certificates, not local file paths.');
+  }
+  const pem = settings.tlsSettings.case === 'tlsPemSettings' ? settings.tlsSettings.value : undefined;
+  return create(CpTLSSettingsSchema, {
+    enabled: settings.enabled,
+    doNotSetSniHostname: settings.doNotSetSniHostname,
+    ca: pem?.ca,
+    cert: pem?.cert,
+    key: pem?.key,
+  });
+}
+
 export const buildControlplaneUpdateRequest = (
   shadowLinkId: string,
   values: FormValues,
@@ -593,12 +623,14 @@ export const buildControlplaneUpdateRequest = (
     originalRoleSyncOptions: originalShadowLink.roleSyncOptions,
   });
 
-  // Build flat shadow link update for controlplane (no nested configurations)
-  // Use local proto schemas with type assertions to work around proto version
-  // differences between local protos and buf packages. Wire format is compatible.
+  // Client options use a plane-specific message name; reconstruct the CP message from its actual fields.
+  const { $typeName: _clientTypeName, tlsSettings, ...clientOptions } = updates.connection.value;
   const shadowLinkUpdate = create(CpShadowLinkUpdateSchema, {
     id: shadowLinkId,
-    clientOptions: create(ShadowLinkClientOptionsSchema, updates.connection.value),
+    clientOptions: create(CpShadowLinkClientOptionsSchema, {
+      ...clientOptions,
+      tlsSettings: buildControlplaneTlsSettings(tlsSettings),
+    }),
     topicMetadataSyncOptions: create(TopicMetadataSyncOptionsSchema, updates.topics.value),
     consumerOffsetSyncOptions: create(ConsumerOffsetSyncOptionsSchema, updates.consumerGroups.value),
     roleSyncOptions: updates.roles ? create(RoleSyncOptionsSchema, updates.roles.value) : undefined,
@@ -606,7 +638,7 @@ export const buildControlplaneUpdateRequest = (
     schemaRegistrySyncOptions: updates.schemaRegistry.value
       ? create(SchemaRegistrySyncOptionsSchema, updates.schemaRegistry.value)
       : undefined,
-  } as unknown as Parameters<typeof create<typeof CpShadowLinkUpdateSchema>>[1]);
+  });
 
   // Remove "configurations." prefix from field mask paths for controlplane
   // Dataplane uses: "configurations.client_options.tls_settings"

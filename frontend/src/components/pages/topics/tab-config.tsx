@@ -12,15 +12,15 @@
 import { Button } from 'components/redpanda-ui/components/button';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Empty, EmptyDescription } from 'components/redpanda-ui/components/empty';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
-import TopicConfigurationEditor from './topic-configuration';
+import { ConfigurationEditor as TopicConfigurationEditor } from './topic-configuration';
 import { appGlobal } from '../../../state/app-global';
 import { api, useApiStoreHook } from '../../../state/backend-api';
 import type { KafkaError, Topic } from '../../../state/rest-interfaces';
 import { toJson } from '../../../utils/json-utils';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import '../../../utils/array-extensions';
-
 // todo: can we assume that config values for time and bytes will always be provided in the smallest units?
 // or is it possible we'll get something like 'segment.hours' instead of 'segment.ms'?
 
@@ -48,7 +48,7 @@ export function TopicConfiguration(props: { topic: Topic }) {
     <TopicConfigurationEditor
       entries={entries}
       onForceRefresh={() => {
-        api.refreshTopicConfig(props.topic.topicName, true);
+        api.refreshTopicConfig(props.topic.topicName, true).catch(reportActionError);
       }}
       targetTopic={props.topic.topicName}
     />
@@ -69,7 +69,11 @@ function renderKafkaError(topicName: string, error: KafkaError) {
         <div className="m-8">
           <SimpleCodeBlock code={toJson(error, 4)} language="json" width="full" />
         </div>
-        <Button className="w-48 self-center" onClick={() => appGlobal.onRefresh()} size="lg">
+        <Button
+          className="w-48 self-center"
+          onClick={asyncEvent(() => appGlobal.onRefresh(), reportActionError)}
+          size="lg"
+        >
           Retry
         </Button>
       </div>

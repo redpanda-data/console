@@ -3,6 +3,8 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { useRef, useState } from 'react';
 
+import { isPresent } from '../../../../../utils/type-guards';
+
 export type SecretInputProps = {
   id: string;
   value: string;
@@ -61,17 +63,17 @@ export const SecretInput = ({ id, value, onChange, required, updating = false }:
   return (
     <div className="flex flex-row gap-2">
       {/*
-        The Registry Input owns the reveal toggle for `type="password"`, and disables it while the
-        field is read-only — which is the state an existing secret sits in before Edit. `key` is
-        what re-masks on Undo: the toggle's state lives inside the Input, so the transition out of
-        editing has to remount it or Undo would leave the restored secret in plain text.
-      */}
+          The Registry Input owns the reveal toggle for `type="password"`, and disables it while the
+          field is read-only — which is the state an existing secret sits in before Edit. `key` is
+          what re-masks on Undo: the toggle's state lives inside the Input, so the transition out of
+          editing has to remount it or Undo would leave the restored secret in plain text.
+        */}
       <Input
         id={id}
         key={canEdit ? 'editing' : 'masked'}
         onChange={(e) => {
           setLocalValue(e.target.value);
-          if (onChange) {
+          if (isPresent(onChange)) {
             onChange(e.target.value);
           }
         }}
@@ -80,9 +82,7 @@ export const SecretInput = ({ id, value, onChange, required, updating = false }:
         type="password"
         value={localValue}
       />
-      {Boolean(updating) && (canEdit ? clearButton : editButton)}
+      {updating && (canEdit ? clearButton : editButton)}
     </div>
   );
 };
-
-export default SecretInput;

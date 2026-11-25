@@ -11,11 +11,11 @@
 
 import { jumpableNodes, searchKeywords, searchValue } from './pipeline-canvas-command-palette-utils';
 import { describe, expect, test } from 'bun:test';
-import type { PipelineFlowNode } from '../utils/pipeline-flow-parser';
-import type { EditTarget } from '../utils/yaml';
+import type { PipelineFlowNode } from '../utils/pipeline-flow-nodes';
+import type { EditTarget } from '../utils/yaml-edit-target';
 
 const ZWSP = '\u200B';
-const TARGET = { kind: 'component', section: 'input', path: ['input'] } as unknown as EditTarget;
+const TARGET: EditTarget = { kind: 'input' };
 
 const node = (overrides: Partial<PipelineFlowNode>): PipelineFlowNode => ({
   id: 'n',
@@ -30,11 +30,11 @@ describe('jumpableNodes', () => {
     const structural = node({ id: 'b', section: 'input' }); // no editTarget (e.g. a merge dot)
     const sectionless = node({ id: 'c', editTarget: TARGET }); // no section (e.g. a bare case wrapper)
 
-    expect(jumpableNodes([editable, structural, sectionless])).toEqual([editable]);
+    expect(jumpableNodes([editable, structural, sectionless])).toStrictEqual([editable]);
   });
 
   test('returns an empty array when nothing is reachable', () => {
-    expect(jumpableNodes([node({ section: 'input' })])).toEqual([]);
+    expect(jumpableNodes([node({ section: 'input' })])).toStrictEqual([]);
   });
 });
 
@@ -78,7 +78,7 @@ describe('searchKeywords', () => {
         { label: 'url', value: 'localhost:9092' },
       ],
     });
-    expect(searchKeywords(withMeta)).toEqual(['orders', 'localhost:9092']);
+    expect(searchKeywords(withMeta)).toStrictEqual(['orders', 'localhost:9092']);
   });
 
   test('returns undefined when there is no searchable meta', () => {

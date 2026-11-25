@@ -49,7 +49,9 @@ test.describe('security pages deep-link (cold cache)', () => {
   test('direct-load /security/users/e2euser/details renders without prior list navigation', async ({ page }) => {
     // Collect console/page errors to guard against cache-miss crashes.
     const consoleErrors: string[] = [];
-    page.on('pageerror', (err) => consoleErrors.push(err.message));
+    page.on('pageerror', (err) => {
+      consoleErrors.push(err.message);
+    });
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
         consoleErrors.push(msg.text());
@@ -67,7 +69,7 @@ test.describe('security pages deep-link (cold cache)', () => {
 
     // Guard: no console errors mentioning undefined user / missing data.
     const suspicious = consoleErrors.filter((msg) => CACHE_MISS_ERROR_PATTERN.test(msg));
-    expect(suspicious).toEqual([]);
+    expect(suspicious).toStrictEqual([]);
   });
 
   test('direct-load /security/acls/<principal>/details renders for existing principal', async ({

@@ -29,7 +29,7 @@ export function deleteRecordsMenuItem(
     </Button>
   );
 
-  if (errorText) {
+  if (errorText !== null && errorText !== undefined && errorText !== '') {
     return (
       <TooltipProvider>
         <Tooltip>

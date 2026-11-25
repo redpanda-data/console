@@ -1,5 +1,6 @@
 import type { PaginationState, SortingState, Updater } from '@tanstack/react-table';
 import { useCallback, useEffect, useMemo } from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useClientFilters } from './use-client-filters';
 import { useKeyboardNav } from './use-keyboard-nav';
@@ -31,7 +32,7 @@ function useClampPageIndex(
       }
       const pageCount = continuousActive ? 1 : Math.max(1, Math.ceil(rowCount / urlState.pageSize));
       if (urlState.pageIndex > pageCount - 1) {
-        urlState.setPageIndex(pageCount - 1);
+        urlState.setPageIndex(pageCount - 1).catch(reportActionError);
       }
     },
     [phase, continuousActive, rowCount, urlState.pageSize, urlState.pageIndex, urlState.setPageIndex]
@@ -91,9 +92,9 @@ function useMessagePaging(urlState: MessagesUrlState, continuousActive: boolean,
   const handlePaginationChange = useCallback(
     (updater: Updater<PaginationState>) => {
       const next = typeof updater === 'function' ? updater(pagination) : updater;
-      urlState.setPageIndex(next.pageIndex);
+      urlState.setPageIndex(next.pageIndex).catch(reportActionError);
       if (!continuousActive) {
-        urlState.setPageSize(next.pageSize);
+        urlState.setPageSize(next.pageSize).catch(reportActionError);
       }
     },
     [pagination, urlState.setPageIndex, urlState.setPageSize, continuousActive]
@@ -102,7 +103,7 @@ function useMessagePaging(urlState: MessagesUrlState, continuousActive: boolean,
   const handleSortingChange = useCallback(
     (updater: Updater<SortingState>) => {
       const next = typeof updater === 'function' ? updater(urlState.sorting) : updater;
-      urlState.setSortingState(next);
+      urlState.setSortingState(next).catch(reportActionError);
     },
     [urlState.sorting, urlState.setSortingState]
   );
@@ -122,13 +123,16 @@ function useMessageSelection(
     (msg: TopicMessage) => {
       // Detail and view settings are distinct right-side surfaces — one at a time
       setViewSettingsOpen(false);
-      setSelectedKey(messageKey(msg));
+      setSelectedKey(messageKey(msg)).catch(reportActionError);
     },
     [setSelectedKey, setViewSettingsOpen]
   );
 
   const selectedMessage = useMemo(
-    () => (selectedKey ? (search.messages.find((m) => messageKey(m) === selectedKey) ?? null) : null),
+    () =>
+      selectedKey !== null && selectedKey !== undefined && selectedKey !== ''
+        ? (search.messages.find((m) => messageKey(m) === selectedKey) ?? null)
+        : null,
     [selectedKey, search.messages]
   );
 
@@ -180,7 +184,9 @@ function useMessageKeyboardNav({
   useKeyboardNav({
     visibleKeys,
     selectedKey: urlState.selectedKey,
-    onSelect: urlState.setSelectedKey,
+    onSelect: (key) => {
+      urlState.setSelectedKey(key).catch(reportActionError);
+    },
     getCopyText,
     enabled,
   });

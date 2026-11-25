@@ -63,7 +63,9 @@ export const RolesStep = () => {
   const roleSyncSupported = useSupportedFeaturesStore((s) => s.shadowLinkRoleSync);
 
   const handleModeChange = (mode: string) => {
-    setValue('rolesMode', mode as 'all' | 'specify');
+    if (mode === 'all' || mode === 'specify') {
+      setValue('rolesMode', mode);
+    }
 
     // Auto-expand when switching to specify mode
     if (mode === 'specify') {

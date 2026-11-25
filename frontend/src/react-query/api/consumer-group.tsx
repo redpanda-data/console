@@ -1,6 +1,10 @@
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
-import { config } from 'config';
-import type { GroupDescription } from 'state/rest-interfaces';
+
+import { config } from '../../runtime-config';
+import { parseOrUnwrap } from '../../state/backend-api';
+import type { GroupDescription } from '../../types/consumer-groups';
+import { arraySum } from '../../utils/array-utils';
+import { isNonEmptyString } from '../../utils/string-utils';
 
 export type GetConsumerGroupsResponse = {
   consumerGroups: GroupDescription[];
@@ -14,10 +18,14 @@ export type GetConsumerGroupsResponse = {
  * TODO: Remove once Console v3 is released.
  */
 // Enrich with the frontend-only fields (mirrors addFrontendFieldsForConsumerGroup in backend-api.ts).
-function addListTableFields(group: GroupDescription) {
-  group.lagSum = group.topicOffsets.sum((o) => o.summedLag);
-  group.isInUse = group.state.toLowerCase() !== 'empty';
-  if (group.allowedActions && !group.allowedActions.includes('all')) {
+function addListTableFields(data: GetConsumerGroupsResponse) {
+  const consumerGroups = data.consumerGroups ?? [];
+  for (const group of consumerGroups) {
+    group.lagSum = arraySum(group.topicOffsets, (o) => o.summedLag);
+    group.isInUse = group.state.toLowerCase() !== 'empty';
+    if (!(group.allowedActions && !group.allowedActions.includes('all'))) {
+      continue;
+    }
     group.noEditPerms = !group.allowedActions.includes('editConsumerGroup');
     group.noDeletePerms = !group.allowedActions.includes('deleteConsumerGroup');
   }
@@ -25,7 +33,7 @@ function addListTableFields(group: GroupDescription) {
 
 async function fetchConsumerGroupsFull(): Promise<GetConsumerGroupsResponse> {
   const headers: HeadersInit = {};
-  if (config.jwt) {
+  if (isNonEmptyString(config.jwt)) {
     headers.Authorization = `Bearer ${config.jwt}`;
   }
 
@@ -38,10 +46,8 @@ async function fetchConsumerGroupsFull(): Promise<GetConsumerGroupsResponse> {
     throw new Error(`Failed to fetch consumer groups: ${response.statusText}`);
   }
 
-  const data: GetConsumerGroupsResponse = await response.json();
-  for (const group of data.consumerGroups ?? []) {
-    addListTableFields(group);
-  }
+  const data = await parseOrUnwrap<GetConsumerGroupsResponse>(response, null, { throwOnInvalidJson: true });
+  addListTableFields(data);
 
   return data;
 }
@@ -54,6 +60,7 @@ export const useLegacyListConsumerGroupsFullQuery = (options?: { enabled?: boole
   });
 
   return {
+    // biome-ignore lint/nursery/noTanstackQueryRestDestructuring: Legacy callers require the full query result with a non-optional data object.
     ...result,
     data: {
       consumerGroups: result.data?.consumerGroups ?? [],

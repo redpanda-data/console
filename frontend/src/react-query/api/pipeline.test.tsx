@@ -22,6 +22,7 @@ import {
 import { connectQueryWrapper } from 'test-utils';
 
 import { toNameContainsFilter, useListPipelinesQuery } from './pipeline';
+import { isNonEmptyString } from '../../utils/string-utils';
 
 // Module scope: the hook memoizes its request on the input's identity.
 const NAME_FILTERED_INPUT = { pageSize: 100, filter: { includeDrafts: true, nameContains: 'Untitled pipeline' } };
@@ -35,7 +36,7 @@ describe('useListPipelinesQuery', () => {
       rpc(listPipelines, (req) =>
         create(ListPipelinesResponseSchema, {
           response: create(DataPlaneListPipelinesResponseSchema, {
-            pipelines: req.request?.filter?.nameContains
+            pipelines: isNonEmptyString(req.request?.filter?.nameContains)
               ? [create(PipelineSchema, { id: 'draft-1', displayName: 'Untitled pipeline' })]
               : [
                   create(PipelineSchema, { id: 'pipeline-1', displayName: 'Pipeline 1' }),
@@ -57,7 +58,7 @@ describe('useListPipelinesQuery', () => {
     await waitFor(() => expect(result.current.all.data.pipelines.length).toBeGreaterThan(0));
 
     // One entry, one result: the filtered caller never gets a view of its own, it replaces everyone's.
-    expect(result.current.filtered.data.pipelines).toEqual(result.current.all.data.pipelines);
+    expect(result.current.filtered.data.pipelines).toStrictEqual(result.current.all.data.pipelines);
   });
 
   test('fetches all pages and flattens pipelines into a single array', async () => {
@@ -103,7 +104,7 @@ describe('useListPipelinesQuery', () => {
     });
 
     expect(callCount).toBe(3);
-    expect(result.current.data.pipelines.map((p) => p.id)).toEqual(['pipeline-1', 'pipeline-2', 'pipeline-3']);
+    expect(result.current.data.pipelines.map((p) => p.id)).toStrictEqual(['pipeline-1', 'pipeline-2', 'pipeline-3']);
   });
 
   test('returns all data in a single page when no nextPageToken', async () => {
@@ -189,7 +190,7 @@ describe('useListPipelinesQuery', () => {
 
     // First page, then the one page that reveals the repeat — and no further.
     expect(callCount).toBe(2);
-    expect(result.current.data.pipelines.map((p) => p.id)).toEqual(['pipeline-1']);
+    expect(result.current.data.pipelines.map((p) => p.id)).toStrictEqual(['pipeline-1']);
   });
 
   test('stops draining on a token cycle, not just an immediate repeat', async () => {
@@ -221,7 +222,7 @@ describe('useListPipelinesQuery', () => {
 
     // Three calls: '' → token-a → token-b, whose token-a is already spent. The drain stops there.
     expect(callCount).toBe(3);
-    expect(result.current.data.pipelines.map((p) => p.id)).toEqual([
+    expect(result.current.data.pipelines.map((p) => p.id)).toStrictEqual([
       'pipeline-first',
       'pipeline-token-a',
       'pipeline-token-b',
@@ -261,7 +262,7 @@ describe('useListPipelinesQuery', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    expect(result.current.data.pipelines.map((p) => p.id)).toEqual([
+    expect(result.current.data.pipelines.map((p) => p.id)).toStrictEqual([
       'pipeline-1',
       'pipeline-2',
       'pipeline-4',

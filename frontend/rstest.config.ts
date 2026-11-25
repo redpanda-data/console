@@ -1,1 +1,5 @@
-export { default } from './rstest.config.integration';
+import { defineConfig } from '@rstest/core';
+
+import integrationConfig from './rstest.config.integration';
+
+export default defineConfig({ extends: integrationConfig });

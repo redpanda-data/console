@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import { cn } from 'components/redpanda-ui/lib/utils';
+import 'components/legacy-layout.css';
 import clsx from 'clsx';
 import { DownloadIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
@@ -27,8 +29,11 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import type { ComponentStyleVars } from 'components/style-vars';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import React, { useCallback } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { SaveMessagesDialog } from './dialogs/save-messages-dialog';
 import type { MessageSearchController, SetSearchState } from './hooks/use-message-search';
@@ -47,8 +52,10 @@ import { PreviewFieldsModal } from './modals/preview-fields-modal';
 import type { PayloadEncoding } from '../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import { createMessageSearch, type MessageSearchRequest } from '../../../../state/backend-api';
 import type { Topic, TopicMessage } from '../../../../state/rest-interfaces';
-import { PartitionOffsetOrigin } from '../../../../state/ui';
 import { uiState } from '../../../../state/ui-state';
+import { PartitionOffsetOrigin } from '../../../../types/topic-settings';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { isPresent } from '../../../../utils/type-guards';
 
 type LoadLargeMessageParams = {
   topicName: string;
@@ -86,7 +93,7 @@ async function loadLargeMessage({
   };
   const result = await search.startSearch(searchReq);
 
-  if (result && result.length === 1) {
+  if (isPresent(result) && result.length === 1) {
     // We must update the old message (that still says "payload too large")
     // So we just find its index and replace it in the array we are currently displaying
     setSearchState((prev) => {
@@ -149,18 +156,18 @@ function useMessagesTable({
       const newState = typeof updater === 'function' ? updater(paginationParams) : updater;
       uiState.topicSettings.searchParams.pageSize = newState.pageSize;
       if (continuousPaginationEnabled) {
-        setPageIndex(() => windowStartPage + newState.pageIndex);
+        setPageIndex(() => windowStartPage + newState.pageIndex).catch(reportActionError);
       } else {
-        setPageIndex(newState.pageIndex);
+        setPageIndex(newState.pageIndex).catch(reportActionError);
       }
-      setPageSize(newState.pageSize);
+      setPageSize(newState.pageSize).catch(reportActionError);
     },
     onSortingChange: (updater) => {
       if (continuousPaginationEnabled) {
         return;
       }
       const newSorting = typeof updater === 'function' ? updater(sorting) : updater;
-      setSortingState(newSorting);
+      setSortingState(newSorting).catch(reportActionError);
     },
     getRowCanExpand: () => true,
     autoResetPageIndex: false,
@@ -209,7 +216,15 @@ function MessagesTableRows({
     <React.Fragment key={row.id}>
       <TableRow>
         {row.getVisibleCells().map((cell) => (
-          <TableCell key={cell.id} style={{ width: cell.column.getSize() === 150 ? undefined : cell.column.getSize() }}>
+          <TableCell
+            className="console-variable-width"
+            key={cell.id}
+            style={
+              {
+                '--console-width': cell.column.getSize() === 150 ? undefined : `${cell.column.getSize()}px`,
+              } as ComponentStyleVars
+            }
+          >
             {<table.FlexRender cell={cell} />}
           </TableCell>
         ))}
@@ -244,7 +259,7 @@ function ContinuousPagination({
   const { pageIndex, setPageIndex, pageSize, setPageSize } = paging;
   const { localPageIndex, boundedLocalPageIndex, loadedPages, hasMoreData } = pageWindow;
   return (
-    <div className="flex items-center justify-end px-2 py-2">
+    <div className="flex items-center justify-end p-2">
       <div className="flex items-center space-x-6 lg:space-x-8">
         {/* Page counter */}
         <div className="flex w-[100px] items-center justify-center text-body font-medium">
@@ -259,7 +274,7 @@ function ContinuousPagination({
             onValueChange={(value) => {
               const newSize = Number(value);
               uiState.topicSettings.searchParams.pageSize = newSize;
-              setPageSize(newSize);
+              setPageSize(newSize).catch(reportActionError);
             }}
             value={`${pageSize}`}
           >
@@ -281,7 +296,7 @@ function ContinuousPagination({
           <Button
             className="hidden size-8 lg:flex"
             disabled={pageIndex === 0}
-            onClick={() => setPageIndex(0)}
+            onClick={asyncEvent(() => setPageIndex(0), reportActionError)}
             size="icon"
             variant="outline"
           >
@@ -292,7 +307,7 @@ function ContinuousPagination({
           <Button
             className="size-8"
             disabled={localPageIndex === 0}
-            onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
+            onClick={asyncEvent(() => setPageIndex(Math.max(0, pageIndex - 1)), reportActionError)}
             size="icon"
             variant="outline"
           >
@@ -303,7 +318,7 @@ function ContinuousPagination({
           <Button
             className="size-8"
             disabled={boundedLocalPageIndex >= loadedPages - 1 && !hasMoreData}
-            onClick={() => setPageIndex((prev) => (prev ?? 0) + 1)}
+            onClick={asyncEvent(() => setPageIndex((prev) => (prev ?? 0) + 1), reportActionError)}
             size="icon"
             variant="outline"
           >
@@ -329,10 +344,14 @@ function MessagesTableHeader({ table }: { table: MessagesTable }) {
         <TableRow key={headerGroup.id}>
           {headerGroup.headers.map((header) => (
             <TableHead
-              className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+              className={cn(header.column.getCanSort() ? 'cursor-pointer select-none' : '', 'console-variable-width')}
               key={header.id}
               onClick={header.column.getToggleSortingHandler()}
-              style={{ width: header.getSize() === 150 ? undefined : header.getSize() }}
+              style={
+                {
+                  '--console-width': header.getSize() === 150 ? undefined : `${header.getSize()}px`,
+                } as ComponentStyleVars
+              }
             >
               {header.isPlaceholder ? null : <table.FlexRender header={header} />}
               {header.column.getIsSorted() === 'asc' && ' ↑'}
@@ -357,7 +376,7 @@ function messageColumnsFor({ topic, query, settings, dialogs, continuousPaginati
     tsFormat: topicSettings?.previewTimestamps ?? 'default',
     keyDeserializer: query.keyDeserializer,
     valueDeserializer: query.valueDeserializer,
-    hasKeyTags: (topicSettings?.previewTags ?? []).filter((x) => x.isActive && x.searchInMessageKey).length > 0,
+    hasKeyTags: (topicSettings?.previewTags ?? []).some((x) => x.isActive && x.searchInMessageKey),
     previewDisplayMode: settings.previewDisplayMode,
     activePreviewTags: settings.activePreviewTags,
     isCompactTopic: topic.cleanupPolicy.includes('compact'),
@@ -466,7 +485,7 @@ export function MessagesResults({
           <span>
             Loaded messages {virtualStartIndex + 1}-{virtualStartIndex + messages.length}
             {` (pages ${windowStartPage + 1}–${windowStartPage + pageWindow.loadedPages} in memory)`}
-            {messageSearch?.nextPageToken ? ' · more available' : ''}
+            {isNonEmptyString(messageSearch?.nextPageToken) ? ' · more available' : ''}
           </span>
         </div>
       )}
@@ -500,7 +519,7 @@ export function MessagesResults({
         }}
         variant="outline"
       >
-        <span style={{ paddingRight: '4px' }}>
+        <span className="pe-1">
           <DownloadIcon />
         </span>
         Save Messages
@@ -529,10 +548,10 @@ export function MessagesResults({
         getShowDialog={() => dialogs.showDeserializersModal}
         keyDeserializer={query.keyDeserializer}
         schemaContext={query.schemaContext}
-        setKeyDeserializer={query.setKeyDeserializer}
-        setSchemaContext={query.setSchemaContext}
+        setKeyDeserializer={asyncEvent(query.setKeyDeserializer, reportActionError)}
+        setSchemaContext={asyncEvent(query.setSchemaContext, reportActionError)}
         setShowDialog={dialogs.setShowDeserializersModal}
-        setValueDeserializer={query.setValueDeserializer}
+        setValueDeserializer={asyncEvent(query.setValueDeserializer, reportActionError)}
         valueDeserializer={query.valueDeserializer}
       />
     </>

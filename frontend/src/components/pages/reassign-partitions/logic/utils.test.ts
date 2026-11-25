@@ -33,8 +33,21 @@ const makeTopic = (topicName: string, replicationFactor: number): Topic => ({
   allowedActions: undefined,
 });
 
-const makePartition = (id: number, replicas: number[]): Partition =>
-  ({ id, replicas, leader: replicas[0], partitionLogDirs: [], replicaSize: 10 }) as unknown as Partition;
+const makePartition = (id: number, replicas: number[]): Partition => ({
+  id,
+  replicas,
+  leader: replicas[0],
+  partitionLogDirs: [],
+  replicaSize: 10,
+  partitionError: null,
+  offlineReplicas: [],
+  inSyncReplicas: replicas,
+  waterMarksError: null,
+  waterMarkLow: 0,
+  waterMarkHigh: 0,
+  topicName: '',
+  hasErrors: false,
+});
 
 const brokers = [0, 1, 2, 3].map(makeBroker);
 const alpha = makeTopic('alpha', 2);
@@ -48,12 +61,12 @@ const topicPartitions = new Map<string, Partition[] | null>([
   ['hidden', null],
 ]);
 
-// Fresh objects: the clone inside removeRedundantReassignments serializes a repeated object only once.
+// Fresh objects keep mutations isolated between cases.
 const brokersById = (ids: number[]) => ids.map((id) => makeBroker(id));
 
 describe('partitionSelectionToTopicPartitions', () => {
   test('resolves the selected partition ids of each topic', () => {
-    expect(partitionSelectionToTopicPartitions({ alpha: [0, 2] }, topicPartitions, [alpha, beta])).toEqual([
+    expect(partitionSelectionToTopicPartitions({ alpha: [0, 2] }, topicPartitions, [alpha, beta])).toStrictEqual([
       { topic: alpha, partitions: [alphaPartitions[0], alphaPartitions[2]] },
     ]);
   });
@@ -101,7 +114,7 @@ describe('computeMovedReplicas', () => {
           })
         ),
       }))
-    ).toEqual([
+    ).toStrictEqual([
       {
         topicName: 'alpha',
         moves: [
@@ -154,7 +167,7 @@ describe('computeMovedReplicas', () => {
     expect(result).toHaveLength(1);
     expect(result[0].topic).toBe(alpha);
     expect(result[0].allPartitions).toBe(alphaPartitions);
-    expect(result[0].selectedPartitions).toEqual([
+    expect(result[0].selectedPartitions).toStrictEqual([
       {
         ...alphaPartitions[1],
         brokersBefore: [0, 1],
@@ -172,8 +185,28 @@ describe('removeRedundantReassignments', () => {
   const apiData: ApiData = {
     brokers,
     topics: [alpha, beta],
-    topicPartitions: topicPartitions as Map<string, Partition[]>,
+    topicPartitions: new Map([
+      ['alpha', alphaPartitions],
+      ['beta', betaPartitions],
+    ]),
   };
+
+  test('snapshots shared broker objects without losing repeated assignments', () => {
+    const sharedBroker = brokers[2];
+    const assignments: TopicAssignments = {
+      alpha: {
+        0: { partition: alphaPartitions[0], brokers: [sharedBroker] },
+        1: { partition: alphaPartitions[1], brokers: [sharedBroker] },
+      },
+    };
+    const result = removeRedundantReassignments(assignments, apiData);
+    expect(result.alpha[0].brokers[0].brokerId).toBe(2);
+    expect(result.alpha[1].brokers[0].brokerId).toBe(2);
+    expect(result.alpha[0].brokers[0]).not.toBe(sharedBroker);
+    expect(result.alpha[0].brokers[0]).toBe(result.alpha[1].brokers[0]);
+    result.alpha[0].brokers[0].address = 'changed';
+    expect(sharedBroker.address).toBe('broker-2');
+  });
 
   test('drops partitions that keep their replicas, and topics left without any', () => {
     const assignments: TopicAssignments = {
@@ -189,11 +222,11 @@ describe('removeRedundantReassignments', () => {
 
     const result = removeRedundantReassignments(assignments, apiData);
 
-    expect(Object.keys(result)).toEqual(['alpha']);
-    expect(Object.keys(result.alpha)).toEqual(['1', '2']);
-    expect(result.alpha[1].brokers.map((b) => b.brokerId)).toEqual([2, 3]);
+    expect(Object.keys(result)).toStrictEqual(['alpha']);
+    expect(Object.keys(result.alpha)).toStrictEqual(['1', '2']);
+    expect(result.alpha[1].brokers.map((b) => b.brokerId)).toStrictEqual([2, 3]);
     // The input is left untouched.
-    expect(Object.keys(assignments.alpha)).toEqual(['0', '1', '2']);
+    expect(Object.keys(assignments.alpha)).toStrictEqual(['0', '1', '2']);
   });
 
   test('keeps a reassignment that changes the replica count', () => {
@@ -201,6 +234,6 @@ describe('removeRedundantReassignments', () => {
       alpha: { 0: { partition: alphaPartitions[0], brokers: brokersById([0, 1, 2]) } },
     };
 
-    expect(Object.keys(removeRedundantReassignments(assignments, apiData).alpha)).toEqual(['0']);
+    expect(Object.keys(removeRedundantReassignments(assignments, apiData).alpha)).toStrictEqual(['0']);
   });
 });

@@ -81,7 +81,7 @@ export const DeleteShadowLinkDialog = ({
           <AlertDialogAction
             disabled={!isDeleteConfirmed || isLoading}
             onClick={handleConfirm}
-            render={<Button variant="destructive">{isLoading ? 'Deleting...' : 'Delete'}</Button>}
+            render={<Button variant="destructive">{isLoading === true ? 'Deleting...' : 'Delete'}</Button>}
           />
         </AlertDialogFooter>
       </AlertDialogContent>

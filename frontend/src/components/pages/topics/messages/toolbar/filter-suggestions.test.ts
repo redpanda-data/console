@@ -50,7 +50,7 @@ describe('buildSuggestions', () => {
   describe('default view', () => {
     test('default view groups filters and fields', () => {
       const result = buildSuggestions(input({}));
-      expect(itemLabels(result)).toEqual(['partition:', 'js:', 'value:', 'key:', 'offset:']);
+      expect(itemLabels(result)).toStrictEqual(['partition:', 'js:', 'value:', 'key:', 'offset:']);
     });
 
     test('recents appear first when present', () => {
@@ -73,7 +73,7 @@ describe('buildSuggestions', () => {
       const result = buildSuggestions(input({ query: 'js: value.type === "ORDER"' }));
       expect(result.heading).toBe('JavaScript');
       const item = result.items.find((i) => i.kind === 'item');
-      expect(item?.action).toEqual({ type: 'open-js', code: 'value.type === "ORDER"' });
+      expect(item?.action).toStrictEqual({ type: 'open-js', code: 'value.type === "ORDER"' });
     });
   });
 
@@ -115,14 +115,14 @@ describe('buildSuggestions', () => {
   describe('typed tokens', () => {
     test('pending offset with typed value offers comparisons', () => {
       const result = buildSuggestions(input({ pendingField: 'offset', query: '2' }));
-      expect(itemLabels(result)).toEqual(['offset > 2', 'offset < 2', 'offset = 2']);
+      expect(itemLabels(result)).toStrictEqual(['offset > 2', 'offset < 2', 'offset = 2']);
     });
 
     test('a completed offset:N/offset>N/offset<N word offers all three comparison alternatives', () => {
       // pendingField is always null in the free-text bar — this is the reachable path
       for (const query of ['offset:2', 'offset>2', 'offset<2', 'offset=2']) {
         const result = buildSuggestions(input({ query }));
-        expect(itemLabels(result)).toEqual(['offset > 2', 'offset < 2', 'offset = 2']);
+        expect(itemLabels(result)).toStrictEqual(['offset > 2', 'offset < 2', 'offset = 2']);
       }
     });
 
@@ -136,7 +136,7 @@ describe('buildSuggestions', () => {
       const result = buildSuggestions(input({ query: 'partition:1' }));
       const item = result.items.find((i) => i.kind === 'item');
       expect(item).toMatchObject({ label: 'partition:1', sub: '1 msg' });
-      expect(item?.kind === 'item' && item.action).toEqual({
+      expect(item?.kind === 'item' && item.action).toStrictEqual({
         type: 'commit-field',
         field: 'partition',
         op: 'eq',
@@ -150,7 +150,7 @@ describe('computeGhost', () => {
   test('completes field names with a trailing colon', () => {
     const ghost = computeGhost(input({ query: 'par' }));
     expect(ghost?.rest).toBe('tition:');
-    expect(ghost?.action).toEqual({ type: 'set-pending', field: 'partition' });
+    expect(ghost?.action).toStrictEqual({ type: 'set-pending', field: 'partition' });
   });
 
   test('completes pending values toward the most common match', () => {

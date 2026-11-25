@@ -3,5 +3,6 @@
   "exclude": ["node_modules"],
   "compilerOptions": {
     "strictNullChecks": true
-  }
+  },
+  "include": ["src", "*.ts", "*.mjs", "scripts", "tests", "lint-rules"]
 }

@@ -3,10 +3,13 @@
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { NuqsTestingAdapter, type OnUrlUpdateFunction } from 'nuqs/adapters/testing';
+import { appGlobal } from 'state/app-global';
+import { api } from 'state/backend-api';
 import type { GetTopicsResponse, Topic } from 'state/rest-interfaces';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { reportActionError } from 'utils/toast.utils';
 
-import TopicList from './topic-list-new';
+import { TopicList } from './topic-list-new';
+import { renderWithFileRoutes, screen, waitFor } from '../../../test-utils';
 
 let response: GetTopicsResponse = { topics: [] };
 let isLoading = false;
@@ -26,10 +29,15 @@ rs.mock('state/backend-api', () => {
     api: {
       ...actual.api,
       refreshCluster: rs.fn(),
-      refreshClusterOverview: rs.fn(),
+      refreshClusterOverview: rs.fn().mockResolvedValue(undefined),
       refreshClusterHealth: rs.fn().mockResolvedValue(undefined),
     },
   };
+});
+
+rs.mock('utils/toast.utils', () => {
+  const actual = rs.requireActual<typeof import('utils/toast.utils')>('utils/toast.utils');
+  return { ...actual, reportActionError: rs.fn() };
 });
 
 const TOPIC_LINK_NAME = /^orders-/;
@@ -135,5 +143,28 @@ describe('the TopicList pagination', () => {
 
     await waitFor(() => expect(screen.getByRole('link', { name: 'orders-0' })).toBeInTheDocument());
     expect(screen.getByTestId('search-field-input')).toHaveValue('');
+  });
+});
+
+describe('the TopicList refresh', () => {
+  beforeEach(() => {
+    response = { topics: topics(1) };
+    isLoading = false;
+    rs.mocked(reportActionError).mockClear();
+  });
+
+  test('a cluster without the debug-bundle endpoint refreshes without an error toast', async () => {
+    renderList(0);
+    await waitFor(() => expect(screen.getByRole('link', { name: 'orders-0' })).toBeInTheDocument());
+    const unsupported = Promise.reject(new Error('unimplemented: DebugBundleService.GetClusterHealth'));
+    rs.mocked(api.refreshClusterHealth).mockReturnValueOnce(unsupported);
+
+    await appGlobal.onRefresh();
+    await unsupported.catch(() => {
+      // Settles after the component's own rejection handler has run.
+    });
+
+    expect(api.refreshClusterHealth).toHaveBeenCalledWith();
+    expect(reportActionError).not.toHaveBeenCalled();
   });
 });

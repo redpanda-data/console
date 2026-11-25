@@ -70,9 +70,9 @@ test('peerFenceRetry tries once more, except after a timeout', () => {
 });
 
 test('a read that keeps failing says why only when there is no controller leader', () => {
-  expect(unreadablePeerFence(noLeader)).toEqual({ status: 'unavailable', reason: 'no-leader' });
-  expect(unreadablePeerFence(timeout)).toEqual({ status: 'unavailable', reason: 'error' });
-  expect(unreadablePeerFence(new ConnectError('boom', Code.Internal))).toEqual({
+  expect(unreadablePeerFence(noLeader)).toStrictEqual({ status: 'unavailable', reason: 'no-leader' });
+  expect(unreadablePeerFence(timeout)).toStrictEqual({ status: 'unavailable', reason: 'error' });
+  expect(unreadablePeerFence(new ConnectError('boom', Code.Internal))).toStrictEqual({
     status: 'unavailable',
     reason: 'error',
   });

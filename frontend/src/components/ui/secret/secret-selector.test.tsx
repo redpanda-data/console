@@ -9,9 +9,9 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test, rs } from '@rstest/core';
 
 import { SecretSelector, type SecretSelectorCustomText } from './secret-selector';
 
@@ -43,10 +43,17 @@ const defaultProps = {
   availableSecrets,
   scopes: [],
   customText,
-} as const;
+};
 
-describe('SecretSelector', () => {
-  test('displays secret name when value is in template format "${secrets.NAME}"', () => {
+async function submitNewSecret(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /create secret/i }));
+  await user.type(screen.getByLabelText(/secret name/i), 'MY_NEW_SECRET');
+  await user.type(screen.getByLabelText(/secret value/i), 'sk-test-value-that-is-long-enough');
+  await user.click(screen.getByRole('button', { name: /^create secret$/i }));
+}
+
+describe('secret selector', () => {
+  test(`displays secret name when value is in template format "\${secrets.NAME}"`, () => {
     render(<SecretSelector {...defaultProps} value="${secrets.CLIENT_KEY}" />);
 
     // The trigger should show the secret name, not the raw template string
@@ -74,22 +81,10 @@ describe('SecretSelector', () => {
     const onChange = rs.fn();
 
     const { rerender } = render(
-      <SecretSelector {...defaultProps} availableSecrets={[]} onChange={onChange} value="" />,
+      <SecretSelector {...defaultProps} availableSecrets={[]} onChange={onChange} value="" />
     );
 
-    // Empty state should show "Create secret" button
-    const createButton = screen.getByRole('button', { name: /create secret/i });
-    await user.click(createButton);
-
-    // Fill in the dialog form
-    const nameInput = screen.getByLabelText(/secret name/i);
-    const valueInput = screen.getByLabelText(/secret value/i);
-    await user.type(nameInput, 'MY_NEW_SECRET');
-    await user.type(valueInput, 'sk-test-value-that-is-long-enough');
-
-    // Submit the form
-    const submitButton = screen.getByRole('button', { name: /^create secret$/i });
-    await user.click(submitButton);
+    await submitNewSecret(user);
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith('MY_NEW_SECRET');
@@ -102,7 +97,7 @@ describe('SecretSelector', () => {
         availableSecrets={[{ id: 'MY_NEW_SECRET', name: 'MY_NEW_SECRET' }]}
         onChange={onChange}
         value="MY_NEW_SECRET"
-      />,
+      />
     );
 
     // The newly created secret should be selected and displayed

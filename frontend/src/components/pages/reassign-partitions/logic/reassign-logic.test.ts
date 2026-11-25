@@ -10,7 +10,7 @@
  */
 
 import { type ApiData, computeReassignments, type TopicAssignments, type TopicPartitions } from './reassign-logic';
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, type Mock, spyOn, test } from 'bun:test';
 import type { Broker, Partition, Topic } from '../../../../state/rest-interfaces';
 
 const makeBroker = (brokerId: number, rack: string): Broker => ({
@@ -32,20 +32,21 @@ const makeTopic = (topicName: string, partitionCount: number, replicationFactor:
   allowedActions: undefined,
 });
 
-const makePartition = (id: number, replicas: number[], replicaSize: number): Partition =>
-  ({
-    id,
-    partitionError: null,
-    replicas,
-    offlineReplicas: null,
-    inSyncReplicas: replicas,
-    leader: replicas[0],
-    partitionLogDirs: replicas.map((brokerId) => ({ error: '', brokerId, partitionId: id, size: replicaSize })),
-    waterMarksError: null,
-    waterMarkLow: 0,
-    waterMarkHigh: 100,
-    replicaSize,
-  }) as Partition;
+const makePartition = (id: number, replicas: number[], replicaSize: number): Partition => ({
+  id,
+  partitionError: null,
+  replicas,
+  offlineReplicas: null,
+  inSyncReplicas: replicas,
+  leader: replicas[0],
+  partitionLogDirs: replicas.map((brokerId) => ({ error: '', brokerId, partitionId: id, size: replicaSize })),
+  waterMarksError: null,
+  waterMarkLow: 0,
+  waterMarkHigh: 100,
+  replicaSize,
+  topicName: '',
+  hasErrors: false,
+});
 
 // Four brokers in two racks. Every replica of `alpha` sits in rack a, `beta` spans both racks.
 const brokers = [makeBroker(0, 'a'), makeBroker(1, 'a'), makeBroker(2, 'b'), makeBroker(3, 'b')];
@@ -76,9 +77,9 @@ const replicaIds = (assignments: TopicAssignments) =>
   );
 
 describe('computeReassignments', () => {
-  let debug: ReturnType<typeof spyOn>;
-  let error: ReturnType<typeof spyOn>;
-  let table: ReturnType<typeof spyOn>;
+  let debug: Mock<typeof console.debug>;
+  let error: Mock<typeof console.error>;
+  let table: Mock<typeof console.table>;
 
   beforeEach(() => {
     debug = spyOn(console, 'debug').mockImplementation(() => undefined);
@@ -99,7 +100,7 @@ describe('computeReassignments', () => {
       brokers
     );
 
-    expect(replicaIds(result)).toEqual(EXPECTED_ALL_BROKERS);
+    expect(replicaIds(result)).toStrictEqual(EXPECTED_ALL_BROKERS);
     expect(error).not.toHaveBeenCalled();
     // Two balancing rounds: the second swaps leaders without lowering the skew, which ends the loop.
     expect(debug).toHaveBeenCalledWith('leader skew in cluster', {
@@ -115,7 +116,7 @@ describe('computeReassignments', () => {
   test('moves every replica onto the selected target brokers', () => {
     const result = computeReassignments(apiData, [select(alpha, alphaPartitions)], [brokers[2], brokers[3]]);
 
-    expect(replicaIds(result)).toEqual(EXPECTED_RACK_B);
+    expect(replicaIds(result)).toStrictEqual(EXPECTED_RACK_B);
     // Rack b alone now hosts every replica, so losing it takes each partition offline.
     expect(error).toHaveBeenCalledWith('Issues in topic "alpha" (RF: 2) (4 issues).');
     expect(table).toHaveBeenCalledWith(

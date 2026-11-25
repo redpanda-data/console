@@ -16,7 +16,7 @@ import { render, screen } from 'test-utils';
 
 import { StopConditionEditor, StopConditionSection } from './stop-condition';
 import type { InputEndBehavior } from '../utils/input-end-behavior';
-import type { StopSlot } from '../utils/pipeline-flow-parser';
+import type { StopSlot } from '../utils/pipeline-flow-nodes';
 
 const continuous: InputEndBehavior = {
   kind: 'continuous',
@@ -68,7 +68,7 @@ describe('the StopConditionEditor', () => {
 
     await replaceLimit(user, '500{enter}');
     expect(onApply).toHaveBeenCalledWith({ messageLimit: 500 });
-    expect(onClose).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledWith();
   });
 
   test('keeps a multi-line check, and applies on Cmd+Enter', async () => {

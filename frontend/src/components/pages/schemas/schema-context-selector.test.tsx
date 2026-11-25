@@ -12,27 +12,28 @@
 import { beforeAll, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { TooltipProvider } from 'components/redpanda-ui/components/tooltip';
-import { render, screen } from 'test-utils';
 
 import { SchemaContextSelector } from './schema-context-selector';
 import { ALL_CONTEXT_ID, DEFAULT_CONTEXT_ID, type DerivedContext } from './schema-context-utils';
+import { render, screen } from '../../../test-utils';
+import { isPresent } from '../../../utils/type-guards';
 
 // Happy DOM polyfills needed by Radix Popover + cmdk
 global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe = () => undefined;
+  unobserve = () => undefined;
+  disconnect = () => undefined;
 };
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = rs.fn();
-  if (!HTMLElement.prototype.hasPointerCapture) {
+  if (!isPresent(HTMLElement.prototype.hasPointerCapture)) {
     HTMLElement.prototype.hasPointerCapture = () => false;
   }
-  if (!HTMLElement.prototype.setPointerCapture) {
+  if (!isPresent(HTMLElement.prototype.setPointerCapture)) {
     HTMLElement.prototype.setPointerCapture = () => undefined;
   }
-  if (!HTMLElement.prototype.releasePointerCapture) {
+  if (!isPresent(HTMLElement.prototype.releasePointerCapture)) {
     HTMLElement.prototype.releasePointerCapture = () => undefined;
   }
 });

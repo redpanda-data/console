@@ -9,6 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
+import type { ComponentStyleVars } from 'components/style-vars';
+import 'components/legacy-layout.css';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -42,6 +44,7 @@ import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 
 
 import { CAT_LIMIT, namespaceTables } from './catalog-tree-tables';
 import type { Catalog, CatalogEngine, Namespace, SqlRole, TableRef } from './sql-types';
+import { isPresent } from '../../../utils/type-guards';
 import { TonedIcon } from '../shared/toned-icon';
 
 export type CatalogTreeProps = {
@@ -138,7 +141,7 @@ type TreeNav = {
 };
 
 function findTreeNav(e: KeyboardEvent<HTMLDivElement>): TreeNav | null {
-  const current = (e.target as HTMLElement).closest<HTMLButtonElement>('[role="treeitem"]');
+  const current = e.target instanceof HTMLElement ? e.target.closest<HTMLButtonElement>('[role="treeitem"]') : null;
   if (!current) {
     return null;
   }
@@ -218,17 +221,15 @@ function FieldRows({
         const isOpen = Boolean(open[path]);
         const FieldChevron = isOpen ? ChevronDown : ChevronRight;
         const rowClass = 'flex w-full items-center gap-1.5 px-2 py-0.75 text-foreground text-body-sm';
-        const indent = { paddingLeft: `${depth * 12}px` };
+        const indent: ComponentStyleVars = { '--console-tree-indent': `${depth * 12}px` };
         const body = (
           <>
             {hasNested ? (
               <TonedIcon className="shrink-0" icon={FieldChevron} size={11} tone="disabled" />
             ) : (
-              <span aria-hidden="true" className="shrink-0" style={{ width: '11px' }} />
+              <span aria-hidden="true" className={cn('shrink-0', 'w-[11px]')} />
             )}
-            <span className="min-w-0 flex-1 overflow-hidden text-left font-mono text-ellipsis whitespace-nowrap">
-              {field.name}
-            </span>
+            <span className="min-w-0 flex-1 truncate text-left font-mono">{field.name}</span>
             <span className="shrink-0 font-mono text-2xs tracking-wide whitespace-nowrap text-muted-foreground uppercase">
               {field.type}
             </span>
@@ -237,17 +238,19 @@ function FieldRows({
         return (
           <Fragment key={path}>
             {hasNested ? (
-              <button
+              <Button
                 aria-expanded={isOpen}
+                // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                 className={cn(rowClass, 'cursor-pointer border-0 bg-transparent')}
                 onClick={() => toggle(path)}
                 style={indent}
                 type="button"
+                variant="unstyled"
               >
                 {body}
-              </button>
+              </Button>
             ) : (
-              <div className={rowClass} style={indent}>
+              <div className={cn(rowClass, 'console-sql-tree-item')} style={indent}>
                 {body}
               </div>
             )}
@@ -270,7 +273,7 @@ function ColumnList({ catalogName, tableName }: ColumnListProps) {
   let content: ReactNode;
   if (isLoading) {
     content = <LoadingRow label="Loading columns…" />;
-  } else if (data?.columns?.length) {
+  } else if (isPresent(data?.columns) && data?.columns.length > 0) {
     content = <FieldRows depth={0} fields={data.columns} open={open} pathPrefix="" toggle={toggle} />;
   } else {
     content = <EmptyNote>No columns</EmptyNote>;
@@ -307,10 +310,7 @@ function TableRow({ catalog, table }: TableRowProps) {
 
   // The table icon picks up the Iceberg blue when the table is Iceberg-backed or
   // tiered, the disabled grey when locked, else the action-primary accent.
-  const tableIcoClass = cn('shrink-0 text-action-primary', {
-    'text-informative': (isIceberg || tiered) && allowed,
-    'text-disabled': !allowed,
-  });
+  const tableIcoClass = tableIconClass(isIceberg, tiered, allowed);
 
   return (
     <div>
@@ -320,10 +320,11 @@ function TableRow({ catalog, table }: TableRowProps) {
         data-locked={!allowed || undefined}
         data-tiered={tiered || undefined}
       >
-        <button
+        <Button
           aria-expanded={allowed ? isOpen : undefined}
           aria-level={3}
           aria-selected={isActive}
+          // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
           className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans text-body text-strong disabled:cursor-default disabled:text-disabled"
           data-tree-id={table.id}
           disabled={!allowed}
@@ -331,22 +332,14 @@ function TableRow({ catalog, table }: TableRowProps) {
           role="treeitem"
           tabIndex={rowTabIndex(table.id)}
           type="button"
+          variant="unstyled"
         >
           <TonedIcon className="shrink-0" icon={Chevron} size={13} tone="disabled" />
           <LucideTable className={tableIcoClass} size={13} />
           <span className={LABEL}>{table.name}</span>
-          {isIceberg || tiered ? (
-            <Badge
-              size="sm"
-              title={tiered ? 'Iceberg-tiered · bridge queried' : undefined}
-              tone="informative"
-              variant="subtle"
-            >
-              Iceberg
-            </Badge>
-          ) : null}
+          <TableStorageBadge isIceberg={isIceberg} tiered={tiered} />
           {allowed ? null : <TonedIcon className="ml-0.5" icon={Lock} size={12} tone="disabled" />}
-        </button>
+        </Button>
         {allowed ? (
           <span className="flex shrink-0 opacity-0 group-hover:opacity-100 has-[:focus-visible]:opacity-100">
             <ElementTooltip content="Query this table">
@@ -393,26 +386,28 @@ function NamespaceNode({ catalog, namespace, fetchedTables, isLoading }: Namespa
     return null;
   }
 
-  const showAddTopic = role === 'admin' && catalog.engine === 'redpanda' && !searching && Boolean(onAddTable);
+  const showAddTopic = canAddTopic(role, catalog.engine, searching, onAddTable);
 
   const NsChevron = isOpen ? ChevronDown : ChevronRight;
 
   return (
     <div className="ml-2.5">
-      <button
+      <Button
         aria-expanded={isOpen}
         aria-level={2}
+        // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
         className={cn(ROW_BASE, 'font-medium text-foreground')}
         data-tree-id={namespace.id}
         onClick={() => toggle(namespace.id)}
         role="treeitem"
         tabIndex={rowTabIndex(namespace.id)}
         type="button"
+        variant="unstyled"
       >
         <TonedIcon className="shrink-0" icon={NsChevron} size={14} tone="disabled" />
         <TonedIcon icon={GitBranch} size={13} tone="muted" />
         <span className={LABEL}>{namespace.name}</span>
-      </button>
+      </Button>
       {isOpen ? (
         // biome-ignore lint/a11y/useSemanticElements: WAI-ARIA trees use role="group" for nested tree item containers.
         <div className="ml-2.5" role="group">
@@ -471,20 +466,22 @@ function CatalogNode({ catalog }: { catalog: Catalog }) {
   return (
     <div>
       <div className="group flex w-full items-center rounded pr-1">
-        <button
+        <Button
           aria-expanded={isCatalogOpen}
           aria-level={1}
+          // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
           className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 border-0 bg-transparent px-2 py-1.5 font-sans text-body font-semibold text-strong"
           data-tree-id={catalog.name}
           onClick={() => toggle(catalog.name)}
           role="treeitem"
           tabIndex={rowTabIndex(catalog.name)}
           type="button"
+          variant="unstyled"
         >
           <TonedIcon className="shrink-0" icon={CatChevron} size={14} tone="disabled" />
           {engineMark(catalog.engine)}
           <span className={LABEL}>{catalog.displayLabel || catalog.name}</span>
-        </button>
+        </Button>
         {showAdd ? (
           <span className="flex shrink-0 opacity-0 group-hover:opacity-100 has-[:focus-visible]:opacity-100">
             <ElementTooltip content="Add a topic to this catalog">
@@ -559,7 +556,7 @@ export function CatalogTree({
   // and re-entry return to that row rather than the first one.
   const handleTreeFocus = (e: FocusEvent<HTMLDivElement>) => {
     const id = e.target.closest<HTMLElement>('[role="treeitem"]')?.getAttribute('data-tree-id');
-    if (id && id !== activeRowId) {
+    if (id !== null && id !== undefined && id !== '' && id !== activeRowId) {
       setActiveRowId(id);
     }
   };
@@ -600,8 +597,8 @@ export function CatalogTree({
           onKeyDown={handleTreeKeyDown}
           role="tree"
         >
-          {isLoading && catalogs.length === 0 ? <LoadingRow label="Loading catalogs…" /> : null}
-          {!isLoading && catalogs.length === 0 ? <EmptyNote>No catalogs</EmptyNote> : null}
+          {isLoading === true && catalogs.length === 0 ? <LoadingRow label="Loading catalogs…" /> : null}
+          {!(isLoading === true) && catalogs.length === 0 ? <EmptyNote>No catalogs</EmptyNote> : null}
           {catalogs.map((catalog) => (
             <CatalogNode catalog={catalog} key={catalog.name} />
           ))}
@@ -609,4 +606,36 @@ export function CatalogTree({
       </CatalogTreeContext.Provider>
     </div>
   );
+}
+
+function tableIconClass(iceberg: boolean, tiered: boolean, allowed: boolean): string {
+  return cn('shrink-0 text-action-primary', {
+    'text-informative': (iceberg || tiered) && allowed,
+    'text-disabled': !allowed,
+  });
+}
+function TableStorageBadge({ isIceberg, tiered }: { isIceberg: boolean; tiered: boolean }) {
+  return (
+    <>
+      {' '}
+      {isIceberg || tiered ? (
+        <Badge
+          size="sm"
+          title={tiered ? 'Iceberg-tiered · bridge queried' : undefined}
+          tone="informative"
+          variant="subtle"
+        >
+          Iceberg
+        </Badge>
+      ) : null}
+    </>
+  );
+}
+function canAddTopic(
+  role: CatalogTreeContextValue['role'],
+  engine: Catalog['engine'],
+  searching: boolean,
+  onAddTable: (() => void) | undefined
+): boolean {
+  return role === 'admin' && engine === 'redpanda' && !searching && onAddTable !== undefined;
 }

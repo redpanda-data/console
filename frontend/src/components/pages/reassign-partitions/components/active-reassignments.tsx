@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import 'components/legacy-layout.css';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import { DataTable } from 'components/redpanda-ui/components/data-table';
@@ -25,16 +26,18 @@ import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from 'component
 import { Progress } from 'components/redpanda-ui/components/progress';
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
 import React, { Component, type FC, type JSX, useRef, useState } from 'react';
-import { showToast, updateToast } from 'utils/toast.utils';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError, showToast, updateToast } from 'utils/toast.utils';
 
 import { BandwidthSlider } from './bandwidth-slider';
 import { api } from '../../../../state/backend-api';
-import type { ConfigEntry } from '../../../../state/rest-interfaces';
+import { arrayDistinct, arrayExcept, arrayFilterNull, arrayFirst } from '../../../../utils/array-utils';
+import { clampNumber } from '../../../../utils/number-utils';
 import { quickTable } from '../../../../utils/tsx-utils';
 import { prettyBytesOrNA, prettyMilliseconds } from '../../../../utils/utils';
 import { BrokerList } from '../../../misc/broker-list';
 import type { ReassignmentState } from '../logic/reassignment-tracker';
-import { reassignmentTracker } from '../reassign-partitions';
+import { reassignmentTracker } from '../logic/tracker-instance';
 
 export class ActiveReassignments extends Component<{
   throttledTopics: string[];
@@ -56,17 +59,20 @@ export class ActiveReassignments extends Component<{
   }
 
   render() {
-    const leaderThrottle = [...api.brokerConfigs.values()]
-      .filter((c) => typeof c !== 'string')
-      .flatMap((c) => c as ConfigEntry[])
-      .filter((c) => c !== undefined)
-      .first((e) => e.name === 'leader.replication.throttled.rate');
-    const followerThrottle = [...api.brokerConfigs.values()]
-      .filter((c) => typeof c !== 'string')
-      .flatMap((c) => c as ConfigEntry[])
-      .filter((c) => c !== undefined)
-      .first((e) => e.name === 'follower.replication.throttled.rate');
-
+    const leaderThrottle = arrayFirst(
+      [...api.brokerConfigs.values()]
+        .filter((c) => typeof c !== 'string')
+        .flat()
+        .filter((c) => c !== undefined),
+      (e) => e.name === 'leader.replication.throttled.rate'
+    );
+    const followerThrottle = arrayFirst(
+      [...api.brokerConfigs.values()]
+        .filter((c) => typeof c !== 'string')
+        .flat()
+        .filter((c) => c !== undefined),
+      (e) => e.name === 'follower.replication.throttled.rate'
+    );
     const throttleSettings = {
       leaderThrottle: leaderThrottle ? Number(leaderThrottle.value) : undefined,
       followerThrottle: followerThrottle ? Number(followerThrottle.value) : undefined,
@@ -272,8 +278,9 @@ export const ThrottleDialog: FC<{
     </Dialog>
   );
 };
-
-const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) => {
+const CancelReassignmentButton: FC<{
+  onConfirm: () => void;
+}> = ({ onConfirm }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -296,14 +303,18 @@ const CancelReassignmentButton: FC<{ onConfirm: () => void }> = ({ onConfirm }) 
     </Popover>
   );
 };
-
-export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentState | null; onClose: () => void }> {
+export class ReassignmentDetailsDialog extends Component<{
+  state: ReassignmentState | null;
+  onClose: () => void;
+}> {
   lastState: ReassignmentState | null;
   wasVisible = false;
 
   state = { shouldThrottle: false };
-
-  constructor(p: { state: ReassignmentState | null; onClose: () => void }) {
+  constructor(p: {
+    state: ReassignmentState | null;
+    onClose: () => void;
+  }) {
     super(p);
   }
 
@@ -347,10 +358,10 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
             </Button>
             <Button
               disabled={!topicConfig}
-              onClick={() => {
-                this.applyBandwidthThrottle();
+              onClick={asyncEvent(async () => {
+                await this.applyBandwidthThrottle();
                 this.props.onClose();
-              }}
+              }, reportActionError)}
               variant="primary"
             >
               Apply &amp; Close
@@ -370,11 +381,13 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     if (this.wasVisible !== visible) {
       // became visible or invisible
       // force update of topic config, so isThrottle has up to date information
-      setTimeout(async () => {
-        api.topicConfig.delete(state.topicName);
-        await api.refreshTopicConfig(state.topicName, true);
-        this.setState({ shouldThrottle: this.isThrottled() });
-      });
+      setTimeout(
+        asyncEvent(async () => {
+          api.topicConfig.delete(state.topicName);
+          await api.refreshTopicConfig(state.topicName, true);
+          this.setState({ shouldThrottle: this.isThrottled() });
+        }, reportActionError)
+      );
     }
     this.wasVisible = visible;
   }
@@ -383,17 +396,16 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     const topicConfig = api.topicConfig.get(topicName);
     if (!topicConfig) {
       setTimeout(() => {
-        api.refreshTopicConfig(topicName);
+        api.refreshTopicConfig(topicName).catch(reportActionError);
       });
     }
     return topicConfig;
   }
 
   renderDetails(state: ReassignmentState) {
-    const replicas = state.partitions.flatMap((p) => p.replicas).distinct();
-    const addingReplicas = state.partitions.flatMap((p) => p.addingReplicas).distinct();
-    const removingReplicas = state.partitions.flatMap((p) => p.removingReplicas).distinct();
-
+    const replicas = arrayDistinct(state.partitions.flatMap((p) => p.replicas));
+    const addingReplicas = arrayDistinct(state.partitions.flatMap((p) => p.addingReplicas));
+    const removingReplicas = arrayDistinct(state.partitions.flatMap((p) => p.removingReplicas));
     return (
       <div className="flex flex-col gap-12">
         {/* Info */}
@@ -428,7 +440,7 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
         </div>
 
         {/* Cancel */}
-        <CancelReassignmentButton onConfirm={() => this.cancelReassignment()} />
+        <CancelReassignmentButton onConfirm={asyncEvent(() => this.cancelReassignment(), reportActionError)} />
       </div>
     );
   }
@@ -445,10 +457,10 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
 
     // partitionId:brokerId, ...
     const leaderThrottleEntries = parseThrottledReplicas(
-      config.configEntries.first((e) => e.name === 'leader.replication.throttled.replicas')?.value
+      arrayFirst(config.configEntries, (e) => e.name === 'leader.replication.throttled.replicas')?.value
     );
     const followerThrottleEntries = parseThrottledReplicas(
-      config.configEntries.first((e) => e.name === 'follower.replication.throttled.replicas')?.value
+      arrayFirst(config.configEntries, (e) => e.name === 'follower.replication.throttled.replicas')?.value
     );
 
     // Go through all partitions that are being reassigned, and check if a broker-partition combo is being throttled:
@@ -468,15 +480,14 @@ export class ReassignmentDetailsDialog extends Component<{ state: ReassignmentSt
     }
 
     if (this.state.shouldThrottle) {
-      api.setThrottledReplicas([
+      return api.setThrottledReplicas([
         {
           topicName: state.topicName,
           ...throttledReplicasOf(state),
         },
       ]);
-    } else {
-      api.resetThrottledReplicas([state.topicName]);
     }
+    return api.resetThrottledReplicas([state.topicName]);
   }
 
   async cancelReassignment() {
@@ -513,30 +524,30 @@ async function changeThrottleRate(toastId: string, brokerIds: number[], value: n
       description: 'Setting throttle rate... done',
       duration: 2000,
     });
-  } catch (err) {
+  } catch (error) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error(`error in applyBandwidthThrottle: ${err}`);
+    console.error(`error in applyBandwidthThrottle: ${String(error)}`);
     updateToast(toastId, {
       status: 'error',
       description: 'Setting throttle rate... error',
     });
   }
 }
-
-type ThrottledReplica = { partitionId: number; brokerId: number };
-
+type ThrottledReplica = {
+  partitionId: number;
+  brokerId: number;
+};
 /** Parses a `partitionId:brokerId, ...` throttle config value, skipping malformed entries. */
 function parseThrottledReplicas(value: string | null | undefined): ThrottledReplica[] | undefined {
-  return value
-    ?.split(',')
-    .map((e) => {
+  return arrayFilterNull(
+    value?.split(',').map((e) => {
       const ar = e.split(':');
       if (ar.length !== 2) {
         return null;
       }
       return { partitionId: Number(ar[0]), brokerId: Number(ar[1]) };
     })
-    .filterNull();
+  );
 }
 
 function anyPartitionThrottled(
@@ -549,7 +560,7 @@ function anyPartitionThrottled(
   }
   return partitions.some((p) => {
     const brokers = new Set(brokersOf(p));
-    return entries.any((e) => e.partitionId === p.partitionId && brokers.has(e.brokerId));
+    return entries.some((e) => e.partitionId === p.partitionId && brokers.has(e.brokerId));
   });
 }
 
@@ -571,7 +582,7 @@ function throttledReplicasOf(state: ReassignmentState) {
 
     // follower throttling is applied only to target brokers that do not yet have a copy
     followerReplicas.push(
-      ...brokersNew.except(brokersOld).map((targetBroker) => ({ partitionId, brokerId: targetBroker }))
+      ...arrayExcept(brokersNew, brokersOld).map((targetBroker) => ({ partitionId, brokerId: targetBroker }))
     );
   }
   return { leaderReplicas, followerReplicas };
@@ -607,9 +618,9 @@ async function cancelReassignmentWithToast(state: ReassignmentState): Promise<bo
       duration: 1000,
     });
     return true;
-  } catch (err) {
+  } catch (error) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage
-    console.error(`cancel reassignment: ${String(err)}`);
+    console.error(`cancel reassignment: ${String(error)}`);
     updateToast(toastRef, {
       status: 'error',
       description: `Cancelling reassignment of '${state.topicName}': Error`,
@@ -618,15 +629,17 @@ async function cancelReassignmentWithToast(state: ReassignmentState): Promise<bo
     return false;
   }
 }
-
-export class TopicNameCol extends Component<{ state: ReassignmentState }> {
+export class TopicNameCol extends Component<{
+  state: ReassignmentState;
+}> {
   render() {
     const { state } = this.props;
-    return <span style={{ paddingRight: '2em' }}>{state.topicName}</span>;
+    return <span className="console-reassignment-topic">{state.topicName}</span>;
   }
 }
-
-export class ProgressCol extends Component<{ state: ReassignmentState }> {
+export class ProgressCol extends Component<{
+  state: ReassignmentState;
+}> {
   render() {
     const { state } = this.props;
 
@@ -649,7 +662,7 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
           right={
             <>
               {state.estimateSpeed !== null && (
-                <span style={{ paddingRight: '1em', opacity: '0.6' }}>({prettyBytesOrNA(state.estimateSpeed)}/s)</span>
+                <span className="console-reassignment-speed">({prettyBytesOrNA(state.estimateSpeed)}/s)</span>
               )}
               <span>
                 {prettyBytesOrNA(transferred)} / {prettyBytesOrNA(state.totalTransferSize)}
@@ -663,33 +676,32 @@ export class ProgressCol extends Component<{ state: ReassignmentState }> {
       progressBar = <ProgressBar left="Complete" percent={100} right={prettyBytesOrNA(state.totalTransferSize)} />;
     }
 
-    return <div style={{ marginBottom: '-6px' }}>{progressBar}</div>;
+    return <div className="mb-[-6px]">{progressBar}</div>;
   }
 }
-
-export class ETACol extends Component<{ state: ReassignmentState }> {
+export class ETACol extends Component<{
+  state: ReassignmentState;
+}> {
   render() {
     const { state } = this.props;
 
     if (state.estimateSpeed === null || state.estimateCompletionTime === null) {
       return '...';
     }
-
-    const remainingMs = (state.estimateCompletionTime.getTime() - Date.now()).clamp(0, undefined);
-
+    const remainingMs = clampNumber(state.estimateCompletionTime.getTime() - Date.now(), 0, undefined);
     return <span>{prettyMilliseconds(remainingMs, { secondsDecimalDigits: 0, unitCount: 2 })}</span>;
   }
 }
-
-export class BrokersCol extends Component<{ state: ReassignmentState }> {
+export class BrokersCol extends Component<{
+  state: ReassignmentState;
+}> {
   render() {
     const { state } = this.props;
-
-    const allBrokerIds = state.partitions
-      .map((p) => [p.addingReplicas, p.removingReplicas, p.replicas])
-      .flat(2)
-      .distinct();
-
+    const allBrokerIds = arrayDistinct(
+      state.partitions
+        .map((p) => [p.addingReplicas, p.removingReplicas, p.replicas])
+        .flat(2 /* partitions contain three arrays of broker IDs */)
+    );
     return <BrokerList brokerIds={allBrokerIds} />;
   }
 }
@@ -699,17 +711,9 @@ const ProgressBar = (p: { percent: number; left?: React.ReactNode; right?: React
   return (
     <>
       <Progress value={percent} />
-      <div
-        style={{
-          display: 'flex',
-          marginTop: '1px',
-          fontFamily: '"Open Sans", sans-serif',
-          fontWeight: 600,
-          fontSize: '75%',
-        }}
-      >
+      <div className="console-reassignment-labels">
         {Boolean(left) && <div>{left}</div>}
-        {Boolean(right) && <div style={{ marginLeft: 'auto' }}>{right}</div>}
+        {Boolean(right) && <div className="ms-auto">{right}</div>}
       </div>
     </>
   );

@@ -87,9 +87,9 @@ const groupAclsByPrincipal = (response: ListACLsResponse) => {
 /** The ACLs granted to roles, keyed by role name. */
 const getRoleAcls = (aclsByPrincipal: Map<string, FlatAclEntry[]>) =>
   new Map(
-    [...aclsByPrincipal]
-      .filter(([principal]) => principal.startsWith(ROLE_PRINCIPAL_PREFIX))
-      .map(([principal, acls]) => [principal.slice(ROLE_PRINCIPAL_PREFIX.length), acls])
+    [...aclsByPrincipal].flatMap(([principal, acls]): [string, FlatAclEntry[]][] =>
+      principal.startsWith(ROLE_PRINCIPAL_PREFIX) ? [[principal.slice(ROLE_PRINCIPAL_PREFIX.length), acls]] : []
+    )
   );
 
 /** The ACLs a principal inherits, one group per role it belongs to that grants any. */
@@ -98,12 +98,15 @@ const getRoleAclGroups = (
   roleAcls: Map<string, FlatAclEntry[]>,
   principal: RolePrincipal
 ): RoleAclGroup[] =>
-  [...roleMembers]
-    .filter(([, members]) =>
-      members.some((m: RolePrincipal) => m.name === principal.name && m.principalType === principal.principalType)
-    )
-    .map(([roleName]) => ({ roleName, acls: roleAcls.get(roleName) ?? [] }))
-    .filter((g) => g.acls.length > 0);
+  [...roleMembers].flatMap(([roleName, members]) => {
+    if (
+      members.every((member) => !(member.name === principal.name && member.principalType === principal.principalType))
+    ) {
+      return [];
+    }
+    const acls = roleAcls.get(roleName) ?? [];
+    return acls.length > 0 ? [{ roleName, acls }] : [];
+  });
 
 const toPrincipalPermissionGroup = (
   p: PrincipalEntry,
@@ -165,9 +168,11 @@ export function usePrincipalPermissions() {
     }
     const aclsByPrincipal = groupAclsByPrincipal(allAclsData);
     const roleAcls = getRoleAcls(aclsByPrincipal);
-    return principals
-      .filter((p) => p.principalType === 'User' || p.principalType === 'Group')
-      .map((p) => toPrincipalPermissionGroup(p, aclsByPrincipal, getRoleAclGroups(roleMembers, roleAcls, p)));
+    return principals.flatMap((p) =>
+      p.principalType === 'User' || p.principalType === 'Group'
+        ? [toPrincipalPermissionGroup(p, aclsByPrincipal, getRoleAclGroups(roleMembers, roleAcls, p))]
+        : []
+    );
   }, [allAclsData, principals, roleMembers]);
 
   return {

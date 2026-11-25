@@ -12,7 +12,7 @@
 import { parse as parseYaml } from 'yaml';
 
 import { type PipelineEndStatus, summarizePipelineEnd } from '../utils/input-end-behavior';
-import { configComponentsOf, type ParsedConfigComponents, type ParsedYamlConfig } from '../utils/yaml';
+import { configComponentsOf, type ParsedConfigComponents } from '../utils/yaml';
 
 /** What the list shows from a config: its component names, and whether it stops on its own. */
 export type ConfigListFacts = ParsedConfigComponents & { end: PipelineEndStatus };
@@ -29,9 +29,7 @@ const orElse = <T>(read: () => T, fallback: T): T => {
 
 // One parse serves both, and each fails on its own.
 function readConfigFacts(configYaml: string): ConfigListFacts {
-  const config = configYaml
-    ? orElse(() => parseYaml(configYaml, { merge: true }) as ParsedYamlConfig | null, undefined)
-    : undefined;
+  const config = configYaml ? orElse<unknown>(() => parseYaml(configYaml, { merge: true }), undefined) : undefined;
   if (config === undefined) {
     return NO_FACTS;
   }

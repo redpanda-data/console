@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import './styles.css';
 import { Group } from 'components/redpanda-ui/components/group';
 import { Input } from 'components/redpanda-ui/components/input';
 
@@ -32,7 +33,7 @@ export function KeyValueInput({
   return (
     <Group attached>
       <Input
-        className="max-w-[100px] border-r-input border-r bg-primary-wash font-medium text-primary"
+        className="console-key-input"
         disabled={disabled}
         onChange={(e) => onChange({ ...value, key: e.target.value })}
         placeholder={keyPlaceholder}

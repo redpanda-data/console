@@ -74,11 +74,11 @@ describe('sql helpers', () => {
   });
 
   test('blockedStatementError points REVOKE at Security and names any other blocked keyword', () => {
-    expect(blockedStatementError('REVOKE')).toEqual({
+    expect(blockedStatementError('REVOKE')).toStrictEqual({
       title: 'Manage access in Security',
       message: 'Grants are managed in Security in this release.',
     });
-    expect(blockedStatementError('DELETE')).toEqual({
+    expect(blockedStatementError('DELETE')).toStrictEqual({
       title: 'Statement not allowed',
       message: 'Only read queries are supported in this release. Found "DELETE".',
     });

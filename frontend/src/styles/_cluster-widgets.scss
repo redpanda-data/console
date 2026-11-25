@@ -1,0 +1,490 @@
+/**
+ * Copyright 2022 Redpanda Data, Inc.
+ *
+ * Use of this software is governed by the Business Source License
+ * included in the file https://github.com/redpanda-data/redpanda/blob/dev/licenses/bsl.md
+ *
+ * As of the Change Date specified in that file, in accordance with
+ * the Business Source License, use of this software will be governed
+ * by the Apache License, Version 2.0
+ */
+
+@use 'legacy-layout-mixins' as layout;
+
+@mixin styles {
+  $avatarSize: 34px;
+  // Heading row above the active-reassignments table.
+  .reassignPartitions .currentReassignments {
+    display: flex;
+    gap: 0.5em;
+    place-items: center;
+    margin-block-end: 0.5em;
+
+    .title {
+      padding-block-end: 2px;
+      margin-inline-start: 0.2em;
+      font-size: 1.17em;
+      font-weight: 500;
+      color: var(--color-strong);
+    }
+  }
+
+  .brokerTagList {
+    display: inline-flex;
+    gap: 1px;
+    background: var(--color-surface-subtle);
+    border-radius: 4px;
+
+    .broker-tag {
+      position: relative;
+      display: inline-flex;
+      padding-block: 1px;
+      padding-inline: 12px;
+      margin: 0;
+      font-weight: 500;
+      color: var(--color-muted-foreground);
+      user-select: none;
+      background: var(--color-surface-recess);
+      border: none;
+      border-radius: 0;
+
+      &.leader {
+        &::after {
+          @include layout.beforeAfter;
+
+          border: 0 solid hsl(0deg, 0%, 60%);
+          border-block-end-width: 2px;
+
+          border-radius: 3px;
+        }
+      }
+
+      &:hover {
+        opacity: 1;
+      }
+
+      &.offline {
+        color: hsl(0deg, 80%, 25%);
+        background: hsl(0deg, 80%, 76%);
+      }
+
+      &.added {
+        color: hsl(111deg, 100%, 34%);
+
+        &::after {
+          @include layout.beforeAfter;
+
+          border: 0 solid hsl(105deg, 100%, 40%);
+          border-block-end-width: 2px;
+
+          border-radius: 3px;
+        }
+      }
+
+      &.removed {
+        color: hsl(15deg, 75%, 60%);
+
+        &::after {
+          @include layout.beforeAfter;
+
+          border: 0 solid hsl(16deg, 100%, 50%);
+          border-block-end-width: 2px;
+
+          border-radius: 3px;
+        }
+      }
+
+      &:first-child {
+        border-start-start-radius: 3px;
+        border-end-start-radius: 3px;
+      }
+
+      &:last-child {
+        border-start-end-radius: 3px;
+        border-end-end-radius: 3px;
+      }
+
+      // The number inside
+      span {
+        padding-block: 0;
+        padding-inline: 2px;
+      }
+    }
+  }
+
+  mark {
+    padding: 1px;
+    background-color: hsl(54deg, 100%, 50%);
+  }
+
+  .devOnly {
+    padding: 1em;
+    background: hsl(53deg, 100%, 80%);
+  }
+
+  // Container for text that has the tooltip
+  .tooltip {
+    position: relative;
+    display: inline-block; // don't expand to fill the container
+
+    // Text shown in the bubble
+    .tooltiptext {
+      position: absolute;
+
+      // position at top
+      inset-block-end: 100%;
+      inset-inline-start: 50%;
+      z-index: 1;
+      visibility: hidden;
+      min-inline-size: 60px;
+
+      padding-block: 0.5em;
+      padding-inline: 0.75em;
+      font-family: Verdana, 'Segoe UI', Tahoma, Geneva, sans-serif;
+
+      font-size: 11px;
+      line-height: 1.5;
+      color: hsl(0, 0%, 87%);
+      text-align: center;
+
+      background-color: hsla(210, 14%, 20%, 0.9);
+      border-radius: 4px;
+
+      // animate
+      opacity: 0;
+      transform: translateX(-50%);
+      transition: opacity 150ms 300ms;
+
+      // make tooltip not instantly dissapear when trying to copy from it
+      &::after {
+        $space: -6px;
+        position: absolute;
+        inset-block-start: $space;
+        inset-block-end: $space;
+        inset-inline-start: $space;
+        inset-inline-end: $space;
+        z-index: -1;
+
+        content: ' ';
+        background: transparent;
+      }
+    }
+
+    &:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    code {
+      padding-block: 2px;
+      padding-inline: 4px;
+      line-height: 2;
+      background: hsl(210deg, 8%, 35%);
+      border-radius: 2px;
+    }
+  }
+
+  .nbspSeparator {
+    font-size: 66%;
+    white-space: nowrap;
+  }
+
+  .groupDetails {
+    .iconButton {
+      position: relative;
+      display: inline-block;
+      inline-size: 20px;
+      block-size: 20px;
+      color: var(--color-muted-foreground);
+      cursor: pointer;
+
+      &::after {
+        @include layout.beforeAfter;
+        margin: -4px;
+        background-color: transparent;
+        border-radius: 2px;
+      }
+
+      // unless disabled...
+      &:not(.disabled) {
+        // darker color on hover
+        &:hover {
+          color: var(--color-foreground);
+
+          &::after {
+            background-color: var(--color-surface-recess);
+          }
+        }
+
+        // slight background when pressed
+        &:active {
+          &::after {
+            background-color: var(--color-surface-subtle);
+          }
+        }
+      }
+    }
+  }
+
+  // iconButton in a table row is invisible unless hovered
+  // biome-ignore lint/style/noDescendingSpecificity: Row opacity is independent of the nested icon hover and active styles.
+  tr:not(:hover) .iconButton {
+    opacity: 0;
+  }
+
+  $easeInQuad: cubic-bezier(0.55, 0.085, 0.68, 0.53);
+  $easeInCubic: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  $easeInSine: cubic-bezier(0.47, 0, 0.745, 0.715);
+  $easeInExpo: cubic-bezier(0.95, 0.05, 0.795, 0.035);
+  $easeInCirc: cubic-bezier(0.6, 0.04, 0.98, 0.335);
+
+  $easeOutQuad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  $easeOutCubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  $easeOutSine: cubic-bezier(0.39, 0.575, 0.565, 1);
+  $easeOutExpo: cubic-bezier(0.19, 1, 0.22, 1);
+  $easeOutCirc: cubic-bezier(0.075, 0.82, 0.165, 1);
+
+  $easeInOutQuad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  $easeInOutCubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+  $easeInOutSine: cubic-bezier(0.445, 0.05, 0.55, 0.95);
+  $easeInOutExpo: cubic-bezier(1, 0, 0, 1);
+  $easeInOutCirc: cubic-bezier(0.785, 0.135, 0.15, 0.86);
+
+  .crossFade {
+    $fadeTimeIn: 400ms;
+    $fadeTimeOut: 400ms;
+    $fadeTimeHeight: 200ms;
+
+    outline: solid red 2px;
+
+    &-enter {
+      position: absolute;
+      opacity: 0;
+      transform: translateX(-20px) scale(1);
+    }
+
+    &-enter-active {
+      opacity: 1;
+
+      transform: translateX(0) scale(1);
+
+      transition:
+        opacity $fadeTimeIn $easeOutCirc,
+        transform $fadeTimeIn $easeOutCirc;
+    }
+
+    &-leave {
+      position: absolute;
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+
+    &-leave-active {
+      opacity: 0;
+      transform: translateX(10px) scale(1);
+
+      transition:
+        opacity $fadeTimeOut $easeOutCirc,
+        transform $fadeTimeOut $easeOutCirc;
+    }
+
+    &-height {
+      transition:
+        height $fadeTimeHeight $easeOutCirc,
+        width $fadeTimeHeight $easeOutCirc;
+    }
+  }
+
+  .consumerGroupModal {
+    &-edit {
+      // edit dialog
+    }
+
+    &-delete {
+      // delete dialog
+    }
+  }
+
+  // Animating a container misaligns the radio's inner dot in Chrome; a perspective transform fixes it.
+  .footer {
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    padding-block: 3em 16px;
+    margin-block-start: auto;
+
+    color: var(--color-muted-foreground);
+
+    .links {
+      display: flex;
+      grid-gap: 1em;
+      gap: 1em;
+      font-size: 27px;
+
+      a {
+        display: flex;
+        align-items: center;
+        inline-size: auto;
+        block-size: 1em;
+        aspect-ratio: 1;
+      }
+    }
+
+    .versionText {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5em 2em;
+      align-items: center;
+      justify-content: center;
+      min-inline-size: 0;
+      font-family: 'Kumbh Sans', sans-serif;
+      font-size: 12px;
+      line-height: normal;
+      overflow-wrap: anywhere;
+
+      .versionGitData {
+        font-family: monospace;
+        font-size: 110%;
+        text-transform: uppercase;
+      }
+    }
+  }
+
+  .profile {
+    position: absolute;
+    inset-block-end: 60px;
+    inset-inline: 0;
+
+    display: flex;
+    flex-shrink: 0;
+    gap: 11px;
+    align-items: center;
+    block-size: 62px;
+
+    padding-block: 0;
+    padding-inline: 12px 18px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    user-select: none;
+    border-color: hsl(220, 2%, 29%);
+    border-block-style: solid;
+
+    border-block-width: 1px;
+
+    transition: all 250ms;
+
+    .avatar {
+      inline-size: $avatarSize;
+
+      min-inline-size: $avatarSize;
+      max-inline-size: $avatarSize;
+      block-size: auto;
+      overflow: hidden;
+
+      image-rendering: crisp-edges;
+      border-radius: 200px;
+
+      transition: all 200ms;
+
+      @supports (image-rendering: -webkit-optimize-contrast) {
+        image-rendering: -webkit-optimize-contrast;
+      }
+
+      img {
+        max-inline-size: 100%;
+        max-block-size: 100%;
+        object-fit: scale-down;
+      }
+    }
+
+    .text {
+      max-inline-size: 100%;
+
+      overflow: hidden;
+      font-weight: 300;
+      white-space: nowrap;
+
+      transition:
+        max-width 200ms,
+        opacity 300ms;
+
+      .userName {
+        max-inline-size: 100%;
+        padding-block-end: 1px;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: white;
+      }
+
+      .prefText {
+        max-inline-size: 100%;
+        font-size: 11.5px;
+        color: hsl(218, 11%, 70%);
+      }
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .avatarDropdown {
+    animation-duration: 100ms;
+  }
+
+  .userMenu {
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 180px;
+
+    padding-block: 3px;
+
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+
+    background-color: #fff;
+    border-radius: 2px;
+
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.26);
+
+    .divider {
+      inline-size: 100%;
+      block-size: 1px;
+      margin-block: 3px;
+      margin-inline: 0;
+
+      pointer-events: none;
+      cursor: default;
+      background-color: hsl(215deg, 21%, 93%);
+    }
+
+    .menuItem {
+      padding-block: 6px;
+      padding-inline: 14px;
+
+      font-size: 13px;
+      font-weight: 400;
+      color: hsl(0, 0%, 25%);
+
+      cursor: pointer;
+      transition: background-color 100ms ease;
+
+      &:hover {
+        background-color: hsl(215deg, 21%, 90%);
+      }
+    }
+
+    .header {
+      padding-block: 8px;
+      padding-inline: 14px;
+      pointer-events: none;
+    }
+  }
+}

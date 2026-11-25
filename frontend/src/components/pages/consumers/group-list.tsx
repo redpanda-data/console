@@ -18,11 +18,15 @@ import { parseAsArrayOf, parseAsInteger, parseAsString, useQueryState } from 'nu
 import type { FC } from 'react';
 import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { useLegacyListConsumerGroupsFullQuery } from 'react-query/api/consumer-group';
+import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
+import { reportActionError } from 'utils/toast.utils';
+import { stringArrayValue, stringValue } from 'utils/type-guards';
 
 import { appGlobal } from '../../../state/app-global';
-import type { GroupDescription } from '../../../state/rest-interfaces';
 import { setPageHeader } from '../../../state/ui-state';
+import type { GroupDescription, GroupType } from '../../../types/consumer-groups';
+import { isPresent } from '../../../utils/type-guards';
 import { BrokerList } from '../../misc/broker-list';
 import { ShortNum } from '../../misc/short-num';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
@@ -64,12 +68,14 @@ const groupIdFilterFn = (row: DataTableRow<GroupDescription>, _columnId: string,
 
 const DEFAULT_PAGE_SIZE = 10;
 
-/** Faceted filter for the state and type columns: the row passes when its value is one of the picked values. */
-const facetFilterFn = (row: DataTableRow<GroupDescription>, columnId: string, filterValues: string[]) => {
-  if (!filterValues?.length) {
+/** Faceted filter for the state and type columns: match one of the selected string values. */
+const facetFilterFn = (row: DataTableRow<GroupDescription>, columnId: string, filterValue: unknown) => {
+  const filterValues = stringArrayValue(filterValue);
+  if (filterValues === undefined || filterValues.length === 0) {
     return true;
   }
-  return filterValues.includes(String(row.getValue(columnId)));
+  const value = stringValue(row.getValue(columnId));
+  return value !== undefined && filterValues.includes(value);
 };
 
 const columns: DataTableColumnDef<GroupDescription>[] = [
@@ -90,7 +96,7 @@ const columns: DataTableColumnDef<GroupDescription>[] = [
         className="flex items-center"
         data-testid={`consumer-group-link-${group.groupId}`}
         params={{ groupId: encodeURIComponent(group.groupId) }}
-        search={{} as never}
+        search={{}}
         to="/groups/$groupId"
       >
         {group.protocolType !== 'consumer' && (
@@ -141,17 +147,19 @@ const columns: DataTableColumnDef<GroupDescription>[] = [
 
 /** Counts the groups in total, per type (classic first) and per state, in first-seen state order. */
 export const computeGroupStatistics = (consumerGroups: GroupDescription[]) => {
-  const byType = new Map<string, number>();
+  const byType = new Map<GroupType, number>();
   const byState = new Map<string, number>();
   for (const group of consumerGroups) {
     byType.set(group.groupType, (byType.get(group.groupType) ?? 0) + 1);
     byState.set(group.state, (byState.get(group.state) ?? 0) + 1);
   }
+  const groupTypes: GroupType[] = ['classic', 'consumer'];
   return {
     total: consumerGroups.length,
-    byType: (['classic', 'consumer'] as const)
-      .filter((type) => byType.has(type))
-      .map((type) => ({ type, label: formatGroupType(type), count: byType.get(type) ?? 0 })),
+    byType: groupTypes.flatMap((type) => {
+      const count = byType.get(type);
+      return count === undefined ? [] : [{ type, label: formatGroupType(type), count }];
+    }),
     byState: Array.from(byState.entries()).map(([state, count]) => ({ state, count })),
   };
 };
@@ -177,8 +185,16 @@ const usePaginationSearchParams = () => {
 
   const onPaginationChange = (updater: Updater<PaginationState>) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater;
-    void setPageIndex(next.pageIndex);
-    void setPageSize(next.pageSize);
+    setPageIndex(next.pageIndex).catch((navigationError: unknown) => {
+      toast.error('Failed to update list URL', {
+        description: navigationError instanceof Error ? navigationError.message : String(navigationError),
+      });
+    });
+    setPageSize(next.pageSize).catch((navigationError: unknown) => {
+      toast.error('Failed to update list URL', {
+        description: navigationError instanceof Error ? navigationError.message : String(navigationError),
+      });
+    });
   };
 
   return { pagination, setPageIndex, onPaginationChange };
@@ -195,13 +211,17 @@ const useSortingSearchParams = (setPageIndex: SetPageIndex) => {
   const onSortingChange = (updater: Updater<SortingState>) => {
     const next = typeof updater === 'function' ? updater(sorting) : updater;
     if (next.length > 0) {
-      setSortId(next[0].id);
-      setSortDesc(next[0].desc ? 'true' : 'false');
+      setSortId(next[0].id).catch(reportActionError);
+      setSortDesc(next[0].desc ? 'true' : 'false').catch(reportActionError);
     } else {
-      setSortId('');
-      setSortDesc('');
+      setSortId('').catch(reportActionError);
+      setSortDesc('').catch(reportActionError);
     }
-    void setPageIndex(0);
+    setPageIndex(0).catch((navigationError: unknown) => {
+      toast.error('Failed to update list URL', {
+        description: navigationError instanceof Error ? navigationError.message : String(navigationError),
+      });
+    });
   };
 
   return { sorting, onSortingChange };
@@ -214,8 +234,8 @@ const useColumnFiltersSearchParams = (setPageIndex: SetPageIndex) => {
 
   const columnFilters: ColumnFiltersState = [
     ...(searchValue ? [{ id: 'groupId', value: searchValue }] : []),
-    ...(stateFilter.length ? [{ id: 'state', value: stateFilter }] : []),
-    ...(typeFilter.length ? [{ id: 'groupType', value: typeFilter }] : []),
+    ...(stateFilter.length > 0 ? [{ id: 'state', value: stateFilter }] : []),
+    ...(typeFilter.length > 0 ? [{ id: 'groupType', value: typeFilter }] : []),
   ];
 
   const onColumnFiltersChange = (updater: Updater<ColumnFiltersState>) => {
@@ -223,10 +243,16 @@ const useColumnFiltersSearchParams = (setPageIndex: SetPageIndex) => {
     const nameFilter = next.find((f) => f.id === 'groupId');
     const stateColumnFilter = next.find((f) => f.id === 'state');
     const typeColumnFilter = next.find((f) => f.id === 'groupType');
-    setSearchValue((nameFilter?.value as string) || null);
-    setStateFilter((stateColumnFilter?.value as string[])?.length ? (stateColumnFilter?.value as string[]) : null);
-    setTypeFilter((typeColumnFilter?.value as string[])?.length ? (typeColumnFilter?.value as string[]) : null);
-    void setPageIndex(0);
+    setSearchValue((stringValue(nameFilter?.value) ?? '') || null).catch(reportActionError);
+    const states = stringArrayValue(stateColumnFilter?.value);
+    setStateFilter(states !== undefined && states.length > 0 ? states : null).catch(reportActionError);
+    const types = stringArrayValue(typeColumnFilter?.value);
+    setTypeFilter(types !== undefined && types.length > 0 ? types : null).catch(reportActionError);
+    setPageIndex(0).catch((navigationError: unknown) => {
+      toast.error('Failed to update list URL', {
+        description: navigationError instanceof Error ? navigationError.message : String(navigationError),
+      });
+    });
   };
 
   return { columnFilters, onColumnFiltersChange };
@@ -258,8 +284,8 @@ const GroupListBody = ({
   if (isLoading) {
     return [0, 1, 2, 3, 4].map((i) => (
       <TableRow key={i}>
-        {columns.map((_col, colIdx) => (
-          <TableCell key={colIdx}>
+        {table.getAllLeafColumns().map((column) => (
+          <TableCell key={column.id}>
             <Skeleton variant="text" width="md" />
           </TableCell>
         ))}
@@ -267,7 +293,7 @@ const GroupListBody = ({
     ));
   }
 
-  if (table.getRowModel().rows.length) {
+  if (table.getRowModel().rows.length > 0) {
     return table.getRowModel().rows.map((row) => (
       <TableRow key={row.id}>
         {row.getVisibleCells().map((cell) => {
@@ -321,13 +347,13 @@ const GroupList: FC = () => {
     autoResetPageIndex: false,
   });
 
-  const groupIdFilter = (table.getColumn('groupId')?.getFilterValue() as string) ?? '';
+  const groupIdFilter = stringValue(table.getColumn('groupId')?.getFilterValue()) ?? '';
 
-  if (isError && error) {
+  if (isError && isPresent(error)) {
     return (
       <Alert variant="destructive">
         <AlertTitle>Failed to load consumer groups</AlertTitle>
-        <AlertDescription>{(error as Error).message}</AlertDescription>
+        <AlertDescription>{error.message}</AlertDescription>
       </Alert>
     );
   }
@@ -409,4 +435,4 @@ const GroupList: FC = () => {
   );
 };
 
-export default GroupList;
+export { GroupList };

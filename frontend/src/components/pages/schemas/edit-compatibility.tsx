@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { InfoIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import {
@@ -52,8 +53,8 @@ import {
   type SchemaRegistryVersionedSchema,
 } from '../../../state/rest-interfaces';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
-import { useClusterFenceGuard } from '../../cluster-fence/use-cluster-fence-guard';
-import PageContent from '../../misc/page-content';
+import { isNonEmptyString } from '../../../utils/string-utils';
+import { PageContent } from '../../misc/page-content';
 import { TonedIcon } from '../shared/toned-icon';
 
 const DEFAULT_OPTION = {
@@ -121,12 +122,17 @@ function useEditCompatibilityData({ subjectName, contextName }: SchemaEditTarget
   const { data: schemaMode, isLoading: isModeLoading } = useSchemaModeQuery();
   const { data: schemaCompatibility, isLoading: isCompatibilityLoading } = useSchemaCompatibilityQuery();
   const { data: schemaDetails, isLoading: isDetailsLoading } = useSchemaDetailsQuery(subjectName, {
-    enabled: !!subjectName,
+    enabled: subjectName !== null && subjectName !== undefined && subjectName !== '',
   });
-  const { data: contexts, isLoading: isContextsLoading } = useSchemaRegistryContextsQuery(!!contextName);
+  const { data: contexts, isLoading: isContextsLoading } = useSchemaRegistryContextsQuery(
+    contextName !== null && contextName !== undefined && contextName !== ''
+  );
 
   const contextCompatibility = useMemo(
-    () => (contextName ? contexts?.find((c) => c.name === contextName)?.compatibility : undefined),
+    () =>
+      contextName !== null && contextName !== undefined && contextName !== ''
+        ? contexts?.find((c) => c.name === contextName)?.compatibility
+        : undefined,
     [contexts, contextName]
   );
 
@@ -135,16 +141,17 @@ function useEditCompatibilityData({ subjectName, contextName }: SchemaEditTarget
     schemaCompatibility,
     schemaDetails,
     contextCompatibility,
-    isLoading: Boolean(
-      isModeLoading || isCompatibilityLoading || (subjectName && isDetailsLoading) || (contextName && isContextsLoading)
-    ),
+    isLoading:
+      isModeLoading ||
+      isCompatibilityLoading ||
+      (isNonEmptyString(subjectName) && isDetailsLoading) ||
+      (isNonEmptyString(contextName) && isContextsLoading),
   };
 }
-
-const EditSchemaCompatibilityPage: FC<{ subjectName?: string; contextName?: string }> = ({
-  subjectName: subjectNameEncoded,
-  contextName: contextNameEncoded,
-}) => {
+const EditSchemaCompatibilityPage: FC<{
+  subjectName?: string;
+  contextName?: string;
+}> = ({ subjectName: subjectNameEncoded, contextName: contextNameEncoded }) => {
   const target = decodeSchemaEditTarget(subjectNameEncoded, contextNameEncoded);
   const schemaRegistryContextsSupported = useSupportedFeaturesStore((s) => s.schemaRegistryContexts);
   const { schemaMode, schemaCompatibility, schemaDetails, contextCompatibility, isLoading } =
@@ -176,7 +183,7 @@ const EditSchemaCompatibilityPage: FC<{ subjectName?: string; contextName?: stri
   );
 };
 
-export default EditSchemaCompatibilityPage;
+export { EditSchemaCompatibilityPage };
 
 // Saves the compatibility for the context, the subject, or (neither) the global config.
 function useSaveCompatibility({ subjectName, contextName }: SchemaEditTarget, onClose: () => void) {
@@ -195,12 +202,12 @@ function useSaveCompatibility({ subjectName, contextName }: SchemaEditTarget, on
       },
     };
 
-    if (contextName) {
+    if (contextName !== null && contextName !== undefined && contextName !== '') {
       updateContextMutation.mutate({ contextName, mode: configMode }, callbacks);
-    } else if (subjectName) {
+    } else if (subjectName !== null && subjectName !== undefined && subjectName !== '') {
       updateSubjectMutation.mutate({ subjectName, mode: configMode }, callbacks);
-    } else {
-      updateGlobalMutation.mutate(configMode as SchemaRegistryCompatibilityMode, callbacks);
+    } else if (configMode !== 'DEFAULT') {
+      updateGlobalMutation.mutate(configMode, callbacks);
     }
   };
 }
@@ -208,30 +215,32 @@ function useSaveCompatibility({ subjectName, contextName }: SchemaEditTarget, on
 function EditSchemaCompatibility(p: {
   subjectName?: string;
   contextName?: string;
-  contextCompatibility?: SchemaRegistryCompatibilityModeWithDefault;
+  contextCompatibility?: SchemaRegistrySubjectDetails['compatibility'];
   schemaMode: string | null | undefined;
-  schemaCompatibility: string | null | undefined;
+  schemaCompatibility: SchemaRegistryCompatibilityMode | null | undefined;
   schemaDetails: SchemaRegistrySubjectDetails | undefined;
   onClose: () => void;
 }) {
   const { subjectName, contextName, contextCompatibility, schemaDetails, schemaCompatibility } = p;
   const fencedReason = useClusterFenceGuard().reasonFor('editSchemas');
   const saveCompatibility = useSaveCompatibility({ subjectName, contextName }, p.onClose);
-
-  const schema = schemaDetails?.schemas.first(
+  const schema = schemaDetails?.schemas.find(
     (x: SchemaRegistryVersionedSchema) => x.version === schemaDetails.latestActiveVersion
   );
 
-  const getInitialCompatibility = (): SchemaRegistryCompatibilityModeWithDefault => {
-    if (contextName) {
+  const getInitialCompatibility = (): SchemaRegistrySubjectDetails['compatibility'] => {
+    if (contextName !== null && contextName !== undefined && contextName !== '') {
       return contextCompatibility ?? SchemaRegistryCompatibilityModes.DEFAULT;
     }
-    const source = subjectName ? schemaDetails?.compatibility : schemaCompatibility;
-    return (source as SchemaRegistryCompatibilityModeWithDefault) ?? SchemaRegistryCompatibilityModes.DEFAULT;
+    const source =
+      subjectName !== null && subjectName !== undefined && subjectName !== ''
+        ? schemaDetails?.compatibility
+        : schemaCompatibility;
+    return source ?? SchemaRegistryCompatibilityModes.DEFAULT;
   };
-  const [configMode, setConfigMode] = useState<SchemaRegistryCompatibilityModeWithDefault>(getInitialCompatibility);
+  const [configMode, setConfigMode] = useState<SchemaRegistrySubjectDetails['compatibility']>(getInitialCompatibility);
 
-  if (subjectName && !schema) {
+  if (subjectName !== null && subjectName !== undefined && subjectName !== '' && !schema) {
     return (
       <SkeletonGroup direction="vertical" spacing="lg">
         <Skeleton variant="heading" width="lg" />
@@ -243,13 +252,19 @@ function EditSchemaCompatibility(p: {
     );
   }
 
-  const allOptions: { value: string; title: string; description: string }[] =
-    subjectName || contextName ? [DEFAULT_OPTION, ...COMPATIBILITY_OPTIONS] : COMPATIBILITY_OPTIONS;
-
+  const allOptions: {
+    value: SchemaRegistryCompatibilityModeWithDefault;
+    title: string;
+    description: string;
+  }[] =
+    (subjectName !== null && subjectName !== undefined && subjectName !== '') ||
+    (contextName !== null && contextName !== undefined && contextName !== '')
+      ? [DEFAULT_OPTION, ...COMPATIBILITY_OPTIONS]
+      : COMPATIBILITY_OPTIONS;
   return (
     <div className="flex gap-16">
       <div className="flex-1">
-        {!!contextName && (
+        {contextName !== null && contextName !== undefined && contextName !== '' && (
           <div className="mb-4 flex items-center gap-2" data-testid="edit-compatibility-context-name">
             <TonedIcon aria-hidden="true" className="size-4" icon={InfoIcon} tone="muted" />
             <div className="text-heading-md font-bold">
@@ -268,7 +283,12 @@ function EditSchemaCompatibility(p: {
             aria-label="Schema compatibility mode"
             className="w-full"
             data-testid="edit-compatibility-mode-radio"
-            onValueChange={(value) => setConfigMode(value as SchemaRegistryCompatibilityModeWithDefault)}
+            onValueChange={(value) => {
+              const selected = allOptions.find((option) => option.value === value);
+              if (selected) {
+                setConfigMode(selected.value);
+              }
+            }}
             value={configMode}
           >
             {allOptions.map((option) => (
@@ -287,8 +307,16 @@ function EditSchemaCompatibility(p: {
                 render={
                   <Button
                     data-testid="edit-compatibility-save-btn"
-                    disabled={api.userData?.canManageSchemaRegistry === false || Boolean(fencedReason)}
-                    onClick={() => saveCompatibility(configMode)}
+                    disabled={
+                      configMode === 'UNKNOWN' ||
+                      api.userData?.canManageSchemaRegistry === false ||
+                      Boolean(fencedReason)
+                    }
+                    onClick={() => {
+                      if (configMode !== 'UNKNOWN') {
+                        saveCompatibility(configMode);
+                      }
+                    }}
                     variant="primary"
                   >
                     Save
@@ -298,9 +326,9 @@ function EditSchemaCompatibility(p: {
               {api.userData?.canManageSchemaRegistry === false && (
                 <TooltipContent side="top">You don't have the 'canManageSchemaRegistry' permission</TooltipContent>
               )}
-              {api.userData?.canManageSchemaRegistry !== false && fencedReason ? (
+              {api.userData?.canManageSchemaRegistry !== false && Boolean(fencedReason) && (
                 <TooltipContent side="top">{fencedReason}</TooltipContent>
-              ) : null}
+              )}
             </Tooltip>
             <Button data-testid="edit-compatibility-cancel-btn" onClick={p.onClose} variant="ghost">
               Cancel
@@ -308,7 +336,7 @@ function EditSchemaCompatibility(p: {
           </div>
         </div>
       </div>
-      {!!subjectName && schema && (
+      {subjectName !== null && subjectName !== undefined && subjectName !== '' && schema && (
         <div className="flex-1">
           <div
             className="text-heading-md font-bold wrap-break-word whitespace-pre-wrap"

@@ -13,7 +13,7 @@ import { Badge } from 'components/redpanda-ui/components/badge';
 import { Link } from 'components/redpanda-ui/components/typography';
 
 import { findConnectorMetadata, removeNamespace } from './helper';
-import BoxCard, { type BoxCardProps } from '../../misc/box-card';
+import { BoxCard, type BoxCardProps } from '../../misc/box-card';
 import type { HiddenRadioOption } from '../../misc/hidden-radio-list';
 
 interface ConnectorBoxCardProps
@@ -27,7 +27,7 @@ export function ConnectorBoxCard(props: ConnectorBoxCardProps) {
   const { id, checked, connectorPlugin, hoverable, active, borderWidth, borderStyle } = props;
   return (
     <BoxCard
-      active={checked || active}
+      active={(checked ?? false) || active}
       borderStyle={borderStyle}
       borderWidth={borderWidth}
       hoverable={hoverable}
@@ -37,9 +37,11 @@ export function ConnectorBoxCard(props: ConnectorBoxCardProps) {
     </BoxCard>
   );
 }
-
-export type ConnectorPlugin = { class: string; type: 'sink' | 'source'; version?: string };
-
+export type ConnectorPlugin = {
+  class: string;
+  type: 'sink' | 'source';
+  version?: string;
+};
 function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: ConnectorPlugin }) {
   const { friendlyName, logo, description, learnMoreLink } = findConnectorMetadata(connectorPlugin.class) ?? {};
   const displayName = friendlyName ?? removeNamespace(connectorPlugin.class);
@@ -54,7 +56,7 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
       <div className="mb-2 text-body-lg font-semibold">{displayName}</div>
 
       <p className="line-clamp-3 text-body-sm text-subtle">{description}</p>
-      {learnMoreLink ? (
+      {learnMoreLink !== null && learnMoreLink !== undefined && learnMoreLink !== '' ? (
         <div className="mt-2">
           <Badge tone="default" variant="subtle">
             <span className="opacity-80">
@@ -70,7 +72,7 @@ function ConnectorRadioCardContent({ connectorPlugin }: { connectorPlugin: Conne
 }
 
 export function getConnectorFriendlyName(className?: string) {
-  if (!className) {
+  if (!(className !== null && className !== undefined && className !== '')) {
     return '';
   }
 

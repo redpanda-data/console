@@ -10,8 +10,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { toast } from 'sonner';
 
 import { useKeyboardNav } from './use-keyboard-nav';
 
@@ -35,30 +36,74 @@ const renderNav = (overrides: Partial<Parameters<typeof useKeyboardNav>[0]> = {}
 
 describe('useKeyboardNav', () => {
   let writeText: ReturnType<typeof rs.fn>;
+  let originalClipboard: PropertyDescriptor | undefined;
 
   beforeEach(() => {
+    rs.clearAllMocks();
+    originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
     writeText = rs.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
   });
 
   afterEach(() => {
     rs.restoreAllMocks();
+    if (originalClipboard) {
+      Object.defineProperty(navigator, 'clipboard', originalClipboard);
+    } else {
+      Reflect.deleteProperty(navigator, 'clipboard');
+    }
   });
 
-  test('plain "c" copies the selected row\'s value', async () => {
-    const { getCopyText } = renderNav();
-    await userEvent.keyboard('c');
-    expect(getCopyText).toHaveBeenCalledWith('a');
-    expect(writeText).toHaveBeenCalledWith('copy-text-for-a');
-  });
+  describe('copy shortcuts', () => {
+    test('plain "c" copies the selected row\'s value', async () => {
+      const { getCopyText } = renderNav();
+      await userEvent.keyboard('c');
+      expect(getCopyText).toHaveBeenCalledWith('a');
+      expect(writeText).toHaveBeenCalledWith('copy-text-for-a');
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Value copied to clipboard'));
+    });
 
-  test("cmd+C / Ctrl+C / Alt+C do not hijack the browser's own copy shortcut", async () => {
-    const { getCopyText } = renderNav();
-    await userEvent.keyboard('{Meta>}c{/Meta}');
-    await userEvent.keyboard('{Control>}c{/Control}');
-    await userEvent.keyboard('{Alt>}c{/Alt}');
-    expect(getCopyText).not.toHaveBeenCalled();
-    expect(writeText).not.toHaveBeenCalled();
+    test('reports every rejected clipboard attempt without a success notification', async () => {
+      writeText.mockRejectedValue(new Error('Clipboard permission denied'));
+      renderNav();
+      await userEvent.keyboard('c');
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith('Failed to copy value', { description: 'Clipboard permission denied' })
+      );
+      expect(toast.success).not.toHaveBeenCalled();
+      await userEvent.keyboard('c');
+      await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
+    });
+
+    test('explains when clipboard access is unavailable', async () => {
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+      renderNav();
+      await userEvent.keyboard('c');
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith('Failed to copy value', {
+          description: 'Clipboard access is unavailable.',
+        })
+      );
+      expect(writeText).not.toHaveBeenCalled();
+      expect(toast.success).not.toHaveBeenCalled();
+    });
+
+    test('keeps empty values as a no-op', async () => {
+      renderNav({ getCopyText: () => '' });
+      await userEvent.keyboard('c');
+      expect(writeText).not.toHaveBeenCalled();
+      expect(toast.success).not.toHaveBeenCalled();
+      expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    test("cmd+C / Ctrl+C / Alt+C do not hijack the browser's own copy shortcut", async () => {
+      const { getCopyText } = renderNav();
+      await userEvent.keyboard('{Meta>}c{/Meta}');
+      await userEvent.keyboard('{Control>}c{/Control}');
+      await userEvent.keyboard('{Alt>}c{/Alt}');
+      expect(getCopyText).not.toHaveBeenCalled();
+      expect(writeText).not.toHaveBeenCalled();
+    });
   });
 
   test('j/k still move selection with no modifiers', async () => {

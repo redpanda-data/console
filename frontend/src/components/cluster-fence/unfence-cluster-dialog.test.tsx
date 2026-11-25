@@ -13,7 +13,13 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { renderWithFileRoutes } from 'test-utils';
+
+import { fenceStatusFixture } from './__fixtures__/queries';
+import type { FencePhase } from './cluster-fence-model';
+import { UnfenceClusterDialog } from './unfence-cluster-dialog';
 
 const mutate = rs.fn();
 const mutation = { mutate, reset: rs.fn(), isPending: false, error: null as unknown };
@@ -24,14 +30,8 @@ rs.mock('react-query/api/cluster-fence', () => {
 });
 rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
-import { useState } from 'react';
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-
-import type { FencePhase } from './cluster-fence-model';
-import { UnfenceClusterDialog } from './unfence-cluster-dialog';
-
 const status = (phase: FencePhase, revision: number) =>
-  ({ summary: { phase, revision: BigInt(revision) } }) as unknown as ReturnType<typeof useClusterFenceStatusQuery>;
+  fenceStatusFixture({ summary: { phase, revision: BigInt(revision) } });
 
 /** Lets a test rerender the open dialog after it changes the mocked status. */
 const harness = { rerender: (): void => undefined };
@@ -59,7 +59,7 @@ describe('the UnfenceClusterDialog', () => {
     );
 
     await user.click(screen.getByTestId('confirm-unfence-cluster'));
-    expect(mutate.mock.calls[0]?.[0]).toEqual({ expectedRevision: 7n });
+    expect(mutate.mock.calls[0]?.[0]).toStrictEqual({ expectedRevision: 7n });
   });
 
   test('says when someone else re-fenced the cluster', async () => {

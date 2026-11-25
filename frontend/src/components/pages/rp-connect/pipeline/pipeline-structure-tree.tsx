@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Button } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -18,11 +17,15 @@ import { useCallback, useId, useMemo, useRef, useState } from 'react';
 
 import { InvalidConfigNotice } from './invalid-config-notice';
 import { sectionAccent } from './pipeline-flow-canvas-nodes';
+import type { PipelineStyle } from './pipeline-style';
 import { StopKindIcon } from './stop-condition';
 import { useResilientParse } from './use-resilient-parse';
+import './pipeline-editor.css';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import { getNodeDocsUrl } from '../utils/connector-docs';
-import { buildChildrenMap, hasStopSlot, type PipelineFlowNode } from '../utils/pipeline-flow-parser';
+import { hasStopSlot, type PipelineFlowNode } from '../utils/pipeline-flow-nodes';
+import { buildChildrenMap } from '../utils/pipeline-flow-parser';
 import { stopSummary } from '../utils/read-until';
 
 const SECTION_TITLES: Record<string, string> = {
@@ -51,7 +54,7 @@ type NodeMaps = {
 function editableAncestorId(node: PipelineFlowNode, maps: NodeMaps): string | undefined {
   let current: PipelineFlowNode | undefined = node;
   while (current && !current.editTarget) {
-    current = current.parentId ? maps.byId.get(current.parentId) : undefined;
+    current = isNonEmptyString(current.parentId) ? maps.byId.get(current.parentId) : undefined;
   }
   return current?.id;
 }
@@ -72,7 +75,10 @@ function collectVisibleIds(maps: NodeMaps, collapsedIds: Set<string>): string[] 
       }
     }
   };
-  for (const section of maps.childrenOf(undefined).filter((n) => n.kind === 'section')) {
+  for (const section of maps.childrenOf(undefined)) {
+    if (section.kind !== 'section') {
+      continue;
+    }
     for (const row of sectionRows(maps, section.id)) {
       visit(row);
     }
@@ -90,14 +96,14 @@ function stopRowSelectKeys(e: React.KeyboardEvent): void {
 
 /** Error takes precedence over the unsaved dot, so a row never shows both. */
 const RowStatusDot = ({ hasError, unsaved }: { hasError?: boolean; unsaved?: boolean }) => {
-  if (hasError) {
+  if (hasError === true) {
     return (
       <ElementTooltip content="Has errors">
         <span aria-hidden className="size-2 shrink-0 rounded-full bg-destructive" />
       </ElementTooltip>
     );
   }
-  if (unsaved) {
+  if (unsaved === true) {
     return (
       <ElementTooltip content="Unsaved changes">
         <span aria-hidden className="size-2 shrink-0 rounded-full bg-informative" />
@@ -116,7 +122,15 @@ function useStopDescriptionId(node: PipelineFlowNode): string | undefined {
 // How an input ends — its stop condition, or on its own — as a small glyph with the full sentence
 // on hover, and as the row's description (`descriptionId`) for assistive tech.
 const StopMark = ({ node, descriptionId }: { node: PipelineFlowNode; descriptionId?: string }) => {
-  if (!(descriptionId && node.stopSlot && node.endBehavior)) {
+  if (
+    !(
+      descriptionId !== null &&
+      descriptionId !== undefined &&
+      descriptionId !== '' &&
+      node.stopSlot &&
+      node.endBehavior
+    )
+  ) {
     return null;
   }
   const { kind } = node.endBehavior;
@@ -184,7 +198,7 @@ function keyboardFocusTarget(
       return maps.childrenOf(node.id).length > 0 && !collapsedIds.has(node.id) ? visibleIds[index + 1] : undefined;
     case 'ArrowLeft': {
       // Leaf or collapsed group: move to the parent row, unless the parent is a section header.
-      const parent = node.parentId ? maps.byId.get(node.parentId) : undefined;
+      const parent = isNonEmptyString(node.parentId) ? maps.byId.get(node.parentId) : undefined;
       return parent && parent.kind !== 'section' ? parent.id : undefined;
     }
     default:
@@ -206,7 +220,7 @@ function rowKeyIntent(key: string, node: PipelineFlowNode, treeNav: TreeKeyNav):
     return { kind: 'toggle' };
   }
   const target = keyboardFocusTarget(key, node, treeNav);
-  return target ? { kind: 'focus', id: target } : undefined;
+  return target !== null && target !== undefined && target !== '' ? { kind: 'focus', id: target } : undefined;
 }
 
 // Roving-focus wiring shared by every row.
@@ -234,6 +248,26 @@ type RowProps = {
   setsize: number;
 };
 
+function treeRowState(
+  {
+    node,
+    selectedId,
+    errorNodeIds,
+    unsavedNodeIds,
+    collapsedIds,
+  }: Pick<RowProps, 'node' | 'selectedId' | 'errorNodeIds' | 'unsavedNodeIds' | 'collapsedIds'>,
+  childCount: number
+) {
+  return {
+    hasChildren: childCount > 0,
+    collapsed: collapsedIds.has(node.id),
+    accent: sectionAccent(node.section),
+    selected: selectedId === node.id,
+    hasError: errorNodeIds?.has(node.id),
+    unsaved: unsavedNodeIds?.has(node.id),
+  };
+}
+
 const NodeRow = ({
   node,
   depth,
@@ -249,15 +283,15 @@ const NodeRow = ({
   setsize,
 }: RowProps) => {
   const children = maps.childrenOf(node.id);
-  const hasChildren = children.length > 0;
-  const collapsed = collapsedIds.has(node.id);
-  const accent = sectionAccent(node.section);
-  const selected = selectedId === node.id;
-  const hasError = errorNodeIds?.has(node.id);
-  const unsaved = unsavedNodeIds?.has(node.id);
+  const { hasChildren, collapsed, accent, selected, hasError, unsaved } = treeRowState(
+    { node, selectedId, errorNodeIds, unsavedNodeIds, collapsedIds },
+    children.length
+  );
   const docsUrl = getNodeDocsUrl(node);
   const stopDescriptionId = useStopDescriptionId(node);
 
+  const indentStyle: PipelineStyle = { '--pipeline-tree-indent': `${indentFor(depth)}px` };
+  const selectedStyle: PipelineStyle = { '--pipeline-tree-accent': accent };
   return (
     <>
       {/* The row itself is the treeitem: it takes focus and handles select/expand keys; the
@@ -270,20 +304,21 @@ const NodeRow = ({
         aria-posinset={posinset}
         aria-selected={selected}
         aria-setsize={setsize}
-        className="flex items-stretch rounded-md"
+        className="pipeline-tree-indent flex items-stretch rounded-md"
         onClick={() => onSelect(node.id, editableAncestorId(node, maps))}
         onFocus={() => nav.onRowFocus(node.id)}
         onKeyDown={(e) => nav.onRowKeyDown(e, node)}
         ref={(el) => nav.registerRow(node.id, el)}
         role="treeitem"
-        style={{ paddingLeft: indentFor(depth) }}
+        style={indentStyle}
         tabIndex={nav.tabbableId === node.id ? 0 : -1}
       >
         {/* Toggle is a separate hit target so it doesn't also select the node; the row owns the
             keyboard/ARIA expansion semantics, so it's hidden from the accessibility tree. */}
         {hasChildren ? (
-          <button
+          <Button
             aria-hidden
+            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
             className="flex w-5 shrink-0 cursor-pointer items-center justify-center self-stretch rounded text-muted-foreground transition-colors hover:text-foreground"
             onClick={(e) => {
               e.stopPropagation();
@@ -291,27 +326,26 @@ const NodeRow = ({
             }}
             tabIndex={-1}
             type="button"
+            variant="unstyled"
           >
             {collapsed ? <ChevronRight className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-          </button>
+          </Button>
         ) : (
           <span aria-hidden className="w-5 shrink-0" />
         )}
         <ElementTooltip content={node.label}>
           <span
             className={cn(
-              'group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1 pr-2 pl-1.5 text-left text-body transition-colors',
+              'pipeline-tree-selected group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md py-1 pr-2 pl-1.5 text-left text-body transition-colors',
               selected ? 'font-medium text-foreground' : 'text-foreground hover:bg-muted/50'
             )}
-            style={
-              selected
-                ? { backgroundColor: accent ? `color-mix(in srgb, ${accent} 16%, transparent)` : 'var(--color-muted)' }
-                : undefined
-            }
+            data-accent={Boolean(accent)}
+            data-selected={selected}
+            style={selectedStyle}
           >
-            <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={node.label as ComponentName} />
+            <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={node.label} />
             <span className="min-w-0 flex-1 truncate font-medium">{node.label}</span>
-            {node.labelText ? (
+            {isNonEmptyString(node.labelText) ? (
               <ElementTooltip content={node.labelText}>
                 <span className="max-w-[40%] min-w-0 shrink truncate text-body-sm text-muted-foreground">
                   {node.labelText}
@@ -320,7 +354,9 @@ const NodeRow = ({
             ) : null}
             <StopMark descriptionId={stopDescriptionId} node={node} />
             <RowStatusDot hasError={hasError} unsaved={unsaved} />
-            {docsUrl ? <NodeDocsLink href={docsUrl} label={node.label} /> : null}
+            {docsUrl !== null && docsUrl !== undefined && docsUrl !== '' ? (
+              <NodeDocsLink href={docsUrl} label={node.label} />
+            ) : null}
           </span>
         </ElementTooltip>
       </div>
@@ -347,18 +383,22 @@ const NodeRow = ({
   );
 };
 
+const ROOT_INDENT_STYLE: PipelineStyle = { '--pipeline-tree-indent': `${indentFor(0)}px` };
+
 // Mirrors a node row's indent + toggle gutter so the dashed "Add" affordance lines up.
 const AddConnectorRow = ({ section, onAdd }: { section: string; onAdd: (section: string) => void }) => (
-  <div className="flex items-stretch" style={{ paddingLeft: indentFor(0) }}>
+  <div className="pipeline-tree-indent flex items-stretch" style={ROOT_INDENT_STYLE}>
     <span aria-hidden className="w-5 shrink-0" />
-    <button
+    <Button
+      // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
       className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-border py-1 pr-2 pl-1.5 text-left text-body text-muted-foreground transition-colors hover:border-primary/60 hover:bg-muted/40 hover:text-foreground"
       onClick={() => onAdd(section)}
       type="button"
+      variant="unstyled"
     >
       <Plus className="size-3.5 shrink-0" />
       <span className="truncate">Add {section}</span>
-    </button>
+    </Button>
   </div>
 );
 
@@ -367,7 +407,7 @@ function invalidOutlineNotice(showingStale: boolean, error?: string): string | u
   if (showingStale) {
     return 'Showing the last valid outline — the current YAML is invalid.';
   }
-  if (error) {
+  if (error !== null && error !== undefined && error !== '') {
     return 'The current YAML is invalid — fix it in the editor to see the outline.';
   }
 }
@@ -395,7 +435,10 @@ function useTreeRovingFocus({ maps, collapsedIds, toggle, onSelectNode }: TreeRo
     setFocusedId(id);
     rowRefs.current.get(id)?.focus();
   }, []);
-  const tabbableId = focusedId && visibleIds.includes(focusedId) ? focusedId : visibleIds[0];
+  const tabbableId =
+    focusedId !== null && focusedId !== undefined && focusedId !== '' && visibleIds.includes(focusedId)
+      ? focusedId
+      : visibleIds[0];
 
   const handleRowKeyDown = (e: React.KeyboardEvent, node: PipelineFlowNode) => {
     const intent = rowKeyIntent(e.key, node, { visibleIds, maps, collapsedIds });
@@ -475,18 +518,21 @@ export function PipelineStructureTree({
     // children, so headers, "empty" notes and Add rows live between trees. Arrows still cross sections.
     <div className="flex flex-col gap-3 py-3 pr-2">
       {/* Left margin only — the container's `pr-2` supplies the matching right gap. */}
-      {notice ? (
+      {notice !== null && notice !== undefined && notice !== '' ? (
         <InvalidConfigNotice className="ml-2" variant="compact">
           {notice}
         </InvalidConfigNotice>
       ) : null}
       {sections.map((section) => {
         const title = SECTION_TITLES[section.section ?? ''] ?? section.label;
+        const sectionStyle: PipelineStyle = {
+          '--pipeline-tree-section-color': section.section ? sectionAccent(section.section) : undefined,
+        };
         return (
           <div className="flex flex-col" key={section.id}>
             <div
-              className="px-2 pb-1 text-body-sm font-medium tracking-wide text-muted-foreground uppercase"
-              style={section.section ? { color: sectionAccent(section.section) } : undefined}
+              className="pipeline-tree-section px-2 pb-1 text-body-sm font-medium tracking-wide text-muted-foreground uppercase"
+              style={sectionStyle}
             >
               {title}
             </div>

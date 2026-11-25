@@ -11,23 +11,52 @@
 
 import { useParams } from '@tanstack/react-router';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { AuthenticationMethod } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { Component } from 'react';
+import { isObject } from 'utils/type-guards';
+import { z } from 'zod';
 
 import { appGlobal } from '../../state/app-global';
 import { api } from '../../state/backend-api';
-import type { ApiError, UserData } from '../../state/rest-interfaces';
+import type { UserData } from '../../state/rest-interfaces';
 import { uiState } from '../../state/ui-state';
 import { getBasePath } from '../../utils/env';
-import fetchWithTimeout from '../../utils/fetch-with-timeout';
+import { fetchWithTimeout } from '../../utils/fetch-with-timeout';
 
 function readOAuthError(searchParams: URLSearchParams): string {
   const error = searchParams.get('error');
   const description = searchParams.get('error_description');
-  return [error ? `Error: ${error}` : '', description ? `Description: ${description}` : '']
+  return [
+    error !== null && error !== undefined && error !== '' ? `Error: ${error}` : '',
+    description !== null && description !== undefined && description !== '' ? `Description: ${description}` : '',
+  ]
     .filter(Boolean)
     .join('\n')
     .trim();
 }
+
+const callbackUserDataSchema = z.object({
+  displayName: z.string(),
+  avatarUrl: z.string(),
+  canViewConsoleUsers: z.boolean(),
+  canListAcls: z.boolean(),
+  canListQuotas: z.boolean(),
+  canReassignPartitions: z.boolean(),
+  canPatchConfigs: z.boolean(),
+  canCreateRoles: z.boolean(),
+  canManageUsers: z.boolean(),
+  canViewPermissionsList: z.boolean(),
+  canManageLicense: z.boolean(),
+  canViewSchemas: z.boolean(),
+  canCreateSchemas: z.boolean(),
+  canDeleteSchemas: z.boolean(),
+  canManageSchemaRegistry: z.boolean(),
+  canViewDebugBundle: z.boolean(),
+  canListTransforms: z.boolean(),
+  canCreateTransforms: z.boolean(),
+  canDeleteTransforms: z.boolean(),
+  authenticationMethod: z.enum(AuthenticationMethod),
+});
 
 async function fetchLoginCallback(provider: string, query: string): Promise<void> {
   const url = `./auth/callbacks/${provider}${query}`;
@@ -38,18 +67,19 @@ async function fetchLoginCallback(provider: string, query: string): Promise<void
     mode: 'no-cors',
   });
   const text = await response.text();
-  const obj = JSON.parse(text);
+  const obj: unknown = JSON.parse(text);
   // console.log('complete login response: ' + text);
   if (response.ok) {
-    api.userData = obj as UserData;
+    const userData: UserData = callbackUserDataSchema.parse(obj);
+    api.userData = userData;
   } else {
     // try to read as error object
-    const err = obj as ApiError;
-    throw err.message;
+    throw new Error(isObject(obj) && typeof obj.message === 'string' ? obj.message : 'Login callback failed');
   }
 }
-
-class LoginCompletePage extends Component<{ provider: string }> {
+class LoginCompletePage extends Component<{
+  provider: string;
+}> {
   componentDidMount() {
     // biome-ignore lint/suspicious/noConsole: error logging for unhandled promise rejections
     this.completeLogin(this.props.provider, window.location).catch(console.error);
@@ -66,8 +96,8 @@ class LoginCompletePage extends Component<{ provider: string }> {
     try {
       await fetchLoginCallback(provider, location.search);
       window.location.assign(getBasePath() || '/');
-    } catch (err) {
-      uiState.loginError = String(err);
+    } catch (error) {
+      uiState.loginError = String(error);
       appGlobal.historyPush(`${getBasePath()}/login`);
     }
   }
@@ -84,8 +114,7 @@ class LoginCompletePage extends Component<{ provider: string }> {
     );
   }
 }
-
-export default () => {
+export const LoginComplete = () => {
   const { provider } = useParams({ from: '/login/callbacks/$provider' });
   return <LoginCompletePage provider={provider} />;
 };

@@ -10,7 +10,7 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { rs } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
 import { useForm } from 'react-hook-form';
@@ -19,7 +19,7 @@ import { render, screen, waitFor } from 'test-utils';
 import { BootstrapServers } from './bootstrap-servers';
 import { FormSchema, type FormValues, initialValues } from '../model';
 
-rs.mock('config', () => ({
+rs.mock('runtime-config', () => ({
   isEmbedded: rs.fn(() => false),
   isFeatureFlagEnabled: rs.fn(() => false),
 }));
@@ -244,7 +244,7 @@ describe('the BootstrapServers', () => {
       // Order: client key appears before client certificate in the DOM
       const keyButton = screen.getByTestId('add-clientKey-button');
       const certButton = screen.getByTestId('add-clientCert-button');
-      expect(keyButton.compareDocumentPosition(certButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(keyButton.compareDocumentPosition(certButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
     test('should auto-open mTLS disclosure when client cert is already filled', () => {

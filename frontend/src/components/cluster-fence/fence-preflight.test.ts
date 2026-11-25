@@ -42,11 +42,11 @@ const messageOf = (checks: ReturnType<typeof getFencePreflightChecks>, id: strin
 
 describe('getFencePreflightChecks', () => {
   test('passes a source cluster whose readers are exempt, naming nothing else', () => {
-    expect(statuses(getFencePreflightChecks(base))).toEqual({ readers: 'pass' });
+    expect(statuses(getFencePreflightChecks(base))).toStrictEqual({ readers: 'pass' });
   });
 
   test('says nothing for a healthy cluster when Console doesn’t know its readers, as in self-hosted Console', () => {
-    expect(getFencePreflightChecks({ ...base, readers: undefined, linksThatStopFence: 'disabled' })).toEqual([]);
+    expect(getFencePreflightChecks({ ...base, readers: undefined, linksThatStopFence: 'disabled' })).toStrictEqual([]);
   });
 
   test('blocks a cluster with a shadow link that hasn’t failed over, naming it', () => {
@@ -98,7 +98,7 @@ describe('getFencePreflightChecks', () => {
     test('skips reader checks when every consumer may read, or when nobody knows the readers', () => {
       expect(
         Object.keys(statuses(getFencePreflightChecks({ ...base, exemptPrincipals: [], allowAllReads: true })))
-      ).toEqual([]);
+      ).toStrictEqual([]);
       expect(statuses(getFencePreflightChecks({ ...base, readers: undefined })).readers).toBeUndefined();
     });
 
@@ -110,10 +110,12 @@ describe('getFencePreflightChecks', () => {
     });
 
     test('never passes the readers it has found while other links are still being resolved', () => {
-      expect(statuses(getFencePreflightChecks({ ...base, readersResolving: true }))).toEqual({ readers: 'pending' });
+      expect(statuses(getFencePreflightChecks({ ...base, readersResolving: true }))).toStrictEqual({
+        readers: 'pending',
+      });
       expect(
         statuses(getFencePreflightChecks({ ...base, exemptPrincipals: ['someone-else'], readersResolving: true }))
-      ).toEqual({ 'reader-orders-dr': 'warn', readers: 'pending' });
+      ).toStrictEqual({ 'reader-orders-dr': 'warn', readers: 'pending' });
     });
 
     test('when Cloud couldn’t check every link, says the readers it found may not be all of them', () => {

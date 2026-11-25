@@ -11,14 +11,17 @@
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
 import { DEFAULT_TABLE_PAGE_SIZE } from 'components/constants';
-import { isEmbedded, isFeatureFlagEnabled } from 'config';
 import { lazy } from 'react';
 import { z } from 'zod';
 
-import RpConnectPipelinesDetails from '../../../components/pages/rp-connect/pipelines-details';
+import { RpConnectPipelinesDetails } from '../../../components/pages/rp-connect/pipelines-details';
+import { isEmbedded, isFeatureFlagEnabled } from '../../../runtime-config';
 
-const PipelinePage = lazy(() => import('../../../components/pages/rp-connect/pipeline'));
-
+const PipelinePage = lazy(() =>
+  import('../../../components/pages/rp-connect/pipeline').then((loadedModule) => ({
+    default: loadedModule.PipelinePage,
+  }))
+);
 const searchSchema = z.object({
   pageSize: z.number().int().positive().optional().catch(DEFAULT_TABLE_PAGE_SIZE),
   page: z.number().int().nonnegative().optional().catch(0),

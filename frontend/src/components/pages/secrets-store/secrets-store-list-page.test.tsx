@@ -11,23 +11,19 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, test } from '@rstest/core';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
+import type { ListSecretsRequest } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { type ListSecretsResponse, ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { Scope, type Secret, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
-import React from 'react';
 import { SECRETS_LIST_PAGE_SIZE } from 'react-query/api/secret';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
+import { SecretsStoreListPage } from './secrets-store-list-page';
+import { renderWithFileRoutes, screen, waitFor } from '../../../test-utils';
 
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
+rs.mock('runtime-config', () => {
+  const actual = rs.requireActual<typeof import('runtime-config')>('runtime-config');
   return {
     ...actual,
     config: {
@@ -38,8 +34,6 @@ rs.mock('config', () => {
 });
 
 Element.prototype.scrollIntoView = rs.fn();
-
-import { SecretsStoreListPage } from './secrets-store-list-page';
 
 const createListSecretsTransport = (listSecretsMock: ReturnType<typeof rs.fn>) =>
   createRouterTransport(({ rpc }) => {
@@ -77,7 +71,7 @@ const getPaginationButtons = () => ({
 async function goToNextPage(user: UserEvent, expectedFooter: string) {
   await user.click(screen.getByRole('button', { name: 'Go to next page' }));
 
-  expect(await screen.findByText(expectedFooter)).toBeVisible();
+  return await screen.findByText(expectedFooter);
 }
 
 describe('the SecretsStoreListPage', () => {
@@ -128,8 +122,8 @@ describe('the SecretsStoreListPage', () => {
       }),
     ];
 
-    const listSecretsMock = rs.fn().mockImplementation(({ request }) => {
-      if (!request?.pageToken) {
+    const listSecretsMock = rs.fn().mockImplementation(({ request }: ListSecretsRequest) => {
+      if ((request?.pageToken ?? '') === '') {
         return create(ListSecretsResponseSchema, {
           response: { secrets: pageOne, nextPageToken: 'page2' },
         });
@@ -217,11 +211,11 @@ describe('the SecretsStoreListPage', () => {
     expect(previousButton).toBeDisabled();
     expect(nextButton).toBeEnabled();
 
-    await goToNextPage(user, 'Page 2 of 3');
+    expect(await goToNextPage(user, 'Page 2 of 3')).toBeVisible();
 
     expect(getPaginationButtons().previousButton).toBeEnabled();
 
-    await goToNextPage(user, 'Page 3 of 3');
+    expect(await goToNextPage(user, 'Page 3 of 3')).toBeVisible();
 
     expect(getPaginationButtons().nextButton).toBeDisabled();
   });
@@ -286,7 +280,10 @@ describe('the SecretsStoreListPage', () => {
     });
 
     // Click the "Scope" faceted filter button (not the column header one in <thead>)
-    const scopeFilterButton = screen.getAllByRole('button', { name: /scope/i }).find((btn) => !btn.closest('thead'))!;
+    const scopeFilterButton = screen.getAllByRole('button', { name: /scope/i }).find((btn) => !btn.closest('thead'));
+    if (scopeFilterButton === undefined) {
+      throw new Error('Expected the scope filter outside the table header');
+    }
     await user.click(scopeFilterButton);
 
     // Select the "MCP Server" option from the filter popover

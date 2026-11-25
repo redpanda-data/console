@@ -9,17 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import { useApiStoreHook } from '../../../state/backend-api';
-import type { ConfigEntry, Partition, Topic } from '../../../state/rest-interfaces';
-import '../../../utils/array-extensions';
 import { Stat } from 'components/redpanda-ui/components/stat';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { InfoIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import type { CleanupPolicyType } from './types';
+import { useApiStoreHook } from '../../../state/backend-api';
+import type { ConfigEntry, Partition, Topic } from '../../../state/rest-interfaces';
+import { arrayRemoveAll, arraySum } from '../../../utils/array-utils';
 import { formatConfigValue } from '../../../utils/formatters/config-value-formatter';
 import { numberToThousandsString } from '../../../utils/tsx-utils';
+import { isPresent } from '../../../utils/type-guards';
 import { prettyBytesOrNA } from '../../../utils/utils';
 import { TonedIcon } from '../shared/toned-icon';
 
@@ -39,7 +40,7 @@ function formatMessageSum(partitions: Partition[] | null | undefined): ReactNode
   if (partitions === null) {
     return 'N/A'; // explicit null -> not allowed
   }
-  const totalMessages = partitions.sum((partition) => partition.waterMarkHigh - partition.waterMarkLow);
+  const totalMessages = arraySum(partitions, (partition) => partition.waterMarkHigh - partition.waterMarkLow);
   return numberToThousandsString(totalMessages);
 }
 
@@ -67,13 +68,21 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
   const cleanupPolicy = configEntries?.find((x) => x.name === 'cleanup.policy')?.value;
   const { retentionMs, retentionBytes, segmentMs, segmentBytes } = findQuickInfoEntries(filteredConfigEntries);
 
-  if (!(configEntries && filteredConfigEntries && cleanupPolicy)) {
+  if (
+    !(
+      configEntries &&
+      filteredConfigEntries &&
+      cleanupPolicy !== null &&
+      cleanupPolicy !== undefined &&
+      cleanupPolicy !== ''
+    )
+  ) {
     return null;
   }
 
   return (
     <div className="my-4 flex flex-wrap items-start gap-x-10 gap-y-3" data-testid="topic-quick-info">
-      <Stat label="Size" value={topic ? prettyBytesOrNA(topic.logDirSummary.totalSizeBytes) : '...'} />
+      <Stat label="Size" value={isPresent(topic) ? prettyBytesOrNA(topic.logDirSummary.totalSizeBytes) : '...'} />
       <Stat
         label="Estimated messages"
         value={
@@ -88,7 +97,14 @@ export const TopicQuickInfoStatistic = (p: { topic: Topic }) => {
           </span>
         }
       />
-      <Stat label="Cleanup Policy" value={CLEANUP_POLICY_LABELS[cleanupPolicy as CleanupPolicyType] ?? ''} />
+      <Stat
+        label="Cleanup Policy"
+        value={
+          cleanupPolicy === 'compact' || cleanupPolicy === 'compact,delete' || cleanupPolicy === 'delete'
+            ? CLEANUP_POLICY_LABELS[cleanupPolicy]
+            : ''
+        }
+      />
       {cleanupPolicy === 'compact' && segmentMs && segmentBytes && (
         <Stat
           label="Segment"
@@ -138,9 +154,9 @@ function filterTopicConfig(config: ConfigEntry[] | null | undefined): ConfigEntr
     newConfig.push(e);
   }
 
-  if (config.find((e) => e.name === 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
+  if (config.some((e) => e.name === 'cleanup.policy' && (e.value ?? '').includes('compact'))) {
     // this is a compacted topic, 'retention.bytes', 'retention.ms' don't apply, so hide them
-    newConfig.removeAll((e) => e.name === 'retention.bytes' || e.name === 'retention.ms');
+    arrayRemoveAll(newConfig, (e) => e.name === 'retention.bytes' || e.name === 'retention.ms');
   }
 
   return newConfig;

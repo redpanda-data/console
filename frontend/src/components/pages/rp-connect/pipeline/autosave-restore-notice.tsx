@@ -28,12 +28,12 @@ export function AutosaveRestoreNotice({
   onDiscard: () => void;
 }) {
   return (
-    <Alert icon={<FileClock />} testId="autosave-restore-notice" variant={isStale ? 'warning' : 'informative'}>
+    <Alert icon={<FileClock />} testId="autosave-restore-notice" variant={isStale === true ? 'warning' : 'informative'}>
       <AlertTitle>Restore your edits from {relativeAgeLabel(updatedAt)}?</AlertTitle>
       <AlertDescription>
         <div className="flex flex-wrap items-center gap-3">
           <span>
-            {isStale
+            {isStale === true
               ? 'Someone else saved this pipeline while you were away. Restoring replaces what is on screen with your unsaved version.'
               : 'You left this editor without saving these edits. Restoring puts them back, replacing what is on screen.'}
           </span>

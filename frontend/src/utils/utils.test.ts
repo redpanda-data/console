@@ -1,11 +1,12 @@
-import { assignDeep, substringWithEllipsis } from './utils'; // Adjust the import path as needed
+import { assignDeep, collectElements, getAllMessageKeys, getOidcSubject, substringWithEllipsis } from './utils'; // Adjust the import path as needed
 import { describe, expect, test } from 'bun:test';
+import type { TopicMessage } from '../types/kafka-messages';
 
 describe('assignDeep', () => {
   test('merges nested objects', () => {
     const target = { a: { b: 1, c: 2 }, d: 3 };
     assignDeep(target, { a: { b: 9 } });
-    expect(target).toEqual({ a: { b: 9, c: 2 }, d: 3 });
+    expect(target).toStrictEqual({ a: { b: 9, c: 2 }, d: 3 });
   });
 
   test('replaces arrays wholesale instead of merging index-by-index', () => {
@@ -20,11 +21,11 @@ describe('assignDeep', () => {
     // element's fields onto another shared element, duplicating ids.
     const a = { id: 'a', visible: true };
     const b = { id: 'b', visible: false };
-    const target: Record<string, unknown> = { cols: [a, b] };
+    const target = { cols: [a, b] };
     assignDeep(target, { cols: [b, a] });
-    expect(a).toEqual({ id: 'a', visible: true });
-    expect(b).toEqual({ id: 'b', visible: false });
-    expect((target.cols as { id: string }[]).map((c) => c.id)).toEqual(['b', 'a']);
+    expect(a).toStrictEqual({ id: 'a', visible: true });
+    expect(b).toStrictEqual({ id: 'b', visible: false });
+    expect(target.cols.map((c) => c.id)).toStrictEqual(['b', 'a']);
   });
 });
 
@@ -56,4 +57,72 @@ describe('substringWithEllipsis', () => {
   test('correctly handles an empty input string', () => {
     expect(substringWithEllipsis('', 5)).toBe('');
   });
+});
+
+test('property search stops without evaluating getters after the first match', () => {
+  const input = Object.assign(() => undefined, { first: 7 });
+  Object.defineProperty(input, 'later', {
+    enumerable: true,
+    get() {
+      throw new Error('Must not read later properties');
+    },
+  });
+  expect(collectElements(input, (key) => key === 'first', true)).toStrictEqual([
+    { propertyName: 'first', path: [], value: 7 },
+  ]);
+});
+
+test('property search retains UTF-16 indices for a string root and ignores nullish roots', () => {
+  const text = 'A😀B';
+  expect(collectElements(text, () => true, false).map((property) => property.value)).toStrictEqual([
+    text[0],
+    text[1],
+    text[2],
+    text[3],
+  ]);
+  expect(collectElements(null, () => true, false)).toStrictEqual([]);
+  expect(collectElements(undefined, () => true, false)).toStrictEqual([]);
+});
+
+describe('oidc error metadata', () => {
+  test.each([null, undefined, 'unavailable', {}, { details: [null, 4] }])(
+    'ignores unvalidated rejection values: %j',
+    (error) => {
+      expect(getOidcSubject(error)).toBeNull();
+    }
+  );
+  test('reads only a nonempty string subject from OIDC metadata', () => {
+    expect(
+      getOidcSubject({
+        details: [
+          { debug: { metadata: { login_type: 'OIDC', subject: 42 } } },
+          { debug: { metadata: { login_type: 'OIDC', subject: '' } } },
+          { debug: { metadata: { login_type: 'OTHER', subject: 'other' } } },
+          { debug: { metadata: { login_type: 'OIDC', subject: 'issuer|subject' } } },
+        ],
+      })
+    ).toBe('issuer|subject');
+  });
+});
+
+test('message-key suggestions preserve string indices and skip null payloads', () => {
+  const message: TopicMessage = {
+    partitionID: 0,
+    offset: 1,
+    timestamp: 0,
+    compression: 'uncompressed',
+    isTransactional: false,
+    headers: [],
+    key: { payload: null, isPayloadNull: true, encoding: 'null', schemaId: 0, size: 0 },
+    value: { payload: 'abc', isPayloadNull: false, encoding: 'text', schemaId: 0, size: 3 },
+    keyJson: 'null',
+    valueJson: '"abc"',
+  };
+  const nullMessage = { ...message, value: { ...message.value, payload: null, isPayloadNull: true } };
+  expect(getAllMessageKeys([nullMessage])).toStrictEqual([]);
+  expect(getAllMessageKeys([message, nullMessage])).toStrictEqual([
+    { propertyName: '0', path: ['0'], fullPath: '.0' },
+    { propertyName: '1', path: ['1'], fullPath: '.1' },
+    { propertyName: '2', path: ['2'], fullPath: '.2' },
+  ]);
 });

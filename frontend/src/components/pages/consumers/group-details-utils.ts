@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import type { GroupDescription, GroupMemberAssignment, GroupMemberDescription } from 'state/rest-interfaces';
+import type { GroupDescription, GroupMemberAssignment, GroupMemberDescription } from 'types/consumer-groups';
 
 /** A KIP-848 group the broker listed but did not describe, so it has no epochs and no members. */
 export const isConsumerGroupWithoutDetails = (group: GroupDescription) =>
@@ -21,8 +21,9 @@ export const isBehindGroupEpoch = (group: GroupDescription, member: GroupMemberD
   member.memberEpoch !== undefined &&
   member.memberEpoch < group.groupEpoch;
 
-export const formatAssignment = (assignment: GroupMemberAssignment) =>
-  `${assignment.topicName}: ${[...(assignment.partitionIds ?? [])].sort((a, b) => a - b).join(', ')}`;
+export const formatAssignment = (
+  assignment: Pick<GroupMemberAssignment, 'topicName'> & { partitionIds?: readonly number[] | null }
+) => `${assignment.topicName}: ${[...(assignment.partitionIds ?? [])].sort((a, b) => a - b).join(', ')}`;
 
 export const membersSummary = (group: GroupDescription, members: GroupMemberDescription[]) => {
   let summary = `${members.length} ${members.length === 1 ? 'member' : 'members'}`;

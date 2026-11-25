@@ -9,11 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
+import { extractSecretName, formatSecretTemplate, SECRET_TEMPLATE_REGEX } from './secret-utils';
 import { describe, expect, test } from 'bun:test';
 
-import { extractSecretName, formatSecretTemplate, SECRET_TEMPLATE_REGEX } from './secret-utils';
-
-describe('SECRET_TEMPLATE_REGEX', () => {
+describe('secret template regex', () => {
   test('should match valid secret template format', () => {
     expect(SECRET_TEMPLATE_REGEX.test('${secrets.MY_SECRET}')).toBe(true);
     expect(SECRET_TEMPLATE_REGEX.test('${secrets.CLIENT_KEY}')).toBe(true);
@@ -71,7 +70,7 @@ describe('formatSecretTemplate', () => {
   });
 });
 
-describe('Round-trip conversion', () => {
+describe('round-trip conversion', () => {
   test('should maintain secret name integrity through format and extract', () => {
     const secretNames = ['CLIENT_KEY', 'POSTGRES_DSN', 'REDPANDA_PASSWORD', 'DATABASE_PASSWORD', 'SECRET_123'];
 

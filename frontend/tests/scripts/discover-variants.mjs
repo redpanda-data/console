@@ -1,6 +1,8 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+/** @typedef {{name: string, dirName: string, path: string, config: import('../shared/variant-config.mjs').VariantConfig}} Variant */
+import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readVariantConfig } from '../shared/variant-config.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -9,7 +11,7 @@ const testsDir = resolve(__dirname, '..');
 /**
  * Reads one test-variant-* directory's config/variant.json
  * @param {string} dirName - Directory name under tests/ (e.g., "test-variant-console")
- * @returns {{name: string, dirName: string, path: string, config: object}|null} - null when the config is missing or unreadable
+ * @returns {Variant|null} - null when the config is missing or unreadable
  */
 function readVariant(dirName) {
   const variantPath = join(testsDir, dirName);
@@ -21,7 +23,7 @@ function readVariant(dirName) {
   }
 
   try {
-    const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+    const config = readVariantConfig(configPath);
     return {
       name: config.name,
       dirName,
@@ -29,14 +31,14 @@ function readVariant(dirName) {
       config,
     };
   } catch (error) {
-    console.error(`Error reading variant config at ${configPath}:`, error.message);
+    console.error(`Error reading variant config at ${configPath}:`, error instanceof Error ? error.message : error);
     return null;
   }
 }
 
 /**
  * Discovers all test variants by scanning for test-variant-* directories
- * @returns {Array<{name: string, dirName: string, path: string, config: object}>}
+ * @returns {Variant[]}
  */
 export function discoverVariants() {
   const variants = [];
@@ -44,11 +46,12 @@ export function discoverVariants() {
   const entries = readdirSync(testsDir, { withFileTypes: true });
 
   for (const entry of entries) {
-    if (entry.isDirectory() && entry.name.startsWith('test-variant-')) {
-      const variant = readVariant(entry.name);
-      if (variant) {
-        variants.push(variant);
-      }
+    if (!(entry.isDirectory() && entry.name.startsWith('test-variant-'))) {
+      continue;
+    }
+    const variant = readVariant(entry.name);
+    if (variant) {
+      variants.push(variant);
     }
   }
 
@@ -58,7 +61,7 @@ export function discoverVariants() {
 /**
  * Get a specific variant by name
  * @param {string} name - Variant name (e.g., "console")
- * @returns {object|null}
+ * @returns {Variant|null}
  */
 export function getVariant(name) {
   return discoverVariants().find((v) => v.name === name) ?? null;

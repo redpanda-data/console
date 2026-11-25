@@ -3,7 +3,7 @@ import { afterEach, expect, rs, test } from '@rstest/core';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import TransformDetails from './transform-details';
+import { TransformDetails } from './transform-details';
 import {
   PartitionTransformStatus_PartitionStatus,
   TransformMetadataSchema,
@@ -70,7 +70,7 @@ function renderTransformWithPartitionLags() {
     ],
   });
   useTransformsStore.setState({
-    refreshTransforms: rs.fn(),
+    refreshTransforms: rs.fn().mockResolvedValue(undefined),
     transforms: [transform],
     transformDetails: new Map([['example', transform]]),
   });
@@ -106,7 +106,7 @@ const transformNamed = (name: string) =>
 async function openExampleLogs(user: ReturnType<typeof userEvent.setup>) {
   const transforms = [transformNamed('example'), transformNamed('other')];
   useTransformsStore.setState({
-    refreshTransforms: rs.fn(),
+    refreshTransforms: rs.fn().mockResolvedValue(undefined),
     transforms,
     transformDetails: new Map(transforms.map((t) => [t.name, t])),
   });
@@ -124,7 +124,7 @@ test('restarts the log search for the transform the page now shows', async () =>
   rerender(<TransformDetails matchedPath="/transforms/other" transformName="other" />);
 
   expect(lastLogFilter()).toBe('return key == "other";');
-  expect(exampleSearch?.stopSearch).toHaveBeenCalled();
+  expect(exampleSearch?.stopSearch).toHaveBeenCalledWith();
 });
 
 test('refreshing the logs stops the running search and starts a new one', async () => {
@@ -135,6 +135,6 @@ test('refreshing the logs stops the running search and starts a new one', async 
   await user.click(screen.getByRole('button', { name: 'Refresh logs' }));
 
   expect(logSearches.at(-1)).not.toBe(firstSearch);
-  expect(firstSearch?.stopSearch).toHaveBeenCalled();
+  expect(firstSearch?.stopSearch).toHaveBeenCalledWith();
   expect(lastLogFilter()).toBe('return key == "example";');
 });

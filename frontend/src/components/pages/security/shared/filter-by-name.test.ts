@@ -17,22 +17,22 @@ const getName = (item: { name: string }) => item.name;
 
 describe('filterByName', () => {
   test('returns all items when query is empty', () => {
-    expect(filterByName(items, '', getName)).toEqual(items);
+    expect(filterByName(items, '', getName)).toStrictEqual(items);
   });
 
   test('filters case-insensitively', () => {
     const result = filterByName(items, 'alice', getName);
-    expect(result.map((i) => i.name)).toEqual(['alice', 'ALICE-admin']);
+    expect(result.map((i) => i.name)).toStrictEqual(['alice', 'ALICE-admin']);
   });
 
   test('supports regex patterns', () => {
     const result = filterByName(items, '^bob$', getName);
-    expect(result.map((i) => i.name)).toEqual(['Bob']);
+    expect(result.map((i) => i.name)).toStrictEqual(['Bob']);
   });
 
   test('falls back to substring match on invalid regex', () => {
     const result = filterByName(items, '[invalid(', getName);
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
   test('substring fallback is case-insensitive', () => {
@@ -43,6 +43,6 @@ describe('filterByName', () => {
 
   test('matches partial names', () => {
     const result = filterByName(items, 'li', getName);
-    expect(result.map((i) => i.name)).toEqual(['alice', 'charlie', 'ALICE-admin']);
+    expect(result.map((i) => i.name)).toStrictEqual(['alice', 'charlie', 'ALICE-admin']);
   });
 });

@@ -11,7 +11,7 @@
 
 import type { ApiData, TopicAssignments, TopicPartitions } from './reassign-logic';
 import type { Broker, Partition, PartitionReassignmentRequest, Topic } from '../../../../state/rest-interfaces';
-import { clone } from '../../../../utils/json-utils';
+import { arrayExcept, arrayFirst } from '../../../../utils/array-utils';
 import type { PartitionSelection } from '../reassign-partitions';
 import type { PartitionWithMoves, TopicWithMoves } from '../step3-review';
 
@@ -44,7 +44,7 @@ function resolveTopicPartitions(
   apiTopicPartitions: Map<string, Partition[] | null>,
   apiTopics: Topic[]
 ): TopicPartitions | undefined {
-  const topic = apiTopics.first((x) => x.topicName === topicName);
+  const topic = arrayFirst(apiTopics, (x) => x.topicName === topicName);
   if (!topic) {
     return; // topic not available
   }
@@ -53,15 +53,12 @@ function resolveTopicPartitions(
   if (!allPartitions) {
     return; // partitions for topic not available
   }
-
-  const relevantPartitions = partitionIds.map((id) => allPartitions.first((p) => p.id === id));
-  if (relevantPartitions.any((p) => p === null)) {
+  const relevantPartitions = partitionIds.map((id) => arrayFirst(allPartitions, (p) => p.id === id));
+  if (!relevantPartitions.every((p): p is Partition => p !== null)) {
     return; // at least one selected partition not available
   }
 
-  // we've checked that there can't be any falsy partitions
-  // so we assert that 'relevantPartitions' is the right type
-  return { topic, partitions: relevantPartitions as Partition[] };
+  return { topic, partitions: relevantPartitions };
 }
 
 export function computeMovedReplicas(
@@ -97,7 +94,7 @@ function computeTopicMoves(
   if (selectedIds === undefined || selectedIds === null || selectedIds.length === 0) {
     return;
   }
-  const topic = apiTopics?.first((t) => t.topicName === topicName);
+  const topic = apiTopics?.find((t) => t.topicName === topicName);
   if (topic === null || topic === undefined) {
     return;
   }
@@ -118,12 +115,12 @@ function selectedPartitionsWithMoves(
   assignments: PartitionReassignmentRequest
 ): PartitionWithMoves[] {
   const selected = new Set(selectedIds);
-  const assignedTopic = assignments.topics.first((t) => t.topicName === topicName);
-  return allPartitions
-    .filter((p) => selected.has(p.id))
-    .map((partition) =>
-      partitionWithMoves(partition, assignedTopic?.partitions.first((e) => e.partitionId === partition.id)?.replicas)
-    );
+  const assignedTopic = arrayFirst(assignments.topics, (t) => t.topicName === topicName);
+  return allPartitions.flatMap((partition) =>
+    selected.has(partition.id)
+      ? [partitionWithMoves(partition, assignedTopic?.partitions.find((e) => e.partitionId === partition.id)?.replicas)]
+      : []
+  );
 }
 
 const NO_REPLICA_MOVES = { numAddedBrokers: 0, numRemovedBrokers: 0, changedLeader: false, anyChanges: false };
@@ -142,8 +139,8 @@ function replicaMoves(oldBrokers: number[], newBrokers: number[]) {
   const changedLeader = oldBrokers[0] !== newBrokers[0];
   return {
     // find those brokers that are completely new (did not previously host a replica of this partition)
-    numAddedBrokers: newBrokers.except(oldBrokers).length,
-    numRemovedBrokers: oldBrokers.except(newBrokers).length,
+    numAddedBrokers: arrayExcept(newBrokers, oldBrokers).length,
+    numRemovedBrokers: arrayExcept(oldBrokers, newBrokers).length,
     changedLeader,
     anyChanges:
       changedLeader || oldBrokers.length !== newBrokers.length || oldBrokers.some((b, i) => b !== newBrokers[i]),
@@ -154,7 +151,7 @@ function replicaMoves(oldBrokers: number[], newBrokers: number[]) {
  * Returns a clone of topicAssignments with redundant reassignments removed
  */
 export function removeRedundantReassignments(topicAssignments: TopicAssignments, apiData: ApiData): TopicAssignments {
-  const result = clone(topicAssignments);
+  const result = structuredClone(topicAssignments);
 
   // Remove partition reassignments that have no effect
   for (const t of Object.keys(result)) {
@@ -172,7 +169,7 @@ function removeRedundantPartitions(result: TopicAssignments, t: string, curTopic
   const partitionIds = Object.keys(topicAssignment);
   const partitionIdsToRemove = partitionIds.filter((partitionId) =>
     keepsReplicas(
-      curTopicPartitions.first((p) => p.id === Number(partitionId))?.replicas,
+      arrayFirst(curTopicPartitions, (p) => p.id === Number(partitionId))?.replicas,
       topicAssignment[Number(partitionId)].brokers
     )
   );
@@ -198,26 +195,38 @@ function keepsReplicas(brokersBefore: number[] | undefined, brokersAfter: Broker
   );
 }
 
+function reassignmentPartitions(topicAssignment: TopicAssignments[string]) {
+  const partitions: PartitionReassignmentRequest['topics'][number]['partitions'] = [];
+  for (const [partitionId, assignment] of Object.entries(topicAssignment)) {
+    if (Object.hasOwn(topicAssignment, partitionId)) {
+      partitions.push({
+        partitionId: Number(partitionId),
+        replicas: assignment.brokers.map((b) => b.brokerId),
+      });
+    }
+  }
+  return partitions;
+}
+
 export function topicAssignmentsToReassignmentRequest(
   topicAssignments: TopicAssignments
 ): PartitionReassignmentRequest {
   // Construct reassignment request from topicAssignments
-  const topics: { topicName: string; partitions: { partitionId: number; replicas: number[] | null }[] }[] = [];
-  for (const t in topicAssignments) {
-    if (Object.hasOwn(topicAssignments, t)) {
-      const topicAssignment = topicAssignments[t];
-      const partitions: { partitionId: number; replicas: number[] | null }[] = [];
-      for (const partitionId in topicAssignment) {
-        if (Object.hasOwn(topicAssignment, partitionId)) {
-          partitions.push({
-            partitionId: Number(partitionId),
-            replicas: topicAssignment[partitionId].brokers.map((b) => b.brokerId),
-          });
-        }
-      }
-
-      topics.push({ topicName: t, partitions });
+  const topics: {
+    topicName: string;
+    partitions: {
+      partitionId: number;
+      replicas: number[] | null;
+    }[];
+  }[] = [];
+  const topicNames = Object.keys(topicAssignments ?? {});
+  for (const t of topicNames) {
+    if (!Object.hasOwn(topicAssignments, t)) {
+      continue;
     }
+    const topicAssignment = topicAssignments[t];
+    const partitions = reassignmentPartitions(topicAssignment);
+    topics.push({ topicName: t, partitions });
   }
 
   return { topics };

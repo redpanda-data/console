@@ -14,9 +14,7 @@ import * as Cookies from 'es-cookie';
 
 import { isAnalyticsEnabled } from '../utils/analytics';
 
-type Fields = {
-  [key: string]: string | number;
-};
+type Fields = Record<string, string | number>;
 
 // HubSpot Configuration Constants
 export const HUBSPOT_REGION = 'na1';
@@ -84,7 +82,7 @@ export const hubspotSubmit = ({
         onSuccess(response);
       }
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       if (onError) {
         onError(error);
       }
@@ -99,7 +97,7 @@ export const trackHubspotUser = (userData: HubspotUserData) => {
   if (!isAnalyticsEnabled()) {
     return;
   }
-  window._hsq = window._hsq || [];
+  window._hsq = window._hsq ?? [];
   window._hsq.push(['identify', userData]);
 };
 
@@ -111,6 +109,6 @@ export const trackHubspotPage = (path: string) => {
   if (!isAnalyticsEnabled()) {
     return;
   }
-  window._hsq = window._hsq || [];
+  window._hsq = window._hsq ?? [];
   window._hsq.push(['setPath', { path }]);
 };

@@ -11,24 +11,23 @@
 
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
-import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
-import { config, isEmbedded } from 'config';
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { ListPipelinesResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { SecretService } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { toast } from 'sonner';
-import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
-rs.mock('config', () => ({
-  ...rs.requireActual<typeof import('config')>('config'),
+import { WrapKafkaConnectOverview as KafkaConnectOverview } from './overview';
+import { config, isEmbedded } from '../../../runtime-config';
+import { useApiStore } from '../../../state/backend-api';
+import { useSupportedFeaturesStore } from '../../../state/supported-features';
+import { renderWithFileRoutes, screen, waitFor } from '../../../test-utils';
+import type { KafkaConnectors } from '../../../types/kafka-connect';
+
+rs.mock('runtime-config', () => ({
+  ...rs.requireActual<typeof import('runtime-config')>('runtime-config'),
   isEmbedded: rs.fn(),
 }));
-
-import KafkaConnectOverview from './overview';
-import { useApiStore } from '../../../state/backend-api';
-import type { KafkaConnectors } from '../../../state/rest-interfaces';
-import { useSupportedFeaturesStore } from '../../../state/supported-features';
-
 const NEW_LIST_CTA = 'Create a pipeline';
 
 const transport = createRouterTransport(({ rpc }) => {
@@ -59,21 +58,18 @@ describe('connect overview mount', () => {
     useSupportedFeaturesStore.setState(initialFeatures, true);
     config.rpcnSecretsClient = initialSecretsClient;
   });
-
-  it('renders the new pipelines list in Cloud', async () => {
+  test('renders the new pipelines list in Cloud', async () => {
     renderPage(true);
 
     await waitFor(() => expect(screen.getByRole('button', { name: NEW_LIST_CTA })).toBeInTheDocument());
   });
-
-  it('keeps the legacy path when not embedded', async () => {
+  test('keeps the legacy path when not embedded', async () => {
     useSupportedFeaturesStore.setState({ pipelinesApi: false });
     renderPage(false);
     await waitFor(() => expect(screen.getByText('Using Redpanda Connect')).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: NEW_LIST_CTA })).not.toBeInTheDocument();
   });
-
-  it('loads connectors without probing unused secret scope permissions', async () => {
+  test('loads connectors without probing unused secret scope permissions', async () => {
     const toastError = rs.spyOn(toast, 'error');
     config.rpcnSecretsClient = createClient(
       SecretService,
@@ -88,7 +84,7 @@ describe('connect overview mount', () => {
     renderPage(true);
 
     await waitFor(() =>
-      expect(useApiStore.getState().connectConnectors).toEqual({ isConfigured: false, clusters: null })
+      expect(useApiStore.getState().connectConnectors).toStrictEqual({ isConfigured: false, clusters: null })
     );
     expect(toastError).not.toHaveBeenCalled();
   });

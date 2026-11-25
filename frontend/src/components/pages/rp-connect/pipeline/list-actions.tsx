@@ -41,7 +41,8 @@ import {
   selectAutosaveEntry,
   useRpcnEditorAutosaveStore,
 } from 'state/rpcn-editor-autosave';
-import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
+import { asyncEvent } from 'utils/async-event';
+import { formatToastErrorMessageGRPC, reportActionError, showToast } from 'utils/toast.utils';
 
 import { DeleteDraftDialog } from './delete-draft-dialog';
 import type { PipelineRow } from './list-row';
@@ -122,12 +123,14 @@ export const ActionsCell = memo(
           />
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() =>
-                navigate({
-                  to: '/rp-connect/$pipelineId/edit',
-                  params: { pipelineId: encodeURIComponent(pipeline.id) },
-                })
-              }
+              onClick={asyncEvent(
+                () =>
+                  navigate({
+                    to: '/rp-connect/$pipelineId/edit',
+                    params: { pipelineId: encodeURIComponent(pipeline.id) },
+                  }),
+                reportActionError
+              )}
             >
               {isDraftRow ? 'Continue editing' : 'Edit'}
             </DropdownMenuItem>

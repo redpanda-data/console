@@ -1,8 +1,10 @@
 # Console policy checks
 
 A small [Oxlint JS plugin](https://oxc.rs/docs/guide/usage/linter/js-plugins) (`console/*`)
-for policy Biome does not express. Biome stays the general linter and formatter; every stock
-Oxlint category is off in `../.oxlintrc.json`, and each rule here is an error. The rule ideas
+for policy Biome does not express. Biome stays the general linter and formatter. The main
+`../oxlint.config.ts` combines these policies with typed and Registry checks; `../oxlint.policy.json`
+isolates syntax policies for their fixtures, with stock categories off. The main gate checks unused
+suppressions; the syntax-only runner cannot judge suppressions for its disabled typed rules. Each policy is an error. The rule ideas
 come from the Oxlint plugin in [pingdotgg/t3code](https://github.com/pingdotgg/t3code).
 
 ```bash
@@ -17,20 +19,21 @@ React Doctor does not adopt this config (`adoptExistingLintConfig: false` in
 
 ## Rules
 
-| Rule | Scope | Reports |
-| --- | --- | --- |
-| `no-hookless-use-function` | all files | a `use*` function, declaration or `const`, that calls no hook while it runs |
-| `no-real-time-wait-in-tests` | test code | sleeps that only the wall clock ends |
-| `no-polling-loop-in-tests` | test code | loops that sleep or yield until a condition holds, or only spin the scheduler |
-| `no-wall-clock-in-tests` | test code | `Date.now()`, `new Date()`, `Date()`, `performance.now()`, `process.hrtime()` |
-| `no-test-timeout-or-unreasoned-skip` | test code | per-test timeout/retry overrides; static skips and todos without an issue and reason |
-| `require-suppression-reason` | all files | Biome, Oxlint and ESLint suppressions and `@ts-expect-error` without a reason; any `@ts-ignore` or `@ts-nocheck` |
-| `no-native-title-tooltip` | all files | `title` on intrinsic HTML elements and on Registry `Button`/`Input` |
+| Rule                                 | Scope     | Reports                                                                                                          |
+| ------------------------------------ | --------- | ---------------------------------------------------------------------------------------------------------------- |
+| `no-hookless-use-function`           | all files | a `use*` function, declaration or `const`, that calls no hook while it runs                                      |
+| `no-real-time-wait-in-tests`         | test code | sleeps that only the wall clock ends                                                                             |
+| `no-polling-loop-in-tests`           | test code | loops that sleep or yield until a condition holds, or only spin the scheduler                                    |
+| `no-wall-clock-in-tests`             | test code | `Date.now()`, `new Date()`, `Date()`, `performance.now()`, `process.hrtime()`                                    |
+| `no-test-timeout-or-unreasoned-skip` | test code | per-test timeout/retry overrides; static skips and todos without an issue and reason                             |
+| `require-suppression-reason`         | all files | Biome, Oxlint and ESLint suppressions and `@ts-expect-error` without a reason; any `@ts-ignore` or `@ts-nocheck` |
+| `unstyled-button-exception`          | all files | an unstyled-appearance Biome exception on a control without literal `variant="unstyled"`                         |
+| `no-native-title-tooltip`            | all files | `title` on intrinsic HTML elements and on Registry `Button`/`Input`                                              |
 
 **Test code** is `*.test.*`, `*.spec.*` and shared `*.cases.*` files plus the helpers tests
 delegate to: `tests/shared/**`, `tests/test-variant-*/utils/**` and `*-test-helpers.*`. Moving a
 wait into a helper does not hide it. The rules themselves hold no path exceptions; the two files
-that own real time get narrow overrides in `.oxlintrc.json`:
+that own real time get narrow overrides in `oxlint.policy.json`:
 
 - `tests/shared/assertions.ts`: `retryAssertion` owns the retry clock other tests delegate to.
 - `tests/shared/global-setup.mjs`: waits for real Docker containers to accept connections.

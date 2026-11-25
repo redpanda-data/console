@@ -1,13 +1,15 @@
+import { create } from '@bufbuild/protobuf';
 import { afterEach, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
+import { SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 
-import RpConnectSecretCreate from './secrets-create';
+import { RpConnectSecretCreate } from './secrets-create';
 import { rpcnSecretManagerApi } from '../../../../state/backend-api';
 
 // No Playwright coverage is possible: the OSS test variant configures no `SecretService`.
 // Registry `Field` wires neither the label nor `required`, so both are asserted here.
-const existingSecret = { id: 'EXISTING_SECRET' };
+const existingSecret = create(SecretSchema, { id: 'EXISTING_SECRET' });
 const SECRET_NAME_LABEL = /Secret name/;
 const SECRET_VALUE_LABEL = /Secret value/;
 
@@ -17,7 +19,7 @@ afterEach(() => {
 });
 
 const renderCreatePage = () => {
-  rpcnSecretManagerApi.secrets = [existingSecret] as never;
+  rpcnSecretManagerApi.secrets = [existingSecret];
   rs.spyOn(RpConnectSecretCreate.prototype, 'refreshData').mockImplementation(() => undefined);
   render(<RpConnectSecretCreate matchedPath="/rp-connect/secrets/create" />);
 };

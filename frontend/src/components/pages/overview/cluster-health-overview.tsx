@@ -6,8 +6,9 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { UnhealthyReason } from '../../../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
 import { api } from '../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../state/supported-features';
+import { isNonEmptyString } from '../../../utils/string-utils';
 import { titleCase } from '../../../utils/utils';
-import DebugBundleLink from '../../debugBundle/debug-bundle-link';
+import { DebugBundleLink } from '../../debugBundle/debug-bundle-link';
 import { TonedIcon } from '../shared/toned-icon';
 
 const HUMAN_READABLE_UNHEALTHY_REASONS: Record<UnhealthyReason, string> = {
@@ -56,7 +57,7 @@ const ClusterHealthOverview = () => {
             </div>
           </div>
         </li>
-        {api.clusterHealth?.unhealthyReasons.includes(UnhealthyReason.LEADERLESS_PARTITIONS) && (
+        {api.clusterHealth?.unhealthyReasons.includes(UnhealthyReason.LEADERLESS_PARTITIONS) === true && (
           <li>
             <div className={ROW_GRID}>
               <div className="font-bold">{HUMAN_READABLE_UNHEALTHY_REASONS[UnhealthyReason.LEADERLESS_PARTITIONS]}</div>
@@ -65,14 +66,14 @@ const ClusterHealthOverview = () => {
                   <TonedIcon icon={ErrorIcon} size={18} tone="destructive" />{' '}
                   <div>{api.clusterHealth?.leaderlessPartitionsCount}</div>
                 </div>{' '}
-                <Link search={{} as never} to="/topics">
+                <Link search={{}} to="/topics">
                   View topics
                 </Link>
               </div>
             </div>
           </li>
         )}
-        {api.clusterHealth?.unhealthyReasons.includes(UnhealthyReason.UNDER_REPLICATED_PARTITIONS) && (
+        {api.clusterHealth?.unhealthyReasons.includes(UnhealthyReason.UNDER_REPLICATED_PARTITIONS) === true && (
           <li>
             <div className={ROW_GRID}>
               <div className="font-bold">
@@ -83,21 +84,21 @@ const ClusterHealthOverview = () => {
                   <TonedIcon icon={WarningIcon} size={18} tone="warning" />{' '}
                   <div>{api.clusterHealth?.underReplicatedPartitionsCount}</div>
                 </div>{' '}
-                <Link search={{} as never} to="/topics">
+                <Link search={{}} to="/topics">
                   View topics
                 </Link>
               </div>
             </div>
           </li>
         )}
-        {Boolean(api.userData?.canViewDebugBundle && featureDebugBundle) && (
+        {Boolean(api.userData?.canViewDebugBundle === true && featureDebugBundle) && (
           <li>
             <div className={ROW_GRID}>
               <div className="font-bold">Debug bundle</div>
               <div className="flex gap-2">
                 {/* debug-bundle-page.ts looks this up with getByRole('link'), so it stays an anchor;
-                    `$jobId` needs a segment. */}
-                {api.isDebugBundleInProgress && api.debugBundleStatus?.jobId ? (
+                `$jobId` needs a segment. */}
+                {api.isDebugBundleInProgress && isNonEmptyString(api.debugBundleStatus?.jobId) ? (
                   <Link
                     className={cn(buttonVariants({ variant: 'link' }), 'h-auto')}
                     params={{ jobId: api.debugBundleStatus.jobId }}
@@ -123,4 +124,4 @@ const ClusterHealthOverview = () => {
   );
 };
 
-export default ClusterHealthOverview;
+export { ClusterHealthOverview };

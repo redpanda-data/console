@@ -10,6 +10,8 @@
  */
 
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
+import { compareStrings } from '../../../../../utils/string-utils';
+import { isObject } from '../../../../../utils/type-guards';
 import type { FilterOp } from '../types';
 
 /**
@@ -35,10 +37,10 @@ export function resolveField(msg: TopicMessage, field: string): unknown {
   }
   let current: unknown = msg.value.isPayloadNull ? undefined : msg.value.payload;
   for (const segment of field.slice('value.'.length).split('.')) {
-    if (current === null || typeof current !== 'object') {
+    if (!isObject(current)) {
       return;
     }
-    current = (current as Record<string, unknown>)[segment];
+    current = current[segment];
   }
   return current;
 }
@@ -124,7 +126,7 @@ const collectPaths = (obj: unknown, prefix: string, depth: number, out: Set<stri
   if (depth > MAX_PATH_DEPTH || obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
     return;
   }
-  for (const [key, child] of Object.entries(obj as Record<string, unknown>)) {
+  for (const [key, child] of Object.entries(obj)) {
     const path = prefix ? `${prefix}.${key}` : key;
     out.add(path);
     collectPaths(child, path, depth + 1, out);
@@ -139,7 +141,7 @@ const loadedValuePaths = (messages: TopicMessage[]): string[] => {
       collectPaths(msg.value.payload, '', 0, paths);
     }
   }
-  return [...paths].sort();
+  return [...paths].sort(compareStrings);
 };
 
 /** Dotted paths that exist under the decoded value payloads of the loaded rows. */

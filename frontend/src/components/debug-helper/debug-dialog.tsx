@@ -11,16 +11,12 @@
 
 import { useRouterState } from '@tanstack/react-router';
 import { ElementTooltip } from 'components/misc/element-tooltip';
-import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
-import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from 'components/redpanda-ui/components/dialog';
-import { Empty, EmptyDescription } from 'components/redpanda-ui/components/empty';
 import { Input } from 'components/redpanda-ui/components/input';
 import {
   Item,
@@ -35,7 +31,6 @@ import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableRow } from 'components/redpanda-ui/components/table';
-import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import {
@@ -57,9 +52,8 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { Fragment, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
-import { pluralizeWithNumber } from 'utils/string';
 
-import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
+import { ConnectConfigsPanel, DebugSection, EmptyState, PopIn } from './debug-configs-panel';
 import { DebugPanda } from './debug-panda';
 import {
   clearOverrides as clearFlagOverrides,
@@ -75,23 +69,8 @@ import {
   VISUAL_DEBUGGERS,
 } from './visual-debuggers';
 import { useHotKey } from '../../hooks/use-hot-key';
-import env, { IsDev } from '../../utils/env';
+import { env, IsDev } from '../../utils/env';
 import { FEATURE_FLAGS } from '../constants';
-import { PIPELINE_END_RUNS, PipelineRunsCell } from '../pages/rp-connect/pipeline/pipeline-end-chip';
-import { type PipelineEndStatus, summarizePipelineEndYaml } from '../pages/rp-connect/utils/input-end-behavior';
-
-type BadgeProps = React.ComponentProps<typeof Badge>;
-
-const TAG_TONE: Record<ConnectConfigFixture['tags'][number], BadgeProps['tone']> = {
-  simple: 'success',
-  medium: 'informative',
-  complex: 'warning',
-  'edge-case': 'brand',
-  invalid: 'destructive',
-  stops: 'primary',
-};
-
-const RUNS_LABEL = new Map(PIPELINE_END_RUNS.map((option) => [option.value, option.label]));
 
 type ButtonVariant = React.ComponentProps<typeof Button>['variant'];
 
@@ -110,9 +89,14 @@ function emitConsole(level: 'log' | 'info' | 'warn' | 'error', message: string):
 function formatBytes(bytes: number): string {
   return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
 }
-
-function readStorageEntries(storage: Storage): { key: string; value: string }[] {
-  const entries: { key: string; value: string }[] = [];
+function readStorageEntries(storage: Storage): {
+  key: string;
+  value: string;
+}[] {
+  const entries: {
+    key: string;
+    value: string;
+  }[] = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
     if (key !== null) {
@@ -129,274 +113,14 @@ function useForceUpdate(): () => void {
 
 // Scale/fade pop for small elements that mount and unmount (badges, count dots).
 // Render inside an <AnimatePresence> so the exit animation can play.
-function PopIn({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <motion.span
-      animate={{ opacity: 1, scale: 1 }}
-      className={cn('inline-flex', className)}
-      exit={{ opacity: 0, scale: 0.5 }}
-      initial={{ opacity: 0, scale: 0.5 }}
-      transition={{ duration: 0.15, ease: 'easeOut' }}
-    >
-      {children}
-    </motion.span>
-  );
-}
-
-function EmptyState({ children }: { children: React.ReactNode }) {
-  return (
-    <Empty>
-      <EmptyDescription>{children}</EmptyDescription>
-    </Empty>
-  );
-}
-
-function DebugSection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card className="w-full max-w-full overflow-hidden" size="sm" variant="standard">
-      <CardHeader spacing="tight">
-        <CardTitle>
-          <span className="text-body-sm font-medium">{title}</span>
-        </CardTitle>
-        {description ? (
-          <CardDescription>
-            <span className="text-body-sm">{description}</span>
-          </CardDescription>
-        ) : null}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
-type FixtureTag = ConnectConfigFixture['tags'][number];
-
-// The Configs panel's sections, in the order they read.
-const FIXTURE_GROUPS: { tag: FixtureTag; label: string; chip: string; description: string }[] = [
-  { tag: 'simple', label: 'Simple', chip: 'Simple', description: 'Small pipelines to start from.' },
-  { tag: 'medium', label: 'Medium', chip: 'Medium', description: 'One source, a few processors, one sink.' },
-  {
-    tag: 'complex',
-    label: 'Complex',
-    chip: 'Complex',
-    description: 'Large, branching pipelines for the visual editor.',
-  },
-  {
-    tag: 'edge-case',
-    label: 'Edge cases',
-    chip: 'Edge',
-    description: 'Resource indirection, many secrets, editor perf.',
-  },
-  {
-    tag: 'stops',
-    label: 'Stop conditions',
-    chip: 'Stops',
-    description: 'Whether a pipeline ends on its own: input stop rows and the Runs column.',
-  },
-  { tag: 'invalid', label: 'Invalid', chip: 'Invalid', description: 'Configs the editor or Connect should reject.' },
-];
-
-// A stop-condition fixture lists under Stop conditions; any other under its first tag.
-const groupOf = (f: ConnectConfigFixture): FixtureTag => (f.tags.includes('stops') ? 'stops' : f.tags[0]);
-
-const SECRET_REF_RE = /\$\{secrets\.([A-Za-z0-9_]+)\}/g;
-
-type FixtureEntry = {
-  fixture: ConnectConfigFixture;
-  group: FixtureTag;
-  end: PipelineEndStatus;
-  lineCount: number;
-  /** Console secrets that must exist before Cloud saves it. */
-  secrets: string[];
-};
-
-function ConfigFixtureRow({ entry }: { entry: FixtureEntry }) {
-  const [expanded, setExpanded] = useState(false);
-  const { fixture, group, end, lineCount, secrets } = entry;
-
-  return (
-    <div className="border-b last:border-0">
-      <Collapsible onOpenChange={setExpanded} open={expanded}>
-        <div className="flex items-start gap-2 px-3 py-1.5 hover:bg-muted/40">
-          <CollapsibleTrigger
-            aria-label={`${expanded ? 'Hide' : 'Show'} the YAML for ${fixture.name}`}
-            render={
-              <button
-                className="flex min-w-0 flex-1 cursor-pointer items-start gap-1.5 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                type="button"
-              />
-            }
-          >
-            <TonedIcon className="mt-1 h-3 w-3 shrink-0" icon={expanded ? ChevronDown : ChevronRight} tone="muted" />
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="flex min-w-0 items-center gap-1.5">
-                <span className="truncate text-body-sm font-medium">{fixture.name}</span>
-                {fixture.tags
-                  .filter((tag) => tag !== group)
-                  .map((tag) => (
-                    <Badge className="shrink-0" key={tag} size="sm" tone={TAG_TONE[tag]} variant="subtle">
-                      {tag}
-                    </Badge>
-                  ))}
-              </span>
-              <span className={cn('text-body-sm text-muted-foreground', !expanded && 'line-clamp-2')}>
-                {fixture.description}
-                {secrets.length > 0 ? (
-                  <span className="whitespace-nowrap text-muted-foreground/70">
-                    {' · '}
-                    {pluralizeWithNumber(secrets.length, 'secret')}
-                  </span>
-                ) : null}
-              </span>
-            </span>
-          </CollapsibleTrigger>
-          <span className="w-28 shrink-0 pt-0.5">
-            <PipelineRunsCell status={end} />
-          </span>
-          <ElementTooltip content="Copy YAML">
-            <CopyButton
-              aria-label={`Copy the YAML for ${fixture.name}`}
-              className="shrink-0"
-              content={fixture.yaml}
-              size="icon-xs"
-              variant="ghost"
-            />
-          </ElementTooltip>
-        </div>
-        <CollapsibleContent>
-          <div className="flex flex-col gap-1.5 pr-3 pb-2.5 pl-7.5">
-            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-body-sm text-muted-foreground">
-              {pluralizeWithNumber(lineCount, 'line')} ·
-              {secrets.length > 0 ? (
-                <>
-                  {' '}
-                  needs {secrets.length === 1 ? 'the secret' : 'the secrets'}
-                  {/* InlineCode's chip at the row's text size and line height */}
-                  {secrets.map((name) => (
-                    <code
-                      className="relative rounded bg-surface-subtle px-[0.3rem] font-mono text-body-sm leading-normal font-medium"
-                      key={name}
-                    >
-                      {name}
-                    </code>
-                  ))}
-                </>
-              ) : (
-                ' needs no secrets'
-              )}
-            </div>
-            <SimpleCodeBlock
-              allowCopy={false}
-              className="my-0"
-              code={fixture.yaml}
-              language="yaml"
-              maxHeight="sm"
-              size="sm"
-              width="full"
-            />
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    </div>
-  );
-}
-
-function ConnectConfigsPanel() {
-  const [filter, setFilter] = useState('');
-  const [shown, setShown] = useState<'all' | FixtureTag>('all');
-  const entries = useMemo(
-    (): FixtureEntry[] =>
-      CONNECT_CONFIG_FIXTURES.map((fixture) => ({
-        fixture,
-        group: groupOf(fixture),
-        // How it ends, as the pipelines list's Runs column reads it.
-        end: summarizePipelineEndYaml(fixture.yaml).status,
-        lineCount: fixture.yaml.split('\n').length,
-        secrets: [...new Set(Array.from(fixture.yaml.matchAll(SECRET_REF_RE), (m) => m[1]))],
-      })),
-    []
-  );
-  const sections = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    const matches = (e: FixtureEntry) =>
-      !q ||
-      [e.fixture.name, e.fixture.description, ...e.fixture.tags, RUNS_LABEL.get(e.end) ?? '', ...e.secrets].some((s) =>
-        s.toLowerCase().includes(q)
-      );
-    return FIXTURE_GROUPS.filter((g) => shown === 'all' || g.tag === shown)
-      .map((g) => ({ ...g, entries: entries.filter((e) => e.group === g.tag && matches(e)) }))
-      .filter((g) => g.entries.length > 0);
-  }, [entries, filter, shown]);
-
-  return (
-    <div className="flex flex-col gap-3">
-      {/* Stays in view while the list scrolls. Sticky offsets count from inside the scroller's padding,
-          so the negative top and margins cancel it. */}
-      <div className="sticky -top-4 z-10 -mx-5 -mt-4 flex flex-wrap items-center gap-2 border-b bg-background px-5 py-2">
-        <Input
-          aria-label="Filter configs by name, tag, secret or how they run"
-          containerClassName="min-w-40 flex-1"
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter configs…"
-          size="sm"
-          value={filter}
-        />
-        <ToggleGroup
-          aria-label="Show"
-          attached={false}
-          onValueChange={([next]) => {
-            if (next) {
-              setShown(next as 'all' | FixtureTag);
-            }
-          }}
-          size="sm"
-          value={[shown]}
-        >
-          <ToggleGroupItem value="all">
-            <span className="text-body-sm">All</span>
-          </ToggleGroupItem>
-          {FIXTURE_GROUPS.map((g) => (
-            <ToggleGroupItem key={g.tag} value={g.tag}>
-              <span className="text-body-sm">{g.chip}</span>
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </div>
-      {sections.length === 0 ? (
-        <EmptyState>No configs match “{filter}”.</EmptyState>
-      ) : (
-        sections.map((section) => (
-          <section aria-label={section.label} className="overflow-hidden rounded-md border" key={section.tag}>
-            <div className="flex items-baseline gap-2 border-b bg-muted/30 px-3 py-1.5">
-              <span className="shrink-0 text-body-sm font-medium">{section.label}</span>
-              <Badge className="shrink-0" size="sm" tone="default" variant="outline">
-                {section.entries.length}
-              </Badge>
-              <span className="min-w-0 text-body-sm text-muted-foreground">{section.description}</span>
-            </div>
-            {section.entries.map((entry) => (
-              <ConfigFixtureRow entry={entry} key={entry.fixture.id} />
-            ))}
-          </section>
-        ))
-      )}
-    </div>
-  );
-}
-
 function ErrorThrower(): never {
   throw new Error('DebugDialog: synthetic render error to test ErrorBoundary');
 }
-
-const TOAST_ACTIONS: { label: string; variant: ButtonVariant; run: () => void }[] = [
+const TOAST_ACTIONS: {
+  label: string;
+  variant: ButtonVariant;
+  run: () => void;
+}[] = [
   { label: 'Success', variant: 'primary', run: () => toast.success('Looking good — operation succeeded.') },
   { label: 'Info', variant: 'outline', run: () => toast.info('Heads up — informational toast.') },
   { label: 'Warning', variant: 'outline', run: () => toast.warning('Be careful — this might be slow.') },
@@ -567,7 +291,7 @@ function StorageEntryRow({ storageKey, value }: { storageKey: string; value: str
           className="mt-0.5 shrink-0"
           render={<Button size="icon-xs" variant="ghost" />}
         >
-          {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          {expanded ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
         </CollapsibleTrigger>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex min-w-0 items-center gap-1.5">
@@ -717,7 +441,7 @@ function StoragePanel() {
 function EnvironmentPanel() {
   const router = useRouterState();
   const info = {
-    nodeEnv: process.env.NODE_ENV ?? '(unset)',
+    nodeEnv: env.NODE_ENV ?? '(unset)',
     isDev: IsDev,
     gitSha: env.REACT_APP_CONSOLE_GIT_SHA || '(unset)',
     gitRef: env.REACT_APP_CONSOLE_GIT_REF || '(unset)',
@@ -899,8 +623,13 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
 }
 
 type PanelId = 'overview' | 'simulate' | 'visual' | 'flags' | 'storage' | 'env' | 'configs';
-
-const PANEL_META: Record<PanelId, { title: string; description: string }> = {
+const PANEL_META: Record<
+  PanelId,
+  {
+    title: string;
+    description: string;
+  }
+> = {
   overview: {
     title: 'Overview',
     description: 'Live status of every debug subsystem. Select a row to open it.',
@@ -933,32 +662,38 @@ const PANEL_META: Record<PanelId, { title: string; description: string }> = {
       'Pipeline YAMLs for exercising the editor, lint and stop conditions. Paste one into the YAML tab of a create or edit page; Cloud saves it once the secrets it lists exist.',
   },
 };
-
-const NAV_GROUPS: { label: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
+const NAV_GROUPS: {
+  label: string;
+  items: {
+    id: PanelId;
+    label: string;
+    icon: React.ReactNode;
+  }[];
+}[] = [
   {
     label: 'General',
     items: [
-      { id: 'overview', label: 'Overview', icon: <Info className="h-3.5 w-3.5 shrink-0" /> },
-      { id: 'simulate', label: 'Simulate', icon: <Zap className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'overview', label: 'Overview', icon: <Info className="size-3.5 shrink-0" /> },
+      { id: 'simulate', label: 'Simulate', icon: <Zap className="size-3.5 shrink-0" /> },
     ],
   },
   {
     label: 'Toggles',
     items: [
-      { id: 'visual', label: 'Visual', icon: <Eye className="h-3.5 w-3.5 shrink-0" /> },
-      { id: 'flags', label: 'Feature flags', icon: <Flag className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'visual', label: 'Visual', icon: <Eye className="size-3.5 shrink-0" /> },
+      { id: 'flags', label: 'Feature flags', icon: <Flag className="size-3.5 shrink-0" /> },
     ],
   },
   {
     label: 'Inspect',
     items: [
-      { id: 'storage', label: 'Storage', icon: <Database className="h-3.5 w-3.5 shrink-0" /> },
-      { id: 'env', label: 'Environment', icon: <Cog className="h-3.5 w-3.5 shrink-0" /> },
+      { id: 'storage', label: 'Storage', icon: <Database className="size-3.5 shrink-0" /> },
+      { id: 'env', label: 'Environment', icon: <Cog className="size-3.5 shrink-0" /> },
     ],
   },
   {
     label: 'Connect',
-    items: [{ id: 'configs', label: 'Configs', icon: <FileCode className="h-3.5 w-3.5 shrink-0" /> }],
+    items: [{ id: 'configs', label: 'Configs', icon: <FileCode className="size-3.5 shrink-0" /> }],
   },
 ];
 
@@ -966,32 +701,37 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
   const overlayCount = getEnabledVisualDebuggers().length;
   const overrideCount = Object.keys(getFlagOverrides()).length;
   const sha = env.REACT_APP_CONSOLE_GIT_SHA ? env.REACT_APP_CONSOLE_GIT_SHA.slice(0, 7) : 'local dev build';
-
-  const rows: { panel: PanelId; icon: React.ReactNode; label: string; value: string; active: boolean }[] = [
+  const rows: {
+    panel: PanelId;
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    active: boolean;
+  }[] = [
     {
       panel: 'visual',
-      icon: <Eye className="h-4 w-4" />,
+      icon: <Eye className="size-4" />,
       label: 'Visual debuggers',
       value: overlayCount > 0 ? `${overlayCount} overlay${overlayCount === 1 ? '' : 's'} enabled` : 'None enabled',
       active: overlayCount > 0,
     },
     {
       panel: 'flags',
-      icon: <Flag className="h-4 w-4" />,
+      icon: <Flag className="size-4" />,
       label: 'Feature flags',
       value: overrideCount > 0 ? `${overrideCount} overridden` : 'All defaults',
       active: overrideCount > 0,
     },
     {
       panel: 'storage',
-      icon: <Database className="h-4 w-4" />,
+      icon: <Database className="size-4" />,
       label: 'Browser storage',
       value: `${window.localStorage.length} local · ${window.sessionStorage.length} session keys`,
       active: false,
     },
     {
       panel: 'env',
-      icon: <Cog className="h-4 w-4" />,
+      icon: <Cog className="size-4" />,
       label: 'Build',
       value: sha,
       active: false,
@@ -1006,7 +746,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
           {index > 0 ? <ItemSeparator /> : null}
           <Item
             className="cursor-pointer text-left"
-            render={<button onClick={() => onNavigate(panel)} type="button" />}
+            render={<Button onClick={() => onNavigate(panel)} type="button" variant="unstyled" />}
             size="sm"
           >
             <ItemMedia variant="icon">{icon}</ItemMedia>
@@ -1023,7 +763,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
                 </PopIn>
               ) : null}
             </AnimatePresence>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0" color="var(--color-muted-foreground)" />
+            <ChevronRight className="size-3.5 shrink-0" color="var(--color-muted-foreground)" />
           </Item>
         </Fragment>
       ))}
@@ -1071,7 +811,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         <DialogHeader align="left" spacing="tight">
           <DialogTitle>
             <span className="flex items-center gap-2">
-              <DebugPanda className="h-5 w-5" />
+              <DebugPanda className="size-5" />
               Debug helpers
               <Badge size="sm" tone="default" variant="outline">
                 dev only
@@ -1093,16 +833,20 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                       const count = railCounts[id] ?? 0;
                       const active = panel === id;
                       return (
-                        <button
+                        <Button
                           className={cn(
+                            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                             'flex h-7 w-full cursor-pointer items-center gap-2 rounded-md px-2 text-left text-body-sm transition-colors',
                             active
-                              ? 'bg-muted font-medium text-foreground'
-                              : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                              ? // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                                'bg-muted font-medium text-foreground'
+                              : // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                                'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                           )}
                           key={id}
                           onClick={() => setPanel(id)}
                           type="button"
+                          variant="unstyled"
                         >
                           {icon}
                           <span className="min-w-0 flex-1 truncate">{itemLabel}</span>
@@ -1113,7 +857,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                               </PopIn>
                             ) : null}
                           </AnimatePresence>
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
@@ -1162,13 +906,15 @@ function DebugLauncher({ onClick }: { onClick: () => void }) {
 
   return createPortal(
     <ElementTooltip content="Debug helpers — ⌃/⌘⇧D">
-      <button
+      <Button
         aria-label="Open debug helpers (Ctrl/Cmd+Shift+D)"
-        className="fixed right-[56px] bottom-[64px] z-40 flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full border bg-linear-to-b from-background to-muted text-muted-foreground opacity-85 shadow-md transition-all hover:text-foreground hover:opacity-100 hover:shadow-lg"
+        // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+        className="fixed right-[56px] bottom-[64px] z-40 flex size-[40px] cursor-pointer items-center justify-center rounded-full border bg-linear-to-b from-background to-muted text-muted-foreground opacity-85 shadow-md transition-all hover:text-foreground hover:opacity-100 hover:shadow-lg"
         onClick={onClick}
         type="button"
+        variant="unstyled"
       >
-        <DebugPanda className="h-[22px] w-[22px]" />
+        <DebugPanda className="size-[22px]" />
         <AnimatePresence initial={false}>
           {activeCount > 0 ? (
             <PopIn className="absolute -top-1 -right-1" key="count">
@@ -1176,7 +922,7 @@ function DebugLauncher({ onClick }: { onClick: () => void }) {
             </PopIn>
           ) : null}
         </AnimatePresence>
-      </button>
+      </Button>
     </ElementTooltip>,
     document.body
   );
@@ -1188,7 +934,7 @@ export function DebugHelperRoot() {
   useHotKey({
     key: 'd',
     modifiers: ['meta', 'shift'],
-    enabled: Boolean(IsDev),
+    enabled: IsDev,
     onTrigger: () => setOpen((v) => !v),
   });
 

@@ -10,6 +10,16 @@
  */
 
 import type { Broker, BrokerConfig, Partition, Topic } from '../../../../state/rest-interfaces';
+import {
+  arrayCount,
+  arrayDistinct,
+  arrayExcept,
+  arrayFirst,
+  arrayGroupInto,
+  arrayMaxBy,
+  arrayMinBy,
+  arraySum,
+} from '../../../../utils/array-utils';
 import { toJson } from '../../../../utils/json-utils';
 
 // Requirements:
@@ -35,11 +45,7 @@ export type TopicPartitions = {
 };
 
 // Result of a reassignment computation. Tells you what brokers to use for each partition in each topic.
-export type TopicAssignments = {
-  [topicName: string]: {
-    [partitionId: number]: PartitionAssignments;
-  };
-};
+export type TopicAssignments = Record<string | number, Record<number, PartitionAssignments>>;
 export type PartitionAssignments = {
   partition: Partition;
   brokers: Broker[]; // brokers the replicas are on; meaning length is always equal to the replicationFactor
@@ -50,9 +56,11 @@ type BrokerReplicaCount = {
   broker: ExBroker;
   assignedReplicas: number;
 };
-
-export type ApiData = { brokers: Broker[]; topics: Topic[]; topicPartitions: Map<string, Partition[]> };
-
+export type ApiData = {
+  brokers: Broker[];
+  topics: Topic[];
+  topicPartitions: Map<string, Partition[]>;
+};
 function computeReassignments(
   apiData: ApiData,
   selectedTopicPartitions: TopicPartitions[],
@@ -62,9 +70,7 @@ function computeReassignments(
 
   // Track information like used disk space per broker, so we extend each broker with some metadata
   const allExBrokers = createExBrokers(apiData, selectedTopicPartitions);
-  const targetExBrokers = allExBrokers.filter(
-    (exb) => targetBrokers.find((b) => exb.brokerId === b.brokerId) !== undefined
-  );
+  const targetExBrokers = allExBrokers.filter((exb) => targetBrokers.some((b) => exb.brokerId === b.brokerId));
 
   const resultAssignments = createEmptyAssignments(selectedTopicPartitions);
 
@@ -141,9 +147,11 @@ function distributeReplicas(
     );
   }
 }
-
-type LeaderOptimizationRound = { skewBefore: number; skewAfter: number; swaps: number };
-
+type LeaderOptimizationRound = {
+  skewBefore: number;
+  skewAfter: number;
+  swaps: number;
+};
 /** Runs up to 10 leader balancing rounds, stopping once the skew is 0 or stops improving. */
 function optimizeLeaders(
   selectedTopicPartitions: TopicPartitions[],
@@ -177,14 +185,14 @@ function logLeaderSkew(allExBrokers: ExBroker[], optimizationLog: LeaderOptimiza
   console.debug('leader skew in cluster', {
     actual: {
       skew: skewActual.range,
-      min: `${skewActual.minValue} partitions (brokerId ${skewActual.min?.brokerId})`,
-      max: `${skewActual.maxValue} partitions (brokerId ${skewActual.max?.brokerId})`,
+      min: `${skewActual.minValue} partitions (brokerId ${String(skewActual.min?.brokerId)})`,
+      max: `${skewActual.maxValue} partitions (brokerId ${String(skewActual.max?.brokerId)})`,
     },
 
     planned: {
       skew: skewPlannedInCluster.range,
-      min: `${skewPlannedInCluster.minValue} partitions (brokerId ${skewPlannedInCluster.min?.brokerId})`,
-      max: `${skewPlannedInCluster.maxValue} partitions (brokerId ${skewPlannedInCluster.max?.brokerId})`,
+      min: `${skewPlannedInCluster.minValue} partitions (brokerId ${String(skewPlannedInCluster.min?.brokerId)})`,
+      max: `${skewPlannedInCluster.maxValue} partitions (brokerId ${String(skewPlannedInCluster.max?.brokerId)})`,
     },
 
     log: optimizationLog,
@@ -198,7 +206,7 @@ function computeTopicAssignments(
   topicPartitions: TopicPartitions,
   targetBrokers: ExBroker[],
   allBrokers: ExBroker[],
-  resultAssignments: { [partitionId: number]: PartitionAssignments }
+  resultAssignments: Record<number, PartitionAssignments>
 ) {
   const { topic, partitions } = topicPartitions;
 
@@ -340,9 +348,8 @@ function computeReplicaAssignments(
   brokerReplicaCount: BrokerReplicaCount[],
   allBrokers: ExBroker[]
 ): ExBroker[] {
-  // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-  const sourceBrokers = partition.replicas.map((id) => allBrokers.first((b) => b.brokerId === id)!);
-  if (sourceBrokers.any((x) => x === null)) {
+  const sourceBrokers = partition.replicas.map((id) => arrayFirst(allBrokers, (b) => b.brokerId === id));
+  if (!sourceBrokers.every((broker): broker is ExBroker => broker !== null)) {
     throw new Error(
       `replicas of partition ${partition.id} (${toJson(partition.replicas)}) define a brokerId which can't be found in 'allBrokers': ${toJson(allBrokers.map((b) => ({ id: b.brokerId, address: b.address, rack: b.rack })))}`
     );
@@ -351,9 +358,12 @@ function computeReplicaAssignments(
   const ctx: CandidateContext = {
     consumedBrokers: [],
     sourceBrokers,
-    sourceRacks: sourceBrokers.map((b) => b.rack).distinct(),
+    sourceRacks: arrayDistinct(sourceBrokers.map((b) => b.rack)),
     replicasInRack: (rack: string) =>
-      brokerReplicaCount.filter((x) => x.broker.rack === rack).sum((x) => x.assignedReplicas),
+      arraySum(
+        brokerReplicaCount.filter((x) => x.broker.rack === rack),
+        (x) => x.assignedReplicas
+      ),
   };
 
   const resultBrokers: ExBroker[] = []; // result
@@ -395,7 +405,7 @@ function balancePartitionLeader(
   // map plain brokers to extended brokers (those with attached tracking data)
   const newBrokers = assignment.brokers.map(
     // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-    (b) => allExBrokers.first((e) => e.brokerId === b.brokerId)!
+    (b) => arrayFirst(allExBrokers, (e) => e.brokerId === b.brokerId)!
   );
   const plannedLeader = newBrokers[0];
 
@@ -418,7 +428,7 @@ function balancePartitionLeader(
   // mapping our extendedBrokers back to the "simple" brokers
   assignment.brokers = newBrokers.map(
     // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-    (exBroker) => apiData.brokers.first((b) => b.brokerId === exBroker.brokerId)!
+    (exBroker) => arrayFirst(apiData.brokers, (b) => b.brokerId === exBroker.brokerId)!
   );
 
   return true;
@@ -455,8 +465,7 @@ function findRiskyPartitions(
   resultAssignments: TopicAssignments,
   getExBroker: (id: number) => ExBroker
 ): RiskyPartition[] {
-  const targetRacks = targetBrokers.map((b) => b.rack).distinct();
-
+  const targetRacks = arrayDistinct(targetBrokers.map((b) => b.rack));
   return selectedTopicPartitions
     .flatMap(({ topic, partitions }) =>
       partitions.map((partition) => {
@@ -482,7 +491,7 @@ function assessPartitionRisk(
     topic,
     partition,
     // Check if the partition would be offline if each single broker is offline
-    criticalBrokers: targetBrokers.filter((b) => replicaBrokers.except([b]).length === 0),
+    criticalBrokers: targetBrokers.filter((b) => arrayExcept(replicaBrokers, [b]).length === 0),
     // Check for offline racks
     criticalRacks: targetRacks.filter((rack) => replicaBrokers.filter((x) => x.rack !== rack).length === 0),
   };
@@ -492,7 +501,8 @@ function assessPartitionRisk(
 // Except for situations where a topic has a replication factor of 1 (each partition will always be on only one broker),
 // or when there is only a single rack available (happens when brokers have null or empty string set as their rack).
 function reportRiskyPartitions(riskyPartitions: RiskyPartition[]) {
-  for (const { key: topic, items: partitionIssues } of riskyPartitions.groupInto((x) => x.topic)) {
+  const issuesByTopic = arrayGroupInto(riskyPartitions, (x) => x.topic);
+  for (const { key: topic, items: partitionIssues } of issuesByTopic) {
     // topics with rf:1 will always be an issue
     if (topic.replicationFactor <= 1) {
       continue;
@@ -612,9 +622,11 @@ function allTopicPartitions(topicPartitions: ApiData['topicPartitions'], brokerI
     return partitions;
   });
 }
-
-type BrokerUsage = { replicas: number; size: number; leader: number };
-
+type BrokerUsage = {
+  replicas: number;
+  size: number;
+  leader: number;
+};
 /**
  * The replicas, leaderships and log dir size that `partitions` place on broker `brokerId`.
  * `fallbackSize` sizes a hosted replica that has no log dir entry for the broker.
@@ -622,16 +634,17 @@ type BrokerUsage = { replicas: number; size: number; leader: number };
 function brokerUsage(partitions: Partition[], brokerId: number, fallbackSize: (p: Partition) => number): BrokerUsage {
   const usage: BrokerUsage = { replicas: 0, size: 0, leader: 0 };
   for (const p of partitions) {
-    const replicasOnBroker = p.replicas.count((x) => x === brokerId);
+    const replicasOnBroker = arrayCount(p.replicas, (x) => x === brokerId);
     usage.replicas += replicasOnBroker;
     usage.leader += p.leader === brokerId ? 1 : 0;
 
-    if (replicasOnBroker > 0) {
-      // This broker hosts a replica of this partition, find the size of its log dir on this broker.
-      // using 'first()' because each broker has exactly one logDirEntry (or maybe zero if broker is offline)
-      const logDirEntry = p.partitionLogDirs.first((x) => !x.error && x.brokerId === brokerId);
-      usage.size += logDirEntry ? logDirEntry.size : fallbackSize(p);
+    if (replicasOnBroker === 0) {
+      continue;
     }
+    // This broker hosts a replica of this partition, find the size of its log dir on this broker.
+    // using 'first()' because each broker has exactly one logDirEntry (or maybe zero if broker is offline)
+    const logDirEntry = arrayFirst(p.partitionLogDirs, (x) => !x.error && x.brokerId === brokerId);
+    usage.size += logDirEntry ? logDirEntry.size : fallbackSize(p);
   }
   return usage;
 }
@@ -653,14 +666,14 @@ function checkArguments(apiData: ApiData, selectedTopicPartitions: TopicPartitio
   checkApiData(apiData);
 
   // Require at least one selected partition
-  if (selectedTopicPartitions.sum((x) => x.partitions.length) === 0) {
+  if (arraySum(selectedTopicPartitions, (x) => x.partitions.length) === 0) {
     throw new Error('No partitions selected');
   }
 
   // Require at least as many brokers as the highest replication factor of any selected partition
-  const maxRf = selectedTopicPartitions
-    .groupInto((t) => t.topic.replicationFactor) // group topics by replication factor
-    .sort((a, b) => b.key - a.key)[0]; // sort descending, then take first group
+  const maxRf = arrayGroupInto(selectedTopicPartitions, (t) => t.topic.replicationFactor).sort(
+    (a, b) => b.key - a.key
+  )[0]; // sort descending, then take first group
   if (maxRf.key > targetBrokers.length) {
     throw new Error(
       `You selected ${targetBrokers.length} target brokers, but the following topics have a replicationFactor of ${maxRf.key}, so at least ${maxRf.key} target brokers are required: ${toJson(maxRf.items.map((t) => t.topic.topicName))}`
@@ -704,11 +717,11 @@ function calcRange<T>(
   }
 
   // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-  const max = ar.maxBy(selector)!;
+  const max = arrayMaxBy(ar, selector)!;
   const maxVal = selector(max);
 
   // biome-ignore lint/style/noNonNullAssertion: not touching to avoid breaking code during migration
-  const min = ar.minBy(selector)!;
+  const min = arrayMinBy(ar, selector)!;
   const minVal = selector(min);
 
   const range = maxVal - minVal;

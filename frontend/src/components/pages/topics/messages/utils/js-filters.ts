@@ -29,7 +29,7 @@ export function visibleJsFilters(jsFilters: FilterEntry[], canUseJsFilters: bool
  * Empty when no filter is active and complete.
  */
 export function buildFilterInterpreterCode(jsFilters: FilterEntry[]): string {
-  const active = jsFilters.filter((f) => f.isActive && f.code && f.transpiledCode);
+  const active = jsFilters.filter((f) => f.isActive && Boolean(f.code) && Boolean(f.transpiledCode));
   if (active.length === 0) {
     return '';
   }

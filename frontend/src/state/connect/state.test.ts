@@ -11,10 +11,11 @@
 
 import { waitFor } from '@testing-library/dom';
 
-import { afterAll, beforeEach, describe, expect, it, mock, spyOn, test } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import type { ConnectorProperty, ConnectorValidationResult } from '../../types/kafka-connect';
+import { DataType, PropertyImportance, PropertyWidth } from '../../types/kafka-connect';
+import { initialPropertyValue, parsePropertyValue } from '../../types/kafka-connect-properties';
 import { type api, useApiStore } from '../backend-api';
-import type { ConnectorProperty, ConnectorValidationResult } from '../rest-interfaces';
-import { DataType, PropertyImportance, PropertyWidth } from '../rest-interfaces';
 
 const mockValidateConnectorConfig = spyOn(useApiStore.getState(), 'validateConnectorConfig').mockImplementation(
   mock<typeof api.validateConnectorConfig>()
@@ -28,7 +29,7 @@ const { ConnectClusterStore, ConnectorPropertiesStore, SecretsStore } = await im
 
 function createMockProperty(overrides: {
   name: string;
-  type?: string;
+  type?: ConnectorProperty['definition']['type'];
   default_value?: string | null;
   custom_default_value?: string;
   value?: string | null;
@@ -37,7 +38,7 @@ function createMockProperty(overrides: {
   return {
     definition: {
       name: overrides.name,
-      type: (overrides.type ?? DataType.String) as ConnectorProperty['definition']['type'],
+      type: overrides.type ?? DataType.String,
       required: overrides.required ?? false,
       default_value: overrides.default_value ?? null,
       custom_default_value: overrides.custom_default_value,
@@ -96,7 +97,7 @@ describe('the ConnectorPropertiesStore', () => {
   });
 
   describe('custom_default_value handling', () => {
-    it('applies custom_default_value for new connectors (appliedConfig = undefined)', async () => {
+    test('applies custom_default_value for new connectors (appliedConfig = undefined)', async () => {
       // Arrange: Property with custom_default_value
       const properties = [
         createMockProperty({
@@ -127,7 +128,7 @@ describe('the ConnectorPropertiesStore', () => {
       expect(prop?.value).toBe('true');
     });
 
-    it('preserves user config when editing existing connector (appliedConfig provided)', async () => {
+    test('preserves user config when editing existing connector (appliedConfig provided)', async () => {
       // Arrange: Property with custom_default_value, but user has different value
       const properties = [
         createMockProperty({
@@ -158,7 +159,7 @@ describe('the ConnectorPropertiesStore', () => {
       expect(prop?.value).toBe(false); // Sanitized to boolean
     });
 
-    it('applies custom_default_value only to properties that have it', async () => {
+    test('applies custom_default_value only to properties that have it', async () => {
       // Arrange: Mix of properties with and without custom_default_value
       const properties = [
         createMockProperty({
@@ -198,7 +199,7 @@ describe('the ConnectorPropertiesStore', () => {
       expect(store.propsByName.get('prop.with.no.defaults')?.value).toBeNull();
     });
 
-    it('applies custom_default_value for boolean properties correctly', async () => {
+    test('applies custom_default_value for boolean properties correctly', async () => {
       // Arrange: Boolean properties with various custom_default_value settings
       const properties = [
         createMockProperty({
@@ -232,7 +233,7 @@ describe('the ConnectorPropertiesStore', () => {
   });
 
   describe('the SecretsStore', () => {
-    it('filters out secrets with empty values', () => {
+    test('filters out secrets with empty values', () => {
       // Only non-empty secrets should be returned
       const { secrets } = secretsStoreWithOneFilledSecret();
       expect(secrets.size).toBe(1);
@@ -241,7 +242,7 @@ describe('the ConnectorPropertiesStore', () => {
       expect(secrets.has('source.cluster.ssl.keystore.key')).toBe(false);
     });
 
-    it('returns a new Map each time (safe for async iteration)', () => {
+    test('returns a new Map each time (safe for async iteration)', () => {
       const store = new SecretsStore();
       const secret = store.getSecret('key');
       secret.value = 'value';
@@ -251,7 +252,7 @@ describe('the ConnectorPropertiesStore', () => {
       expect(map1).not.toBe(map2);
     });
 
-    it('does not retain previously non-empty secrets that become empty', () => {
+    test('does not retain previously non-empty secrets that become empty', () => {
       const store = new SecretsStore();
       const secret = store.getSecret('key');
 
@@ -287,5 +288,30 @@ describe('the ConnectClusterStore', () => {
   test('opens an existing connector for updating', () => {
     const connector = clusterWithS3Sink().getConnector(S3_SINK, 'orders-to-s3', { 'aws.s3.bucket.name': 'orders' });
     expect(connector?.crud).toBe('update');
+  });
+});
+
+describe('connector property value boundaries', () => {
+  test.each([null, '', 'x', 0, false, true, ['a', 'b']].map((value) => ({ value })))(
+    'retains supported values without coercion: %p',
+    ({ value }) => {
+      expect(parsePropertyValue(value)).toBe(value);
+    }
+  );
+
+  test.each([undefined, {}, [1], ['a', 1]].map((value) => ({ value })))(
+    'rejects values the form cannot represent: %p',
+    ({ value }) => {
+      expect(() => parsePropertyValue(value)).toThrow(
+        'Connector property values must be a scalar, null, or a list of strings.'
+      );
+    }
+  );
+
+  test('keeps numeric defaults and unrecognized boolean text faithful to the API', () => {
+    expect(initialPropertyValue(createMockProperty({ name: 'count', type: DataType.Int, default_value: '0' }))).toBe(0);
+    expect(
+      initialPropertyValue(createMockProperty({ name: 'flag', type: DataType.Boolean, value: 'not-a-boolean' }))
+    ).toBe('not-a-boolean');
   });
 });

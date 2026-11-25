@@ -13,6 +13,7 @@ import { ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb'
 import { isMap, isScalar, isSeq, LineCounter, parseDocument, type Range, type Scalar } from 'yaml';
 
 import { getConnectorDocsUrl } from './connector-docs';
+import { isPresent } from '../../../../utils/type-guards';
 import {
   CONNECT_COMPONENT_TYPE,
   type ConnectComponentSpec,
@@ -51,7 +52,7 @@ export function deprecationNotice(
 ): DeprecationNotice {
   const named = REPLACEMENTS[`${component.type}:${component.name}`];
   const replacement =
-    named && catalog.some((c) => c.type === named.type && c.name === named.name && !isDeprecatedComponent(c))
+    isPresent(named) && catalog.some((c) => c.type === named.type && c.name === named.name && !isDeprecatedComponent(c))
       ? named
       : undefined;
   const docsTarget = replacement ?? component;
@@ -78,7 +79,8 @@ export type DeprecatedUsage = {
 
 type FieldShape = Pick<RawFieldSpec, 'name' | 'type' | 'kind'> & { children?: readonly FieldShape[] };
 
-const COMPONENT_TYPES: ReadonlySet<string> = new Set(CONNECT_COMPONENT_TYPE);
+const componentType = (type: string): ConnectComponentType | undefined =>
+  CONNECT_COMPONENT_TYPE.find((candidate) => candidate === type);
 const PROCESSORS: FieldShape = { name: 'processors', type: 'processor', kind: 'array' };
 
 // Where components sit at the top level of a config.
@@ -120,10 +122,12 @@ function fieldValues(node: unknown, kind: string): unknown[] {
 // Follows the schema's component-typed fields, so nested components are found wherever they sit.
 function walkField(walk: Walk, node: unknown, field: FieldShape): void {
   for (const value of fieldValues(node, field.kind)) {
-    if (COMPONENT_TYPES.has(field.type)) {
-      walkComponent(walk, value, field.type as ConnectComponentType);
+    const type = componentType(field.type);
+    if (type !== undefined) {
+      walkComponent(walk, value, type);
     } else if (isMap(value)) {
-      for (const child of field.children ?? []) {
+      const childFields = field.children ?? [];
+      for (const child of childFields) {
         walkField(walk, value.get(child.name, true), child);
       }
     }
@@ -137,17 +141,17 @@ function walkComponent(walk: Walk, node: unknown, type: ConnectComponentType): v
   }
   for (const { key, value } of node.items) {
     if (isScalar(key) && typeof key.value === 'string') {
-      walkSlotKey(walk, key as Scalar<string>, value, type);
+      walkSlotKey(walk, key, key.value, value, type);
     }
   }
 }
 
-function walkSlotKey(walk: Walk, key: Scalar<string>, value: unknown, type: ConnectComponentType): void {
-  if (key.value === 'processors' && (type === 'input' || type === 'output')) {
+function walkSlotKey(walk: Walk, key: Scalar, name: string, value: unknown, type: ConnectComponentType): void {
+  if (name === 'processors' && (type === 'input' || type === 'output')) {
     walkField(walk, value, PROCESSORS);
     return;
   }
-  const spec = walk.catalog.find((c) => c.type === type && c.name === key.value);
+  const spec = walk.catalog.find((c) => c.type === type && c.name === name);
   if (spec && isDeprecatedComponent(spec) && key.range) {
     walk.usages.push({ notice: deprecationNotice(spec, walk.catalog), range: lineRange(key.range, walk.lineCounter) });
   }
@@ -165,7 +169,8 @@ function lineRange([startOffset, endOffset]: Range, lineCounter: LineCounter): D
 /** Every deprecated component the YAML uses, nested ones included, in document order. */
 export function findDeprecatedUsages(yaml: string, components: readonly ConnectComponentSpec[]): DeprecatedUsage[] {
   // Most configs use none; skip the parse unless a deprecated name appears at all.
-  if (!components.some((c) => isDeprecatedComponent(c) && yaml.includes(c.name))) {
+  const containsDeprecatedName = components.some((c) => isDeprecatedComponent(c) && yaml.includes(c.name));
+  if (!containsDeprecatedName) {
     return [];
   }
   const lineCounter = new LineCounter();

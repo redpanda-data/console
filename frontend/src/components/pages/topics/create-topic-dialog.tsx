@@ -14,22 +14,24 @@ import { Link } from '@tanstack/react-router';
 import { CheckCircleIcon, PlusIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import { convertRetentionValue } from './convert-retention-value';
-import type { CleanupPolicyType } from './types';
-import { isServerless } from '../../../config';
 import { useCreateTopicMutation } from '../../../react-query/api/topic';
+import { isServerless } from '../../../runtime-config';
 import { api } from '../../../state/backend-api';
+import { arrayRemoveAll } from '../../../utils/array-utils';
+import { isNonEmptyString } from '../../../utils/string-utils';
 import {
   getRetentionSizeFinalValue,
   getRetentionTimeFinalValue,
-  type RetentionSizeUnit,
-  type RetentionTimeUnit,
   sizeFactors,
   timeFactors,
   validateReplicationFactor,
 } from '../../../utils/topic-utils';
+import { isPresent } from '../../../utils/type-guards';
 import { prettyBytes, prettyMilliseconds, titleCase } from '../../../utils/utils';
 import { FenceGuardedButton } from '../../cluster-fence/fence-guarded-controls';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
@@ -64,13 +66,13 @@ const createTopicFormSchema = z
     minInSyncReplicas: z.number().int().min(1, 'Must be at least 1').optional(),
     cleanupPolicy: z.enum(['delete', 'compact', 'compact,delete'] as const),
     retentionTimeMs: z.number(),
-    retentionTimeUnit: z.string(),
+    retentionTimeUnit: z.enum(['default', 'infinite', 'ms', 'seconds', 'minutes', 'hours', 'days', 'months', 'years']),
     retentionSize: z.number(),
-    retentionSizeUnit: z.string(),
+    retentionSizeUnit: z.enum(['default', 'infinite', 'Bit', 'KiB', 'MiB', 'GiB', 'TiB']),
     additionalConfig: z.array(z.object({ name: z.string(), value: z.string() })),
   })
   .superRefine((data, ctx) => {
-    if (data.replicationFactor !== undefined && api.clusterOverview) {
+    if (data.replicationFactor !== undefined && isPresent(api.clusterOverview)) {
       const err = validateReplicationFactor(data.replicationFactor, api.isRedpanda);
       if (err) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: err, path: ['replicationFactor'] });
@@ -95,7 +97,7 @@ function NumInput(p: {
   useEffect(() => setEditValue(p.value === undefined ? undefined : String(p.value)), [p.value]);
 
   const commit = (x: number | undefined) => {
-    if (p.disabled) {
+    if (p.disabled === true) {
       return;
     }
     const v = x !== undefined && p.min !== undefined && x < p.min ? p.min : x;
@@ -113,7 +115,7 @@ function NumInput(p: {
       inputMode="numeric"
       onBlur={() => {
         // An empty box and a non-numeric entry both clear the value.
-        const n = editValue ? Number(editValue) : Number.NaN;
+        const n = editValue !== null && editValue !== undefined && editValue !== '' ? Number(editValue) : Number.NaN;
         if (!Number.isFinite(n)) {
           commit(undefined);
           setEditValue('');
@@ -129,7 +131,7 @@ function NumInput(p: {
       }}
       placeholder={p.placeholder}
       spellCheck={false}
-      value={p.disabled && p.placeholder && p.value === undefined ? '' : (editValue ?? '')}
+      value={p.disabled === true && isNonEmptyString(p.placeholder) && p.value === undefined ? '' : (editValue ?? '')}
     />
   );
 }
@@ -160,7 +162,7 @@ function RetentionSelect<U extends string>(p: {
   let placeholder: string | undefined;
   if (unit === 'default') {
     placeholder =
-      p.defaultConfigValue && Number.isFinite(Number(p.defaultConfigValue))
+      isNonEmptyString(p.defaultConfigValue) && Number.isFinite(Number(p.defaultConfigValue))
         ? p.formatDefault(p.defaultConfigValue)
         : 'default';
   }
@@ -168,10 +170,12 @@ function RetentionSelect<U extends string>(p: {
     placeholder = 'Infinite';
   }
 
-  const options = (Object.keys(factors) as U[]).map((name) => ({
-    value: name,
-    label: name === 'default' || name === 'infinite' ? titleCase(name) : name,
-  }));
+  const options = Object.keys(factors)
+    .filter((name): name is U => Object.hasOwn(factors, name))
+    .map((name) => ({
+      value: name,
+      label: name === 'default' || name === 'infinite' ? titleCase(name) : name,
+    }));
 
   return (
     <Group attached>
@@ -188,7 +192,10 @@ function RetentionSelect<U extends string>(p: {
       <Select
         items={options}
         onValueChange={(u) => {
-          const newUnit = u as U;
+          const newUnit = options.find((option) => option.value === u)?.value;
+          if (newUnit === undefined) {
+            return;
+          }
           p.onChangeValue(convertRetentionValue(value, unit, newUnit, factors));
           p.onChangeUnit(newUnit);
         }}
@@ -218,15 +225,14 @@ type FormContentProps = {
   tryGetBrokerConfig: (name: string) => string | undefined;
 };
 
-function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps) {
-  const { control, watch, setValue } = form;
-  const { fields, append, remove } = useFieldArray({ control, name: 'additionalConfig' });
+function CreateTopicDialogContent({ form, tryGetBrokerConfig: readBrokerConfig }: FormContentProps) {
+  const { control: formControl, watch, setValue } = form;
   const serverless = isServerless();
 
   return (
     <div className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
       <Controller
-        control={control}
+        control={formControl}
         name="topicName"
         render={({ field, fieldState }) => (
           <Field className="sm:col-span-2" data-invalid={fieldState.invalid}>
@@ -248,7 +254,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
       />
 
       <Controller
-        control={control}
+        control={formControl}
         name="partitions"
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
@@ -259,7 +265,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
               min={1}
               onBlur={field.onBlur}
               onChange={field.onChange}
-              placeholder={tryGetBrokerConfig('num.partitions')}
+              placeholder={readBrokerConfig('num.partitions')}
               value={field.value}
             />
             <FieldDescription>More partitions allow more consumers.</FieldDescription>
@@ -269,7 +275,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
       />
 
       <Controller
-        control={control}
+        control={formControl}
         name="replicationFactor"
         render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
@@ -281,7 +287,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
               min={1}
               onBlur={field.onBlur}
               onChange={field.onChange}
-              placeholder={tryGetBrokerConfig('default.replication.factor')}
+              placeholder={readBrokerConfig('default.replication.factor')}
               value={field.value}
             />
             <FieldDescription>
@@ -294,7 +300,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
 
       {!api.isRedpanda && (
         <Controller
-          control={control}
+          control={formControl}
           name="minInSyncReplicas"
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
@@ -305,7 +311,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
                 min={1}
                 onBlur={field.onBlur}
                 onChange={field.onChange}
-                placeholder={tryGetBrokerConfig('min.insync.replicas') ?? '1'}
+                placeholder={readBrokerConfig('min.insync.replicas') ?? '1'}
                 value={field.value}
               />
               <FieldDescription>Replicas that have to acknowledge a write.</FieldDescription>
@@ -317,12 +323,12 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
 
       {!serverless && (
         <Controller
-          control={control}
+          control={formControl}
           name="cleanupPolicy"
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor="create-topic-cleanup-policy">Cleanup policy</FieldLabel>
-              <Select onValueChange={(v) => field.onChange(v as CleanupPolicyType)} value={field.value}>
+              <Select onValueChange={(v) => field.onChange(v)} value={field.value}>
                 <SelectTrigger data-testid="cleanup-policy-select" id="create-topic-cleanup-policy">
                   <SelectValue />
                 </SelectTrigger>
@@ -345,7 +351,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
         <RetentionSelect
           clearedValue={0}
           data-testid="topic-retention-time"
-          defaultConfigValue={tryGetBrokerConfig('log.retention.ms')}
+          defaultConfigValue={readBrokerConfig('log.retention.ms')}
           factors={timeFactors}
           formatDefault={(raw) =>
             prettyMilliseconds(raw, {
@@ -359,7 +365,7 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
           label="Retention time"
           onChangeUnit={(u) => setValue('retentionTimeUnit', u)}
           onChangeValue={(v) => setValue('retentionTimeMs', v)}
-          unit={watch('retentionTimeUnit') as RetentionTimeUnit}
+          unit={watch('retentionTimeUnit')}
           value={watch('retentionTimeMs')}
         />
         <FieldDescription>How long records are kept.</FieldDescription>
@@ -370,76 +376,20 @@ function CreateTopicDialogContent({ form, tryGetBrokerConfig }: FormContentProps
         <RetentionSelect
           clearedValue={-1}
           data-testid="topic-retention-size"
-          defaultConfigValue={tryGetBrokerConfig('log.retention.bytes')}
+          defaultConfigValue={readBrokerConfig('log.retention.bytes')}
           factors={sizeFactors}
           formatDefault={(raw) => prettyBytes(raw, { showLargeAsInfinite: true, showNullAs: 'default' })}
           id="create-topic-retention-size"
           label="Retention size"
           onChangeUnit={(u) => setValue('retentionSizeUnit', u)}
           onChangeValue={(v) => setValue('retentionSize', v)}
-          unit={watch('retentionSizeUnit') as RetentionSizeUnit}
+          unit={watch('retentionSizeUnit')}
           value={watch('retentionSize')}
         />
         <FieldDescription>Maximum size kept per partition.</FieldDescription>
       </Field>
 
-      {!serverless && (
-        <Field className="sm:col-span-2 sm:col-start-1">
-          <FieldLabel>Additional configuration</FieldLabel>
-          <FieldDescription>Optional topic-level overrides, such as compression or segment size.</FieldDescription>
-          <div className="flex flex-col gap-2">
-            {fields.map((fieldItem, i) => (
-              <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)_auto] items-center gap-2" key={fieldItem.id}>
-                <Controller
-                  control={control}
-                  name={`additionalConfig.${i}.name`}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      aria-label="Property name"
-                      autoComplete="off"
-                      placeholder="Property Name..."
-                      spellCheck={false}
-                    />
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name={`additionalConfig.${i}.value`}
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      aria-label="Property value"
-                      autoComplete="off"
-                      placeholder="Property Value..."
-                      spellCheck={false}
-                    />
-                  )}
-                />
-                <Button
-                  aria-label="Remove entry"
-                  onClick={() => remove(i)}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <TonedIcon icon={XIcon} tone="muted" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              className="w-fit"
-              onClick={() => append({ name: '', value: '' })}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <PlusIcon />
-              Add entry
-            </Button>
-          </div>
-        </Field>
-      )}
+      {!serverless && <AdditionalTopicConfiguration form={form} />}
     </div>
   );
 }
@@ -498,12 +448,15 @@ function TopicCreatedPanel({
 
 /** Flattens the retention/policy fields and user-entered overrides into topic config entries. */
 function buildTopicConfigs(values: CreateTopicFormValues) {
-  const config: { name: string; value: string }[] = [];
+  const config: {
+    name: string;
+    value: string;
+  }[] = [];
   const setVal = (name: string, value: string | number | undefined) => {
     if (value === undefined) {
       return;
     }
-    config.removeAll((x) => x.name === name);
+    arrayRemoveAll(config, (x) => x.name === name);
     config.push({ name, value: String(value) });
   };
 
@@ -525,13 +478,13 @@ function formConfigEntries(values: CreateTopicFormValues): [string, string | num
       'retention.ms',
       values.retentionTimeUnit === 'default'
         ? undefined
-        : getRetentionTimeFinalValue(values.retentionTimeMs, values.retentionTimeUnit as RetentionTimeUnit),
+        : getRetentionTimeFinalValue(values.retentionTimeMs, values.retentionTimeUnit),
     ],
     [
       'retention.bytes',
       values.retentionSizeUnit === 'default'
         ? undefined
-        : getRetentionSizeFinalValue(values.retentionSize, values.retentionSizeUnit as RetentionSizeUnit),
+        : getRetentionSizeFinalValue(values.retentionSize, values.retentionSizeUnit),
     ],
     ['min.insync.replicas', values.minInSyncReplicas],
     ['cleanup.policy', values.cleanupPolicy],
@@ -556,7 +509,12 @@ type CreatedCounts = ReturnType<typeof getRequestedCounts>;
 
 // Brokers only report the resolved counts on CreateTopics v5+ responses; older ones
 // return -1 even when the request named explicit values, so fall back to what we asked for.
-function toCreatedTopicResult(apiResult: CreatedCounts & { topicName: string }, requested: CreatedCounts) {
+function toCreatedTopicResult(
+  apiResult: CreatedCounts & {
+    topicName: string;
+  },
+  requested: CreatedCounts
+) {
   return {
     topicName: apiResult.topicName,
     partitionCount: apiResult.partitionCount === -1 ? requested.partitionCount : apiResult.partitionCount,
@@ -565,7 +523,7 @@ function toCreatedTopicResult(apiResult: CreatedCounts & { topicName: string }, 
 }
 
 function refreshClusterAfterCreate() {
-  api.refreshClusterOverview();
+  api.refreshClusterOverview().catch(reportActionError);
   api.refreshClusterHealth().catch(() => {
     // Best-effort refresh; the topic was created either way.
   });
@@ -597,13 +555,13 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
 
   useEffect(() => {
     api.refreshCluster();
-    api.refreshClusterOverview();
+    api.refreshClusterOverview().catch(reportActionError);
   }, []);
 
   useEffect(() => {
     if (isOpen) {
       api.refreshCluster();
-      api.refreshClusterOverview();
+      api.refreshClusterOverview().catch(reportActionError);
       form.reset();
       setResult(null);
     }
@@ -630,15 +588,15 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
 
       setResult(toCreatedTopicResult(apiResult, requested));
       refreshClusterAfterCreate();
-    } catch (e) {
-      setResult({ error: e });
+    } catch (error) {
+      setResult({ error });
     } finally {
       setIsLoading(false);
     }
   };
 
   // Not `Boolean(...)`: the truthiness check narrows `result` to non-null for the success branch below.
-  const isSuccess = result && !result.error;
+  const isSuccess = result !== undefined && result !== null && !Boolean(result.error);
 
   return (
     <Dialog
@@ -649,13 +607,13 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
       }}
       open={isOpen}
     >
-      <DialogContent size={isSuccess ? 'md' : 'lg'}>
+      <DialogContent size={isSuccess === true ? 'md' : 'lg'}>
         <DialogHeader>
-          <DialogTitle>{isSuccess ? 'Topic created' : 'Create topic'}</DialogTitle>
+          <DialogTitle>{isSuccess === true ? 'Topic created' : 'Create topic'}</DialogTitle>
         </DialogHeader>
 
         <DialogBody>
-          {result?.error ? (
+          {result !== null && Boolean(result.error) ? (
             <Alert variant="destructive">
               <AlertTitle>{result.error instanceof Error ? result.error.name : 'Error'}</AlertTitle>
               <AlertDescription>
@@ -666,21 +624,21 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
             </Alert>
           ) : null}
 
-          {isSuccess ? (
+          {isSuccess === true ? (
             <TopicCreatedPanel
               partitionCount={result.partitionCount}
               replicationFactor={result.replicationFactor}
               topicName={result.topicName}
             />
           ) : (
-            <form id="create-topic-form" onSubmit={form.handleSubmit(onSubmit)}>
+            <form id="create-topic-form" onSubmit={asyncEvent(form.handleSubmit(onSubmit), reportActionError)}>
               <CreateTopicDialogContent form={form} tryGetBrokerConfig={tryGetBrokerConfig} />
             </form>
           )}
         </DialogBody>
 
         <DialogFooter>
-          {isSuccess ? (
+          {isSuccess === true ? (
             <>
               <Button data-testid="create-topic-success__close-button" onClick={handleClose} variant="outline">
                 Close
@@ -690,7 +648,7 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
                 render={
                   <Link
                     params={{ topicName: encodeURIComponent(result?.topicName ?? '') }}
-                    search={{} as never}
+                    search={{}}
                     to="/topics/$topicName"
                   >
                     Go to topic
@@ -717,5 +675,61 @@ export function CreateTopicDialog({ isOpen, onClose }: { isOpen: boolean; onClos
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function AdditionalTopicConfiguration({ form }: Pick<FormContentProps, 'form'>) {
+  const formControl = form.control;
+  const { fields, append, remove } = useFieldArray({ control: formControl, name: 'additionalConfig' });
+  return (
+    <Field className="sm:col-span-2 sm:col-start-1">
+      <FieldLabel>Additional configuration</FieldLabel>
+      <FieldDescription>Optional topic-level overrides, such as compression or segment size.</FieldDescription>
+      <div className="flex flex-col gap-2">
+        {fields.map((fieldItem, i) => (
+          <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)_auto] items-center gap-2" key={fieldItem.id}>
+            <Controller
+              control={formControl}
+              name={`additionalConfig.${i}.name`}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  aria-label="Property name"
+                  autoComplete="off"
+                  placeholder="Property Name..."
+                  spellCheck={false}
+                />
+              )}
+            />
+            <Controller
+              control={formControl}
+              name={`additionalConfig.${i}.value`}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  aria-label="Property value"
+                  autoComplete="off"
+                  placeholder="Property Value..."
+                  spellCheck={false}
+                />
+              )}
+            />
+            <Button aria-label="Remove entry" onClick={() => remove(i)} size="icon-sm" type="button" variant="ghost">
+              <TonedIcon icon={XIcon} tone="muted" />
+            </Button>
+          </div>
+        ))}
+        <Button
+          className="w-fit"
+          onClick={() => append({ name: '', value: '' })}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <PlusIcon />
+          Add entry
+        </Button>
+      </div>
+    </Field>
   );
 }

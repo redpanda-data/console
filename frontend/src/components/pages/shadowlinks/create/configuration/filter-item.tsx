@@ -17,11 +17,12 @@ import { FormField, FormItem, FormMessage } from 'components/redpanda-ui/compone
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Info, Trash } from 'lucide-react';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
-import type { Control, FieldPath, FieldValues } from 'react-hook-form';
+import type { Control } from 'react-hook-form';
 import { useWatch } from 'react-hook-form';
 
 import { Item } from '../../../../redpanda-ui/components/item';
 import { getFilterTypeLabel } from '../../shadowlink-helpers';
+import type { FormValues } from '../model';
 
 const RESOURCE_TYPE_BY_PREFIX: Record<string, string> = {
   topics: 'topics',
@@ -41,23 +42,24 @@ type FilterTab = keyof typeof FILTER_TABS;
 const isFilterTab = (value: string): value is FilterTab => value in FILTER_TABS;
 
 const getFilterTab = (patternType: unknown, filterType: unknown): FilterTab =>
-  (Object.keys(FILTER_TABS) as FilterTab[]).find(
-    (tab) => FILTER_TABS[tab].patternType === patternType && FILTER_TABS[tab].filterType === filterType
-  ) ?? 'include-specific';
+  Object.keys(FILTER_TABS)
+    .filter(isFilterTab)
+    .find((tab) => FILTER_TABS[tab].patternType === patternType && FILTER_TABS[tab].filterType === filterType) ??
+  'include-specific';
 
-const getFilterFieldNames = <TFieldValues extends FieldValues>(prefix: string, index: number) => ({
-  pattern: `${prefix}.${index}.patternType` as FieldPath<TFieldValues>,
-  filter: `${prefix}.${index}.filterType` as FieldPath<TFieldValues>,
-  name: `${prefix}.${index}.name` as FieldPath<TFieldValues>,
+const getFilterFieldNames = (prefix: 'topics' | 'roles' | 'consumers', index: number) => ({
+  pattern: `${prefix}.${index}.patternType` as const,
+  filter: `${prefix}.${index}.filterType` as const,
+  name: `${prefix}.${index}.name` as const,
 });
 
 const testIdFor = (dataTestId: string | undefined, suffix: string) =>
-  dataTestId ? `${dataTestId}-${suffix}` : undefined;
+  dataTestId !== null && dataTestId !== undefined && dataTestId !== '' ? `${dataTestId}-${suffix}` : undefined;
 
-type FilterItemProps<TFieldValues extends FieldValues> = {
-  control: Control<TFieldValues>;
+type FilterItemProps = {
+  control: Control<FormValues>;
   index: number;
-  fieldNamePrefix: string;
+  fieldNamePrefix: 'topics' | 'roles' | 'consumers';
   onRemove: () => void;
   children: React.ReactNode;
   viewType: boolean; // true = editable, false = resume/summary
@@ -77,7 +79,7 @@ const FilterItemSummary = ({ filterLabel, nameValue, errorMessage }: FilterItemS
     <Item>
       <div className="text-body font-medium">{filterLabel}</div>
       <div className="flex flex-wrap gap-2">
-        {nameValue ? (
+        {Boolean(nameValue) ? (
           <Badge size="sm" tone="informative" variant="subtle">
             {String(nameValue)}
           </Badge>
@@ -140,21 +142,21 @@ const FilterItemEditor = ({
         type="button"
         variant="ghost"
       >
-        <Trash className="h-3 w-3" />
+        <Trash className="size-3" />
       </Button>
     </div>
     {children}
     <FormMessage />
-    {Boolean(showMatchAllMessage) && (
+    {showMatchAllMessage && (
       <Alert variant="warning">
-        <Info className="h-4 w-4" />
+        <Info className="size-4" />
         <AlertDescription>This filter will match all {resourceType}.</AlertDescription>
       </Alert>
     )}
   </FormItem>
 );
 
-export const FilterItem = <TFieldValues extends FieldValues>({
+export const FilterItem = ({
   control,
   index,
   fieldNamePrefix,
@@ -163,8 +165,8 @@ export const FilterItem = <TFieldValues extends FieldValues>({
   viewType,
   'data-testid': dataTestId,
   errorMessage,
-}: FilterItemProps<TFieldValues>) => {
-  const fieldNames = getFilterFieldNames<TFieldValues>(fieldNamePrefix, index);
+}: FilterItemProps) => {
+  const fieldNames = getFilterFieldNames(fieldNamePrefix, index);
   const patternValue = useWatch({ control, name: fieldNames.pattern });
   const filterValue = useWatch({ control, name: fieldNames.filter });
   const nameValue = useWatch({ control, name: fieldNames.name });

@@ -9,16 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import type { Edge, Node } from '@xyflow/react';
-
-import {
-  decorateEdges,
-  injectNodeData,
-  regionGeometry,
-  scopeBounds,
-  selectionTargetForNode,
-} from './pipeline-flow-canvas';
-import { describe, expect, it, mock } from 'bun:test';
+import { decorateEdges, injectNodeData, selectionTargetForNode } from './pipeline-flow-canvas';
+import { regionGeometry, scopeBounds } from './pipeline-scope-regions';
+import { describe, expect, mock, test } from 'bun:test';
+import type { FlowEdge as Edge, FlowNode as Node } from '../utils/pipeline-flow-layout';
 
 const edges: Edge[] = [
   { id: 'spine-a-b', source: 'a', target: 'b', type: 'flowGraphEdge', data: { insertIndex: 1 } },
@@ -26,8 +20,7 @@ const edges: Edge[] = [
   { id: 'ref-a-resource-0', source: 'a', target: 'resource-0', type: 'flowGraphEdge', data: { tone: 'muted' } },
 ];
 
-const refData = (decorated: Edge[]) =>
-  decorated.find((e) => e.id.startsWith('ref-'))?.data as { dimmed?: boolean; emphasized?: boolean; faint?: boolean };
+const refData = (decorated: Edge[]) => decorated.find((e) => e.id.startsWith('ref-'))?.data;
 
 /** The data of edge `id`, failing loudly (rather than reading through `undefined`) when there is none. */
 const edgeData = (decorated: Edge[], id: string) => {
@@ -46,12 +39,12 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
     position: { x, y },
     initialWidth: 200,
     initialHeight: 80,
-    data: {},
+    data: { label: id },
     type,
   });
   const noMeasure = new Map<string, { measured?: { width?: number; height?: number } }>();
 
-  it('keeps everything but the entry marker in the body (the join stays inside)', () => {
+  test('keeps everything but the entry marker in the body (the join stays inside)', () => {
     // Marker (col 0, the entry) fans to two outputs (col 1) and reconverges at a join (col 2). Only
     // the marker is the entry; the outputs AND the join are body, so the box covers them all.
     const marker = node('marker', 0, 300, 'flowSplit');
@@ -64,22 +57,22 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
       noMeasure,
       (n) => n.id === 'marker'
     );
-    expect(geom?.body).toEqual({ minX: 500, minY: 0, maxX: 1200, maxY: 680 }); // outputs + join
-    expect(geom?.entry).toEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 }); // just the entry marker
+    expect(geom?.body).toStrictEqual({ minX: 500, minY: 0, maxX: 1200, maxY: 680 }); // outputs + join
+    expect(geom?.entry).toStrictEqual({ minX: 0, minY: 300, maxX: 200, maxY: 380 }); // just the entry marker
   });
 
-  it('has a null entry when nothing is flagged', () => {
+  test('has a null entry when nothing is flagged', () => {
     const a = node('a', 0, 0);
     const b = node('b', 500, 300);
     const geom = scopeBounds([a, b], scope('a', 'b'), noMeasure);
-    expect(geom?.body).toEqual({ minX: 0, minY: 0, maxX: 700, maxY: 380 });
+    expect(geom?.body).toStrictEqual({ minX: 0, minY: 0, maxX: 700, maxY: 380 });
     expect(geom?.entry).toBeNull();
   });
 
-  it('ignores nodes outside the scope; returns null when the scope is only the entry', () => {
+  test('ignores nodes outside the scope; returns null when the scope is only the entry', () => {
     const marker = node('marker', 0, 300, 'flowSplit');
     const outsider = node('outsider', 5000, 5000); // NOT in scope — must not stretch the bounds
-    expect(scopeBounds([marker, outsider], scope('marker'), noMeasure)?.body).toEqual({
+    expect(scopeBounds([marker, outsider], scope('marker'), noMeasure)?.body).toStrictEqual({
       minX: 0,
       minY: 300,
       maxX: 200,
@@ -94,7 +87,7 @@ describe('scopeBounds — body bounds plus the entry marker', () => {
 describe('regionGeometry — the arm reaches the entry marker', () => {
   const body = { minX: 500, minY: 300, maxX: 700, maxY: 480 };
 
-  it('wraps a same-row marker with a thin arm clamped to the body height', () => {
+  test('wraps a same-row marker with a thin arm clamped to the body height', () => {
     const marker = { minX: 0, minY: 340, maxX: 200, maxY: 420 }; // within the body's rows
     const { rects } = regionGeometry(body, marker, 6, 6);
     expect(rects).toHaveLength(2); // padded body + one arm
@@ -104,7 +97,7 @@ describe('regionGeometry — the arm reaches the entry marker', () => {
     expect(arm.maxY).toBeLessThanOrEqual(body.maxY + 6);
   });
 
-  it('stretches the arm up to meet the body when the marker sits clear above it (try/catch)', () => {
+  test('stretches the arm up to meet the body when the marker sits clear above it (try/catch)', () => {
     const marker = { minX: 0, minY: 100, maxX: 200, maxY: 180 }; // fully above the body
     const { rects } = regionGeometry(body, marker, 6, 6);
     const arm = rects[1];
@@ -115,7 +108,7 @@ describe('regionGeometry — the arm reaches the entry marker', () => {
 });
 
 describe('decorateEdges', () => {
-  it('keeps resource-reference edges faint until an endpoint is selected or hovered', () => {
+  test('keeps resource-reference edges faint until an endpoint is selected or hovered', () => {
     // Reference edges never fully dim: even with an unrelated node selected they stay faint
     // (a visible hint) rather than vanishing like dimmed flow edges.
     expect(refData(decorateEdges(edges, {}))).toMatchObject({ faint: true });
@@ -135,38 +128,38 @@ describe('decorateEdges', () => {
     expect(refData(decorateEdges(edges, { selectedScope: scope('resource-0') }))).toMatchObject({ emphasized: true });
   });
 
-  it('hover alone does not dim unrelated edges (only selection does)', () => {
+  test('hover alone does not dim unrelated edges (only selection does)', () => {
     const hovered = decorateEdges(edges, { hoveredScope: scope('a') });
     expect(edgeData(hovered, 'fanout-c').dimmed).toBeUndefined();
   });
 
-  it('dims unrelated edges and emphasizes connected ones while a node is selected', () => {
+  test('dims unrelated edges and emphasizes connected ones while a node is selected', () => {
     const decorated = decorateEdges(edges, { selectedScope: scope('a') });
     const spine = edgeData(decorated, 'spine-a-b');
     const fanout = edgeData(decorated, 'fanout-c');
     expect(spine.emphasized).toBe(true);
     expect(spine.dimmed).toBe(false);
-    expect(fanout.dimmed).toBe(true);
+    expect(fanout?.dimmed).toBe(true);
 
     // No selection → no dimming anywhere.
     const plain = decorateEdges(edges, {});
     expect(edgeData(plain, 'fanout-c').dimmed).toBeUndefined();
   });
 
-  it("keeps a selected container's internal wiring lit (scope includes descendants)", () => {
+  test("keeps a selected container's internal wiring lit (scope includes descendants)", () => {
     // Selecting container 'a' (subtree includes 'b','c'): the fan edge between its children must
     // stay lit, not dim as "unrelated".
     const decorated = decorateEdges(edges, { selectedScope: scope('a', 'b', 'c') });
-    const fanout = decorated.find((e) => e.id === 'fanout-c')?.data as { dimmed?: boolean; emphasized?: boolean };
-    expect(fanout.emphasized).toBe(true);
-    expect(fanout.dimmed).toBe(false);
+    const fanout = decorated.find((e) => e.id === 'fanout-c')?.data;
+    expect(fanout?.emphasized).toBe(true);
+    expect(fanout?.dimmed).toBe(false);
   });
 
-  it('wires the insert handler onto spine edges with their processor index', () => {
+  test('wires the insert handler onto spine edges with their processor index', () => {
     const onInsert = mock();
     const decorated = decorateEdges(edges, { onInsert });
-    const spineData = decorated.find((e) => e.type === 'flowGraphEdge')?.data as { onInsert?: () => void };
-    spineData.onInsert?.();
+    const spineData = decorated.find((e) => e.type === 'flowGraphEdge')?.data;
+    spineData?.onInsert?.();
     expect(onInsert).toHaveBeenCalledWith(1);
   });
 });
@@ -184,21 +177,21 @@ describe('selectionTargetForNode', () => {
     data: { label: 'case 1', isCase: true }, // no editTarget
   };
 
-  it('selects an editable node directly', () => {
-    expect(selectionTargetForNode(switchNode, [switchNode, caseNode])).toEqual({
+  test('selects an editable node directly', () => {
+    expect(selectionTargetForNode(switchNode, [switchNode, caseNode])).toStrictEqual({
       id: 'proc-0',
       target: { kind: 'processor', index: 0 },
     });
   });
 
-  it('walks up from a structural node (no editTarget) to select its parent', () => {
-    expect(selectionTargetForNode(caseNode, [switchNode, caseNode])).toEqual({
+  test('walks up from a structural node (no editTarget) to select its parent', () => {
+    expect(selectionTargetForNode(caseNode, [switchNode, caseNode])).toStrictEqual({
       id: 'proc-0',
       target: { kind: 'processor', index: 0 },
     });
   });
 
-  it('selects a switch case directly when it carries a switchCase editTarget', () => {
+  test('selects a switch case directly when it carries a switchCase editTarget', () => {
     const editableCase: Node = {
       id: 'proc-0-case-1',
       parentId: 'proc-0',
@@ -209,13 +202,13 @@ describe('selectionTargetForNode', () => {
         editTarget: { kind: 'switchCase', path: ['pipeline', 'processors', 0, 'switch', 0] },
       },
     };
-    expect(selectionTargetForNode(editableCase, [switchNode, editableCase])).toEqual({
+    expect(selectionTargetForNode(editableCase, [switchNode, editableCase])).toStrictEqual({
       id: 'proc-0-case-1',
       target: { kind: 'switchCase', path: ['pipeline', 'processors', 0, 'switch', 0] },
     });
   });
 
-  it('returns null when no ancestor is selectable', () => {
+  test('returns null when no ancestor is selectable', () => {
     const orphan: Node = { id: 'x', position: { x: 0, y: 0 }, data: { label: 'x' } };
     expect(selectionTargetForNode(orphan, [orphan])).toBeNull();
   });
@@ -230,21 +223,21 @@ describe('injectNodeData — appearance', () => {
   };
   const base = { collapsedIds: new Set<string>(), toggleCollapse: () => undefined };
 
-  it('marks a node new this render as appeared and drops its reposition transition', () => {
+  test('marks a node new this render as appeared and drops its reposition transition', () => {
     // Empty previousIds → the node is appearing (e.g. revealed by expanding).
     const injected = injectNodeData(node, { ...base, previousIds: new Set() });
-    expect((injected.data as { appeared?: boolean }).appeared).toBe(true);
+    expect(injected.data.appeared).toBe(true);
     // No transform transition, so it snaps to its spot instead of flying from origin.
-    expect((injected.style as { transition?: string }).transition).toBeUndefined();
+    expect(injected.style?.transition).toBeUndefined();
   });
 
-  it('leaves an existing node untouched (smooth reposition transition kept)', () => {
+  test('leaves an existing node untouched (smooth reposition transition kept)', () => {
     const injected = injectNodeData(node, { ...base, previousIds: new Set(['child-1']) });
-    expect((injected.data as { appeared?: boolean }).appeared).toBeUndefined();
-    expect((injected.style as { transition?: string }).transition).toBe('transform 200ms ease');
+    expect(injected.data.appeared).toBeUndefined();
+    expect(injected.style?.transition).toBe('transform 200ms ease');
   });
 
-  it('flags a node as unsaved when its id is in unsavedNodeIds', () => {
+  test('flags a node as unsaved when its id is in unsavedNodeIds', () => {
     const unsaved = injectNodeData(node, {
       ...base,
       previousIds: new Set(['child-1']),

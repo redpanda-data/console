@@ -9,27 +9,48 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
-import { createRouterTransport } from '@connectrpc/connect';
+import { create, type MessageShape } from '@bufbuild/protobuf';
+import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ListShadowLinksResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
-import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
+import { toast as registryToast } from 'components/redpanda-ui/components/toast';
+import {
+  type CreateShadowLinkResponse,
+  CreateShadowLinkResponseSchema,
+  ListShadowLinksResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import {
+  createShadowLink,
+  listShadowLinks,
+} from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { toast } from 'sonner';
+import { useSupportedFeaturesStore } from 'state/supported-features';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 import { ShadowLinkCreatePage } from './shadowlink-create-page';
+import { isEmbedded } from '../../../../runtime-config';
+import { getBasePath } from '../../../../utils/env';
+import {
+  addACLFilterCreate,
+  addBootstrapServer,
+  addConsumerFilterCreate,
+  addRoleFilterCreate,
+  addTopicFilterCreate,
+  enableTLS,
+  navigateToConfigurationStep,
+  setSchemaRegistrySyncGateSupported as seedSchemaRegistrySyncGate,
+  setShadowLinkGatesSupported,
+} from '../shadowlink-test-helpers';
 
-// Mock the hooks
-rs.mock('react-query/api/shadowlink', () => ({
-  useCreateShadowLinkMutation: rs.fn(),
-}));
+// Record writes at the RPC boundary; mutation state and callbacks use the real hook.
+const createShadowLinkRequestMock =
+  rs.fn<(request: MessageShape<typeof createShadowLink.input>) => Promise<CreateShadowLinkResponse>>();
 
 // Mock config module
-rs.mock('../../../../config', () => {
-  const actual = rs.requireActual<typeof import('../../../../config')>('../../../../config');
+rs.mock('../../../../runtime-config', () => {
+  const actual = rs.requireActual<typeof import('../../../../runtime-config')>('../../../../runtime-config');
   return {
     ...actual,
     isEmbedded: rs.fn(() => false),
@@ -45,14 +66,6 @@ rs.mock('../../../../utils/env', () => {
   };
 });
 
-// Mock ui-state
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
-
 // Mock toast notifications
 rs.mock('sonner', () => ({
   toast: {
@@ -60,23 +73,6 @@ rs.mock('sonner', () => ({
     error: rs.fn(),
   },
 }));
-
-import { useCreateShadowLinkMutation } from 'react-query/api/shadowlink';
-import { useSupportedFeaturesStore } from 'state/supported-features';
-
-import { isEmbedded } from '../../../../config';
-import { getBasePath } from '../../../../utils/env';
-import {
-  addACLFilterCreate,
-  addBootstrapServer,
-  addConsumerFilterCreate,
-  addRoleFilterCreate,
-  addTopicFilterCreate,
-  enableTLS,
-  navigateToConfigurationStep,
-  setSchemaRegistrySyncGateSupported as seedSchemaRegistrySyncGate,
-  setShadowLinkGatesSupported,
-} from '../shadowlink-test-helpers';
 
 const pristineFeatureStoreState = useSupportedFeaturesStore.getState();
 const resetSchemaRegistrySyncGate = () => {
@@ -89,6 +85,7 @@ const resetSchemaRegistrySyncGate = () => {
 const renderCreatePage = () =>
   renderWithFileRoutes(<ShadowLinkCreatePage />, {
     transport: createRouterTransport(({ rpc }) => {
+      rpc(createShadowLink, (request) => createShadowLinkRequestMock(request));
       rpc(listShadowLinks, () => create(ListShadowLinksResponseSchema, { shadowLinks: [] }));
     }),
   });
@@ -123,7 +120,7 @@ const fillInputValue = async (input: HTMLElement, value: string) => {
   // mode: 'onChange' kicks off the async zodResolver, which re-renders the
   // form fields once it settles. Await that settle so it lands inside act().
   await waitFor(() => {
-    expect((input as HTMLInputElement).value).toBe(value);
+    expect(input).toHaveValue(value);
   });
 };
 
@@ -200,9 +197,10 @@ const uploadCertificatePem = async (
   const input = scr.getByTestId(`add-${certType}-button`).querySelector('input[type="file"]');
   const file = new File([pemContent], `${certType}.pem`, { type: 'application/x-pem-file' });
 
-  if (input) {
-    await user.upload(input as HTMLInputElement, file);
+  if (!(input instanceof HTMLInputElement)) {
+    throw new Error('Missing certificate file input');
   }
+  await user.upload(input, file);
 
   await waitFor(() => {
     expect(scr.getByTestId(`${certType}-status`)).toBeInTheDocument();
@@ -293,23 +291,27 @@ const renderAndPerform = async (user: ReturnType<typeof userEvent.setup>, action
 };
 
 /**
- * Submit the form and return the request passed to the create mutation
+ * Submit the form and return the typed request received by the RPC handler
  */
-const submitCreateForm = async (
-  user: ReturnType<typeof userEvent.setup>,
-  mockMutateAsync: ReturnType<typeof rs.fn>
-) => {
+const submitCreateForm = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(screen.getByRole('button', { name: 'Create shadow link' }));
 
   // Verify mutateAsync was called
   await waitFor(
     () => {
-      expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      expect(createShadowLinkRequestMock).toHaveBeenCalledTimes(1);
     },
     { timeout: 5000 }
   );
 
-  return mockMutateAsync.mock.calls[0][0];
+  const request = createShadowLinkRequestMock.mock.calls.at(-1)?.[0];
+  const shadowLink = request?.shadowLink;
+  const configurations = shadowLink?.configurations;
+  const clientOptions = configurations?.clientOptions;
+  if (!(request && shadowLink && configurations && clientOptions)) {
+    throw new Error('Create must send a shadow link, configuration and client options');
+  }
+  return { ...request, shadowLink: { ...shadowLink, configurations: { ...configurations, clientOptions } } };
 };
 
 /**
@@ -352,7 +354,7 @@ const fillSchemaRegistryApiConnection = async (user: ReturnType<typeof userEvent
 type CreateTestCase = {
   description: string;
   actions: CreateAction[];
-  verify: (createRequest: any, exp: typeof import('@rstest/core').expect) => void;
+  verify: (createRequest: Awaited<ReturnType<typeof submitCreateForm>>, exp: typeof expect) => void;
 };
 
 /**
@@ -371,14 +373,13 @@ const testCases: CreateTestCase[] = [
     verify: (createRequest, exp) => {
       exp(createRequest.shadowLink.name).toBe('test-shadow-link');
       exp(createRequest.shadowLink.configurations.clientOptions.bootstrapServers).toEqual(['server1.example.com:9092']);
-      exp(createRequest.shadowLink.configurations.clientOptions.authenticationConfiguration.authentication.case).toBe(
-        'scramConfiguration'
-      );
-      const scramConfig =
-        createRequest.shadowLink.configurations.clientOptions.authenticationConfiguration.authentication.value;
-      exp(scramConfig.username).toBe('admin');
-      exp(scramConfig.password).toBe('admin-secret');
-      exp(scramConfig.scramMechanism).toBeDefined();
+      const authentication =
+        createRequest.shadowLink.configurations.clientOptions.authenticationConfiguration?.authentication;
+      exp(authentication?.case).toBe('scramConfiguration');
+      const scramConfig = authentication?.case === 'scramConfiguration' ? authentication.value : undefined;
+      exp(scramConfig?.username).toBe('admin');
+      exp(scramConfig?.password).toBe('admin-secret');
+      exp(scramConfig?.scramMechanism).toBeDefined();
       // Untouched roles default to all: a single wildcard include filter
       exp(createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters).toEqual([
         exp.objectContaining({ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }),
@@ -422,9 +423,9 @@ const testCases: CreateTestCase[] = [
       );
       const topicFilter =
         createRequest.shadowLink.configurations.topicMetadataSyncOptions?.autoCreateShadowTopicFilters[0];
-      exp(topicFilter.name).toBe('topic-exact');
-      exp(topicFilter.patternType).toBe(PatternType.LITERAL);
-      exp(topicFilter.filterType).toBe(FilterType.INCLUDE);
+      exp(topicFilter?.name).toBe('topic-exact');
+      exp(topicFilter?.patternType).toBe(PatternType.LITERAL);
+      exp(topicFilter?.filterType).toBe(FilterType.INCLUDE);
     },
   },
   {
@@ -440,9 +441,9 @@ const testCases: CreateTestCase[] = [
     verify: (createRequest, exp) => {
       exp(createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters).toHaveLength(1);
       const roleFilter = createRequest.shadowLink.configurations.roleSyncOptions?.roleNameFilters[0];
-      exp(roleFilter.name).toBe('my-role');
-      exp(roleFilter.patternType).toBe(PatternType.LITERAL);
-      exp(roleFilter.filterType).toBe(FilterType.INCLUDE);
+      exp(roleFilter?.name).toBe('my-role');
+      exp(roleFilter?.patternType).toBe(PatternType.LITERAL);
+      exp(roleFilter?.filterType).toBe(FilterType.INCLUDE);
     },
   },
   {
@@ -459,7 +460,7 @@ const testCases: CreateTestCase[] = [
       // Specify mode must send the user's filter, not the match-all one
       exp(createRequest.shadowLink.configurations.securitySyncOptions?.aclFilters).toHaveLength(1);
       const aclFilter = createRequest.shadowLink.configurations.securitySyncOptions?.aclFilters[0];
-      exp(aclFilter.accessFilter?.principal).toBe('User:alice');
+      exp(aclFilter?.accessFilter?.principal).toBe('User:alice');
     },
   },
   {
@@ -503,11 +504,10 @@ const testCases: CreateTestCase[] = [
     ],
     verify: (createRequest, exp) => {
       exp(createRequest.shadowLink.name).toBe('test-shadow-link');
-      exp(createRequest.shadowLink.configurations.clientOptions.tlsSettings.enabled).toBe(true);
-      exp(createRequest.shadowLink.configurations.clientOptions.tlsSettings.tlsSettings.case).toBe('tlsFileSettings');
-      exp(createRequest.shadowLink.configurations.clientOptions.tlsSettings.tlsSettings.value.caPath).toBe(
-        '/etc/certs/ca.pem'
-      );
+      exp(createRequest.shadowLink.configurations.clientOptions.tlsSettings).toMatchObject({
+        enabled: true,
+        tlsSettings: { case: 'tlsFileSettings', value: { caPath: '/etc/certs/ca.pem' } },
+      });
     },
   },
   {
@@ -526,11 +526,13 @@ const testCases: CreateTestCase[] = [
     ],
     verify: (createRequest, exp) => {
       exp(createRequest.shadowLink.name).toBe('test-shadow-link');
-      exp(createRequest.shadowLink.configurations.clientOptions.tlsSettings.enabled).toBe(true);
-      exp(createRequest.shadowLink.configurations.clientOptions.tlsSettings.tlsSettings.case).toBe('tlsPemSettings');
-      exp(createRequest.shadowLink.configurations.clientOptions.tlsSettings.tlsSettings.value.ca).toBe(
-        '-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----'
-      );
+      exp(createRequest.shadowLink.configurations.clientOptions.tlsSettings).toMatchObject({
+        enabled: true,
+        tlsSettings: {
+          case: 'tlsPemSettings',
+          value: { ca: '-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----' },
+        },
+      });
     },
   },
   {
@@ -546,7 +548,7 @@ const testCases: CreateTestCase[] = [
     verify: (createRequest, exp) => {
       exp(createRequest.shadowLink.name).toBe('test-shadow-link');
       exp(createRequest.shadowLink.configurations.schemaRegistrySyncOptions).toBeDefined();
-      exp(createRequest.shadowLink.configurations.schemaRegistrySyncOptions.schemaRegistryShadowingMode.case).toBe(
+      exp(createRequest.shadowLink.configurations.schemaRegistrySyncOptions?.schemaRegistryShadowingMode.case).toBe(
         'shadowSchemaRegistryTopic'
       );
     },
@@ -554,8 +556,6 @@ const testCases: CreateTestCase[] = [
 ];
 
 describe('the ShadowLinkCreatePage', () => {
-  const mockMutateAsync = rs.fn();
-
   beforeEach(() => {
     rs.clearAllMocks();
 
@@ -563,35 +563,7 @@ describe('the ShadowLinkCreatePage', () => {
     // Role gate open: the roles card and its default-all payload need >= 26.2.0.
     setShadowLinkGatesSupported({ schemaRegistrySync: false, roleSync: true });
 
-    mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
-
-    // Mock create mutation - must return the mutation hook properly
-    rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
-      // Wrap mutateAsync to call onSuccess callback
-      const wrappedMutateAsync = async (request: any) => {
-        const result = await mockMutateAsync(request);
-        options?.onSuccess?.(result, request, undefined, {} as any);
-        return result;
-      };
-
-      return {
-        mutateAsync: wrappedMutateAsync,
-        isPending: false,
-        isError: false,
-        isSuccess: false,
-        error: null,
-        data: undefined,
-        mutate: rs.fn(),
-        reset: rs.fn(),
-        status: 'idle',
-        variables: undefined,
-        context: undefined,
-        failureCount: 0,
-        failureReason: null,
-        isPaused: false,
-        submittedAt: 0,
-      } as any;
-    });
+    createShadowLinkRequestMock.mockReset().mockResolvedValue(create(CreateShadowLinkResponseSchema));
   });
 
   afterEach(() => {
@@ -603,12 +575,32 @@ describe('the ShadowLinkCreatePage', () => {
 
     await renderAndPerform(user, actions);
 
-    const createRequest = await submitCreateForm(user, mockMutateAsync);
+    const createRequest = await submitCreateForm(user);
 
     // Run custom verification function
     verify(createRequest, expect);
 
     await waitForCreateSuccess();
+  });
+
+  test('reports an RPC failure once without an additional generic action toast', async () => {
+    const user = userEvent.setup();
+    await renderAndPerform(user, CONNECTION_STEP_ACTIONS);
+    createShadowLinkRequestMock.mockRejectedValueOnce(new ConnectError('Create unavailable', Code.Unavailable));
+    const genericReport = rs.spyOn(registryToast, 'add').mockReturnValue('unexpected-error-toast');
+    try {
+      await submitCreateForm(user);
+      await waitFor(() => {
+        expect(rs.mocked(toast.error).mock.calls).toStrictEqual([
+          ['Shadow link create failed', { description: '[unavailable] Create unavailable' }],
+        ]);
+        expect(screen.getByRole('button', { name: 'Create shadow link' })).toBeEnabled();
+      });
+      expect(genericReport).not.toHaveBeenCalled();
+      expect(toast.success).not.toHaveBeenCalled();
+    } finally {
+      genericReport.mockRestore();
+    }
   });
 
   test('hides the roles card and omits role sync options when the cluster does not support role sync', async () => {
@@ -624,7 +616,7 @@ describe('the ShadowLinkCreatePage', () => {
 
     // Not even the default include-all filter may be sent to a cluster
     // that predates role sync
-    const createRequest = await submitCreateForm(user, mockMutateAsync);
+    const createRequest = await submitCreateForm(user);
     expect(createRequest.shadowLink.configurations.roleSyncOptions).toBeUndefined();
 
     await waitForCreateSuccess();
@@ -632,41 +624,13 @@ describe('the ShadowLinkCreatePage', () => {
 });
 
 describe('the ShadowLinkCreatePage - Schema Registry sync over API', () => {
-  const mockMutateAsync = rs.fn();
-
   beforeEach(() => {
     rs.clearAllMocks();
 
     // Gate open: the redesigned Schema Registry section renders.
     seedSchemaRegistrySyncGate(true);
 
-    mockMutateAsync.mockImplementation((_request) => Promise.resolve({}));
-
-    rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
-      const wrappedMutateAsync = async (request: any) => {
-        const result = await mockMutateAsync(request);
-        options?.onSuccess?.(result, request, undefined, {} as any);
-        return result;
-      };
-
-      return {
-        mutateAsync: wrappedMutateAsync,
-        isPending: false,
-        isError: false,
-        isSuccess: false,
-        error: null,
-        data: undefined,
-        mutate: rs.fn(),
-        reset: rs.fn(),
-        status: 'idle',
-        variables: undefined,
-        context: undefined,
-        failureCount: 0,
-        failureReason: null,
-        isPaused: false,
-        submittedAt: 0,
-      } as any;
-    });
+    createShadowLinkRequestMock.mockReset().mockResolvedValue(create(CreateShadowLinkResponseSchema));
   });
 
   afterEach(() => {
@@ -683,23 +647,23 @@ describe('the ShadowLinkCreatePage - Schema Registry sync over API', () => {
 
     await fillSchemaRegistryApiConnection(user);
 
-    const createRequest = await submitCreateForm(user, mockMutateAsync);
-    expect(createRequest.shadowLink.configurations.schemaRegistrySyncOptions.schemaRegistryShadowingMode).toMatchObject(
-      {
-        case: 'shadowSchemaRegistryApi',
-        value: {
-          sourceUrl: 'https://schema-registry.example.com:8081',
+    const createRequest = await submitCreateForm(user);
+    expect(
+      createRequest.shadowLink.configurations.schemaRegistrySyncOptions?.schemaRegistryShadowingMode
+    ).toMatchObject({
+      case: 'shadowSchemaRegistryApi',
+      value: {
+        sourceUrl: 'https://schema-registry.example.com:8081',
+        authOptions: {
           authOptions: {
-            authOptions: {
-              case: 'basic',
-              // Raw password, never a secret reference
-              value: { username: 'sr-replicator', password: 'p@ssw0rd!' },
-            },
+            case: 'basic',
+            // Raw password, never a secret reference
+            value: { username: 'sr-replicator', password: 'p@ssw0rd!' },
           },
-          tlsSettings: { enabled: true },
         },
-      }
-    );
+        tlsSettings: { enabled: true },
+      },
+    });
 
     await waitForCreateSuccess();
   });
@@ -711,8 +675,8 @@ describe('the ShadowLinkCreatePage - Schema Registry sync over API', () => {
 
     await user.click(screen.getByTestId('sr-mode-topic-tab'));
 
-    const createRequest = await submitCreateForm(user, mockMutateAsync);
-    expect(createRequest.shadowLink.configurations.schemaRegistrySyncOptions.schemaRegistryShadowingMode.case).toBe(
+    const createRequest = await submitCreateForm(user);
+    expect(createRequest.shadowLink.configurations.schemaRegistrySyncOptions?.schemaRegistryShadowingMode.case).toBe(
       'shadowSchemaRegistryTopic'
     );
 
@@ -721,38 +685,11 @@ describe('the ShadowLinkCreatePage - Schema Registry sync over API', () => {
 });
 
 describe('the ShadowLinkCreatePage - Embedded Mode Redirect', () => {
-  const mockMutateAsync = rs.fn();
   const originalLocation = window.location;
 
   beforeEach(() => {
     rs.clearAllMocks();
-    mockMutateAsync.mockImplementation(() => Promise.resolve({}));
-
-    rs.mocked(useCreateShadowLinkMutation).mockImplementation((options) => {
-      const wrappedMutateAsync = async (request: any) => {
-        const result = await mockMutateAsync(request);
-        options?.onSuccess?.(result, request, undefined, {} as any);
-        return result;
-      };
-
-      return {
-        mutateAsync: wrappedMutateAsync,
-        isPending: false,
-        isError: false,
-        isSuccess: false,
-        error: null,
-        data: undefined,
-        mutate: rs.fn(),
-        reset: rs.fn(),
-        status: 'idle',
-        variables: undefined,
-        context: undefined,
-        failureCount: 0,
-        failureReason: null,
-        isPaused: false,
-        submittedAt: 0,
-      } as any;
-    });
+    createShadowLinkRequestMock.mockReset().mockResolvedValue(create(CreateShadowLinkResponseSchema));
 
     // Mock window.location
     Object.defineProperty(window, 'location', {
@@ -772,7 +709,7 @@ describe('the ShadowLinkCreatePage - Embedded Mode Redirect', () => {
     // happy-dom blocks `window.location.href` assignment when
     // disableMainFrameNavigation is on (see rstest.setup.ts), so
     // replace window.location with a plain object whose href we can inspect.
-    const originalLocation = window.location;
+    const locationBeforeTest = window.location;
     const locationStub = { href: '' };
     Object.defineProperty(window, 'location', {
       configurable: true,
@@ -793,7 +730,7 @@ describe('the ShadowLinkCreatePage - Embedded Mode Redirect', () => {
       Object.defineProperty(window, 'location', {
         configurable: true,
         writable: true,
-        value: originalLocation,
+        value: locationBeforeTest,
       });
     }
   });

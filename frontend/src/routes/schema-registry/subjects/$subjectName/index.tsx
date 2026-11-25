@@ -12,7 +12,7 @@
 import { createFileRoute, useParams } from '@tanstack/react-router';
 import { z } from 'zod';
 
-import SchemaDetailsView from '../../../../components/pages/schemas/schema-details';
+import { SchemaDetailsView } from '../../../../components/pages/schemas/schema-details';
 
 const searchSchema = z.object({
   version: z.string().optional().catch(undefined),

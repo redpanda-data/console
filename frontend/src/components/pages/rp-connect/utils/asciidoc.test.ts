@@ -10,12 +10,12 @@
  */
 
 import { asciidocToMarkdown, markdownToPlainText } from './asciidoc';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 const lines = (...rows: string[]) => rows.join('\n');
 
 describe('asciidocToMarkdown', () => {
-  it.each([
+  test.each([
     [
       'section titles, so no "==" leaks',
       '== Performance\nBenefits from batching.',
@@ -115,7 +115,7 @@ describe('asciidocToMarkdown', () => {
 });
 
 describe('markdownToPlainText', () => {
-  it.each([
+  test.each([
     [
       'converted Markdown to one line',
       asciidocToMarkdown('\nUse `consumer_group`.\n\n== Notes\n* first'),

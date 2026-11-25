@@ -11,10 +11,10 @@
 
 import { afterEach, describe, expect, rs, test } from '@rstest/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { config } from 'config';
 import { connectQueryWrapper } from 'test-utils';
 
 import { useLegacyListTopicsQuery, useUpdateTopicConfigMutation } from './topic';
+import { config } from '../../runtime-config';
 import { useApiStore } from '../../state/backend-api';
 
 // Disable retries so a failing query settles into the error state immediately.
@@ -46,6 +46,15 @@ describe('useLegacyListTopicsQuery', () => {
     expect(result.current.error).toBeInstanceOf(Error);
   });
 
+  test('keeps malformed JSON in the error state', async () => {
+    rs.spyOn(config, 'fetch').mockResolvedValue(new Response('{broken', { status: 200 }));
+    const { queryClientWrapper } = connectQueryWrapper(NO_RETRY);
+    const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeInstanceOf(SyntaxError);
+  });
+
   test('returns topics on a successful response', async () => {
     rs.spyOn(config, 'fetch').mockResolvedValue(
       jsonResponse({ topics: [{ topicName: 'orders', isInternal: false }] }, { status: 200 })
@@ -55,7 +64,7 @@ describe('useLegacyListTopicsQuery', () => {
     const { result } = renderHook(() => useLegacyListTopicsQuery(), { wrapper: queryClientWrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data.topics).toEqual([{ topicName: 'orders', isInternal: false }]);
+    expect(result.current.data.topics).toStrictEqual([{ topicName: 'orders', isInternal: false }]);
   });
 });
 

@@ -5,6 +5,7 @@ import { pluginReact } from '@rsbuild/plugin-react';
 import { defineConfig } from '@rstest/core';
 
 import { REACT19_REQUIRED_VERSION } from './module-federation.config';
+import { isNonEmptyString } from './src/utils/string-utils';
 import { fileURLToPath } from 'node:url';
 
 const react19RemoteEntry = fileURLToPath(new URL('./tests/federation/react19-remote-adapter.cjs', import.meta.url));
@@ -21,7 +22,7 @@ export default defineConfig({
   include: ['src/**/*.federation.test.tsx'],
   globalSetup: './tests/federation/rstest-global-setup.ts',
   testTimeout: 30_000,
-  reporters: [['md', { preset: 'compact' }], ...(process.env.CI ? ['github-actions' as const] : [])],
+  reporters: [['md', { preset: 'compact' }], ...(isNonEmptyString(process.env.CI) ? ['github-actions' as const] : [])],
   plugins: [
     pluginReact(),
     federation({

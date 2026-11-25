@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from '@rstest/core';
+import { afterEach, describe, expect, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
 
 import { useExpandedPageMode } from './use-expanded-page-mode';
@@ -11,7 +11,10 @@ const isExpanded = () => document.documentElement.hasAttribute(PAGE_EXPANDED_ATT
 // The hook reads `getClientRects()` for its on-screen check; happy-dom does no layout.
 const createPageRoot = ({ onScreen }: { onScreen: boolean }) => {
   const el = document.createElement('div');
-  el.getClientRects = () => (onScreen ? [new DOMRect(0, 0, 800, 600)] : []) as unknown as DOMRectList;
+  el.getClientRects = () => {
+    const rects = onScreen ? [new DOMRect(0, 0, 800, 600)] : [];
+    return Object.assign(rects, { item: (index: number) => rects[index] ?? null });
+  };
   document.body.appendChild(el);
   return el;
 };
@@ -32,14 +35,14 @@ describe('useExpandedPageMode', () => {
     localStorage.clear();
   });
 
-  it('starts collapsed and sets no attribute when nothing is stored', () => {
+  test('starts collapsed and sets no attribute when nothing is stored', () => {
     const { result } = renderExpandedPage();
 
     expect(result.current.expanded).toBe(false);
     expect(isExpanded()).toBe(false);
   });
 
-  it('restores the stored expanded preference and marks the document', () => {
+  test('restores the stored expanded preference and marks the document', () => {
     localStorage.setItem(STORAGE_KEY, 'full');
 
     const { result } = renderExpandedPage();
@@ -48,7 +51,7 @@ describe('useExpandedPageMode', () => {
     expect(isExpanded()).toBe(true);
   });
 
-  it('persists both directions of the toggle', () => {
+  test('persists both directions of the toggle', () => {
     const { result } = renderExpandedPage();
 
     act(() => {
@@ -64,7 +67,7 @@ describe('useExpandedPageMode', () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBe('boxed');
   });
 
-  it('clears the attribute when the page unmounts, so it cannot bleed onto the next page', () => {
+  test('clears the attribute when the page unmounts, so it cannot bleed onto the next page', () => {
     localStorage.setItem(STORAGE_KEY, 'full');
     const { unmount } = renderExpandedPage();
     expect(isExpanded()).toBe(true);
@@ -74,7 +77,7 @@ describe('useExpandedPageMode', () => {
     expect(isExpanded()).toBe(false);
   });
 
-  it('holds the preference but not the attribute while the page root is off screen', () => {
+  test('holds the preference but not the attribute while the page root is off screen', () => {
     localStorage.setItem(STORAGE_KEY, 'full');
 
     // Embedded Cloud UI keeps Console mounted and hidden on host routes.

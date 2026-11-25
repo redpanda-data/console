@@ -1,7 +1,7 @@
 import { afterEach, expect, rs, test } from '@rstest/core';
 import { act, render, screen } from '@testing-library/react';
 
-import ReassignPartitions from './reassign-partitions';
+import { ReassignPartitions } from './reassign-partitions';
 import { StepReview } from './step3-review';
 import { useApiStore } from '../../../state/backend-api';
 import type { Partition, Topic } from '../../../state/rest-interfaces';

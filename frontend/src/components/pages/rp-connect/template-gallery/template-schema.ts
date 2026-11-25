@@ -10,6 +10,8 @@
  */
 
 import type { PipelineTemplate, TemplateSlot } from './pipeline-template-types';
+import { isNonEmptyString } from '../../../../utils/string-utils';
+import { isPresent } from '../../../../utils/type-guards';
 import type { ConnectComponentSpec, RawFieldSpec } from '../types/schema';
 import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 import { checkRequired, findConnectComponent, resolveFieldByPath } from '../utils/schema';
@@ -23,7 +25,7 @@ const slotDescription = (field: RawFieldSpec): string | undefined =>
 // Pass enriched specs (enrichComponentsWithConfigSchema) so `required` uses the
 // backend-computed signal rather than the proto heuristic.
 export function applySchemaToSlots(template: PipelineTemplate, components?: ConnectComponentSpec[]): TemplateSlot[] {
-  if (!components?.length) {
+  if (!(isPresent(components) && components.length > 0)) {
     return template.slots;
   }
 
@@ -40,7 +42,7 @@ export function applySchemaToSlots(template: PipelineTemplate, components?: Conn
   };
 
   return template.slots.map((slot) => {
-    if (!slot.schemaField) {
+    if (!isNonEmptyString(slot.schemaField)) {
       return slot;
     }
     const comp = componentForSection(slot.section);
@@ -55,7 +57,7 @@ export function applySchemaToSlots(template: PipelineTemplate, components?: Conn
       required: slot.required ?? checkRequired(field),
     };
 
-    if (merged.kind !== 'secret' && !merged.default && field.defaultValue) {
+    if (merged.kind !== 'secret' && !isNonEmptyString(merged.default) && field.defaultValue) {
       return { ...merged, default: field.defaultValue };
     }
     return merged;

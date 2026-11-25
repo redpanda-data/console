@@ -24,7 +24,7 @@ import { InlineCode, List, ListItem } from 'components/redpanda-ui/components/ty
 import type { FC } from 'react';
 import { useState } from 'react';
 
-import FilterEditor from './editor';
+import { FilterEditor } from './editor';
 import type { FilterEntry } from '../../../../state/ui';
 
 const JavascriptFilterModal: FC<{
@@ -124,4 +124,4 @@ const JavascriptFilterModal: FC<{
   );
 };
 
-export default JavascriptFilterModal;
+export { JavascriptFilterModal };

@@ -33,6 +33,7 @@ export const mapEntityTypeToDisplay = (entityType: Quota_EntityType): QuotaEntit
       return 'user';
     case Quota_EntityType.IP:
       return 'ip';
+    case Quota_EntityType.UNSPECIFIED:
     default:
       return 'unknown';
   }
@@ -73,5 +74,13 @@ export const sortingToSearch = (
   if (!first) {
     return { sortField: undefined, sortDirection: undefined };
   }
-  return { sortField: first.id as QuotaSortField, sortDirection: first.desc ? 'desc' : 'asc' };
+  const fields: QuotaSortField[] = [
+    'entityType',
+    'entityName',
+    'producerRate',
+    'consumerRate',
+    'controllerMutationRate',
+  ];
+  const sortField = fields.find((field) => field === first.id);
+  return { sortField, sortDirection: sortField === undefined ? undefined : first.desc ? 'desc' : 'asc' };
 };

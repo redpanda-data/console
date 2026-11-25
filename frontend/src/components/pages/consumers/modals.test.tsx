@@ -3,10 +3,10 @@ import { QueryClient } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { toast } from 'sonner';
 import { useApiStore } from 'state/backend-api';
-import type { GroupDescription } from 'state/rest-interfaces';
-import { render, screen, waitFor, within } from 'test-utils';
 
 import { DeleteOffsetsModal, EditOffsetsModal, type GroupOffset } from './modals';
+import { render, screen, waitFor, within } from '../../../test-utils';
+import type { GroupDescription } from '../../../types/consumer-groups';
 
 const group: GroupDescription = {
   groupId: 'test-group',

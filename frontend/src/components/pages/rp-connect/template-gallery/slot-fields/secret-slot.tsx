@@ -22,7 +22,9 @@ import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { Control, FieldValues } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
+import { reportActionError } from 'utils/toast.utils';
 
+import { isNonEmptyString } from '../../../../../utils/string-utils';
 import { AddSecretsDialog } from '../../onboarding/add-secrets-dialog';
 import type { SecretSlot } from '../pipeline-template-types';
 
@@ -46,7 +48,7 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
   );
 
   const requiredSecretsForDialog = useMemo(
-    () => (slot.suggestedName ? [slot.suggestedName] : ['NEW_SECRET']),
+    () => (isNonEmptyString(slot.suggestedName) ? [slot.suggestedName] : ['NEW_SECRET']),
     [slot.suggestedName]
   );
 
@@ -70,7 +72,7 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
         {(field) => {
           // Include a just-created value the listSecrets query hasn't reported
           // yet, so the Select shows it instead of the placeholder.
-          const selectedValue = (field.value as string | undefined) ?? '';
+          const selectedValue = typeof field.value === 'string' ? field.value : '';
           const options =
             selectedValue && !existingSecrets.includes(selectedValue)
               ? [selectedValue, ...existingSecrets]
@@ -105,7 +107,7 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
                 type="button"
                 variant="outline"
               >
-                <Plus className="h-4 w-4" /> Create secret
+                <Plus className="size-4" /> Create secret
               </Button>
             </div>
           );
@@ -119,9 +121,9 @@ export const SecretSlotField = ({ slot, control, onSecretCreated, onRequestCreat
           onClose={() => setIsDialogOpen(false)}
           onSecretsCreated={(secretNames) => {
             setIsDialogOpen(false);
-            refetch();
+            refetch().catch(reportActionError);
             const created = secretNames?.[0];
-            if (created) {
+            if (created !== null && created !== undefined && created !== '') {
               onSecretCreated?.(slot.id, created);
             }
           }}

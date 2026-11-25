@@ -13,8 +13,9 @@
 
 import { parseDocument, parse as parseYaml } from 'yaml';
 
+import { configRecord, configString, configValue } from './__fixtures__/config-value';
 import type { InputEndBehavior } from './input-end-behavior';
-import type { StopSlot } from './pipeline-flow-parser';
+import type { StopSlot } from './pipeline-flow-nodes';
 import {
   classifyIdleTimeout,
   describeDuration,
@@ -32,14 +33,14 @@ import {
   stopSlotLock,
   unwrapLock,
 } from './read-until';
-import { readStopCondition, unwrapReadUntil } from './yaml';
+import { readStopCondition, unwrapReadUntil } from './yaml-values';
 import { describe, expect, test } from 'bun:test';
 
 describe('message limits', () => {
   test('reads counter() limits and legacy count("name") limits', () => {
-    expect(parseMessageLimit('counter() >= 1000')).toEqual({ limit: 1000 });
-    expect(parseMessageLimit('  counter( ) > 99 ')).toEqual({ limit: 100 });
-    expect(parseMessageLimit('count("messages") >= 100')).toEqual({ limit: 100, counter: 'messages' });
+    expect(parseMessageLimit('counter() >= 1000')).toStrictEqual({ limit: 1000 });
+    expect(parseMessageLimit('  counter( ) > 99 ')).toStrictEqual({ limit: 100 });
+    expect(parseMessageLimit('count("messages") >= 100')).toStrictEqual({ limit: 100, counter: 'messages' });
   });
 
   test('anything else is not a limit', () => {
@@ -57,22 +58,22 @@ describe('message limits', () => {
 
 describe('resolveStopCondition', () => {
   test('a new limit counts with counter(), so sibling inputs never share a count', () => {
-    expect(resolveStopCondition(undefined, { messageLimit: 250 })).toEqual({ check: 'counter() >= 250' });
+    expect(resolveStopCondition(undefined, { messageLimit: 250 })).toStrictEqual({ check: 'counter() >= 250' });
   });
 
   test('editing a legacy count("name") limit keeps its counter', () => {
-    expect(resolveStopCondition({ check: 'count("orders") >= 10' }, { messageLimit: 20 })).toEqual({
+    expect(resolveStopCondition({ check: 'count("orders") >= 10' }, { messageLimit: 20 })).toStrictEqual({
       check: 'count("orders") >= 20',
     });
   });
 
   test('restart_input is kept with any condition, never alone, and values are trimmed', () => {
-    expect(resolveStopCondition(undefined, { idleTimeout: ' 30s ', restartInput: true })).toEqual({
+    expect(resolveStopCondition(undefined, { idleTimeout: ' 30s ', restartInput: true })).toStrictEqual({
       idleTimeout: '30s',
       restartInput: true,
     });
-    expect(resolveStopCondition(undefined, { restartInput: true })).toEqual({});
-    expect(resolveStopCondition(undefined, { check: ' this.done ', restartInput: true })).toEqual({
+    expect(resolveStopCondition(undefined, { restartInput: true })).toStrictEqual({});
+    expect(resolveStopCondition(undefined, { check: ' this.done ', restartInput: true })).toStrictEqual({
       check: 'this.done',
       restartInput: true,
     });
@@ -111,7 +112,7 @@ describe('durations', () => {
       ['1toString', undefined],
     ];
     for (const [text, ns] of cases) {
-      expect([text, parseGoDuration(text)]).toEqual([text, ns]);
+      expect([text, parseGoDuration(text)]).toStrictEqual([text, ns]);
     }
   });
 
@@ -132,12 +133,12 @@ describe('durations', () => {
       ['5 m', 'invalid'],
     ];
     for (const [value, kind] of cases) {
-      expect([value, classifyIdleTimeout(value)]).toEqual([value, kind]);
+      expect([value, classifyIdleTimeout(value)]).toStrictEqual([value, kind]);
     }
   });
 
   test('only a positive timeout or an env var reference fires; a zero one still counts as set', () => {
-    expect(['1ms', '${IDLE}', '0s', '-1s', 'soon', undefined].map(idleTimeoutFires)).toEqual([
+    expect(['1ms', '${IDLE}', '0s', '-1s', 'soon', undefined].map(idleTimeoutFires)).toStrictEqual([
       true,
       true,
       false,
@@ -145,7 +146,7 @@ describe('durations', () => {
       false,
       false,
     ]);
-    expect(['1ms', '0s', '-1s', 'soon'].map(isIdleTimeoutSet)).toEqual([true, true, false, false]);
+    expect(['1ms', '0s', '-1s', 'soon'].map(isIdleTimeoutSet)).toStrictEqual([true, true, false, false]);
   });
 
   test('describes them in words', () => {
@@ -159,12 +160,12 @@ describe('durations', () => {
 
 describe('describeStopCondition', () => {
   test('summarizes a limit, a check and an idle timeout', () => {
-    expect(describeStopCondition({ check: 'counter() >= 1500' })).toEqual({
+    expect(describeStopCondition({ check: 'counter() >= 1500' })).toStrictEqual({
       short: '1.5K msgs',
       compact: 'after 1.5K msgs',
       long: 'after 1,500 messages',
     });
-    expect(describeStopCondition({ check: 'this.last', idleTimeout: '30s' })).toEqual({
+    expect(describeStopCondition({ check: 'this.last', idleTimeout: '30s' })).toStrictEqual({
       short: 'on match · idle 30s',
       compact: 'on match or 30s idle',
       long: 'when `this.last` is true, or after 30 seconds without new messages',
@@ -214,7 +215,7 @@ describe('stopRowText', () => {
   test('a broker row counts the members that keep it running', () => {
     const members = { total: 3, continuous: 1, unknown: 0, invalid: 0 };
     const group = { isGroup: true };
-    expect(stopRowText('broker', openSlot, { ...continuous, members }, group)).toEqual({
+    expect(stopRowText('broker', openSlot, { ...continuous, members }, group)).toStrictEqual({
       eyebrow: 'Continuous',
       text: '1 of 3 inputs never stops',
     });
@@ -225,13 +226,13 @@ describe('stopRowText', () => {
     const stopped = { kind: 'condition' as const, reason: 'Stops after 5 seconds without new messages.' };
     expect(
       stopRowText('broker', { path: ['input'], condition: { idleTimeout: '5s' }, ownEnd: natural }, stopped, group)
-    ).toEqual({ eyebrow: 'Stops', text: 'after 5s idle' });
+    ).toStrictEqual({ eyebrow: 'Stops', text: 'after 5s idle' });
   });
 
   test('a broker whose own batching may not stop says so, not its members', () => {
     const members = { total: 2, continuous: 0, unknown: 0, invalid: 0 };
     const batching: InputEndBehavior = { kind: 'unknown', reason: 'Its `batching` has no `period`.', members };
-    expect(stopRowText('broker', openSlot, batching, { isGroup: true })).toEqual({
+    expect(stopRowText('broker', openSlot, batching, { isGroup: true })).toStrictEqual({
       eyebrow: 'Stops?',
       text: 'Its batching has no period.',
     });
@@ -244,7 +245,10 @@ describe('stopRowText', () => {
       condition: { check: 'counter() >= 1000', idleTimeout: '1m' },
       ownEnd: continuous,
     };
-    expect(stopRowText('kafka', limited, stopped)).toEqual({ eyebrow: 'Stops', text: 'after 1K msgs or 1m idle' });
+    expect(stopRowText('kafka', limited, stopped)).toStrictEqual({
+      eyebrow: 'Stops',
+      text: 'after 1K msgs or 1m idle',
+    });
     expect(stopRowText('aws_s3', { path: ['input'], ownEnd: natural }, natural).text).toBe('when its data runs out');
   });
 
@@ -254,7 +258,7 @@ describe('stopRowText', () => {
     const zero: StopSlot = { path: ['input'], condition: { idleTimeout: '0s' }, ownEnd: continuous };
     expect(stopRowText('kafka', zero, continuous).text).toBe('condition never fires');
     const empty: StopSlot = { path: ['input'], condition: {}, ownEnd: continuous };
-    expect(stopRowText('kafka', empty, { kind: 'invalid', reason: 'x' })).toEqual({
+    expect(stopRowText('kafka', empty, { kind: 'invalid', reason: 'x' })).toStrictEqual({
       eyebrow: 'Fix',
       text: 'condition incomplete',
     });
@@ -264,15 +268,17 @@ describe('stopRowText', () => {
 
 describe('unwrapReadUntil', () => {
   test('sees through a wrapper to the input it reads', () => {
-    const slot = parseYaml(`
+    const slot = configRecord(
+      parseYaml(`
 read_until:
   check: counter() >= 3
   idle_timeout: 10s
   restart_input: true
   input:
     kafka: { topics: [a] }
-`);
-    expect(unwrapReadUntil(slot)).toEqual({
+`)
+    );
+    expect(unwrapReadUntil(slot)).toStrictEqual({
       component: { kafka: { topics: ['a'] } },
       innerPath: ['read_until', 'input'],
       stop: { check: 'counter() >= 3', idleTimeout: '10s', restartInput: true },
@@ -281,16 +287,19 @@ read_until:
 
   test('a wrapper with no input yet is left as the component', () => {
     const slot = { read_until: { check: 'true' } };
-    expect(unwrapReadUntil(slot)).toEqual({ component: slot, innerPath: [] });
+    expect(unwrapReadUntil(slot)).toStrictEqual({ component: slot, innerPath: [] });
   });
 
   test('an unquoted numeric idle timeout stays visible', () => {
-    expect(readStopCondition({ idle_timeout: 30 })).toEqual({ idleTimeout: '30' });
+    expect(readStopCondition({ idle_timeout: 30 })).toStrictEqual({ idleTimeout: '30' });
   });
 
   test('a scalar check is the query Connect reads, and restart_input takes YAML 1.1 words', () => {
-    expect(readStopCondition({ check: true, restart_input: 'yes' })).toEqual({ check: 'true', restartInput: true });
-    expect(readStopCondition({ check: 'true', restart_input: 'off' })).toEqual({ check: 'true' });
+    expect(readStopCondition({ check: true, restart_input: 'yes' })).toStrictEqual({
+      check: 'true',
+      restartInput: true,
+    });
+    expect(readStopCondition({ check: 'true', restart_input: 'off' })).toStrictEqual({ check: 'true' });
   });
 
   test('looks past a slot’s processors to find the wrapper', () => {
@@ -354,7 +363,7 @@ output:
       generate: { mapping: root = 1 }
     check: counter() >= 1
 `;
-    const next = setStopCondition(wrapped, ['input'], { check: 'counter() >= 1', idleTimeout: '1m' }) as string;
+    const next = configString(setStopCondition(wrapped, ['input'], { check: 'counter() >= 1', idleTimeout: '1m' }));
     expect(next.indexOf('idle_timeout')).toBeLessThan(next.indexOf('input:\n      generate'));
   });
 
@@ -365,8 +374,8 @@ output:
       - kafka: { topics: [a] }
       - aws_s3: { bucket: b }
 `;
-    const next = setStopCondition(broker, ['input', 'broker', 'inputs', 0], { idleTimeout: '10s' }) as string;
-    expect(parseYaml(next)).toEqual({
+    const next = configString(setStopCondition(broker, ['input', 'broker', 'inputs', 0], { idleTimeout: '10s' }));
+    expect(parseYaml(next)).toStrictEqual({
       input: {
         broker: {
           inputs: [
@@ -388,8 +397,8 @@ output:
   test('an anchored member keeps meaning the bare input for its aliases, wrapped or not', () => {
     const anchored =
       'input:\n  broker:\n    inputs:\n      - &m\n        generate: { mapping: root = 1 }\n      - *m\n';
-    const wrapped = setStopCondition(anchored, ['input', 'broker', 'inputs', 0], { idleTimeout: '5s' }) as string;
-    expect(parseYaml(wrapped)).toEqual({
+    const wrapped = configString(setStopCondition(anchored, ['input', 'broker', 'inputs', 0], { idleTimeout: '5s' }));
+    expect(parseYaml(wrapped)).toStrictEqual({
       input: {
         broker: {
           inputs: [
@@ -399,16 +408,20 @@ output:
         },
       },
     });
-    const unwrapped = setStopCondition(wrapped, ['input', 'broker', 'inputs', 0], null) as string;
-    expect(parseYaml(unwrapped)).toEqual(parseYaml(anchored));
+    const unwrapped = configString(setStopCondition(wrapped, ['input', 'broker', 'inputs', 0], null));
+    expect(parseYaml(unwrapped)).toStrictEqual(parseYaml(anchored));
   });
 
   test('a multi-line check round-trips', () => {
     const check = 'let n = this.n\n$n > 3';
-    const wrapped = setStopCondition(plain, ['input'], { check }) as string;
-    expect(readStopCondition(parseYaml(wrapped).input.read_until)).toEqual({ check });
-    const edited = setStopCondition(wrapped, ['input'], { check: `${check}\n# done` }) as string;
-    expect(readStopCondition(parseYaml(edited).input.read_until)).toEqual({ check: `${check}\n# done` });
+    const wrapped = configString(setStopCondition(plain, ['input'], { check }));
+    expect(readStopCondition(configRecord(configValue(parseYaml(wrapped), 'input', 'read_until')))).toStrictEqual({
+      check,
+    });
+    const edited = configString(setStopCondition(wrapped, ['input'], { check: `${check}\n# done` }));
+    expect(readStopCondition(configRecord(configValue(parseYaml(edited), 'input', 'read_until')))).toStrictEqual({
+      check: `${check}\n# done`,
+    });
   });
 });
 
@@ -416,7 +429,7 @@ describe('setStopCondition unwrapping', () => {
   test('unwrapping keeps the input’s own label over one on the wrapper', () => {
     const both =
       'input:\n  label: outer\n  read_until:\n    idle_timeout: 5s\n    input:\n      label: inner\n      kafka: {}\n';
-    expect(parseYaml(setStopCondition(both, ['input'], null) as string)).toEqual({
+    expect(parseYaml(configString(setStopCondition(both, ['input'], null)))).toStrictEqual({
       input: { label: 'inner', kafka: {} },
     });
   });
@@ -428,9 +441,9 @@ describe('setStopCondition unwrapping', () => {
   });
 
   test('clearing the condition restores the original input', () => {
-    const wrapped = setStopCondition(plain, ['input'], { check: 'counter() >= 10' }) as string;
-    const unwrapped = setStopCondition(wrapped, ['input'], null) as string;
-    expect(parseYaml(unwrapped)).toEqual(parseYaml(plain));
+    const wrapped = configString(setStopCondition(plain, ['input'], { check: 'counter() >= 10' }));
+    const unwrapped = configString(setStopCondition(wrapped, ['input'], null));
+    expect(parseYaml(unwrapped)).toStrictEqual(parseYaml(plain));
     expect(unwrapped).toContain('# the main topic');
   });
 
@@ -443,7 +456,7 @@ describe('setStopCondition unwrapping', () => {
       processors: [{ log: { message: inner } }]
   processors: [{ log: { message: outer } }]
 `;
-    expect(parseYaml(setStopCondition(wrapped, ['input'], null) as string)).toEqual({
+    expect(parseYaml(configString(setStopCondition(wrapped, ['input'], null)))).toStrictEqual({
       input: {
         generate: { mapping: 'root = 1' },
         processors: [{ log: { message: 'inner' } }, { log: { message: 'outer' } }],
@@ -454,7 +467,7 @@ describe('setStopCondition unwrapping', () => {
   test('comments on the wrapper’s own keys survive unwrapping', () => {
     const commented =
       'input:\n  # stops the backfill\n  read_until:\n    idle_timeout: 5s\n    # the source\n    input:\n      kafka: {}\n';
-    const out = setStopCondition(commented, ['input'], null) as string;
+    const out = configString(setStopCondition(commented, ['input'], null));
     expect(out).toContain('# stops the backfill');
     expect(out).toContain('# the source');
   });
@@ -481,8 +494,10 @@ describe('setStopCondition unwrapping', () => {
   });
 
   test('a condition with nothing to stop on clears instead of writing an invalid wrapper', () => {
-    const wrapped = setStopCondition(plain, ['input'], { idleTimeout: '5s' }) as string;
-    expect(parseYaml(setStopCondition(wrapped, ['input'], { restartInput: true }) as string)).toEqual(parseYaml(plain));
+    const wrapped = configString(setStopCondition(plain, ['input'], { idleTimeout: '5s' }));
+    expect(parseYaml(configString(setStopCondition(wrapped, ['input'], { restartInput: true })))).toStrictEqual(
+      parseYaml(plain)
+    );
   });
 });
 

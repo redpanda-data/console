@@ -9,11 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { type Document, isAlias, isMap, isScalar, isSeq, Pair, parseDocument, Scalar, YAMLMap } from 'yaml';
+import { type Document, isAlias, isMap, isNode, isScalar, isSeq, Pair, parseDocument, Scalar, YAMLMap } from 'yaml';
 
 import type { InputEndBehavior, InputEndKind } from './input-end-behavior';
-import type { StopSlot } from './pipeline-flow-parser';
-import { isStopConditionSet, READ_UNTIL, type StopCondition, YAML_STRINGIFY_OPTIONS } from './yaml';
+import type { StopSlot } from './pipeline-flow-nodes';
+import { isStopConditionSet, READ_UNTIL, type StopCondition, YAML_STRINGIFY_OPTIONS } from './yaml-values';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 
 // ── Message limits ─────────────────────────────────────────────────────────
 // `counter()` counts per call site; the deprecated `count("name")` is shared by name, so it is
@@ -37,11 +38,11 @@ function limitCheckParts(check: string): { op?: string; digits?: string; counter
 
 /** The message limit a `check` expresses (`counter() >= N`, or legacy `count("name") >= N`). */
 export function parseMessageLimit(check: string | undefined): MessageLimit | undefined {
-  if (!check) {
+  if (!(check !== null && check !== undefined && check !== '')) {
     return;
   }
   const { op, digits, counter } = limitCheckParts(check);
-  if (!(op && digits)) {
+  if (!(op !== null && op !== undefined && op !== '' && digits !== null && digits !== undefined && digits !== '')) {
     return;
   }
   const limit = op === '>' ? Number(digits) + 1 : Number(digits);
@@ -68,13 +69,13 @@ export function resolveStopCondition(existing: StopCondition | undefined, draft:
   const stop: StopCondition = {};
   if (draft.messageLimit !== undefined) {
     stop.check = messageLimitCheck({ limit: draft.messageLimit, counter: parseMessageLimit(existing?.check)?.counter });
-  } else if (draft.check?.trim()) {
+  } else if (isNonEmptyString(draft.check?.trim())) {
     stop.check = draft.check.trim();
   }
-  if (draft.idleTimeout?.trim()) {
+  if (isNonEmptyString(draft.idleTimeout?.trim())) {
     stop.idleTimeout = draft.idleTimeout.trim();
   }
-  if (draft.restartInput && isStopConditionSet(stop)) {
+  if (draft.restartInput === true && isStopConditionSet(stop)) {
     stop.restartInput = true;
   }
   return stop;
@@ -82,7 +83,7 @@ export function resolveStopCondition(existing: StopCondition | undefined, draft:
 
 // The same check, or the same message limit however it's written (`counter() > 5` is `counter() >= 6`).
 function sameCheck(a: string | undefined, b: string | undefined): boolean {
-  if ((a?.trim() || undefined) === (b?.trim() || undefined)) {
+  if (((a?.trim() ?? '') || undefined) === ((b?.trim() ?? '') || undefined)) {
     return true;
   }
   const [x, y] = [parseMessageLimit(a), parseMessageLimit(b)];
@@ -93,7 +94,7 @@ function sameCheck(a: string | undefined, b: string | undefined): boolean {
 export function sameStopCondition(a: StopCondition | undefined, b: StopCondition | undefined): boolean {
   return (
     sameCheck(a?.check, b?.check) &&
-    (a?.idleTimeout?.trim() || undefined) === (b?.idleTimeout?.trim() || undefined) &&
+    ((a?.idleTimeout?.trim() ?? '') || undefined) === ((b?.idleTimeout?.trim() ?? '') || undefined) &&
     Boolean(a?.restartInput) === Boolean(b?.restartInput)
   );
 }
@@ -253,7 +254,7 @@ function checkClause(check: string | undefined, batches: boolean): StopCondition
     const long = `after ${FULL_NUMBER.format(limit.limit)} ${limitUnit(limit.limit, batches, false)}`;
     return { short: msgs, compact: `after ${msgs}`, long };
   }
-  if (!check) {
+  if (!(check !== null && check !== undefined && check !== '')) {
     return;
   }
   // A backtick in the query would end the code span it's quoted in.
@@ -276,7 +277,7 @@ export function describeStopCondition(
   { batches = false }: { batches?: boolean } = {}
 ): StopConditionSummary {
   const check = checkClause(stop.check, batches);
-  const idle = stop.idleTimeout ? idleClause(stop.idleTimeout, check !== undefined) : undefined;
+  const idle = isNonEmptyString(stop.idleTimeout) ? idleClause(stop.idleTimeout, check !== undefined) : undefined;
   const clauses = [check, idle].filter((clause): clause is StopConditionSummary => clause !== undefined);
   return {
     short: clauses.map((c) => c.short).join(' · '),
@@ -313,7 +314,7 @@ export const CODE_SPAN_RE = /`([^`]+)`/g;
 const plain = (text: string): string => text.replace(CODE_SPAN_RE, '$1');
 
 export const withCaveat = (text: string, behavior: InputEndBehavior) =>
-  behavior.caveat ? `${text} ${behavior.caveat}` : text;
+  isNonEmptyString(behavior.caveat) ? `${text} ${behavior.caveat}` : text;
 
 /** An input's one-line end label, plus the plain-text sentence for its tooltip. */
 export function stopSummary(slot: StopSlot, effective: InputEndBehavior): { short: string; long: string } {
@@ -355,6 +356,8 @@ function groupEndText(name: string, effective: InputEndBehavior): { eyebrow: str
         eyebrow: 'Fix',
         text: m && m.invalid > 0 ? `${whichMembers(m.invalid, m.total)} incomplete` : plain(effective.reason),
       };
+    case 'condition':
+    case 'unknown':
     default:
       // The members all stop when the group's own batching is what may not.
       return {
@@ -385,6 +388,8 @@ function inputEndText(
         eyebrow: 'Fix',
         text: wrapped && slot.ownEnd.kind !== 'invalid' ? 'condition incomplete' : plain(effective.reason),
       };
+    case 'condition':
+    case 'unknown':
     default:
       return { eyebrow: 'Stops?', text: 'may not stop on its own' };
   }
@@ -406,21 +411,19 @@ export function stopRowText(
 
 // ── YAML mutation ──────────────────────────────────────────────────────────
 
-const pairKey = (pair: unknown): unknown =>
-  pair instanceof Pair && isScalar(pair.key) ? (pair.key as Scalar).value : undefined;
+const pairKey = (pair: unknown): unknown => (pair instanceof Pair && isScalar(pair.key) ? pair.key.value : undefined);
 
-const findPair = (map: YAMLMap, key: string): Pair | undefined =>
-  map.items.find((p) => pairKey(p) === key) as Pair | undefined;
+const findPair = (map: YAMLMap, key: string): Pair | undefined => map.items.find((p) => pairKey(p) === key);
 
 // The wrapper's settings, in document order ahead of its child `input` so they read first.
 const SETTING_KEYS = ['check', 'idle_timeout', 'restart_input'] as const;
 
 function settingValues(stop: StopCondition): Record<(typeof SETTING_KEYS)[number], string | boolean | undefined> {
   return {
-    check: stop.check?.trim() || undefined,
-    idle_timeout: stop.idleTimeout?.trim() || undefined,
+    check: (stop.check?.trim() ?? '') || undefined,
+    idle_timeout: (stop.idleTimeout?.trim() ?? '') || undefined,
     // Default false — written only when on.
-    restart_input: stop.restartInput ? true : undefined,
+    restart_input: stop.restartInput === true ? true : undefined,
   };
 }
 
@@ -493,7 +496,7 @@ function placeChildPair(slot: YAMLMap, pair: Pair, outerKeys: Set<unknown>): 'mo
 
 // Both are lists, and neither is anchored.
 const processorsMerge = (outer: unknown, inner: unknown): boolean =>
-  isSeq(outer) && isSeq(inner) && !(outer.anchor || inner.anchor);
+  isSeq(outer) && isSeq(inner) && !((outer.anchor ?? '') || isNonEmptyString(inner.anchor));
 
 // Prepend the child's processors to the slot's; false when they can't merge.
 function prependProcessors(outer: unknown, inner: unknown): boolean {
@@ -514,11 +517,11 @@ function unwrapBlocker(slot: YAMLMap, inner: YAMLMap): string | undefined {
   if ([...slot.items, ...inner.items].some(isMergePair)) {
     return UNWRAP_MERGED;
   }
-  if (slot.anchor && inner.anchor) {
+  if (isNonEmptyString(slot.anchor) && isNonEmptyString(inner.anchor)) {
     return UNWRAP_ANCHORS;
   }
   const outerKeys = new Set(slot.items.map(pairKey).filter((k) => k !== READ_UNTIL));
-  const clashes = (inner.items as Pair[]).some((pair) => {
+  const clashes = inner.items.some((pair) => {
     const key = pairKey(pair);
     return (
       outerKeys.has(key) &&
@@ -539,7 +542,7 @@ function wrappedInput(wrapper: unknown): YAMLMap | undefined {
 function childPairsToMove(slot: YAMLMap, inner: YAMLMap): Pair[] | undefined {
   const outerKeys = new Set(slot.items.map(pairKey).filter((k) => k !== READ_UNTIL));
   const moved: Pair[] = [];
-  for (const pair of inner.items as Pair[]) {
+  for (const pair of inner.items) {
     const placement = placeChildPair(slot, pair, outerKeys);
     if (placement === 'clash') {
       return;
@@ -557,9 +560,10 @@ function childPairsToMove(slot: YAMLMap, inner: YAMLMap): Pair[] | undefined {
 function carryCommentsAndAnchor(slot: YAMLMap, wrapperPair: Pair, inner: YAMLMap, first: unknown): void {
   const wrapper = wrapperPair.value;
   const inputPair = isMap(wrapper) ? findPair(wrapper, 'input') : undefined;
-  const comments = [wrapperPair.key, wrapper, inputPair?.key, inner]
-    .map((n) => (n as { commentBefore?: string } | undefined)?.commentBefore)
-    .filter((c): c is string => Boolean(c));
+  const comments = [wrapperPair.key, wrapper, inputPair?.key, inner].flatMap((n) => {
+    const leadingComment = isNode(n) ? n.commentBefore : undefined;
+    return Boolean(leadingComment) ? [leadingComment] : [];
+  });
   if (comments.length > 0 && isScalar(first)) {
     first.commentBefore = [...comments, first.commentBefore].filter(Boolean).join('\n');
   }
@@ -567,7 +571,7 @@ function carryCommentsAndAnchor(slot: YAMLMap, wrapperPair: Pair, inner: YAMLMap
   if (trailing.length > 0) {
     slot.comment = [slot.comment, ...trailing].filter(Boolean).join('\n');
   }
-  if (inner.anchor && !slot.anchor) {
+  if (isNonEmptyString(inner.anchor) && !isNonEmptyString(slot.anchor)) {
     slot.anchor = inner.anchor;
   }
 }
@@ -575,7 +579,7 @@ function carryCommentsAndAnchor(slot: YAMLMap, wrapperPair: Pair, inner: YAMLMap
 // Replace the wrapper with its child input's fields, in place; false when they can't merge.
 function unwrapSlot(slot: YAMLMap, wrapperPair: Pair): boolean {
   const inner = wrappedInput(wrapperPair.value);
-  if (!inner || unwrapBlocker(slot, inner)) {
+  if (!inner || isNonEmptyString(unwrapBlocker(slot, inner))) {
     return false;
   }
   const moved = childPairsToMove(slot, inner);
@@ -603,7 +607,10 @@ const isMergePair = (pair: unknown): boolean => {
 // The maps a `<<` value merges in: an alias, a map, or a list of them.
 function mergeSources(doc: Document, value: unknown): YAMLMap[] {
   const items = isSeq(value) ? value.items : [value];
-  return items.map((item) => (isAlias(item) ? item.resolve(doc) : item)).filter((m): m is YAMLMap => isMap(m));
+  return items.flatMap((item) => {
+    const resolvedItem = isAlias(item) ? item.resolve(doc) : item;
+    return isMap(resolvedItem) ? [resolvedItem] : [];
+  });
 }
 
 // Whether a `<<` merge key on the map brings in `key`.
@@ -613,7 +620,7 @@ function mergesIn(doc: Document, map: YAMLMap, key: string, depth = 0): boolean 
     map.items.some(
       (pair) =>
         isMergePair(pair) &&
-        mergeSources(doc, (pair as Pair).value).some(
+        mergeSources(doc, pair.value).some(
           (source) => findPair(source, key) !== undefined || mergesIn(doc, source, key, depth + 1)
         )
     )
@@ -675,8 +682,8 @@ function applyToSlot(slot: YAMLMap, stop: StopCondition | null): boolean | 'unch
     wrapSlot(slot, stop);
     return true;
   }
-  if (isWrapper) {
-    applySettings(wrapperPair.value as YAMLMap, stop);
+  if (isWrapper && isMap(wrapperPair.value)) {
+    applySettings(wrapperPair.value, stop);
   }
   return isWrapper;
 }
@@ -694,7 +701,7 @@ export function setStopCondition(
   try {
     const doc = parseDocument(yaml);
     const slot = doc.errors.length > 0 ? undefined : doc.getIn(slotPath, true);
-    if (!isMap(slot) || stopSlotLock(doc, slotPath)) {
+    if (!isMap(slot) || isNonEmptyString(stopSlotLock(doc, slotPath))) {
       return null;
     }
     const applied = applyToSlot(slot, stop);

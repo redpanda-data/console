@@ -61,7 +61,8 @@ export const WARNING_VARIANT = { danger: 'destructive', warning: 'warning', info
 const linkNotesFor = (suggestions: PrincipalSuggestion[]) => {
   const notes = new Map<string, string>();
   for (const { principal, linkName } of suggestions) {
-    notes.set(principal, notes.has(principal) ? `${notes.get(principal)}, ${linkName}` : linkName);
+    const previous = notes.get(principal);
+    notes.set(principal, previous === undefined ? linkName : `${previous}, ${linkName}`);
   }
   return notes;
 };
@@ -77,7 +78,14 @@ const ExemptUsersField = ({ value, setPrincipals, suggestions }: PolicyFieldProp
   const named = value.exemptPrincipals.filter(Boolean);
   /** Redpanda matches bare user names, so a typed `User:` prefix is dropped rather than warned about. */
   const setNamed = (names: string[]) => {
-    const bare = Array.from(new Set(names.map(toExemptName).filter(Boolean)));
+    const bare = Array.from(
+      new Set(
+        names.flatMap((name) => {
+          const principal = toExemptName(name);
+          return principal === '' ? [] : [principal];
+        })
+      )
+    );
     setPrincipals(blankExempt ? [...bare, ''] : bare);
   };
   const missingSuggestions = suggestions.filter(
@@ -112,10 +120,11 @@ const ExemptUsersField = ({ value, setPrincipals, suggestions }: PolicyFieldProp
               icon={<PlusIcon />}
               key={`${linkName}-${principal}`}
               render={
-                <button
+                <Button
                   aria-label={`Add ${principal}, the user of ${linkName}`}
                   onClick={() => setPrincipals([...value.exemptPrincipals, principal])}
                   type="button"
+                  variant="unstyled"
                 />
               }
               tone="primary"
@@ -197,14 +206,16 @@ const AdvancedOptions = ({ value, onChange }: Pick<ClusterFenceSettingsFieldsPro
     <Collapsible onOpenChange={setAdvancedOpen} open={advancedOpen}>
       <CollapsibleTrigger
         render={
-          <button className="flex items-center gap-1 text-label" type="button">
-            <span
-              className={cn('flex transition-transform motion-reduce:transition-none', advancedOpen && 'rotate-90')}
-            >
-              <ChevronRightIcon aria-hidden="true" className="size-4" />
+          <Button type="button" variant="unstyled">
+            <span className="flex items-center gap-1 text-label">
+              <span
+                className={cn('flex transition-transform motion-reduce:transition-none', advancedOpen && 'rotate-90')}
+              >
+                <ChevronRightIcon aria-hidden="true" className="size-4" />
+              </span>
+              Advanced options
             </span>
-            Advanced options
-          </button>
+          </Button>
         }
       />
       <CollapsibleContent>

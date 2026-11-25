@@ -10,9 +10,10 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
-import { useForm } from 'react-hook-form';
+import { type DeepPartial, useForm } from 'react-hook-form';
 import { render, screen, waitFor } from 'test-utils';
 
 import { SyncBehaviorSection } from './sync-behavior-section';
@@ -32,7 +33,7 @@ const TestWrapper = ({
   onFormChange,
 }: {
   defaultValues?: FormValues;
-  onFormChange?: (values: FormValues) => void;
+  onFormChange?: (values: DeepPartial<FormValues>) => void;
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
@@ -42,7 +43,7 @@ const TestWrapper = ({
 
   if (onFormChange) {
     form.watch((values) => {
-      onFormChange(values as FormValues);
+      onFormChange(values);
     });
   }
 
@@ -58,7 +59,7 @@ const TestWrapper = ({
 describe('the SyncBehaviorSection', () => {
   test('should start collapsed and reveal fields when expanded', async () => {
     const user = userEvent.setup();
-    let formValues: FormValues | undefined;
+    let formValues: DeepPartial<FormValues> | undefined;
 
     render(
       <TestWrapper

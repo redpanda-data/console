@@ -1,12 +1,9 @@
 .overviewGrid {
-
-    h3 {
-        margin-bottom: 22px;
-        margin-top: 6px;
-        font-weight: 600;
-        font-size: 14px;
-        text-transform: uppercase;
-        color: var(--color-foreground);
-    }
-
+  h3 {
+    margin-block: 6px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-foreground);
+    text-transform: uppercase;
+  }
 }

@@ -14,9 +14,14 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useSyncExternalStore } from 'react';
+import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
+import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
 import { renderWithFileRoutes } from 'test-utils';
 
+import { fenceStatusFixture, shadowLinksFixture } from './__fixtures__/queries';
+import type { FenceSummary } from './cluster-fence-model';
+import { FenceClusterDialog } from './fence-cluster-dialog';
 import type { ShadowLinkReader } from './shadow-link-topology';
 
 const mutate = rs.fn();
@@ -33,23 +38,12 @@ rs.mock('react-query/api/cluster-fence', () => {
 rs.mock('react-query/api/shadowlink', () => ({ useListShadowLinksQuery: rs.fn() }));
 rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
-import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-
-import { FenceClusterDialog } from './fence-cluster-dialog';
-
 const mockOwnLinks = (names: string[] | 'loading') =>
   rs
     .mocked(useListShadowLinksQuery)
-    .mockReturnValue(
-      (names === 'loading'
-        ? { data: undefined, isError: false }
-        : { data: { shadowLinks: names.map((name) => ({ name })) } }) as unknown as ReturnType<
-        typeof useListShadowLinksQuery
-      >
-    );
+    .mockReturnValue(shadowLinksFixture(names === 'loading' ? undefined : names.map((name) => ({ name }))));
 
-const summaryAt = (revision: number, overrides: Record<string, unknown> = {}) => ({
+const summaryAt = (revision: number, overrides: Partial<FenceSummary> = {}): FenceSummary => ({
   phase: 'unfenced',
   revision: BigInt(revision),
   exemptPrincipals: [],
@@ -57,12 +51,19 @@ const summaryAt = (revision: number, overrides: Record<string, unknown> = {}) =>
   ...overrides,
 });
 
+type LiveStatus = Parameters<typeof fenceStatusFixture>[0];
+
 /** Stands in for the polled status, so a test can change it while the dialog is open. */
-const live = {
-  value: { summary: summaryAt(2), brokers: [{ nodeId: 1, status: 'confirmed' }] } as unknown,
+const live: {
+  value: LiveStatus;
+  open: boolean;
+  listeners: Set<() => void>;
+  set: (next: Partial<{ value: LiveStatus; open: boolean }>) => void;
+} = {
+  value: { summary: summaryAt(2), brokers: [{ nodeId: 1, status: 'confirmed', blocks: false }] },
   open: true,
   listeners: new Set<() => void>(),
-  set(next: Partial<{ value: unknown; open: boolean }>) {
+  set(next) {
     act(() => {
       Object.assign(live, next);
       for (const listener of live.listeners) {
@@ -105,13 +106,12 @@ describe('the FenceClusterDialog', () => {
     live.value = {
       summary: summaryAt(2),
       brokers: [
-        { nodeId: 1, status: 'confirmed' },
-        { nodeId: 2, status: 'confirmed' },
+        { nodeId: 1, status: 'confirmed', blocks: false },
+        { nodeId: 2, status: 'confirmed', blocks: false },
       ],
     };
-    rs.mocked(useClusterFenceStatusQuery).mockImplementation(
-      () =>
-        useSyncExternalStore(subscribe, () => live.value) as unknown as ReturnType<typeof useClusterFenceStatusQuery>
+    rs.mocked(useClusterFenceStatusQuery).mockImplementation(() =>
+      fenceStatusFixture(useSyncExternalStore(subscribe, () => live.value))
     );
     mockOwnLinks([]);
     setReaders([

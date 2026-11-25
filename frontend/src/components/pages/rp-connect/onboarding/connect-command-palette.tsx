@@ -1,4 +1,4 @@
-import { type ComponentName, componentLogoMap } from 'assets/connectors/component-logo-map';
+import { getComponentLogo } from 'assets/connectors/component-logo-map';
 import clsx from 'clsx';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Badge } from 'components/redpanda-ui/components/badge';
@@ -33,6 +33,8 @@ import {
   searchableText,
 } from './connect-command-palette-utils';
 import { ConnectorLogo } from './connector-logo';
+import { nonzeroNumber } from '../../../../utils/number-utils';
+import { compareStrings, isNonEmptyString } from '../../../../utils/string-utils';
 import type { ConnectComponentSpec, ConnectComponentType, ExtendedConnectComponentSpec } from '../types/schema';
 import { asciidocToMarkdown, markdownToPlainText } from '../utils/asciidoc';
 import { getCategoryDisplayName } from '../utils/categories';
@@ -41,11 +43,11 @@ import { deprecationMessage, deprecationNotice, isDeprecatedComponent } from '..
 import { componentStatusToString, parseSchema } from '../utils/schema';
 
 function ComponentIcon({ component, className = 'size-5' }: { component: ConnectComponentSpec; className?: string }) {
-  if (component.logoUrl) {
+  if (isNonEmptyString(component.logoUrl)) {
     return <img alt="" className={clsx(className, 'shrink-0 object-contain')} src={component.logoUrl} />;
   }
-  if (componentLogoMap[component.name as ComponentName]) {
-    return <ConnectorLogo className={clsx(className, 'shrink-0')} name={component.name as ComponentName} />;
+  if (getComponentLogo(component.name)) {
+    return <ConnectorLogo className={clsx(className, 'shrink-0')} name={component.name} />;
   }
 
   return <TonedIcon className={clsx(className, 'shrink-0')} icon={Waypoints} tone="muted" />;
@@ -67,12 +69,12 @@ const MARKDOWN_COMPONENTS: Components = {
   p: ({ children }) => <div className="text-body leading-relaxed text-foreground">{children}</div>,
   // Markdown can produce an anchor with no destination, which is text rather than a link.
   a: ({ href, children }) =>
-    href ? (
+    href !== null && href !== undefined && href !== '' ? (
       <Link href={href} rel="noopener noreferrer" target="_blank">
         {children}
       </Link>
     ) : (
-      <>{children}</>
+      children
     ),
   code: ({ children }) => <code className="rounded bg-muted px-1 py-0.5 font-mono text-body-sm">{children}</code>,
   ul: ({ children }) => <ul className="list-disc space-y-0.5 pl-4 text-body text-foreground">{children}</ul>,
@@ -211,7 +213,7 @@ function DetailPane({ component }: { component?: ConnectComponentSpec }) {
         </div>
       ) : null}
 
-      {docsUrl ? (
+      {docsUrl !== null && docsUrl !== undefined && docsUrl !== '' ? (
         <div className="flex flex-col text-body">
           <Link className="inline-flex items-center" href={docsUrl} rel="noopener noreferrer" target="_blank">
             View documentation
@@ -241,7 +243,7 @@ type CategoryGroup = { id: string; name: string; components: ConnectComponentSpe
 function groupByCategory(components: ConnectComponentSpec[]): CategoryGroup[] {
   const groups = new Map<string, ConnectComponentSpec[]>();
   for (const component of components) {
-    const cats = component.categories?.length ? component.categories : ['other'];
+    const cats = Boolean(component.categories?.length) ? component.categories : ['other'];
     for (const key of cats) {
       const list = groups.get(key);
       if (list) {
@@ -259,8 +261,8 @@ function groupByCategory(components: ConnectComponentSpec[]): CategoryGroup[] {
 // The "All" tab lists every component once, deduped across the category groups it may appear in.
 function dedupeAcrossGroups(grouped: CategoryGroup[]): CategoryGroup[] {
   const seen = new Set<string>();
-  return grouped
-    .map((group) => ({
+  return grouped.flatMap((group) => {
+    const dedupedGroup = {
       ...group,
       components: group.components.filter((c) => {
         const key = `${c.type}:${c.name}`;
@@ -270,8 +272,9 @@ function dedupeAcrossGroups(grouped: CategoryGroup[]): CategoryGroup[] {
         seen.add(key);
         return true;
       }),
-    }))
-    .filter((group) => group.components.length > 0);
+    };
+    return dedupedGroup.components.length > 0 ? [dedupedGroup] : [];
+  });
 }
 
 function buildTabs(
@@ -374,12 +377,14 @@ function usePaletteSearch(catalog: PaletteCatalog, query: string, allowedTypes?:
       return [];
     }
     const ranked = inScope
-      .map((component) => ({
-        component,
-        rank: matchRank(component, q, searchIndex.get(component) ?? ''),
-      }))
-      .filter((r) => r.rank >= 0)
-      .sort((a, b) => a.rank - b.rank || byProminence(a.component, b.component))
+      .flatMap((component) => {
+        const rankedComponent = {
+          component,
+          rank: matchRank(component, q, searchIndex.get(component) ?? ''),
+        };
+        return rankedComponent.rank >= 0 ? [rankedComponent] : [];
+      })
+      .sort((a, b) => nonzeroNumber(a.rank - b.rank) ?? byProminence(a.component, b.component))
       .map((r) => r.component);
     const replacement = deprecatedMatch?.replacement;
     const pinned = replacement ? byKey.get(`${replacement.type}:${replacement.name}`) : undefined;
@@ -396,7 +401,7 @@ function usePaletteSearch(catalog: PaletteCatalog, query: string, allowedTypes?:
         types.add(component.type);
       }
     }
-    return [...types].sort();
+    return [...types].sort(compareStrings);
   }, [q, results, allowedTypes, pickable, typeAllowed, searchIndex]);
 
   return { q, results, outOfScopeTypes, deprecatedMatch };
@@ -416,7 +421,11 @@ function usePaletteFacets({
 }) {
   const { byName, inScope } = catalog;
   const recentComponents = useMemo(
-    () => recents.map((r) => byName.get(r.name)).filter((c): c is ConnectComponentSpec => Boolean(c)),
+    () =>
+      recents.flatMap((r) => {
+        const recentComponent = byName.get(r.name);
+        return recentComponent === undefined ? [] : [recentComponent];
+      }),
     [recents, byName]
   );
   const suggested = useMemo(
@@ -428,7 +437,8 @@ function usePaletteFacets({
   const tabs = useMemo(() => buildTabs(recentComponents, suggested, grouped), [recentComponents, suggested, grouped]);
 
   const defaultTab = suggested.length > 0 ? 'suggested' : 'all';
-  const currentTab = tab && tabs.some((t) => t.id === tab) ? tab : defaultTab;
+  const currentTab =
+    tab !== null && tab !== undefined && tab !== '' && tabs.some((t) => t.id === tab) ? tab : defaultTab;
   const browseItems = useMemo(
     () => browseItemsForTab(currentTab, recentComponents, suggested, grouped),
     [currentTab, recentComponents, suggested, grouped]
@@ -614,11 +624,11 @@ export const ConnectCommandPalette = ({
   };
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: keyboard handling augments the inner cmdk listbox.
-    <div className="flex min-h-0 flex-1 flex-col" onKeyDown={handleKeyDown}>
+    <div className="flex min-h-0 flex-1 flex-col">
       <Command
         className="min-h-0 flex-1"
         disablePointerSelection
+        onKeyDown={handleKeyDown}
         onValueChange={setActiveValue}
         shouldFilter={false}
         size="full"

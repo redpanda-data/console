@@ -9,26 +9,35 @@
  * by the Apache License, Version 2.0
  */
 
-
 /* Use this file to start scoping out global css styles */
 
 body {
-    margin: 0;
-    font-family: "Inter", "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    list-style-type: none;
-    // background: #f0f2f5;
+  margin: 0;
+  font-family:
+    'Inter',
+    'Segoe UI',
+    'Roboto',
+    'Oxygen',
+    'Ubuntu',
+    'Cantarell',
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  list-style-type: none;
+  // background: #f0f2f5;
 }
 
 code {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
 h2 {
-    font-size: 1.4em;
+  font-size: 1.4em;
 }
 
 b {
-    font-weight: 600;
+  font-weight: 600;
 }

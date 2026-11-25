@@ -59,17 +59,17 @@ const unavailablePayloadText = (payload: Payload): PayloadText | undefined => {
   if (payload.isPayloadNull) {
     return { text: 'null', muted: true };
   }
-  if (payload.isPayloadTooLarge) {
+  if (payload.isPayloadTooLarge === true) {
     return { text: 'Payload too large to display — open the message to load it', muted: true };
   }
 };
 
 /** The best decoded form: JSON, then the hex preview, then a deserialization-failure hint. */
-const decodedPayloadText = (payload: Payload, json: string, hexPreview: string): PayloadText => {
+const decodedPayloadText = (payload: Payload, json: string, hexPreview: string | undefined): PayloadText => {
   if (json) {
     return { text: json, muted: false };
   }
-  if (hexPreview) {
+  if (hexPreview !== undefined && hexPreview !== '') {
     return { text: hexPreview, muted: false };
   }
   if (payload.troubleshootReport && payload.troubleshootReport.length > 0) {
@@ -78,7 +78,7 @@ const decodedPayloadText = (payload: Payload, json: string, hexPreview: string):
   return { text: '', muted: true };
 };
 
-const payloadText = (payload: Payload, json: string, hexPreview: string): PayloadText =>
+const payloadText = (payload: Payload, json: string, hexPreview: string | undefined): PayloadText =>
   unavailablePayloadText(payload) ?? decodedPayloadText(payload, json, hexPreview);
 
 /**
@@ -88,7 +88,7 @@ const payloadText = (payload: Payload, json: string, hexPreview: string): Payloa
 const PayloadMeta = ({ payload }: { payload: Payload }) => (
   <span className="mt-0.5 flex items-center gap-2">
     <Badge size="sm" tone="default" variant="subtle">
-      {payload.encoding}
+      {payload.encoding ?? 'unknown'}
     </Badge>
     <span className="text-body-sm text-muted-foreground">{prettyBytes(payload.size)}</span>
   </span>
@@ -103,7 +103,7 @@ export const PayloadCell = ({
 }: {
   payload: Payload;
   json: string;
-  hexPreview: string;
+  hexPreview: string | undefined;
   density: RowDensity;
   className?: string;
 }) => {
@@ -117,9 +117,9 @@ export const PayloadCell = ({
       >
         <span
           className={clsx(
-            'block overflow-hidden font-mono text-body text-ellipsis whitespace-nowrap',
+            'block truncate font-mono text-body',
             muted ? 'text-muted-foreground italic' : '',
-            error ? 'text-destructive' : ''
+            error === true ? 'text-destructive' : ''
           )}
         >
           {truncate(text)}
@@ -154,7 +154,7 @@ export const ValueCell = ({
     !msg.value.isPayloadNull && typeof msg.value.payload === 'object' && msg.value.payload !== null;
 
   if (preview && activeTags && activeTags.length > 0 && payloadIsObject) {
-    let chips = getPreviewTags(msg.value.payload as Record<string, unknown>, activeTags, preview.caseSensitive);
+    let chips = getPreviewTags(msg.value.payload, activeTags, preview.caseSensitive);
     if (preview.multiResultMode === 'showOnlyFirst') {
       chips = chips.slice(0, 1);
     }
@@ -162,7 +162,6 @@ export const ValueCell = ({
       <span className="flex min-w-0 flex-col">
         <span
           className={clsx('previewTags font-mono text-body-sm', {
-            'previewTags-single': preview.displayMode === 'single',
             'previewTags-wrap': preview.displayMode === 'wrap',
             'previewTags-rows': preview.displayMode === 'rows',
           })}

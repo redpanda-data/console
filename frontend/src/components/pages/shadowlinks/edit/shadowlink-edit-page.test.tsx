@@ -9,11 +9,26 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
+import { create, type MessageShape } from '@bufbuild/protobuf';
+import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { type ShadowLink, ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
+import { toast as registryToast } from 'components/redpanda-ui/components/toast';
+import {
+  ListShadowLinksResponseSchema,
+  UpdateShadowLinkResponseSchema,
+} from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
+import {
+  listShadowLinks,
+  updateShadowLink,
+} from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
+import {
+  GetShadowLinkResponseSchema,
+  type ShadowLink,
+  ShadowLinkSchema,
+} from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
+import { getShadowLink } from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
 import {
   ACLFilterSchema,
   AuthenticationConfigurationSchema,
@@ -29,31 +44,45 @@ import {
   TopicMetadataSyncOptionsSchema,
 } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
+import { toast } from 'sonner';
+import { useSupportedFeaturesStore } from 'state/supported-features';
+import { renderWithFileRoutes } from 'test-utils';
 
 import { ShadowLinkEditPage } from './shadowlink-edit-page';
+import {
+  type Action,
+  addACLFilter,
+  addBootstrapServer,
+  addConsumerFilter,
+  addTopicFilter,
+  addTopicFilterWithPattern,
+  enableMTLS,
+  enableSchemaRegistrySync,
+  enableTLS,
+  setSchemaRegistrySyncGateSupported,
+  toggleExcludeDefault,
+  updateAdvancedOption,
+  updateMetadataMaxAge,
+  uploadCACertificate,
+  uploadClientCertificates,
+} from '../shadowlink-test-helpers';
 
-// Mock the hooks
-rs.mock('react-query/api/shadowlink', () => ({
-  useEditShadowLink: rs.fn(),
-}));
-
-// Mock ui-state
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
-}));
+// Record the real hook's outgoing protobuf request, not a rebuilt approximation.
+const mockUpdateShadowLink =
+  rs.fn<
+    (request: MessageShape<typeof updateShadowLink.input>) => Promise<MessageShape<typeof updateShadowLink.output>>
+  >();
 
 // Mock config
-rs.mock('config', () => {
-  const actual = rs.requireActual<typeof import('config')>('config');
+rs.mock('runtime-config', () => {
+  const actual = rs.requireActual<typeof import('runtime-config')>('runtime-config');
   return {
     ...actual,
     config: {
       jwt: 'test-jwt-token',
     },
     isFeatureFlagEnabled: rs.fn(() => false),
+    isEmbedded: () => false,
   };
 });
 
@@ -74,29 +103,6 @@ rs.mock('@tanstack/react-router', () => {
     useParams: () => ({ name: SHADOW_LINK_NAME }),
   };
 });
-
-import { useEditShadowLink } from 'react-query/api/shadowlink';
-import { useSupportedFeaturesStore } from 'state/supported-features';
-import { renderWithFileRoutes } from 'test-utils';
-
-import { buildDefaultFormValues } from '../mappers/dataplane';
-import {
-  type Action,
-  addACLFilter,
-  addBootstrapServer,
-  addConsumerFilter,
-  addTopicFilter,
-  addTopicFilterWithPattern,
-  enableMTLS,
-  enableSchemaRegistrySync,
-  enableTLS,
-  setSchemaRegistrySyncGateSupported,
-  toggleExcludeDefault,
-  updateAdvancedOption,
-  updateMetadataMaxAge,
-  uploadCACertificate,
-  uploadClientCertificates,
-} from '../shadowlink-test-helpers';
 
 /**
  * Create a mock shadow link with minimal configuration
@@ -144,12 +150,19 @@ const createMockShadowLink = (): ShadowLink =>
         aclFilters: [],
       }),
     }),
-  }) as ShadowLink;
+  });
 
 /**
  * Render the edit page with all necessary providers
  */
-const renderEditPage = (_shadowLink: ShadowLink) => renderWithFileRoutes(<ShadowLinkEditPage />);
+const renderEditPage = (shadowLink: ShadowLink) =>
+  renderWithFileRoutes(<ShadowLinkEditPage />, {
+    transport: createRouterTransport(({ rpc }) => {
+      rpc(getShadowLink, () => create(GetShadowLinkResponseSchema, { shadowLink }));
+      rpc(updateShadowLink, (request) => mockUpdateShadowLink(request));
+      rpc(listShadowLinks, () => create(ListShadowLinksResponseSchema));
+    }),
+  });
 
 /**
  * Action dispatcher - routes actions to appropriate helpers
@@ -198,7 +211,7 @@ type TestCase = {
   description: string;
   actions: Action[];
   expectedFieldMaskPaths: string[];
-  verify: (updateRequest: any, exp: typeof import('@rstest/core').expect) => void;
+  verify: (updateRequest: Awaited<ReturnType<typeof saveUpdateRequest>>, exp: typeof expect) => void;
 };
 
 /**
@@ -283,61 +296,25 @@ const testCases: TestCase[] = [
   },
 ];
 
-const mockEditHook = (mockUpdateShadowLink: ReturnType<typeof rs.fn>, mockShadowLink: ShadowLink) => {
-  rs.mocked(useEditShadowLink).mockReturnValue({
-    formValues: buildDefaultFormValues(mockShadowLink),
-    isLoading: false,
-    error: null,
-    isUpdating: false,
-    hasData: true,
-    updateShadowLink: mockUpdateShadowLink,
-    dataplaneUpdate: {
-      isPending: false,
-      isSuccess: false,
-      isError: false,
-      error: null,
-      reset: rs.fn(),
-    } as any,
-    controlplaneUpdate: {
-      isPending: false,
-      isSuccess: false,
-      isError: false,
-      error: null,
-      reset: rs.fn(),
-    } as any,
-  });
-};
-
-/**
- * Mock the edit hook with this shadow link and render the page
- */
-const renderEditPageFor = (mockUpdateShadowLink: ReturnType<typeof rs.fn>, mockShadowLink: ShadowLink) => {
-  mockEditHook(mockUpdateShadowLink, mockShadowLink);
-  renderEditPage(mockShadowLink);
-};
-
-/**
- * Save the form and build the dataplane update request from the submitted form values
- */
-const saveAndBuildUpdateRequest = async (
-  user: ReturnType<typeof userEvent.setup>,
-  mockUpdateShadowLink: ReturnType<typeof rs.fn>,
-  mockShadowLink: ShadowLink
-) => {
+/** Save through the real form and return exactly what crossed the RPC boundary. */
+const saveUpdateRequest = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(screen.getByText('Save'));
-
-  // Verify updateShadowLink was called
   await waitFor(() => {
     expect(mockUpdateShadowLink).toHaveBeenCalledTimes(1);
   });
-
-  // The hook builds the request internally from the submitted form values, so build it
-  // here too to verify the update request structure
-  const formValuesArg = mockUpdateShadowLink.mock.calls[0][0];
-  const { buildDataplaneUpdateRequest } = await import('./shadowlink-edit-utils');
-  return buildDataplaneUpdateRequest(SHADOW_LINK_NAME, formValuesArg, mockShadowLink, {
-    roleSyncSupported: true,
-  });
+  const request = mockUpdateShadowLink.mock.calls.at(0)?.[0];
+  const shadowLink = request?.shadowLink;
+  const configurations = shadowLink?.configurations;
+  const clientOptions = configurations?.clientOptions;
+  const updateMask = request?.updateMask;
+  if (!(request && shadowLink && configurations && clientOptions && updateMask)) {
+    throw new Error('Expected a complete shadow-link update request');
+  }
+  return {
+    ...request,
+    updateMask,
+    shadowLink: { ...shadowLink, configurations: { ...configurations, clientOptions } },
+  };
 };
 
 const replaceInputValue = async (user: ReturnType<typeof userEvent.setup>, input: HTMLElement, value: string) => {
@@ -346,11 +323,10 @@ const replaceInputValue = async (user: ReturnType<typeof userEvent.setup>, input
 };
 
 describe('the ShadowLinkEditPage', () => {
-  const mockUpdateShadowLink = rs.fn();
-
   beforeEach(() => {
     rs.clearAllMocks();
-    mockUpdateShadowLink.mockImplementation((_request) => Promise.resolve({}));
+    mockUpdateShadowLink.mockReset();
+    mockUpdateShadowLink.mockResolvedValue(create(UpdateShadowLinkResponseSchema));
     // The SR and role sync feature gates default to closed; api-mode tests seed SR open.
     useSupportedFeaturesStore.setState({
       endpointCompatibility: null,
@@ -362,7 +338,7 @@ describe('the ShadowLinkEditPage', () => {
   test.each(testCases)('$description', async ({ actions, expectedFieldMaskPaths, verify }) => {
     const user = userEvent.setup();
     const mockShadowLink = createMockShadowLink();
-    renderEditPageFor(mockUpdateShadowLink, mockShadowLink);
+    renderEditPage(mockShadowLink);
 
     // Wait for the form to load
     await waitFor(() => {
@@ -378,13 +354,30 @@ describe('the ShadowLinkEditPage', () => {
       Promise.resolve()
     );
 
-    const updateRequest = await saveAndBuildUpdateRequest(user, mockUpdateShadowLink, mockShadowLink);
+    const updateRequest = await saveUpdateRequest(user);
 
     // Verify field mask includes all expected paths
-    expect(updateRequest?.updateMask?.paths).toEqual(expect.arrayContaining(expectedFieldMaskPaths));
+    expect(updateRequest?.updateMask?.paths).toStrictEqual(expect.arrayContaining(expectedFieldMaskPaths));
 
     // Run custom verification function
     verify(updateRequest, expect);
+  });
+
+  test('reports rejected updates once without a generic second error', async () => {
+    const user = userEvent.setup();
+    const genericToast = rs.spyOn(registryToast, 'add');
+    mockUpdateShadowLink.mockRejectedValue(new ConnectError('Update denied', Code.PermissionDenied));
+    renderEditPage(createMockShadowLink());
+    await screen.findByTestId('bootstrap-server-input-0');
+    await addBootstrapServer(user, screen, 'localhost:9093');
+    await user.click(screen.getByText('Save'));
+    await waitFor(() => {
+      expect(rs.mocked(toast.error).mock.calls).toStrictEqual([
+        ['Shadow link update failed', { description: '[permission_denied] Update denied' }],
+      ]);
+    });
+    expect(genericToast).not.toHaveBeenCalled();
+    genericToast.mockRestore();
   });
 
   describe('schema registry api mode', () => {
@@ -425,13 +418,13 @@ describe('the ShadowLinkEditPage', () => {
       setSchemaRegistrySyncGateSupported(true);
       const user = userEvent.setup();
       const mockShadowLink = createApiModeShadowLink();
-      renderEditPageFor(mockUpdateShadowLink, mockShadowLink);
+      renderEditPage(mockShadowLink);
       await openSrSyncBehavior(user);
       return { user, mockShadowLink };
     };
 
     test('edits an api-mode link with a retyped password and emits only the SR mask', async () => {
-      const { user, mockShadowLink } = await renderApiModeSyncBehavior();
+      const { user } = await renderApiModeSyncBehavior();
 
       // The topic tab is locked for an api-mode link.
       expect(screen.getByTestId('sr-mode-topic-tab')).toHaveAttribute('aria-disabled', 'true');
@@ -442,9 +435,9 @@ describe('the ShadowLinkEditPage', () => {
       await replaceInputValue(user, tailInput, '30s');
       await user.type(screen.getByTestId('sr-basic-password-input'), 'retyped-secret');
 
-      const updateRequest = await saveAndBuildUpdateRequest(user, mockUpdateShadowLink, mockShadowLink);
+      const updateRequest = await saveUpdateRequest(user);
 
-      expect(updateRequest.updateMask?.paths).toEqual(['configurations.schema_registry_sync_options']);
+      expect(updateRequest.updateMask?.paths).toStrictEqual(['configurations.schema_registry_sync_options']);
       expect(
         updateRequest.shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode
       ).toMatchObject({
@@ -474,7 +467,6 @@ describe('the ShadowLinkEditPage', () => {
     test('keeps the read-only card for an api-mode link when the gate is closed', async () => {
       const user = userEvent.setup();
       const mockShadowLink = createApiModeShadowLink();
-      mockEditHook(mockUpdateShadowLink, mockShadowLink);
 
       renderEditPage(mockShadowLink);
       await user.click(screen.getByTestId('tab-shadowing'));
@@ -489,15 +481,15 @@ describe('the ShadowLinkEditPage', () => {
       // read-only card, so its validation must not block the rest of the form.
       const user = userEvent.setup();
       const mockShadowLink = createApiModeShadowLink();
-      renderEditPageFor(mockUpdateShadowLink, mockShadowLink);
+      renderEditPage(mockShadowLink);
 
       await screen.findByTestId('bootstrap-server-input-0');
       await addTopicFilter(user, screen, 'unrelated-topic');
 
-      const updateRequest = await saveAndBuildUpdateRequest(user, mockUpdateShadowLink, mockShadowLink);
+      const updateRequest = await saveUpdateRequest(user);
 
       // Only the topic change goes out; the untouched SR slice emits no mask.
-      expect(updateRequest.updateMask?.paths).toEqual(['configurations.topic_metadata_sync_options']);
+      expect(updateRequest.updateMask?.paths).toStrictEqual(['configurations.topic_metadata_sync_options']);
     });
   });
 });

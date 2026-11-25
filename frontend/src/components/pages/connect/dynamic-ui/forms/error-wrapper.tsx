@@ -27,7 +27,8 @@ export const ErrorWrapper = (
 
   const cycleError = showErrors ? () => setCurrentErrorIndex((i) => i + 1) : undefined;
 
-  const errorText = isEmpty(property) && isRequired ? errorToShow || isRequiredError(property.name) : errorToShow;
+  const errorText =
+    isEmpty(property) && isRequired ? (errorToShow ?? '') || isRequiredError(property.name) : errorToShow;
   const isInvalid = Boolean(errorToShow) || (isEmpty(property) && isRequired);
 
   return (
@@ -37,7 +38,11 @@ export const ErrorWrapper = (
         only way to see the rest is to click the field, which advances `currentErrorIndex`.
       */}
       <Field data-invalid={isInvalid || undefined} onClick={cycleError}>
-        <FieldLabel htmlFor={inputId} id={inputId ? `${inputId}-label` : undefined} required={isRequired}>
+        <FieldLabel
+          htmlFor={inputId}
+          id={inputId !== null && inputId !== undefined && inputId !== '' ? `${inputId}-label` : undefined}
+          required={isRequired}
+        >
           {property.entry.definition.display_name}
         </FieldLabel>
         {/* Documentation sits between label and control. */}
@@ -46,7 +51,9 @@ export const ErrorWrapper = (
         </FieldDescription>
         {/* Wrapped so `Field`'s vertical `[&>*]:w-full` lands here and not on a Switch. */}
         <div>{input}</div>
-        {errorText ? <FieldError>{errorText}</FieldError> : null}
+        {errorText !== null && errorText !== undefined && errorText !== '' ? (
+          <FieldError>{errorText}</FieldError>
+        ) : null}
       </Field>
     </div>
   );

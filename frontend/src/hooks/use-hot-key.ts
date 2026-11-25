@@ -25,8 +25,10 @@ type HotKeyOptions = {
 const TYPING_TAG_REGEX = /^(input|textarea|select)$/i;
 
 export const isTypingTarget = (target: EventTarget | null): boolean => {
-  const el = target as HTMLElement | null;
-  return el !== null && (TYPING_TAG_REGEX.test(el.tagName) || el.isContentEditable);
+  if (target === null || !('tagName' in target) || typeof target.tagName !== 'string') {
+    return false;
+  }
+  return TYPING_TAG_REGEX.test(target.tagName) || ('isContentEditable' in target && target.isContentEditable === true);
 };
 
 const MODIFIER_CHECKS: Record<Modifier, (e: KeyboardEvent) => boolean> = {

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 
 import RedpandaConnectLogo from '../../../assets/redpanda/rp-connect.svg';
-import PipelinesYamlEditor from '../../misc/pipelines-yaml-editor';
+import { PipelinesYamlEditor } from '../../misc/pipelines-yaml-editor';
 import { SingleSelect } from '../../misc/select';
 
 const installInstructions = {
@@ -54,8 +54,15 @@ redpanda:
   logs_level: info
 `.trim();
   const [editorText, setEditorText] = useState(exampleCode);
-  const [selectedInstall, setSelectedInstall] = useState('macOS - Homebrew' as keyof typeof installInstructions);
-  const options = Object.keys(installInstructions).map((x) => ({ value: x as typeof selectedInstall }));
+  const [selectedInstall, setSelectedInstall] = useState<keyof typeof installInstructions>('macOS - Homebrew');
+  const options = Object.keys(installInstructions).flatMap((key): { value: keyof typeof installInstructions }[] =>
+    key === 'Linux' ||
+    key === 'macOS - Homebrew' ||
+    key === 'macOS - Apple Silicon download' ||
+    key === 'macOS - Intel download'
+      ? [{ value: key }]
+      : []
+  );
 
   return (
     <div className="grid grid-cols-[1fr_320px] gap-10">
@@ -105,7 +112,7 @@ redpanda:
                 defaultPath="config.yaml"
                 language="yaml"
                 onChange={(e) => {
-                  if (e) {
+                  if (e !== null && e !== undefined && e !== '') {
                     setEditorText(e);
                   }
                 }}

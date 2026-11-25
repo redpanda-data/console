@@ -11,10 +11,12 @@
 
 'use client';
 
+import 'components/legacy-layout.css';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { createDataTableColumnHelper, useDataTable } from 'components/redpanda-ui/components/data-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import type { ComponentStyleVars } from 'components/style-vars';
 import { RefreshCw } from 'lucide-react';
 import type { ShadowLinkTaskStatus } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { useMemo } from 'react';
@@ -82,7 +84,7 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
               type="button"
               variant="ghost"
             >
-              <RefreshCw className="h-5 w-5" />
+              <RefreshCw className="size-5" />
             </Button>
           </CardAction>
         )}
@@ -91,7 +93,7 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
         {tasks?.length === 0 ? (
           <div className="flex items-center justify-center py-8" data-testid="tasks-empty-state">
             <div className="text-body text-muted-foreground">
-              {dataUnavailable ? 'Task data unavailable' : 'No tasks found'}
+              {dataUnavailable === true ? 'Task data unavailable' : 'No tasks found'}
             </div>
           </div>
         ) : (
@@ -100,7 +102,11 @@ export const TasksTable = ({ tasks, onRefresh, dataUnavailable }: TasksTableProp
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} style={{ width: header.getSize() }}>
+                    <TableHead
+                      className="console-variable-width"
+                      key={header.id}
+                      style={{ '--console-width': `${header.getSize()}px` } as ComponentStyleVars}
+                    >
                       {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                     </TableHead>
                   ))}

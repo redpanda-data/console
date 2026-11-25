@@ -9,33 +9,32 @@
  * by the Apache License, Version 2.0
  */
 
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, type RenderHookResult, renderHook, waitFor } from '@testing-library/react';
 import { toast } from 'sonner';
 
 import { type MessageSearchParams, type MessageSearchResult, useMessageSearch } from './use-message-search';
+import { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
+import {
+  type ListMessagesRequest,
+  type ListMessagesResponse,
+  ListMessagesResponseSchema,
+} from '../../../../../protogen/redpanda/api/console/v1alpha1/list_messages_pb';
 import { messageKey } from '../utils/message-key';
-
-// The hook feeds raw data frames through convertListMessageData; identity-mock it so
-// tests can use plain {partitionID, offset} stubs without building full proto payloads.
-rs.mock('../../../../../utils/message-converters', () => ({
-  convertListMessageData: (value: unknown) => value,
-}));
 
 rs.mock('sonner', () => ({
   toast: { error: rs.fn() },
 }));
 
-type Frame =
-  | { case: 'phase'; value: { phase: string } }
-  | { case: 'progress'; value: { bytesConsumed: bigint; messagesConsumed: bigint } }
-  | { case: 'done'; value: { bytesConsumed: bigint; elapsedMs: bigint; nextPageToken: string; isCancelled: boolean } }
-  | { case: 'error'; value: { message: string } }
-  | { case: 'data'; value: { partitionID: number; offset: number } };
+type Frame = MessageInitShape<typeof ListMessagesResponseSchema>['controlMessage'];
+type ListMessages = (
+  request: ListMessagesRequest,
+  options: { signal?: AbortSignal; timeoutMs: number }
+) => AsyncIterable<ListMessagesResponse>;
+const listMessagesMock = rs.fn<ListMessages>();
 
-const listMessagesMock = rs.fn();
-
-rs.mock('../../../../../config', () => ({
+rs.mock('../../../../../runtime-config', () => ({
   config: {
     get consoleClient() {
       return { listMessages: listMessagesMock };
@@ -45,7 +44,7 @@ rs.mock('../../../../../config', () => ({
 
 const dataFrame = (partitionID: number, offset: number): Frame => ({
   case: 'data',
-  value: { partitionID, offset },
+  value: { partitionId: partitionID, offset: BigInt(offset) },
 });
 
 const doneFrame = (nextPageToken = ''): Frame => ({
@@ -55,13 +54,7 @@ const doneFrame = (nextPageToken = ''): Frame => ({
 
 /** Builds a listMessages implementation yielding the given frames, capturing call args. */
 function scriptStream(...frames: Frame[]) {
-  listMessagesMock.mockImplementation((_req: unknown, _opts: { signal?: AbortSignal; timeoutMs: number }) =>
-    (function* streamMessages() {
-      for (const frame of frames) {
-        yield { controlMessage: frame };
-      }
-    })()
-  );
+  listMessagesMock.mockImplementation(() => streamFrames(frames));
 }
 
 /**
@@ -79,7 +72,7 @@ function pausedStream(...framesBeforePause: Frame[]) {
   listMessagesMock.mockImplementationOnce(() =>
     (async function* streamMessages() {
       for (const frame of framesBeforePause) {
-        yield { controlMessage: frame };
+        yield create(ListMessagesResponseSchema, { controlMessage: frame });
       }
       await gate;
     })()
@@ -141,7 +134,7 @@ describe('useMessageSearch', () => {
       const { result } = renderHook(() => useMessageSearch('test-topic'));
       await act(() => result.current.start(baseParams));
 
-      expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2', '1-7']);
+      expect(result.current.messages.map(messageKey)).toStrictEqual(['0-1', '0-2', '1-7']);
       expect(result.current.phase).toBe('done');
       expect(result.current.bytesConsumed).toBe(1024);
       expect(result.current.elapsedMs).toBe(42);
@@ -160,7 +153,7 @@ describe('useMessageSearch', () => {
       expect(listMessagesMock).toHaveBeenCalledTimes(2);
       expect(requestAt(1).pageToken).toBe('page-2');
       expect(requestAt(1).pageSize).toBe(25);
-      expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2']);
+      expect(result.current.messages.map(messageKey)).toStrictEqual(['0-1', '0-2']);
       expect(result.current.nextPageToken).toBeNull();
     });
 
@@ -172,7 +165,7 @@ describe('useMessageSearch', () => {
 
       scriptStream(dataFrame(2, 9), doneFrame());
       await act(() => result.current.start(baseParams));
-      expect(result.current.messages.map(messageKey)).toEqual(['2-9']);
+      expect(result.current.messages.map(messageKey)).toStrictEqual(['2-9']);
     });
 
     test('start with append:true keeps previous results (live tail restarting after hitting maxResults)', async () => {
@@ -183,7 +176,7 @@ describe('useMessageSearch', () => {
 
       scriptStream(dataFrame(0, 2), doneFrame());
       await act(() => result.current.start(baseParams, { live: true, append: true }));
-      expect(result.current.messages.map(messageKey)).toEqual(['0-1', '0-2']);
+      expect(result.current.messages.map(messageKey)).toStrictEqual(['0-1', '0-2']);
     });
 
     test('a superseded run must not finalize state (phase/backendPhase/messages) after a newer run replaces it', async () => {
@@ -193,20 +186,17 @@ describe('useMessageSearch', () => {
 
       // B replaces A while A is still paused mid-stream (not yet at its `finally`).
       const releaseB = pausedStream();
-      startInBackground(result);
+      const startB = startInBackground(result);
       expect(result.current.phase).toBe('connecting');
 
       // A's abort now resolves (on a later microtask, as it would for a real aborted fetch) —
       // its `finally` runs after B has already taken over.
-      await act(async () => {
-        releaseA();
-        await startA;
-      });
+      await settleStream(releaseA, startA);
 
       // B's in-progress state must survive; A's stale completion must not have overwritten it.
       expect(result.current.phase).toBe('connecting');
 
-      releaseB(); // let B settle so it doesn't dangle past the test
+      await settleStream(releaseB, startB); // settle B so it cannot leak past the test
       await waitFor(() => expect(result.current.phase).toBe('done'));
     });
 
@@ -214,18 +204,13 @@ describe('useMessageSearch', () => {
       scriptStream(dataFrame(0, 1), dataFrame(0, 2), doneFrame());
       const result = await startSearch();
 
-      listMessagesMock.mockImplementation(() =>
-        (async function* streamMessages() {
-          await Promise.resolve();
-          yield { controlMessage: { case: 'data', value: { partitionID: 0, offset: 2, reloaded: true } } };
-        })()
-      );
+      configureReloadedMessage();
       await act(() => result.current.loadLargeMessage(0, 2));
 
-      const replaced = result.current.messages[1] as { reloaded?: boolean };
-      expect(replaced.reloaded).toBe(true);
+      const replaced = result.current.messages[1];
+      expect(JSON.stringify(replaced.value.payload)).toBe('{"reloaded":true}');
       // The one-off fetch must lift the size limit and request the raw payload
-      const req = listMessagesMock.mock.calls.at(-1)?.[0];
+      const req = lastRequest();
       expect(req.ignoreMaxSizeLimit).toBe(true);
       expect(req.includeOriginalRawPayload).toBe(true);
       expect(req.maxResults).toBe(1);
@@ -237,7 +222,7 @@ describe('useMessageSearch', () => {
       listMessagesMock.mockImplementation(() =>
         (async function* streamMessages() {
           await Promise.resolve();
-          yield { controlMessage: dataFrame(0, 1) };
+          yield create(ListMessagesResponseSchema, { controlMessage: dataFrame(0, 1) });
           throw new Error('connection lost');
         })()
       );
@@ -257,12 +242,9 @@ describe('useMessageSearch', () => {
     // hard failure apart from a normal finish and looped on it at RTT speed. `start()` must now
     // reject when the stream actually failed.
     test('start() rejects on a real stream failure, not just resolve-and-setError', async () => {
-      listMessagesMock.mockImplementation(() =>
-        (async function* streamMessages() {
-          await Promise.resolve();
-          throw new Error('connection lost');
-        })()
-      );
+      listMessagesMock.mockImplementation(() => ({
+        [Symbol.asyncIterator]: () => ({ next: () => Promise.reject(new Error('connection lost')) }),
+      }));
 
       const { result } = renderHook(() => useMessageSearch('test-topic'));
       await act(async () => {
@@ -353,3 +335,54 @@ describe('useMessageSearch', () => {
     });
   });
 });
+
+async function settleStream(release: () => void, completion: Promise<void>) {
+  await act(async () => {
+    release();
+    await completion;
+  });
+}
+function configureReloadedMessage() {
+  listMessagesMock.mockImplementation(() =>
+    (async function* streamMessages() {
+      await Promise.resolve();
+      yield create(ListMessagesResponseSchema, {
+        controlMessage: {
+          case: 'data',
+          value: {
+            partitionId: 0,
+            offset: 2n,
+            value: {
+              encoding: PayloadEncoding.JSON,
+              normalizedPayload: new TextEncoder().encode('{"reloaded":true}'),
+            },
+          },
+        },
+      });
+    })()
+  );
+}
+function lastRequest() {
+  const request = listMessagesMock.mock.calls.at(-1)?.[0];
+  if (!request) {
+    throw new Error('Expected a large-message request');
+  }
+  return request;
+}
+
+function streamFrames(frames: Frame[]): AsyncIterable<ListMessagesResponse> {
+  const messages = frames.map((frame) => create(ListMessagesResponseSchema, { controlMessage: frame }));
+  return {
+    [Symbol.asyncIterator]: () => {
+      let index = 0;
+      return {
+        next: (): Promise<IteratorResult<ListMessagesResponse>> => {
+          const value = messages[index++];
+          const step: IteratorResult<ListMessagesResponse> =
+            value === undefined ? { done: true, value: undefined } : { done: false, value };
+          return Promise.resolve(step);
+        },
+      };
+    },
+  };
+}

@@ -9,10 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import Tabs, { type Tab } from './tabs';
+import { type Tab, Tabs } from './tabs';
 
 const testTabs: Tab[] = [
   {
@@ -77,7 +78,7 @@ describe('tabs', () => {
 
     await user.click(screen.getByText('test title 2'));
 
-    expect(onChange).toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledWith('test2');
   });
 
   test('accepts a function as tab title', () => {

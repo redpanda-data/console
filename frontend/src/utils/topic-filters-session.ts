@@ -9,13 +9,28 @@
  * by the Apache License, Version 2.0
  */
 
+import { z } from 'zod';
+
 import type { FilterEntry } from '../state/ui';
+
+const storedFiltersSchema = z.record(
+  z.string(),
+  z.array(
+    z.object({
+      isNew: z.boolean(),
+      id: z.string(),
+      filterType: z.literal('code'),
+      isActive: z.boolean(),
+      name: z.string(),
+      transpiledCode: z.string(),
+      code: z.string(),
+    })
+  )
+);
 
 const SESSION_STORAGE_KEY = 'topic-filters';
 
-type TopicFiltersMap = {
-  [topicName: string]: FilterEntry[];
-};
+type TopicFiltersMap = Record<string, FilterEntry[]>;
 
 /**
  * Get all filters from sessionStorage
@@ -23,10 +38,10 @@ type TopicFiltersMap = {
 function getAllFilters(): TopicFiltersMap {
   try {
     const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (!stored) {
+    if (!(stored !== null && stored !== undefined && stored !== '')) {
       return {};
     }
-    return JSON.parse(stored) as TopicFiltersMap;
+    return storedFiltersSchema.parse(JSON.parse(stored));
   } catch (error) {
     // biome-ignore lint/suspicious/noConsole: intentional console usage for debugging
     console.warn('Failed to parse filters from sessionStorage:', error);

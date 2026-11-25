@@ -9,51 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ComponentList } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
-import { type Document, isMap, isSeq, type Pair, parseDocument } from 'yaml';
+import { type Document, isMap, isScalar, isSeq, type Pair, parseDocument } from 'yaml';
 
 import { describe, expect, test } from 'bun:test';
-import schemaJson from '../../../../../assets/rp-connect-schema-full.json' with { type: 'json' };
+import { isNonEmptyString } from '../../../../../utils/string-utils';
+import { isPresent } from '../../../../../utils/type-guards';
 import type { RawFieldSpec } from '../../types/schema';
+import { componentList } from '../../utils/__fixtures__/schema-snapshot';
 import { checkRequired, findComponentByName, resolveFieldByPath } from '../../utils/schema';
 import type { PipelineTemplate, TemplateSlot } from '../pipeline-template-types';
 import { PIPELINE_TEMPLATES } from '../pipeline-templates';
 import { stitchTemplateYaml } from '../template-deploy';
-
-const componentList = schemaJson as unknown as ComponentList;
-
-// Bridge snapshot field names (is_optional/default/...) to proto FieldSpec names so we reuse the form's required-field logic.
-type SnapshotField = {
-  is_optional?: boolean;
-  default?: unknown;
-  is_advanced?: boolean;
-  is_deprecated?: boolean;
-  children?: SnapshotField[];
-};
-
-// benthos's required rule (jSchemaIsRequired): no default and not optional; objects follow children.
-// The snapshot has full default info, so we stamp requiredBySchema exactly like runtime enrichment does.
-const snapshotRequired = (f: SnapshotField): boolean => {
-  if (f.is_optional || 'default' in f) {
-    return false;
-  }
-  if (!f.children?.length) {
-    return true;
-  }
-  return f.children.some(snapshotRequired);
-};
-
-const toRawFieldSpec = (f: SnapshotField): RawFieldSpec =>
-  ({
-    ...f,
-    optional: f.is_optional,
-    // Mirror the proto's loss: only string defaults survive serialization.
-    defaultValue: typeof f.default === 'string' ? f.default : undefined,
-    advanced: f.is_advanced,
-    deprecated: f.is_deprecated,
-    requiredBySchema: snapshotRequired(f),
-    children: f.children?.map(toRawFieldSpec),
-  }) as unknown as RawFieldSpec;
 
 // Framework-injected keys every input/output accepts; absent from a component's own field tree.
 const FRAMEWORK_KEYS = new Set(['label', 'processors']);
@@ -62,11 +28,11 @@ const FRAMEWORK_KEYS = new Set(['label', 'processors']);
 const sampleValues = (slotIds: string[]): Record<string, string> =>
   Object.fromEntries(slotIds.map((id) => [id, `value_${id}`]));
 
-type FieldNode = { children?: { name: string }[] };
+type FieldNode = RawFieldSpec;
 
 // Field paths under one stitched mapping pair that are absent from the component schema.
 function unknownFieldPathsOfPair(pair: Pair, componentConfig: FieldNode | undefined, prefix: string): string[] {
-  const key = (pair.key as { value?: unknown } | null)?.value;
+  const key = isScalar(pair.key) ? pair.key.value : undefined;
   if (typeof key !== 'string') {
     return [];
   }
@@ -74,11 +40,11 @@ function unknownFieldPathsOfPair(pair: Pair, componentConfig: FieldNode | undefi
     return [];
   }
   const path = prefix ? `${prefix}.${key}` : key;
-  const field = resolveFieldByPath(componentConfig as never, path);
+  const field = resolveFieldByPath(componentConfig, path);
   if (!field) {
     return [path];
   }
-  return isMap(pair.value) && (field as FieldNode).children
+  return isMap(pair.value) && isPresent(field.children) && field.children.length > 0
     ? collectUnknownFieldPaths(pair.value, componentConfig, path)
     : [];
 }
@@ -102,7 +68,7 @@ function stitchedComponents(doc: Document): StitchedComponent[] {
       continue;
     }
     for (const pair of section.items) {
-      const name = (pair.key as { value?: unknown } | null)?.value;
+      const name = isScalar(pair.key) ? pair.key.value : undefined;
       if (typeof name === 'string') {
         components.push({ type, name, config: pair.value });
       }
@@ -115,19 +81,18 @@ function stitchedComponents(doc: Document): StitchedComponent[] {
 function missingRequiredFields(config: unknown, comp: ReturnType<typeof findComponentByName>): string[] {
   const present = new Set(
     isMap(config)
-      ? config.items.map((p) => (p.key as { value?: unknown } | null)?.value).filter((k) => typeof k === 'string')
+      ? config.items.map((p) => (isScalar(p.key) ? p.key.value : undefined)).filter((k) => typeof k === 'string')
       : []
   );
   return (comp?.config?.children ?? [])
-    .filter((field) => checkRequired(toRawFieldSpec(field as unknown as SnapshotField)))
-    .map((field) => (field as { name?: string }).name)
-    .filter((name): name is string => !!name && !present.has(name));
+    .filter((field) => checkRequired(field))
+    .map((field) => field.name)
+    .filter((name): name is string => name !== null && name !== undefined && name !== '' && !present.has(name));
 }
 
 // Looks up a bundled template, failing the test when it is missing.
 function requireTemplate(id: string): PipelineTemplate {
   const template = PIPELINE_TEMPLATES.find((t) => t.id === id);
-  expect(template).toBeDefined();
   if (!template) {
     throw new Error(`Expected the bundled template "${id}"`);
   }
@@ -153,11 +118,11 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
         const comp = findComponentByName(componentList, componentName, type);
         expect(comp, `template "${template.id}": ${type} "${componentName}" not in schema snapshot`).toBeDefined();
 
-        const unknownPaths = collectUnknownFieldPaths(config, comp?.config as FieldNode | undefined, '');
+        const unknownPaths = collectUnknownFieldPaths(config, comp?.config, '');
         expect(
           unknownPaths,
           `template "${template.id}": ${type} "${componentName}" has fields not in schema: ${unknownPaths.join(', ')}`
-        ).toEqual([]);
+        ).toStrictEqual([]);
       }
     }
   );
@@ -200,13 +165,13 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     if (slot.required !== undefined) {
       return slot.required;
     }
-    if (!slot.schemaField) {
+    if (!isNonEmptyString(slot.schemaField)) {
       return false;
     }
     const endpoint = endpointForSection(template, slot.section);
     const comp = endpoint && findComponentByName(componentList, endpoint.component, endpoint.type);
     const field = comp && resolveFieldByPath(comp.config, slot.schemaField);
-    return field ? checkRequired(toRawFieldSpec(field as unknown as SnapshotField)) : false;
+    return field ? checkRequired(field) : false;
   };
 
   // Fill only the form-required slots; blank the rest (defaultWhenBlank slots still emit a value).
@@ -229,7 +194,7 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
         expect(
           missing,
           `template "${template.id}": ${type} "${componentName}" omits required field(s): ${missing.join(', ')}`
-        ).toEqual([]);
+        ).toStrictEqual([]);
       }
     }
   );
@@ -260,7 +225,7 @@ describe('the PIPELINE_TEMPLATES produce schema-valid YAML', () => {
     if (!isSeq(tables)) {
       throw new Error('Expected the template tables sequence');
     }
-    expect(tables.toJSON()).toEqual(['users', 'orders', 'invoices']);
+    expect(tables.toJSON()).toStrictEqual(['users', 'orders', 'invoices']);
   });
 
   test('a blank list slot still drops the whole sequence key', () => {

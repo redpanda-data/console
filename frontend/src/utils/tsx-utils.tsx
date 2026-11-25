@@ -11,13 +11,18 @@
 
 import { CopyIcon, DownloadIcon, InfoIcon } from 'components/icons';
 import { SkeletonText } from 'components/redpanda-ui/components/skeleton';
+import { Table } from 'components/redpanda-ui/components/table';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { motion } from 'motion/react';
 import React, { Component, type CSSProperties, type JSX, useEffect, useId, useState } from 'react';
 
+import './tsx-utils.css';
+
 import { animProps } from './animation-props';
 import { toJson } from './json-utils';
+import { isNonEmptyString } from './string-utils';
 import { closeToast, showToast, updateToast } from './toast.utils';
 import { prettyMilliseconds, simpleUniqueId } from './utils';
 import type { TimestampDisplayFormat } from '../state/ui';
@@ -36,20 +41,15 @@ export function numberToThousandsString(n: number): JSX.Element {
   const parts = n.toLocaleString(defaultLocale).split(thousandsSeperator);
 
   const result: JSX.Element[] = [];
-  for (let i = 0; i < parts.length; i++) {
-    const last = i === parts.length - 1;
-
-    // Add the number block itself; React.Fragment is used explicitly to avoid missing key warning
-    result.push(<React.Fragment key={i}>{parts[i]}</React.Fragment>);
-
-    // Add a dot
-    if (!last) {
-      result.push(
-        <span className="noSelect nbspSeparator" key={`${i}.`}>
-          {nbsp}
-        </span>
-      );
-    }
+  let decimalPlace = (parts.length - 1) * 3;
+  for (const part of parts) {
+    result.push(
+      <React.Fragment key={decimalPlace}>
+        {part}
+        {decimalPlace > 0 && <span className="noSelect nbspSeparator">{nbsp}</span>}
+      </React.Fragment>
+    );
+    decimalPlace -= 3;
   }
 
   return <>{result}</>;
@@ -82,89 +82,79 @@ export function TimestampDisplay({
       return ts.toString();
     case 'relative':
       return `${prettyMilliseconds(Date.now() - ts, { compact: true })} ago`;
+    case 'default':
     default:
       // format 'default' -> locale datetime
       return new Date(ts).toLocaleString();
   }
 }
 
-const DefaultQuickTableOptions = {
-  tableClassName: undefined as string | undefined,
-  keyAlign: 'left' as 'left' | 'right' | 'center',
-  valueAlign: 'left' as 'left' | 'right' | 'center',
-  gapWidth: '16px' as string | number,
-  gapHeight: 0 as string | number,
-  keyStyle: undefined as React.CSSProperties | undefined,
-  valueStyle: undefined as React.CSSProperties | undefined,
-  tableStyle: undefined as React.CSSProperties | undefined,
+type QuickTableOptions = {
+  keyAlign?: 'left' | 'right' | 'center';
+  valueAlign?: 'left' | 'right' | 'center';
+  gapWidth?: string | number;
+  gapHeight?: string | number;
+  keyClassName?: string;
+  valueClassName?: string;
 };
-type QuickTableOptions = Partial<typeof DefaultQuickTableOptions>;
+type QuickTableEntry = { key: React.ReactNode; value: React.ReactNode };
+type QuickTableData = QuickTableEntry[] | [React.ReactNode, React.ReactNode][] | Record<string, React.ReactNode>;
+type HelperStyleVars = CSSProperties & Record<`--console-${string}`, string | number | undefined>;
 
-// [ { key: 'a', value: 'b' } ]
-// { 'key1': 'value1', 'key2': 'value2' }
-// [ ['a', 'b'] ]
-export function quickTable(
-  data:
-    | [React.ReactNode, React.ReactNode][]
-    | { [key: string]: React.ReactNode }
-    | { key: React.ReactNode; value: React.ReactNode }[],
-  options?: QuickTableOptions
-): JSX.Element;
+function cssLength(value: string | number | undefined): string | undefined {
+  return typeof value === 'number' ? `${value}px` : value;
+}
 
-export function quickTable(
-  data:
-    | { key: React.ReactNode; value: React.ReactNode }[]
-    | { [key: string]: React.ReactNode }
-    | [React.ReactNode, React.ReactNode][],
-  options?: QuickTableOptions
-): JSX.Element {
-  let entries: { key: React.ReactNode; value: React.ReactNode }[];
-
-  // plain object?
-  if (typeof data === 'object' && !Array.isArray(data)) {
-    // Convert to array of key value objects
-    entries = Object.entries(data).map(([key, value]) => ({ key, value }));
-  }
-  // array of [any, any] ?
-  else if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
-    // Convert to array of key-value objects
-    entries = (data as [React.ReactNode, React.ReactNode][]).map((ar) => ({ key: ar[0], value: ar[1] }));
-  }
-  // already correct? array of { key:any, value:any }
-  else {
-    // Cast to correct type directly
-    entries = data as { key: React.ReactNode; value: React.ReactNode }[];
-  }
-
-  const o = Object.assign({} as QuickTableOptions, DefaultQuickTableOptions, options);
-
+export function quickTable(data: QuickTableData, options?: QuickTableOptions): JSX.Element {
+  const entries: QuickTableEntry[] = Array.isArray(data)
+    ? data.map((entry) => (Array.isArray(entry) ? { key: entry[0], value: entry[1] } : entry))
+    : Object.entries(data).map(([key, value]) => ({ key, value }));
+  const o = { keyAlign: 'left', valueAlign: 'left', gapWidth: '16px', gapHeight: 0, ...options };
   const showVerticalGutter = (typeof o.gapHeight === 'number' && o.gapHeight > 0) || typeof o.gapHeight === 'string';
-  const classNames = [o.tableClassName, 'quickTable'].joinStr(' ');
-
+  const tableStyle: HelperStyleVars = {
+    '--console-table-gap-width': cssLength(o.gapWidth),
+    '--console-table-gap-height': cssLength(o.gapHeight),
+  };
+  const occurrences = new Map<string, number>();
+  const rows = entries.map((entry) => {
+    const label = toSafeString(entry.key);
+    const occurrence = occurrences.get(label) ?? 0;
+    occurrences.set(label, occurrence + 1);
+    return { ...entry, rowKey: `${label}:${occurrence}` };
+  });
   return (
-    <table className={classNames} style={o.tableStyle}>
+    <Table className="quickTable w-auto" size={null} style={tableStyle} variant="simple">
       <tbody>
-        {entries.map((obj, i) => (
-          <React.Fragment key={`${toSafeString(obj.key)}-${i}`}>
+        {rows.map((entry) => (
+          <React.Fragment key={entry.rowKey}>
             <tr>
-              <td className="keyCell" style={{ textAlign: o.keyAlign, ...o.keyStyle }}>
-                {React.isValidElement(obj.key) ? obj.key : toSafeString(obj.key)}
+              <td
+                className={cn(
+                  o.keyClassName,
+                  o.keyAlign === 'right' ? 'text-right' : o.keyAlign === 'center' ? 'text-center' : 'text-left'
+                )}
+              >
+                {React.isValidElement(entry.key) ? entry.key : toSafeString(entry.key)}
               </td>
-              <td style={{ minWidth: '0px', width: o.gapWidth, padding: '0px' }} />
-              <td className="valueCell" style={{ textAlign: o.valueAlign, ...o.valueStyle }}>
-                {React.isValidElement(obj.value) ? obj.value : toSafeString(obj.value)}
+              <td className="console-table-gap" />
+              <td
+                className={cn(
+                  o.valueClassName,
+                  o.valueAlign === 'right' ? 'text-right' : o.valueAlign === 'center' ? 'text-center' : 'text-left'
+                )}
+              >
+                {React.isValidElement(entry.value) ? entry.value : toSafeString(entry.value)}
               </td>
             </tr>
-
-            {showVerticalGutter && i < entries.length - 1 && (
+            {showVerticalGutter && entry !== rows.at(-1) && (
               <tr>
-                <td style={{ padding: 0, paddingBottom: o.gapHeight }} />
+                <td className="console-table-row-gap" />
               </tr>
             )}
           </React.Fragment>
         ))}
       </tbody>
-    </table>
+    </Table>
   );
 }
 
@@ -180,10 +170,16 @@ export function toSafeString(x: unknown): string {
   }
   return toJson(x);
 }
-
-export function objToKv(obj: Record<string, unknown>): { key: string; value: unknown }[] {
-  const ar = [] as { key: string; value: unknown }[];
-  for (const k in obj) {
+export function objToKv(obj: Record<string, unknown>): {
+  key: string;
+  value: unknown;
+}[] {
+  const ar = [] as {
+    key: string;
+    value: unknown;
+  }[];
+  const propertyNames = Object.keys(obj ?? {});
+  for (const k of propertyNames) {
     if (Object.hasOwn(obj, k)) {
       ar.push({ key: k, value: obj[k] });
     }
@@ -191,20 +187,14 @@ export function objToKv(obj: Record<string, unknown>): { key: string; value: unk
   return ar;
 }
 
-function withChildId(child: React.ReactNode, id: string): React.ReactElement {
-  // biome-ignore lint/style/useObjectSpread: ReactNode cannot be spread safely
-  const newChild = Object.assign({}, child) as { props?: Record<string, unknown> };
-  newChild.props = {};
-  Object.assign(newChild.props, (child as { props?: Record<string, unknown> }).props, { id });
-  return newChild as React.ReactElement;
+function withChildId(child: React.ReactNode, id: string): React.ReactNode {
+  return React.isValidElement<Record<string, unknown>>(child) ? React.cloneElement(child, { id }) : child;
 }
 
-const style_flexColumn: CSSProperties = { display: 'flex', flexDirection: 'column' };
 export const Label = (p: {
   text: string;
   textSuffix?: React.ReactNode;
   className?: string;
-  style?: CSSProperties;
   children?: React.ReactNode;
   required?: boolean;
   /** Id of the labellable control inside `children`. When set, the child is rendered as-is. */
@@ -217,15 +207,13 @@ export const Label = (p: {
 
   const renderedChild = p.htmlFor === undefined ? withChildId(child, id) : child;
 
-  const divStyle = p.style ? { ...p.style, ...style_flexColumn } : p.style;
-
   const labelClasses = ['labelText'];
-  if (p.required) {
+  if (p.required === true) {
     labelClasses.push('required');
   }
 
   return (
-    <div className={p.className} style={divStyle}>
+    <div className={p.className}>
       <div className={labelClasses.join(' ')}>
         <label htmlFor={id}>{p.text}</label> {p.textSuffix}
       </div>
@@ -250,38 +238,35 @@ export const InfoText = (p: {
   gap?: string;
   transform?: string;
 }) => {
+  const overlayStyle: HelperStyleVars = { '--console-info-max-width': p.maxWidth, '--console-info-align': p.align };
   const overlay =
-    p.maxWidth || p.align ? <div style={{ maxWidth: p.maxWidth, textAlign: p.align }}>{p.tooltip}</div> : p.tooltip;
+    (p.maxWidth ?? '') || p.align ? (
+      <div className="console-info-overlay" style={overlayStyle}>
+        {p.tooltip}
+      </div>
+    ) : (
+      p.tooltip
+    );
 
-  const size = p.iconSize ?? '14px';
-  const gap = p.gap ?? '4px';
-
-  const color = p.iconColor ?? 'var(--color-subtle)';
-  const placement = p.placement ?? 'top';
-
+  const iconStyle: HelperStyleVars = {
+    '--console-info-color': p.iconColor ?? 'var(--color-subtle)',
+    '--console-info-size': p.iconSize ?? '14px',
+    '--console-info-gap': p.gap ?? '4px',
+    '--console-info-transform': p.transform,
+  };
   const icon = (
-    <span
-      style={{
-        color,
-        display: 'inline-flex',
-        boxSizing: 'content-box',
-        width: size,
-        height: size,
-        marginLeft: gap,
-        transform: p.transform,
-      }}
-    >
+    <span className="console-info-icon" style={iconStyle}>
       {p.icon ?? <InfoIcon />}
     </span>
   );
 
   const tooltip = (
     <Tooltip>
-      <TooltipTrigger render={<span style={{ display: 'inline-flex', alignItems: 'center' }} />}>
+      <TooltipTrigger render={<span className="inline-flex items-center" />}>
         {p.tooltipOverText === true ? p.children : null}
         {icon}
       </TooltipTrigger>
-      <TooltipContent side={placement}>{overlay}</TooltipContent>
+      <TooltipContent side={p.placement ?? 'top'}>{overlay}</TooltipContent>
     </Tooltip>
   );
 
@@ -290,7 +275,7 @@ export const InfoText = (p: {
   }
 
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+    <span className="inline-flex items-center">
       {p.children}
       {tooltip}
     </span>
@@ -299,7 +284,7 @@ export const InfoText = (p: {
 
 export function OptionGroup<T extends string>(p: {
   label: string;
-  options: { [key: string]: string };
+  options: Record<string, T>;
   value: T;
   onChange: (value: T) => void;
   children?: never;
@@ -317,16 +302,17 @@ export function OptionGroup<T extends string>(p: {
           aria-labelledby={captionId}
           onValueChange={([next]) => {
             // Single-select: ignore the deselect that toggling the active segment reports.
-            if (next !== undefined && next !== p.value) {
-              p.onChange(next as T);
+            const selected = Object.values(p.options).find((option) => option === next);
+            if (selected !== undefined && selected !== p.value) {
+              p.onChange(selected);
             }
           }}
           value={[p.value]}
           variant="outline"
         >
-          {objToKv(p.options).map((kv) => (
-            <ToggleGroupItem key={kv.key} value={String(kv.value)}>
-              {kv.key}
+          {Object.entries(p.options).map(([label, value]) => (
+            <ToggleGroupItem key={label} value={value}>
+              {label}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -343,8 +329,12 @@ type StatusIndicatorProps = {
   messagesConsumed?: string;
   progressText: string;
 };
-
-export class StatusIndicator extends Component<StatusIndicatorProps, { showWaitingText: boolean }> {
+export class StatusIndicator extends Component<
+  StatusIndicatorProps,
+  {
+    showWaitingText: boolean;
+  }
+> {
   toastRef: string | null = null;
   dismissed = false;
 
@@ -394,7 +384,7 @@ export class StatusIndicator extends Component<StatusIndicatorProps, { showWaiti
 
   componentWillUnmount() {
     clearInterval(this.timerHandle);
-    if (this.toastRef) {
+    if (isNonEmptyString(this.toastRef)) {
       closeToast(this.toastRef);
     }
     this.toastRef = null;
@@ -406,9 +396,10 @@ export class StatusIndicator extends Component<StatusIndicatorProps, { showWaiti
     }
     const indeterminate = this.props.statusText === 'Connecting';
     const percent = Math.round(this.props.fillFactor * 100);
-    const showCounters = Boolean(this.props.bytesConsumed && this.props.messagesConsumed);
+    const showCounters = Boolean(isNonEmptyString(this.props.bytesConsumed) && this.props.messagesConsumed);
 
     // The toast description is a <p>, so this stays phrasing content (spans, no Progress).
+    const progressStyle: HelperStyleVars = { '--console-progress-width': `${percent}%` };
     const content = (
       <span className="flex flex-col gap-1 text-body text-foreground">
         <span
@@ -421,10 +412,10 @@ export class StatusIndicator extends Component<StatusIndicatorProps, { showWaiti
           <span
             className={
               indeterminate
-                ? 'block h-full w-full animate-pulse rounded-full bg-primary'
-                : 'block h-full rounded-full bg-primary transition-[width] motion-reduce:transition-none'
+                ? 'block size-full animate-pulse rounded-full bg-primary'
+                : 'console-status-progress block h-full rounded-full bg-primary'
             }
-            style={indeterminate ? undefined : { width: `${percent}%` }}
+            style={indeterminate ? undefined : progressStyle}
           />
         </span>
         <span className="flex font-semibold">
@@ -467,64 +458,41 @@ export class StatusIndicator extends Component<StatusIndicatorProps, { showWaiti
   }
 }
 
-export class ZeroSizeWrapper extends Component<{
+export function ZeroSizeWrapper(p: {
   width?: string;
   height?: string;
   justifyContent?: string;
   alignItems?: string;
   positionContentAbsolute?: boolean;
   transform?: string;
-  wrapperStyle?: CSSProperties;
   children?: React.ReactNode;
-}> {
-  static readonly style: CSSProperties = {
-    display: 'inline-flex',
-    width: '0px',
-    height: '0px',
-    transform: 'translateY(-0.5px)',
-    // zIndex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+}) {
+  const zeroStyle: HelperStyleVars = {
+    '--console-zero-width': p.width,
+    '--console-zero-height': p.height,
+    '--console-zero-justify': p.justifyContent,
+    '--console-zero-align': p.alignItems,
+    '--console-zero-transform': p.transform,
   };
-
-  render() {
-    const p = this.props;
-    let style = ZeroSizeWrapper.style;
-    if (p.width || p.height || p.justifyContent || p.alignItems || p.transform || p.wrapperStyle) {
-      style = { ...style, ...p, ...p.wrapperStyle };
-    }
-
-    return (
-      <span className="verticalCenter" style={style}>
-        <span style={p.positionContentAbsolute ? { position: 'absolute' } : undefined}>{this.props.children}</span>
-      </span>
-    );
-  }
+  return (
+    <span className="console-zero-size verticalCenter" style={zeroStyle}>
+      <span className={p.positionContentAbsolute === true ? 'absolute' : undefined}>{p.children}</span>
+    </span>
+  );
 }
 
-const defaultSkeletonStyle = { margin: '2rem' };
 export const DefaultSkeleton = (
-  <motion.div {...animProps} key={'defaultSkeleton'} style={defaultSkeletonStyle}>
+  <motion.div {...animProps} className="m-8" key="defaultSkeleton">
     <SkeletonText lines={8} width="full" />
   </motion.div>
 );
 
-// Single line, no wrapping; overflow shows an ellipsis.
-const ellipsisSpanStyle: CSSProperties = {
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
-  overflow: 'hidden',
-  maxWidth: '100%',
-  verticalAlign: 'text-bottom',
-};
 export const Ellipsis = (p: { children?: React.ReactNode; className?: string }) => (
-  <span className={p.className} style={ellipsisSpanStyle}>
-    {p.children}
-  </span>
+  <span className={cn(p.className, 'max-w-full truncate align-text-bottom')}>{p.children}</span>
 );
 
 export const Code = (p: { children?: React.ReactNode; nowrap?: boolean }) => {
-  const className = p.nowrap ? 'codeBox nowrap' : 'codeBox';
+  const className = p.nowrap === true ? 'codeBox nowrap' : 'codeBox';
   return <span className={className}>{p.children}</span>;
 };
 

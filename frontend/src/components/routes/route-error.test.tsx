@@ -9,15 +9,16 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
+
+import { RouteError } from './route-error';
 
 const mockRouter = { invalidate: rs.fn() };
 
 rs.mock('@tanstack/react-router', () => ({
   useRouter: () => mockRouter,
 }));
-
-import { RouteError } from './route-error';
 
 describe('the RouteError', () => {
   test('shows a real Error message', () => {
@@ -37,7 +38,9 @@ describe('the RouteError', () => {
   });
 
   test('falls back to a generic message for an Error with no message', () => {
-    render(<RouteError error={new Error()} />);
+    const error = new Error('Message removed by the request boundary');
+    error.message = '';
+    render(<RouteError error={error} />);
 
     expect(screen.getByText('An unexpected error occurred.')).toBeVisible();
   });

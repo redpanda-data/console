@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 
-import SearchBar from './search-bar';
+import { SearchBar } from './search-bar';
 
 const data = ['alpha', 'beta'];
 const dataSource = () => data;

@@ -9,13 +9,13 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it, rs } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from 'test-utils';
+
+import { EditorTipsBar } from './editor-tips-bar';
 
 const platform = rs.hoisted(() => ({ mac: false }));
 rs.mock('utils/platform', () => ({ isMacOS: () => platform.mac }));
-
-import { EditorTipsBar } from './editor-tips-bar';
 
 function renderVisualTips(mac: boolean) {
   platform.mac = mac;
@@ -23,14 +23,14 @@ function renderVisualTips(mac: boolean) {
 }
 
 describe('the EditorTipsBar — shortcut chip formatting', () => {
-  it('joins keys with "+" and spells out modifiers off macOS (Alt+Z, Ctrl+Z, Ctrl+Shift+Z)', () => {
+  test('joins keys with "+" and spells out modifiers off macOS (Alt+Z, Ctrl+Z, Ctrl+Shift+Z)', () => {
     renderVisualTips(false);
     expect(screen.getByText('Alt+Z')).toBeInTheDocument();
     expect(screen.getByText('Ctrl+Z')).toBeInTheDocument();
     expect(screen.getByText('Ctrl+Shift+Z')).toBeInTheDocument();
   });
 
-  it('runs glyphs together on macOS (⌥Z, ⌘Z, ⌘⇧Z)', () => {
+  test('runs glyphs together on macOS (⌥Z, ⌘Z, ⌘⇧Z)', () => {
     renderVisualTips(true);
     expect(screen.getByText('⌥Z')).toBeInTheDocument();
     expect(screen.getByText('⌘Z')).toBeInTheDocument();

@@ -10,6 +10,7 @@
  */
 
 import { CloseIcon, SettingsIcon } from 'components/icons';
+import { Button } from 'components/redpanda-ui/components/button';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import type { FC } from 'react';
 
@@ -36,34 +37,40 @@ export const MessageSearchFilterBar: FC<MessageSearchFilterBarProps> = ({ filter
             data-testid={`message-filter-tag-${e.id}`}
             key={e.id}
           >
-            <button
+            <Button
               aria-label="Edit filter"
+              // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
               className="flex items-center px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
               data-testid={`message-filter-edit-${e.id}`}
               onClick={() => {
                 onEdit(e);
               }}
               type="button"
+              variant="unstyled"
             >
               <SettingsIcon size={14} />
-            </button>
-            <button
+            </Button>
+            <Button
+              // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
               className={cn('border-x px-2 py-1 transition-colors hover:bg-accent', !e.isActive && 'line-through')}
               data-testid={`message-filter-toggle-${e.id}`}
               onClick={() => onToggle(e.id)}
               type="button"
+              variant="unstyled"
             >
               {e.name || e.code || 'New Filter'}
-            </button>
-            <button
+            </Button>
+            <Button
               aria-label="Remove filter"
+              // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
               className="flex items-center px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
               data-testid={`message-filter-remove-${e.id}`}
               onClick={() => onRemove(e.id)}
               type="button"
+              variant="unstyled"
             >
               <CloseIcon size={14} />
-            </button>
+            </Button>
           </div>
         ))}
       </div>

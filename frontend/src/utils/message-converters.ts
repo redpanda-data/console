@@ -56,6 +56,8 @@ function mapPayloadEncoding(encoding: PayloadEncoding | undefined): Payload['enc
       return 'consumerOffsets';
     case PayloadEncoding.CBOR:
       return 'cbor';
+    case undefined:
+    case PayloadEncoding.UNSPECIFIED:
     default:
       return;
   }
@@ -89,7 +91,7 @@ export function convertListMessageData(data: ListMessagesResponse_DataMessage): 
     value: convertPayload(data.value, valueJson, 'value'),
     keyJson,
     valueJson,
-  } as TopicMessage;
+  };
 }
 
 function mapCompression(compression: ProtoCompressionType): TopicMessage['compression'] {
@@ -104,6 +106,7 @@ function mapCompression(compression: ProtoCompressionType): TopicMessage['compre
       return CompressionType.LZ4;
     case ProtoCompressionType.ZSTD:
       return CompressionType.ZStd;
+    case ProtoCompressionType.UNSPECIFIED:
     default:
       return CompressionType.Unknown;
   }
@@ -142,5 +145,5 @@ function convertPayload(
     isPayloadNull: source?.encoding === PayloadEncoding.NULL,
     isPayloadTooLarge: source?.isPayloadTooLarge,
     size: Number(source?.payloadSize),
-  } as Payload;
+  };
 }

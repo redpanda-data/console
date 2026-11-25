@@ -17,15 +17,15 @@ import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 const getScopeConfig = (scope: Scope): { text: string; icon?: React.ReactNode } => {
   switch (scope) {
     case Scope.REDPANDA_CONNECT:
-      return { text: 'Redpanda Connect', icon: <Link className="h-3 w-3" /> };
+      return { text: 'Redpanda Connect', icon: <Link className="size-3" /> };
     case Scope.REDPANDA_CLUSTER:
-      return { text: 'Cluster', icon: <Server className="h-3 w-3" /> };
+      return { text: 'Cluster', icon: <Server className="size-3" /> };
     case Scope.MCP_SERVER:
-      return { text: 'MCP Server', icon: <MCPIcon className="h-3 w-3" /> };
+      return { text: 'MCP Server', icon: <MCPIcon className="size-3" /> };
     case Scope.AI_AGENT:
-      return { text: 'AI Agent', icon: <CircleUser className="h-3 w-3" /> };
+      return { text: 'AI Agent', icon: <CircleUser className="size-3" /> };
     case Scope.AI_GATEWAY:
-      return { text: 'AI Gateway', icon: <Waypoints className="h-3 w-3" /> };
+      return { text: 'AI Gateway', icon: <Waypoints className="size-3" /> };
     case Scope.UNSPECIFIED:
       return { text: 'Unspecified' };
     default:

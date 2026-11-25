@@ -16,6 +16,7 @@ import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
 import { lazy, useEffect, useMemo, useState } from 'react';
 import { useListComponentsQuery } from 'react-query/api/connect';
+import { parseJsonSchema } from 'types/json-schema';
 
 import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'json' };
 import { useDeprecationMarkers } from '../pages/rp-connect/pipeline/use-deprecation-markers';
@@ -66,8 +67,12 @@ const defaultOptions: editor.IStandaloneEditorConstructionOptions = {
   },
 } as const;
 
-const buildMonacoYamlOptions = (schema: typeof benthosSchema) =>
-  ({
+const buildMonacoYamlOptions = (schema: typeof benthosSchema): MonacoYamlOptions => {
+  const validated = parseJsonSchema({ type: 'object', definitions: schema.definitions, properties: schema.properties });
+  if (!validated) {
+    throw new Error('Invalid bundled Redpanda Connect JSON schema');
+  }
+  return {
     enableSchemaRequest: false,
     format: { enable: true },
     completion: true,
@@ -77,17 +82,14 @@ const buildMonacoYamlOptions = (schema: typeof benthosSchema) =>
         // If YAML file is opened matching this glob
         fileMatch: ['**/*.yaml'],
         // The following schema will be applied
-        schema: {
-          type: 'object',
-          definitions: schema.definitions,
-          properties: schema.properties,
-        },
+        schema: validated,
 
         // And the URI will be linked to as the source.
         uri: 'https://github.com/redpanda-data/console/blob/master/frontend/src/assets/rp-connect-schema.json',
       },
     ],
-  }) as MonacoYamlOptions;
+  };
+};
 
 const LazyEditor = lazy(() => import('./monaco-editor'));
 
@@ -113,10 +115,9 @@ function useDocumentedCatalog(yaml: MonacoYaml | undefined) {
 
   return components;
 }
-
-export default function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
+export function PipelinesYamlEditor(props: PipelinesYamlEditorProps) {
   const { options: givenOptions, beforeMount, onMount, onChange, ...rest } = props;
-  const options = { ...defaultOptions, ...(givenOptions ?? {}) };
+  const options = { ...defaultOptions, ...givenOptions };
   const monacoTheme = useMonacoTheme();
   const [yaml, setYaml] = useState<MonacoYaml | undefined>(undefined);
   // Callers pass `value` or only `defaultValue`, so track what's typed for the latter.

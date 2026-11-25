@@ -24,6 +24,7 @@ import { useState } from 'react';
 import { columnMeta } from 'utils/data-table-column-meta';
 import { docsLinks } from 'utils/docs-links';
 import { pluralize } from 'utils/string';
+import { stringValue } from 'utils/type-guards';
 
 import { SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import { useListRolesQuery } from '../../../../react-query/api/security';
@@ -87,7 +88,7 @@ const nameFilterFn = (row: DataTableRow<UserListEntry>, columnId: string, filter
 };
 
 const mechanismFilterFn = (row: DataTableRow<UserListEntry>, columnId: string, filterValues: string[]) => {
-  if (!filterValues?.length) {
+  if (!Boolean(filterValues?.length)) {
     return true;
   }
   return filterValues.includes(String(row.getValue(columnId)));
@@ -217,7 +218,7 @@ export const UsersTabNew: FC = () => {
           <ListLayoutSearchInput
             onChange={(e) => table.getColumn('name')?.setFilterValue(e.target.value || undefined)}
             placeholder="Filter by name (regexp)..."
-            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+            value={stringValue(table.getColumn('name')?.getFilterValue()) ?? ''}
           />
           <DataTableFacetedFilter column={table.getColumn('mechanism')} options={mechanismOptions} title="Mechanism" />
         </ListLayoutFilters>
@@ -305,7 +306,7 @@ const UserAclsCell = ({ userName }: { userName: string }) => {
         className="m-0.5"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        render={<Badge render={<button type="button" />} tone="default" variant="subtle" />}
+        render={<Badge render={<Button type="button" variant="unstyled" />} tone="default" variant="subtle" />}
       >
         <span className="leading-tight">{`${directAcls.length} ${pluralize(directAcls.length, 'ACL')}`}</span>
       </PopoverTrigger>
@@ -379,7 +380,7 @@ const UserActions = ({ user }: { user: UserListEntry }) => {
         <DropdownMenuTrigger
           render={
             <Button className="deleteButton" size="icon-sm" variant="ghost">
-              <MoreHorizontalIcon className="h-4 w-4" />
+              <MoreHorizontalIcon className="size-4" />
             </Button>
           }
         />

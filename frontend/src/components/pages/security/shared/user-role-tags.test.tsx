@@ -13,6 +13,8 @@ import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
+import { UserRoleTags } from './user-role-tags';
+
 const { mockRoleMembers, mockListACLsFilter } = rs.hoisted(() => ({
   mockRoleMembers: new Map<string, { name: string; principalType: string }[]>(),
   mockListACLsFilter: { captured: null as { principal: string } | null },
@@ -48,8 +50,6 @@ rs.mock('../../../../state/supported-features', () => ({
   useSupportedFeaturesStore: <T,>(selector: (s: Record<string, boolean>) => T) => selector({ rolesApi: true }),
 }));
 
-import { UserRoleTags } from './user-role-tags';
-
 describe('the UserRoleTags', () => {
   beforeEach(() => {
     mockRoleMembers.clear();
@@ -59,13 +59,13 @@ describe('the UserRoleTags', () => {
   test('user principal queries ACLs with User: prefix', () => {
     render(<UserRoleTags userName="alice" />);
 
-    expect(mockListACLsFilter.captured).toEqual(expect.objectContaining({ principal: 'User:alice' }));
+    expect(mockListACLsFilter.captured).toStrictEqual(expect.objectContaining({ principal: 'User:alice' }));
   });
 
   test('group principal queries ACLs with Group: prefix', () => {
     render(<UserRoleTags principalType="Group" userName="engineering" />);
 
-    expect(mockListACLsFilter.captured).toEqual(expect.objectContaining({ principal: 'Group:engineering' }));
+    expect(mockListACLsFilter.captured).toStrictEqual(expect.objectContaining({ principal: 'Group:engineering' }));
   });
 
   test('user principal shows role memberships for User members', () => {
@@ -99,7 +99,7 @@ describe('the UserRoleTags', () => {
 
     render(<UserRoleTags userName="bob" />);
 
-    expect(mockListACLsFilter.captured).toEqual(expect.objectContaining({ principal: 'User:bob' }));
+    expect(mockListACLsFilter.captured).toStrictEqual(expect.objectContaining({ principal: 'User:bob' }));
     expect(screen.getByText('RedpandaRole:viewer')).toBeInTheDocument();
   });
 });

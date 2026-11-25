@@ -10,9 +10,10 @@
  */
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { Form } from 'components/redpanda-ui/components/form';
-import { useForm } from 'react-hook-form';
+import { type DeepPartial, useForm } from 'react-hook-form';
 import { render, screen, waitFor, within } from 'test-utils';
 
 import { ScopeSection } from './scope-section';
@@ -32,7 +33,7 @@ const TestWrapper = ({
   onFormChange,
 }: {
   defaultValues?: FormValues;
-  onFormChange?: (values: FormValues) => void;
+  onFormChange?: (values: DeepPartial<FormValues>) => void;
 }) => {
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
@@ -41,7 +42,7 @@ const TestWrapper = ({
 
   if (onFormChange) {
     form.watch((values) => {
-      onFormChange(values as FormValues);
+      onFormChange(values);
     });
   }
 
@@ -57,7 +58,7 @@ const TestWrapper = ({
 /** Renders the section and records the latest form values on every change. */
 const renderTrackingFormValues = () => {
   const user = userEvent.setup();
-  const latest: { values?: FormValues } = {};
+  const latest: { values?: DeepPartial<FormValues> } = {};
 
   render(
     <TestWrapper
@@ -98,15 +99,15 @@ describe('the ScopeSection', () => {
     await user.type(screen.getByTestId('sr-subjects-input-field'), ':.prod:orders-value{enter}');
 
     await waitFor(() => {
-      expect(latest.values?.schemaRegistry?.contexts).toEqual(['.prod']);
-      expect(latest.values?.schemaRegistry?.subjects).toEqual([':.prod:orders-value']);
+      expect(latest.values?.schemaRegistry?.contexts).toStrictEqual(['.prod']);
+      expect(latest.values?.schemaRegistry?.subjects).toStrictEqual([':.prod:orders-value']);
     });
 
     // Removing a chip updates form state
     const chip = screen.getByTestId('sr-contexts-input-chip-.prod');
     await user.click(within(chip).getByRole('button', { name: 'Remove tag' }));
     await waitFor(() => {
-      expect(latest.values?.schemaRegistry?.contexts).toEqual([]);
+      expect(latest.values?.schemaRegistry?.contexts).toStrictEqual([]);
     });
   });
 

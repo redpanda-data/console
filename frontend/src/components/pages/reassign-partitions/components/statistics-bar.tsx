@@ -9,8 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
+import type { ComponentStyleVars } from 'components/style-vars';
+import 'components/legacy-layout.css';
 import { useApiStoreHook } from '../../../../state/backend-api';
 import type { Broker, Partition } from '../../../../state/rest-interfaces';
+import { arrayDistinct, arraySum } from '../../../../utils/array-utils';
+import { isPresent } from '../../../../utils/type-guards';
 import { prettyBytesOrNA } from '../../../../utils/utils';
 import type { PartitionSelection } from '../reassign-partitions';
 
@@ -28,46 +32,37 @@ export function SelectionInfoBar(props: { partitionSelection: PartitionSelection
   const data = selectionStatistics(selectedPartitions, involvedBrokers);
 
   return (
-    <div style={{ margin: props.margin }}>
+    <div className="console-variable-margin" style={{ '--console-margin': props.margin } as ComponentStyleVars}>
       <h4>Current Selection</h4>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'nowrap',
-          gap: '3em',
-          fontFamily: 'Open Sans',
-          color: 'var(--color-foreground)',
-          fontSize: '1.1em',
-        }}
-      >
+      <div className="console-selection-statistics">
         {data.map((item) => (
           <div key={item.title}>
-            <div style={{ fontSize: '.8em', opacity: 0.6, paddingBottom: '.5em' }}>{item.title}</div>
-            <div style={{}}>{item.value}</div>
+            <div className="console-selection-statistic-label">{item.title}</div>
+            <div>{item.value}</div>
           </div>
         ))}
       </div>
     </div>
   );
 }
-
-type SelectedTopicPartitions = { topic: string; partitions: Partition[] };
-
+type SelectedTopicPartitions = {
+  topic: string;
+  partitions: Partition[];
+};
 /** The figures shown for the selection; broker and rack counts stay '...' until the brokers are known. */
 function selectionStatistics(selectedPartitions: SelectedTopicPartitions[], involvedBrokers: Broker[] | null) {
   const allSelectedPartitions = selectedPartitions.flatMap((p) => p.partitions);
   const partitionCountLeaders = allSelectedPartitions.length;
-  const totalPartitionsCount = allSelectedPartitions.sum((t) => t.replicas.length);
-
+  const totalPartitionsCount = arraySum(allSelectedPartitions, (t) => t.replicas.length);
   return [
     { title: 'Leader Partitions', value: partitionCountLeaders },
     { title: 'Total Partitions', value: totalPartitionsCount },
     { title: 'Involved Topics', value: selectedPartitions.length },
     { title: 'Involved Brokers', value: involvedBrokers?.length ?? '...' },
-    { title: 'Involved Racks', value: involvedBrokers?.map((b) => b.rack).distinct().length ?? '...' },
+    { title: 'Involved Racks', value: arrayDistinct(involvedBrokers?.map((b) => b.rack))?.length ?? '...' },
     {
       title: 'Size',
-      value: prettyBytesOrNA(allSelectedPartitions.sum((p) => p.replicas.length * p.replicaSize)),
+      value: prettyBytesOrNA(arraySum(allSelectedPartitions, (p) => p.replicas.length * p.replicaSize)),
     },
   ];
 }
@@ -82,7 +77,7 @@ function selectedTopicPartitions(
     if (partitions === null) {
       continue;
     }
-    if (!partitionSelection[topic]) {
+    if (!isPresent(partitionSelection[topic])) {
       continue;
     }
     const relevantPartitions = partitions.filter((p) => partitionSelection[topic].includes(p.id));

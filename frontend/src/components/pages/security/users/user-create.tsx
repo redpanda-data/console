@@ -12,7 +12,9 @@
 import { useNavigate } from '@tanstack/react-router';
 import { InfoIcon, RotateCwIcon } from 'lucide-react';
 import { useLayoutEffect, useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
 import { generatePassword } from 'utils/password';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useListRolesQuery } from '../../../../react-query/api/security';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
@@ -56,20 +58,28 @@ const UserCreatePage = () => {
                 isSubmitting={isSubmitting}
                 isValidPassword={state.isValidPassword}
                 isValidUsername={state.isValidUsername}
-                onClick={createUser}
+                onClick={asyncEvent(createUser, reportActionError)}
                 userExists={state.users.includes(state.username)}
                 usernameEmpty={!state.username}
               />
-              <Button disabled={isSubmitting} onClick={onCancel} testId="create-user-cancel" variant="link">
+              <Button
+                disabled={isSubmitting}
+                onClick={asyncEvent(onCancel, reportActionError)}
+                testId="create-user-cancel"
+                variant="link"
+              >
                 Cancel
               </Button>
             </div>
           </>
         ) : (
           <CreateUserConfirmationModal
-            closeModal={onCancel}
+            closeModal={asyncEvent(onCancel, reportActionError)}
             mechanism={state.mechanism}
-            onGoToUserDetails={() => navigate({ to: `/security/users/${state.username}/details` })}
+            onGoToUserDetails={asyncEvent(
+              () => navigate({ to: `/security/users/${state.username}/details` }),
+              reportActionError
+            )}
             password={state.password}
             username={state.username}
           />
@@ -79,7 +89,7 @@ const UserCreatePage = () => {
   );
 };
 
-export default UserCreatePage;
+export { UserCreatePage };
 
 type CreateUserButtonProps = {
   isSubmitting: boolean;
@@ -133,7 +143,7 @@ export const CreateUserButton = ({
     </Button>
   );
 
-  if (!disabledReason) {
+  if (!(disabledReason !== null && disabledReason !== undefined && disabledReason !== '')) {
     return button;
   }
 
@@ -275,7 +285,15 @@ export const CreateUserModal = ({ state }: CreateUserModalProps) => {
 
         <Field>
           <FieldLabel required>SASL mechanism</FieldLabel>
-          <Select onValueChange={(v) => state.setMechanism(v as SaslMechanism)} value={state.mechanism}>
+          <Select
+            onValueChange={(v) => {
+              const selected = SASL_MECHANISMS.find((m) => m === v);
+              if (selected) {
+                state.setMechanism(selected);
+              }
+            }}
+            value={state.mechanism}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -325,7 +343,7 @@ export const CreateUserConfirmationModal = ({
       </AlertDescription>
     </Alert>
 
-    <div className="grid max-w-[460px] items-center gap-x-6 gap-y-2" style={{ gridTemplateColumns: 'max-content 1fr' }}>
+    <div className="grid max-w-[460px] grid-cols-[max-content_1fr] items-center gap-x-6 gap-y-2">
       <div className="font-bold" data-testid="username">
         Username
       </div>

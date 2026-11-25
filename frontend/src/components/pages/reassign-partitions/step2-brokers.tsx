@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import 'components/legacy-layout.css';
 import { Checkbox } from 'components/redpanda-ui/components/checkbox';
 import {
   DataTable,
@@ -22,6 +23,7 @@ import { SelectionInfoBar } from './components/statistics-bar';
 import type { PartitionSelection } from './reassign-partitions';
 import { api } from '../../../state/backend-api';
 import type { Broker } from '../../../state/rest-interfaces';
+import { isPresent } from '../../../utils/type-guards';
 import { eqSet, prettyBytesOrNA } from '../../../utils/utils';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 
@@ -108,13 +110,13 @@ export class StepSelectBrokers extends Component<{
   }
 
   render() {
-    if (!this.brokers || this.brokers.length === 0) {
+    if (!isPresent(this.brokers) || this.brokers.length === 0) {
       return <div>Error: no brokers available</div>;
     }
 
     return (
       <>
-        <div style={{ margin: '2em 1em' }}>
+        <div className="console-reassignment-intro">
           <h2>Target Brokers</h2>
           <p>
             Choose the target brokers to move the selected partitions to. Redpanda Console will distribute partitions

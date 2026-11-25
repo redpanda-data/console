@@ -9,13 +9,23 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import type { ConnectError } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { QueryClient, QueryObserver, skipToken } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
-import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from 'react-query/api/sql';
-import { render, screen } from 'test-utils';
+import type { GetTopicConfigurationsResponse } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import {
+  type DescribeTableResponse,
+  DescribeTableResponseSchema,
+  type ListTablesResponse,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
 
 import { CatalogTree } from './catalog-tree';
 import type { Catalog, TableRef } from './sql-types';
+import { trackedQueryClients } from '../../../../tests/harness-cleanup';
+import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from '../../../react-query/api/sql';
+import { render, screen } from '../../../test-utils';
 
 rs.mock('react-query/api/sql', () => ({
   useListTablesQuery: rs.fn(),
@@ -39,7 +49,16 @@ const catalog = (overrides: Partial<Catalog> = {}): Catalog => ({
   ...overrides,
 });
 
-const noTables = { data: undefined, isLoading: false };
+function queryState<T extends object>(data?: T) {
+  const client = new QueryClient();
+  trackedQueryClients.add(client);
+  return new QueryObserver<T, ConnectError>(client, {
+    queryKey: ['catalog-tree-fixture'],
+    enabled: false,
+    initialData: data,
+    queryFn: skipToken,
+  }).getCurrentResult();
+}
 const REDPANDA_CATALOG_RE = /Redpanda Catalog/;
 const ORDERS_RE = /orders/;
 const PUBLIC_RE = /public/;
@@ -50,9 +69,12 @@ const PAGED_TABLE_RE = /t\d\d/;
 const LOAD_MORE_RE = /Load more · 5 remaining/;
 
 beforeEach(() => {
-  rs.mocked(useListTablesQuery).mockReturnValue(noTables as never);
-  rs.mocked(useDescribeTableQuery).mockReturnValue({ data: undefined, isLoading: false } as never);
-  rs.mocked(useTopicIcebergQuery).mockReturnValue({ isIceberg: false } as never);
+  rs.mocked(useListTablesQuery).mockReturnValue(queryState<ListTablesResponse>());
+  rs.mocked(useDescribeTableQuery).mockReturnValue(queryState<DescribeTableResponse>());
+  rs.mocked(useTopicIcebergQuery).mockReturnValue({
+    ...queryState<GetTopicConfigurationsResponse>(),
+    isIceberg: false,
+  });
 });
 
 // Renders a viewer tree with the default catalog and returns its catalog and namespace rows.
@@ -67,17 +89,18 @@ const renderTreeRows = () => {
 // Types arrive lower-cased from the backend; composite columns as "record"
 // with their nested fields parsed server-side.
 const renderExpandedOrdersColumns = async () => {
-  rs.mocked(useDescribeTableQuery).mockReturnValue({
-    data: {
-      columns: [
-        { name: 'id', type: 'bigint' },
-        { name: 'payload', type: 'jsonb' },
-        { name: 'tags', type: 'text[]' },
-        { name: 'customer', type: 'record', fields: [{ name: 'street', type: 'text' }] },
-      ],
-    },
-    isLoading: false,
-  } as never);
+  rs.mocked(useDescribeTableQuery).mockReturnValue(
+    queryState(
+      create(DescribeTableResponseSchema, {
+        columns: [
+          { name: 'id', type: 'bigint' },
+          { name: 'payload', type: 'jsonb' },
+          { name: 'tags', type: 'text[]' },
+          { name: 'customer', type: 'record', fields: [{ name: 'street', type: 'text' }] },
+        ],
+      })
+    )
+  );
   render(<CatalogTree catalogs={[catalog()]} onQueryTable={rs.fn()} sqlRole="viewer" />);
 
   await userEvent.click(screen.getByRole('treeitem', { name: ORDERS_RE }));
@@ -90,7 +113,7 @@ describe('the CatalogTree', () => {
 
       expect(screen.getByRole('tree', { name: 'Catalogs' })).toBeInTheDocument();
       const items = screen.getAllByRole('treeitem');
-      expect(items.map((i) => i.getAttribute('aria-level'))).toEqual(['1', '2', '3', '3']);
+      expect(items.map((i) => i.getAttribute('aria-level'))).toStrictEqual(['1', '2', '3', '3']);
       expect(screen.getByRole('treeitem', { name: REDPANDA_CATALOG_RE })).toHaveAttribute('aria-expanded', 'true');
       expect(screen.getByRole('treeitem', { name: ORDERS_RE })).toBeInTheDocument();
     });

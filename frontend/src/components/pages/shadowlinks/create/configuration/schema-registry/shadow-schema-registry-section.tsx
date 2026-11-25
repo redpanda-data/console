@@ -39,7 +39,12 @@ type ShadowSchemaRegistrySectionProps = {
   modeNotice?: React.ReactNode;
 };
 
-export const ShadowSchemaRegistrySection = ({ disabledModes = [], modeNotice }: ShadowSchemaRegistrySectionProps) => {
+const NO_DISABLED_MODES: SchemaRegistryMode[] = [];
+
+export const ShadowSchemaRegistrySection = ({
+  disabledModes = NO_DISABLED_MODES,
+  modeNotice,
+}: ShadowSchemaRegistrySectionProps) => {
   const { control, getValues, setValue } = useFormContext<FormValues>();
   const mode = useWatch({ control, name: 'schemaRegistry.mode' });
 

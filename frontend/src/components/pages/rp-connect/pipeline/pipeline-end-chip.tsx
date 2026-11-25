@@ -9,16 +9,18 @@
  * by the Apache License, Version 2.0
  */
 
-import type { ComponentName } from 'assets/connectors/component-logo-map';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Popover, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertTriangle, Box, ChevronDown, ChevronRight } from 'lucide-react';
 import { type ComponentType, useState } from 'react';
 
+import './pipeline-editor.css';
 import { RichText, StopKindIcon } from './stop-condition';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { ConnectorLogo } from '../onboarding/connector-logo';
 import type {
   InputEndBehavior,
@@ -26,7 +28,7 @@ import type {
   PipelineEndStatus,
   PipelineEndSummary,
 } from '../utils/input-end-behavior';
-import type { InputEndRow } from '../utils/pipeline-flow-parser';
+import type { InputEndRow } from '../utils/pipeline-flow-nodes';
 import { stopSummary } from '../utils/read-until';
 
 const STATUS_COPY: Record<Exclude<PipelineEndStatus, 'none'>, { label: string; detail: string }> = {
@@ -54,13 +56,6 @@ const STATUS_KIND: Record<Exclude<PipelineEndStatus, 'none'>, InputEndKind> = {
   continuous: 'continuous',
   invalid: 'invalid',
   unknown: 'unknown',
-};
-
-const CHIP_TONE: Record<Exclude<PipelineEndStatus, 'none'>, string> = {
-  finite: 'border-success/40 text-success',
-  continuous: 'border-border text-foreground',
-  invalid: 'border-destructive/50 text-destructive',
-  unknown: 'border-border text-foreground',
 };
 
 const ROW_TONE: Record<InputEndKind, string> = {
@@ -95,15 +90,16 @@ export function PipelineEndChip({
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger
         render={
-          <button
+          <Button
             aria-label={`How this pipeline ends: ${copy.label}`}
             className={cn(
-              'flex h-8 cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 text-body-sm font-medium shadow-sm backdrop-blur-sm transition-colors hover:bg-muted',
-              CHIP_TONE[status]
+              // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+              'pipeline-end-chip flex h-8 cursor-pointer items-center gap-1.5 rounded-md border bg-background/90 px-2.5 text-body-sm font-medium shadow-sm backdrop-blur-sm transition-colors hover:bg-muted'
             )}
             data-status={status}
             data-testid="pipeline-end-chip"
             type="button"
+            variant="unstyled"
           />
         }
       >
@@ -119,7 +115,7 @@ export function PipelineEndChip({
           <span className="text-body-sm text-muted-foreground">
             {status === 'finite' || !behavior ? copy.detail : <RichText text={`${behavior.reason} ${copy.detail}`} />}
           </span>
-          {status === 'finite' && behavior?.caveat ? (
+          {status === 'finite' && isNonEmptyString(behavior?.caveat) ? (
             <span className="flex items-start gap-1 text-body-sm text-warning">
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
               <span>
@@ -134,21 +130,25 @@ export function PipelineEndChip({
             return (
               <li key={row.id}>
                 <ElementTooltip content={long}>
-                  <button
+                  <Button
                     className={cn(
+                      // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                       'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-muted',
-                      row.nested && 'pl-6'
+                      row.nested &&
+                        // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+                        'pl-6'
                     )}
                     onClick={() => {
                       setOpen(false);
                       onSelectInput(row.id);
                     }}
                     type="button"
+                    variant="unstyled"
                   >
-                    <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={row.name as ComponentName} />
+                    <ConnectorLogo className="size-4 shrink-0" fallback={Box} name={row.name} />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-body-sm font-medium">{row.labelText ?? row.name}</span>
-                      {row.labelText ? (
+                      {isNonEmptyString(row.labelText) ? (
                         <span className="truncate font-mono text-2xs text-muted-foreground">{row.name}</span>
                       ) : null}
                     </span>
@@ -164,7 +164,7 @@ export function PipelineEndChip({
                         kind={row.effective.kind}
                       />
                       {short}
-                      {row.effective.caveat ? (
+                      {isNonEmptyString(row.effective.caveat) ? (
                         <TonedIcon
                           aria-label="Might keep running"
                           className="size-3.5"
@@ -174,7 +174,7 @@ export function PipelineEndChip({
                       ) : null}
                     </span>
                     <TonedIcon className="size-3.5 shrink-0" icon={ChevronRight} tone="muted" />
-                  </button>
+                  </Button>
                 </ElementTooltip>
               </li>
             );
@@ -197,7 +197,13 @@ export function PipelineEndMeta({ summary }: { summary: PipelineEndSummary }) {
       {/* A button, so the reason is in reach of the keyboard too. */}
       <TooltipTrigger
         render={
-          <button className="flex cursor-default items-center gap-1.5" data-testid="pipeline-end-meta" type="button" />
+          <Button
+            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+            className="flex cursor-default items-center gap-1.5"
+            data-testid="pipeline-end-meta"
+            type="button"
+            variant="unstyled"
+          />
         }
       >
         <span
@@ -212,8 +218,12 @@ export function PipelineEndMeta({ summary }: { summary: PipelineEndSummary }) {
         {copy.label}
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
-        {reason ? <RichText text={`${reason} ${copy.detail}`} /> : copy.detail}
-        {summary.behavior?.caveat ? (
+        {reason !== null && reason !== undefined && reason !== '' ? (
+          <RichText text={`${reason} ${copy.detail}`} />
+        ) : (
+          copy.detail
+        )}
+        {isNonEmptyString(summary.behavior?.caveat) ? (
           <span className="mt-1 block">
             <RichText text={summary.behavior.caveat} />
           </span>
@@ -261,16 +271,18 @@ export function PipelineRunsCell({ status }: { status: PipelineEndStatus }) {
   if (status === 'none') {
     return <span className="text-muted-foreground">—</span>;
   }
-  const { label, tone } = RUNS_COPY[status];
+  const { label } = RUNS_COPY[status];
   const copy = STATUS_COPY[status];
   return (
     <Tooltip>
       <TooltipTrigger
         render={
-          <button
-            className={cn('inline-flex cursor-default items-center gap-1.5 text-body-sm whitespace-nowrap', tone)}
+          <Button
+            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
+            className="pipeline-runs-cell inline-flex cursor-default items-center gap-1.5 text-body-sm whitespace-nowrap"
             data-status={status}
             type="button"
+            variant="unstyled"
           />
         }
       >

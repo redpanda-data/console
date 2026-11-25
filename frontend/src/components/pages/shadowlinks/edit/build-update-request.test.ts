@@ -10,6 +10,16 @@
  */
 
 import { ShadowLinkSchema as CpShadowLinkSchema } from '@buf/redpandadata_cloud.bufbuild_es/redpanda/api/controlplane/v1/shadow_link_pb';
+import {
+  FilterType as CpFilterType,
+  PatternType as CpPatternType,
+} from '@buf/redpandadata_core.bufbuild_es/redpanda/core/admin/v2/shadow_link_pb';
+import {
+  ACLOperation as CpACLOperation,
+  ACLPattern as CpACLPattern,
+  ACLPermissionType as CpACLPermissionType,
+  ACLResource as CpACLResource,
+} from '@buf/redpandadata_core.bufbuild_es/redpanda/core/common/v1/acl_pb';
 import { create } from '@bufbuild/protobuf';
 import { type Duration, DurationSchema } from '@bufbuild/protobuf/wkt';
 import { ShadowLinkSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
@@ -30,6 +40,7 @@ import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protog
 
 import { buildControlplaneUpdateRequest, buildDataplaneUpdateRequest } from './shadowlink-edit-utils';
 import { describe, expect, test } from 'bun:test';
+import { compareStrings } from '../../../../utils/string-utils';
 import type { FormValues } from '../create/model';
 import { AUTH_METHOD, initialValues, SCHEMA_REGISTRY_MODE, TLS_MODE } from '../create/model';
 
@@ -170,29 +181,29 @@ const createBaseControlplaneShadowLink = () =>
     },
     topicMetadataSyncOptions: {
       autoCreateShadowTopicFilters: [
-        { name: 'my-topic', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE },
+        { name: 'my-topic', patternType: CpPatternType.LITERAL, filterType: CpFilterType.INCLUDE },
       ],
       syncedShadowTopicProperties: [],
       excludeDefault: false,
     },
     consumerOffsetSyncOptions: {
-      groupFilters: [{ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+      groupFilters: [{ name: '*', patternType: CpPatternType.LITERAL, filterType: CpFilterType.INCLUDE }],
     },
     roleSyncOptions: {
-      roleNameFilters: [{ name: '*', patternType: PatternType.LITERAL, filterType: FilterType.INCLUDE }],
+      roleNameFilters: [{ name: '*', patternType: CpPatternType.LITERAL, filterType: CpFilterType.INCLUDE }],
     },
     securitySyncOptions: {
       aclFilters: [
         {
           resourceFilter: {
-            resourceType: ACLResource.ACL_RESOURCE_TOPIC,
-            patternType: ACLPattern.ACL_PATTERN_LITERAL,
+            resourceType: CpACLResource.ACL_RESOURCE_TOPIC,
+            patternType: CpACLPattern.ACL_PATTERN_LITERAL,
             name: 'my-topic',
           },
           accessFilter: {
             principal: 'User:admin',
-            operation: ACLOperation.ACL_OPERATION_READ,
-            permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW,
+            operation: CpACLOperation.ACL_OPERATION_READ,
+            permissionType: CpACLPermissionType.ACL_PERMISSION_TYPE_ALLOW,
             host: '*',
           },
         },
@@ -284,10 +295,8 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.updateMask?.paths).toEqual(['role_sync_options']);
-      expect(result.shadowLink?.roleSyncOptions?.roleNameFilters).toEqual([
-        expect.objectContaining({ name: 'test-role' }),
-      ]);
+      expect(result.updateMask?.paths).toStrictEqual(['role_sync_options']);
+      expect(result.shadowLink?.roleSyncOptions?.roleNameFilters).toMatchObject([{ name: 'test-role' }]);
     });
 
     test('should carry no role sync value or mask path when the cluster does not support role sync', () => {
@@ -302,7 +311,7 @@ describe('buildControlplaneUpdateRequest', () => {
       });
 
       expect(result.shadowLink?.roleSyncOptions).toBeUndefined();
-      expect(result.updateMask?.paths).toEqual([]);
+      expect(result.updateMask?.paths).toStrictEqual([]);
     });
 
     test('should have empty updateMask paths when no changes from original', () => {
@@ -310,7 +319,7 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.updateMask?.paths).toEqual([]);
+      expect(result.updateMask?.paths).toStrictEqual([]);
     });
 
     test('should preserve original interval and paused when role filters change', () => {
@@ -355,35 +364,35 @@ describe('buildControlplaneUpdateRequest', () => {
       });
 
       // Controlplane uses flat structure - properties directly on shadowLink
-      expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['changed:9092']);
-      expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
-        expect.objectContaining({
+      expect(result.shadowLink?.clientOptions?.bootstrapServers).toStrictEqual(['changed:9092']);
+      expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toMatchObject([
+        {
           name: 'my-topic',
           patternType: PatternType.LITERAL,
           filterType: FilterType.INCLUDE,
-        }),
+        },
       ]);
-      expect(result.shadowLink?.consumerOffsetSyncOptions?.groupFilters).toEqual([
-        expect.objectContaining({
+      expect(result.shadowLink?.consumerOffsetSyncOptions?.groupFilters).toMatchObject([
+        {
           name: '*',
           patternType: PatternType.LITERAL,
           filterType: FilterType.INCLUDE,
-        }),
+        },
       ]);
-      expect(result.shadowLink?.securitySyncOptions?.aclFilters).toEqual([
-        expect.objectContaining({
-          resourceFilter: expect.objectContaining({
+      expect(result.shadowLink?.securitySyncOptions?.aclFilters).toMatchObject([
+        {
+          resourceFilter: {
             resourceType: ACLResource.ACL_RESOURCE_TOPIC,
             patternType: ACLPattern.ACL_PATTERN_LITERAL,
             name: 'my-topic',
-          }),
-          accessFilter: expect.objectContaining({
+          },
+          accessFilter: {
             principal: 'User:admin',
             operation: ACLOperation.ACL_OPERATION_READ,
             permissionType: ACLPermissionType.ACL_PERMISSION_TYPE_ALLOW,
             host: '*',
-          }),
-        }),
+          },
+        },
       ]);
     });
 
@@ -397,7 +406,7 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['kafka1:9092', 'kafka2:9092']);
+      expect(result.shadowLink?.clientOptions?.bootstrapServers).toStrictEqual(['kafka1:9092', 'kafka2:9092']);
     });
   });
 
@@ -414,13 +423,12 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.updateMask?.paths).toEqual(
-        expect.arrayContaining(['client_options', 'topic_metadata_sync_options'])
-      );
+      expect(result.updateMask?.paths).toContain('client_options');
+      expect(result.updateMask?.paths).toContain('topic_metadata_sync_options');
       expect(result.updateMask?.paths?.length).toBe(2);
-      expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['new:9092']);
-      expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
-        expect.objectContaining({ name: 'topic1' }),
+      expect(result.shadowLink?.clientOptions?.bootstrapServers).toStrictEqual(['new:9092']);
+      expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toMatchObject([
+        { name: 'topic1' },
       ]);
     });
 
@@ -453,30 +461,28 @@ describe('buildControlplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.updateMask?.paths).toEqual(
-        expect.arrayContaining([
+      expect(result.updateMask?.paths?.toSorted(compareStrings)).toStrictEqual(
+        [
           'client_options',
           'topic_metadata_sync_options',
           'consumer_offset_sync_options',
           'role_sync_options',
           'security_sync_options',
           'schema_registry_sync_options',
-        ])
+        ].toSorted(compareStrings)
       );
       expect(result.updateMask?.paths?.length).toBe(6);
-      expect(result.shadowLink?.clientOptions?.bootstrapServers).toEqual(['new:9092']);
-      expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toEqual([
-        expect.objectContaining({ name: 'topic1' }),
+      expect(result.shadowLink?.clientOptions?.bootstrapServers).toStrictEqual(['new:9092']);
+      expect(result.shadowLink?.topicMetadataSyncOptions?.autoCreateShadowTopicFilters).toMatchObject([
+        { name: 'topic1' },
       ]);
-      expect(result.shadowLink?.consumerOffsetSyncOptions?.groupFilters).toEqual([
-        expect.objectContaining({ name: 'group1' }),
-      ]);
-      expect(result.shadowLink?.roleSyncOptions?.roleNameFilters).toEqual([expect.objectContaining({ name: 'role1' })]);
-      expect(result.shadowLink?.securitySyncOptions?.aclFilters).toEqual([
-        expect.objectContaining({
-          resourceFilter: expect.objectContaining({ name: 'test-topic' }),
-          accessFilter: expect.objectContaining({ principal: 'User:test' }),
-        }),
+      expect(result.shadowLink?.consumerOffsetSyncOptions?.groupFilters).toMatchObject([{ name: 'group1' }]);
+      expect(result.shadowLink?.roleSyncOptions?.roleNameFilters).toMatchObject([{ name: 'role1' }]);
+      expect(result.shadowLink?.securitySyncOptions?.aclFilters).toMatchObject([
+        {
+          resourceFilter: { name: 'test-topic' },
+          accessFilter: { principal: 'User:test' },
+        },
       ]);
       expect(result.shadowLink?.schemaRegistrySyncOptions).toBeDefined();
     });
@@ -586,7 +592,7 @@ describe('buildDataplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.shadowLink?.configurations?.clientOptions?.bootstrapServers).toEqual([
+      expect(result.shadowLink?.configurations?.clientOptions?.bootstrapServers).toStrictEqual([
         'kafka1:9092',
         'kafka2:9092',
       ]);
@@ -655,7 +661,7 @@ describe('buildDataplaneUpdateRequest', () => {
         roleSyncSupported: true,
       });
 
-      expect(result.updateMask?.paths).toEqual([]);
+      expect(result.updateMask?.paths).toStrictEqual([]);
     });
   });
 
@@ -684,8 +690,8 @@ describe('buildDataplaneUpdateRequest', () => {
         roleSyncSupported: false,
       });
 
-      expect(result.updateMask?.paths).toEqual(['configurations.client_options']);
-      expect(result.shadowLink?.configurations?.clientOptions?.bootstrapServers).toEqual(['changed:9092']);
+      expect(result.updateMask?.paths).toStrictEqual(['configurations.client_options']);
+      expect(result.shadowLink?.configurations?.clientOptions?.bootstrapServers).toStrictEqual(['changed:9092']);
       expect(result.shadowLink?.configurations?.roleSyncOptions).toBeUndefined();
     });
   });
@@ -710,8 +716,8 @@ describe('buildDataplaneUpdateRequest', () => {
       expect(result.updateMask?.paths).toContain('configurations.role_sync_options');
       expect(result.shadowLink?.configurations?.roleSyncOptions?.paused).toBe(true);
       expect(result.shadowLink?.configurations?.roleSyncOptions?.interval?.seconds).toBe(300n);
-      expect(result.shadowLink?.configurations?.roleSyncOptions?.roleNameFilters).toEqual([
-        expect.objectContaining({ name: 'test-role' }),
+      expect(result.shadowLink?.configurations?.roleSyncOptions?.roleNameFilters).toMatchObject([
+        { name: 'test-role' },
       ]);
     });
   });
@@ -734,7 +740,7 @@ describe('schema registry api mode through both builders', () => {
       roleSyncSupported: true,
     });
 
-    expect(request.updateMask?.paths).toEqual(['schema_registry_sync_options']);
+    expect(request.updateMask?.paths).toStrictEqual(['schema_registry_sync_options']);
     const mode = request.shadowLink?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
     expect(mode?.case).toBe('shadowSchemaRegistryApi');
     if (mode?.case === 'shadowSchemaRegistryApi') {
@@ -748,7 +754,7 @@ describe('schema registry api mode through both builders', () => {
       roleSyncSupported: true,
     });
 
-    expect(request.updateMask?.paths).toEqual(['configurations.schema_registry_sync_options']);
+    expect(request.updateMask?.paths).toStrictEqual(['configurations.schema_registry_sync_options']);
     const mode = request.shadowLink?.configurations?.schemaRegistrySyncOptions?.schemaRegistryShadowingMode;
     expect(mode?.case).toBe('shadowSchemaRegistryApi');
     if (mode?.case === 'shadowSchemaRegistryApi') {

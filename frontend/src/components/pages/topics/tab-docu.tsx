@@ -9,12 +9,8 @@
  * by the Apache License, Version 2.0
  */
 
-import { Component, type JSX } from 'react';
-import { docsLinks } from 'utils/docs-links';
-
-import type { Topic } from '../../../state/rest-interfaces';
-import '../../../utils/array-extensions';
 import { Button } from 'components/redpanda-ui/components/button';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import {
   Empty,
   EmptyContent,
@@ -23,13 +19,14 @@ import {
   EmptyTitle,
 } from 'components/redpanda-ui/components/empty';
 import { motion } from 'motion/react';
-import ReactMarkdown, { defaultUrlTransform as baseUriTransformer } from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Component, type JSX } from 'react';
+import ReactMarkdown, { defaultUrlTransform as baseUriTransformer, type Components } from 'react-markdown';
 import remarkEmoji from 'remark-emoji';
 import remarkGfm from 'remark-gfm';
+import { docsLinks } from 'utils/docs-links';
 
 import { api } from '../../../state/backend-api';
+import type { Topic } from '../../../state/rest-interfaces';
 import { animProps } from '../../../utils/animation-props';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
 
@@ -66,25 +63,16 @@ function sanitizeUrl(uri: string): string {
 }
 
 export class TopicDocumentation extends Component<{ topic: Topic }> {
-  private readonly components = {
-    // biome-ignore lint/suspicious/noExplicitAny: react-markdown component props are complex and dynamic
-    code({ inline, className, children, ...props }: any) {
-      const match = CODE_LANGUAGE_REGEX.exec(className || '');
-      return !inline && match ? (
-        <SyntaxHighlighter
-          customStyle={{
-            backgroundColor: null,
-            border: null,
-            margin: null,
-            padding: null,
-          }}
+  private readonly components: Components = {
+    code({ className, children, ...props }) {
+      const match = CODE_LANGUAGE_REGEX.exec(className ?? '');
+      return match ? (
+        <SimpleCodeBlock
+          allowCopy={false}
+          className="my-0"
+          code={String(children).replace(TRAILING_NEWLINE_REGEX, '')}
           language={match[1]}
-          PreTag="div"
-          style={vs}
-          {...props}
-        >
-          {String(children).replace(TRAILING_NEWLINE_REGEX, '')}
-        </SyntaxHighlighter>
+        />
       ) : (
         <code className={className} {...props}>
           {children}
@@ -143,7 +131,7 @@ const errorNotFound = renderDocuError(
   'Not Found',
   <>
     <p>No documentation file was found for this topic.</p>
-    <ul style={{ listStyle: 'none' }}>
+    <ul className="list-none">
       <li>
         Ensure the Git connection to the documentation repository is configured correctly in the Redpanda Console
         backend.
@@ -168,7 +156,7 @@ const errorEmpty = renderDocuError(
 // todo: use <MotionAlways> for them
 function renderDocuError(title: string, body: JSX.Element) {
   return (
-    <motion.div {...animProps} key={'b'} style={{ margin: '2rem 1rem' }}>
+    <motion.div {...animProps} className="mx-4 my-8" key={'b'}>
       <Empty>
         <EmptyHeader>
           <EmptyTitle>{title}</EmptyTitle>

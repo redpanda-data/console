@@ -9,9 +9,10 @@
  * by the Apache License, Version 2.0
  */
 
-import { renderWithFileRoutes, screen } from 'test-utils';
+import { describe, expect, test } from '@rstest/core';
 
 import { UserRolesCard } from './user-roles-card';
+import { renderWithFileRoutes, screen } from '../../../../test-utils';
 
 const mockRoles = [
   {

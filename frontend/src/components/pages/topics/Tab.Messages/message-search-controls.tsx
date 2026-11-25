@@ -44,6 +44,8 @@ import { Switch } from 'components/redpanda-ui/components/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
 import type React from 'react';
 import { type FC, useId, useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { MessageSearchFilterBar } from './common/message-search-filter-bar';
 import { StartOffsetDateTimePicker } from './forms/start-offset-date-time-picker';
@@ -54,28 +56,25 @@ import type {
   MessageViewDialogs,
   TopicViewSettings,
 } from './hooks/use-message-view-params';
-import JavascriptFilterModal from './javascript-filter-modal';
-import { isServerless } from '../../../../config';
+import { JavascriptFilterModal } from './javascript-filter-modal';
+import { isServerless } from '../../../../runtime-config';
 import { useApiStoreHook } from '../../../../state/backend-api';
 import type { Topic } from '../../../../state/rest-interfaces';
-import {
-  createFilterEntry,
-  DEFAULT_SEARCH_PARAMS,
-  type FilterEntry,
-  PartitionOffsetOrigin,
-  type PartitionOffsetOriginType,
-} from '../../../../state/ui';
+import type { FilterEntry, PartitionOffsetOriginType } from '../../../../state/ui';
+import { createFilterEntry, DEFAULT_SEARCH_PARAMS, PartitionOffsetOrigin } from '../../../../types/topic-settings';
+import { isNonzeroNumber } from '../../../../utils/number-utils';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { Label, StatusIndicator } from '../../../../utils/tsx-utils';
 import { prettyBytes, prettyMilliseconds } from '../../../../utils/utils';
 import { range } from '../../../misc/common';
-import RemovableFilter from '../../../misc/removable-filter';
+import { RemovableFilter } from '../../../misc/removable-filter';
 
-function getOffsetOrigin(startOffset: number): PartitionOffsetOriginType {
-  return (startOffset >= 0 ? PartitionOffsetOrigin.Custom : startOffset) as PartitionOffsetOriginType;
+function getOffsetOrigin(startOffset: number): number {
+  return startOffset >= 0 ? PartitionOffsetOrigin.Custom : startOffset;
 }
 
 // Continuous pagination is only available with Newest or Beginning start offsets.
-function supportsContinuousPagination(origin: PartitionOffsetOriginType): boolean {
+function supportsContinuousPagination(origin: number): boolean {
   return origin === PartitionOffsetOrigin.EndMinusResults || origin === PartitionOffsetOrigin.Start;
 }
 
@@ -147,10 +146,17 @@ function buildStartOffsetOptions(continuousPaginationEnabled: boolean, maxResult
     },
   ];
 }
-
-type ParamsProps = { query: MessageQueryParams; paging: MessagePagingParams };
-
-function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicName: string }) {
+type ParamsProps = {
+  query: MessageQueryParams;
+  paging: MessagePagingParams;
+};
+function StartOffsetControl({
+  topicName,
+  query,
+  paging,
+}: ParamsProps & {
+  topicName: string;
+}) {
   const { startOffset, setStartOffset, startTimestamp, setStartTimestamp, maxResults } = query;
   const [customStartOffsetValue, setCustomStartOffsetValue] = useState<number | string>(0);
 
@@ -159,9 +165,9 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
   // queues a nuqs update that navigates back to this topic (UX-1514).
   const changeStartOffset = (value: number) => {
     if (value !== startOffset) {
-      paging.setPageIndex(0);
+      paging.setPageIndex(0).catch(reportActionError);
     }
-    setStartOffset(value);
+    setStartOffset(value).catch(reportActionError);
   };
 
   const currentOffsetOrigin = getOffsetOrigin(startOffset);
@@ -173,7 +179,10 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
       <div className="flex gap-3">
         <Select
           onValueChange={(val) => {
-            const e = Number(val) as PartitionOffsetOriginType;
+            const e = parseOffsetOrigin(val);
+            if (e === undefined) {
+              return;
+            }
             const offset = nextStartOffset(e, startOffset);
             if (offset !== undefined) {
               changeStartOffset(offset);
@@ -181,14 +190,11 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
 
             // Auto-disable continuous pagination for unsupported offsets
             if (paging.continuousPaginationEnabled && !supportsContinuousPagination(e)) {
-              paging.setContinuousPaginationEnabled(false);
+              paging.setContinuousPaginationEnabled(false).catch(reportActionError);
             }
 
             // Handle timestamp parameter in URL
-            const timestamp = nextStartTimestamp(e, startTimestamp);
-            if (timestamp !== undefined) {
-              setStartTimestamp(timestamp);
-            }
+            applyOriginTimestamp(e, startTimestamp, setStartTimestamp);
           }}
           value={String(currentOffsetOrigin)}
         >
@@ -211,6 +217,7 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
               <TooltipTrigger
                 render={
                   <Input
+                    className="w-[7.5em]"
                     disabled={currentOffsetOrigin !== PartitionOffsetOrigin.Custom}
                     maxLength={20}
                     onChange={(e) => {
@@ -219,7 +226,6 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
                         changeStartOffset(Number(e.target.value));
                       }
                     }}
-                    style={{ width: '7.5em' }}
                     value={customStartOffsetValue}
                   />
                 }
@@ -229,7 +235,11 @@ function StartOffsetControl({ topicName, query, paging }: ParamsProps & { topicN
           </TooltipProvider>
         )}
         {currentOffsetOrigin === PartitionOffsetOrigin.Timestamp && (
-          <StartOffsetDateTimePicker onChange={setStartTimestamp} topicName={topicName} value={startTimestamp} />
+          <StartOffsetDateTimePicker
+            onChange={asyncEvent(setStartTimestamp, reportActionError)}
+            topicName={topicName}
+            value={startTimestamp}
+          />
         )}
       </div>
     </Label>
@@ -240,9 +250,9 @@ function MaxResultsControl({ query, paging }: ParamsProps) {
   const { maxResults, setMaxResults } = query;
   const changeMaxResults = (value: number) => {
     if (value !== maxResults) {
-      paging.setPageIndex(0);
+      paging.setPageIndex(0).catch(reportActionError);
     }
-    setMaxResults(value);
+    setMaxResults(value).catch(reportActionError);
   };
 
   return (
@@ -274,13 +284,12 @@ function ContinuousPaginationControl({ paging, startOffset }: { paging: MessageP
   return (
     <Label
       htmlFor={controlId}
-      style={{}}
       text="Continuous Pagination"
       textSuffix={
         <Tooltip>
           <TooltipTrigger
             render={
-              <span style={{ display: 'inline-flex', verticalAlign: 'text-top', cursor: 'pointer' }}>
+              <span className="inline-flex cursor-pointer align-text-top">
                 <InfoIcon size={11} />
               </span>
             }
@@ -293,13 +302,13 @@ function ContinuousPaginationControl({ paging, startOffset }: { paging: MessageP
         </Tooltip>
       }
     >
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+      <div className="flex flex-1 items-center">
         <Switch
           checked={paging.continuousPaginationEnabled}
           data-testid="continuous-pagination-toggle"
           disabled={continuousPaginationDisabled}
           id={controlId}
-          onCheckedChange={(checked) => paging.setContinuousPaginationEnabled(checked)}
+          onCheckedChange={asyncEvent((checked) => paging.setContinuousPaginationEnabled(checked), reportActionError)}
         />
       </div>
     </Label>
@@ -322,7 +331,7 @@ const AddFilterMenuItem: FC<{
   onClick: () => void;
   children: React.ReactNode;
 }> = ({ testId, disabledReason, onClick, children }) => {
-  if (!disabledReason) {
+  if (!(disabledReason !== null && disabledReason !== undefined && disabledReason !== '')) {
     return (
       <DropdownMenuItem data-testid={testId} onClick={onClick}>
         {children}
@@ -534,7 +543,7 @@ function QuickSearchRow({
               <DownloadIcon size={14} /> {prettyBytes(search.bytesConsumed)}
             </div>
             <div className="flex items-center gap-2">
-              <TimerIcon size={14} /> {search.elapsedMs ? prettyMilliseconds(search.elapsedMs) : ''}
+              <TimerIcon size={14} /> {isNonzeroNumber(search.elapsedMs) ? prettyMilliseconds(search.elapsedMs) : ''}
             </div>
           </>
         ) : (
@@ -581,11 +590,11 @@ export function MessageSearchControls(props: MessageSearchControlsProps) {
                     <RemovableFilter
                       onRemove={() => {
                         settings.removeDynamicFilter('partition');
-                        query.setPartitionID(DEFAULT_SEARCH_PARAMS.partitionID);
+                        query.setPartitionID(DEFAULT_SEARCH_PARAMS.partitionID).catch(reportActionError);
                       }}
                     >
                       <Select
-                        onValueChange={(val) => query.setPartitionID(Number(val))}
+                        onValueChange={asyncEvent((val) => query.setPartitionID(Number(val)), reportActionError)}
                         value={String(query.partitionID)}
                       >
                         <SelectTrigger testId="partition-filter-dropdown">
@@ -616,7 +625,7 @@ export function MessageSearchControls(props: MessageSearchControlsProps) {
           />
 
           {/* Search Progress Indicator: "Consuming Messages 30/30" */}
-          {Boolean(search.searchPhase && search.searchPhase.length > 0) && (
+          {isNonEmptyString(search.searchPhase) && search.searchPhase.length > 0 && (
             <StatusIndicator
               bytesConsumed={prettyBytes(search.bytesConsumed)}
               fillFactor={paging.continuousPaginationEnabled ? 0 : messages.length / query.maxResults}
@@ -627,8 +636,7 @@ export function MessageSearchControls(props: MessageSearchControlsProps) {
                   ? `${messages.length} / ${totalLoadedCount} loaded`
                   : `${messages.length} / ${query.maxResults}`
               }
-              // biome-ignore lint/style/noNonNullAssertion: not touching MobX observables
-              statusText={search.searchPhase!}
+              statusText={search.searchPhase}
             />
           )}
         </div>
@@ -674,4 +682,19 @@ export function MessageSearchControls(props: MessageSearchControlsProps) {
       ) : null}
     </>
   );
+}
+
+function parseOffsetOrigin(value: unknown): PartitionOffsetOriginType | undefined {
+  return Object.values(PartitionOffsetOrigin).find((origin) => origin === Number(value));
+}
+
+function applyOriginTimestamp(
+  origin: PartitionOffsetOriginType,
+  current: number,
+  setTimestamp: (value: number | null) => Promise<unknown>
+) {
+  const timestamp = nextStartTimestamp(origin, current);
+  if (timestamp !== undefined) {
+    setTimestamp(timestamp).catch(reportActionError);
+  }
 }

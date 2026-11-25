@@ -7,6 +7,7 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { UpdateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useState } from 'react';
+import { asyncEvent } from 'utils/async-event';
 import { generatePassword } from 'utils/password';
 
 import { StateRoleSelector } from './user-create';
@@ -14,7 +15,8 @@ import { useListRolesQuery, useUpdateRoleMembershipMutation } from '../../../../
 import { getSASLMechanism, useUpdateUserMutationWithToast } from '../../../../react-query/api/user';
 import { rolesApi } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
-import { formatToastErrorMessageGRPC, showToast } from '../../../../utils/toast.utils';
+import { arrayExcept } from '../../../../utils/array-utils';
+import { formatToastErrorMessageGRPC, reportActionError, showToast } from '../../../../utils/toast.utils';
 import { SASL_MECHANISMS, type SaslMechanism } from '../../../../utils/user';
 import { Button } from '../../../redpanda-ui/components/button';
 import { Checkbox } from '../../../redpanda-ui/components/checkbox';
@@ -43,7 +45,7 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
   const [password, setPassword] = useState(() => generatePassword(30, false));
   const [mechanism, setMechanism] = useState<SaslMechanism | undefined>(undefined);
   const [generateWithSpecialChars, setGenerateWithSpecialChars] = useState(false);
-  const isValidPassword = password && password.length >= 4 && password.length <= 64;
+  const isValidPassword = password.length >= 4 && password.length <= 64;
   const { mutateAsync: updateUser, isPending: isUpdateUserPending } = useUpdateUserMutationWithToast();
 
   const onSavePassword = async () => {
@@ -133,7 +135,15 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
             </Field>
             <Field>
               <FieldLabel required>SASL mechanism</FieldLabel>
-              <Select onValueChange={(v) => setMechanism(v as SaslMechanism)} value={mechanism ?? ''}>
+              <Select
+                onValueChange={(v) => {
+                  const selected = SASL_MECHANISMS.find((m) => m === v);
+                  if (selected) {
+                    setMechanism(selected);
+                  }
+                }}
+                value={mechanism ?? ''}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select mechanism..." />
                 </SelectTrigger>
@@ -154,7 +164,7 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
           </Button>
           <Button
             disabled={!isValidPassword || mechanism === undefined || isUpdateUserPending}
-            onClick={onSavePassword}
+            onClick={asyncEvent(onSavePassword, reportActionError)}
             type="submit"
           >
             Save changes
@@ -172,8 +182,8 @@ type ChangeRolesModalProps = {
 };
 
 const getRoleChanges = (originalRoles: string[], selectedRoles: string[]) => ({
-  addedRoles: selectedRoles.except(originalRoles),
-  removedRoles: originalRoles.except(selectedRoles),
+  addedRoles: arrayExcept(selectedRoles, originalRoles),
+  removedRoles: arrayExcept(originalRoles, selectedRoles),
 });
 
 // Removals first, then additions.
@@ -254,7 +264,11 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
           <Button disabled={isUpdateMembershipPending} onClick={() => setIsOpen(false)} variant="outline">
             Cancel
           </Button>
-          <Button disabled={isUpdateMembershipPending} onClick={onSaveRoles} type="submit">
+          <Button
+            disabled={isUpdateMembershipPending}
+            onClick={asyncEvent(onSaveRoles, reportActionError)}
+            type="submit"
+          >
             Save changes
           </Button>
         </DialogFooter>

@@ -20,16 +20,18 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import type { FC, ReactElement } from 'react';
 
-import ErrorResult from './error-result';
-import Section from './section';
+import { ErrorResult } from './error-result';
+import { Section } from './section';
 import { api } from '../../state/backend-api';
 import type { WrappedApiError } from '../../state/rest-interfaces';
+import { isObject } from '../../utils/type-guards';
 
 function isWrappedApiError(error: unknown): error is WrappedApiError {
-  return error !== null && typeof error === 'object' && 'statusCode' in error;
+  return isObject(error) && 'statusCode' in error;
 }
-
-export const ErrorDisplay: FC<{ children: ReactElement }> = ({ children }) => {
+export const ErrorDisplay: FC<{
+  children: ReactElement;
+}> = ({ children }) => {
   if (api.errors.length === 0) {
     return children;
   }

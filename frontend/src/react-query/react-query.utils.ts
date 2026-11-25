@@ -64,9 +64,7 @@ type FieldInit<F> = F extends Date | Uint8Array | bigint | boolean | string | nu
                   [key: string | number]: MessageInit<V>;
                 }
               : F;
-type MapWithMessage<V extends Message> = {
-  [key: string | number]: V;
-};
+type MapWithMessage<V extends Message> = Record<string | number, V>;
 type OneofSelectedMessage<K extends string, M extends Message> = {
   case: K;
   value: M;

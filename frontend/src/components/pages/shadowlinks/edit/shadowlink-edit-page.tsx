@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Code } from '@connectrpc/connect';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
@@ -20,6 +20,8 @@ import { type FieldErrors, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { ShadowingTab } from './shadowing-tab';
 import { SourceTab } from './source-tab';
@@ -113,15 +115,6 @@ const useShadowLinkUpdateFeedback = (
       });
     }
   }, [dataplaneUpdate.isSuccess, controlplaneUpdate.isSuccess, navigate, name]);
-
-  useEffect(() => {
-    const error = dataplaneUpdate.error || controlplaneUpdate.error;
-    if (error) {
-      toast.error('Shadow link update failed', {
-        description: error.message,
-      });
-    }
-  }, [dataplaneUpdate.error, controlplaneUpdate.error]);
 };
 
 /**
@@ -165,7 +158,7 @@ const ShadowLinkEditUnavailable = ({ error }: { error: EditShadowLink['error'] }
   return (
     <div className="flex flex-col items-center justify-center gap-4 p-8">
       <div className="text-body-lg">Shadow link not found</div>
-      <Button onClick={() => navigate({ to: '/shadowlinks' })} variant="outline">
+      <Button onClick={asyncEvent(() => navigate({ to: '/shadowlinks' }), reportActionError)} variant="outline">
         Back to Shadow Links
       </Button>
     </div>
@@ -178,6 +171,10 @@ type ShadowLinkEditFormProps = {
   isUpdating: boolean;
   updateShadowLink: EditShadowLink['updateShadowLink'];
 };
+
+function reportUpdateError(error: unknown): void {
+  toast.error('Shadow link update failed', { description: ConnectError.from(error).message });
+}
 
 const ShadowLinkEditForm = ({ name, formValues, isUpdating, updateShadowLink }: ShadowLinkEditFormProps) => {
   const navigate = useNavigate();
@@ -209,7 +206,12 @@ const ShadowLinkEditForm = ({ name, formValues, isUpdating, updateShadowLink }: 
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit, (errors) => reportValidationErrors(errors, setCurrentTab))}>
+        <form
+          onSubmit={asyncEvent(
+            form.handleSubmit(onSubmit, (errors) => reportValidationErrors(errors, setCurrentTab)),
+            reportUpdateError
+          )}
+        >
           <Tabs onValueChange={setCurrentTab} value={currentTab}>
             <TabsList>
               <TabsTrigger data-testid="tab-all" value="all">
@@ -251,7 +253,11 @@ const ShadowLinkEditForm = ({ name, formValues, isUpdating, updateShadowLink }: 
             <Button disabled={isUpdating} type="submit">
               Save
             </Button>
-            <Button onClick={() => navigate({ to: `/shadowlinks/${name}` })} type="button" variant="ghost">
+            <Button
+              onClick={asyncEvent(() => navigate({ to: `/shadowlinks/${name}` }), reportActionError)}
+              type="button"
+              variant="ghost"
+            >
               Cancel
             </Button>
           </div>

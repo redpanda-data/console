@@ -14,17 +14,17 @@ import { describe, expect, test } from 'bun:test';
 
 describe('boundedAppend', () => {
   test('appends an item when under the cap', () => {
-    expect(boundedAppend([1, 2], 3, 5)).toEqual([1, 2, 3]);
+    expect(boundedAppend([1, 2], 3, 5)).toStrictEqual([1, 2, 3]);
   });
 
   test('drops the oldest entries when the cap is exceeded', () => {
-    expect(boundedAppend([1, 2, 3], 4, 3)).toEqual([2, 3, 4]);
+    expect(boundedAppend([1, 2, 3], 4, 3)).toStrictEqual([2, 3, 4]);
   });
 
   test('returns a new array and does not mutate the input', () => {
     const input = [1, 2];
     const result = boundedAppend(input, 3, 5);
-    expect(input).toEqual([1, 2]);
+    expect(input).toStrictEqual([1, 2]);
     expect(result).not.toBe(input);
   });
 });
@@ -33,13 +33,13 @@ describe('trimToLast', () => {
   test('trims a buffer in place to the last max entries', () => {
     const buffer = [1, 2, 3, 4, 5];
     trimToLast(buffer, 2);
-    expect(buffer).toEqual([4, 5]);
+    expect(buffer).toStrictEqual([4, 5]);
   });
 
   test('leaves the buffer unchanged when within the cap', () => {
     const buffer = [1, 2];
     trimToLast(buffer, 5);
-    expect(buffer).toEqual([1, 2]);
+    expect(buffer).toStrictEqual([1, 2]);
   });
 });
 
@@ -51,7 +51,7 @@ describe('pruneMapToKeys', () => {
       ['c', 3],
     ]);
     const result = pruneMapToKeys(map, new Set(['a', 'c']));
-    expect([...result.entries()]).toEqual([
+    expect([...result.entries()]).toStrictEqual([
       ['a', 1],
       ['c', 3],
     ]);
@@ -77,7 +77,7 @@ describe('appendWithSlackCap', () => {
     for (let i = 0; i < 5; i++) {
       appendWithSlackCap(buffer, i, 3, 2); // max 3 + slack 2 = 5, not yet exceeded
     }
-    expect(buffer).toEqual([0, 1, 2, 3, 4]);
+    expect(buffer).toStrictEqual([0, 1, 2, 3, 4]);
   });
 
   test('trims to max keeping the newest once past max + slack', () => {
@@ -85,6 +85,6 @@ describe('appendWithSlackCap', () => {
     for (let i = 0; i < 6; i++) {
       appendWithSlackCap(buffer, i, 3, 2); // the 6th push exceeds 5 and trims to the last 3
     }
-    expect(buffer).toEqual([3, 4, 5]);
+    expect(buffer).toStrictEqual([3, 4, 5]);
   });
 });

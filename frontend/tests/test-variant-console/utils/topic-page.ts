@@ -1,11 +1,22 @@
 import { expect, type Page, step } from '../../shared/e2e';
 
+const SAVE_REGEX = /save/i;
+const PARTITIONS_REGEX = /partitions/i;
+const COPY_VALUE_REGEX = /copy value/i;
+const REPLICATION_REGEX = /replication/i;
+const SAVE_MESSAGE_REGEX = /save message/i;
+const TOPICS_REGEX = /\/topics\/?(\?.*)?$/;
+
 /**
  * Page Object Model for Topic pages
  * Encapsulates common topic-related operations for E2E tests
  */
 export class TopicPage {
-  constructor(protected page: Page) {}
+  protected page: Page;
+
+  constructor(page: Page) {
+    this.page = page;
+  }
 
   /**
    * Navigation methods
@@ -76,14 +87,14 @@ export class TopicPage {
   }
 
   async fillPartitions(partitions: string) {
-    const partitionsInput = this.page.getByPlaceholder(/partitions/i);
+    const partitionsInput = this.page.getByPlaceholder(PARTITIONS_REGEX);
     if (await partitionsInput.isVisible()) {
       await partitionsInput.fill(partitions);
     }
   }
 
   async fillReplicationFactor(replicationFactor: string) {
-    const replicationInput = this.page.getByPlaceholder(/replication/i);
+    const replicationInput = this.page.getByPlaceholder(REPLICATION_REGEX);
     if ((await replicationInput.isVisible()) && !(await replicationInput.isDisabled())) {
       await replicationInput.fill(replicationFactor);
     }
@@ -145,13 +156,13 @@ export class TopicPage {
   }
 
   async confirmExport() {
-    const dialog = this.page.getByRole('dialog', { name: /save message/i });
-    const saveButton = dialog.getByRole('button', { name: /save/i });
+    const dialog = this.page.getByRole('dialog', { name: SAVE_MESSAGE_REGEX });
+    const saveButton = dialog.getByRole('button', { name: SAVE_REGEX });
     await saveButton.click();
   }
 
   async copyMessageValue() {
-    await this.page.getByRole('button', { name: /copy value/i }).click();
+    await this.page.getByRole('button', { name: COPY_VALUE_REGEX }).click();
   }
 
   async verifyClipboardContent(expectedContent: string) {
@@ -195,7 +206,7 @@ export class TopicPage {
   }
 
   async verifyOnTopicsListPage() {
-    await expect(this.page).toHaveURL(/\/topics\/?(\?.*)?$/);
+    await expect(this.page).toHaveURL(TOPICS_REGEX);
   }
 
   /**

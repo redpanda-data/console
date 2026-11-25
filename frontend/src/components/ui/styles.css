@@ -1,0 +1,52 @@
+.console-log-head,
+.console-log-cell {
+  inline-size: var(--console-log-width);
+  min-inline-size: var(--console-log-min-width);
+  padding-inline: 0.75rem;
+}
+
+.console-log-cell {
+  padding-block: 0.5rem;
+}
+
+.console-log-status-cell {
+  padding-block: 2.5rem;
+}
+
+.console-log-live-switch {
+  inline-size: 2.25rem;
+  block-size: 1.25rem;
+}
+
+.console-log-live-switch [data-slot='switch-thumb'] {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+}
+
+.console-datetime-calendar {
+  padding: 0;
+}
+
+.console-datetime-popover {
+  padding: 0.75rem;
+}
+
+.console-delete-header {
+  text-align: start;
+}
+
+.console-key-input {
+  max-inline-size: 100px;
+  font-weight: 500;
+  color: var(--color-primary);
+  background-color: var(--color-primary-wash);
+  border-inline-end: 1px solid var(--color-input);
+}
+
+.console-consumer-group-state-tooltip {
+  max-inline-size: 36rem;
+  padding: 0.5rem;
+  color: var(--color-foreground);
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+}

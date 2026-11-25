@@ -62,6 +62,9 @@ function runActionForState(state?: Pipeline_State): RunAction | null {
     case PipelineState.COMPLETED:
       return 'start';
     // Drafts start through `useStartDraft`.
+    case undefined:
+    case PipelineState.UNSPECIFIED:
+    case PipelineState.DRAFT:
     default:
       return null;
   }

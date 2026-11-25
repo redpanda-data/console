@@ -9,8 +9,14 @@
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
 import type { SortingState } from '@tanstack/react-table';
-import { Quota_EntityType, type Quota_Value, Quota_ValueType } from 'protogen/redpanda/api/dataplane/v1/quota_pb';
+import {
+  Quota_EntityType,
+  type Quota_Value,
+  Quota_ValueSchema,
+  Quota_ValueType,
+} from 'protogen/redpanda/api/dataplane/v1/quota_pb';
 
 import {
   clampPageIndex,
@@ -22,7 +28,8 @@ import {
 } from './quotas-list-utils';
 import { describe, expect, test } from 'bun:test';
 
-const value = (valueType: Quota_ValueType, v: number): Quota_Value => ({ valueType, value: v }) as Quota_Value;
+const value = (valueType: Quota_ValueType, v: number): Quota_Value =>
+  create(Quota_ValueSchema, { valueType, value: v });
 
 describe('quotas-list-utils', () => {
   describe('mapEntityTypeToDisplay', () => {
@@ -102,39 +109,39 @@ describe('quotas-list-utils', () => {
 
   describe('searchToSorting', () => {
     test('returns empty sorting when no field is set', () => {
-      expect(searchToSorting(undefined, undefined)).toEqual([]);
+      expect(searchToSorting(undefined, undefined)).toStrictEqual([]);
     });
 
     test('maps an ascending field', () => {
-      expect(searchToSorting('entityName', 'asc')).toEqual([{ id: 'entityName', desc: false }]);
+      expect(searchToSorting('entityName', 'asc')).toStrictEqual([{ id: 'entityName', desc: false }]);
     });
 
     test('maps a descending field', () => {
-      expect(searchToSorting('producerRate', 'desc')).toEqual([{ id: 'producerRate', desc: true }]);
+      expect(searchToSorting('producerRate', 'desc')).toStrictEqual([{ id: 'producerRate', desc: true }]);
     });
 
     test('defaults to ascending when direction is omitted', () => {
-      expect(searchToSorting('entityType', undefined)).toEqual([{ id: 'entityType', desc: false }]);
+      expect(searchToSorting('entityType', undefined)).toStrictEqual([{ id: 'entityType', desc: false }]);
     });
   });
 
   describe('sortingToSearch', () => {
     test('returns undefined fields for empty sorting', () => {
-      expect(sortingToSearch([])).toEqual({ sortField: undefined, sortDirection: undefined });
+      expect(sortingToSearch([])).toStrictEqual({ sortField: undefined, sortDirection: undefined });
     });
 
     test('maps a descending sort', () => {
       const sorting: SortingState = [{ id: 'consumerRate', desc: true }];
-      expect(sortingToSearch(sorting)).toEqual({ sortField: 'consumerRate', sortDirection: 'desc' });
+      expect(sortingToSearch(sorting)).toStrictEqual({ sortField: 'consumerRate', sortDirection: 'desc' });
     });
 
     test('maps an ascending sort', () => {
       const sorting: SortingState = [{ id: 'entityName', desc: false }];
-      expect(sortingToSearch(sorting)).toEqual({ sortField: 'entityName', sortDirection: 'asc' });
+      expect(sortingToSearch(sorting)).toStrictEqual({ sortField: 'entityName', sortDirection: 'asc' });
     });
 
     test('round-trips with searchToSorting', () => {
-      expect(sortingToSearch(searchToSorting('producerRate', 'desc'))).toEqual({
+      expect(sortingToSearch(searchToSorting('producerRate', 'desc'))).toStrictEqual({
         sortField: 'producerRate',
         sortDirection: 'desc',
       });

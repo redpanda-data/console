@@ -19,6 +19,7 @@ import { Link } from 'components/redpanda-ui/components/typography';
 import { useEffect, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
+import { isObject } from 'utils/type-guards';
 
 import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './connector-box-card';
 import { ConfigPage } from './dynamic-ui/components';
@@ -29,22 +30,28 @@ import {
   ConnectClusterStore,
   type ConnectorPropertiesStore,
   ConnectorValidationError,
+  type Secret,
 } from '../../../state/connect/state';
-import { type ClusterConnectors, type ConnectorValidationResult, DataType } from '../../../state/rest-interfaces';
 import { uiState } from '../../../state/ui-state';
+import { type ClusterConnectors, type ConnectorValidationResult, DataType } from '../../../types/kafka-connect';
+import { arraySum } from '../../../utils/array-utils';
+import { isNonEmptyString } from '../../../utils/string-utils';
 import { containsIgnoreCase, delay, TimeSince } from '../../../utils/utils';
 import { HiddenRadioList } from '../../misc/hidden-radio-list';
-import KowlEditor from '../../misc/kowl-editor';
-import PageContent from '../../misc/page-content';
+import { KowlEditor } from '../../misc/kowl-editor';
+import { PageContent } from '../../misc/page-content';
 import { SearchInput } from '../../misc/search-input';
 import { SingleSelect } from '../../misc/select';
-import Tabs from '../../misc/tabs/tabs';
+import { Tabs } from '../../misc/tabs/tabs';
 import { Wizard, type WizardStep } from '../../misc/wizard';
 import { PageComponent, type PageInitHelper } from '../page';
 
 type PluginTabFilter = 'all' | 'export' | 'import';
-type ConnectorPluginEntry = { class: string; type: 'sink' | 'source'; version?: string | undefined };
-
+type ConnectorPluginEntry = {
+  class: string;
+  type: 'sink' | 'source';
+  version?: string | undefined;
+};
 function matchesTabFilter(plugin: ConnectorPluginEntry, tabFilter: PluginTabFilter): boolean {
   if (tabFilter === 'export') {
     return plugin.type !== 'source'; // not an "export" type
@@ -59,10 +66,10 @@ function matchesTextFilter(plugin: ConnectorPluginEntry, meta: ConnectorMetadata
   if (!textFilter) {
     return true;
   }
-  return Boolean(
-    (meta.friendlyName && containsIgnoreCase(meta.friendlyName, textFilter)) ||
-      (plugin.class && containsIgnoreCase(plugin.class, textFilter)) ||
-      (meta.description && containsIgnoreCase(meta.description, textFilter))
+  return (
+    (isNonEmptyString(meta.friendlyName) && containsIgnoreCase(meta.friendlyName, textFilter)) ||
+    (plugin.class && containsIgnoreCase(plugin.class, textFilter)) ||
+    (isNonEmptyString(meta.description) && containsIgnoreCase(meta.description, textFilter))
   );
 }
 
@@ -90,9 +97,9 @@ const ConnectorType = (p: {
   const [textFilter, setTextFilter] = useState('');
   const [tabFilter, setTabFilter] = useState<PluginTabFilter>('all');
 
-  let filteredPlugins = [] as ConnectorPluginEntry[];
+  let filteredPlugins: ConnectorPluginEntry[] = [];
 
-  if (p.activeCluster) {
+  if (isNonEmptyString(p.activeCluster)) {
     const allPlugins = api.connectAdditionalClusterInfo.get(p.activeCluster)?.plugins;
 
     filteredPlugins = allPlugins?.filter((plugin) => matchesPluginFilters(plugin, tabFilter, textFilter)) || [];
@@ -112,7 +119,7 @@ const ConnectorType = (p: {
           <h2>Installation Target</h2>
           <div className="max-w-[400px]">
             <SingleSelect<string | undefined>
-              onChange={p.onActiveClusterChange as (val: string | null | undefined) => void}
+              onChange={(value) => p.onActiveClusterChange(value ?? null)}
               options={p.connectClusters.map(({ clusterName }) => ({
                 value: clusterName,
                 label: clusterName,
@@ -146,7 +153,10 @@ const ConnectorType = (p: {
           {/* Filter-only tabs: the panels are empty and the card grid below reacts to the key. */}
           <Tabs
             onChange={(key) => {
-              setTabFilter(key as (typeof tabFilterModes)[number]);
+              const selected = tabFilterModes.find((mode) => mode === key);
+              if (selected) {
+                setTabFilter(selected);
+              }
             }}
             tabs={[
               { key: 'all', title: 'All', content: null },
@@ -171,8 +181,9 @@ const ConnectorType = (p: {
     </>
   );
 };
-
-class CreateConnector extends PageComponent<{ clusterName: string }> {
+class CreateConnector extends PageComponent<{
+  clusterName: string;
+}> {
   initPage(p: PageInitHelper) {
     const clusterName = decodeURIComponent(this.props.clusterName);
     p.title = 'Create Connector';
@@ -253,7 +264,8 @@ type WizardControls = ReturnType<typeof useConnectorWizardState>;
 
 function parseConfigText(text: string): ConfigObject | null {
   try {
-    return JSON.parse(text);
+    const parsed: unknown = JSON.parse(text);
+    return isObject(parsed) ? parsed : null;
   } catch {
     return null; // keep null
   }
@@ -306,11 +318,18 @@ function applyEditedConfig(
   connectorRef: ConnectorPropertiesStore | undefined,
   parsedUpdatedConfig: ConfigObject | null
 ) {
-  const configObj = connectorRef?.getConfigObject() as ConfigObject | undefined;
+  const configObj = connectorRef?.getConfigObject();
   const isShallowEqual =
     parsedUpdatedConfig !== null && configObj !== undefined && isShallowEqualConfig(parsedUpdatedConfig, configObj);
   if (parsedUpdatedConfig !== null && !isShallowEqual) {
     connectorRef?.updateProperties(parsedUpdatedConfig);
+  }
+}
+
+// The JSON view may provide a value without having populated the secret field.
+function fillMissingSecretValue(secret: Secret, valueFromJson: unknown) {
+  if (!secret.value && Boolean(valueFromJson)) {
+    secret.value = String(valueFromJson);
   }
 }
 
@@ -324,18 +343,12 @@ function syncSecretsFromJson(
   }
 
   for (const p of connectorRef.propsByName.values()) {
-    if (p.entry.definition.type === DataType.Password) {
-      const secret = secrets.getSecret(p.name);
-      // secret.extractSecretId(property.value);
-      secret.extractSecretId(p.value as string);
-
-      // In case the secret has not been populated (because the user only used the JSON view to modify the connector),
-      // we need to copy the values from the json into the secrets
-      const valueFromJson = parsedUpdatedConfig?.[p.name];
-      if (!secret.value && valueFromJson) {
-        secret.value = String(valueFromJson);
-      }
+    if (p.entry.definition.type !== DataType.Password) {
+      continue;
     }
+    const secret = secrets.getSecret(p.name);
+    secret.extractSecretId(typeof p.value === 'string' ? p.value : '');
+    fillMissingSecretValue(secret, parsedUpdatedConfig?.[p.name]);
   }
 }
 
@@ -347,7 +360,7 @@ function prepareConnectorConfig(
   const connectorRef = connectClusterStore.getConnector(pluginClass, null, undefined);
   applyEditedConfig(connectorRef, parsedUpdatedConfig);
   syncSecretsFromJson(connectorRef, parsedUpdatedConfig);
-  return connectorRef?.getConfigObject() as ConfigObject | undefined;
+  return connectorRef?.getConfigObject();
 }
 
 // The validation result when the config has errors to show, otherwise null.
@@ -358,10 +371,10 @@ async function findValidationErrors(
 ): Promise<ConnectorValidationResult | null> {
   try {
     const validationResult = await api.validateConnectorConfig(activeCluster, pluginClass, propertiesObject ?? {});
-    const errorCount = validationResult.configs.sum((x) => x.value.errors.length);
+    const errorCount = arraySum(validationResult.configs, (x) => x.value.errors.length);
     return errorCount > 0 ? validationResult : null;
-  } catch (e) {
-    throw new ConnectorValidationError(String(e));
+  } catch (error) {
+    throw new ConnectorValidationError(String(error), { cause: error });
   }
 }
 
@@ -369,23 +382,24 @@ const CONNECTOR_SCAN_MAX_TIME = 10_000;
 const CONNECTOR_SCAN_INTERVAL = 100;
 
 // Polls until the new connector appears; false when it did not show up in time. Each poll waits for
-// the previous refresh to land, so the scans recurse one after another rather than overlap.
+// the previous refresh to land, so scans run sequentially rather than overlap.
 async function waitForConnector(
   connectClusterStore: ConnectClusterStore,
   connectorName: string,
   timer = new TimeSince()
 ): Promise<boolean> {
-  if (timer.value > CONNECTOR_SCAN_MAX_TIME) {
-    return false; // Abort, tried to wait for too long
+  while (true) {
+    if (timer.value > CONNECTOR_SCAN_MAX_TIME) {
+      return false;
+    }
+    // biome-ignore lint/performance/noAwaitInLoops: Each probe must finish before checking the refreshed connector state.
+    await connectClusterStore.refreshData(true);
+    if (connectClusterStore.getConnectorState(connectorName)) {
+      return true;
+    }
+    // Back off between dependent readiness probes; never overlap them.
+    await delay(CONNECTOR_SCAN_INTERVAL);
   }
-
-  await connectClusterStore.refreshData(true);
-  if (connectClusterStore.getConnectorState(connectorName)) {
-    return true;
-  }
-
-  await delay(CONNECTOR_SCAN_INTERVAL);
-  return waitForConnector(connectClusterStore, connectorName, timer);
 }
 
 type ReviewSubmission = {
@@ -413,7 +427,8 @@ async function createAndOpenConnector(submission: ReviewSubmission, connectorNam
 }
 
 function reportCreationFailure(e: unknown, wizard: WizardControls) {
-  const error = e as { name?: string; message?: string };
+  const error = isObject(e) ? e : undefined;
+  const message = typeof error?.message === 'string' ? error.message : String(e);
   switch (error?.name) {
     case 'ConnectorValidationError':
       wizard.setValidationFailure(error?.message);
@@ -421,8 +436,9 @@ function reportCreationFailure(e: unknown, wizard: WizardControls) {
     case 'ConnectorCreationError':
       wizard.setCreationFailure(error?.message);
       break;
+    case undefined:
     default:
-      wizard.setGenericFailure(new Error(error?.message));
+      wizard.setGenericFailure(new Error(message));
   }
 }
 
@@ -432,9 +448,9 @@ async function createConnectorWithProgress(submission: ReviewSubmission, connect
     await createAndOpenConnector(submission, connectorName);
     submission.setCreatingModalOpen(false);
     return true;
-  } catch (e: unknown) {
+  } catch (error: unknown) {
     submission.setCreatingModalOpen(false);
-    reportCreationFailure(e, submission.wizard);
+    reportCreationFailure(error, submission.wizard);
     return false;
   }
 }
@@ -449,10 +465,15 @@ async function validateAndCreateConnector(submission: ReviewSubmission): Promise
     return false;
   }
 
-  return await createConnectorWithProgress(submission, propertiesObject?.name as string);
+  const name = propertiesObject?.name;
+  if (typeof name !== 'string') {
+    throw new Error('Connector name is required');
+  }
+  return await createConnectorWithProgress(submission, name);
 }
-
-async function submitReview(submission: ReviewSubmission): Promise<{ conditionMet: boolean }> {
+async function submitReview(submission: ReviewSubmission): Promise<{
+  conditionMet: boolean;
+}> {
   submission.wizard.clearErrors();
   submission.wizard.setLoading(true);
   const conditionMet = await validateAndCreateConnector(submission);
@@ -607,7 +628,7 @@ const ConnectorWizard = ({ connectClusters, activeCluster }: ConnectorWizardProp
       />
 
       {/* Not closeable while the connector is being created: no onOpenChange handler, and the
-          close X has to be suppressed or it would render and do nothing. */}
+              close X has to be suppressed or it would render and do nothing. */}
       <Dialog open={isCreatingModalOpen}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
@@ -632,7 +653,7 @@ function CreateConnectorHeading(p: { plugin: ConnectorPlugin | null }) {
   const displayName = getConnectorFriendlyName(p.plugin.class);
 
   return (
-    <h1 className="flex items-center gap-[0.5ch] pb-8 text-heading-xl">
+    <h1 className="flex items-center gap-1 pb-8 text-heading-xl">
       Create Connector:
       {p.plugin.type === 'source' ? 'import data from ' : 'export data to '}
       {displayName}
@@ -687,7 +708,7 @@ function Review({
             </div>
           )}
 
-          {validationFailure ? (
+          {Boolean(validationFailure) ? (
             <div className="my-4">
               <Alert icon={<AlertIcon />} variant="destructive">
                 <AlertTitle>Validation attempt failed</AlertTitle>
@@ -696,7 +717,7 @@ function Review({
             </div>
           ) : null}
 
-          {creationFailure ? (
+          {Boolean(creationFailure) ? (
             <div className="my-4">
               <Alert icon={<AlertIcon />} variant="destructive">
                 <AlertTitle>Creation attempt failed</AlertTitle>
@@ -715,7 +736,7 @@ function Review({
           ) : null}
 
           <h2 className="mt-4 text-heading-lg">Connector Properties</h2>
-          <div style={{ margin: '0 auto 1.5rem' }}>
+          <div className="mx-auto mt-0 mb-6">
             <KowlEditor
               height="600px"
               language="json"
@@ -773,4 +794,4 @@ function ValidationDisplay({ validationResult }: { validationResult: ConnectorVa
   );
 }
 
-export default CreateConnector;
+export { CreateConnector };

@@ -11,8 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import ReassignPartitions from '../components/pages/reassign-partitions/reassign-partitions';
-
+import { ReassignPartitions } from '../components/pages/reassign-partitions/reassign-partitions';
 export const Route = createFileRoute('/reassign-partitions')({
   staticData: {
     title: 'Reassign Partitions',

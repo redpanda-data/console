@@ -10,8 +10,8 @@
  */
 
 import { RefreshIcon } from 'components/icons';
+import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Button } from 'components/redpanda-ui/components/button';
-import { cn } from 'components/redpanda-ui/lib/utils';
 
 type RefreshButtonProps = {
   onClick: () => void;
@@ -33,7 +33,7 @@ export function RefreshButton({ onClick, loading = false, disabled, label = 'Ref
       size="icon"
       variant="ghost"
     >
-      <RefreshIcon className={cn('size-4', loading && 'animate-spin')} />
+      <TonedIcon className="size-4" icon={RefreshIcon} spin={loading} />
     </Button>
   );
 }

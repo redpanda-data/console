@@ -14,9 +14,8 @@ import { Link } from 'components/redpanda-ui/components/typography';
 import type { FC } from 'react';
 import { docsLinks } from 'utils/docs-links';
 
-import PageContent from '../../misc/page-content';
-import Section from '../../misc/section';
-
+import { PageContent } from '../../misc/page-content';
+import { Section } from '../../misc/section';
 export const SchemaNotConfiguredPage: FC = () => (
   <PageContent>
     <Section>

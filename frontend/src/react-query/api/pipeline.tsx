@@ -38,6 +38,8 @@ import { type MessageInit, type QueryOptions, SHORT_POLLING_INTERVAL } from 'rea
 import { useInfiniteQueryWithAllPages } from 'react-query/use-infinite-query-with-all-pages';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import { isNonzeroNumber } from '../../utils/number-utils';
+
 export const REDPANDA_CONNECT_LOGS_TOPIC = '__redpanda.connect.logs';
 export const MAX_REDPANDA_CONNECT_LOGS_RESULT_COUNT = 1000;
 export const REDPANDA_CONNECT_LOGS_TIME_WINDOW_HOURS = 5;
@@ -66,7 +68,7 @@ export const useGetPipelineQuery = (
       ((query) => {
         const state = query?.state?.data?.response?.pipeline?.state;
         // Poll every 2 seconds when pipeline is in transitional state (STARTING or STOPPING)
-        const shouldPoll = state && transitionalStates.includes(state);
+        const shouldPoll = isNonzeroNumber(state) && transitionalStates.includes(state);
         return shouldPoll ? SHORT_POLLING_INTERVAL : false;
       }),
     refetchIntervalInBackground: options?.refetchIntervalInBackground ?? false,
@@ -93,30 +95,34 @@ export const useListPipelinesQuery = (
   );
 
   const listPipelinesRequest = useMemo(
-    () =>
-      create(ListPipelinesRequestSchema, {
-        request: listPipelinesRequestDataPlane,
-      }) as ListPipelinesRequest & Required<Pick<ListPipelinesRequest, 'request'>>,
+    () => ({
+      ...create(ListPipelinesRequestSchema),
+      request: listPipelinesRequestDataPlane,
+    }),
     [listPipelinesRequestDataPlane]
   );
 
   const listPipelinesResult = useInfiniteQueryWithAllPages(listPipelines, listPipelinesRequest, {
     enabled: options?.enabled,
-    refetchInterval: options?.enableSmartPolling
-      ? (query) => {
-          const pages = query?.state?.data?.pages;
-          const hasTransitional = pages?.some((page) =>
-            page?.response?.pipelines?.some((p) => transitionalStates.includes(p?.state))
-          );
-          return hasTransitional ? SHORT_POLLING_INTERVAL : false;
-        }
-      : false,
+    refetchInterval:
+      options?.enableSmartPolling === true
+        ? (query) => {
+            const pages = query?.state?.data?.pages;
+            const hasTransitional = pages?.some(
+              (page) => page?.response?.pipelines?.some((p) => transitionalStates.includes(p?.state)) === true
+            );
+            return hasTransitional === true ? SHORT_POLLING_INTERVAL : false;
+          }
+        : false,
     getNextPageParam: (lastPage, _allPages, _lastPageParam, allPageParams) => {
       const nextPageToken = lastPage?.response?.nextPageToken;
       // Any token already requested, not just the last one: keyset tokens only move forward, so a
       // repeat means the server sent us backwards (A→A, or a longer A→B→A cycle) and the drain would
       // never end.
-      if (!nextPageToken || allPageParams.some((param) => param?.pageToken === nextPageToken)) {
+      if (
+        !(nextPageToken !== null && nextPageToken !== undefined && nextPageToken !== '') ||
+        allPageParams.some((param) => param?.pageToken === nextPageToken)
+      ) {
         return;
       }
       return create(ListPipelinesRequestSchemaDataPlane, {
@@ -136,7 +142,8 @@ export const useListPipelinesQuery = (
     }
     const byId = new Map<string, Pipeline>();
     for (const page of pages) {
-      for (const pipeline of page?.response?.pipelines ?? []) {
+      const pagePipelines = page?.response?.pipelines ?? [];
+      for (const pipeline of pagePipelines) {
         byId.set(pipeline.id, pipeline);
       }
     }

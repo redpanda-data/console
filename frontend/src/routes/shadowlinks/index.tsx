@@ -9,15 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { create } from '@bufbuild/protobuf';
-import { ConnectError } from '@connectrpc/connect';
-import { createQueryOptions } from '@connectrpc/connect-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ShieldIcon } from 'components/icons';
 import { ShadowLinkListPage } from 'components/pages/shadowlinks/list/shadowlink-list-page';
-import { ListShadowLinksRequestSchema } from 'protogen/redpanda/api/console/v1alpha1/shadowlink_pb';
-import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { z } from 'zod';
+
+import { loadShadowlinks } from '../../components/pages/shadowlinks/list/load-shadowlinks';
 
 const searchSchema = z.object({
   tab: z.enum(['links', 'source']).optional().catch(undefined),
@@ -35,19 +32,6 @@ export const Route = createFileRoute('/shadowlinks/')({
     icon: ShieldIcon,
   },
   validateSearch: searchSchema,
-  loader: async ({ context: { queryClient, dataplaneTransport } }) => {
-    try {
-      await queryClient.ensureQueryData(
-        createQueryOptions(listShadowLinks, create(ListShadowLinksRequestSchema, {}), { transport: dataplaneTransport })
-      );
-    } catch (error) {
-      if (error instanceof ConnectError) {
-        // The page renders its own error states for API errors; rethrowing
-        // would fail the route into the raw error boundary.
-        return;
-      }
-      throw error;
-    }
-  },
+  loader: ({ context }) => loadShadowlinks(context),
   component: ShadowLinkListPage,
 });

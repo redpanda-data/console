@@ -25,10 +25,14 @@ import { Label } from 'components/redpanda-ui/components/label';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { useState } from 'react';
 
-import { createFilterEntry, type FilterEntry } from '../../../../../state/ui';
-import FilterEditor from '../../Tab.Messages/editor';
+import type { FilterEntry } from '../../../../../state/ui';
+import { createFilterEntry } from '../../../../../types/topic-settings';
+import { FilterEditor } from '../../Tab.Messages/editor';
 
-const EXAMPLES: { code: string; note: string }[] = [
+const EXAMPLES: {
+  code: string;
+  note: string;
+}[] = [
   { code: 'value != null', note: 'skips records without value' },
   { code: "if (key == 'example') return true", note: "only messages whose key equals 'example' (after decoding)" },
   { code: 'value.version === 0', note: 'matches records whose value version is 0' },
@@ -122,13 +126,15 @@ export const JsFilterDialog = ({ filter, seedCode, seedName, onClose, onSave }: 
             <div className="flex flex-wrap gap-1.5">
               {EXAMPLES.map((example) => (
                 <ElementTooltip content={example.note} key={example.code}>
-                  <button
+                  <Button
+                    // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
                     className="rounded-md border bg-background px-2.5 py-1 font-mono text-xs whitespace-nowrap hover:bg-muted"
                     onClick={() => setDraft((prev) => ({ ...prev, code: example.code, transpiledCode: example.code }))}
                     type="button"
+                    variant="unstyled"
                   >
                     {example.code}
-                  </button>
+                  </Button>
                 </ElementTooltip>
               ))}
             </div>

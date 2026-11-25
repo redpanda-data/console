@@ -13,6 +13,7 @@ import { CardField } from 'components/redpanda-ui/components/card';
 import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import type { PrincipalFieldProps } from '../shared/acl-model';
 import { parsePrincipal } from '../shared/acl-model';
 
@@ -25,7 +26,7 @@ function LockedPrincipalField({ value, error, label = 'Principal' }: PrincipalFi
     <CardField>
       <FieldLabel htmlFor="principal">{label}</FieldLabel>
       <Input disabled id="principal" testId="shared-principal-input" value={parsePrincipal(value).name} />
-      {error && <FieldError>{error}</FieldError>}
+      {isNonEmptyString(error) && <FieldError>{error}</FieldError>}
     </CardField>
   );
 }

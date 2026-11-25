@@ -11,9 +11,9 @@
 
 import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { render, screen, within } from 'test-utils';
 
 import { DebugDialog } from './debug-dialog';
+import { render, screen, within } from '../../test-utils';
 
 const openConfigs = async () => {
   const user = userEvent.setup();
@@ -32,7 +32,7 @@ const sectionNames = () => screen.getAllByRole('region').map((s) => s.getAttribu
 describe('the DebugDialog — Connect configs', () => {
   test('lists the configs under a heading per group', async () => {
     await openConfigs();
-    expect(sectionNames()).toEqual(['Simple', 'Medium', 'Complex', 'Edge cases', 'Stop conditions', 'Invalid']);
+    expect(sectionNames()).toStrictEqual(['Simple', 'Medium', 'Complex', 'Edge cases', 'Stop conditions', 'Invalid']);
     // A stop-condition config lists under Stop conditions and keeps its other tag as a badge.
     const stops = screen.getByRole('region', { name: 'Stop conditions' });
     expect(within(stops).getByText('Stop conditions that never fire')).toBeInTheDocument();
@@ -42,11 +42,11 @@ describe('the DebugDialog — Connect configs', () => {
   test('narrows to one group, and filters by a secret name', async () => {
     const user = await openConfigs();
     await user.click(screen.getByRole('button', { name: 'Stops' }));
-    expect(sectionNames()).toEqual(['Stop conditions']);
+    expect(sectionNames()).toStrictEqual(['Stop conditions']);
 
     await user.click(screen.getByRole('button', { name: 'All' }));
     await user.type(screen.getByRole('textbox', { name: FILTER_CONFIGS_RE }), 'RESTART_INPUT');
-    expect(sectionNames()).toEqual(['Stop conditions']);
+    expect(sectionNames()).toStrictEqual(['Stop conditions']);
     expect(screen.getByText('Read-only stop conditions')).toBeInTheDocument();
   });
 

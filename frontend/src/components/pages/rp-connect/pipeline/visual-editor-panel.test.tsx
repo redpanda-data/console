@@ -1,11 +1,14 @@
+import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
+import { create } from '@bufbuild/protobuf';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { type ComponentList, ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { ComponentListSchema, ComponentStatus } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { type ReactNode, useState } from 'react';
 import { render, screen, waitForElementToBeRemoved } from 'test-utils';
 
 import { PipelineEditorProvider, usePipelineEditorStore } from './use-pipeline-editor-store';
 import { VisualEditorPanel } from './visual-editor-panel';
+import { isPresent } from '../../../../utils/type-guards';
 import { mockComponents } from '../utils/__fixtures__/component-schemas';
 
 // Surface the visual-editor callbacks as buttons so we can drive the panel
@@ -117,7 +120,11 @@ rs.mock('../onboarding/add-connector-dialog', () => ({
 
 function MockYamlEditor(props: { value?: string; onChange?: (v: string) => void }) {
   return (
-    <textarea data-testid="node-yaml" onChange={(e) => props.onChange?.(e.target.value)} value={props.value || ''} />
+    <textarea
+      data-testid="node-yaml"
+      onChange={(e) => props.onChange?.(e.target.value)}
+      value={(props.value ?? '') || ''}
+    />
   );
 }
 
@@ -157,8 +164,8 @@ const renderPanel = (overrides: Partial<Parameters<typeof VisualEditorPanel>[0]>
   const utils = render(
     <PipelineEditorProvider>
       <VisualEditorPanel
-        componentList={{} as ComponentList}
-        components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
+        componentList={create(ComponentListSchema, {})}
+        components={isPresent(mockComponents.memoryCache) ? [mockComponents.memoryCache] : []}
         mode="edit"
         onYamlChange={onYamlChange}
         yamlContent={sampleYaml}
@@ -188,8 +195,8 @@ function StatefulPanel({
   return (
     <PipelineEditorProvider>
       <VisualEditorPanel
-        componentList={{} as ComponentList}
-        components={mockComponents.memoryCache ? [mockComponents.memoryCache] : []}
+        componentList={create(ComponentListSchema, {})}
+        components={isPresent(mockComponents.memoryCache) ? [mockComponents.memoryCache] : []}
         mode="edit"
         onYamlChange={setYaml}
         yamlContent={yaml}
@@ -247,7 +254,7 @@ async function commitCacheTtl(user: User, value: string) {
 // Selects a node through its mock canvas button and waits for its inspector to open.
 async function openNodeInspector(user: User, buttonText: string) {
   await user.click(screen.getByText(buttonText));
-  await screen.findByTestId('node-yaml');
+  await findNodeYamlEditor();
 }
 
 // The mock select button keeps focus after the click, and canvas shortcuts are suppressed while a
@@ -290,7 +297,7 @@ describe('the VisualEditorPanel', () => {
       const user = userEvent.setup();
       renderPanel({ components: DEPRECATION_COMPONENTS, yamlContent: CACHE_YAML });
 
-      expect(JSON.parse(screen.getByTestId('flow-canvas').getAttribute('data-deprecations') ?? '[]')).toEqual([
+      expect(JSON.parse(screen.getByTestId('flow-canvas').getAttribute('data-deprecations') ?? '[]')).toStrictEqual([
         ['resource-cache_resources-0', [MEMORY_DEPRECATION]],
       ]);
 
@@ -316,7 +323,7 @@ describe('the VisualEditorPanel', () => {
     async function editRawYaml(user: User, yaml: string, panel = <StatefulPanel initialYaml={sampleYaml} />) {
       render(panel);
       await openNodeInspector(user, 'select-input');
-      const editor = screen.getByTestId('node-yaml');
+      const editor = await findNodeYamlEditor();
       await retype(user, editor, yaml);
       return editor;
     }
@@ -354,7 +361,7 @@ describe('the VisualEditorPanel', () => {
       const panel = (
         <StatefulPanel externalYaml={sampleYaml.replace("'root = {}'", 'root = 3')} initialYaml={sampleYaml} />
       );
-      const editor = (await editRawYaml(user, 'generate:\n  mapping: root = 1 # note', panel)) as HTMLTextAreaElement;
+      const editor = await editRawYaml(user, 'generate:\n  mapping: root = 1 # note', panel);
       await user.keyboard('{Meta>}{Enter}{/Meta}');
       expectCanvasYaml('root = 1');
       return editor;
@@ -392,7 +399,7 @@ describe('the VisualEditorPanel', () => {
 
       await user.click(screen.getByText('select-input'));
 
-      const editor = (await screen.findByTestId('node-yaml')) as HTMLTextAreaElement;
+      const editor = await findNodeYamlEditor();
       expect(editor.value).toContain('generate');
 
       await user.clear(editor);
@@ -529,14 +536,16 @@ describe('the VisualEditorPanel', () => {
 
       // Clicking a member navigates the inspector to that output's own config editor.
       await user.click(screen.getByText('gcp_pubsub'));
-      const editor = (await screen.findByTestId('node-yaml')) as HTMLTextAreaElement;
+      const editor = await findNodeYamlEditor();
       expect(editor.value).toContain('project: my-project');
     });
 
     test('surfaces a lint problem for the selected node in the inspector', async () => {
       const user = userEvent.setup();
       // Line 2 (`generate:`) is inside the input node's YAML range.
-      renderPanel({ lintHints: [{ line: 2, column: 1, hint: 'invalid input config', lintType: 'config' }] as never });
+      renderPanel({
+        lintHints: [create(LintHintSchema, { line: 2, column: 1, hint: 'invalid input config', lintType: 'config' })],
+      });
 
       await user.click(screen.getByText('select-input'));
 
@@ -552,9 +561,11 @@ describe('the VisualEditorPanel', () => {
       render(
         <PipelineEditorProvider>
           <VisualEditorPanel
-            componentList={{} as ComponentList}
-            components={mockComponents.generateInput ? [mockComponents.generateInput] : []}
-            lintHints={[{ line: 2, column: 1, hint: 'field mapping is required', lintType: 'config' }] as never}
+            componentList={create(ComponentListSchema, {})}
+            components={isPresent(mockComponents.generateInput) ? [mockComponents.generateInput] : []}
+            lintHints={[
+              create(LintHintSchema, { line: 2, column: 1, hint: 'field mapping is required', lintType: 'config' }),
+            ]}
             mode="view"
             onYamlChange={rs.fn()}
             yamlContent={sampleYaml}
@@ -569,7 +580,9 @@ describe('the VisualEditorPanel', () => {
     test('the problems chip lists lint hints and clicking one selects the offending node', async () => {
       const user = userEvent.setup();
       // Line 2 (`generate:`) maps to the input node.
-      renderPanel({ lintHints: [{ line: 2, column: 1, hint: 'invalid input config', lintType: 'config' }] as never });
+      renderPanel({
+        lintHints: [create(LintHintSchema, { line: 2, column: 1, hint: 'invalid input config', lintType: 'config' })],
+      });
 
       await user.click(screen.getByTestId('pipeline-problems-chip'));
       const list = screen.getByTestId('pipeline-problems-list');
@@ -577,7 +590,7 @@ describe('the VisualEditorPanel', () => {
 
       // Clicking the problem selects the node — its config opens in the inspector.
       await user.click(screen.getByText('invalid input config'));
-      expect(((await screen.findByTestId('node-yaml')) as HTMLTextAreaElement).value).toContain('generate');
+      expect((await findNodeYamlEditor()).value).toContain('generate');
       expect(screen.queryByTestId('pipeline-problems-list')).not.toBeInTheDocument();
     });
 
@@ -598,7 +611,7 @@ output:
       // Line 7 is the case's malformed `check` condition.
       renderPanel({
         yamlContent: switchYaml,
-        lintHints: [{ line: 7, column: 1, hint: 'expected end quote', lintType: 'config' }] as never,
+        lintHints: [create(LintHintSchema, { line: 7, column: 1, hint: 'expected end quote', lintType: 'config' })],
       });
 
       await user.click(screen.getByTestId('pipeline-problems-chip'));
@@ -606,7 +619,7 @@ output:
 
       // The whole entry node opens in the inspector — not the condition-only editor ("Condition (check)"
       // is unique to it). The condition stays editable via the embedded "Routing condition" section.
-      const editor = (await screen.findByTestId('node-yaml')) as HTMLTextAreaElement;
+      const editor = await findNodeYamlEditor();
       expect(editor.value).toContain('message: hi');
       expect(screen.queryByText('Condition (check)')).not.toBeInTheDocument();
       expect(screen.getByText('Routing condition')).toBeInTheDocument();
@@ -688,7 +701,7 @@ output:
       // Edit targets are positional, so after a reorder `proc-0` resolves to a different component —
       // the inspector must close rather than silently show (and edit) the wrong node.
       const panelProps = {
-        componentList: {} as ComponentList,
+        componentList: create(ComponentListSchema, {}),
         components: [],
         mode: 'edit' as const,
         onYamlChange: rs.fn(),
@@ -700,7 +713,7 @@ output:
       );
 
       await user.click(screen.getByText('select-proc0'));
-      expect(((await screen.findByTestId('node-yaml')) as HTMLTextAreaElement).value).toContain('message: hi');
+      expect((await findNodeYamlEditor()).value).toContain('message: hi');
 
       // An in-place edit keeps proc-0 a `log`, so the selection survives.
       rerender(
@@ -727,7 +740,7 @@ output:
 
       await user.click(screen.getByText('select-input'));
       // The component is shown (read-only), but there's no way to apply or remove it.
-      await screen.findByTestId('node-yaml');
+      await findNodeYamlEditor();
       expect(screen.queryByRole('button', { name: 'Apply changes' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
       expect(onYamlChange).not.toHaveBeenCalled();
@@ -752,13 +765,13 @@ function StopHarness({ initialYaml = sampleYaml, swapTo }: { initialYaml?: strin
   const [yaml, setYaml] = useState(initialYaml);
   return (
     <PipelineEditorProvider>
-      {swapTo ? (
+      {swapTo !== null && swapTo !== undefined && swapTo !== '' ? (
         <button onClick={() => setYaml(swapTo)} type="button">
           swap-yaml
         </button>
       ) : null}
       <VisualEditorPanel
-        componentList={{} as ComponentList}
+        componentList={create(ComponentListSchema, {})}
         components={[]}
         mode="edit"
         onYamlChange={setYaml}
@@ -907,3 +920,12 @@ describe('the VisualEditorPanel stop conditions and pending inspector edits', ()
     expect(canvasYaml()).toContain('mapping: root = 42');
   });
 });
+
+/** Resolve the mock's actual input control, rather than asserting an arbitrary HTMLElement. */
+async function findNodeYamlEditor() {
+  const editor = await screen.findByTestId('node-yaml');
+  if (!(editor instanceof HTMLTextAreaElement)) {
+    throw new TypeError('The YAML editor must be a textarea');
+  }
+  return editor;
+}

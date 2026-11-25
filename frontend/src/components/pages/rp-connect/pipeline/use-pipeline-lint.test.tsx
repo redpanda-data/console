@@ -12,7 +12,7 @@
 import { LintHintSchema } from '@buf/redpandadata_common.bufbuild_es/redpanda/api/common/v1/linthint_pb';
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { renderHook } from '@testing-library/react';
 
 import { usePipelineLint } from './use-pipeline-lint';
@@ -20,7 +20,7 @@ import { usePipelineLint } from './use-pipeline-lint';
 // Deterministic: skip the 500ms debounce so the hook lints the passed YAML immediately.
 rs.mock('hooks/use-debounced-value', () => ({ useDebouncedValue: (v: string) => v }));
 
-const mockUseLintQuery = rs.fn();
+const mockUseLintQuery = rs.fn<(...args: unknown[]) => ReturnType<typeof lintQueryResult>>();
 rs.mock('react-query/api/connect', () => ({
   useLintPipelineConfigQuery: (...args: unknown[]) => mockUseLintQuery(...args),
 }));
@@ -28,7 +28,9 @@ rs.mock('react-query/api/connect', () => ({
 const VALID_YAML = 'input:\n  generate: {}\noutput:\n  drop: {}';
 const SYNTAX_ERROR_YAML = 'input: [unclosed';
 
-const lintQueryResult = (overrides: Partial<{ data: unknown; isError: boolean; error: unknown }>) => ({
+const lintQueryResult = (
+  overrides: Partial<{ data: unknown; isError: boolean; error: unknown; isPending: boolean }>
+) => ({
   data: undefined,
   isPending: false,
   isError: false,
@@ -43,13 +45,13 @@ describe('usePipelineLint', () => {
     mockUseLintQuery.mockReset();
   });
 
-  it('passes through live server-lint hints for valid YAML', () => {
+  test('passes through live server-lint hints for valid YAML', () => {
     mockUseLintQuery.mockReturnValue(lintQueryResult({ data: { lintHints: [hint('missing field')] } }));
     const { result } = renderHook(() => usePipelineLint(VALID_YAML, {}, true));
-    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toEqual(['missing field']);
+    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toStrictEqual(['missing field']);
   });
 
-  it('surfaces local YAML syntax errors, superseding save-error hints for the same broken doc', () => {
+  test('surfaces local YAML syntax errors, superseding save-error hints for the same broken doc', () => {
     mockUseLintQuery.mockReturnValue(lintQueryResult({}));
     const saveError = {
       save0: create(LintHintSchema, { line: 0, column: 0, hint: 'server syntax error', lintType: 'error' }),
@@ -61,16 +63,16 @@ describe('usePipelineLint', () => {
     expect(hints.every((h) => h.hint !== 'server syntax error')).toBe(true);
   });
 
-  it('adds the stop conditions the server lint accepts but Connect refuses at start', () => {
+  test('adds the stop conditions the server lint accepts but Connect refuses at start', () => {
     mockUseLintQuery.mockReturnValue(lintQueryResult({ data: { lintHints: [] } }));
     const yaml = 'input:\n  read_until:\n    input:\n      kafka: {}\noutput:\n  drop: {}';
     const { result } = renderHook(() => usePipelineLint(yaml, {}, true));
-    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toEqual([
+    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toStrictEqual([
       'read_until needs a check or an idle_timeout to know when to stop.',
     ]);
   });
 
-  it('surfaces a lint RPC that rejected the config (invalid_argument)', () => {
+  test('surfaces a lint RPC that rejected the config (invalid_argument)', () => {
     mockUseLintQuery.mockReturnValue(
       lintQueryResult({ isError: true, error: new ConnectError('bad config', Code.InvalidArgument) })
     );
@@ -78,35 +80,37 @@ describe('usePipelineLint', () => {
     expect(Object.values(result.current.lintHints).some((h) => h.hint.includes('bad config'))).toBe(true);
   });
 
-  it('ignores a transient lint RPC failure so it does not fabricate a config error', () => {
+  test('ignores a transient lint RPC failure so it does not fabricate a config error', () => {
     mockUseLintQuery.mockReturnValue(
       lintQueryResult({ isError: true, error: new ConnectError('service down', Code.Unavailable) })
     );
     const { result } = renderHook(() => usePipelineLint(VALID_YAML, {}, true));
-    expect(result.current.lintHints).toEqual({});
+    expect(result.current.lintHints).toStrictEqual({});
   });
 
-  it('does not run client-side lint when disabled (view mode)', () => {
+  test('does not run client-side lint when disabled (view mode)', () => {
     mockUseLintQuery.mockReturnValue(lintQueryResult({}));
     const { result } = renderHook(() => usePipelineLint(SYNTAX_ERROR_YAML, {}, false));
-    expect(result.current.lintHints).toEqual({});
+    expect(result.current.lintHints).toStrictEqual({});
   });
 
-  it('skips the server lint for blank content instead of surfacing "value is required"', () => {
+  test('skips the server lint for blank content instead of surfacing "value is required"', () => {
     // A disabled query stays isPending forever — the hook must not leak that as a lint spinner.
     mockUseLintQuery.mockReturnValue(lintQueryResult({ isPending: true }));
     for (const blank of ['', '   \n\t']) {
       const { result } = renderHook(() => usePipelineLint(blank, {}, true));
       expect(mockUseLintQuery).toHaveBeenLastCalledWith(blank, { enabled: false });
-      expect(result.current.lintHints).toEqual({});
+      expect(result.current.lintHints).toStrictEqual({});
       expect(result.current.isLintPending).toBe(false);
     }
   });
 
-  it('still surfaces save-error hints on blank content (explicit save is real feedback)', () => {
+  test('still surfaces save-error hints on blank content (explicit save is real feedback)', () => {
     mockUseLintQuery.mockReturnValue(lintQueryResult({ isPending: true }));
     const saveError = { save0: hint('config_yaml: value is required') };
     const { result } = renderHook(() => usePipelineLint('', saveError, true));
-    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toEqual(['config_yaml: value is required']);
+    expect(Object.values(result.current.lintHints).map((h) => h.hint)).toStrictEqual([
+      'config_yaml: value is required',
+    ]);
   });
 });

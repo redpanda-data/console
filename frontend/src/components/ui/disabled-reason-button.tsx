@@ -40,7 +40,7 @@ export const DisabledReasonButton = ({
   focusableWhenDisabled = false,
   className,
 }: DisabledReasonButtonProps) => {
-  if (!reason) {
+  if (reason === undefined || reason === '') {
     return (
       <Button className={className} data-testid={testId} onClick={onClick} size={size} variant={variant}>
         {children}
@@ -59,21 +59,13 @@ export const DisabledReasonButton = ({
         className
       )}
       data-testid={testId}
-      // biome-ignore lint/a11y/noNoninteractiveTabindex: the only way for a keyboard to reach why the control is disabled
       tabIndex={focusableWhenDisabled ? 0 : undefined}
     >
       {children}
       {focusableWhenDisabled ? <span className="sr-only">{reason}</span> : null}
     </span>
   ) : (
-    <Button
-      aria-disabled
-      className={cn('cursor-not-allowed opacity-50', className)}
-      data-testid={testId}
-      onClick={(e) => e.preventDefault()}
-      size={size}
-      variant={variant}
-    >
+    <Button className={className} data-testid={testId} disabled focusableWhenDisabled size={size} variant={variant}>
       {children}
     </Button>
   );

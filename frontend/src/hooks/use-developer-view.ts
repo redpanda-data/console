@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 
-const IS_DEV = process.env.NODE_ENV !== 'production';
+import { env } from '../utils/env';
+
+const IS_DEV = env.NODE_ENV !== 'production';
 const STORAGE_KEY = 'dv';
 // Where `?` is a character being typed, not a shortcut.
 const TYPING_TARGET = 'input, textarea, select, [contenteditable], [role="textbox"], [role="combobox"]';
@@ -22,7 +24,7 @@ const useDeveloperViewDev = (): boolean => {
     const onKeyDown = (event: KeyboardEvent) => {
       // Not while typing, not on key repeat, and not as part of a shortcut.
       const target = event.target instanceof HTMLElement ? event.target : null;
-      const isEditable = Boolean(target?.isContentEditable || target?.closest(TYPING_TARGET));
+      const isEditable = Boolean((target?.isContentEditable ?? false) || target?.closest(TYPING_TARGET));
       if (
         event.key !== '?' ||
         event.repeat ||
@@ -58,4 +60,4 @@ const useDeveloperViewProd = (): boolean => useState(readStored)[0];
 
 const useDeveloperView = IS_DEV ? useDeveloperViewDev : useDeveloperViewProd;
 
-export default useDeveloperView;
+export { useDeveloperView };

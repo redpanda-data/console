@@ -10,7 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { createRouterTransport, type Transport } from '@connectrpc/connect';
+import { createRouterTransport, type MethodImpl, type Transport } from '@connectrpc/connect';
 import { beforeEach, describe, expect, test } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -37,14 +37,20 @@ import {
   SASLMechanism,
 } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { createUser, listUsers } from 'protogen/redpanda/api/dataplane/v1/user-UserService_connectquery';
-import { type Ref, useImperativeHandle, useRef } from 'react';
+import { type ReactNode, type Ref, useImperativeHandle, useRef } from 'react';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
-import type { UserStepRef } from '../types/wizard';
+// ── Component import (after mocks) ────────────────────────────────────────────
+import { AddUserStep } from './add-user-step';
+import type { UserStepRef, UserStepSubmissionResult } from '../types/wizard';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
-rs.mock('config', () => ({
+rs.mock('config', () => ({ addBearerTokenInterceptor: rs.fn((next: unknown) => next) }));
+
+rs.mock('runtime-config', () => ({
   config: {
     jwt: 'test-jwt-token',
     controlplaneUrl: 'http://localhost:9090',
@@ -52,14 +58,6 @@ rs.mock('config', () => ({
     isServerless: false,
   },
   isFeatureFlagEnabled: rs.fn(() => false),
-  addBearerTokenInterceptor: rs.fn((next: unknown) => next),
-}));
-
-rs.mock('state/ui-state', () => ({
-  uiState: {
-    pageTitle: '',
-    pageBreadcrumbs: [],
-  },
 }));
 
 // Mock generatePassword to return deterministic value
@@ -84,15 +82,8 @@ rs.mock('components/ui/service-account/service-account-selector', () => ({
 }));
 
 // Mock TanStack Router Link
-function MockLink(props: { children: unknown }) {
-  const React = require('react');
-  return React.createElement(
-    'a',
-    {
-      href: '#',
-    },
-    props.children
-  );
+function MockLink({ children }: { children: ReactNode }) {
+  return <a href="/">{children}</a>;
 }
 
 rs.mock('@tanstack/react-router', () => {
@@ -105,28 +96,35 @@ rs.mock('@tanstack/react-router', () => {
 
 // Polyfills
 global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe = () => undefined;
+  unobserve = () => undefined;
+  disconnect = () => undefined;
 };
 Element.prototype.scrollIntoView = rs.fn();
 
-// ── Component import (after mocks) ────────────────────────────────────────────
-import { AddUserStep } from './add-user-step';
-
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function TestHarness({ onResult, ...props }: { onResult: (result: unknown) => void; [key: string]: unknown }) {
+function TestHarness({
+  onResult,
+  ...props
+}: {
+  onResult: (result: UserStepSubmissionResult) => void;
+  [key: string]: unknown;
+}) {
   const ref = useRef<UserStepRef>(null);
   return (
     <>
       <AddUserStep hideTitle ref={ref} selectionMode="new" {...props} />
       <button
         data-testid="submit"
-        onClick={async () => {
-          const result = await ref.current!.triggerSubmit();
+        onClick={asyncEvent(async () => {
+          const step = ref.current;
+          if (step === null) {
+            throw new Error('Expected the mounted user step');
+          }
+          const result = await step.triggerSubmit();
           onResult(result);
-        }}
+        }, reportActionError)}
         type="button"
       >
         Submit
@@ -137,31 +135,35 @@ function TestHarness({ onResult, ...props }: { onResult: (result: unknown) => vo
 
 /** Build transport with common RPC mocks */
 function buildTransport(overrides?: {
-  listUsersMock?: ReturnType<typeof rs.fn>;
-  createUserMock?: ReturnType<typeof rs.fn>;
-  listACLsMock?: ReturnType<typeof rs.fn>;
-  createACLMock?: ReturnType<typeof rs.fn>;
-  createSecretMock?: ReturnType<typeof rs.fn>;
-  listSecretsMock?: ReturnType<typeof rs.fn>;
+  listUsersMock?: ReturnType<typeof rs.fn<MethodImpl<typeof listUsers>>>;
+  createUserMock?: ReturnType<typeof rs.fn<MethodImpl<typeof createUser>>>;
+  listACLsMock?: ReturnType<typeof rs.fn<MethodImpl<typeof listACLs>>>;
+  createACLMock?: ReturnType<typeof rs.fn<MethodImpl<typeof createACL>>>;
+  createSecretMock?: ReturnType<typeof rs.fn<MethodImpl<typeof createSecret>>>;
+  listSecretsMock?: ReturnType<typeof rs.fn<MethodImpl<typeof listSecrets>>>;
 }) {
   const listUsersMock =
     overrides?.listUsersMock ??
-    rs.fn().mockReturnValue(
+    rs.fn<MethodImpl<typeof listUsers>>().mockReturnValue(
       create(ListUsersResponseSchema, {
         users: [],
         nextPageToken: '',
       })
     );
 
-  const createUserMock = overrides?.createUserMock ?? rs.fn().mockReturnValue(create(CreateUserResponseSchema, {}));
+  const createUserMock =
+    overrides?.createUserMock ??
+    rs.fn<MethodImpl<typeof createUser>>().mockReturnValue(create(CreateUserResponseSchema, {}));
 
   const listACLsMock =
-    overrides?.listACLsMock ?? rs.fn().mockReturnValue(create(ListACLsResponseSchema, { resources: [] }));
+    overrides?.listACLsMock ??
+    rs.fn<MethodImpl<typeof listACLs>>().mockReturnValue(create(ListACLsResponseSchema, { resources: [] }));
 
-  const createACLMock = overrides?.createACLMock ?? rs.fn().mockReturnValue({});
+  const createACLMock = overrides?.createACLMock ?? rs.fn<MethodImpl<typeof createACL>>().mockReturnValue({});
 
   const createSecretMock =
-    overrides?.createSecretMock ?? rs.fn().mockReturnValue(create(CreateSecretResponseSchemaConsole, {}));
+    overrides?.createSecretMock ??
+    rs.fn<MethodImpl<typeof createSecret>>().mockReturnValue(create(CreateSecretResponseSchemaConsole, {}));
 
   const transport = createRouterTransport(({ rpc }) => {
     rpc(listUsers, listUsersMock);
@@ -186,10 +188,10 @@ function buildTransport(overrides?: {
 
 /** Renders the harness and records what `triggerSubmit` resolves to. */
 function renderCapturingResult(props: Record<string, unknown>, transport: Transport) {
-  const captured: { result?: unknown } = {};
+  const captured: { result?: UserStepSubmissionResult } = {};
   renderWithFileRoutes(
     <TestHarness
-      onResult={(r: unknown) => {
+      onResult={(r: UserStepSubmissionResult) => {
         captured.result = r;
       }}
       {...props}
@@ -289,11 +291,11 @@ describe('the AddUserStep', () => {
     test('1. new SASL user calls createUser RPC', async () => {
       const user = userEvent.setup();
       const { transport, createUserMock } = buildTransport();
-      let capturedResult: unknown;
+      let capturedResult: UserStepSubmissionResult | undefined;
 
       renderWithFileRoutes(
         <TestHarness
-          onResult={(r: unknown) => {
+          onResult={(r: UserStepSubmissionResult) => {
             capturedResult = r;
           }}
           selectionMode="new"
@@ -313,18 +315,18 @@ describe('the AddUserStep', () => {
 
       await waitFor(() => {
         expect(capturedResult).toBeDefined();
-        expect((capturedResult as { success: boolean }).success).toBe(true);
+        expect(capturedResult?.success).toBe(true);
       });
     });
 
     test('2. triggerSubmit returns username and saslMechanism', async () => {
       const user = userEvent.setup();
       const { transport } = buildTransport();
-      let capturedResult: unknown;
+      let capturedResult: UserStepSubmissionResult | undefined;
 
       renderWithFileRoutes(
         <TestHarness
-          onResult={(r: unknown) => {
+          onResult={(r: UserStepSubmissionResult) => {
             capturedResult = r;
           }}
           selectionMode="new"
@@ -339,21 +341,21 @@ describe('the AddUserStep', () => {
 
       await waitFor(() => {
         expect(capturedResult).toBeDefined();
-        const result = capturedResult as { success: boolean; data?: { username: string; saslMechanism: string } };
-        expect(result.success).toBe(true);
-        expect(result.data?.username).toBe('my-user');
-        expect(result.data?.saslMechanism).toBe('SCRAM-SHA-256');
+        expect(capturedResult).toMatchObject({
+          success: true,
+          data: { username: 'my-user', saslMechanism: 'SCRAM-SHA-256' },
+        });
       });
     });
 
     test('3. empty username rejected — triggerSubmit returns success: false', async () => {
       const user = userEvent.setup();
       const { transport } = buildTransport();
-      let capturedResult: unknown;
+      let capturedResult: UserStepSubmissionResult | undefined;
 
       renderWithFileRoutes(
         <TestHarness
-          onResult={(r: unknown) => {
+          onResult={(r: UserStepSubmissionResult) => {
             capturedResult = r;
           }}
           selectionMode="new"
@@ -369,7 +371,7 @@ describe('the AddUserStep', () => {
 
       await waitFor(() => {
         expect(capturedResult).toBeDefined();
-        expect((capturedResult as { success: boolean }).success).toBe(false);
+        expect(capturedResult?.success).toBe(false);
       });
     });
 
@@ -386,7 +388,7 @@ describe('the AddUserStep', () => {
 
       // Wait for the user list to load
       await waitFor(() => {
-        expect(listUsersMock).toHaveBeenCalled();
+        expect(listUsersMock.mock.calls[0]?.[0]).toMatchObject({ pageSize: 25, pageToken: '' });
       });
 
       // Type an existing username into the input
@@ -394,7 +396,7 @@ describe('the AddUserStep', () => {
 
       await waitFor(() => {
         expect(captured.result).toBeDefined();
-        expect((captured.result as { success: boolean }).success).toBe(true);
+        expect(captured.result?.success).toBe(true);
       });
 
       // createUser should NOT have been called for existing user
@@ -406,9 +408,12 @@ describe('the AddUserStep', () => {
     test('5. consumer group fields shown when showConsumerGroupFields=true', async () => {
       const { transport } = buildTransport();
 
-      renderWithFileRoutes(<TestHarness onResult={() => {}} selectionMode="new" showConsumerGroupFields={true} />, {
-        transport,
-      });
+      renderWithFileRoutes(
+        <TestHarness onResult={() => undefined} selectionMode="new" showConsumerGroupFields={true} />,
+        {
+          transport,
+        }
+      );
 
       const consumerGroupInput = await screen.findByPlaceholderText('Enter a consumer group name');
       expect(consumerGroupInput).toBeInTheDocument();
@@ -433,10 +438,7 @@ describe('the AddUserStep', () => {
 
       await waitFor(() => {
         expect(captured.result).toBeDefined();
-        const result = captured.result as { success: boolean; data?: { consumerGroup: string } };
-        expect(result.success).toBe(true);
-        // The consumer group is passed through the mutation, verify createUser was called
-        expect(result.data?.consumerGroup).toBe('my-consumer-group');
+        expect(captured.result).toMatchObject({ success: true, data: { consumerGroup: 'my-consumer-group' } });
       });
     });
   });
@@ -476,7 +478,7 @@ describe('the AddUserStep', () => {
       const user = userEvent.setup();
       const { transport } = buildTransport();
 
-      renderWithFileRoutes(<TestHarness onResult={() => {}} selectionMode="new" />, { transport });
+      renderWithFileRoutes(<TestHarness onResult={() => undefined} selectionMode="new" />, { transport });
 
       // Wait for component to render
       await screen.findByText('SASL user');
@@ -495,7 +497,7 @@ describe('the AddUserStep', () => {
       const user = userEvent.setup();
       const { transport } = buildTransport();
 
-      renderWithFileRoutes(<TestHarness onResult={() => {}} pipelineName="my-pipe" selectionMode="new" />, {
+      renderWithFileRoutes(<TestHarness onResult={() => undefined} pipelineName="my-pipe" selectionMode="new" />, {
         transport,
       });
 
@@ -504,7 +506,7 @@ describe('the AddUserStep', () => {
       await user.click(saTab);
 
       await waitFor(() => {
-        const nameInput = screen.getByLabelText('Service account name') as HTMLInputElement;
+        const nameInput = screen.getByLabelText<HTMLInputElement>('Service account name');
         // The generateServiceAccountName with pipelineName='my-pipe' should contain 'my-pipe'
         expect(nameInput.value).toContain('my-pipe');
       });
@@ -513,11 +515,11 @@ describe('the AddUserStep', () => {
     test('9. SA triggerSubmit returns SA data', async () => {
       const user = userEvent.setup();
       const { transport } = buildTransport();
-      let capturedResult: unknown;
+      let capturedResult: UserStepSubmissionResult | undefined;
 
       renderWithFileRoutes(
         <TestHarness
-          onResult={(r: unknown) => {
+          onResult={(r: UserStepSubmissionResult) => {
             capturedResult = r;
           }}
           pipelineName="test-pipeline"
@@ -538,13 +540,10 @@ describe('the AddUserStep', () => {
 
       await waitFor(() => {
         expect(capturedResult).toBeDefined();
-        const result = capturedResult as {
-          success: boolean;
-          data?: { authMethod: string; serviceAccountId: string };
-        };
-        expect(result.success).toBe(true);
-        expect(result.data?.authMethod).toBe('service-account');
-        expect(result.data?.serviceAccountId).toBe('sa-123');
+        expect(capturedResult).toMatchObject({
+          success: true,
+          data: { authMethod: 'service-account', serviceAccountId: 'sa-123' },
+        });
       });
     });
 
@@ -553,12 +552,12 @@ describe('the AddUserStep', () => {
     test('keeps the pipeline service account instead of creating another', async () => {
       const user = userEvent.setup();
       const { transport } = buildTransport();
-      let capturedResult: unknown;
+      let capturedResult: UserStepSubmissionResult | undefined;
 
       renderWithFileRoutes(
         <TestHarness
           hasServiceAccount
-          onResult={(r: unknown) => {
+          onResult={(r: UserStepSubmissionResult) => {
             capturedResult = r;
           }}
           pipelineName="test-pipeline"
@@ -576,7 +575,7 @@ describe('the AddUserStep', () => {
       await user.click(screen.getByTestId('submit'));
 
       await waitFor(() =>
-        expect(capturedResult).toEqual({ success: true, data: { authMethod: 'service-account', existing: true } })
+        expect(capturedResult).toStrictEqual({ success: true, data: { authMethod: 'service-account', existing: true } })
       );
     });
   });
@@ -604,11 +603,11 @@ describe('the AddUserStep', () => {
     test('logs in with the mechanism the user was created with', async () => {
       const user = userEvent.setup();
       const { transport } = buildTransport({ listUsersMock: existingUser() });
-      let capturedResult: unknown;
+      let capturedResult: UserStepSubmissionResult | undefined;
 
       renderWithFileRoutes(
         <TestHarness
-          onResult={(r: unknown) => {
+          onResult={(r: UserStepSubmissionResult) => {
             capturedResult = r;
           }}
           selectionMode="new"
@@ -650,7 +649,7 @@ describe('the AddUserStep', () => {
         .mockReturnValue(
           create(ListUsersResponseSchema, { users: [create(ListUsersResponse_UserSchema, { name: 'no-perms-user' })] })
         );
-    const topicGrants = (createACLMock: ReturnType<typeof rs.fn>) =>
+    const topicGrants = (createACLMock: ReturnType<typeof rs.fn<MethodImpl<typeof createACL>>>) =>
       createACLMock.mock.calls.filter(([request]) => request.resourceName === 'my-topic');
 
     // A reused user has to end up able to use the topic, as a new one does.
@@ -667,12 +666,20 @@ describe('the AddUserStep', () => {
         );
 
         // The topic's ACLs are only fetched once the name resolves to an existing user.
-        await waitFor(() => expect(listACLsMock).toHaveBeenCalled());
+        await waitFor(() =>
+          expect(listACLsMock.mock.calls[0]?.[0]).toMatchObject({
+            filter: {
+              resourceType: ACL_ResourceType.TOPIC,
+              resourceName: 'my-topic',
+              resourcePatternType: ACL_ResourcePatternType.MATCH,
+            },
+          })
+        );
         expect(await screen.findByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeChecked();
         await user.click(screen.getByTestId('submit'));
 
         await waitFor(() => expect(captured.result).toMatchObject({ success: true }));
-        expect(topicGrants(createACLMock)).toEqual([
+        expect(topicGrants(createACLMock)).toStrictEqual([
           [
             expect.objectContaining({ principal: 'User:no-perms-user', operation: ACL_Operation.ALL }),
             expect.anything(),
@@ -686,12 +693,12 @@ describe('the AddUserStep', () => {
     test("10b. leaves an existing user's access alone when the grant is unticked", async () => {
       const user = userEvent.setup();
       const { transport, listACLsMock, createACLMock } = buildTransport({ listUsersMock: userWithoutAccess() });
-      let capturedResult: unknown;
+      let capturedResult: UserStepSubmissionResult | undefined;
 
       renderWithFileRoutes(
         <TestHarness
           defaultUsername="no-perms-user"
-          onResult={(r: unknown) => {
+          onResult={(r: UserStepSubmissionResult) => {
             capturedResult = r;
           }}
           selectionMode="existing"
@@ -700,13 +707,21 @@ describe('the AddUserStep', () => {
         { transport }
       );
 
-      await waitFor(() => expect(listACLsMock).toHaveBeenCalled());
+      await waitFor(() =>
+        expect(listACLsMock.mock.calls[0]?.[0]).toMatchObject({
+          filter: {
+            resourceType: ACL_ResourceType.TOPIC,
+            resourceName: 'my-topic',
+            resourcePatternType: ACL_ResourcePatternType.MATCH,
+          },
+        })
+      );
       await user.click(await screen.findByRole('checkbox', { name: 'Grant this user full access to my-topic' }));
       expect(await screen.findByText('User will not be able to read from topic')).toBeInTheDocument();
       await user.click(screen.getByTestId('submit'));
 
       await waitFor(() => expect(capturedResult).toMatchObject({ success: true }));
-      expect(topicGrants(createACLMock)).toEqual([]);
+      expect(topicGrants(createACLMock)).toStrictEqual([]);
     });
 
     test('11. has permissions alert when user has ACLs', async () => {
@@ -728,7 +743,7 @@ describe('the AddUserStep', () => {
 
       // Wait for user list to load
       await waitFor(() => {
-        expect(listUsersMock).toHaveBeenCalled();
+        expect(listUsersMock.mock.calls[0]?.[0]).toMatchObject({ pageSize: 25, pageToken: '' });
       });
 
       // Should show success alert about having permissions
@@ -743,7 +758,7 @@ describe('the AddUserStep', () => {
       expect(screen.queryByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeNull();
       await user.click(screen.getByTestId('submit'));
       await waitFor(() => expect(captured.result).toMatchObject({ success: true }));
-      expect(topicGrants(createACLMock)).toEqual([]);
+      expect(topicGrants(createACLMock)).toStrictEqual([]);
     });
     test.each([
       ['a prefixed', 'my-', ACL_ResourcePatternType.PREFIXED],
@@ -766,12 +781,14 @@ describe('the AddUserStep', () => {
 
       expect(await screen.findByText(HAS_TOPIC_ACCESS)).toBeInTheDocument();
       expect(screen.queryByRole('checkbox', { name: 'Grant this user full access to my-topic' })).toBeNull();
-      expect(listACLsMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filter: expect.objectContaining({ resourcePatternType: ACL_ResourcePatternType.MATCH }),
-        }),
-        expect.anything()
-      );
+      expect(
+        listACLsMock.mock.calls.some(
+          ([request, context]) =>
+            request.filter?.resourcePatternType === ACL_ResourcePatternType.MATCH &&
+            context !== null &&
+            context !== undefined
+        )
+      ).toBe(true);
     });
 
     // The grant is ALL, so a user who can already do what the component needs mustn't be offered it.
@@ -806,12 +823,12 @@ describe('the AddUserStep', () => {
     test('12. isPending accessible via ref', async () => {
       const user = userEvent.setup();
       const { transport } = buildTransport();
-      let refValue: UserStepRef | null = null;
+      const captured: { current: UserStepRef | null } = { current: null };
 
       renderWithFileRoutes(
         <RefCaptureHarness
           onCapture={(ref) => {
-            refValue = ref;
+            captured.current = ref;
           }}
         />,
         { transport }
@@ -822,9 +839,8 @@ describe('the AddUserStep', () => {
 
       await user.click(screen.getByTestId('capture-ref'));
 
-      expect(refValue).not.toBeNull();
-      expect(refValue!.isPending).toBe(false);
-      expect(typeof refValue!.triggerSubmit).toBe('function');
+      expect(captured.current).toMatchObject({ isPending: false });
+      expect(typeof captured.current?.triggerSubmit).toBe('function');
     });
   });
 });

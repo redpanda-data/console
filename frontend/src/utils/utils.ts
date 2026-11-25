@@ -13,6 +13,7 @@ import { Base64, fromUint8Array } from 'js-base64';
 import prettyBytesOriginal from 'pretty-bytes';
 import prettyMillisecondsOriginal, { type Options as PrettyMillisecondsOptions } from 'pretty-ms';
 
+import { isObject, isUnknownArray } from './type-guards';
 import type { TopicMessage } from '../state/rest-interfaces';
 
 // Note: Making a <Memo> component is not possible, the container JSX will always render children first so they can be passed as props
@@ -136,7 +137,7 @@ export const alwaysChanging = () => {
 };
 
 export function assignDeep(target: Record<string, unknown>, source: Record<string, unknown>) {
-  for (const key in source) {
+  for (const key of Object.keys(source)) {
     if (!Object.hasOwn(source, key) || key === '__proto__' || key === 'constructor') {
       continue;
     }
@@ -160,12 +161,12 @@ function assignDeepValue(target: Record<string, unknown>, key: string, value: un
 
 function assignDeepObject(target: Record<string, unknown>, key: string, value: object | null, existing: unknown) {
   // Replacing arrays preserves shared element identities when settings reorder them.
-  if (Array.isArray(value) || !existing || typeof existing !== 'object') {
+  if (Array.isArray(value) || !isObject(existing)) {
     target[key] = value;
     return;
   }
-  if (value !== null) {
-    assignDeep(existing as Record<string, unknown>, value as Record<string, unknown>);
+  if (isObject(value)) {
+    assignDeep(existing, value);
   }
 }
 
@@ -191,6 +192,21 @@ type PropertySearchExContext = {
   returnFirstResult: boolean;
 };
 
+function isPropertyContainer(value: unknown): value is Record<string, unknown> {
+  return isObject(value) || typeof value === 'function';
+}
+
+/** Preserve for-in's own string indices without asserting primitives to dictionaries. */
+function enumerablePropertySource(value: unknown): Record<string, unknown> {
+  if (isPropertyContainer(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return Object.fromEntries(value.split('').map((character, index): [string, string] => [String(index), character]));
+  }
+  return {};
+}
+
 export function collectElements(
   obj: unknown,
   isMatch: (propertyName: string, path: string[], value: unknown) => boolean,
@@ -202,12 +218,12 @@ export function collectElements(
     results: [],
     returnFirstResult: returnFirstMatch,
   };
-  collectElementsRecursive(ctx, obj as Record<string, unknown>);
+  collectElementsRecursive(ctx, enumerablePropertySource(obj));
   return ctx.results;
 }
 
 function collectElementsRecursive(ctx: PropertySearchExContext, obj: Record<string, unknown>): PropertySearchResult {
-  for (const key in obj) {
+  for (const key of Object.keys(obj)) {
     if (Object.hasOwn(obj, key) && collectMatchingProperty(ctx, key, obj[key]) === 'abort') {
       return 'abort';
     }
@@ -222,9 +238,9 @@ function collectMatchingProperty(ctx: PropertySearchExContext, key: string, valu
       return 'abort';
     }
   }
-  if (typeof value === 'object' && value !== null) {
+  if (isObject(value)) {
     ctx.currentPath.push(key);
-    const result = collectElementsRecursive(ctx, value as Record<string, unknown>);
+    const result = collectElementsRecursive(ctx, value);
     ctx.currentPath.pop();
     return result;
   }
@@ -267,16 +283,16 @@ function collectDirectProperties(
   isMatch: IsMatchFunc
 ): CollectedProperty[] {
   const results: CollectedProperty[] = [];
-  for (const key in property.value as Record<string, unknown>) {
-    if (Object.hasOwn(property.value as Record<string, unknown>, key)) {
-      const value = (property.value as Record<string, unknown>)[key];
-      if (value === null || typeof value === 'function') {
-        continue;
-      }
-      if (segment === '*' || isMatch(segment, key, value)) {
-        results.push({ path: [...property.path, key], value });
-      }
+  const source = enumerablePropertySource(property.value);
+  for (const key of Object.keys(source)) {
+    if (!Object.hasOwn(source, key)) {
+      continue;
     }
+    const value = source[key];
+    if (value === null || typeof value === 'function' || (segment !== '*' && !isMatch(segment, key, value))) {
+      continue;
+    }
+    results.push({ path: [...property.path, key], value });
   }
   return results;
 }
@@ -292,7 +308,7 @@ export function getAllMessageKeys(messages: TopicMessage[]): Property[] {
   // slice is needed because messages array is observable
   for (const m of messages.slice()) {
     const payload = m.value.payload;
-    getAllKeysRecursive(ctx, payload as Record<string, unknown>);
+    getAllKeysRecursive(ctx, enumerablePropertySource(payload));
 
     ctx.currentPath = [];
     ctx.currentFullPath = '';
@@ -321,7 +337,7 @@ type GetAllKeysContext = {
 function getAllKeysRecursive(ctx: GetAllKeysContext, obj: Record<string, unknown>): void {
   const isArray = Array.isArray(obj);
   const pathToHere = ctx.currentFullPath;
-  for (const key in obj) {
+  for (const key of Object.keys(obj)) {
     if (Object.hasOwn(obj, key)) {
       collectMessageKey(ctx, obj[key], key, pathToHere, isArray);
     }
@@ -342,8 +358,8 @@ function collectMessageKey(
   if (!isArray) {
     recordMessageKey(ctx, key, fullPath);
   }
-  if (typeof value === 'object' && value !== null) {
-    getAllKeysRecursive(ctx, value as Record<string, unknown>);
+  if (isObject(value)) {
+    getAllKeysRecursive(ctx, value);
   }
   ctx.currentPath.pop();
   ctx.currentFullPath = fullPath;
@@ -368,7 +384,7 @@ export function hoursToMilliseconds(hours: number) {
 
 export const cullText = (str: string, length: number) => {
   const ELLIPSIS_LENGTH = 3;
-  return str.length > length ? `${str.substring(0, length - ELLIPSIS_LENGTH)}...` : str;
+  return str.length > length ? `${str.slice(0, Math.max(0, length - ELLIPSIS_LENGTH))}...` : str;
 };
 
 export function groupConsecutive(ar: number[]): number[][] {
@@ -432,7 +448,7 @@ function parsePrettyValue(value: number | string | null | undefined, options?: P
   if (value === undefined || value === null) {
     return options?.showNullAs ?? 'N/A';
   }
-  if (options?.showLargeAsInfinite && isUInt64Maximum(String(value))) {
+  if (options?.showLargeAsInfinite === true && isUInt64Maximum(String(value))) {
     return 'Infinite';
   }
   if (typeof value === 'string') {
@@ -502,7 +518,7 @@ export function randomId() {
  * "prefix-randomId()-randomId()"
  */
 export function simpleUniqueId(prefix?: string) {
-  return `${prefix}-${randomId()}-${randomId()}`;
+  return `${String(prefix)}-${randomId()}-${randomId()}`;
 }
 
 /**
@@ -530,7 +546,7 @@ export function capitalizeFirst(str: string): string {
  * Scroll the main content region
  */
 export function scrollToTop(): void {
-  const mainLayout = document.getElementById('mainLayout');
+  const mainLayout = document.querySelector<HTMLElement>('#mainLayout');
   if (!mainLayout) {
     return;
   }
@@ -542,10 +558,11 @@ export function scrollToTop(): void {
  * Scroll the main content region to the target element (which is found by the given id)
  */
 export function scrollTo(targetId: string, anchor: 'start' | 'end' | 'center' = 'center', offset?: number): void {
-  const mainLayout = document.getElementById('mainLayout');
+  const mainLayout = document.querySelector<HTMLElement>('#mainLayout');
   if (!mainLayout) {
     return;
   }
+  // biome-ignore lint/style/useDomQuerySelector: target IDs can contain CSS selector metacharacters.
   const target = document.getElementById(targetId);
   if (!target) {
     return;
@@ -593,7 +610,7 @@ export function isValidBase64(str: string): boolean {
   try {
     Base64.decode(str);
     return true;
-  } catch (_e) {
+  } catch {
     return false;
   }
 }
@@ -621,7 +638,7 @@ function formatHexBytes(bytes: Uint8Array): string {
 export function base64ToHexString(base64: string): string {
   try {
     return formatHexBytes(binaryStringToBytes(Base64.atob(base64)));
-  } catch (_err) {
+  } catch {
     return '<<Unable to decode message>>';
   }
 }
@@ -629,7 +646,7 @@ export function base64ToHexString(base64: string): string {
 export function uint8ArrayToHexString(ar: Uint8Array): string {
   try {
     return formatHexBytes(ar);
-  } catch (_err) {
+  } catch {
     return '<<Unable to convert uint8Array to hex>>';
   }
 }
@@ -640,16 +657,20 @@ export function delay(timeoutMs: number): Promise<void> {
   });
 }
 
+function isHeadersCollection(headers: Headers | Record<string, string>): headers is Headers {
+  return typeof headers.set === 'function';
+}
+
 export function setHeader(init: RequestInit, name: string, value: string) {
   if (init.headers === null || init.headers === undefined) {
     init.headers = [[name, value]];
   } else if (Array.isArray(init.headers)) {
     init.headers.push([name, value]);
-  } else if (typeof init.headers.set === 'function') {
+  } else if (isHeadersCollection(init.headers)) {
     init.headers.set(name, value);
   } else {
     // Record<string, string>
-    (init.headers as Record<string, string>)[name] = value;
+    init.headers[name] = value;
   }
 }
 
@@ -658,18 +679,19 @@ export function retrier<T>(
   operation: () => Promise<T>,
   { attempts = Number.POSITIVE_INFINITY, delayTime = 100 }
 ): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    operation()
-      .then(resolve)
-      .catch((reason: unknown) => {
-        if (attempts > 0) {
-          return delay(delayTime)
-            .then(() => retrier(operation, { attempts: attempts - 1, delayTime }))
-            .then(resolve)
-            .catch(reject);
-        }
-        reject(reason);
-      });
+  let pending: Promise<T>;
+  try {
+    pending = operation();
+  } catch (error) {
+    // Keep synchronous programming errors non-retryable, as with the original Promise executor.
+    return Promise.reject(error);
+  }
+  return pending.catch(async (error: unknown) => {
+    if (attempts > 0) {
+      await delay(delayTime);
+      return retrier(operation, { attempts: attempts - 1, delayTime });
+    }
+    throw error;
   });
 }
 
@@ -693,7 +715,7 @@ export function substringWithEllipsis(input: string, maxLength: number): string 
     // Subtract 3 from maxLength to accommodate the ellipsis
     // Ensure maxLength is at least 4 to avoid negative substring lengths
     const effectiveLength = Math.max(maxLength - 3, 1);
-    return `${input.substring(0, effectiveLength)}...`;
+    return `${input.slice(0, effectiveLength)}...`;
   }
   return input;
 }
@@ -716,16 +738,21 @@ export function decodeURIComponentPercents(encodedStr: string): string {
  * Pulls the `subject` out of a permission error's details, from the entry whose
  * `login_type` is `OIDC`. Null when there is no such entry.
  */
-export function getOidcSubject(error: {
-  details?: { debug?: { metadata?: { login_type?: string; subject?: string } } }[];
-}): string | null {
-  if (!error.details) {
+export function getOidcSubject(error: unknown): string | null {
+  if (!(isObject(error) && isUnknownArray(error.details))) {
     return null;
   }
   for (const detail of error.details) {
-    if (detail.debug?.metadata?.login_type === 'OIDC' && detail.debug.metadata.subject) {
-      return detail.debug.metadata.subject;
+    const debug = isObject(detail) ? detail.debug : undefined;
+    const metadata = isObject(debug) ? debug.metadata : undefined;
+    if (
+      isObject(metadata) &&
+      metadata.login_type === 'OIDC' &&
+      typeof metadata.subject === 'string' &&
+      metadata.subject !== ''
+    ) {
+      return metadata.subject;
     }
   }
-  return null; // Return null if no OIDC subject is found
+  return null;
 }

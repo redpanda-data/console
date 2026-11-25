@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { describe, expect, test } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 
 import { UserInformationCard } from './user-information-card';
@@ -20,13 +21,13 @@ import { UserInformationCard } from './user-information-card';
  * callback is passed.
  */
 describe('password change button visibility', () => {
-  it('shows the Edit password button when onEditPassword is provided', () => {
+  test('shows the Edit password button when onEditPassword is provided', () => {
     render(<UserInformationCard onEditPassword={rs.fn()} username="test-user" />);
 
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
   });
 
-  it('hides the Edit password button when onEditPassword is not provided', () => {
+  test('hides the Edit password button when onEditPassword is not provided', () => {
     render(<UserInformationCard username="test-user" />);
 
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();

@@ -27,6 +27,7 @@ import {
 } from './filter-suggestions';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../../state/ui';
+import { isNonEmptyString } from '../../../../../utils/string-utils';
 import { TonedIcon } from '../../../shared/toned-icon';
 import type { FieldFilterToken } from '../types';
 import { formatFilterLine, type LineWord, parseFilterLine, wordRangeAtCaret } from '../utils/filter-line';
@@ -188,7 +189,7 @@ const noteAppliedAction = (edit: LineEdit, action: SuggestionAction) => {
       action,
     });
   }
-  if (action.type === 'fill-text' && action.commit) {
+  if (action.type === 'fill-text' && action.commit === true) {
     edit.setOpen(false);
   }
 };
@@ -362,7 +363,7 @@ function useSuggestionDropdown() {
   // Close on outside click
   useEffect(() => {
     const onMouseDown = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (containerRef.current && e.target instanceof Node && !containerRef.current.contains(e.target)) {
         setOpen(false);
       }
     };
@@ -506,7 +507,7 @@ function useSuggestionActions({
           break;
         case 'Enter': {
           const active = actionableItems[activeIdx];
-          if (open && active && (query || navigated)) {
+          if (open && active !== undefined && (query || navigated)) {
             e.preventDefault();
             applySuggestion(active.action);
             setNavigated(false);
@@ -563,9 +564,9 @@ const SuggestionList = ({ id, heading, items, activeIdx, onApply, onHover }: Sug
   return (
     <Listbox aria-label={heading} className="absolute top-full left-0 z-30 mt-1.5" id={id}>
       <ListboxGroupLabel>{heading}</ListboxGroupLabel>
-      {items.map((item, i) => {
+      {items.map((item) => {
         if (item.kind === 'header') {
-          return <ListboxGroupLabel key={`h-${item.label}-${i}`}>{item.label}</ListboxGroupLabel>;
+          return <ListboxGroupLabel key={`heading-${item.label}`}>{item.label}</ListboxGroupLabel>;
         }
         itemIdx += 1;
         const optionIdx = itemIdx;
@@ -574,7 +575,7 @@ const SuggestionList = ({ id, heading, items, activeIdx, onApply, onHover }: Sug
           <ListboxOption
             active={isActive}
             id={`${id}-option-${optionIdx}`}
-            key={`${item.label}-${i}`}
+            key={JSON.stringify(item.action)}
             onClick={() => onApply(item.action)}
             onMouseEnter={() => onHover(optionIdx)}
           >
@@ -583,7 +584,7 @@ const SuggestionList = ({ id, heading, items, activeIdx, onApply, onHover }: Sug
             >
               {item.label}
             </span>
-            {item.sub && (
+            {isNonEmptyString(item.sub) && (
               <span className="font-mono text-caption whitespace-nowrap text-muted-foreground">{item.sub}</span>
             )}
           </ListboxOption>
@@ -640,7 +641,7 @@ export const FilterBar = ({
     onEditJsFilter,
   });
   const activeOptionId =
-    dropdown.open && suggestions.actionableItems[dropdown.activeIdx]
+    dropdown.open && suggestions.actionableItems[dropdown.activeIdx] !== undefined
       ? `${listboxId}-option-${dropdown.activeIdx}`
       : undefined;
   const hasChips = jsFilters.length > 0 || fieldTokens.length > 0 || partitionId >= 0 || line.rawText.length > 0;
@@ -652,9 +653,11 @@ export const FilterBar = ({
           'flex min-h-10 cursor-text flex-wrap items-center gap-1.5 rounded-lg border border-border bg-background py-1 pr-2 pl-3 shadow-xs',
           dropdown.open && 'border-primary'
         )}
-        onClick={() => inputRef.current?.focus()}
-        onKeyDown={() => {
-          // clicks focus the input; keyboard handling lives on the input itself
+        onPointerDown={(event) => {
+          if (event.target instanceof Element && event.target.closest('button,input,a,[role=button]') !== null) {
+            return;
+          }
+          inputRef.current?.focus();
         }}
       >
         <TonedIcon className="size-4 shrink-0" icon={SearchIcon} tone="muted" />

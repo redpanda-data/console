@@ -11,8 +11,7 @@
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
 
-import KafkaClusterDetails from '../../../components/pages/connect/cluster-details';
-
+import { KafkaClusterDetails } from '../../../components/pages/connect/cluster-details';
 export const Route = createFileRoute('/connect-clusters/$clusterName/')({
   staticData: {
     title: 'Connect Cluster',

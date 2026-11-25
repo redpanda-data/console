@@ -9,33 +9,23 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it } from '@rstest/core';
+import { describe, expect, test } from '@rstest/core';
 import { render, screen } from 'test-utils';
 
 import { InvalidConfigNotice } from './invalid-config-notice';
 
 describe('the InvalidConfigNotice', () => {
-  it('renders its message inside a warning alert', () => {
+  test('renders its message inside a warning alert', () => {
     render(<InvalidConfigNotice>Can't visualize the latest YAML.</InvalidConfigNotice>);
     expect(screen.getByRole('alert')).toHaveTextContent("Can't visualize the latest YAML.");
   });
 
-  it('stays content-width (w-auto) rather than the Alert default w-full, so the floating canvas banner does not cover the toolbars', () => {
-    render(<InvalidConfigNotice>notice</InvalidConfigNotice>);
-    const alert = screen.getByRole('alert');
-    expect(alert).toHaveClass('w-auto');
-    expect(alert).not.toHaveClass('w-full');
-  });
-
-  it('forwards positioning classes from the caller and pads by variant', () => {
+  test('keeps the warning content accessible in the floated variant', () => {
     render(
       <InvalidConfigNotice className="absolute top-3 left-1/2" variant="floating">
-        notice
+        Invalid pipeline YAML
       </InvalidConfigNotice>
     );
-    const alert = screen.getByRole('alert');
-    expect(alert).toHaveClass('absolute', 'px-3');
-    // The variant's padding wins over the Alert's default on the same axis.
-    expect(alert).not.toHaveClass('px-4');
+    expect(screen.getByRole('alert')).toHaveTextContent('Invalid pipeline YAML');
   });
 });

@@ -14,6 +14,7 @@ import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Badge, type BadgeTone } from 'components/redpanda-ui/components/badge';
+import { Button } from 'components/redpanda-ui/components/button';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
@@ -100,20 +101,24 @@ const ChangeRow = ({
           </span>
         ) : null}
       </span>
-      {detail ? <span className="truncate pl-0.5 text-body-sm text-muted-foreground">{detail}</span> : null}
+      {detail !== null && detail !== undefined && detail !== '' ? (
+        <span className="truncate pl-0.5 text-body-sm text-muted-foreground">{detail}</span>
+      ) : null}
     </>
   );
   return (
     <li>
       {onSelect ? (
         <ElementTooltip content={actionLabel}>
-          <button
+          <Button
+            // biome-ignore lint/nursery/noTailwindRestyledComponents: Registry unstyled variant owns this compound control's appearance.
             className="group flex w-full cursor-pointer flex-col gap-0.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
             onClick={onSelect}
             type="button"
+            variant="unstyled"
           >
             {body}
-          </button>
+          </Button>
         </ElementTooltip>
       ) : (
         <div className="flex w-full flex-col gap-0.5 rounded px-2 py-1.5 text-left">{body}</div>

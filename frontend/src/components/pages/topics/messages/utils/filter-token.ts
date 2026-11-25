@@ -11,6 +11,8 @@
 
 import type { FieldFilterToken, FilterOp, FilterToken } from '../types';
 
+const RETURN_REGEX = /return |=>|[=!<>]==?|&&|\|\||[();{}]/;
+
 const FIELD_PATTERN = /^(key|value(?:\.[\w.*-]+)?|partition|offset)/;
 const INTEGER_VALUE_PATTERN = /^\d+$/;
 const NEEDS_QUOTING_PATTERN = /["\s]/;
@@ -57,7 +59,7 @@ const OPERATOR_SYMBOLS: [symbol: string, op: FilterOp][] = [
  * `fieldTokenText`, to keep it round-trippable in the URL.
  */
 const DISPLAY_OP_SYMBOLS = new Map(
-  OPERATOR_SYMBOLS.filter(([, op]) => op !== 'eq').map(([symbol, op]): [FilterOp, string] => [op, symbol])
+  OPERATOR_SYMBOLS.flatMap(([symbol, op]): [FilterOp, string][] => (op === 'eq' ? [] : [[op, symbol]]))
 );
 
 /**
@@ -68,7 +70,9 @@ const DISPLAY_OP_SYMBOLS = new Map(
  */
 const fieldTokenText = (token: FieldFilterToken, value: string): string => {
   const symbol = DISPLAY_OP_SYMBOLS.get(token.op);
-  return symbol ? `${token.field}${symbol}${value}` : `${token.field}:${value}`;
+  return symbol !== null && symbol !== undefined && symbol !== ''
+    ? `${token.field}${symbol}${value}`
+    : `${token.field}:${value}`;
 };
 
 /**
@@ -78,7 +82,7 @@ const fieldTokenText = (token: FieldFilterToken, value: string): string => {
  */
 export function formatTokenText(token: FilterToken): string {
   if (token.kind === 'js') {
-    return `ƒ ${token.name || token.code}`;
+    return `ƒ ${(token.name ?? '') || token.code}`;
   }
   return fieldTokenText(token, token.value);
 }
@@ -242,7 +246,7 @@ export function looksLikeJs(text: string): boolean {
   if (trimmed.startsWith('js:') || trimmed.startsWith('javascript:')) {
     return true;
   }
-  return /return |=>|[=!<>]==?|&&|\|\||[();{}]/.test(trimmed) && !parseFilterInput(trimmed);
+  return RETURN_REGEX.test(trimmed) && !parseFilterInput(trimmed);
 }
 
 const JS_CODE_LIKE_PATTERN = /return\b|=>|[=!<>]==?|&&|\|\||[();{}[\].]/;

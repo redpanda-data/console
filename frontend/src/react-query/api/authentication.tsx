@@ -23,6 +23,8 @@ import {
 import type { MessageInit, QueryOptions } from 'react-query/react-query.utils';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
+import { isNonEmptyString } from '../../utils/string-utils';
+
 export const useLoginSaslScramMutation = () => {
   const queryClient = useQueryClient();
 
@@ -87,7 +89,7 @@ export const useListConsoleUsersQuery = (
 export const useIsAuthenticated = () => {
   const { data, isLoading } = useGetIdentityQuery();
   return {
-    isAuthenticated: !!data?.displayName,
+    isAuthenticated: isNonEmptyString(data?.displayName),
     isLoading,
     user: data,
   };

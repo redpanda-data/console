@@ -9,9 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-// Array prototype extensions (must be imported early)
-import './utils/array-extensions';
-
 /* TLS is optional, so Console is often served over plain HTTP — not a secure context, where
    `navigator.clipboard` is absent and every copy silently fails. Delegates to native where it exists.
    Needed in each entry point. */
@@ -45,10 +42,10 @@ import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { builderCustomComponents } from 'components/builder-io/builder-custom-components';
 import { BUILDER_API_KEY } from 'components/constants';
 import { CustomFeatureFlagProvider } from 'custom-feature-flag-provider';
-import useDeveloperView from 'hooks/use-developer-view';
+import { useDeveloperView } from 'hooks/use-developer-view';
 import type { LucideIcon } from 'lucide-react';
 import { protobufRegistry } from 'protobuf-registry';
-import queryClient from 'query-client';
+import { queryClient } from 'query-client';
 import { useEffect } from 'react';
 import { getBasePath } from 'utils/env';
 
@@ -57,17 +54,13 @@ import { NotFoundPage } from './components/misc/not-found-page';
 import { RoutePendingFallback } from './components/misc/route-pending-fallback';
 import { ThemeProvider } from './components/redpanda-ui/components/theme-provider';
 import { Toaster as BaseUiToaster } from './components/redpanda-ui/components/toast';
-import {
-  addBearerTokenInterceptor,
-  checkExpiredLicenseInterceptor,
-  getGrpcBasePath,
-  isFeatureFlagEnabled,
-  setup,
-} from './config';
+import { addBearerTokenInterceptor, checkExpiredLicenseInterceptor, setup } from './config';
 import { routerDefaults } from './router-defaults';
 import { routeTree } from './routeTree.gen';
+import { getGrpcBasePath, isFeatureFlagEnabled } from './runtime-config';
 import { installUISettingsSideEffects } from './state/ui';
 import { installDarkModeAvailabilitySync, isDarkModeAvailable, themeInitFor } from './theme-init';
+import { env } from './utils/env';
 
 // Create transport before router so loaders can use it
 const dataplaneTransport = createConnectTransport({
@@ -94,6 +87,7 @@ const router = createRouter({
 });
 
 declare global {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: Window augmentation requires declaration merging.
   interface Window {
     __E2E_FEATURE_FLAGS__?: Record<string, boolean>;
   }
@@ -141,14 +135,19 @@ const App = () => {
     <CustomFeatureFlagProvider initialFlags={window.__E2E_FEATURE_FLAGS__ ?? {}}>
       <Content apiKey={BUILDER_API_KEY} content={null} customComponents={builderCustomComponents} model={''} />
       {/* Standalone only: embedded and federated mode leave data-theme to the Cloud UI host. The theme
-          follows this load's dark-mode availability (theme-init.ts). */}
+            follows this load's dark-mode availability (theme-init.ts). */}
       <ThemeProvider {...themeInitFor(isDarkModeAvailable())}>
         {/* showToast viewport, above the router so the error boundary and login can toast */}
         <BaseUiToaster testId="console-toasts" />
         <TransportProvider transport={dataplaneTransport}>
           <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />
-            <ReactQueryDevtools initialIsOpen={process.env.NODE_ENV !== 'production' && developerView} />
+            <div className="console-query-devtools">
+              <ReactQueryDevtools
+                buttonPosition="relative"
+                initialIsOpen={env.NODE_ENV !== 'production' && developerView}
+              />
+            </div>
           </QueryClientProvider>
         </TransportProvider>
       </ThemeProvider>
@@ -156,4 +155,4 @@ const App = () => {
   );
 };
 
-export default App;
+export { App };

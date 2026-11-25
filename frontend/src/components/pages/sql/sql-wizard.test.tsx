@@ -11,9 +11,9 @@
 
 import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { render, screen } from 'test-utils';
 
 import { SqlWizard, type SqlWizardProps, type WizardTopic } from './sql-wizard';
+import { render, screen } from '../../../test-utils';
 
 function MockSyncCodeBlock({ code }: { code: string }) {
   return <div data-testid="sql-preview">{code}</div>;
@@ -98,7 +98,7 @@ describe('the SqlWizard', () => {
 
     await pickTopicAndContinue('orders');
 
-    expect(screen.getAllByRole('term').map((term) => term.textContent)).toEqual(['Catalog', 'Source topic']);
+    expect(screen.getAllByRole('term').map((term) => term.textContent)).toStrictEqual(['Catalog', 'Source topic']);
     expect(screen.getAllByRole('definition')[1]).toHaveTextContent('orders');
     expect(screen.getByRole('figure', { name: 'This will run' })).toContainElement(screen.getByTestId('sql-preview'));
   });
@@ -150,6 +150,8 @@ describe('the SqlWizard', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
 
-    expect(onClose).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'click', target: screen.getByRole('button', { name: 'Close' }) })
+    );
   });
 });

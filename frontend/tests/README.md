@@ -7,16 +7,16 @@ Node must satisfy `package.json`. CI selects Node from `.nvmrc`.
 
 ## Choose by behavior
 
-| Coverage | Runner/environment | Command |
-| --- | --- | --- |
-| Pure logic, transforms, mocked module contracts | Bun; Happy DOM supplies import-time browser globals | `bun run test:unit` |
-| React components, hooks, DOM, store/transport integration | Rstest + Happy DOM | `bun run test:integration` |
-| Bundler/configuration and subprocess integration | Rstest + Happy DOM | `bun run test:integration` |
-| Built Module Federation remote | Rstest federation plugin + Happy DOM | `bun run test:federation` |
-| Native CSS animation and browser hit testing | Rstest + Playwright Chromium | `bun run test:browser` |
-| Native input, viewport and fixture compatibility | Rstest + Playwright Chromium | `bun run test:e2e:canary` |
-| Production app, mocked REST/Connect boundary, bundle/worker budgets | Rstest + Playwright Chromium | `bun run build && bun run test:bundle` |
-| Running Console + backend + brokers/services | Rstest + Playwright + Testcontainers | `bun run e2e-test:variant console` |
+| Coverage                                                            | Runner/environment                                  | Command                                |
+| ------------------------------------------------------------------- | --------------------------------------------------- | -------------------------------------- |
+| Pure logic, transforms, mocked module contracts                     | Bun; Happy DOM supplies import-time browser globals | `bun run test:unit`                    |
+| React components, hooks, DOM, store/transport integration           | Rstest + Happy DOM                                  | `bun run test:integration`             |
+| Bundler/configuration and subprocess integration                    | Rstest + Happy DOM                                  | `bun run test:integration`             |
+| Built Module Federation remote                                      | Rstest federation plugin + Happy DOM                | `bun run test:federation`              |
+| Native CSS animation and browser hit testing                        | Rstest + Playwright Chromium                        | `bun run test:browser`                 |
+| Native input, viewport and fixture compatibility                    | Rstest + Playwright Chromium                        | `bun run test:e2e:canary`              |
+| Production app, mocked REST/Connect boundary, bundle/worker budgets | Rstest + Playwright Chromium                        | `bun run build && bun run test:bundle` |
+| Running Console + backend + brokers/services                        | Rstest + Playwright + Testcontainers                | `bun run e2e-test:variant console`     |
 
 Classify before naming: `.test.ts` is the Bun convention, `.test.tsx` covers DOM/React
 integration, `.integration.test.ts` covers non-JSX integration, and `.spec.ts` drives a

@@ -78,7 +78,7 @@ function ExpandedMessageActions({
           (previous instanceof HTMLElement && previous !== document.body && previous.isConnected
             ? previous
             : fallbackFocusRef?.current);
-        if (target?.isConnected) {
+        if (target?.isConnected === true) {
           target.focus({ preventScroll: true });
         }
       };
@@ -126,7 +126,14 @@ const DetailBody = ({
     <Accordion
       className="min-h-0 flex-1 overflow-y-auto"
       multiple
-      onValueChange={(value) => onOpenSectionsChange(value as DetailSectionKey[])}
+      onValueChange={(value) =>
+        onOpenSectionsChange(
+          value.filter(
+            (key): key is DetailSectionKey =>
+              key === 'metadata' || key === 'key' || key === 'headers' || key === 'value'
+          )
+        )
+      }
       value={SECTION_KEYS.filter((key) => sections[key])}
     >
       <MetadataSection msg={msg} />

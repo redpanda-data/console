@@ -14,7 +14,7 @@ const isTimestampListMessagesRequest = (request: Request, timestampInMillisecond
 
   try {
     const postData = request.postData();
-    if (!postData) {
+    if (!(postData !== null && postData !== undefined && postData !== '')) {
       return false;
     }
 
@@ -105,7 +105,7 @@ test.describe('filter Messages by Timestamp', () => {
 
           try {
             const postData = request.postData();
-            if (!postData) {
+            if (!(postData !== null && postData !== undefined && postData !== '')) {
               return false;
             }
 

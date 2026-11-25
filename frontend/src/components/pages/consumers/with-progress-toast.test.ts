@@ -12,14 +12,14 @@
 import { toast } from 'sonner';
 
 import { withProgressToast } from './with-progress-toast';
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, type Mock, spyOn, test } from 'bun:test';
 
 const TOAST_ID = 'progress-toast';
 
 describe('withProgressToast', () => {
-  let loading: ReturnType<typeof spyOn>;
-  let success: ReturnType<typeof spyOn>;
-  let error: ReturnType<typeof spyOn>;
+  let loading: Mock<typeof toast.loading>;
+  let success: Mock<typeof toast.success>;
+  let error: Mock<typeof toast.error>;
 
   beforeEach(() => {
     loading = spyOn(toast, 'loading').mockReturnValue(TOAST_ID);
@@ -56,7 +56,7 @@ describe('withProgressToast', () => {
       withProgressToast(
         'Deleting offsets',
         () => Promise.reject(new Error('denied')),
-        (err) => `Could not delete - ${(err as Error).message}`
+        (err) => `Could not delete - ${err instanceof Error ? err.message : String(err)}`
       )
     ).rejects.toThrow('denied');
 

@@ -11,8 +11,7 @@
 
 import { createFileRoute, useParams } from '@tanstack/react-router';
 
-import AdminDebugBundleProgress from '../../../components/pages/admin/admin-debug-bundle-progress';
-
+import { AdminPageDebugBundleProgress as AdminDebugBundleProgress } from '../../../components/pages/admin/admin-debug-bundle-progress';
 export const Route = createFileRoute('/debug-bundle/progress/$jobId')({
   staticData: {
     title: 'Debug Bundle Progress',

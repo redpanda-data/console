@@ -9,11 +9,12 @@
  * by the Apache License, Version 2.0
  */
 
-import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
 
+import { createComponentFixture } from './__fixtures__/component-spec';
 import { useCreateModeInitialYaml } from './use-create-mode-initial-yaml';
-import type { ConnectComponentSpec } from '../types/schema';
+import type { generateYamlFromWizardData } from './yaml';
 
 const mockStoreSetYamlContent = rs.fn();
 let mockPersistedYaml: string | undefined;
@@ -34,12 +35,12 @@ rs.mock('state/rpcn-wizard-store', () => ({
 }));
 
 const GENERATED_YAML = 'input:\n  generate:\n    mapping: "root = {}"';
-const mockGenerateYaml = rs.fn(() => GENERATED_YAML);
+const mockGenerateYaml = rs.fn((..._args: Parameters<typeof generateYamlFromWizardData>) => GENERATED_YAML);
 rs.mock('./yaml', () => ({
-  generateYamlFromWizardData: (...args: unknown[]) => mockGenerateYaml(...args),
+  generateYamlFromWizardData: (...args: Parameters<typeof generateYamlFromWizardData>) => mockGenerateYaml(...args),
 }));
 
-const fakeComponents = [{ name: 'generate', type: 'input' }] as ConnectComponentSpec[];
+const fakeComponents = [createComponentFixture({ name: 'generate', type: 'input' })];
 
 describe('useCreateModeInitialYaml', () => {
   let onResolved: ReturnType<typeof rs.fn>;
@@ -56,7 +57,7 @@ describe('useCreateModeInitialYaml', () => {
     rs.restoreAllMocks();
   });
 
-  it('does not call onResolved and isInitializing=false when disabled', () => {
+  test('does not call onResolved and isInitializing=false when disabled', () => {
     const { result } = renderHook(() =>
       useCreateModeInitialYaml({
         enabled: false,
@@ -71,7 +72,7 @@ describe('useCreateModeInitialYaml', () => {
   });
 
   describe('serverless path', () => {
-    it('returns isInitializing=true while waiting for components', () => {
+    test('returns isInitializing=true while waiting for components', () => {
       const { result } = renderHook(() =>
         useCreateModeInitialYaml({
           enabled: true,
@@ -85,7 +86,7 @@ describe('useCreateModeInitialYaml', () => {
       expect(result.current.isInitializing).toBe(true);
     });
 
-    it('calls onResolved with generated YAML once components are loaded', () => {
+    test('calls onResolved with generated YAML once components are loaded', () => {
       const { result } = renderHook(() =>
         useCreateModeInitialYaml({
           enabled: true,
@@ -97,10 +98,14 @@ describe('useCreateModeInitialYaml', () => {
       );
       expect(onResolved).toHaveBeenCalledWith(GENERATED_YAML);
       expect(result.current.isInitializing).toBe(false);
-      expect(mockGenerateYaml).toHaveBeenCalledOnce();
+      expect(mockGenerateYaml).toHaveBeenCalledExactlyOnceWith(
+        { connectionName: 'generate', connectionType: 'input' },
+        undefined,
+        fakeComponents
+      );
     });
 
-    it('persists to onboarding YAML store when diagrams disabled', () => {
+    test('persists to onboarding YAML store when diagrams disabled', () => {
       renderHook(() =>
         useCreateModeInitialYaml({
           enabled: true,
@@ -113,7 +118,7 @@ describe('useCreateModeInitialYaml', () => {
       expect(mockStoreSetYamlContent).toHaveBeenCalledWith({ yamlContent: GENERATED_YAML });
     });
 
-    it('does not persist to onboarding YAML store when diagrams enabled', () => {
+    test('does not persist to onboarding YAML store when diagrams enabled', () => {
       renderHook(() =>
         useCreateModeInitialYaml({
           enabled: true,
@@ -126,7 +131,7 @@ describe('useCreateModeInitialYaml', () => {
       expect(mockStoreSetYamlContent).not.toHaveBeenCalled();
     });
 
-    it('times out after timeoutMs and sets isInitializing=false', () => {
+    test('times out after timeoutMs and sets isInitializing=false', () => {
       const { result } = renderHook(() =>
         useCreateModeInitialYaml({
           enabled: true,
@@ -147,7 +152,7 @@ describe('useCreateModeInitialYaml', () => {
       expect(onResolved).not.toHaveBeenCalled();
     });
 
-    it('runs generation only once even if rerendered', () => {
+    test('runs generation only once even if rerendered', () => {
       const { rerender } = renderHook(() =>
         useCreateModeInitialYaml({
           enabled: true,
@@ -157,16 +162,24 @@ describe('useCreateModeInitialYaml', () => {
           onResolved,
         })
       );
-      expect(mockGenerateYaml).toHaveBeenCalledOnce();
+      expect(mockGenerateYaml).toHaveBeenCalledExactlyOnceWith(
+        { connectionName: 'generate', connectionType: 'input' },
+        undefined,
+        fakeComponents
+      );
 
       rerender();
       rerender();
 
-      expect(mockGenerateYaml).toHaveBeenCalledOnce();
-      expect(onResolved).toHaveBeenCalledOnce();
+      expect(mockGenerateYaml).toHaveBeenCalledExactlyOnceWith(
+        { connectionName: 'generate', connectionType: 'input' },
+        undefined,
+        fakeComponents
+      );
+      expect(onResolved).toHaveBeenCalledExactlyOnceWith(GENERATED_YAML);
     });
 
-    it('does not call onResolved when wizard has no data', () => {
+    test('does not call onResolved when wizard has no data', () => {
       mockGenerateYaml.mockReturnValue('');
       const { result } = renderHook(() =>
         useCreateModeInitialYaml({
@@ -183,7 +196,7 @@ describe('useCreateModeInitialYaml', () => {
   });
 
   describe('non-serverless path (persisted YAML)', () => {
-    it('calls onResolved with persisted YAML', () => {
+    test('calls onResolved with persisted YAML', () => {
       mockPersistedYaml = 'input:\n  http_client:\n    url: http://example.com';
       const { result } = renderHook(() =>
         useCreateModeInitialYaml({
@@ -198,7 +211,7 @@ describe('useCreateModeInitialYaml', () => {
       expect(result.current.isInitializing).toBe(false);
     });
 
-    it('does not restore when diagrams are enabled', () => {
+    test('does not restore when diagrams are enabled', () => {
       mockPersistedYaml = 'input:\n  http_client:\n    url: http://example.com';
       renderHook(() =>
         useCreateModeInitialYaml({
@@ -212,7 +225,7 @@ describe('useCreateModeInitialYaml', () => {
       expect(onResolved).not.toHaveBeenCalled();
     });
 
-    it('does not call onResolved when no persisted YAML exists', () => {
+    test('does not call onResolved when no persisted YAML exists', () => {
       mockPersistedYaml = undefined;
       const { result } = renderHook(() =>
         useCreateModeInitialYaml({
@@ -227,7 +240,7 @@ describe('useCreateModeInitialYaml', () => {
       expect(result.current.isInitializing).toBe(false);
     });
 
-    it('does not call generateYamlFromWizardData', () => {
+    test('does not call generateYamlFromWizardData', () => {
       mockPersistedYaml = 'input:\n  http_client:\n    url: http://example.com';
       renderHook(() =>
         useCreateModeInitialYaml({

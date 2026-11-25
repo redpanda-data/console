@@ -12,7 +12,7 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button, buttonVariants } from 'components/redpanda-ui/components/button';
+import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Skeleton } from 'components/redpanda-ui/components/skeleton';
@@ -30,6 +30,10 @@ import {
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
 import { toast } from 'sonner';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { asyncEvent } from 'utils/async-event';
+import { isNonEmptyString } from 'utils/string-utils';
+import { reportActionError } from 'utils/toast.utils';
+import { isObject } from 'utils/type-guards';
 
 import {
   type BrokerProgress,
@@ -72,7 +76,11 @@ const BROKER_STATUS: Record<
 
 const BrokerCopy = ({ broker }: { broker: BrokerProgress }) => {
   if (!broker.copy) {
-    return <span className="font-mono text-body-sm text-muted-foreground">{broker.errorMessage || 'No answer'}</span>;
+    return (
+      <span className="font-mono text-body-sm text-muted-foreground">
+        {isNonEmptyString(broker.errorMessage) ? broker.errorMessage : 'No answer'}
+      </span>
+    );
   }
   const phase = broker.copy.phase ? FENCE_PHASE_LABEL[broker.copy.phase] : 'Unknown state';
   return (
@@ -206,7 +214,7 @@ const readerUser = (reader: ShadowLinkReader) => {
   if (reader.authentication === 'none') {
     return <span className="text-muted-foreground">No SASL or mTLS</span>;
   }
-  return reader.principal ? <span className="font-mono">{reader.principal}</span> : '–';
+  return isNonEmptyString(reader.principal) ? <span className="font-mono">{reader.principal}</span> : '–';
 };
 
 const ReadersCard = ({
@@ -278,18 +286,19 @@ const ReadersCard = ({
                   >
                     <TableCell weight="medium">
                       {openCluster ? (
-                        <button
-                          className={cn(buttonVariants({ variant: 'link' }), 'h-auto p-0')}
+                        <Button
                           onClick={() =>
                             openCluster(
                               reader.shadowClusterId,
                               `/shadowlinks/${encodeURIComponent(reader.linkName)}?tab=failover`
                             )
                           }
+                          size={null}
                           type="button"
+                          variant="link"
                         >
                           {reader.linkName}
-                        </button>
+                        </Button>
                       ) : (
                         reader.linkName
                       )}
@@ -352,8 +361,10 @@ const OwnCopies = ({ copies }: { copies: BrokerOwnCopy[] }) =>
           <li key={copy.nodeId ?? `self-${index}`}>
             {copy.nodeId === undefined ? 'The broker that answered' : `Broker ${copy.nodeId}`}:{' '}
             {copy.phase
-              ? `${FENCE_PHASE_LABEL[copy.phase]}, revision ${copy.revision?.toString()}`
-              : copy.errorMessage || 'no answer'}
+              ? `${FENCE_PHASE_LABEL[copy.phase]}, revision ${String(copy.revision)}`
+              : isNonEmptyString(copy.errorMessage)
+                ? copy.errorMessage
+                : 'no answer'}
           </li>
         ))}
       </ul>
@@ -477,7 +488,7 @@ const searchText = (searchStr: string, key: string): string | undefined => {
   }
 };
 
-const URL_ACTIONS = Object.keys(DIALOG_FOR_ACTION) as (keyof typeof DIALOG_FOR_ACTION)[];
+const URL_ACTIONS = ['exempt', 'fence', 'unfence'] as const;
 
 /**
  * `?action=` opens a dialog for links from elsewhere: `exempt` the settings with `principal` already
@@ -489,7 +500,7 @@ const URL_ACTIONS = Object.keys(DIALOG_FOR_ACTION) as (keyof typeof DIALOG_FOR_A
 const useDialogFromUrl = (phase: FencePhase, setDialog: (dialog: SourceDialog | null) => void) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const requested = (location.search as { action?: unknown }).action;
+  const requested = isObject(location.search) ? location.search.action : undefined;
   const action = URL_ACTIONS.find((candidate) => candidate === requested);
   const handled = useRef(false);
   useEffect(() => {
@@ -611,7 +622,7 @@ export const ClusterFenceSourcePanel = () => {
       <ReadProblem
         error={status.error}
         isRefetching={status.isRefetching}
-        onRetry={() => status.refetch()}
+        onRetry={asyncEvent(() => status.refetch(), reportActionError)}
         ownCopies={status.ownCopies}
       />
     );

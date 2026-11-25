@@ -12,11 +12,11 @@
 import { RouteError } from './components/routes/route-error';
 import { RoutePending } from './components/routes/route-pending';
 import { routerDefaults } from './router-defaults';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 describe('routerDefaults', () => {
-  it('preloads on intent while TanStack Query owns caching and route boundaries', () => {
-    expect(routerDefaults).toEqual({
+  test('preloads on intent while TanStack Query owns caching and route boundaries', () => {
+    expect(routerDefaults).toStrictEqual({
       defaultErrorComponent: RouteError,
       defaultPendingComponent: RoutePending,
       defaultPreload: 'intent',

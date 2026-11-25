@@ -23,18 +23,22 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
-import { showToast } from 'utils/toast.utils';
+import { reportActionError, showToast } from 'utils/toast.utils';
 
 import { formatPipelineError } from './errors';
 import { PipelineEditor } from './pipelines-create';
 import { clampTasks, cpuToTasks, MAX_TASKS, MIN_TASKS, tasksToCPU } from './tasks';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
+import { arrayFirst } from '../../../utils/array-utils';
+import { nonzeroNumber } from '../../../utils/number-utils';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
-import PageContent from '../../misc/page-content';
+import { PageContent } from '../../misc/page-content';
 import { PageComponent, type PageInitHelper } from '../page';
 
-class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
+class RpConnectPipelinesEdit extends PageComponent<{
+  pipelineId: string;
+}> {
   initPage(p: PageInitHelper): void {
     const pipelineId = this.props.pipelineId;
 
@@ -44,12 +48,12 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
 
     this.refreshData(true);
     // get secrets
-    rpcnSecretManagerApi.refreshSecrets(true);
+    rpcnSecretManagerApi.refreshSecrets(true).catch(reportActionError);
     appGlobal.onRefresh = () => this.refreshData(true);
   }
 
   refreshData(_force: boolean) {
-    pipelinesApi.refreshPipelines(_force);
+    pipelinesApi.refreshPipelines(_force).catch(reportActionError);
   }
 
   render() {
@@ -57,7 +61,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
       return DefaultSkeleton;
     }
     const pipelineId = this.props.pipelineId;
-    const pipeline = pipelinesApi.pipelines.first((x) => x.id === pipelineId);
+    const pipeline = arrayFirst(pipelinesApi.pipelines, (x) => x.id === pipelineId);
     if (!pipeline) {
       return DefaultSkeleton;
     }
@@ -65,7 +69,7 @@ class RpConnectPipelinesEdit extends PageComponent<{ pipelineId: string }> {
   }
 }
 
-export default RpConnectPipelinesEdit;
+export { RpConnectPipelinesEdit };
 
 type PipelineUpdateInput = {
   displayName: string;
@@ -91,7 +95,7 @@ const useUpdatePipeline = (pipeline: Pipeline, pipelineId: string) => {
           configYaml: editorContent,
           description,
           resources: {
-            cpuShares: tasksToCPU(tasks) || '0',
+            cpuShares: (tasksToCPU(tasks) ?? '') || '0',
             memoryShares: '0', // still required by API but unused
           },
           tags: {
@@ -108,7 +112,7 @@ const useUpdatePipeline = (pipeline: Pipeline, pipelineId: string) => {
         });
 
         const retUnits = cpuToTasks(r.response?.pipeline?.resources?.cpuShares);
-        if (retUnits && tasks !== retUnits) {
+        if (retUnits !== null && retUnits !== undefined && Boolean(retUnits) && tasks !== retUnits) {
           showToast({
             status: 'info',
             duration: 6000,
@@ -118,11 +122,11 @@ const useUpdatePipeline = (pipeline: Pipeline, pipelineId: string) => {
         await pipelinesApi.refreshPipelines(true);
         appGlobal.historyPush(`/rp-connect/${pipelineId}`);
       })
-      .catch((err) => {
+      .catch((error: unknown) => {
         showToast({
           status: 'error',
           title: 'Failed to update pipeline',
-          description: formatPipelineError(err),
+          description: formatPipelineError(error),
         });
       })
       .finally(() => {
@@ -137,7 +141,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
   const [formState, setFormState] = useState<PipelineUpdateInput>({
     displayName: pipeline.displayName,
     description: pipeline.description,
-    tasks: cpuToTasks(pipeline?.resources?.cpuShares) || MIN_TASKS,
+    tasks: nonzeroNumber(cpuToTasks(pipeline?.resources?.cpuShares)) ?? MIN_TASKS,
     editorContent: pipeline.configYaml,
   });
   const { displayName, description, tasks, editorContent } = formState;
@@ -249,7 +253,7 @@ const RpConnectPipelinesEditContent = ({ pipeline, pipelineId }: { pipeline: Pip
             'Update'
           )}
         </Button>
-        <Link params={{ pipelineId }} search={{} as never} to="/rp-connect/$pipelineId">
+        <Link params={{ pipelineId }} search={{}} to="/rp-connect/$pipelineId">
           <Button variant="link">Cancel</Button>
         </Link>
       </div>

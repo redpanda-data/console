@@ -32,12 +32,8 @@ export const payloadEncodingPairs = [
   { value: PayloadEncoding.CBOR, label: 'CBOR' },
 ];
 
-export const PAYLOAD_ENCODING_LABELS = payloadEncodingPairs.reduce(
-  (acc, pair) => {
-    acc[pair.value] = pair.label;
-    return acc;
-  },
-  {} as Record<PayloadEncoding, string>
+export const PAYLOAD_ENCODING_LABELS = Object.fromEntries<string>(
+  payloadEncodingPairs.map(({ value, label }) => [value, label])
 );
 
 // Define the column order as a constant

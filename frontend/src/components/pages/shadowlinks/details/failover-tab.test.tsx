@@ -19,9 +19,15 @@ import { useClusterFenceStore } from 'stores/cluster-fence-store';
 
 import { type FailoverReadiness, type FailoverTopic, getFailoverReadiness, getSourceFenceStep } from './failover-model';
 import { FailoverTab } from './failover-tab';
-import type { UnifiedShadowLink } from '../model';
+import { type UnifiedShadowLink, UnifiedShadowLinkState } from '../model';
 
-const link = { name: 'orders-dr' } as UnifiedShadowLink;
+const link: UnifiedShadowLink = {
+  name: 'orders-dr',
+  id: 'orders-dr',
+  state: UnifiedShadowLinkState.ACTIVE,
+  tasksStatus: [],
+  syncedShadowTopicProperties: [],
+};
 
 const sasl: LinkIdentity = { authentication: 'sasl', principal: 'shadow-orders' };
 
@@ -44,7 +50,7 @@ const cloudSource = (
   exemptPrincipals = ['shadow-orders'],
   brokers: ShadowLinkPeerFenceBroker[] = [],
   stateChangedAt?: Date
-): ShadowLinkSource => ({
+): Extract<ShadowLinkSource, { kind: 'cloud' }> => ({
   kind: 'cloud',
   clusterId: 'prod',
   clusterName: 'prod-us-east-1',
@@ -218,7 +224,7 @@ describe('the FailoverTab', () => {
           topics: topics([0]),
           fence: {
             kind: 'unreadable',
-            source: cloudSource('fenced') as Extract<ShadowLinkSource, { kind: 'cloud' }>,
+            source: cloudSource('fenced'),
             reason: 'no-leader',
           },
         })

@@ -1,3 +1,4 @@
+import 'components/legacy-layout.css';
 import { InfoIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
@@ -85,8 +86,8 @@ const globHelp = (
           <div className="rowSeparator" />
         </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-        <div style={{ opacity: 0.5, fontSize: 'smaller', textAlign: 'center' }}>Example Data</div>
+      <div className="flex flex-col justify-end">
+        <div className="console-preview-example-label">Example Data</div>
         <SimpleCodeBlock
           allowCopy={false}
           allowWrap={false}
@@ -107,7 +108,7 @@ const globHelp = (
         A glob pattern is just a list of property names seperated by dots. In addition to simple property names you can
         use:
       </div>
-      <ul style={{ paddingLeft: '2em', marginTop: '.5em' }}>
+      <ul className="console-preview-patterns">
         <li>
           <Code>*</Code> Star to match all current properties
         </li>
@@ -133,18 +134,10 @@ export const PatternHelpDrawer = () => {
 
   return (
     <>
-      <button
-        onClick={onOpen}
-        style={{
-          margin: '0 2px',
-          color: 'var(--color-action-primary)',
-          textDecoration: 'underline dotted',
-        }}
-        type="button"
-      >
+      <Button className="mx-0.5 my-0" onClick={onOpen} type="button" variant="link">
         <InfoIcon size={15} />
         &nbsp;glob patterns
-      </button>
+      </Button>
       <Sheet onOpenChange={setIsOpen} open={isOpen}>
         {/* SheetContent is not a flex column, so the header and footer only stay pinned once it is.
             `container` opts out of the dialog's PortalContainerProvider — DialogContent is

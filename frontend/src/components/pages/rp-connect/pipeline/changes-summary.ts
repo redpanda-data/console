@@ -11,8 +11,11 @@
 
 import { Pipeline_State } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 
+import { nonzeroNumber } from '../../../../utils/number-utils';
+import { isNonEmptyString } from '../../../../utils/string-utils';
 import { changedNodeIds } from '../utils/pipeline-diff';
-import { type PipelineFlowNode, parsePipelineFlowTree, sectionLabel } from '../utils/pipeline-flow-parser';
+import { type PipelineFlowNode, sectionLabel } from '../utils/pipeline-flow-nodes';
+import { parsePipelineFlowTree } from '../utils/pipeline-flow-parser';
 
 export type ChangeKind = 'added' | 'removed' | 'changed';
 
@@ -43,7 +46,11 @@ function componentNodesById(yaml: string): Map<string, PipelineFlowNode> {
   return byId;
 }
 
-const describe = (id: string, node: PipelineFlowNode | undefined, kind: ChangeKind): ComponentChange => ({
+const describeComponentChange = (
+  id: string,
+  node: PipelineFlowNode | undefined,
+  kind: ChangeKind
+): ComponentChange => ({
   id,
   kind,
   section: sectionLabel(node?.section),
@@ -63,17 +70,17 @@ export function summarizeComponentChanges(
   const unmatchedEdited = changedIds.filter((id) => edited.has(id));
   const unmatchedSaved = new Set(changedNodeIds(editedYaml, savedYaml).filter((id) => saved.has(id)));
   const editedChanges = unmatchedEdited.map((id) =>
-    describe(id, edited.get(id), unmatchedSaved.has(id) ? 'changed' : 'added')
+    describeComponentChange(id, edited.get(id), unmatchedSaved.has(id) ? 'changed' : 'added')
   );
-  const removedChanges = [...unmatchedSaved]
-    .filter((id) => !unmatchedEdited.includes(id))
-    .map((id) => describe(id, saved.get(id), 'removed'));
+  const removedChanges = [...unmatchedSaved].flatMap((id) =>
+    unmatchedEdited.includes(id) ? [] : [describeComponentChange(id, saved.get(id), 'removed')]
+  );
 
   return [...editedChanges, ...removedChanges].sort(compareBySectionThenId);
 }
 
 function compareBySectionThenId(a: ComponentChange, b: ComponentChange): number {
-  return a.section.localeCompare(b.section) || a.id.localeCompare(b.id, undefined, { numeric: true });
+  return nonzeroNumber(a.section.localeCompare(b.section)) ?? a.id.localeCompare(b.id, undefined, { numeric: true });
 }
 
 export const UNSAVED_CHANGES_LANE_LABEL = 'Unsaved changes';
@@ -117,16 +124,16 @@ function formatSettingValue(key: SettingsFieldKey, values: SettingsValues, gatew
     return values.computeUnits === undefined ? NOT_SET : String(values.computeUnits);
   }
   if (key === 'tags') {
-    const tags = (values.tags ?? []).filter((tag) => tag?.key);
+    const tags = (values.tags ?? []).filter((tag) => isNonEmptyString(tag?.key));
     return tags.length > 0
-      ? tags.map((tag) => (tag?.value ? `${tag.key}: ${tag.value}` : tag?.key)).join(', ')
+      ? tags.map((tag) => (isNonEmptyString(tag?.value) ? `${tag?.key ?? ''}: ${tag.value}` : tag?.key)).join(', ')
       : 'none';
   }
   if (key === 'egressGatewayIds') {
-    const ids = (values.egressGatewayIds ?? []).filter(Boolean);
-    return ids.length > 0 ? ids.map((id) => (id && gatewayNames?.get(id)) || id).join(', ') : 'none';
+    const ids = (values.egressGatewayIds ?? []).filter(isNonEmptyString);
+    return ids.length > 0 ? ids.map((id) => (gatewayNames?.get(id) ?? '') || id).join(', ') : 'none';
   }
-  return values[key] || NOT_SET;
+  return (values[key] ?? '') || NOT_SET;
 }
 
 // `saved` is the form's default values, re-baselined on every save. Compared by value, not `dirtyFields`.

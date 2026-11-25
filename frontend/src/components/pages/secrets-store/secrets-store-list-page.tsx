@@ -40,10 +40,13 @@ import React, { useEffect } from 'react';
 import { useDeleteSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
 import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { asyncEvent } from 'utils/async-event';
+import { formatToastErrorMessageGRPC, reportActionError } from 'utils/toast.utils';
+import { stringValue } from 'utils/type-guards';
 
 import { SecretScopeBadge } from './secret-scope-badge';
 import { SecretsStoreActionsCell } from './secrets-store-actions';
+import { isPresent } from '../../../utils/type-guards';
 
 export const updatePageTitle = () => {
   uiState.pageTitle = 'Secrets Store';
@@ -64,8 +67,8 @@ export type SecretTableRow = {
 
 const transformSecret = (secret: Secret): SecretTableRow => ({
   id: secret.id,
-  labels: secret.labels || {},
-  scopes: secret.scopes || [],
+  labels: secret.labels ?? {},
+  scopes: secret.scopes ?? [],
   scope: '',
 });
 
@@ -103,7 +106,7 @@ export const createColumns = (options: CreateColumnsOptions): DataTableColumnDef
       accessorKey: 'labels',
       header: 'Labels',
       cell: ({ row }) => {
-        const labels = row.getValue('labels') as Record<string, string>;
+        const labels = row.original.labels;
         const filteredLabels = Object.entries(labels).filter(
           ([key, value]) => !(key === 'owner' && value === 'console')
         );
@@ -144,7 +147,7 @@ export const createColumns = (options: CreateColumnsOptions): DataTableColumnDef
           const IconComponent = option.icon;
           return {
             label: option.label,
-            icon: IconComponent ? <IconComponent className="h-3 w-3" /> : null,
+            icon: isPresent(IconComponent) ? <IconComponent className="size-3" /> : null,
           };
         };
 
@@ -219,15 +222,15 @@ function SecretsStoreDataTableToolbar({ table }: { table: DataTableInstance<Secr
             table.getColumn('id')?.setFilterValue(event.target.value)
           }
           placeholder="Filter by ID..."
-          value={(table.getColumn('id')?.getFilterValue() as string) ?? ''}
+          value={stringValue(table.getColumn('id')?.getFilterValue()) ?? ''}
         />
         {table.getColumn('scope') && (
           <DataTableFacetedFilter column={table.getColumn('scope')} options={scopeOptions} title="Scope" />
         )}
-        {Boolean(isFiltered) && (
+        {isFiltered && (
           <Button onClick={() => table.resetColumnFilters()} size="sm" variant="ghost">
             Reset
-            <X className="ml-2 h-4 w-4" />
+            <X className="ml-2 size-4" />
           </Button>
         )}
       </div>
@@ -346,7 +349,9 @@ export const SecretsStoreListPage = () => {
           </div>
         </header>
         <div className="mt-2 mb-4">
-          <Button onClick={() => navigate({ to: '/secrets/create' })}>Create Secret</Button>
+          <Button onClick={asyncEvent(() => navigate({ to: '/secrets/create' }), reportActionError)}>
+            Create Secret
+          </Button>
         </div>
 
         <div className="flex items-center justify-between">
@@ -373,7 +378,7 @@ export const SecretsStoreListPage = () => {
                   <TableRow>
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
                       <div className="flex items-center justify-center gap-2">
-                        <TonedIcon className="h-4 w-4" icon={Loader2} spin />
+                        <TonedIcon className="size-4" icon={Loader2} spin />
                         Loading secrets...
                       </div>
                     </TableCell>
@@ -385,14 +390,14 @@ export const SecretsStoreListPage = () => {
                   <TableRow>
                     <TableCell className="h-24 text-center" colSpan={columns.length}>
                       <div className="flex items-center justify-center gap-2 text-destructive">
-                        <AlertCircle className="h-4 w-4" />
+                        <AlertCircle className="size-4" />
                         Error loading secrets: {String(error)}
                       </div>
                     </TableCell>
                   </TableRow>
                 );
               }
-              if (table.getRowModel().rows?.length) {
+              if (Boolean(table.getRowModel().rows?.length)) {
                 return table.getRowModel().rows.map((row) => (
                   <TableRow data-state={row.getIsSelected() && 'selected'} key={row.id}>
                     {row.getVisibleCells().map((cell) => (

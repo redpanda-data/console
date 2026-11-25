@@ -10,13 +10,15 @@
  */
 
 import { Code, ConnectError } from '@connectrpc/connect';
+import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { PropsWithChildren } from 'react';
 import { toast } from 'sonner';
 
+import { LIVE_INITIAL_STATE, liveReducer, MAX_LIVE_LOG_MESSAGES, useLogSearch } from './logs';
 import type { TopicMessage } from '../../state/rest-interfaces';
-import { PartitionOffsetOrigin } from '../../state/ui';
+import { PartitionOffsetOrigin } from '../../types/topic-settings';
 
 // Track messages returned by convertListMessageData
 let convertCallIndex = 0;
@@ -40,15 +42,13 @@ rs.mock('sonner', () => ({
 
 // Mock config with a fake consoleClient
 const mockListMessages = rs.fn();
-rs.mock('../../config', () => ({
+rs.mock('../../runtime-config', () => ({
   config: {
     get consoleClient() {
       return { listMessages: mockListMessages };
     },
   },
 }));
-
-import { LIVE_INITIAL_STATE, liveReducer, MAX_LIVE_LOG_MESSAGES, useLogSearch } from './logs';
 
 function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
   return {
@@ -64,7 +64,7 @@ function makeMessage(id: number, keyJson = 'pipeline-1'): TopicMessage {
     valueBinHexPreview: '',
     keyJson,
     keyBinHexPreview: '',
-  } as TopicMessage;
+  };
 }
 
 function createWrapper({ retry = false }: { retry?: boolean | number } = {}) {
@@ -123,7 +123,7 @@ describe('useLogSearch live mode', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3, 2, 1]));
+    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toStrictEqual([3, 2, 1]));
   });
 
   test('keeps one copy of a message both the history and the tail returned', async () => {
@@ -145,7 +145,7 @@ describe('useLogSearch live mode', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3, 2, 1]));
+    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toStrictEqual([3, 2, 1]));
   });
 
   // The tail heartbeats with empty progress while open, which isn't a search in progress.
@@ -194,7 +194,7 @@ describe('useLogSearch live mode', () => {
       }
     );
 
-    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toEqual([3]));
+    await waitFor(() => expect(result.current.messages.map((m) => m.offset)).toStrictEqual([3]));
     await waitFor(() =>
       expect(
         queryClient
@@ -218,9 +218,14 @@ describe('useLogSearch live mode', () => {
     });
     mockStreams({
       history,
-      async *live({ signal }) {
-        await untilAborted(signal);
-      },
+      live: ({ signal }) => ({
+        [Symbol.asyncIterator]: () => ({
+          next: async () => {
+            await untilAborted(signal);
+            return { done: true, value: undefined };
+          },
+        }),
+      }),
     });
 
     const { result, rerender } = renderHook(
@@ -241,12 +246,36 @@ describe('useLogSearch history mode', () => {
   beforeEach(() => {
     rs.useFakeTimers({ shouldAdvanceTime: true });
     rs.clearAllMocks();
+    mockListMessages.mockReset();
     convertCallIndex = 0;
     fakeMessages.length = 0;
   });
 
   afterEach(() => {
     rs.useRealTimers();
+  });
+
+  test('reads fresh history when the filtering mode changes', async () => {
+    mockListMessages.mockImplementation(function* streamMessages(request: { filterInterpreterCode: string }) {
+      if (request.filterInterpreterCode) {
+        yield dataOf(makeMessage(1));
+      } else {
+        yield dataOf(makeMessage(2));
+        yield dataOf(makeMessage(3, 'different-pipeline'));
+      }
+      yield DONE;
+    });
+
+    const { result, rerender } = renderHook(
+      ({ serverless }: { serverless: boolean }) =>
+        useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless }),
+      { wrapper: createWrapper(), initialProps: { serverless: false } }
+    );
+    await waitFor(() => expect(result.current.messages.map((message) => message.offset)).toStrictEqual([1]));
+
+    rerender({ serverless: true });
+
+    await waitFor(() => expect(result.current.messages.map((message) => message.offset)).toStrictEqual([2]));
   });
 
   test('reports progress during history streaming', async () => {
@@ -326,7 +355,7 @@ describe('useLogSearch history mode', () => {
 
     await waitFor(() => expect(result.current.phase).toBeNull());
     expect(result.current.error).toBeNull();
-    expect(result.current.messages).toEqual([]);
+    expect(result.current.messages).toStrictEqual([]);
     expect(toast.error).not.toHaveBeenCalled();
   });
 

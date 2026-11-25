@@ -1,3 +1,4 @@
+import { isNonzeroNumber } from '../../../src/utils/number-utils';
 import type { Locator, Page } from '../../shared/e2e';
 import { appURL, expect } from '../../shared/e2e';
 
@@ -67,20 +68,21 @@ export class SchemaPage {
   }
 
   async gotoCreate() {
-    await this.page.goto('/schema-registry/create', { waitUntil: 'networkidle' });
+    await this.page.goto('/schema-registry/create');
     await expect(this.page.getByRole('heading', { name: CREATE_SCHEMA_HEADING }).first()).toBeVisible();
   }
 
   async gotoDetails(subjectName: string, version?: number | 'latest') {
-    const versionParam = version ? `?version=${version}` : '?version=latest';
+    const versionParam = version === 'latest' || isNonzeroNumber(version) ? `?version=${version}` : '?version=latest';
     await this.page.goto(`/schema-registry/subjects/${encodeURIComponent(subjectName)}${versionParam}`);
     await expect(this.page.getByRole('heading', { name: subjectName })).toBeVisible();
   }
 
   async gotoEditCompatibility(subjectName?: string) {
-    const url = subjectName
-      ? `/schema-registry/subjects/${encodeURIComponent(subjectName)}/edit-compatibility`
-      : '/schema-registry/edit-compatibility';
+    const url =
+      subjectName !== null && subjectName !== undefined && subjectName !== ''
+        ? `/schema-registry/subjects/${encodeURIComponent(subjectName)}/edit-compatibility`
+        : '/schema-registry/edit-compatibility';
     await this.page.goto(url);
     await expect(this.page.getByRole('heading', { name: EDIT_COMPATIBILITY_HEADING })).toBeVisible();
   }
@@ -103,7 +105,7 @@ export class SchemaPage {
     );
 
     // Validate if requested
-    if (params.validate) {
+    if (params.validate === true) {
       await this.validateSchema();
     }
 
@@ -127,7 +129,7 @@ export class SchemaPage {
 
   /** Fills the topic (TOPIC_NAME strategy) or the subject name (CUSTOM strategy) the subject is named after. */
   private async fillSubjectSource({ strategy, topicName, keyOrValue, subjectName }: CreateSchemaParams) {
-    if (strategy === 'TOPIC_NAME' && topicName) {
+    if (strategy === 'TOPIC_NAME' && topicName !== null && topicName !== undefined && topicName !== '') {
       // For topic select, we also need to use custom select
       await selectCustomOption(this.page.getByTestId('schema-create-topic-select'), topicName);
 
@@ -136,7 +138,7 @@ export class SchemaPage {
       }
     }
 
-    if (strategy === 'CUSTOM' && subjectName) {
+    if (strategy === 'CUSTOM' && subjectName !== null && subjectName !== undefined && subjectName !== '') {
       await this.page.getByTestId('schema-create-subject-name-input').fill(subjectName);
     }
   }
@@ -360,6 +362,6 @@ export class SchemaPage {
   async getSchemaId(): Promise<number> {
     const schemaIdElement = this.page.getByTestId('schema-definition-schema-id');
     const text = await schemaIdElement.textContent();
-    return Number.parseInt(text?.trim() || '0', 10);
+    return Number.parseInt((text?.trim() ?? '') || '0', 10);
   }
 }

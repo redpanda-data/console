@@ -16,4 +16,4 @@ function PageContent(props: PageContentProps) {
   );
 }
 
-export default PageContent;
+export { PageContent };

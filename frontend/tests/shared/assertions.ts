@@ -45,7 +45,9 @@ export function retryAssertion<T>(
 export async function step<T>(name: string, action: () => T | Promise<T>): Promise<T> {
   try {
     return await action();
-  } catch (cause) {
-    throw new Error(`Step failed: ${name}: ${cause instanceof Error ? cause.message : String(cause)}`, { cause });
+  } catch (error) {
+    throw new Error(`Step failed: ${name}: ${error instanceof Error ? error.message : String(error)}`, {
+      cause: error,
+    });
   }
 }

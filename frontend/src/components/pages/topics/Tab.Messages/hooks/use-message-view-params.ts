@@ -12,12 +12,15 @@
 import type { SortingState } from '@tanstack/react-table';
 import { parseAsBoolean, parseAsInteger, parseAsString } from 'nuqs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { reportActionError } from 'utils/toast.utils';
 
 import { useQueryStateWithCallback } from '../../../../../hooks/use-query-state-with-callback';
 import { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
-import { DEFAULT_SEARCH_PARAMS, type FilterEntry } from '../../../../../state/ui';
+import type { FilterEntry } from '../../../../../state/ui';
 import { DEFAULT_SORTING, useTopicSettingsStore } from '../../../../../stores/topic-settings-store';
+import { DEFAULT_SEARCH_PARAMS } from '../../../../../types/topic-settings';
+import { payloadEncodingParser } from '../../../../../utils/payload-encoding';
 import { sortingParser } from '../../../../../utils/sorting-parser';
 import { getTopicFilters, setTopicFilters } from '../../../../../utils/topic-filters-session';
 
@@ -126,7 +129,7 @@ export function useMessageQueryParams(topicName: string) {
       getDefaultValue: () => getSearchParams(topicName)?.keyDeserializer ?? PayloadEncoding.UNSPECIFIED,
     },
     'kd',
-    parseAsInteger.withDefault(PayloadEncoding.UNSPECIFIED)
+    payloadEncodingParser
   );
 
   const [valueDeserializer, setValueDeserializer] = useQueryStateWithCallback<PayloadEncoding>(
@@ -137,7 +140,7 @@ export function useMessageQueryParams(topicName: string) {
       getDefaultValue: () => getSearchParams(topicName)?.valueDeserializer ?? PayloadEncoding.UNSPECIFIED,
     },
     'vd',
-    parseAsInteger.withDefault(PayloadEncoding.UNSPECIFIED)
+    payloadEncodingParser
   );
 
   const [schemaContext, setSchemaContext] = useQueryStateWithCallback<string>(
@@ -225,14 +228,14 @@ export function useMessagePagingParams(topicName: string, maxResults: number) {
   // Clear sorting when enabling continuous pagination mode
   useEffect(() => {
     if (continuousPaginationEnabled && sorting.length > 0) {
-      setSortingState([]);
+      setSortingState([]).catch(reportActionError);
     }
   }, [continuousPaginationEnabled, sorting.length, setSortingState]);
 
   // Auto-cap page size to maxResults when continuous pagination is enabled
   useEffect(() => {
     if (continuousPaginationEnabled && maxResults < pageSize) {
-      setPageSize(maxResults);
+      setPageSize(maxResults).catch(reportActionError);
     }
   }, [continuousPaginationEnabled, maxResults, pageSize, setPageSize]);
 

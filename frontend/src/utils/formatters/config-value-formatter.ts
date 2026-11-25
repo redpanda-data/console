@@ -68,7 +68,7 @@ function formatNumericConfigValue(name: string, value: string, num: number, suff
   if (name.endsWith('.bytes.per.second')) {
     return num >= Number.MAX_SAFE_INTEGER ? `Infinite${suffix}` : `${prettyBytesOrNA(num)}/s${suffix}`;
   }
-  if (CONFIG_INFINITE_VALUES[name] && num >= CONFIG_INFINITE_VALUES[name]) {
+  if (Boolean(CONFIG_INFINITE_VALUES[name]) && num >= CONFIG_INFINITE_VALUES[name]) {
     return `Infinite${suffix}`;
   }
   const timeExtension = TIME_EXTENSIONS.find(([extension]) => name.endsWith(extension));

@@ -13,12 +13,9 @@ import { Code, type ConnectError } from '@connectrpc/connect';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
 import { ACLOperation, ACLPattern, ACLPermissionType, ACLResource } from 'protogen/redpanda/core/common/v1/acl_pb';
 
+// Unified models and forward-compatible protobuf enums carry numeric values; unknown values use the existing fallback labels.
 // Helper function to get filter label from pattern and filter type
-export const getFilterTypeLabel = (
-  patternType: PatternType,
-  filterType: FilterType,
-  resourceType = 'topics'
-): string => {
+export const getFilterTypeLabel = (patternType: number, filterType: number, resourceType = 'topics'): string => {
   if (patternType === PatternType.LITERAL && filterType === FilterType.INCLUDE) {
     return `Include specific ${resourceType}`;
   }
@@ -35,7 +32,7 @@ export const getFilterTypeLabel = (
 };
 
 // Helper functions to convert ACL enum values to readable labels
-export const getResourceTypeLabel = (type: ACLResource | undefined): string => {
+export const getResourceTypeLabel = (type: number | undefined): string => {
   if (type === undefined) {
     return 'Any';
   }
@@ -54,12 +51,14 @@ export const getResourceTypeLabel = (type: ACLResource | undefined): string => {
       return 'Schema Registry Subject';
     case ACLResource.ACL_RESOURCE_SR_REGISTRY:
       return 'Schema Registry';
+    case ACLResource.ACL_RESOURCE_UNSPECIFIED:
+    case ACLResource.ACL_RESOURCE_SR_ANY:
     default:
       return 'Any';
   }
 };
 
-export const getPatternTypeLabel = (pattern: ACLPattern | undefined): string => {
+export const getPatternTypeLabel = (pattern: number | undefined): string => {
   if (pattern === undefined) {
     return 'Any';
   }
@@ -72,12 +71,13 @@ export const getPatternTypeLabel = (pattern: ACLPattern | undefined): string => 
       return 'Prefixed';
     case ACLPattern.ACL_PATTERN_MATCH:
       return 'Match';
+    case ACLPattern.ACL_PATTERN_UNSPECIFIED:
     default:
       return 'Any';
   }
 };
 
-export const getOperationLabel = (operation: ACLOperation | undefined): string => {
+export const getOperationLabel = (operation: number | undefined): string => {
   if (operation === undefined) {
     return 'Any';
   }
@@ -104,12 +104,13 @@ export const getOperationLabel = (operation: ACLOperation | undefined): string =
       return 'Alter Configs';
     case ACLOperation.ACL_OPERATION_IDEMPOTENT_WRITE:
       return 'Idempotent Write';
+    case ACLOperation.ACL_OPERATION_UNSPECIFIED:
     default:
       return 'Any';
   }
 };
 
-export const getPermissionTypeLabel = (permissionType: ACLPermissionType | undefined): string => {
+export const getPermissionTypeLabel = (permissionType: number | undefined): string => {
   if (permissionType === undefined) {
     return 'Any';
   }
@@ -120,6 +121,7 @@ export const getPermissionTypeLabel = (permissionType: ACLPermissionType | undef
       return 'Allow';
     case ACLPermissionType.ACL_PERMISSION_TYPE_DENY:
       return 'Deny';
+    case ACLPermissionType.ACL_PERMISSION_TYPE_UNSPECIFIED:
     default:
       return 'Any';
   }

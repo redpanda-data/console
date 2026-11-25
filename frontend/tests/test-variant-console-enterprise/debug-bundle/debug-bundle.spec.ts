@@ -1,3 +1,4 @@
+import { isNonEmptyString } from '../../../src/utils/string-utils';
 import { appURL, expect, test } from '../../shared/e2e';
 import { DebugBundlePage } from '../../test-variant-console/utils/debug-bundle-page';
 
@@ -157,7 +158,7 @@ test.describe('debug Bundle - Download and Deletion', () => {
   });
 });
 
-test.describe.skipIf(!!process.env.CI)('debug Bundle - Error Handling', () => {
+test.describe.skipIf(isNonEmptyString(process.env.CI))('debug Bundle - Error Handling', () => {
   test('should display error message if bundle generation fails', async ({ page, skip }) => {
     const debugBundlePage = new DebugBundlePage(page);
     await debugBundlePage.goto();

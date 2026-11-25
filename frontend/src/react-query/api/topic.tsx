@@ -6,7 +6,6 @@ import {
   useMutation as useTanstackMutation,
   useQuery as useTanstackQuery,
 } from '@tanstack/react-query';
-import { config } from 'config';
 import {
   type ListTopicsRequest,
   ListTopicsRequestSchema,
@@ -24,7 +23,10 @@ import { toast } from 'sonner';
 import type { GetTopicsResponse, TopicDescription } from 'state/rest-interfaces';
 import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
 
-import { api } from '../../state/backend-api';
+import { config } from '../../runtime-config';
+import { api, parseOrUnwrap } from '../../state/backend-api';
+import { isNonEmptyString } from '../../utils/string-utils';
+import { isPresent } from '../../utils/type-guards';
 
 type ListTopicsExtraOptions = {
   hideInternalTopics?: boolean;
@@ -60,7 +62,7 @@ export const useLegacyListTopicsQuery = (
     queryFn: async () => {
       // Add JWT Bearer token if available (same as REST and gRPC calls)
       const headers: HeadersInit = {};
-      if (config.jwt) {
+      if (isNonEmptyString(config.jwt)) {
         headers.Authorization = `Bearer ${config.jwt}`;
       }
 
@@ -75,7 +77,7 @@ export const useLegacyListTopicsQuery = (
         throw new Error(`Failed to fetch topics: ${response.status} ${response.statusText}`);
       }
 
-      return response.json();
+      return parseOrUnwrap<GetTopicsResponse>(response, null, { throwOnInvalidJson: true });
     },
     staleTime,
     refetchOnWindowFocus,
@@ -87,6 +89,7 @@ export const useLegacyListTopicsQuery = (
     ? allRetrievedTopics?.filter((topic) => !(topic.isInternal || topic.topicName.startsWith('_')))
     : allRetrievedTopics;
 
+  // biome-ignore lint/nursery/noTanstackQueryRestDestructuring: Legacy callers require the full query result with a non-optional data object.
   return { ...legacyListTopicsResult, data: { topics } };
 };
 
@@ -164,7 +167,7 @@ export const useTopicConfigQuery = (topicName: string, enabled = true) => {
     staleTime: TOPIC_CONFIG_CACHE_STALE_TIME,
     retry: (failureCount, error) => {
       // Don't retry on authorization errors
-      if (error && typeof error === 'object' && 'statusText' in error) {
+      if (isPresent(error) && typeof error === 'object' && 'statusText' in error) {
         return false;
       }
       return failureCount < 2;

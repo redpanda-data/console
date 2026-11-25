@@ -13,6 +13,7 @@ import { type ReactNode, useEffect, useMemo } from 'react';
 
 import { SearchInput } from './search-input';
 import { AnimatePresence, animProps_span_searchResult, MotionSpan } from '../../utils/animation-props';
+import { isPresent } from '../../utils/type-guards';
 
 type SearchBarProps<TItem> = {
   dataSource: () => TItem[];
@@ -28,7 +29,7 @@ function SearchBar<TItem>(props: SearchBarProps<TItem>) {
 
   const source = dataSource();
   const filteredData = useMemo(() => {
-    if (!source) {
+    if (!isPresent(source)) {
       return [];
     }
     return source.filter((item) => isFilterMatch(filterText, item));
@@ -37,9 +38,11 @@ function SearchBar<TItem>(props: SearchBarProps<TItem>) {
   useEffect(() => {
     onFilteredDataChanged(filteredData);
   }, [filteredData, onFilteredDataChanged]);
-
-  const filterSummary = useMemo((): { identity: string; node: ReactNode } | null => {
-    if (!source || source.length === 0) {
+  const filterSummary = useMemo((): {
+    identity: string;
+    node: ReactNode;
+  } | null => {
+    if (!isPresent(source) || source.length === 0) {
       return null;
     }
 
@@ -84,4 +87,4 @@ function SearchBar<TItem>(props: SearchBarProps<TItem>) {
   );
 }
 
-export default SearchBar;
+export { SearchBar };

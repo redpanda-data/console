@@ -69,11 +69,15 @@ const resolveDiffBase = (): DiffBase => {
   probe.style.display = 'none';
   document.body.append(probe);
 
-  const resolved = {} as DiffBase;
-  for (const [name, token] of Object.entries(DIFF_TOKENS) as [keyof DiffBase, string][]) {
+  const resolveToken = (token: string): string => {
     probe.style.color = `var(${token})`;
-    resolved[name] = toHex(getComputedStyle(probe).color);
-  }
+    return toHex(getComputedStyle(probe).color);
+  };
+  const resolved: DiffBase = {
+    removed: resolveToken(DIFF_TOKENS.removed),
+    inserted: resolveToken(DIFF_TOKENS.inserted),
+    neutral: resolveToken(DIFF_TOKENS.neutral),
+  };
 
   probe.remove();
   return resolved;

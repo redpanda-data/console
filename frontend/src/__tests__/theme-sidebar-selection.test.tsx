@@ -16,7 +16,7 @@
  * components/layout/sidebar.tsx).
  */
 
-import { describe, expect, it } from '@rstest/core';
+import { describe, expect, test } from '@rstest/core';
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -36,7 +36,7 @@ const withoutComments = (css: string): string => css.replace(CSS_COMMENT, '');
 
 /** The selector list of the `::selection` rule that paints the sidebar pair. */
 const sidebarSelectionSelectors = (): string[] => {
-  const rule = withoutComments(THEME_CSS).match(SIDEBAR_SELECTION_RULE);
+  const rule = SIDEBAR_SELECTION_RULE.exec(withoutComments(THEME_CSS));
   if (!rule) {
     throw new Error('No ::selection rule setting --color-sidebar-primary found in theme.css');
   }
@@ -75,14 +75,14 @@ const matchedBySidebarRule = (id: string, selectors: string[], root: HTMLElement
 };
 
 describe('theme.css sidebar ::selection scoping', () => {
-  it('paints the sidebar pair on sidebar chrome', () => {
+  test('paints the sidebar pair on sidebar chrome', () => {
     const selectors = sidebarSelectionSelectors();
     const shell = renderShell();
 
     expect(matchedBySidebarRule('nav-link', selectors, shell)).toBe(true);
   });
 
-  it('leaves page content on the `selection` tokens', () => {
+  test('leaves page content on the `selection` tokens', () => {
     const selectors = sidebarSelectionSelectors();
     const shell = renderShell();
 
@@ -91,8 +91,8 @@ describe('theme.css sidebar ::selection scoping', () => {
     expect(matchedBySidebarRule('page-copy', selectors, shell)).toBe(false);
   });
 
-  it('keeps a page-wide `::selection` rule on the selection tokens', () => {
-    const rule = withoutComments(THEME_CSS).match(PAGE_SELECTION_RULE);
+  test('keeps a page-wide `::selection` rule on the selection tokens', () => {
+    const rule = PAGE_SELECTION_RULE.exec(withoutComments(THEME_CSS));
 
     expect(rule?.[1]).toContain('var(--color-selection)');
     expect(rule?.[1]).toContain('var(--color-selection-foreground)');

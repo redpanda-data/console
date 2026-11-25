@@ -1,0 +1,60 @@
+.console-flow-card {
+  inline-size: var(--flow-card-width);
+}
+
+/* Match RF's handle selectors with higher specificity, without inline geometry or !important. */
+.console-flow-handle[data-flow-pin='spine'] {
+  inset-inline-start: var(--flow-handle-x);
+  transform: none;
+}
+
+.console-flow-handle[data-flow-pin='insert'] {
+  inset-block-start: 12px;
+  transform: none;
+}
+
+.console-flow-handle[data-flow-pin='merge'] {
+  inset-block-start: 16px;
+  transform: none;
+}
+
+.console-flow-handle[data-flow-pin='merge-top'] {
+  inset-inline-start: 24px;
+  transform: none;
+}
+
+.console-flow-title {
+  background-color: var(--flow-header-tint, transparent);
+}
+
+.console-flow-accent {
+  color: var(--flow-accent, inherit);
+}
+
+.console-flow-icon {
+  color: var(--flow-accent);
+  background-color: color-mix(in srgb, var(--flow-accent) 14%, var(--color-card));
+  border-color: color-mix(in srgb, var(--flow-accent) 40%, transparent);
+}
+
+.console-flow-join {
+  background-color: color-mix(in srgb, var(--color-primary) 12%, var(--color-background));
+  border-color: var(--color-primary);
+}
+
+.console-flow-label,
+.console-flow-position {
+  z-index: var(--flow-label-z, auto);
+  transform: translate(-50%, -50%) translate(var(--flow-label-x), var(--flow-label-y));
+}
+
+.console-flow-label {
+  opacity: var(--flow-label-opacity);
+}
+
+path.console-flow-edge {
+  opacity: var(--flow-edge-opacity);
+  stroke: var(--flow-edge-stroke);
+  stroke-width: var(--flow-edge-width);
+  stroke-dasharray: var(--flow-edge-dash, none);
+}

@@ -1,32 +1,36 @@
-import { parse as parseYaml } from 'yaml';
+import { create } from '@bufbuild/protobuf';
+import { ComponentSpecSchema, FieldSpecSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
+import { isDocument, parse as parseYaml } from 'yaml';
 
-import { mockComponents } from './__fixtures__/component-schemas';
+import { mockComponents, mockComponentToConnectSpec } from './__fixtures__/component-schemas';
+import { configArray, configRecord, configString, configValue } from './__fixtures__/config-value';
 import { parsePipelineFlowTree } from './pipeline-flow-parser';
 import { schemaToConfig } from './schema';
 import {
-  appendResource,
   buildInsertableComponent,
   configComponentsOf,
   configToYaml,
-  countResourceReferences,
   createResourceAndReturnLabel,
-  type EditTarget,
+  generateYamlFromWizardData,
+  getConnectTemplate,
+  mergeConnectConfigs,
+} from './yaml';
+import {
+  appendResource,
+  getComponentAt,
+  insertComponentAt,
+  removeComponentAt,
+  setComponentAt,
+} from './yaml-component-editing';
+import type { EditTarget } from './yaml-edit-target';
+import {
   extractAllTopics,
   extractConnectorTopics,
-  generateYamlFromWizardData,
-  getComponentAt,
-  getConnectTemplate,
-  insertComponentAt,
-  listResourceLabels,
-  mergeConnectConfigs,
-  type ParsedYamlConfig,
   patchRedpandaConfig,
-  removeComponentAt,
-  renameResourceReferences,
-  setComponentAt,
   tryPatchRedpandaYaml,
   usesServiceAccountLogin,
-} from './yaml';
+} from './yaml-redpanda';
+import { countResourceReferences, listResourceLabels, renameResourceReferences } from './yaml-resources';
 import { describe, expect, test } from 'bun:test';
 import type { ConnectComponentSpec } from '../types/schema';
 
@@ -76,24 +80,26 @@ output:
 
   describe('yaml comment generation', () => {
     test('should add comments to required fields', () => {
-      const spec = {
-        name: 'test_output',
-        type: 'output',
-        plugin: false,
-        config: {
-          name: 'root',
-          type: 'object',
-          kind: 'scalar',
-          children: [
-            {
-              name: 'required_field',
-              type: 'string',
-              kind: 'scalar',
-              optional: false,
-            },
-          ],
-        },
-      } as unknown as ConnectComponentSpec;
+      const spec = mockComponentToConnectSpec(
+        create(ComponentSpecSchema, {
+          name: 'test_output',
+          type: 'output',
+          config: create(FieldSpecSchema, {
+            name: 'root',
+            type: 'object',
+            kind: 'scalar',
+            children: [
+              create(FieldSpecSchema, {
+                name: 'required_field',
+                type: 'string',
+                kind: 'scalar',
+                optional: false,
+              }),
+            ],
+          }),
+        }),
+        'output'
+      );
 
       const result = schemaToConfig(spec, false);
       if (!result) {
@@ -127,7 +133,7 @@ output:
 
       // Parent objects like tls should not have inline comments
       const lines = yaml.split('\n');
-      const tlsLineIndex = lines.findIndex((line) => line.trim().startsWith('tls:'));
+      const tlsLineIndex = lines.findIndex((line) => line.trimStart().startsWith('tls:'));
 
       if (tlsLineIndex !== -1) {
         const tlsLine = lines[tlsLineIndex];
@@ -177,11 +183,6 @@ output:
   generate:
     mapping: "" # Existing comment`;
 
-      const kafkaOutputSpec = mockComponents.kafkaOutput;
-      if (!kafkaOutputSpec) {
-        throw new Error('kafka output not found');
-      }
-
       const mergedYaml = getConnectTemplate({
         connectionName: 'kafka',
         connectionType: 'output',
@@ -213,8 +214,8 @@ output:
       const yaml = configToYaml(mergedDoc);
 
       expect(yaml).toContain('# keep me');
-      const parsed = parseYaml(yaml) as { pipeline: { processors: unknown[] } };
-      expect(parsed.pipeline.processors).toHaveLength(2);
+      const parsed: unknown = parseYaml(yaml);
+      expect(configValue(parsed, 'pipeline', 'processors')).toHaveLength(2);
     });
 
     test('preserves comments on existing resources when appending another', () => {
@@ -231,8 +232,8 @@ output:
       const yaml = configToYaml(mergedDoc);
 
       expect(yaml).toContain('# keep me');
-      const parsed = parseYaml(yaml) as { cache_resources: { label?: string }[] };
-      expect(parsed.cache_resources).toHaveLength(2);
+      const parsed: unknown = parseYaml(yaml);
+      expect(configValue(parsed, 'cache_resources')).toHaveLength(2);
     });
   });
 
@@ -276,9 +277,9 @@ output:
         existingYaml,
       });
 
-      const parsed = parseYaml(mergedYaml as string) as { input: { file: { scanner: Record<string, unknown> } } };
+      const parsed: unknown = parseYaml(configString(mergedYaml));
       // The scanner config must stay wrapped in its name — `scanner: { avro: {…} }`, not the bare fields.
-      expect(Object.keys(parsed.input.file.scanner)).toEqual(['avro']);
+      expect(Object.keys(configRecord(configValue(parsed, 'input', 'file', 'scanner')))).toStrictEqual(['avro']);
     });
 
     test('refuses a scanner when the config has no input', () => {
@@ -297,7 +298,7 @@ output:
   });
 });
 
-const componentsOf = (yaml: string) => configComponentsOf(parseYaml(yaml, { merge: true }) as ParsedYamlConfig | null);
+const componentsOf = (yaml: string) => configComponentsOf(parseYaml(yaml, { merge: true }));
 
 describe('configComponentsOf', () => {
   describe('inputs', () => {
@@ -312,7 +313,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['generate']);
+        expect(result.inputs).toStrictEqual(['generate']);
       });
 
       test('parses a kafka input', () => {
@@ -329,7 +330,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['kafka']);
+        expect(result.inputs).toStrictEqual(['kafka']);
       });
     });
 
@@ -364,7 +365,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['amqp_0_9', 'kafka']);
+        expect(result.inputs).toStrictEqual(['amqp_0_9', 'kafka']);
       });
 
       test('handles broker with empty inputs array', () => {
@@ -378,7 +379,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual([]);
+        expect(result.inputs).toStrictEqual([]);
       });
     });
 
@@ -402,7 +403,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['file', 'generate']);
+        expect(result.inputs).toStrictEqual(['file', 'generate']);
       });
 
       test('extracts child inputs from sequence with sharded join', () => {
@@ -435,7 +436,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['file', 'file']);
+        expect(result.inputs).toStrictEqual(['file', 'file']);
       });
     });
   });
@@ -455,8 +456,8 @@ output:
     topic: my_topic
 `;
         const result = componentsOf(yaml);
-        expect(result.inputs).toEqual(['generate']);
-        expect(result.outputs).toEqual(['kafka']);
+        expect(result.inputs).toStrictEqual(['generate']);
+        expect(result.outputs).toStrictEqual(['kafka']);
       });
 
       test('parses a drop output', () => {
@@ -469,7 +470,7 @@ output:
   drop: {}
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['drop']);
+        expect(result.outputs).toStrictEqual(['drop']);
       });
     });
 
@@ -490,7 +491,7 @@ output:
     - resource: general_processor
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['resource', 'resource']);
+        expect(result.outputs).toStrictEqual(['resource', 'resource']);
       });
 
       // A member's own processors can come before its output, as they can on an input.
@@ -502,12 +503,12 @@ output:
       - processors: [{ mapping: root = this }]
         kafka_franz: { topic: a }
 `;
-        expect(componentsOf(yaml).outputs).toEqual(['kafka_franz']);
+        expect(componentsOf(yaml).outputs).toStrictEqual(['kafka_franz']);
         const switched = componentsOf(
           'output:\n  switch:\n    cases:\n      - output: { processors: [], drop: {} }\n'
         ).outputs;
-        expect(switched).toEqual(['drop']);
-        expect(componentsOf('output:\n  fallback:\n    - processors: []\n      stdout: {}\n').outputs).toEqual([
+        expect(switched).toStrictEqual(['drop']);
+        expect(componentsOf('output:\n  fallback:\n    - processors: []\n      stdout: {}\n').outputs).toStrictEqual([
           'stdout',
         ]);
       });
@@ -530,7 +531,7 @@ output:
           target_address: queue:/my_queue
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['kafka', 'http_client', 'amqp_1']);
+        expect(result.outputs).toStrictEqual(['kafka', 'http_client', 'amqp_1']);
       });
 
       test('handles broker with empty outputs array', () => {
@@ -541,7 +542,7 @@ output:
     outputs: []
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual([]);
+        expect(result.outputs).toStrictEqual([]);
       });
 
       test('handles broker with batching config', () => {
@@ -562,7 +563,7 @@ output:
       period: 1s
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['kafka', 'redis_streams']);
+        expect(result.outputs).toStrictEqual(['kafka', 'redis_streams']);
       });
     });
 
@@ -596,7 +597,7 @@ output:
                 root.type = this.type | "unknown"
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub', 'redis_streams']);
+        expect(result.outputs).toStrictEqual(['amqp_1', 'gcp_pubsub', 'redis_streams']);
       });
 
       test('handles switch with continue flag', () => {
@@ -620,7 +621,7 @@ output:
             topic: that_i_dont_want_to_hang_with
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub']);
+        expect(result.outputs).toStrictEqual(['amqp_1', 'gcp_pubsub']);
       });
     });
 
@@ -644,7 +645,7 @@ output:
         path: /usr/local/benthos/everything_failed.jsonl
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['http_client', 'http_client', 'file']);
+        expect(result.outputs).toStrictEqual(['http_client', 'http_client', 'file']);
       });
 
       test('extracts outputs from fallback with dynamodb and file', () => {
@@ -664,7 +665,7 @@ output:
         path: /usr/local/benthos/failed_stuff.jsonl
 `;
         const result = componentsOf(yaml);
-        expect(result.outputs).toEqual(['aws_dynamodb', 'file']);
+        expect(result.outputs).toStrictEqual(['aws_dynamodb', 'file']);
       });
     });
   });
@@ -686,7 +687,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['mapping']);
+      expect(result.processors).toStrictEqual(['mapping']);
     });
 
     test('parses log processor', () => {
@@ -705,7 +706,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['log']);
+      expect(result.processors).toStrictEqual(['log']);
     });
 
     test('parses switch processor', () => {
@@ -728,7 +729,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['switch']);
+      expect(result.processors).toStrictEqual(['switch']);
     });
 
     test('parses resource processor', () => {
@@ -745,7 +746,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['resource']);
+      expect(result.processors).toStrictEqual(['resource']);
     });
 
     test('parses catch processor', () => {
@@ -765,7 +766,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['catch']);
+      expect(result.processors).toStrictEqual(['catch']);
     });
 
     test('parses try processor', () => {
@@ -784,7 +785,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['try']);
+      expect(result.processors).toStrictEqual(['try']);
     });
 
     test('parses multiple processors in pipeline', () => {
@@ -823,9 +824,9 @@ output:
     topic: output_topic
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['kafka']);
-      expect(result.processors).toEqual(['mapping', 'log', 'switch', 'catch', 'try', 'resource']);
-      expect(result.outputs).toEqual(['kafka']);
+      expect(result.inputs).toStrictEqual(['kafka']);
+      expect(result.processors).toStrictEqual(['mapping', 'log', 'switch', 'catch', 'try', 'resource']);
+      expect(result.outputs).toStrictEqual(['kafka']);
     });
   });
 
@@ -844,7 +845,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['generate']);
+      expect(result.inputs).toStrictEqual(['generate']);
     });
 
     test('skips label on single output and returns component name', () => {
@@ -860,7 +861,7 @@ output:
     key: ""
 `;
       const result = componentsOf(yaml);
-      expect(result.outputs).toEqual(['redpanda']);
+      expect(result.outputs).toStrictEqual(['redpanda']);
     });
 
     test('skips label on both input and output', () => {
@@ -891,8 +892,8 @@ output:
     max_in_flight: 0
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['generate']);
-      expect(result.outputs).toEqual(['redpanda']);
+      expect(result.inputs).toStrictEqual(['generate']);
+      expect(result.outputs).toStrictEqual(['redpanda']);
     });
 
     test('skips label on processor items', () => {
@@ -917,7 +918,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual(['branch', 'mapping']);
+      expect(result.processors).toStrictEqual(['branch', 'mapping']);
     });
 
     test('skips label on broker child inputs', () => {
@@ -941,7 +942,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['kafka', 'amqp_0_9']);
+      expect(result.inputs).toStrictEqual(['kafka', 'amqp_0_9']);
     });
 
     test('skips label on broker child outputs', () => {
@@ -960,7 +961,7 @@ output:
           url: http://example.com/post
 `;
       const result = componentsOf(yaml);
-      expect(result.outputs).toEqual(['kafka', 'http_client']);
+      expect(result.outputs).toStrictEqual(['kafka', 'http_client']);
     });
 
     test('skips label on fallback child outputs', () => {
@@ -976,7 +977,7 @@ output:
         path: /usr/local/benthos/failed.jsonl
 `;
       const result = componentsOf(yaml);
-      expect(result.outputs).toEqual(['http_client', 'file']);
+      expect(result.outputs).toStrictEqual(['http_client', 'file']);
     });
 
     test('skips label on switch case outputs', () => {
@@ -999,7 +1000,7 @@ output:
             topic: mikes_bars
 `;
       const result = componentsOf(yaml);
-      expect(result.outputs).toEqual(['amqp_1', 'gcp_pubsub']);
+      expect(result.outputs).toStrictEqual(['amqp_1', 'gcp_pubsub']);
     });
 
     test('full pipeline with labels everywhere', () => {
@@ -1045,15 +1046,15 @@ output:
           url: http://example.com/webhook
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['kafka', 'generate']);
-      expect(result.processors).toEqual(['mapping', 'branch']);
-      expect(result.outputs).toEqual(['kafka', 'http_client']);
+      expect(result.inputs).toStrictEqual(['kafka', 'generate']);
+      expect(result.processors).toStrictEqual(['mapping', 'branch']);
+      expect(result.outputs).toStrictEqual(['kafka', 'http_client']);
     });
   });
 
   describe('edge cases', () => {
     test('returns empty for an empty config', () => {
-      expect(componentsOf('')).toEqual({ inputs: [], processors: [], outputs: [] });
+      expect(componentsOf('')).toStrictEqual({ inputs: [], processors: [], outputs: [] });
     });
 
     test('handles config with no output', () => {
@@ -1063,9 +1064,9 @@ input:
     mapping: 'root = {}'
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['generate']);
-      expect(result.outputs).toEqual([]);
-      expect(result.processors).toEqual([]);
+      expect(result.inputs).toStrictEqual(['generate']);
+      expect(result.outputs).toStrictEqual([]);
+      expect(result.processors).toStrictEqual([]);
     });
 
     test('handles config with no processors', () => {
@@ -1078,7 +1079,7 @@ output:
   drop: {}
 `;
       const result = componentsOf(yaml);
-      expect(result.processors).toEqual([]);
+      expect(result.processors).toStrictEqual([]);
     });
 
     test('handles config with no input', () => {
@@ -1091,9 +1092,9 @@ pipeline:
     - mapping: 'root = this'
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual([]);
-      expect(result.processors).toEqual(['mapping']);
-      expect(result.outputs).toEqual(['drop']);
+      expect(result.inputs).toStrictEqual([]);
+      expect(result.processors).toStrictEqual(['mapping']);
+      expect(result.outputs).toStrictEqual(['drop']);
     });
 
     test('full pipeline with broker input, multiple processors, and broker output', () => {
@@ -1130,19 +1131,19 @@ output:
           url: http://example.com/webhook
 `;
       const result = componentsOf(yaml);
-      expect(result.inputs).toEqual(['kafka', 'amqp_0_9']);
-      expect(result.processors).toEqual(['mapping', 'log']);
-      expect(result.outputs).toEqual(['kafka', 'http_client']);
+      expect(result.inputs).toStrictEqual(['kafka', 'amqp_0_9']);
+      expect(result.processors).toStrictEqual(['mapping', 'log']);
+      expect(result.outputs).toStrictEqual(['kafka', 'http_client']);
     });
   });
 
   describe('extractAllTopics', () => {
     test('returns empty for empty string', () => {
-      expect(extractAllTopics('')).toEqual([]);
+      expect(extractAllTopics('')).toStrictEqual([]);
     });
 
     test('returns empty for invalid YAML', () => {
-      expect(extractAllTopics('{{not valid')).toEqual([]);
+      expect(extractAllTopics('{{not valid')).toStrictEqual([]);
     });
 
     test('extracts topic from kafka input', () => {
@@ -1154,7 +1155,7 @@ input:
       - events
       - orders
 `;
-      expect(extractAllTopics(yaml)).toEqual(['events', 'orders']);
+      expect(extractAllTopics(yaml)).toStrictEqual(['events', 'orders']);
     });
 
     test('extracts topic from kafka output', () => {
@@ -1164,7 +1165,7 @@ output:
     addresses: [localhost:9092]
     topic: processed_events
 `;
-      expect(extractAllTopics(yaml)).toEqual(['processed_events']);
+      expect(extractAllTopics(yaml)).toStrictEqual(['processed_events']);
     });
 
     test('extracts topics from multiple components', () => {
@@ -1192,7 +1193,7 @@ output:
   kafka:
     topic: shared_topic
 `;
-      expect(extractAllTopics(yaml)).toEqual(['shared_topic']);
+      expect(extractAllTopics(yaml)).toStrictEqual(['shared_topic']);
     });
 
     test('returns without crashing on a circular alias config', () => {
@@ -1200,7 +1201,7 @@ output:
   b: *x
   topic: looped
 `;
-      expect(extractAllTopics(yaml)).toEqual(['looped']);
+      expect(extractAllTopics(yaml)).toStrictEqual(['looped']);
     });
 
     test('resolves merge keys so merged topics are found', () => {
@@ -1338,9 +1339,9 @@ input:
     topic: orders
 `;
           const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-          const component = parseYaml(result ?? '').output.redpanda;
-          expect(Object.keys(component)[0]).toBe('seed_brokers');
-          expect(component).toEqual({
+          const component = configValue(parseYaml(result ?? ''), 'output', 'redpanda');
+          expect(Object.keys(configRecord(component))[0]).toBe('seed_brokers');
+          expect(component).toStrictEqual({
             seed_brokers: [brokersVariable],
             tls: { enabled: true },
             topic: 'orders',
@@ -1352,7 +1353,7 @@ input:
           const result = patchRedpandaConfig('input:\n  redpanda:\n    topics: [orders]\n', 'input', 'redpanda', {
             sasl,
           });
-          expect(parseYaml(result ?? '').input.redpanda).toMatchObject({
+          expect(configValue(parseYaml(result ?? ''), 'input', 'redpanda')).toMatchObject({
             seed_brokers: [brokersVariable],
             tls: { enabled: true },
           });
@@ -1367,7 +1368,7 @@ input:
       enabled: false
 `;
           const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-          expect(parseYaml(result ?? '').output.redpanda).toMatchObject({
+          expect(configValue(parseYaml(result ?? ''), 'output', 'redpanda')).toMatchObject({
             seed_brokers: ['broker-0:9092'],
             tls: { enabled: false },
           });
@@ -1377,7 +1378,7 @@ input:
         test('leaves TLS alone on brokers the component names', () => {
           const yaml = 'output:\n  redpanda:\n    seed_brokers: [localhost:9092]\n    topic: orders\n';
           const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-          expect(parseYaml(result ?? '').output.redpanda.tls).toBeUndefined();
+          expect(configValue(parseYaml(result ?? ''), 'output', 'redpanda', 'tls')).toBeUndefined();
         });
 
         test('keeps TLS that comes from a merge key', () => {
@@ -1390,9 +1391,9 @@ output:
     topic: orders
 `;
           const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-          const component = parseYaml(result ?? '', { merge: true }).output.redpanda;
-          expect(component.seed_brokers).toEqual([brokersVariable]);
-          expect(component.tls).toEqual({ enabled: false });
+          const component = configValue(parseYaml(result ?? '', { merge: true }), 'output', 'redpanda');
+          expect(configValue(component, 'seed_brokers')).toStrictEqual([brokersVariable]);
+          expect(configValue(component, 'tls')).toStrictEqual({ enabled: false });
         });
       });
 
@@ -1401,14 +1402,18 @@ output:
           const result = patchRedpandaConfig('output:\n  redpanda:\n    seed_brokers: []\n', 'output', 'redpanda', {
             sasl,
           });
-          expect(parseYaml(result ?? '').output.redpanda.seed_brokers).toEqual([brokersVariable]);
+          expect(configValue(parseYaml(result ?? ''), 'output', 'redpanda', 'seed_brokers')).toStrictEqual([
+            brokersVariable,
+          ]);
         });
 
         test('replaces a placeholder broker list that names no broker', () => {
           const result = patchRedpandaConfig('output:\n  redpanda:\n    seed_brokers: [""]\n', 'output', 'redpanda', {
             sasl,
           });
-          expect(parseYaml(result ?? '').output.redpanda.seed_brokers).toEqual([brokersVariable]);
+          expect(configValue(parseYaml(result ?? ''), 'output', 'redpanda', 'seed_brokers')).toStrictEqual([
+            brokersVariable,
+          ]);
         });
 
         test('keeps brokers that come from a merge key', () => {
@@ -1420,7 +1425,9 @@ output:
     topic: orders
 `;
           const result = patchRedpandaConfig(yaml, 'output', 'redpanda', { sasl });
-          expect(parseYaml(result ?? '', { merge: true }).output.redpanda.seed_brokers).toEqual(['broker-0:9092']);
+          expect(
+            configValue(parseYaml(result ?? '', { merge: true }), 'output', 'redpanda', 'seed_brokers')
+          ).toStrictEqual(['broker-0:9092']);
         });
       });
 
@@ -1448,7 +1455,7 @@ output:
         const result = tryPatchRedpandaYaml('output:\n  redpanda:\n    topic: orders\n', 'output', 'redpanda', {
           authMethod: 'service-account',
         });
-        expect(parseYaml(result ?? '').output.redpanda).toMatchObject({
+        expect(configValue(parseYaml(result ?? ''), 'output', 'redpanda')).toMatchObject({
           seed_brokers: [brokersVariable],
           sasl: [{ mechanism: 'REDPANDA_CLOUD_SERVICE_ACCOUNT' }],
         });
@@ -1458,12 +1465,12 @@ output:
         const topicOnly = patchRedpandaConfig('output:\n  redpanda: {}\n', 'output', 'redpanda', {
           topicName: 'orders',
         });
-        expect(parseYaml(topicOnly ?? '').output.redpanda).toEqual({ topic: 'orders' });
+        expect(configValue(parseYaml(topicOnly ?? ''), 'output', 'redpanda')).toStrictEqual({ topic: 'orders' });
 
         const franz = patchRedpandaConfig('output:\n  kafka_franz:\n    topic: orders\n', 'output', 'kafka_franz', {
           sasl,
         });
-        expect(parseYaml(franz ?? '').output.kafka_franz.seed_brokers).toBeUndefined();
+        expect(configValue(parseYaml(franz ?? ''), 'output', 'kafka_franz', 'seed_brokers')).toBeUndefined();
       });
     });
 
@@ -1558,7 +1565,7 @@ output:
   stdout: {}`;
     const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
     expect(result.parseError).toBe(false);
-    expect(result.topics).toEqual(['my-topic', 'other-topic']);
+    expect(result.topics).toStrictEqual(['my-topic', 'other-topic']);
   });
 
   test('extracts singular topic from output section', () => {
@@ -1569,12 +1576,15 @@ output:
     topic: my-output-topic`;
     const result = extractConnectorTopics(yaml, 'output', 'kafka_franz');
     expect(result.parseError).toBe(false);
-    expect(result.topics).toEqual(['my-output-topic']);
+    expect(result.topics).toStrictEqual(['my-output-topic']);
   });
 
   test('returns undefined topics for empty YAML', () => {
-    expect(extractConnectorTopics('', 'input', 'kafka_franz')).toEqual({ topics: undefined, parseError: false });
-    expect(extractConnectorTopics('   ', 'input', 'kafka_franz')).toEqual({ topics: undefined, parseError: false });
+    expect(extractConnectorTopics('', 'input', 'kafka_franz')).toStrictEqual({ topics: undefined, parseError: false });
+    expect(extractConnectorTopics('   ', 'input', 'kafka_franz')).toStrictEqual({
+      topics: undefined,
+      parseError: false,
+    });
   });
 
   test('resolves topics pulled in via a YAML merge anchor', () => {
@@ -1591,7 +1601,7 @@ output:
   stdout: {}`;
     const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
     expect(result.parseError).toBe(false);
-    expect(result.topics).toEqual(['anchored-topic']);
+    expect(result.topics).toStrictEqual(['anchored-topic']);
   });
 
   test('returns undefined topics when component has no topic config', () => {
@@ -1620,7 +1630,7 @@ output:
       - ""`;
     const result = extractConnectorTopics(yaml, 'input', 'kafka_franz');
     expect(result.parseError).toBe(false);
-    expect(result.topics).toEqual(['valid-topic']);
+    expect(result.topics).toStrictEqual(['valid-topic']);
   });
 
   test('returns undefined topics when all topics are empty strings', () => {
@@ -1699,11 +1709,11 @@ output:
   describe('reading and editing components', () => {
     describe('getComponentAt', () => {
       test('reads the input component', () => {
-        expect(getComponentAt(pipelineYaml, { kind: 'input' })).toEqual({ generate: { mapping: 'root = {}' } });
+        expect(getComponentAt(pipelineYaml, { kind: 'input' })).toStrictEqual({ generate: { mapping: 'root = {}' } });
       });
 
       test('reads a processor by index', () => {
-        expect(getComponentAt(pipelineYaml, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+        expect(getComponentAt(pipelineYaml, { kind: 'processor', index: 1 })).toStrictEqual({ mapping: 'root = this' });
       });
 
       test('returns undefined on parse failure', () => {
@@ -1715,11 +1725,13 @@ output:
       test('replaces a processor config in place', () => {
         const next = setComponentAt(pipelineYaml, { kind: 'processor', index: 0 }, { log: { message: 'changed' } });
         expect(next).not.toBeNull();
-        expect(getComponentAt(next as string, { kind: 'processor', index: 0 })).toEqual({
+        expect(getComponentAt(configString(next), { kind: 'processor', index: 0 })).toStrictEqual({
           log: { message: 'changed' },
         });
         // Sibling processor is untouched.
-        expect(getComponentAt(next as string, { kind: 'processor', index: 1 })).toEqual({ mapping: 'root = this' });
+        expect(getComponentAt(configString(next), { kind: 'processor', index: 1 })).toStrictEqual({
+          mapping: 'root = this',
+        });
       });
 
       test('returns null on parse failure', () => {
@@ -1760,17 +1772,17 @@ output:
       };
 
       test('is read and written inside its wrapper, which keeps its stop condition', () => {
-        expect(getComponentAt(wrapped, member)).toEqual({ kafka_franz: { topics: ['a'] } });
-        const next = setComponentAt(wrapped, member, { kafka_franz: { topics: ['b'] } }) as string;
-        expect(parseYaml(next).input.read_until.input.broker.inputs[0]).toEqual({
+        expect(getComponentAt(wrapped, member)).toStrictEqual({ kafka_franz: { topics: ['a'] } });
+        const next = configString(setComponentAt(wrapped, member, { kafka_franz: { topics: ['b'] } }));
+        expect(configValue(parseYaml(next), 'input', 'read_until', 'input', 'broker', 'inputs', 0)).toStrictEqual({
           read_until: { check: 'counter() >= 5', input: { kafka_franz: { topics: ['b'] } } },
         });
-        expect(Object.keys(getComponentAt(wrapped, { kind: 'input' }) ?? {})).toEqual(['broker']);
+        expect(Object.keys(getComponentAt(wrapped, { kind: 'input' }) ?? {})).toStrictEqual(['broker']);
       });
 
       test('is deleted with its wrapper', () => {
-        const next = removeComponentAt(wrapped, member) as string;
-        expect(parseYaml(next).input.read_until.input.broker.inputs).toEqual([]);
+        const next = configString(removeComponentAt(wrapped, member));
+        expect(configValue(parseYaml(next), 'input', 'read_until', 'input', 'broker', 'inputs')).toStrictEqual([]);
       });
 
       test('an input resource keeps its read_until, as the canvas shows it', () => {
@@ -1781,7 +1793,7 @@ output:
       input: { generate: { mapping: root = 1 } }
 `;
         const target: EditTarget = { kind: 'path', path: ['input_resources', 0], componentType: 'input' };
-        expect(Object.keys(getComponentAt(resource, target) ?? {})).toEqual(['label', 'read_until']);
+        expect(Object.keys(getComponentAt(resource, target) ?? {})).toStrictEqual(['label', 'read_until']);
       });
     });
 
@@ -1798,7 +1810,7 @@ pipeline:
     - mapping: '${longMapping}'
 output:
   drop: {}`;
-        const next = insertComponentAt(yaml, ['pipeline', 'processors'], 1, { log: { message: 'hi' } }) as string;
+        const next = configString(insertComponentAt(yaml, ['pipeline', 'processors'], 1, { log: { message: 'hi' } }));
         expect(next).toContain(longMapping);
         expect(next).toContain('topics: [ foo, bar ]');
       });
@@ -1811,7 +1823,7 @@ output:
         message: hello
 output:
   drop: {}`;
-        const next = setComponentAt(yaml, { kind: 'processor', index: 1 }, { log: { message: 'bye' } }) as string;
+        const next = configString(setComponentAt(yaml, { kind: 'processor', index: 1 }, { log: { message: 'bye' } }));
         expect(next).toContain(longMapping);
       });
     });
@@ -1834,24 +1846,26 @@ output:
       };
 
       test('reads a nested component by path', () => {
-        expect(getComponentAt(nestedYaml, httpTarget)).toEqual({ http: { url: 'http://old' } });
+        expect(getComponentAt(nestedYaml, httpTarget)).toStrictEqual({ http: { url: 'http://old' } });
       });
 
       test('replaces a nested component in place, leaving siblings intact', () => {
         const next = setComponentAt(nestedYaml, httpTarget, { http: { url: 'http://new', verb: 'POST' } });
         expect(next).not.toBeNull();
-        expect(getComponentAt(next as string, httpTarget)).toEqual({ http: { url: 'http://new', verb: 'POST' } });
+        expect(getComponentAt(configString(next), httpTarget)).toStrictEqual({
+          http: { url: 'http://new', verb: 'POST' },
+        });
         // The branch's request_map/result_map are untouched.
-        const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
-        expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+        const parsed: unknown = parseYaml(configString(next));
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'request_map')).toBe('root = this');
       });
 
       test('removing the last nested child keeps an empty fillable processors array', () => {
         const next = removeComponentAt(nestedYaml, httpTarget);
         expect(next).not.toBeNull();
-        const parsed = parseYaml(next as string) as { pipeline: { processors: { branch: Record<string, unknown> }[] } };
-        expect(parsed.pipeline.processors[0].branch.processors).toEqual([]);
-        expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+        const parsed: unknown = parseYaml(configString(next));
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'processors')).toStrictEqual([]);
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'request_map')).toBe('root = this');
       });
 
       test('removing the only step of a try keeps the try as an empty fillable array', () => {
@@ -1866,8 +1880,8 @@ output:
           path: ['pipeline', 'processors', 0, 'try', 0],
           componentType: 'processor',
         });
-        const parsed = parseYaml(next as string) as { pipeline: { processors: { try: unknown[] }[] } };
-        expect(parsed.pipeline.processors[0].try).toEqual([]);
+        const parsed: unknown = parseYaml(configString(next));
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'try')).toStrictEqual([]);
       });
 
       test('removing the only processor of a switch case keeps the case and its check', () => {
@@ -1884,10 +1898,11 @@ output:
           path: ['pipeline', 'processors', 0, 'switch', 0, 'processors', 0],
           componentType: 'processor',
         });
-        const parsed = parseYaml(next as string) as {
-          pipeline: { processors: { switch: { check: string; processors: unknown[] }[] }[] };
-        };
-        expect(parsed.pipeline.processors[0].switch[0]).toEqual({ check: 'this.x == 1', processors: [] });
+        const parsed: unknown = parseYaml(configString(next));
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'switch', 0)).toStrictEqual({
+          check: 'this.x == 1',
+          processors: [],
+        });
       });
 
       test('removing the last item of a top-level resource array drops the emptied key', () => {
@@ -1904,10 +1919,10 @@ output:
           path: ['input_resources', 0],
           componentType: 'input',
         });
-        const parsed = parseYaml(next as string) as Record<string, unknown>;
+        const parsed: unknown = parseYaml(configString(next));
         // A top-level container prunes like `pipeline:` does — no dead `input_resources: []` left behind.
-        expect(parsed.input_resources).toBeUndefined();
-        expect(parsed.input).toBeDefined();
+        expect(configValue(parsed, 'input_resources')).toBeUndefined();
+        expect(configValue(parsed, 'input')).toBeDefined();
       });
     });
   });
@@ -1916,8 +1931,8 @@ output:
     describe('appendResource', () => {
       test('appends to a new cache_resources array', () => {
         const next = appendResource(pipelineYaml, 'cache_resources', { label: 'c', memory: {} });
-        const parsed = parseYaml(next as string) as { cache_resources: Record<string, unknown>[] };
-        expect(parsed.cache_resources).toEqual([{ label: 'c', memory: {} }]);
+        const parsed: unknown = parseYaml(configString(next));
+        expect(configValue(parsed, 'cache_resources')).toStrictEqual([{ label: 'c', memory: {} }]);
       });
     });
 
@@ -1937,13 +1952,13 @@ output:
         const casePath = ['pipeline', 'processors', 0, 'switch', 0, 'processors'];
         const next = insertComponentAt(switchYaml, casePath, 0, { log: { message: 'first' } });
         expect(next).not.toBeNull();
-        const parsed = parseYaml(next as string) as {
-          pipeline: { processors: { switch: { processors: Record<string, unknown>[] }[] }[] };
-        };
-        const case0 = parsed.pipeline.processors[0].switch[0].processors;
-        expect(case0).toEqual([{ log: { message: 'first' } }, { mapping: 'root = this' }]);
+        const parsed: unknown = parseYaml(configString(next));
+        const case0 = configValue(parsed, 'pipeline', 'processors', 0, 'switch', 0, 'processors');
+        expect(case0).toStrictEqual([{ log: { message: 'first' } }, { mapping: 'root = this' }]);
         // The other case is untouched.
-        expect(parsed.pipeline.processors[0].switch[1].processors).toEqual([{ mapping: 'root = that' }]);
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'switch', 1, 'processors')).toStrictEqual([
+          { mapping: 'root = that' },
+        ]);
       });
 
       test('creates a nested processors array when the container has none yet', () => {
@@ -1956,11 +1971,11 @@ output:
         const next = insertComponentAt(branchYaml, ['pipeline', 'processors', 0, 'branch', 'processors'], 0, {
           mapping: 'root = x',
         });
-        const parsed = parseYaml(next as string) as {
-          pipeline: { processors: { branch: { processors: unknown[]; request_map: string } }[] };
-        };
-        expect(parsed.pipeline.processors[0].branch.processors).toEqual([{ mapping: 'root = x' }]);
-        expect(parsed.pipeline.processors[0].branch.request_map).toBe('root = this');
+        const parsed: unknown = parseYaml(configString(next));
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'processors')).toStrictEqual([
+          { mapping: 'root = x' },
+        ]);
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'branch', 'request_map')).toBe('root = this');
       });
 
       test('appends a structural switch-case skeleton', () => {
@@ -1968,9 +1983,12 @@ output:
           check: '',
           processors: [],
         });
-        const parsed = parseYaml(next as string) as { pipeline: { processors: { switch: unknown[] }[] } };
-        expect(parsed.pipeline.processors[0].switch).toHaveLength(3);
-        expect(parsed.pipeline.processors[0].switch.at(-1)).toEqual({ check: '', processors: [] });
+        const parsed: unknown = parseYaml(configString(next));
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'switch')).toHaveLength(3);
+        expect(configArray(configValue(parsed, 'pipeline', 'processors', 0, 'switch')).at(-1)).toStrictEqual({
+          check: '',
+          processors: [],
+        });
       });
 
       test('refuses to insert into a container that exists as a non-sequence (no clobbering)', () => {
@@ -2009,9 +2027,9 @@ rate_limit_resources:
     local: { count: 1, interval: 1s }`;
 
       test('listResourceLabels returns labels per kind', () => {
-        expect(listResourceLabels(withResources, 'cache')).toEqual(['dedupe']);
-        expect(listResourceLabels(withResources, 'rate_limit')).toEqual(['limiter']);
-        expect(listResourceLabels('output:\n  drop: {}', 'cache')).toEqual([]);
+        expect(listResourceLabels(withResources, 'cache')).toStrictEqual(['dedupe']);
+        expect(listResourceLabels(withResources, 'rate_limit')).toStrictEqual(['limiter']);
+        expect(listResourceLabels('output:\n  drop: {}', 'cache')).toStrictEqual([]);
       });
 
       test('createResourceAndReturnLabel adds the chosen impl and returns its label', () => {
@@ -2019,12 +2037,12 @@ rate_limit_resources:
         const result = createResourceAndReturnLabel(base, 'cache', 'memory', [mockComponents.memoryCache]);
         expect(result).not.toBeNull();
         expect(result?.label).toBeTruthy();
-        if (!(result?.yaml && result.label)) {
+        if (result === null || result.yaml === '' || result.label === '') {
           throw new Error('Expected the resource YAML and label');
         }
-        const parsed = parseYaml(result.yaml) as { cache_resources: { label: string }[] };
-        expect(parsed.cache_resources).toHaveLength(1);
-        expect(parsed.cache_resources[0].label).toBe(result?.label);
+        const parsed: unknown = parseYaml(result.yaml);
+        expect(configValue(parsed, 'cache_resources')).toHaveLength(1);
+        expect(configValue(parsed, 'cache_resources', 0, 'label')).toBe(result?.label);
         // The label the caller gets back is exactly the one it can link into a node.
         expect(listResourceLabels(result.yaml, 'cache')).toContain(result.label);
       });
@@ -2033,7 +2051,7 @@ rate_limit_resources:
         const base = 'cache_resources:\n  - label: memory\n    memory: {}\noutput:\n  drop: {}';
         const result = createResourceAndReturnLabel(base, 'cache', 'memory', [mockComponents.memoryCache]);
         expect(result?.label).not.toBe('memory');
-        if (!result?.yaml) {
+        if (result === null || result.yaml === '') {
           throw new Error('Expected the resource YAML');
         }
         expect(listResourceLabels(result.yaml, 'cache')).toHaveLength(2);
@@ -2058,22 +2076,18 @@ rate_limit_resources:
   - label: shared
     local: { count: 1, interval: 1s }`;
 
-      type SharedParsed = {
-        pipeline: { processors: [{ cache: { resource: string } }, { rate_limit: { resource: string } }] };
-      };
-
       test('renameResourceReferences with a kind leaves same-labelled references of the other kind alone', () => {
-        const next = renameResourceReferences(sharedLabelYaml, 'shared', 'renamed', 'cache') as string;
-        const parsed = parseYaml(next) as SharedParsed;
-        expect(parsed.pipeline.processors[0].cache.resource).toBe('renamed');
-        expect(parsed.pipeline.processors[1].rate_limit.resource).toBe('shared');
+        const next = configString(renameResourceReferences(sharedLabelYaml, 'shared', 'renamed', 'cache'));
+        const parsed: unknown = parseYaml(next);
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'cache', 'resource')).toBe('renamed');
+        expect(configValue(parsed, 'pipeline', 'processors', 1, 'rate_limit', 'resource')).toBe('shared');
       });
 
       test('renameResourceReferences without a kind rewrites every matching reference', () => {
-        const next = renameResourceReferences(sharedLabelYaml, 'shared', 'renamed') as string;
-        const parsed = parseYaml(next) as SharedParsed;
-        expect(parsed.pipeline.processors[0].cache.resource).toBe('renamed');
-        expect(parsed.pipeline.processors[1].rate_limit.resource).toBe('renamed');
+        const next = configString(renameResourceReferences(sharedLabelYaml, 'shared', 'renamed'));
+        const parsed: unknown = parseYaml(next);
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'cache', 'resource')).toBe('renamed');
+        expect(configValue(parsed, 'pipeline', 'processors', 1, 'rate_limit', 'resource')).toBe('renamed');
       });
 
       test('countResourceReferences scopes to the kind when given', () => {
@@ -2102,15 +2116,12 @@ cache_resources:
     memory: {}`;
 
       test('renameResourceReferences follows refs held in non-`resource` fields', () => {
-        const next = renameResourceReferences(fieldRefYaml, 'my_cache', 'renamed', 'cache') as string;
-        const parsed = parseYaml(next) as {
-          input: { mongodb_cdc: { checkpoint_cache: string; url: string } };
-          pipeline: { processors: [{ dedupe: { cache: string; key: string } }] };
-        };
-        expect(parsed.input.mongodb_cdc.checkpoint_cache).toBe('renamed');
-        expect(parsed.pipeline.processors[0].dedupe.cache).toBe('renamed');
+        const next = configString(renameResourceReferences(fieldRefYaml, 'my_cache', 'renamed', 'cache'));
+        const parsed: unknown = parseYaml(next);
+        expect(configValue(parsed, 'input', 'mongodb_cdc', 'checkpoint_cache')).toBe('renamed');
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'dedupe', 'cache')).toBe('renamed');
         // An unrelated field with a matching value must NOT be rewritten.
-        expect(parsed.input.mongodb_cdc.url).toBe('mongodb://x');
+        expect(configValue(parsed, 'input', 'mongodb_cdc', 'url')).toBe('mongodb://x');
       });
 
       test('countResourceReferences counts refs held in non-`resource` fields', () => {
@@ -2142,15 +2153,11 @@ output_resources:
     drop: {}`;
 
       test('renameResourceReferences scoped to a section kind rewrites only that section', () => {
-        const next = renameResourceReferences(sectionResourceYaml, 'src', 'renamed', 'input') as string;
-        const parsed = parseYaml(next) as {
-          input: { resource: string };
-          pipeline: { processors: [{ resource: string }] };
-          output: { broker: { outputs: [{ resource: string }] } };
-        };
-        expect(parsed.input.resource).toBe('renamed');
-        expect(parsed.pipeline.processors[0].resource).toBe('src');
-        expect(parsed.output.broker.outputs[0].resource).toBe('src');
+        const next = configString(renameResourceReferences(sectionResourceYaml, 'src', 'renamed', 'input'));
+        const parsed: unknown = parseYaml(next);
+        expect(configValue(parsed, 'input', 'resource')).toBe('renamed');
+        expect(configValue(parsed, 'pipeline', 'processors', 0, 'resource')).toBe('src');
+        expect(configValue(parsed, 'output', 'broker', 'outputs', 0, 'resource')).toBe('src');
       });
 
       test('countResourceReferences scopes to section kinds', () => {
@@ -2164,21 +2171,21 @@ output_resources:
   describe('removeComponentAt', () => {
     test('removes a processor and keeps the rest', () => {
       const next = removeComponentAt(pipelineYaml, { kind: 'processor', index: 0 });
-      const parsed = parseYaml(next as string) as { pipeline: { processors: Record<string, unknown>[] } };
-      expect(parsed.pipeline.processors).toEqual([{ mapping: 'root = this' }]);
+      const parsed: unknown = parseYaml(configString(next));
+      expect(configValue(parsed, 'pipeline', 'processors')).toStrictEqual([{ mapping: 'root = this' }]);
     });
 
     test('prunes the pipeline key when the last processor is removed', () => {
-      let next = removeComponentAt(pipelineYaml, { kind: 'processor', index: 1 }) as string;
-      next = removeComponentAt(next, { kind: 'processor', index: 0 }) as string;
-      const parsed = parseYaml(next) as Record<string, unknown>;
-      expect(parsed.pipeline).toBeUndefined();
+      let next = configString(removeComponentAt(pipelineYaml, { kind: 'processor', index: 1 }));
+      next = configString(removeComponentAt(next, { kind: 'processor', index: 0 }));
+      const parsed: unknown = parseYaml(next);
+      expect(configValue(parsed, 'pipeline')).toBeUndefined();
     });
 
     test('removes the input key', () => {
       const next = removeComponentAt(pipelineYaml, { kind: 'input' });
-      const parsed = parseYaml(next as string) as Record<string, unknown>;
-      expect(parsed.input).toBeUndefined();
+      const parsed: unknown = parseYaml(configString(next));
+      expect(configValue(parsed, 'input')).toBeUndefined();
     });
 
     test('returns a blank config when the only component is deleted', () => {
@@ -2215,7 +2222,7 @@ output_resources:
       // drop has no config fields; the generated object must still carry `drop: {}` — without it
       // the insert writes an output with only a label, which renders as an empty placeholder.
       const step = buildInsertableComponent('drop', 'output', Object.values(mockComponents));
-      expect(step?.drop).toEqual({});
+      expect(step?.drop).toStrictEqual({});
     });
   });
 
@@ -2224,16 +2231,16 @@ output_resources:
       const next = tryPatchRedpandaYaml('input:\n  redpanda:\n    topics:\n      - existing\n', 'input', 'redpanda', {
         topicName: 'new-topic',
       });
-      const parsed = parseYaml(next as string) as { input: { redpanda: { topics: string[] } } };
-      expect(parsed.input.redpanda.topics).toEqual(['existing', 'new-topic']);
+      const parsed: unknown = parseYaml(configString(next));
+      expect(configValue(parsed, 'input', 'redpanda', 'topics')).toStrictEqual(['existing', 'new-topic']);
     });
 
     test('does not duplicate a topic already in the list', () => {
       const next = tryPatchRedpandaYaml('input:\n  redpanda:\n    topics:\n      - existing\n', 'input', 'redpanda', {
         topicName: 'existing',
       });
-      const parsed = parseYaml(next as string) as { input: { redpanda: { topics: string[] } } };
-      expect(parsed.input.redpanda.topics).toEqual(['existing']);
+      const parsed: unknown = parseYaml(configString(next));
+      expect(configValue(parsed, 'input', 'redpanda', 'topics')).toStrictEqual(['existing']);
     });
 
     test('appending preserves non-string entries and comments in the topics list', () => {
@@ -2244,8 +2251,8 @@ output_resources:
         { topicName: 'new-topic' }
       );
       expect(next).toContain('# keep me');
-      const parsed = parseYaml(next as string) as { input: { redpanda: { topics: unknown[] } } };
-      expect(parsed.input.redpanda.topics).toEqual([123, 'existing', 'new-topic']);
+      const parsed: unknown = parseYaml(configString(next));
+      expect(configValue(parsed, 'input', 'redpanda', 'topics')).toStrictEqual([123, 'existing', 'new-topic']);
     });
 
     // The dialog grants the group it shows, so the input has to read as that one.
@@ -2256,7 +2263,7 @@ output_resources:
         'redpanda',
         { authMethod: 'sasl', username: 'orders-reader', consumerGroup: 'orders-readers' }
       );
-      expect(parseYaml(next ?? '').input.redpanda.consumer_group).toBe('orders-readers');
+      expect(configValue(parseYaml(next ?? ''), 'input', 'redpanda', 'consumer_group')).toBe('orders-readers');
     });
 
     test('leaves a consumer group the input already reads with, even from a merge key', () => {
@@ -2268,7 +2275,9 @@ output_resources:
         consumerGroup: 'orders-readers',
       });
       expect(next).not.toContain('    consumer_group:');
-      expect(parseYaml(next ?? '', { merge: true }).input.redpanda.consumer_group).toBe('orders-readers');
+      expect(configValue(parseYaml(next ?? '', { merge: true }), 'input', 'redpanda', 'consumer_group')).toBe(
+        'orders-readers'
+      );
     });
 
     test('gives an output no consumer group', () => {
@@ -2277,7 +2286,7 @@ output_resources:
         username: 'orders-writer',
         consumerGroup: 'orders-readers',
       });
-      expect(parseYaml(next ?? '').output.redpanda.consumer_group).toBeUndefined();
+      expect(configValue(parseYaml(next ?? ''), 'output', 'redpanda', 'consumer_group')).toBeUndefined();
     });
   });
 
@@ -2290,8 +2299,8 @@ output_resources:
         existingYaml: '',
       });
 
-      const parsed = parseYaml(yaml as string) as { output?: Record<string, unknown> };
-      expect(parsed.output?.drop).toEqual({});
+      const parsed: unknown = parseYaml(configString(yaml));
+      expect(configValue(parsed, 'output', ['drop', true])).toStrictEqual({});
     });
   });
 });
@@ -2308,31 +2317,35 @@ output:
   drop: {}`;
 
   test('the list names the wrapped input, not the wrapper', () => {
-    expect(componentsOf(wrapped).inputs).toEqual(['redpanda']);
+    expect(componentsOf(wrapped).inputs).toStrictEqual(['redpanda']);
     const broker = `input:
   broker:
     inputs:
       - read_until: { idle_timeout: 5s, input: { kafka: {} } }
       - aws_s3: {}`;
-    expect(componentsOf(broker).inputs).toEqual(['kafka', 'aws_s3']);
+    expect(componentsOf(broker).inputs).toStrictEqual(['kafka', 'aws_s3']);
   });
 
   test('patches topics and SASL into the wrapped input, stripping its placeholder', () => {
-    const result = patchRedpandaConfig(wrapped, 'input', 'redpanda', {
-      topicName: 'orders',
-      sasl: [{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }],
-    }) as string;
-    const inner = (parseYaml(result) as { input: { read_until: { input: { redpanda: Record<string, unknown> } } } })
-      .input.read_until.input.redpanda;
-    expect(inner.topics).toEqual(['orders']);
-    expect(inner.sasl).toEqual([{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }]);
+    const result = configString(
+      patchRedpandaConfig(wrapped, 'input', 'redpanda', {
+        topicName: 'orders',
+        sasl: [{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }],
+      })
+    );
+    const inner = configValue(parseYaml(result), 'input', 'read_until', 'input', 'redpanda');
+    expect(configValue(inner, 'topics')).toStrictEqual(['orders']);
+    expect(configValue(inner, 'sasl')).toStrictEqual([{ mechanism: 'SCRAM-SHA-256', username: 'u', password: 'p' }]);
     expect(result).not.toContain('# topics:');
-    expect((parseYaml(result) as { input: Record<string, unknown> }).input.redpanda).toBeUndefined();
+    expect(configValue(parseYaml(result), 'input', 'redpanda')).toBeUndefined();
   });
 
   test('reads the wrapped input’s topics', () => {
     const withTopics = wrapped.replace('# topics: Required - topics to read from', 'topics: [a, b]');
-    expect(extractConnectorTopics(withTopics, 'input', 'redpanda')).toEqual({ topics: ['a', 'b'], parseError: false });
+    expect(extractConnectorTopics(withTopics, 'input', 'redpanda')).toStrictEqual({
+      topics: ['a', 'b'],
+      parseError: false,
+    });
   });
 });
 
@@ -2340,7 +2353,10 @@ describe('a scanner added to an input inside a read_until', () => {
   test('lands on the wrapped input, not on the wrapper', () => {
     const wrapped =
       'input:\n  read_until:\n    idle_timeout: 5s\n    input:\n      aws_s3:\n        bucket: b\noutput:\n  drop: {}\n';
-    const merged = mergeConnectConfigs(wrapped, { csv: {} } as never) as { toJS: () => unknown };
+    const merged: unknown = mergeConnectConfigs(wrapped, { csv: {} });
+    if (!isDocument(merged)) {
+      throw new Error('Expected a merged YAML document');
+    }
     expect(merged.toJS()).toMatchObject({
       input: { read_until: { idle_timeout: '5s', input: { aws_s3: { bucket: 'b', scanner: { csv: {} } } } } },
     });
@@ -2361,10 +2377,10 @@ input:
         consumer_group: g
 output:
   drop: {}`;
-    const result = patchRedpandaConfig(yaml, 'input', 'redpanda', { topicName: 'orders' }) as string;
-    const { input } = parseYaml(result, { merge: true }) as { input: Record<string, unknown> };
-    expect(Object.keys(input)).toEqual(['read_until']);
-    expect((input.read_until as { input: { redpanda: Record<string, unknown> } }).input.redpanda).toEqual({
+    const result = configString(patchRedpandaConfig(yaml, 'input', 'redpanda', { topicName: 'orders' }));
+    const input = configRecord(configValue(parseYaml(result, { merge: true }), 'input'));
+    expect(Object.keys(input)).toStrictEqual(['read_until']);
+    expect(configValue(input, 'read_until', 'input', 'redpanda')).toStrictEqual({
       seed_brokers: ['a'],
       consumer_group: 'g',
       topics: ['orders'],

@@ -10,21 +10,21 @@
  */
 
 import { getRouteApi } from '@tanstack/react-router';
-
-const routeApi = getRouteApi('/security/acls/$aclName/details');
-
 import { useLayoutEffect } from 'react';
 
 import { HostSelector } from './host-selector';
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { setPageHeader } from '../../../../state/ui-state';
+import { isPresent } from '../../../../utils/type-guards';
 import { Button } from '../../../redpanda-ui/components/button';
 import { ACLDetails } from '../shared/acl-details';
 import type { AclDetail } from '../shared/acl-model';
 import { parsePrincipalFromParam } from '../shared/principal-utils';
 
+const routeApi = getRouteApi('/security/acls/$aclName/details');
+
 const getAclEditHref = (aclName: string, host: string | undefined) => {
-  const hostQuery = host ? `?host=${host}` : '';
+  const hostQuery = host !== null && host !== undefined && host !== '' ? `?host=${host}` : '';
   return `/security/acls/${aclName}/update${hostQuery}`;
 };
 
@@ -38,7 +38,7 @@ type AclDetailContentProps = {
 
 const AclDetailContent = ({ aclName, host, principalName, data }: AclDetailContentProps) => {
   const [acls, ...hosts] = data;
-  if (!acls) {
+  if (!isPresent(acls)) {
     return <div>No ACL data found</div>;
   }
   if (hosts.length > 0) {
@@ -64,7 +64,7 @@ const AclDetailContent = ({ aclName, host, principalName, data }: AclDetailConte
 
 const AclDetailPage = () => {
   const { aclName } = routeApi.useParams();
-  const host = routeApi.useSearch().host || undefined;
+  const host = (routeApi.useSearch().host ?? '') || undefined;
   const { principalType, principalName } = parsePrincipalFromParam(aclName);
   const { data, isLoading } = useGetAclsByPrincipal(`${principalType}:${principalName}`, host);
 
@@ -83,4 +83,4 @@ const AclDetailPage = () => {
   return <AclDetailContent aclName={aclName} data={data ?? []} host={host} principalName={principalName} />;
 };
 
-export default AclDetailPage;
+export { AclDetailPage };

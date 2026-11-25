@@ -10,30 +10,25 @@
  */
 
 import { clsx } from 'clsx';
-import type { CSSProperties } from 'react';
 
 import { numberToThousandsString } from '../../utils/tsx-utils';
 
-export function ShortNum(p: { value: number; tooltip?: boolean; className?: string; style?: CSSProperties }) {
-  const { value, tooltip, className, style } = p;
+export function ShortNum(p: { value: number; tooltip?: boolean; className?: string }) {
+  const { value, tooltip, className } = p;
   if (value === null) {
     return '';
   }
   const str = formatShortNumber(value);
 
-  if (tooltip) {
+  if (tooltip === true) {
     return (
-      <div className={clsx(className, 'tooltip')} style={style}>
+      <div className={clsx(className, 'tooltip')}>
         {str}
         <span className="tooltiptext">{numberToThousandsString(value)}</span>
       </div>
     );
   }
-  return (
-    <span className={className} style={style}>
-      {str}
-    </span>
-  );
+  return <span className={className}>{str}</span>;
 }
 
 function formatShortNumber(value: number): string {

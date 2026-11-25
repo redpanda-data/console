@@ -184,6 +184,9 @@ export function getGRPCPermissionType(operation: OperationType): ACL_PermissionT
       return ACL_PermissionType.ALLOW;
     case OperationTypeDeny:
       return ACL_PermissionType.DENY;
+    case 'allow':
+    case 'deny':
+    case 'not-set':
     default:
       return ACL_PermissionType.UNSPECIFIED;
   }
@@ -203,6 +206,12 @@ export function getGRPCResourceType(operation: ResourceType): ACL_ResourceType {
       return ACL_ResourceType.SUBJECT;
     case ResourceTypeSchemaRegistry:
       return ACL_ResourceType.REGISTRY;
+    case 'cluster':
+    case 'consumerGroup':
+    case 'schemaRegistry':
+    case 'subject':
+    case 'topic':
+    case 'transactionalId':
     default:
       return ACL_ResourceType.UNSPECIFIED;
   }
@@ -216,6 +225,9 @@ export function getGRPCResourcePatternType(pattern: ResourcePatternType): ACL_Re
       return ACL_ResourcePatternType.LITERAL;
     case ResourcePatternTypePrefix:
       return ACL_ResourcePatternType.PREFIXED;
+    case 'any':
+    case 'literal':
+    case 'prefix':
     default:
       return ACL_ResourcePatternType.UNSPECIFIED;
   }
@@ -266,6 +278,10 @@ function getResourceTypeFromGRPC(grpcType: ACL_ResourceType): ResourceType {
       return ResourceTypeSubject;
     case ACL_ResourceType.REGISTRY:
       return ResourceTypeSchemaRegistry;
+    case ACL_ResourceType.UNSPECIFIED:
+    case ACL_ResourceType.ANY:
+    case ACL_ResourceType.DELEGATION_TOKEN:
+    case ACL_ResourceType.USER:
     default:
       return ResourceTypeTopic; // Default fallback
   }
@@ -279,6 +295,8 @@ function getResourcePatternTypeFromGRPC(grpcPattern: ACL_ResourcePatternType): R
       return ResourcePatternTypeLiteral;
     case ACL_ResourcePatternType.PREFIXED:
       return ResourcePatternTypePrefix;
+    case ACL_ResourcePatternType.UNSPECIFIED:
+    case ACL_ResourcePatternType.MATCH:
     default:
       return ResourcePatternTypeLiteral; // Default fallback
   }
@@ -290,6 +308,8 @@ function getOperationTypeFromGRPC(grpcPermission: ACL_PermissionType): Operation
       return OperationTypeAllow;
     case ACL_PermissionType.DENY:
       return OperationTypeDeny;
+    case ACL_PermissionType.UNSPECIFIED:
+    case ACL_PermissionType.ANY:
     default:
       return OperationTypeNotSet;
   }
@@ -319,6 +339,10 @@ function getOperationNameFromGRPC(grpcOp: ACL_Operation): string {
       return 'ALTER_CONFIGS';
     case ACL_Operation.IDEMPOTENT_WRITE:
       return 'IDEMPOTENT_WRITE';
+    case ACL_Operation.UNSPECIFIED:
+    case ACL_Operation.ANY:
+    case ACL_Operation.CREATE_TOKENS:
+    case ACL_Operation.DESCRIBE_TOKENS:
     default:
       return 'UNKNOWN';
   }
@@ -375,10 +399,11 @@ const processResourceAcls = (resource: ListACLsResponse['resources'][number], ho
 
   for (const acl of resource.acls) {
     const hostData = hostsMap.get(acl.host);
-    if (hostData) {
-      const rule = getOrCreateRule(hostData, ruleKey, target);
-      rule.operations[getOperationNameFromGRPC(acl.operation)] = getOperationTypeFromGRPC(acl.permissionType);
+    if (!hostData) {
+      continue;
     }
+    const rule = getOrCreateRule(hostData, ruleKey, target);
+    rule.operations[getOperationNameFromGRPC(acl.operation)] = getOperationTypeFromGRPC(acl.permissionType);
   }
 };
 
@@ -437,7 +462,7 @@ export const getAclFromAclListResponse = (aclList: ListACLsResponse): AclDetail[
 };
 
 export const getOperationsForResourceType = (resourceType: ResourceType): Record<string, OperationType> =>
-  operationSets[resourceType] || {};
+  operationSets[resourceType] ?? {};
 
 export const getInitialRuleIdCounter = (rules?: Rule[]): number =>
   rules && rules.length > 0 ? Math.max(...rules.map((r) => r.id)) + 1 : 2;
@@ -514,7 +539,7 @@ export function getIdFromCreateACLRequest(request: CreateACLRequest): string {
 
 // Convert rules to CreateACLRequest array for API calls
 export function convertRulesToCreateACLRequests(rules: Rule[], principal: string, host: string): CreateACLRequest[] {
-  return rules.reduce((acc, r) => {
+  return rules.reduce<CreateACLRequest[]>((acc, r) => {
     const baseRule = {
       resourcePatternType:
         r.selectorType === 'any' ? ACL_ResourcePatternType.LITERAL : getGRPCResourcePatternType(r.selectorType),
@@ -545,7 +570,7 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
       );
     }
     if (r.mode === ModeCustom) {
-      const customResults = Object.entries(r.operations).reduce((operations, [op, opValue]) => {
+      const customResults = Object.entries(r.operations).reduce<CreateACLRequest[]>((operations, [op, opValue]) => {
         if (opValue !== OperationTypeNotSet) {
           operations.push(
             create(CreateACLRequestSchema, {
@@ -559,11 +584,11 @@ export function convertRulesToCreateACLRequests(rules: Rule[], principal: string
           );
         }
         return operations;
-      }, [] as CreateACLRequest[]);
+      }, []);
       acc.push(...customResults);
     }
     return acc;
-  }, [] as CreateACLRequest[]);
+  }, []);
 }
 
 // Helper function to convert UPPER_CASE strings to sentence case
@@ -627,7 +652,7 @@ export const handleResponses = (errors: ConnectError[], created: boolean) => {
 };
 
 export const handleUrlWithHost = (baseUrl: string, host?: string): string =>
-  host ? `${baseUrl}?host=${encodeURIComponent(host)}` : baseUrl;
+  host !== null && host !== undefined && host !== '' ? `${baseUrl}?host=${encodeURIComponent(host)}` : baseUrl;
 
 export const aclResourceTypeLabel = (type: ACL_ResourceType): string => {
   const map: Partial<Record<ACL_ResourceType, string>> = {

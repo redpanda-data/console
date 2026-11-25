@@ -9,18 +9,15 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, rs, test } from '@rstest/core';
-import { render, screen } from '@testing-library/react';
+import { create } from '@bufbuild/protobuf';
+import { ConnectError, createRouterTransport } from '@connectrpc/connect';
+import { describe, expect, test } from '@rstest/core';
+import { GetShadowMetricsResponseSchema } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
+import { getShadowMetrics } from 'protogen/redpanda/api/dataplane/v1/shadowlink-ShadowLinkService_connectquery';
+import { render, screen, waitFor } from 'test-utils';
 
 import { ShadowLinkMetrics } from './shadow-link-metrics';
 import { type UnifiedShadowLink, UnifiedShadowLinkState } from '../model';
-
-// Mock the useGetShadowMetricsQuery hook
-rs.mock('react-query/api/shadowlink', () => ({
-  useGetShadowMetricsQuery: rs.fn(),
-}));
-
-import { useGetShadowMetricsQuery } from 'react-query/api/shadowlink';
 
 const mockShadowLink: UnifiedShadowLink = {
   name: 'test-link',
@@ -31,36 +28,32 @@ const mockShadowLink: UnifiedShadowLink = {
   syncedShadowTopicProperties: [],
 };
 
-describe('the ShadowLinkMetrics', () => {
-  test('should display metrics when data is loaded', () => {
-    rs.mocked(useGetShadowMetricsQuery).mockReturnValue({
-      data: {
-        totalTopicsReplicated: 100n,
-        failedOverTopics: 5n,
-        errorTopics: 2n,
-      },
-      isFetching: false,
-      error: null,
-    } as any);
-
-    render(<ShadowLinkMetrics shadowLink={mockShadowLink} />);
-
+describe('the shadow link metrics', () => {
+  test('displays loaded metrics from the RPC', async () => {
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(getShadowMetrics, () =>
+        create(GetShadowMetricsResponseSchema, {
+          totalTopicsReplicated: 100n,
+          failedOverTopics: 5n,
+          errorTopics: 2n,
+        })
+      );
+    });
+    render(<ShadowLinkMetrics shadowLink={mockShadowLink} />, { transport });
+    await waitFor(() => expect(screen.getByTestId('metric-value-replicated')).toHaveTextContent('100'));
     expect(screen.getByTestId('metric-value-state')).toHaveTextContent('Active');
-    expect(screen.getByTestId('metric-value-replicated')).toHaveTextContent('100');
     expect(screen.getByTestId('metric-value-failedover')).toHaveTextContent('5');
     expect(screen.getByTestId('metric-value-error')).toHaveTextContent('2');
   });
 
-  test('should display error state when metrics fail to load', () => {
-    rs.mocked(useGetShadowMetricsQuery).mockReturnValue({
-      data: null,
-      isFetching: false,
-      error: new Error('Failed to fetch metrics'),
-    } as any);
-
-    render(<ShadowLinkMetrics shadowLink={mockShadowLink} />);
-
-    expect(screen.getByTestId('shadow-link-metrics-error')).toBeInTheDocument();
-    expect(screen.getByText('Failed to load metrics: Failed to fetch metrics')).toBeInTheDocument();
+  test('displays the RPC failure state', async () => {
+    const transport = createRouterTransport(({ rpc }) => {
+      rpc(getShadowMetrics, () => {
+        throw new ConnectError('Failed to fetch metrics');
+      });
+    });
+    render(<ShadowLinkMetrics shadowLink={mockShadowLink} />, { transport });
+    expect(await screen.findByTestId('shadow-link-metrics-error')).toBeInTheDocument();
+    expect(screen.getByText(/Failed to load metrics:.*Failed to fetch metrics/)).toBeInTheDocument();
   });
 });

@@ -10,6 +10,7 @@
  */
 
 import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from '@tanstack/react-router';
 import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
@@ -32,12 +33,13 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
+import { asyncEvent } from 'utils/async-event';
+import { reportActionError } from 'utils/toast.utils';
 
 import { ConfigurationStep } from './configuration/configuration-step';
 import { ConnectionStep } from './connection/connection-step';
 import { FormSchema, type FormValues, initialValues } from './model';
 import { buildSchemaRegistrySyncOptions } from './schema-registry-request';
-import { isEmbedded } from '../../../../config';
 import {
   ACLOperation,
   ACLPattern,
@@ -45,8 +47,14 @@ import {
   ACLResource,
 } from '../../../../protogen/redpanda/core/common/v1/acl_pb';
 import { useCreateShadowLinkMutation } from '../../../../react-query/api/shadowlink';
+import { isEmbedded } from '../../../../runtime-config';
 import { getBasePath } from '../../../../utils/env';
 import { allNameFilter, buildClientOptions } from '../edit/shadowlink-edit-utils';
+
+// Report rejected submissions at the event boundary, after RHF records their failed state.
+function reportCreateError(error: unknown): void {
+  toast.error('Shadow link create failed', { description: ConnectError.from(error).message });
+}
 
 // Stepper definition
 const { Stepper } = defineStepper(
@@ -95,13 +103,13 @@ const buildSecuritySyncOptions = (values: FormValues) =>
               resourceFilter: {
                 resourceType: acl.resourceType,
                 patternType: acl.resourcePattern,
-                name: acl.resourceName || '',
+                name: (acl.resourceName ?? '') || '',
               },
               accessFilter: {
-                principal: acl.principal || '',
+                principal: (acl.principal ?? '') || '',
                 operation: acl.operation,
                 permissionType: acl.permissionType,
-                host: acl.host || '',
+                host: (acl.host ?? '') || '',
               },
             })
           ),
@@ -208,11 +216,6 @@ export const ShadowLinkCreatePage = () => {
         toast.error('Failed to navigate', { description: String(error) });
       });
     },
-    onError: (error) => {
-      toast.error('Shadow link create failed', {
-        description: error.message,
-      });
-    },
   });
 
   const onSubmit = async (values: FormValues) => {
@@ -262,7 +265,7 @@ export const ShadowLinkCreatePage = () => {
 
             <div className="xl:w-2/3">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)}>
+                <form onSubmit={asyncEvent(form.handleSubmit(onSubmit), reportCreateError)}>
                   {/* CONNECTION STEP */}
                   {methods.current.id === 'shadow-connection' && (
                     <Stepper.Panel>
@@ -286,24 +289,28 @@ export const ShadowLinkCreatePage = () => {
                   <FenceGuardedButton
                     action="createShadowLink"
                     disabled={isCreating}
-                    onClick={form.handleSubmit(onSubmit)}
+                    onClick={asyncEvent(form.handleSubmit(onSubmit), reportCreateError)}
                   >
                     Create shadow link
                   </FenceGuardedButton>
                 ) : (
-                  <Button onClick={() => next(methods)} type="button">
+                  <Button onClick={asyncEvent(() => next(methods), reportActionError)} type="button">
                     Next
                   </Button>
                 )}
 
                 {methods.isFirst ? (
-                  <Button onClick={() => navigate({ to: '/shadowlinks' })} type="button" variant="ghost">
+                  <Button
+                    onClick={asyncEvent(() => navigate({ to: '/shadowlinks' }), reportActionError)}
+                    type="button"
+                    variant="ghost"
+                  >
                     Cancel
                   </Button>
                 ) : (
                   <Button
                     onClick={() => {
-                      methods.prev();
+                      methods.prev().catch(reportActionError);
                     }}
                     type="button"
                     variant="ghost"

@@ -16,10 +16,19 @@ import type { TopicMessage } from '../state/rest-interfaces';
 function makeMessage(overrides: Partial<TopicMessage> = {}): TopicMessage {
   return {
     offset: 0,
+    partitionID: 0,
+    timestamp: 0,
+    compression: 'uncompressed',
+    isTransactional: false,
+    headers: [],
+    key: { payload: '', isPayloadNull: false, encoding: 'text', schemaId: 0, size: 0 },
+    value: { payload: '', isPayloadNull: false, encoding: 'text', schemaId: 0, size: 0 },
     keyJson: '',
     valueJson: '',
+    keyBinHexPreview: '',
+    valueBinHexPreview: '',
     ...overrides,
-  } as unknown as TopicMessage;
+  };
 }
 
 describe('isFilterMatch', () => {
@@ -48,10 +57,7 @@ describe('isFilterMatch', () => {
   });
 
   test('handles undefined keyJson and valueJson', () => {
-    const msg = makeMessage({ offset: 5 });
-    // Explicitly set to undefined to simulate missing fields
-    (msg as Record<string, unknown>).keyJson = undefined;
-    (msg as Record<string, unknown>).valueJson = undefined;
+    const msg = { offset: 5, keyJson: undefined, valueJson: undefined };
 
     expect(isFilterMatch('5', msg)).toBe(true);
     expect(isFilterMatch('abc', msg)).toBe(false);
@@ -113,7 +119,7 @@ describe('trimSlidingWindow', () => {
       virtualStartIndex: 0,
     });
     expect(result.trimCount).toBe(100);
-    expect(result.messages.length).toBe(150);
+    expect(result.messages).toHaveLength(150);
     expect(result.windowStartPage).toBe(2);
     expect(result.virtualStartIndex).toBe(100);
   });
@@ -175,7 +181,7 @@ describe('trimSlidingWindow', () => {
     expect(result.trimCount).toBe(100);
     expect(result.windowStartPage).toBe(3 + 2);
     expect(result.virtualStartIndex).toBe(200 + 100);
-    expect(result.messages.length).toBe(150);
+    expect(result.messages).toHaveLength(150);
   });
 
   test('returns trimCount 0 when user is on first pages', () => {

@@ -1,3 +1,5 @@
+/** @typedef {import('./discover-variants.mjs').Variant} Variant */
+/** @typedef {{variant: string, code: number|null}} VariantResult */
 import { discoverVariants, getVariant } from './discover-variants.mjs';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -11,6 +13,9 @@ const testsDir = resolve(__dirname, '..');
 
 // Listen on `port` once: calls `onFree` after the listener closes, or `onBusy`
 // when the bind fails.
+/** @param {number} port
+ * @param {()=>void} onFree
+ * @param {()=>void} onBusy */
 function probePort(port, onFree, onBusy) {
   const srv = net.createServer();
   srv.unref();
@@ -25,6 +30,10 @@ function probePort(port, onFree, onBusy) {
 // connection in the gap before Docker binds it (→ "address already in use").
 // Probing a fixed range below that window avoids the race. `taken` excludes
 // ports already chosen this run so we don't hand out duplicates.
+/** @param {Set<number>} taken
+ * @param {number} min
+ * @param {number} max
+ * @returns {Promise<number>} */
 function getFreePort(taken = new Set(), min = 20_000, max = 45_000) {
   return new Promise((resolveP, rejectP) => {
     let attempts = 0;
@@ -54,22 +63,30 @@ function getFreePort(taken = new Set(), min = 20_000, max = 45_000) {
 // Assigns a free port to each key, one key at a time: a probe only records its
 // port in `taken` once it finishes, so concurrent probes could hand two services
 // the same port.
-async function allocatePorts([key, ...remainingKeys], taken, ports = {}) {
-  if (key === undefined) {
-    return ports;
+/** @param {string[]} keys
+ * @param {Set<number>} taken
+ * @param {Record<string,number>} ports */
+async function allocatePorts(keys, taken, ports = {}) {
+  for (const key of keys) {
+    if (key === undefined) {
+      break;
+    }
+    // biome-ignore lint/performance/noAwaitInLoops: Each probe reserves its port in taken before the next may choose a free port.
+    ports[key] = await getFreePort(taken);
   }
-  ports[key] = await getFreePort(taken);
-  return allocatePorts(remainingKeys, taken, ports);
+  return ports;
 }
 
 // Allocate a fresh free host port for every service the variant exposes, so
 // local runs never collide with whatever is already on the default ports (e.g.
 // a dev Console on :3000). CI keeps the fixed variant.json ports — separate
 // runners, no collisions — unless E2E_DYNAMIC_PORTS=1 is set.
+/** @param {Variant} variant */
 function resolveDynamicPorts(variant) {
   const staticPorts = variant.config.ports ?? {};
   const useDynamic =
-    process.env.E2E_DYNAMIC_PORTS === '1' || (!process.env.CI && process.env.E2E_DYNAMIC_PORTS !== '0');
+    process.env.E2E_DYNAMIC_PORTS === '1' ||
+    (!((process.env.CI ?? '') !== '') && process.env.E2E_DYNAMIC_PORTS !== '0');
   if (!useDynamic) {
     return Promise.resolve(null);
   }
@@ -99,6 +116,7 @@ function printUsage() {
   printExamples();
 }
 
+/** @param {string} variantName */
 function printUnknownVariant(variantName) {
   console.error(`Error: Variant "${variantName}" not found.`);
   console.log('');
@@ -106,6 +124,7 @@ function printUnknownVariant(variantName) {
 }
 
 // Returns the variant and its Rstest config path, or null after explaining why it cannot run.
+/** @param {string} variantName */
 function findRunnableVariant(variantName) {
   const variant = getVariant(variantName);
 
@@ -124,6 +143,8 @@ function findRunnableVariant(variantName) {
   return { variant, configPath };
 }
 
+/** @param {Variant} variant
+ * @param {string} configPath */
 function printVariantHeader(variant, configPath) {
   console.log(`Running variant: ${variant.name} (${variant.config.displayName})`);
   console.log(`Config: ${configPath}`);
@@ -133,12 +154,14 @@ function printVariantHeader(variant, configPath) {
 // Pick free host ports up front (before Rstest loads its config, so the
 // config's baseURL can read REACT_APP_ORIGIN). global-setup merges
 // E2E_PORTS_OVERRIDE over variant.json for the container port mappings.
+/** @param {Variant} variant */
 async function resolvePortEnv(variant) {
   const dynamicPorts = await resolveDynamicPorts(variant);
+  /** @type {Record<string, string>} */
   const portEnv = {};
   if (dynamicPorts) {
     portEnv.E2E_PORTS_OVERRIDE = JSON.stringify(dynamicPorts);
-    if (dynamicPorts.backend && !process.env.REACT_APP_ORIGIN) {
+    if (dynamicPorts.backend !== undefined && !((process.env.REACT_APP_ORIGIN ?? '') !== '')) {
       portEnv.REACT_APP_ORIGIN = `http://localhost:${dynamicPorts.backend}`;
     }
     console.log(`Using dynamic host ports: ${JSON.stringify(dynamicPorts)}`);
@@ -147,6 +170,10 @@ async function resolvePortEnv(variant) {
   return portEnv;
 }
 
+/** @param {Variant} variant
+ * @param {string} configPath
+ * @param {string[]} rstestArgs
+ * @param {Record<string,string>} portEnv */
 function spawnRstest(variant, configPath, rstestArgs, portEnv) {
   const args = ['run', 'rstest', ...rstestArgs, '--config', configPath];
 
@@ -163,19 +190,23 @@ function spawnRstest(variant, configPath, rstestArgs, portEnv) {
   });
 }
 
+/** @param {import('node:child_process').ChildProcess} child
+ * @returns {Promise<number>} */
 function waitForSuccessfulExit(child) {
-  return new Promise((resolve, reject) => {
-    child.on('close', (code) => {
-      if (code === 0) {
-        resolve(code);
+  return new Promise((settle, reject) => {
+    child.on('close', (exitCode) => {
+      if (exitCode === 0) {
+        settle(exitCode);
       } else {
-        reject(new Error(`Rstest exited with code ${code}`));
+        reject(new Error(`Rstest exited with code ${String(exitCode)}`));
       }
     });
     child.on('error', reject);
   });
 }
 
+/** @param {string} variantName
+ * @param {string[]} rstestArgs */
 async function runVariant(variantName, rstestArgs = []) {
   const runnable = findRunnableVariant(variantName);
 
@@ -202,8 +233,8 @@ if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
   const variantName = args[0];
   const rstestArgs = args.slice(1);
 
-  runVariant(variantName, rstestArgs).catch((error) => {
-    console.error(error.message);
+  runVariant(variantName, rstestArgs).catch((/** @type {unknown} */ error) => {
+    console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;
   });
 }

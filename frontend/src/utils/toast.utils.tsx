@@ -11,6 +11,7 @@ import {
 } from 'protogen/google/rpc/error_details_pb';
 import type { ReactNode } from 'react';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { isNonEmptyString } from 'utils/string-utils';
 
 export type ErrorHttpPayload = {
   internalCode: number;
@@ -45,11 +46,13 @@ type GetToastIdProps = {
 };
 
 const getToastId = ({ initialId, resourceName }: GetToastIdProps) => {
-  if (!resourceName) {
+  if (!(resourceName !== null && resourceName !== undefined && resourceName !== '')) {
     return initialId;
   }
 
-  return initialId ? `${initialId}_${resourceName}` : resourceName;
+  return initialId !== null && initialId !== undefined && initialId !== ''
+    ? `${initialId}_${resourceName}`
+    : resourceName;
 };
 
 // Base UI: timeout 0 means sticky, and a `loading` toast never times out.
@@ -123,11 +126,11 @@ export const formatToastErrorMessage = ({
     return `Failed to ${action} ${entity}`;
   }
 
-  if (customCode) {
-    return `Failed to ${action} ${entity} due to: ${customReason || error.reason} (http code: ${customCode})`;
+  if (customCode !== null && customCode !== undefined && Boolean(customCode)) {
+    return `Failed to ${action} ${entity} due to: ${(customReason ?? '') || error.reason} (http code: ${customCode})`;
   }
 
-  return `Failed to ${action} ${entity} due to: ${customReason || error.reason} (code: ${error.internalCode})`;
+  return `Failed to ${action} ${entity} due to: ${(customReason ?? '') || error.reason} (code: ${error.internalCode})`;
 };
 
 function collectBadRequestDetails(error: ConnectError): string[] {
@@ -139,7 +142,10 @@ function collectBadRequestDetails(error: ConnectError): string[] {
 function collectViolationDescriptions(error: ConnectError): string[] {
   const preconditions = error.findDetails(PreconditionFailureSchema).flatMap((pf) => pf.violations);
   const quotas = error.findDetails(QuotaFailureSchema).flatMap((qf) => qf.violations);
-  return [...preconditions, ...quotas].map((v) => v.description).filter(Boolean);
+  return [...preconditions, ...quotas].flatMap((v) => {
+    const violationDescription = v.description;
+    return Boolean(violationDescription) ? [violationDescription] : [];
+  });
 }
 
 function collectResourceInfoDetails(error: ConnectError): string[] {
@@ -201,13 +207,13 @@ const clusterFenceHint = (error: ConnectError): string | undefined => {
 export function formatToastErrorMessageGRPC({ error, action, entity }: FormatToastMessageGRPCProps): string {
   const message = formatGRPCErrorMessage({ error, action, entity });
   const hint = clusterFenceHint(error);
-  return hint ? `${message.replace(TRAILING_PERIOD, '')}. ${hint}` : message;
+  return isNonEmptyString(hint) ? `${message.replace(TRAILING_PERIOD, '')}. ${hint}` : message;
 }
 
 function formatGRPCErrorMessage({ error, action, entity }: FormatToastMessageGRPCProps): string {
   const localizedText = error.findDetails(LocalizedMessageSchema).find((m) => m.message)?.message;
 
-  const baseMessage = localizedText || error.rawMessage;
+  const baseMessage = (localizedText ?? '') || error.rawMessage;
   if (!baseMessage) {
     return `Failed to ${action} ${entity}`;
   }
@@ -227,7 +233,15 @@ function formatGRPCErrorMessage({ error, action, entity }: FormatToastMessageGRP
 function formatErrorReasons(error: ConnectError): string {
   return error
     .findDetails(ErrorInfoSchema)
-    .filter((info) => info.reason)
-    .map((info) => ` (reason: ${info.reason})`)
+    .flatMap((info) => (info.reason ? [` (reason: ${info.reason})`] : []))
     .join('');
+}
+
+/** Last-resort UI reporting for synchronous events; feature actions keep their own contextual errors. */
+export function reportActionError(error: unknown): void {
+  showToast({
+    status: 'error',
+    title: 'Action failed',
+    description: error instanceof Error ? error.message : 'An unexpected error occurred.',
+  });
 }

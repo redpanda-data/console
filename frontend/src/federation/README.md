@@ -4,10 +4,10 @@ Console ships two independent Module Federation containers. Use `bun run build`
 to build both into the frontend artifact (`build/`). The builds run sequentially:
 the first cleans `build/`, then the React 19 build writes `build/react-19/`.
 
-| Entry URL | Container global | Exposes | React ownership |
-| --- | --- | --- | --- |
-| `/embedded.js` | `rp_console` | Existing `App`, `BridgeApp`, `EmbeddedApp`, `injectApp`, `config`, `types` | Private to Console; unchanged |
-| `/react-19/embedded.js` | `rp_console_react19` | `ReactApp`, `types` | Shared with a compatible React 19 host |
+| Entry URL               | Container global     | Exposes                                                                    | React ownership                        |
+| ----------------------- | -------------------- | -------------------------------------------------------------------------- | -------------------------------------- |
+| `/embedded.js`          | `rp_console`         | Existing `App`, `BridgeApp`, `EmbeddedApp`, `injectApp`, `config`, `types` | Private to Console; unchanged          |
+| `/react-19/embedded.js` | `rp_console_react19` | `ReactApp`, `types`                                                        | Shared with a compatible React 19 host |
 
 The React 19 entry exposes `ConsoleApp` directly with the existing
 `ConsoleAppProps` contract. It does not create a React root or use the bridge.

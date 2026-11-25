@@ -16,6 +16,8 @@ import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { BadgeGroup } from 'components/redpanda-ui/components/badge-group';
+import { Input } from 'components/redpanda-ui/components/input';
+import './pipeline-editor.css';
 import { Button } from 'components/redpanda-ui/components/button';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
 import {
@@ -45,7 +47,9 @@ import type { Pipeline } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import { Fragment, type ReactNode, useMemo } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Controller, useWatch } from 'react-hook-form';
+import { asyncEvent } from 'utils/async-event';
 import { docsLinks } from 'utils/docs-links';
+import { reportActionError } from 'utils/toast.utils';
 
 import { UNSAVED_CHANGES_PILL_TOOLTIP } from './changes-summary';
 import { DRAFT_BADGE_TOOLTIP, draftIssueSummary, isDraft, relativeAgeLabel, timestampToMillis } from './draft-copy';
@@ -59,10 +63,10 @@ import {
   type SaveIntent,
 } from './save-actions';
 import { useStartDraftConfirm } from './start-draft-dialog';
+import type { PipelineFormValues } from './use-pipeline-document-recovery';
 import { cpuToTasks } from '../tasks';
 import { type PipelineEndSummary, summarizePipelineEndYaml } from '../utils/input-end-behavior';
-import { extractAllTopics } from '../utils/yaml';
-import type { PipelineFormValues } from '.';
+import { extractAllTopics } from '../utils/yaml-redpanda';
 
 const DOCS_URL = docsLinks.cloud.connectQuickstart;
 
@@ -103,11 +107,11 @@ const DescriptionBlock = ({ text, clamp }: { text: string; clamp?: boolean }) =>
   <div className="flex flex-col gap-0.5 text-body">
     <span className="text-muted-foreground">Description</span>
     {/* Only a clamped description hides text worth a tooltip. */}
-    <ElementTooltip content={clamp ? text : undefined}>
+    <ElementTooltip content={clamp === true ? text : undefined}>
       <p
         className={cn(
           'max-w-prose leading-relaxed wrap-break-word whitespace-pre-wrap text-foreground',
-          clamp && 'line-clamp-2'
+          clamp === true && 'line-clamp-2'
         )}
       >
         {text}
@@ -149,7 +153,7 @@ const CopyableMeta = ({
 }) => (
   <span className="group/meta flex min-w-0 items-center gap-1.5">
     <span className="shrink-0">{label}</span>
-    {href ? (
+    {href !== null && href !== undefined && href !== '' ? (
       <a
         className="flex min-w-0 items-center gap-1 text-foreground hover:underline"
         href={href}
@@ -163,7 +167,7 @@ const CopyableMeta = ({
       </a>
     ) : (
       <ElementTooltip content={value}>
-        <span className={cn('max-w-[18rem] truncate text-foreground', mono && 'font-mono')}>{value}</span>
+        <span className={cn('max-w-[18rem] truncate text-foreground', mono === true && 'font-mono')}>{value}</span>
       </ElementTooltip>
     )}
     <span className="inline-flex shrink-0 opacity-0 transition-opacity group-hover/meta:opacity-100">
@@ -198,7 +202,7 @@ const TagBadges = ({ tags }: { tags: TagEntry[] }) => (
 
 const BackButton = ({ onClick }: { onClick: () => void }) => (
   <Button className="-ml-3.5 shrink-0" onClick={onClick} size="icon" variant="ghost">
-    <ArrowLeftIcon className="h-5 w-5" />
+    <ArrowLeftIcon className="size-5" />
   </Button>
 );
 
@@ -219,7 +223,7 @@ const DeleteDraftButton = ({ onClick }: { onClick: () => void }) => (
 
 // Expanded mode insets the header while the panel below it goes flush.
 const headerClassName = (expanded: boolean) =>
-  cn('flex flex-col gap-3 transition-[padding] duration-300 ease-in-out', expanded && 'px-4');
+  cn('pipeline-transition-padding flex flex-col gap-3 duration-300 ease-in-out', expanded && 'px-4');
 
 // Inline-editable pipeline name, bound to the same form field as the settings dialog.
 const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineFormValues>; placeholder: string }) => (
@@ -228,15 +232,11 @@ const EditableTitle = ({ form, placeholder }: { form: UseFormReturn<PipelineForm
     name="name"
     render={({ field, fieldState }) => (
       <div className="flex min-w-0 flex-col">
-        <input
+        <Input
           {...field}
           aria-invalid={fieldState.invalid}
           aria-label="Pipeline name"
-          className={cn(
-            'field-sizing-content max-w-full min-w-[12rem] truncate border-b border-transparent bg-transparent py-0.5 text-heading-xl leading-none tracking-heading',
-            'placeholder:text-muted-foreground hover:border-border focus:border-input focus:outline-none',
-            fieldState.error && 'border-destructive hover:border-destructive focus:border-destructive'
-          )}
+          className="pipeline-editable-title"
           placeholder={placeholder}
         />
         {fieldState.error ? <p className="mt-1 text-body text-destructive">{fieldState.error.message}</p> : null}
@@ -295,7 +295,13 @@ function PipelineViewMeta({
       key: 'url',
       node: pipeline.url ? <CopyableMeta href={pipeline.url} label="Endpoint" value={pipeline.url} /> : null,
     },
-    { key: 'edited', node: editedAt ? <span>Edited {relativeAgeLabel(editedAt)}</span> : null },
+    {
+      key: 'edited',
+      node:
+        editedAt !== null && editedAt !== undefined && Boolean(editedAt) ? (
+          <span>Edited {relativeAgeLabel(editedAt)}</span>
+        ) : null,
+    },
   ];
   return (
     <div className="flex flex-col gap-2">
@@ -340,7 +346,7 @@ export function PipelineViewHeader({
           </ElementTooltip>
           <PipelineStateBadge
             state={pipeline.state}
-            tooltip={viewingDraft ? DRAFT_BADGE_TOOLTIP : pipeline.status?.error || undefined}
+            tooltip={viewingDraft ? DRAFT_BADGE_TOOLTIP : (pipeline.status?.error ?? '') || undefined}
           />
           <Button
             aria-label="View pipeline details"
@@ -356,7 +362,7 @@ export function PipelineViewHeader({
           </Button>
           <Button
             icon={<EditIcon />}
-            onClick={() => navigate({ to: `/rp-connect/${pipeline.id}/edit` })}
+            onClick={asyncEvent(() => navigate({ to: `/rp-connect/${pipeline.id}/edit` }), reportActionError)}
             variant="outline"
           >
             {viewingDraft ? 'Continue editing' : 'Edit pipeline'}
@@ -391,9 +397,13 @@ const SaveActions = ({
   return (
     // Positions come from JSX order, not DOM siblings: the open menu's focus guards land inside this div.
     <Group attached className="w-auto">
-      <Button disabled={isSaving || disabled} onClick={() => onSave({ run: primary })} testId="save-pipeline">
+      <Button
+        disabled={(isSaving ?? false) || disabled}
+        onClick={() => onSave({ run: primary })}
+        testId="save-pipeline"
+      >
         {runIntentLabel(primary, context)}
-        {isSaving ? <Spinner /> : null}
+        {isSaving === true ? <Spinner /> : null}
       </Button>
       {alternates.length > 0 ? (
         <DropdownMenu>
@@ -401,7 +411,7 @@ const SaveActions = ({
             render={
               <Button
                 aria-label="More save options"
-                disabled={isSaving || disabled}
+                disabled={(isSaving ?? false) || disabled}
                 size="icon"
                 testId="save-pipeline-options"
               >
@@ -462,7 +472,13 @@ export function PipelineEditHeader({
 
   const items: MetaEntry[] = [
     { key: 'units', node: <ComputeUnitsMeta units={units} /> },
-    { key: 'url', node: url ? <CopyableMeta href={url} label="Endpoint" value={url} /> : null },
+    {
+      key: 'url',
+      node:
+        url !== null && url !== undefined && url !== '' ? (
+          <CopyableMeta href={url} label="Endpoint" value={url} />
+        ) : null,
+    },
   ];
 
   return (
@@ -491,7 +507,7 @@ export function PipelineEditHeader({
               Docs
             </Button>
             <SaveActions context={saveContext} disabled={isSaveBlocked} isSaving={isSaving} onSave={onSave} />
-            {hasUnsavedChanges ? (
+            {hasUnsavedChanges === true ? (
               <ElementTooltip content={UNSAVED_CHANGES_PILL_TOOLTIP}>
                 <span
                   className="absolute top-full right-0 mt-1.5 flex items-center gap-1.5 text-body-sm whitespace-nowrap text-muted-foreground"
@@ -507,7 +523,7 @@ export function PipelineEditHeader({
       </div>
       <div className="flex flex-col items-start gap-2">
         <MetaStrip items={items} />
-        {issueSummary ? (
+        {issueSummary !== null && issueSummary !== undefined && issueSummary !== '' ? (
           <span className="flex items-center gap-1.5 text-body text-warning">
             <AlertTriangle className="size-3.5" />
             {issueSummary}
@@ -518,7 +534,9 @@ export function PipelineEditHeader({
             <TagBadges tags={tags} />
           </DetailLine>
         ) : null}
-        {description ? <DescriptionBlock text={description} /> : null}
+        {description !== null && description !== undefined && description !== '' ? (
+          <DescriptionBlock text={description} />
+        ) : null}
       </div>
     </header>
   );

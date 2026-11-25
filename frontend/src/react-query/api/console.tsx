@@ -1,5 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { useMutation } from '@connectrpc/connect-query';
+import { CompressionType } from 'protogen/redpanda/api/console/v1alpha1/common_pb';
 import { publishMessage } from 'protogen/redpanda/api/console/v1alpha1/console_service-ConsoleService_connectquery';
 import {
   type PublishMessagePayloadOptions,
@@ -23,7 +24,6 @@ export const usePublishMessageMutation = () =>
 /**
  * Helper function to create a PublishMessageRequest with payload options
  */
-// biome-ignore lint/nursery/useMaxParams: Message publishing helper with many configuration options
 export const createPublishMessageRequest = (
   topic: string,
   partitionId = -1,
@@ -31,7 +31,7 @@ export const createPublishMessageRequest = (
   value?: MessageInit<PublishMessagePayloadOptions>,
   headers: { key: string; value: Uint8Array }[] = [],
   useTransactions = false,
-  compression = 0
+  compression = CompressionType.UNSPECIFIED
 ): MessageInit<PublishMessageRequest> => {
   const request = create(PublishMessageRequestSchema, {
     topic,

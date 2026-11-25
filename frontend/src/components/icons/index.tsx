@@ -1,10 +1,10 @@
+// biome-ignore-all lint/performance/noBarrelFile: Stable semantic adapter; direct vendor imports and test helpers intentionally share one entry point.
 /**
  * Central icon exports, from lucide-react and @icons-pack/react-simple-icons. The single source for
  * icons in Console — `import { CheckIcon, GitHubIcon } from 'components/icons'`.
  */
 
 // Social media icons - simple-icons
-// biome-ignore lint/performance/noBarrelFile: Intentional central icon system as per project architecture
 // Deep per-icon imports: the package barrel re-exports ~3000 icons (59MB),
 // which dev-mode bundlers pre-bundle whole — crashing browser-mode test runs.
 export { default as GitHubIcon } from '@icons-pack/react-simple-icons/icons/SiGithub.mjs'; // FaGithub

@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { describe, expect, it, rs } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
 import { act, render, screen } from 'test-utils';
 
@@ -44,7 +44,7 @@ async function pressAndExpectFocus(key: string, rowName: string) {
 
 describe('the PipelineStructureTree', () => {
   describe('rendering and selection', () => {
-    it('renders the section headers and the full nested structure as rows', () => {
+    test('renders the section headers and the full nested structure as rows', () => {
       render(<PipelineStructureTree configYaml={NESTED} />);
       expect(screen.getByText('INPUT')).toBeInTheDocument();
       expect(screen.getByText('PROCESSORS')).toBeInTheDocument();
@@ -55,8 +55,8 @@ describe('the PipelineStructureTree', () => {
       }
     });
 
-    it('selects an editable node directly when its row is clicked', async () => {
-      const onSelectNode = rs.fn();
+    test('selects an editable node directly when its row is clicked', async () => {
+      const onSelectNode = rs.fn<(highlightId: string, editableId?: string) => void>();
       render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
       await userEvent.click(screen.getByText('http'));
       // http maps to its own YAML location, so the highlighted and editable ids match.
@@ -66,8 +66,8 @@ describe('the PipelineStructureTree', () => {
       expect(highlightId).toBe(editableId);
     });
 
-    it('resolves a switch case to itself so its routing condition is editable', async () => {
-      const onSelectNode = rs.fn();
+    test('resolves a switch case to itself so its routing condition is editable', async () => {
+      const onSelectNode = rs.fn<(highlightId: string, editableId?: string) => void>();
       render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
       await userEvent.click(screen.getByText('case 1'));
       const [highlightId, editableId] = onSelectNode.mock.calls[0];
@@ -79,7 +79,7 @@ describe('the PipelineStructureTree', () => {
   });
 
   describe('expansion', () => {
-    it('collapses a group to hide its descendants', async () => {
+    test('collapses a group to hide its descendants', async () => {
       render(<PipelineStructureTree configYaml={NESTED} />);
       expect(screen.getByText('http')).toBeInTheDocument();
       const switchRow = screen.getByRole('treeitem', { name: 'switch' });
@@ -91,14 +91,16 @@ describe('the PipelineStructureTree', () => {
       expect(screen.getByText('switch')).toBeInTheDocument();
     });
 
-    it('toggles a group via the chevron without selecting the node', async () => {
-      const onSelectNode = rs.fn();
+    test('toggles a group via the chevron without selecting the node', async () => {
+      const onSelectNode = rs.fn<(highlightId: string, editableId?: string) => void>();
       render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
       const switchRow = screen.getByRole('treeitem', { name: 'switch' });
       // The chevron is presentational (the row owns the ARIA expansion), so target it directly.
       const chevron = switchRow.querySelector('button');
-      expect(chevron).not.toBeNull();
-      await userEvent.click(chevron as HTMLElement);
+      if (!chevron) {
+        throw new Error('Missing switch expansion control');
+      }
+      await userEvent.click(chevron);
       expect(screen.queryByText('http')).not.toBeInTheDocument();
       // Collapsing must not also select the node.
       expect(onSelectNode).not.toHaveBeenCalled();
@@ -106,7 +108,7 @@ describe('the PipelineStructureTree', () => {
   });
 
   describe('keyboard navigation', () => {
-    it('exposes rows as treeitems with level, position and expansion state', () => {
+    test('exposes rows as treeitems with level, position and expansion state', () => {
       render(<PipelineStructureTree configYaml={NESTED} />);
       // One labelled tree per non-empty section, so role="tree" owns only treeitems
       // (headers / Add buttons live between the trees).
@@ -122,7 +124,7 @@ describe('the PipelineStructureTree', () => {
       expect(httpRow).not.toHaveAttribute('aria-expanded');
     });
 
-    it('moves focus between visible rows with the arrow, Home and End keys', async () => {
+    test('moves focus between visible rows with the arrow, Home and End keys', async () => {
       render(<PipelineStructureTree configYaml={NESTED} />);
       const first = screen.getByRole('treeitem', { name: 'kafka_franz' });
       // Roving tabindex: only the first row is initially tabbable.
@@ -135,7 +137,7 @@ describe('the PipelineStructureTree', () => {
       expect(first).toHaveFocus();
     });
 
-    it('moves into an expanded group with ArrowRight and to the parent with ArrowLeft', async () => {
+    test('moves into an expanded group with ArrowRight and to the parent with ArrowLeft', async () => {
       render(<PipelineStructureTree configYaml={NESTED} />);
       const switchRow = screen.getByRole('treeitem', { name: 'switch' });
       act(() => switchRow.focus());
@@ -148,8 +150,8 @@ describe('the PipelineStructureTree', () => {
       expect(screen.getByRole('treeitem', { name: 'branch' })).toHaveFocus();
     });
 
-    it('selects the focused row with Enter', async () => {
-      const onSelectNode = rs.fn();
+    test('selects the focused row with Enter', async () => {
+      const onSelectNode = rs.fn<(highlightId: string, editableId?: string) => void>();
       render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
       const httpRow = screen.getByRole('treeitem', { name: 'http' });
       act(() => httpRow.focus());
@@ -162,7 +164,7 @@ describe('the PipelineStructureTree', () => {
 
   describe('docs links', () => {
     // The registry Button renders `as="a"` with role="button" (Base UI), so query by that role.
-    it('links each component row to its reference docs', () => {
+    test('links each component row to its reference docs', () => {
       render(<PipelineStructureTree configYaml={NESTED} />);
       const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
       expect(docsLink).toHaveAttribute(
@@ -178,14 +180,14 @@ describe('the PipelineStructureTree', () => {
       expect(screen.getByRole('button', { name: 'switch documentation' })).toBeInTheDocument();
     });
 
-    it('omits the docs link on structural rows that name no component', () => {
+    test('omits the docs link on structural rows that name no component', () => {
       render(<PipelineStructureTree configYaml={NESTED} />);
       const caseRow = screen.getByRole('treeitem', { name: 'case 1' });
       expect(caseRow.querySelector('a')).toBeNull();
     });
 
-    it('opens the docs link without also selecting the row', async () => {
-      const onSelectNode = rs.fn();
+    test('opens the docs link without also selecting the row', async () => {
+      const onSelectNode = rs.fn<(highlightId: string, editableId?: string) => void>();
       render(<PipelineStructureTree configYaml={NESTED} onSelectNode={onSelectNode} />);
       const docsLink = screen.getByRole('button', { name: 'kafka_franz documentation' });
       await userEvent.click(docsLink);
@@ -198,7 +200,7 @@ describe('the PipelineStructureTree', () => {
   });
 
   describe('invalid yaml', () => {
-    it('keeps the last valid outline, flagged, when an edit makes the YAML invalid', () => {
+    test('keeps the last valid outline, flagged, when an edit makes the YAML invalid', () => {
       const { rerender } = render(<PipelineStructureTree configYaml={NESTED} />);
       expect(screen.getByText('switch')).toBeInTheDocument();
 
@@ -208,13 +210,13 @@ describe('the PipelineStructureTree', () => {
       expect(screen.getByText('switch')).toBeInTheDocument();
     });
 
-    it('shows a fix-it notice (no crash) when the YAML is invalid from the start', () => {
+    test('shows a fix-it notice (no crash) when the YAML is invalid from the start', () => {
       render(<PipelineStructureTree configYaml={'input: [unclosed'} />);
       expect(screen.getByText(FIX_IT_NOTICE_RE)).toBeInTheDocument();
       expect(screen.queryByText('INPUT')).not.toBeInTheDocument();
     });
 
-    it('does not flag a valid but still-incomplete config as invalid while authoring from blank', () => {
+    test('does not flag a valid but still-incomplete config as invalid while authoring from blank', () => {
       const { rerender } = render(<PipelineStructureTree configYaml={''} />);
       // `input:` is valid, just not yet a pipeline — no prior outline to hold, so no "invalid" notice.
       rerender(<PipelineStructureTree configYaml={'input:'} />);
@@ -224,7 +226,7 @@ describe('the PipelineStructureTree', () => {
 });
 
 describe('the PipelineStructureTree stop conditions', () => {
-  it('describes how each input row stops', async () => {
+  test('describes how each input row stops', async () => {
     render(
       <PipelineStructureTree
         configYaml={'input:\n  read_until:\n    idle_timeout: 30s\n    input:\n      kafka_franz: {}\n'}

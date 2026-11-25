@@ -13,11 +13,8 @@ import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
 
-rs.mock('../utils/fetch-with-timeout', () => ({ default: rs.fn() }));
-
 import { api, rolesApi, useApiStore, useRolesStore } from './backend-api';
 import type { TopicConsumer, TopicDescription, UserData } from './rest-interfaces';
-import { config } from '../config';
 import { AuthenticationMethod } from '../protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import {
   ClusterStatusService,
@@ -34,8 +31,11 @@ import {
   DebugBundleStatusSchema,
   GetDebugBundleStatusResponse_DebugBundleBrokerStatusSchema,
 } from '../protogen/redpanda/api/console/v1alpha1/debug_bundle_pb';
-import fetchWithTimeout from '../utils/fetch-with-timeout';
+import { config } from '../runtime-config';
+import { fetchWithTimeout } from '../utils/fetch-with-timeout';
+import { compareStrings } from '../utils/string-utils';
 
+rs.mock('../utils/fetch-with-timeout', () => ({ fetchWithTimeout: rs.fn() }));
 const topicsResponse = (topicNames: string[]) =>
   new Response(JSON.stringify({ topics: topicNames.map((topicName) => ({ topicName })) }), {
     status: 200,
@@ -70,9 +70,9 @@ describe('refreshTopics topic-cache pruning (F2)', () => {
     await useApiStore.getState().refreshTopics(true);
 
     const state = useApiStore.getState();
-    expect([...state.topicConfig.keys()]).toEqual(['live-topic']);
-    expect([...state.topicConsumers.keys()]).toEqual(['live-topic']);
-    expect(state.topics).toEqual([{ topicName: 'live-topic' }]);
+    expect([...state.topicConfig.keys()]).toStrictEqual(['live-topic']);
+    expect([...state.topicConsumers.keys()]).toStrictEqual(['live-topic']);
+    expect(state.topics).toStrictEqual([{ topicName: 'live-topic' }]);
   });
 
   test('keeps cache entries for topics that still exist', async () => {
@@ -86,7 +86,34 @@ describe('refreshTopics topic-cache pruning (F2)', () => {
 
     await useApiStore.getState().refreshTopics(true);
 
-    expect([...useApiStore.getState().topicConfig.keys()].sort()).toEqual(['a', 'b']);
+    expect([...useApiStore.getState().topicConfig.keys()].sort(compareStrings)).toStrictEqual(['a', 'b']);
+  });
+});
+
+describe('legacy topic request cache', () => {
+  test('coalesces forced reads while a request is in flight', async () => {
+    const pending = Promise.withResolvers<Response>();
+    const fetch = rs.mocked(fetchWithTimeout).mockReset().mockReturnValueOnce(pending.promise);
+    const first = api.refreshTopics(true);
+    const concurrent = api.refreshTopics(true);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    pending.resolve(topicsResponse(['first-result']));
+    await Promise.all([first, concurrent]);
+    expect(api.topics?.map((topic) => topic.topicName)).toStrictEqual(['first-result']);
+  });
+
+  test('reuses fresh completed data unless explicitly forced to refetch', async () => {
+    const fetch = rs
+      .mocked(fetchWithTimeout)
+      .mockReset()
+      .mockResolvedValueOnce(topicsResponse(['cached-result']));
+    await api.refreshTopics(true);
+    await api.refreshTopics();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    fetch.mockResolvedValueOnce(topicsResponse(['forced-result']));
+    await api.refreshTopics(true);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(api.topics?.map((topic) => topic.topicName)).toStrictEqual(['forced-result']);
   });
 });
 
@@ -254,16 +281,16 @@ describe('store proxies', () => {
 
     api.errors = [];
 
-    expect(useApiStore.getState().errors).toEqual([]);
+    expect(useApiStore.getState().errors).toStrictEqual([]);
     useApiStore.setState({ schemaTypes: ['AVRO'] });
-    expect(api.schemaTypes).toEqual(['AVRO']);
+    expect(api.schemaTypes).toStrictEqual(['AVRO']);
   });
 
   test('rolesApi forwards reads and writes to the roles store', () => {
     rolesApi.roles = ['admin', 'viewer'];
 
-    expect(useRolesStore.getState().roles).toEqual(['admin', 'viewer']);
+    expect(useRolesStore.getState().roles).toStrictEqual(['admin', 'viewer']);
     useRolesStore.setState({ roles: ['operator'] });
-    expect(rolesApi.roles).toEqual(['operator']);
+    expect(rolesApi.roles).toStrictEqual(['operator']);
   });
 });

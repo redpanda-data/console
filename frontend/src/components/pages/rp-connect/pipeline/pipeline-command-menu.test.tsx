@@ -11,9 +11,8 @@
 
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
-import { describe, expect, it, rs } from '@rstest/core';
+import { describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import type { editor } from 'monaco-editor';
 import { ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
@@ -39,14 +38,15 @@ function createMockEditor() {
       getLineContent: rs.fn(() => ''),
       getLineMaxColumn: rs.fn(() => 1),
       getValue: rs.fn(() => ''),
+      setValue: rs.fn(),
     })),
-    executeEdits: rs.fn(),
+    executeEdits: rs.fn(() => true),
     setPosition: rs.fn(),
     focus: rs.fn(),
     getDomNode: rs.fn(() => null),
     getScrolledVisiblePosition: rs.fn(() => null),
     onDidScrollChange: rs.fn(() => ({ dispose: rs.fn() })),
-  } as unknown as editor.IStandaloneCodeEditor;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -98,7 +98,7 @@ function queryHeading(name: string) {
 }
 
 describe('the PipelineCommandMenu', () => {
-  it('dialog variant renders all category group headings', async () => {
+  test('dialog variant renders all category group headings', async () => {
     const transport = createTestTransport({ secretNames: ['API_KEY'], topicNames: ['orders'], userNames: ['svc'] });
 
     render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
@@ -113,7 +113,7 @@ describe('the PipelineCommandMenu', () => {
     });
   });
 
-  it('drops the heading of an empty category but still offers to create into it', async () => {
+  test('drops the heading of an empty category but still offers to create into it', async () => {
     const transport = createTestTransport({ topicNames: ['orders'], userNames: ['svc'] });
 
     render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
@@ -125,7 +125,7 @@ describe('the PipelineCommandMenu', () => {
     expect(screen.getByRole('button', { name: /create secret/i })).toBeInTheDocument();
   });
 
-  it('secret items appear in the list with correct syntax', async () => {
+  test('secret items appear in the list with correct syntax', async () => {
     const transport = createTestTransport({ secretNames: ['MY_API_KEY', 'DB_PASSWORD'] });
 
     render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
@@ -138,7 +138,7 @@ describe('the PipelineCommandMenu', () => {
     });
   });
 
-  it('selecting a contextual variable calls executeEdits and closes the menu', async () => {
+  test('selecting a contextual variable calls executeEdits and closes the menu', async () => {
     const user = userEvent.setup();
     const transport = createTestTransport();
     const mockEditor = createMockEditor();
@@ -149,21 +149,24 @@ describe('the PipelineCommandMenu', () => {
     });
 
     // Wait for contextual variables to render
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
     expect(await screen.findByText('${REDPANDA_BROKERS}')).toBeInTheDocument();
 
     // Click the first contextual variable item
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
     await user.click(screen.getByText('${REDPANDA_BROKERS}'));
 
     await waitFor(() => {
       expect(mockEditor.executeEdits).toHaveBeenCalledWith(
         'command-menu-insert',
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
         expect.arrayContaining([expect.objectContaining({ text: '${REDPANDA_BROKERS}' })])
       );
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
 
-  it('category filter toggle shows only the selected category', async () => {
+  test('category filter toggle shows only the selected category', async () => {
     const user = userEvent.setup();
     const transport = createTestTransport({ secretNames: ['SECRET_ONE'] });
 
@@ -186,7 +189,7 @@ describe('the PipelineCommandMenu', () => {
     });
   });
 
-  it('popover variant renders Command component', async () => {
+  test('popover variant renders Command component', async () => {
     const transport = createTestTransport();
 
     render(
@@ -205,7 +208,7 @@ describe('the PipelineCommandMenu', () => {
     expect(await screen.findByPlaceholderText('Filter...')).toBeInTheDocument();
   });
 
-  it('popover selection calls onSlashSelect with variable text', async () => {
+  test('popover selection calls onSlashSelect with variable text', async () => {
     const user = userEvent.setup();
     const transport = createTestTransport();
     const onSlashSelect = rs.fn();
@@ -222,14 +225,16 @@ describe('the PipelineCommandMenu', () => {
       { transport }
     );
 
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
     await user.click(await screen.findByText('${REDPANDA_BROKERS}'));
 
     await waitFor(() => {
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal external configuration syntax, not JavaScript interpolation.
       expect(onSlashSelect).toHaveBeenCalledWith('${REDPANDA_BROKERS}');
     });
   });
 
-  it('topic items from API appear in list', async () => {
+  test('topic items from API appear in list', async () => {
     const transport = createTestTransport({ topicNames: ['my-topic', 'orders'] });
 
     render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
@@ -242,7 +247,7 @@ describe('the PipelineCommandMenu', () => {
     });
   });
 
-  it('"Create secret" button opens AddSecretsDialog', async () => {
+  test('"Create secret" button opens AddSecretsDialog', async () => {
     const user = userEvent.setup();
     const transport = createTestTransport({ secretNames: ['EXISTING_KEY'] });
     const onOpenChange = rs.fn();
@@ -267,7 +272,7 @@ describe('the PipelineCommandMenu', () => {
   });
 
   describe('create buttons', () => {
-    it('"All" tab shows all three create buttons', async () => {
+    test('"All" tab shows all three create buttons', async () => {
       const transport = createTestTransport();
 
       render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
@@ -281,7 +286,7 @@ describe('the PipelineCommandMenu', () => {
       });
     });
 
-    it('"Secrets" tab shows only "Create secret"', async () => {
+    test('"Secrets" tab shows only "Create secret"', async () => {
       const user = userEvent.setup();
       const transport = createTestTransport();
 
@@ -300,7 +305,7 @@ describe('the PipelineCommandMenu', () => {
       });
     });
 
-    it('"Topics" tab shows only "Create topic"', async () => {
+    test('"Topics" tab shows only "Create topic"', async () => {
       const user = userEvent.setup();
       const transport = createTestTransport();
 
@@ -319,7 +324,7 @@ describe('the PipelineCommandMenu', () => {
       });
     });
 
-    it('"Users" tab shows only "Create user"', async () => {
+    test('"Users" tab shows only "Create user"', async () => {
       const user = userEvent.setup();
       const transport = createTestTransport();
 
@@ -338,7 +343,7 @@ describe('the PipelineCommandMenu', () => {
       });
     });
 
-    it('"Variables" tab shows no create buttons', async () => {
+    test('"Variables" tab shows no create buttons', async () => {
       const user = userEvent.setup();
       const transport = createTestTransport();
 
@@ -357,7 +362,7 @@ describe('the PipelineCommandMenu', () => {
       });
     });
 
-    it('popover shows all three create buttons', async () => {
+    test('popover shows all three create buttons', async () => {
       const transport = createTestTransport();
 
       render(

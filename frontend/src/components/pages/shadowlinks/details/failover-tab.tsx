@@ -30,6 +30,7 @@ import { cn } from 'components/redpanda-ui/lib/utils';
 import { CheckIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { isNonEmptyString } from 'utils/string-utils';
 
 import {
   type FailoverReadiness,
@@ -119,7 +120,7 @@ const Lane = ({
 }) => (
   <section
     aria-label={title}
-    className={cn('rounded-lg border px-5 pt-4', dashed && 'border-dashed')}
+    className={cn('rounded-lg border px-5 pt-4', dashed === true && 'border-dashed')}
     data-testid={testId}
   >
     <div className="flex flex-wrap items-start justify-between gap-2">
@@ -149,7 +150,7 @@ const OpenSourceButton = ({ fence, link }: { fence: SourceFenceStep; link: LinkI
       onClick={() =>
         openCluster(
           source.clusterId,
-          exempt
+          isNonEmptyString(exempt)
             ? `/shadowlinks${defaultStringifySearch({ tab: 'source', action: 'exempt', principal: exempt })}`
             : '/shadowlinks?tab=source'
         )
@@ -158,7 +159,7 @@ const OpenSourceButton = ({ fence, link }: { fence: SourceFenceStep; link: LinkI
       testId="failover-open-source"
       variant="outline"
     >
-      {exempt ? `Exempt ${exempt} on ${source.clusterName}` : `Open ${source.clusterName}`}
+      {isNonEmptyString(exempt) ? `Exempt ${exempt} on ${source.clusterName}` : `Open ${source.clusterName}`}
     </Button>
   );
 };
@@ -197,7 +198,7 @@ const SettingsStepBody = ({ step, link }: { step: CloudStep; link: LinkIdentity 
         <span className={link.authentication === 'sasl' ? 'font-mono' : undefined}>{user ?? 'an unknown user'}</span>
         <CanReadBadge canRead={step.linkExempt} no="Not exempt" yes="Exempt" />
       </p>
-      {note ? (
+      {isNonEmptyString(note) ? (
         <p
           className={cn('text-body-sm', step.linkExempt === undefined && 'text-muted-foreground')}
           data-testid={step.linkExempt === false ? 'failover-link-not-exempt' : 'failover-link-principal-unknown'}
@@ -225,10 +226,26 @@ const brokerCount = (fence: KnownPeerFence) => {
   return {
     total: brokers.length,
     confirmed: brokers.filter((broker) => broker.status === 'confirmed').length,
-    down: brokers.filter((broker) => broker.status === 'not-answering').map((broker) => broker.nodeId),
-    behind: brokers.filter((broker) => broker.status === 'behind').map((broker) => broker.nodeId),
+    down: brokers.flatMap((broker) => (broker.status === 'not-answering' ? [broker.nodeId] : [])),
+    behind: brokers.flatMap((broker) => (broker.status === 'behind' ? [broker.nodeId] : [])),
   };
 };
+
+const FencingProgress = ({
+  clusterName,
+  progress: { total, confirmed, down, behind },
+}: {
+  clusterName: string;
+  progress: ReturnType<typeof brokerCount>;
+}) => (
+  <p className="text-body-sm text-muted-foreground" data-testid="failover-fencing-progress">
+    {total > 0 ? `${confirmed} of ${total} brokers have confirmed. ` : ''}
+    {down.length > 0
+      ? `${unreachableBrokersSubject(down)} answering, so ${clusterName} stays fencing until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster. There’s no timeout.`
+      : ''}
+    {down.length === 0 && behind.length > 0 ? `Waiting on ${brokersPhrase(behind)}.` : ''}
+  </p>
+);
 
 const FencedStepBody = ({ step }: { step: CloudStep }) => {
   const now = useNow();
@@ -243,13 +260,7 @@ const FencedStepBody = ({ step }: { step: CloudStep }) => {
         {since ? <span className="text-muted-foreground">for {formatFenceDuration(now - since.getTime())}</span> : null}
       </p>
       {fence.state === 'fencing' ? (
-        <p className="text-body-sm text-muted-foreground" data-testid="failover-fencing-progress">
-          {total > 0 ? `${confirmed} of ${total} brokers have confirmed. ` : ''}
-          {down.length > 0
-            ? `${unreachableBrokersSubject(down)} answering, so ${source.clusterName} stays fencing until ${down.length === 1 ? 'it comes' : 'they come'} back or ${down.length === 1 ? 'leaves' : 'leave'} the cluster. There’s no timeout.`
-            : ''}
-          {down.length === 0 && behind.length > 0 ? `Waiting on ${brokersPhrase(behind)}.` : ''}
-        </p>
+        <FencingProgress clusterName={source.clusterName} progress={{ total, confirmed, down, behind }} />
       ) : null}
       {fence.state === 'fenced' ? (
         <p className="text-body-sm text-muted-foreground">
@@ -271,7 +282,8 @@ const describeLag = (lag: LagStep): string => {
     return 'No topics are syncing.';
   }
   const summary = `${lag.caughtUp} of ${lag.syncing} ${plural(lag.syncing, 'topic', 'topics')} caught up.`;
-  const [worst, ...rest] = lag.behind;
+  const worst = lag.behind.at(0);
+  const rest = lag.behind.slice(1);
   if (!worst) {
     return summary;
   }

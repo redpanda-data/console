@@ -25,7 +25,7 @@ import {
   saveSuccessMessage,
   unsavedChangesCopy,
 } from './save-actions';
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 /**
  * A ConnectError as it arrives off the wire: details are decoded into `{ type, value, debug }`
@@ -48,7 +48,7 @@ const stopped: SaveContext = { mode: 'edit', state: Pipeline_State.STOPPED, draf
 const unknownState: SaveContext = { mode: 'edit', state: undefined, draftsEnabled: true };
 
 describe('isInvalidConfigError', () => {
-  it('recognises a rejection carrying lint hints', () => {
+  test('recognises a rejection carrying lint hints', () => {
     const error = new ConnectError('invalid pipeline configuration', Code.InvalidArgument, undefined, [
       {
         desc: LintHintSchema,
@@ -58,14 +58,14 @@ describe('isInvalidConfigError', () => {
     expect(isInvalidConfigError(error)).toBe(true);
   });
 
-  it('recognises wire-decoded lint hints', () => {
+  test('recognises wire-decoded lint hints', () => {
     const error = wireError('invalid pipeline configuration', Code.InvalidArgument, [
       { type: 'redpanda.api.common.v1.LintHint', debug: { hint: 'an explicit output type must be specified' } },
     ]);
     expect(isInvalidConfigError(error)).toBe(true);
   });
 
-  it('recognises the dataplane reason even without hints', () => {
+  test('recognises the dataplane reason even without hints', () => {
     const error = wireError('invalid pipeline configuration', Code.InvalidArgument, [
       {
         type: 'google.rpc.ErrorInfo',
@@ -75,14 +75,14 @@ describe('isInvalidConfigError', () => {
     expect(isInvalidConfigError(error)).toBe(true);
   });
 
-  it('leaves a different invalid_argument alone, so it surfaces as an error to fix now', () => {
+  test('leaves a different invalid_argument alone, so it surfaces as an error to fix now', () => {
     const error = wireError('name is too short', Code.InvalidArgument, [
       { type: 'google.rpc.ErrorInfo', debug: { reason: 'REASON_INVALID_INPUT', domain: 'redpanda.com/dataplane' } },
     ]);
     expect(isInvalidConfigError(error)).toBe(false);
   });
 
-  it('ignores non-validation failures', () => {
+  test('ignores non-validation failures', () => {
     expect(isInvalidConfigError(new ConnectError('already exists', Code.AlreadyExists))).toBe(false);
     expect(isInvalidConfigError(new ConnectError('boom', Code.Internal))).toBe(false);
     expect(isInvalidConfigError(new Error('network down'))).toBe(false);
@@ -91,11 +91,11 @@ describe('isInvalidConfigError', () => {
 });
 
 describe('isNoLongerDraftError', () => {
-  it('recognises the refusal that stops a draft save deploying to a running pipeline', () => {
+  test('recognises the refusal that stops a draft save deploying to a running pipeline', () => {
     expect(isNoLongerDraftError(new ConnectError('pipeline is not a draft', Code.FailedPrecondition))).toBe(true);
   });
 
-  it('leaves everything else alone', () => {
+  test('leaves everything else alone', () => {
     expect(isNoLongerDraftError(new ConnectError('nope', Code.PermissionDenied))).toBe(false);
     // A suspended cluster refuses writes with the same code.
     expect(
@@ -107,116 +107,116 @@ describe('isNoLongerDraftError', () => {
 
 describe('primaryRunIntent', () => {
   // The whole point of the default: the primary click always succeeds and never starts anything.
-  it('parks work that has never been deployed', () => {
+  test('parks work that has never been deployed', () => {
     expect(primaryRunIntent(creating)).toBe('draft');
     expect(primaryRunIntent(draft)).toBe('draft');
   });
 
-  it('falls back to deploy-then-stop when the deployment has no drafts', () => {
+  test('falls back to deploy-then-stop when the deployment has no drafts', () => {
     expect(primaryRunIntent(creatingWithoutDrafts)).toBe('stopped');
   });
 
-  it('leaves a deployed pipeline in whatever state it was in', () => {
+  test('leaves a deployed pipeline in whatever state it was in', () => {
     expect(primaryRunIntent(running)).toBe('keep');
     expect(primaryRunIntent(stopped)).toBe('keep');
   });
 });
 
 describe('alternateRunIntents', () => {
-  it('offers a start for anything not deployed yet', () => {
-    expect(alternateRunIntents(creating)).toEqual(['start']);
-    expect(alternateRunIntents(draft)).toEqual(['start']);
+  test('offers a start for anything not deployed yet', () => {
+    expect(alternateRunIntents(creating)).toStrictEqual(['start']);
+    expect(alternateRunIntents(draft)).toStrictEqual(['start']);
   });
 
-  it('offers a stop when editing a live pipeline', () => {
-    expect(alternateRunIntents(running)).toEqual(['stopped']);
-    expect(alternateRunIntents({ ...running, state: Pipeline_State.STARTING })).toEqual(['stopped']);
+  test('offers a stop when editing a live pipeline', () => {
+    expect(alternateRunIntents(running)).toStrictEqual(['stopped']);
+    expect(alternateRunIntents({ ...running, state: Pipeline_State.STARTING })).toStrictEqual(['stopped']);
   });
 
-  it('offers a start when editing an idle pipeline', () => {
-    expect(alternateRunIntents(stopped)).toEqual(['start']);
-    expect(alternateRunIntents({ ...stopped, state: Pipeline_State.ERROR })).toEqual(['start']);
-    expect(alternateRunIntents({ ...stopped, state: Pipeline_State.COMPLETED })).toEqual(['start']);
+  test('offers a start when editing an idle pipeline', () => {
+    expect(alternateRunIntents(stopped)).toStrictEqual(['start']);
+    expect(alternateRunIntents({ ...stopped, state: Pipeline_State.ERROR })).toStrictEqual(['start']);
+    expect(alternateRunIntents({ ...stopped, state: Pipeline_State.COMPLETED })).toStrictEqual(['start']);
   });
 
-  it('offers nothing while the state is unknown', () => {
-    expect(alternateRunIntents(unknownState)).toEqual([]);
-    expect(alternateRunIntents({ ...unknownState, state: Pipeline_State.UNSPECIFIED })).toEqual([]);
+  test('offers nothing while the state is unknown', () => {
+    expect(alternateRunIntents(unknownState)).toStrictEqual([]);
+    expect(alternateRunIntents({ ...unknownState, state: Pipeline_State.UNSPECIFIED })).toStrictEqual([]);
   });
 });
 
 describe('runIntentLabel', () => {
-  it('names the draft save the same everywhere', () => {
+  test('names the draft save the same everywhere', () => {
     expect(runIntentLabel('draft', creating)).toBe('Save draft');
     expect(runIntentLabel('draft', draft)).toBe('Save draft');
   });
 
   // Saving a running pipeline restarts it, and there is no apply-later to make that untrue.
-  it('says out loud that applying to a running pipeline restarts it', () => {
+  test('says out loud that applying to a running pipeline restarts it', () => {
     expect(runIntentLabel('keep', running)).toBe('Apply and restart');
     expect(runIntentLabel('keep', stopped)).toBe('Save');
   });
 
-  it('names the stop only where something is already running', () => {
+  test('names the stop only where something is already running', () => {
     expect(runIntentLabel('stopped', creatingWithoutDrafts)).toBe('Save');
     expect(runIntentLabel('stopped', running)).toBe('Save and stop');
   });
 });
 
 describe('isBlankConfig', () => {
-  it('treats an empty or whitespace-only config as blank', () => {
+  test('treats an empty or whitespace-only config as blank', () => {
     expect(isBlankConfig('')).toBe(true);
     expect(isBlankConfig('  \n\t\n ')).toBe(true);
   });
 
-  it('leaves a comments-only config to the server, which answers it with lint hints', () => {
+  test('leaves a comments-only config to the server, which answers it with lint hints', () => {
     expect(isBlankConfig('# nothing here yet\n')).toBe(false);
     expect(isBlankConfig('input:\n  generate: {}\n')).toBe(false);
   });
 });
 
 describe('saveSuccessMessage', () => {
-  it('spells out that a draft is not running', () => {
+  test('spells out that a draft is not running', () => {
     expect(saveSuccessMessage(creating, 'draft')).toMatch(/isn't running/i);
     expect(saveSuccessMessage(draft, 'draft')).toBe('Draft saved');
   });
 
-  it('spells out that a created-and-stopped pipeline is not running', () => {
+  test('spells out that a created-and-stopped pipeline is not running', () => {
     expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).toMatch(/not running/i);
     expect(saveSuccessMessage(creating, 'start')).toMatch(/starting/i);
   });
 
   // It was deployed and then stopped, so "yet" would claim it had never run.
-  it('does not claim a created-and-stopped pipeline has never run', () => {
+  test('does not claim a created-and-stopped pipeline has never run', () => {
     expect(saveSuccessMessage(creatingWithoutDrafts, 'stopped')).not.toMatch(/yet/i);
   });
 
-  it('mentions the restart only when the pipeline was actually running', () => {
+  test('mentions the restart only when the pipeline was actually running', () => {
     expect(saveSuccessMessage(running, 'keep')).toMatch(/restarting/i);
     expect(saveSuccessMessage(stopped, 'keep')).toBe('Pipeline updated');
   });
 });
 
 describe('unsavedChangesCopy', () => {
-  it('parks unfinished work as a draft where one is possible', () => {
+  test('parks unfinished work as a draft where one is possible', () => {
     expect(unsavedChangesCopy(creating).escape).toBe('save-draft');
     expect(unsavedChangesCopy(draft).escape).toBe('save-draft');
   });
 
   // Saving would restart it, so "save and leave" is not a kindness here — but neither is a dialog whose
   // only ways out are losing the work or never leaving the page.
-  it('offers the browser instead of a draft once a pipeline is deployed', () => {
+  test('offers the browser instead of a draft once a pipeline is deployed', () => {
     for (const context of [running, stopped, creatingWithoutDrafts]) {
       expect(unsavedChangesCopy(context).escape).toBe('leave-for-now');
     }
   });
 
-  it('says why a running pipeline cannot simply be saved', () => {
+  test('says why a running pipeline cannot simply be saved', () => {
     expect(unsavedChangesCopy(running).body).toMatch(/restarts the pipeline/i);
   });
 
   // The promise belongs to the button that keeps them: Discard clears the buffer.
-  it('promises the browser keeps the edits only where leaving keeps them', () => {
+  test('promises the browser keeps the edits only where leaving keeps them', () => {
     for (const context of [running, stopped, creatingWithoutDrafts]) {
       expect(unsavedChangesCopy(context).body).toMatch(/this browser keeps/i);
     }
@@ -225,14 +225,14 @@ describe('unsavedChangesCopy', () => {
 
   // CreatePipeline always deploys, so a create without drafts is a deploy followed by a stop. Only a
   // real draft can promise the configuration never runs.
-  it('does not promise that creating without drafts never starts the pipeline', () => {
+  test('does not promise that creating without drafts never starts the pipeline', () => {
     expect(unsavedChangesCopy(creatingWithoutDrafts).body).not.toMatch(/without starting/i);
     expect(unsavedChangesCopy(creatingWithoutDrafts).body).toMatch(/run briefly/i);
     expect(unsavedChangesCopy(creating).body).toMatch(/does not run/i);
   });
 
   // Saving a stopped pipeline is not destructive, so the copy must not borrow the running one's warning.
-  it('does not warn about restarts on a stopped pipeline', () => {
+  test('does not warn about restarts on a stopped pipeline', () => {
     expect(unsavedChangesCopy(stopped).body).not.toMatch(/restart/i);
   });
 });

@@ -81,7 +81,7 @@ export const OperationsBadge = ({ rule, showResourceDescription = true }: Operat
 
   return (
     <div className="space-y-3">
-      {Boolean(showResourceDescription) && <div className="font-medium text-strong">{resourceText}</div>}
+      {showResourceDescription && <div className="font-medium text-strong">{resourceText}</div>}
       <div>
         {enabledOperations.length === 0 ? (
           <span className="text-body-sm text-disabled italic">No operations configured</span>

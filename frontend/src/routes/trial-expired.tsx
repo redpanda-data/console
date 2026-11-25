@@ -11,8 +11,7 @@
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import LicenseExpiredPage from '../components/pages/admin/license-expired-page';
-
+import { LicenseExpiredPage } from '../components/pages/admin/license-expired-page';
 export const Route = createFileRoute('/trial-expired')({
   staticData: {
     title: 'Your enterprise trial has expired',

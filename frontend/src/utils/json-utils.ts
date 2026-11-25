@@ -9,9 +9,11 @@
  * by the Apache License, Version 2.0
  */
 
+import { isObject } from './type-guards';
+
 export type JsonValue = string | number | boolean | null | undefined | JsonValue[] | { [key: string]: JsonValue };
 
-export type JsonObject = { [key: string]: JsonValue };
+export type JsonObject = Record<string, JsonValue>;
 
 export type DataType =
   | 'string'
@@ -27,13 +29,13 @@ export type DataType =
 
 const seen = new Set();
 // Serialize object to json, handling reference loops gracefully
-export function toJson(obj: unknown, space?: string | number | undefined): string {
+export function toJson(obj: unknown, space?: string | number): string {
   seen.clear();
   try {
     return JSON.stringify(
       obj,
       (_key: string, value: unknown) => {
-        if (typeof value === 'object' && value !== null) {
+        if (isObject(value)) {
           if (seen.has(value)) {
             return;
           }
@@ -52,18 +54,10 @@ export function toJson(obj: unknown, space?: string | number | undefined): strin
     seen.clear();
   }
 }
-// Clone object using serialization
-
-export function clone<T>(obj: T): T {
-  if (!obj) {
-    return obj;
-  }
-  return JSON.parse(toJson(obj));
-}
 // Accesses all members of an object by serializing it
 
 export function touch(obj: unknown): void {
-  JSON.stringify(obj, (_k, v) => {
+  JSON.stringify(obj, (_k: string, v: unknown) => {
     if (typeof v === 'object') {
       return v;
     }
@@ -93,7 +87,7 @@ export function getDataType(value: JsonValue): DataType {
  */
 export function tryParseJson(str: string): {
   success: boolean;
-  data: JsonValue;
+  data: unknown;
 } {
   const trimmed = str.trim();
   if (!((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']')))) {
@@ -123,8 +117,8 @@ export function updateValueAtPath(obj: JsonValue, path: string[], value: JsonVal
   if (Array.isArray(mutableObj)) {
     return updateArray(mutableObj, path, value);
   }
-  if (typeof mutableObj === 'object' && mutableObj !== null) {
-    return updateObject(mutableObj as JsonObject, path, value);
+  if (isObject(mutableObj)) {
+    return updateObject(mutableObj, path, value);
   }
   // biome-ignore lint/suspicious/noConsole: intentional console usage
   console.error(`Cannot update path ${path.join('.')} in non-object/array value:`, mutableObj);
@@ -152,7 +146,10 @@ function updateArray(array: JsonValue[], path: string[], value: JsonValue): Json
 }
 
 function copyDenseArray(array: JsonValue[], length: number): JsonValue[] {
-  const copy: JsonValue[] = new Array(length).fill(null);
+  /* oxlint-disable unicorn/no-new-array -- Array.from truncates fractional lengths instead of preserving RangeError. */
+  // biome-ignore lint/nursery/noNewArray: preserve RangeError for invalid array lengths, unlike Array.from.
+  const copy = new Array<JsonValue>(length).fill(null);
+  /* oxlint-enable unicorn/no-new-array */
   for (let index = 0; index < array.length; index++) {
     copy[index] = index in array ? array[index] : null;
   }
@@ -181,6 +178,16 @@ function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonOb
   }
   return newObj;
 }
+// Missing paths and present undefined leaves have different public results.
+const MISSING_PATH_VALUE = Symbol('missing-json-path');
+
+function valueAtKey(value: JsonValue, key: string): JsonValue | typeof MISSING_PATH_VALUE {
+  if (Array.isArray(value)) {
+    const index = Number(key);
+    return Number.isNaN(index) || index < 0 || index >= value.length ? MISSING_PATH_VALUE : value[index];
+  }
+  return value !== null && typeof value === 'object' && key in value ? value[key] : MISSING_PATH_VALUE;
+}
 
 /**
  * Gets a value at a specific path in a nested JSON structure
@@ -190,33 +197,17 @@ function updateObject(obj: JsonObject, path: string[], value: JsonValue): JsonOb
  * @returns The value at the path, or defaultValue if not found
  */
 export function getValueAtPath(obj: JsonValue, path: string[], defaultValue: JsonValue = null): JsonValue {
-  if (path.length === 0) {
-    return obj;
+  let current = obj;
+  // The recursive implementation snapshots the remaining keys before reading any property getters.
+  const keys = path.slice();
+  for (const key of keys) {
+    const next = valueAtKey(current, key);
+    if (next === MISSING_PATH_VALUE) {
+      return defaultValue;
+    }
+    current = next;
   }
-
-  const [first, ...rest] = path;
-
-  if (obj === null || obj === undefined) {
-    return defaultValue;
-  }
-
-  if (Array.isArray(obj)) {
-    return getArrayValueAtPath(obj, first, rest, defaultValue);
-  }
-
-  if (typeof obj === 'object' && first in obj) {
-    return getValueAtPath(obj[first], rest, defaultValue);
-  }
-
-  return defaultValue;
-}
-
-function getArrayValueAtPath(array: JsonValue[], key: string, rest: string[], defaultValue: JsonValue): JsonValue {
-  const index = Number(key);
-  if (Number.isNaN(index) || index < 0 || index >= array.length) {
-    return defaultValue;
-  }
-  return getValueAtPath(array[index], rest, defaultValue);
+  return current;
 }
 
 /**
