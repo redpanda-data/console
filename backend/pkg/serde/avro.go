@@ -58,14 +58,13 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 		return &RecordPayload{}, fmt.Errorf("serializing avro: %w", err)
 	}
 
-	schemaID := uint32(loc.id)
-
-	return &RecordPayload{
+	rp := &RecordPayload{
 		NormalizedPayload:   jsonBytes,
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingAvro,
-		SchemaID:            &schemaID,
-	}, nil
+	}
+	loc.describe(ctx, rp)
+	return rp, nil
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.

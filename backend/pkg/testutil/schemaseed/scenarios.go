@@ -21,6 +21,8 @@ import (
 type Want struct {
 	Encoding string // Console payload encoding, "" asserts nothing
 	SchemaID int    // schema ID, 0 for no schema
+	Context  string // context the schema resolves in, "" is the default
+	Location string // "payload" or "header"
 	JSON     string // decoded payload
 	Error    string // text that a registry serde must report
 }
@@ -42,7 +44,10 @@ type Fixture struct {
 	Scenarios []Scenario
 }
 
-var allLocations = []Location{Plain, PayloadID}
+var (
+	allLocations     = []Location{Plain, PayloadID, HeaderID}
+	encodedLocations = []Location{PayloadID, HeaderID}
+)
 
 var (
 	customers = []string{
@@ -149,13 +154,23 @@ func newScenario(topic, name, origin, expect string) Scenario {
 
 // place puts an encoded message in the key or value of the scenario record and
 // sets its correct result.
-func place(sc *Scenario, isKey bool, e encoded) {
-	want := Want{Encoding: encodingName(e.schema.Type), SchemaID: e.schema.ID, JSON: e.json}
+func place(sc *Scenario, isKey bool, e encoded, loc Location) {
+	Place(sc.Record, isKey, loc, e.locator(), e.message)
+	w := Want{
+		Encoding: encodingName(e.schema.Type),
+		SchemaID: e.schema.ID,
+		Context:  e.schema.Context,
+		Location: "payload",
+		JSON:     e.json,
+	}
+	if loc.inHeader() {
+		w.Location = "header"
+	}
 	if isKey {
-		sc.Record.Key, sc.Key = e.payload(), want
+		sc.Key = w
 		return
 	}
-	sc.Record.Value, sc.Value = e.payload(), want
+	sc.Value = w
 }
 
 // matrix adds every key and value location pair, except plain with plain.
@@ -172,14 +187,14 @@ func (b *builder) matrix(topic, origin string, keys, values []encoded) {
 				sc.Record.Key = fmt.Appendf(nil, "plain-key-%02d", i)
 				sc.Key = Want{}
 			} else {
-				place(&sc, true, keys[i%len(keys)])
+				place(&sc, true, keys[i%len(keys)], kl)
 			}
 			if vl == Plain {
 				plain := fmt.Sprintf(`{"plain":true,"n":%d}`, i)
 				sc.Record.Value = []byte(plain)
 				sc.Value = Want{Encoding: "json", JSON: plain}
 			} else {
-				place(&sc, false, values[i%len(values)])
+				place(&sc, false, values[i%len(values)], vl)
 			}
 			b.scenarios = append(b.scenarios, sc)
 		}
@@ -187,20 +202,23 @@ func (b *builder) matrix(topic, origin string, keys, values []encoded) {
 }
 
 // single adds a record with an encoded value and an optional plain key.
-func (b *builder) single(topic, what, origin, expect string, key []byte, e encoded) {
-	sc := newScenario(topic, fmt.Sprintf("value=%s %s", PayloadID, what), origin, expect)
+func (b *builder) single(topic, what, origin, expect string, key []byte, e encoded, loc Location) {
+	sc := newScenario(topic, fmt.Sprintf("value=%s %s", loc, what), origin, expect)
 	if key != nil {
 		sc.Record.Key = key
 		sc.Key = Want{}
 	}
-	place(&sc, false, e)
+	place(&sc, false, e, loc)
 	b.scenarios = append(b.scenarios, sc)
 }
 
-// raw adds a record whose value bytes are given as is.
-func (b *builder) raw(name, expect string, value []byte, want Want) {
+// raw adds a record whose value bytes and schema header are given as is.
+func (b *builder) raw(name, expect string, value []byte, header *kgo.RecordHeader, want Want) {
 	sc := newScenario("edge-cases", name, "none", expect)
 	sc.Record.Value = value
+	if header != nil {
+		sc.Record.Headers = append(sc.Record.Headers, *header)
+	}
 	sc.Value = want
 	b.scenarios = append(b.scenarios, sc)
 }
@@ -248,10 +266,14 @@ func buildScenarios(schemas []*Schema, base int) ([]Scenario, error) {
 		{"acme.catalog.Catalog.Product", productEnc},
 		{"acme.catalog.Catalog.Product.Price", priceEnc},
 	} {
-		b.single("proto-nested-default", m.name, "default", "ok", []byte(m.name), m.enc)
+		for _, loc := range encodedLocations {
+			b.single("proto-nested-default", m.name, "default", "ok", []byte(m.name), m.enc, loc)
+		}
 	}
 
-	b.single("refs-prod", "Invoice", ContextProd, "ok", []byte("inv-1"), invoiceEnc)
+	for _, loc := range encodedLocations {
+		b.single("refs-prod", "Invoice", ContextProd, "ok", []byte("inv-1"), invoiceEnc, loc)
+	}
 
 	b.edgeCases(base, custKeys[0], custs[0], legacyEnc)
 
@@ -260,20 +282,33 @@ func buildScenarios(schemas []*Schema, base int) ([]Scenario, error) {
 
 func (b *builder) edgeCases(base int, key, value, legacy encoded) {
 	const topic = "edge-cases"
+	valueHeader := func(v []byte) *kgo.RecordHeader {
+		return &kgo.RecordHeader{Key: ValueSchemaIDHeader, Value: v}
+	}
+	headerError := Want{Error: ValueSchemaIDHeader + " header"}
 
 	sc := newScenario(topic, "tombstone, key=payload-id", "default", "ok: key decodes, value is null")
-	place(&sc, true, key)
+	place(&sc, true, key, PayloadID)
 	b.scenarios = append(b.scenarios, sc)
 
 	b.raw("value=payload-id unknown ID", "error: schema ID not found",
-		append(IDLocator(base+9999), value.message...),
+		append(IDLocator(base+9999), value.message...), nil,
 		Want{Error: "not found"})
+	b.raw("value=header-id truncated", "error: truncated ID header",
+		value.message, valueHeader([]byte{0, 0, 0}), headerError)
+	b.raw("value=header empty", "error: empty schema ID header",
+		value.message, valueHeader([]byte{}), headerError)
 	b.raw("value=payload unknown magic byte", "error: unknown magic byte 0x02",
-		append([]byte{0x02}, value.message...),
+		append([]byte{0x02}, value.message...), nil,
 		Want{Error: "magic byte"})
 	b.raw("value=plain", "ok: plain JSON, no schema",
-		[]byte(`{"plain":true}`),
+		[]byte(`{"plain":true}`), nil,
 		Want{Encoding: "json", JSON: `{"plain":true}`})
 
-	b.single(topic, "soft-deleted schema", "default", "ok: schema is soft-deleted, ID lookup still works", nil, legacy)
+	b.single(topic, "soft-deleted schema", "default", "ok: schema is soft-deleted, ID lookup still works", nil, legacy, PayloadID)
+
+	sc = newScenario(topic, "value=payload-id with a null schema ID header", "default", "ok: a null header selects the payload")
+	sc.Record.Headers = append(sc.Record.Headers, *valueHeader(nil))
+	place(&sc, false, value, PayloadID)
+	b.scenarios = append(b.scenarios, sc)
 }

@@ -12,6 +12,7 @@ package serde
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -33,6 +34,10 @@ type BSRClient interface {
 // a record.
 type Service struct {
 	SerDes []Serde
+
+	// registryFirst is SerDes with the schema registry serdes moved ahead of
+	// the plain ones.
+	registryFirst []Serde
 }
 
 // NewService creates the new serde service.
@@ -76,8 +81,28 @@ func NewService(
 	)
 
 	return &Service{
-		SerDes: serdes,
+		SerDes:        serdes,
+		registryFirst: registrySerdesFirst(serdes),
 	}, nil
+}
+
+// registrySerdesFirst moves the schema registry serdes right after the null
+// serde. A payload whose schema ID is in a record header is the bare message,
+// which a plain serde such as JSON would otherwise claim first.
+func registrySerdesFirst(serdes []Serde) []Serde {
+	var first, registry, rest []Serde
+	for _, serde := range serdes {
+		//nolint:exhaustive // every other encoding keeps its place
+		switch serde.Name() {
+		case PayloadEncodingNull:
+			first = append(first, serde)
+		case PayloadEncodingJSONSchema, PayloadEncodingAvro, PayloadEncodingProtobufSchema:
+			registry = append(registry, serde)
+		default:
+			rest = append(rest, serde)
+		}
+	}
+	return slices.Concat(first, registry, rest)
 }
 
 // DeserializeRecord tries to deserialize a Kafka record into a struct that
@@ -149,13 +174,20 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 }
 
 // trySerdes runs the serdes in the order they were registered until one
-// decodes the payload. With a specific encoding only that serde runs. It
-// always returns a payload, with the report of every serde that failed.
+// decodes the payload. If the record has a schema ID header for the payload,
+// the schema registry serdes run first. With a specific encoding only that
+// serde runs. It always returns a payload, with the report of every serde
+// that failed.
 func (s *Service) trySerdes(ctx context.Context, record *kgo.Record, payloadType PayloadType, encoding PayloadEncoding, specific bool) (*RecordPayload, []TroubleshootingReport) {
-	troubleshooting := make([]TroubleshootingReport, 0, len(s.SerDes))
+	serdes := s.SerDes
+	if _, ok := schemaIDHeader(record.Headers, payloadType); ok && s.registryFirst != nil {
+		serdes = s.registryFirst
+	}
+
+	troubleshooting := make([]TroubleshootingReport, 0, len(serdes))
 
 	var rp *RecordPayload
-	for _, serde := range s.SerDes {
+	for _, serde := range serdes {
 		if specific && encoding != serde.Name() {
 			continue
 		}

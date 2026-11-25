@@ -95,14 +95,13 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf payload into JSON: %w", err)
 	}
 
-	sID := uint32(loc.id)
-
-	return &RecordPayload{
+	rp := &RecordPayload{
 		DeserializedPayload: native,
 		NormalizedPayload:   jsonBytes,
 		Encoding:            PayloadEncodingProtobuf,
-		SchemaID:            &sID,
-	}, nil
+	}
+	loc.describe(ctx, rp)
+	return rp, nil
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.

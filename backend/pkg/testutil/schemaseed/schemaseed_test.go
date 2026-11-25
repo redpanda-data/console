@@ -28,12 +28,12 @@ func TestFake(t *testing.T) {
 			counts[sc.Topic]++
 		}
 		assert.Equal(t, map[string]int{
-			"matrix-avro-default":  3,
-			"matrix-proto-staging": 3,
-			"matrix-json-prod":     3,
-			"proto-nested-default": 3,
-			"refs-prod":            1,
-			"edge-cases":           5,
+			"matrix-avro-default":  8,
+			"matrix-proto-staging": 8,
+			"matrix-json-prod":     8,
+			"proto-nested-default": 6,
+			"refs-prod":            2,
+			"edge-cases":           8,
 		}, counts)
 	})
 

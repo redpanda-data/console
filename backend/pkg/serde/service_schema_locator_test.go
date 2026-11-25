@@ -81,4 +81,6 @@ func assertLocatorWant(t *testing.T, label string, want schemaseed.Want, got *Re
 	if want.JSON != "" {
 		assert.JSONEq(t, want.JSON, string(got.NormalizedPayload), "%s payload", label)
 	}
+	assert.Equal(t, want.Location, string(got.SchemaIDLocation), "%s schema ID location", label)
+	assert.Equal(t, want.Context, got.SchemaContext, "%s schema context", label)
 }

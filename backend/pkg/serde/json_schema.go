@@ -34,7 +34,7 @@ func (JSONSchemaSerde) Name() PayloadEncoding {
 }
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
-func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
+func (JSONSchemaSerde) DeserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
 	loc, err := locateSchema(record, payloadType)
 	if err != nil {
 		return &RecordPayload{}, err
@@ -46,14 +46,13 @@ func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record,
 		return &RecordPayload{}, err
 	}
 
-	schemaID := uint32(loc.id)
-
-	return &RecordPayload{
+	rp := &RecordPayload{
 		NormalizedPayload:   jsonPayload,
 		DeserializedPayload: obj,
 		Encoding:            PayloadEncodingJSON,
-		SchemaID:            &schemaID,
-	}, nil
+	}
+	loc.describe(ctx, rp)
+	return rp, nil
 }
 
 // SerializeObject serializes data into binary format ready for writing to Kafka as a record.

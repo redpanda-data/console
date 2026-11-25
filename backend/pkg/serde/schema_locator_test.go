@@ -84,6 +84,169 @@ func TestLocateSchema(t *testing.T) {
 	}
 }
 
+func TestLocateSchema_Header(t *testing.T) {
+	var (
+		idOne     = []byte{0x00, 0x00, 0x00, 0x00, 0x01}
+		idTwo     = []byte{0x00, 0x00, 0x00, 0x00, 0x02}
+		bare      = []byte("bare message")
+		prefixed  = append(append([]byte{}, idTwo...), "msg"...)
+		header    = func(key string, value []byte) kgo.RecordHeader { return kgo.RecordHeader{Key: key, Value: value} }
+		valueOnly = func(headers ...kgo.RecordHeader) *kgo.Record { return &kgo.Record{Value: bare, Headers: headers} }
+	)
+
+	tests := []struct {
+		name        string
+		record      *kgo.Record
+		payloadType PayloadType
+		validateFn  func(t *testing.T, loc schemaLocator, err error)
+	}{
+		{
+			name:        "value header, the payload is the bare message",
+			record:      valueOnly(header("other", []byte("x")), header(valueSchemaIDHeader, idOne)),
+			payloadType: PayloadTypeValue,
+			validateFn: func(t *testing.T, loc schemaLocator, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, 1, loc.id)
+				assert.Equal(t, SchemaIDLocationHeader, loc.location)
+				assert.Equal(t, bare, loc.message())
+			},
+		},
+		{
+			name:        "key header",
+			record:      &kgo.Record{Key: bare, Value: prefixed, Headers: []kgo.RecordHeader{header(keySchemaIDHeader, idOne)}},
+			payloadType: PayloadTypeKey,
+			validateFn: func(t *testing.T, loc schemaLocator, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, 1, loc.id)
+				assert.Equal(t, SchemaIDLocationHeader, loc.location)
+				assert.Equal(t, bare, loc.message())
+			},
+		},
+		{
+			name:        "the key header does not apply to the value",
+			record:      &kgo.Record{Key: bare, Value: prefixed, Headers: []kgo.RecordHeader{header(keySchemaIDHeader, idOne)}},
+			payloadType: PayloadTypeValue,
+			validateFn: func(t *testing.T, loc schemaLocator, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, 2, loc.id)
+				assert.Equal(t, SchemaIDLocationPayload, loc.location)
+				assert.Equal(t, []byte("msg"), loc.message())
+			},
+		},
+		{
+			name:        "the last header wins",
+			record:      valueOnly(header(valueSchemaIDHeader, idOne), header(valueSchemaIDHeader, idTwo)),
+			payloadType: PayloadTypeValue,
+			validateFn: func(t *testing.T, loc schemaLocator, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, 2, loc.id)
+			},
+		},
+		{
+			name: "a null last header selects the payload",
+			record: &kgo.Record{Value: prefixed, Headers: []kgo.RecordHeader{
+				header(valueSchemaIDHeader, idOne), header(valueSchemaIDHeader, nil),
+			}},
+			payloadType: PayloadTypeValue,
+			validateFn: func(t *testing.T, loc schemaLocator, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, 2, loc.id)
+				assert.Equal(t, SchemaIDLocationPayload, loc.location)
+			},
+		},
+		{
+			name:        "a null header before a set one is ignored",
+			record:      valueOnly(header(valueSchemaIDHeader, nil), header(valueSchemaIDHeader, idOne)),
+			payloadType: PayloadTypeValue,
+			validateFn: func(t *testing.T, loc schemaLocator, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, 1, loc.id)
+				assert.Equal(t, SchemaIDLocationHeader, loc.location)
+			},
+		},
+		{
+			name:        "an empty header fails",
+			record:      valueOnly(header(valueSchemaIDHeader, []byte{})),
+			payloadType: PayloadTypeValue,
+			validateFn: func(t *testing.T, _ schemaLocator, err error) {
+				assert.EqualError(t, err, "invalid __value_schema_id header: it is empty")
+			},
+		},
+		{
+			name: "a header that fails is not retried on the payload",
+			record: &kgo.Record{Value: prefixed, Headers: []kgo.RecordHeader{
+				header(valueSchemaIDHeader, []byte{0x00, 0x00}),
+			}},
+			payloadType: PayloadTypeValue,
+			validateFn: func(t *testing.T, _ schemaLocator, err error) {
+				assert.EqualError(t, err, "invalid __value_schema_id header: truncated schema ID, got 2 of 5 bytes")
+			},
+		},
+		{
+			name:        "unknown magic byte in the key header",
+			record:      &kgo.Record{Key: bare, Headers: []kgo.RecordHeader{header(keySchemaIDHeader, []byte{0x07, 0x00, 0x00, 0x00, 0x01})}},
+			payloadType: PayloadTypeKey,
+			validateFn: func(t *testing.T, _ schemaLocator, err error) {
+				assert.EqualError(t, err, "invalid __key_schema_id header: unknown magic byte 0x07")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			loc, err := locateSchema(tc.record, tc.payloadType)
+			tc.validateFn(t, loc, err)
+		})
+	}
+}
+
+func TestSchemaLocator_ProtobufMessageInHeader(t *testing.T) {
+	record := &kgo.Record{
+		Value: []byte("bare message"),
+		Headers: []kgo.RecordHeader{
+			{Key: valueSchemaIDHeader, Value: []byte{0x00, 0x00, 0x00, 0x00, 0x09, 0x04, 0x02, 0x06}},
+		},
+	}
+
+	loc, err := locateSchema(record, PayloadTypeValue)
+	require.NoError(t, err)
+	index, message, err := loc.protobufMessage()
+	require.NoError(t, err)
+	assert.Equal(t, 9, loc.id)
+	assert.Equal(t, []int{1, 3}, index)
+	assert.Equal(t, []byte("bare message"), message)
+
+	// The indexes are required. A header with the schema ID only is not enough.
+	record.Headers[0].Value = []byte{0x00, 0x00, 0x00, 0x00, 0x09}
+	loc, err = locateSchema(record, PayloadTypeValue)
+	require.NoError(t, err)
+	_, _, err = loc.protobufMessage()
+	assert.ErrorContains(t, err, "buffer is too small")
+}
+
+func TestRegistrySerdesFirst(t *testing.T) {
+	svc, err := NewService(nil, nil, nil, nil, config.Cbor{})
+	require.NoError(t, err)
+
+	names := func(serdes []Serde) []PayloadEncoding {
+		out := make([]PayloadEncoding, len(serdes))
+		for i, serde := range serdes {
+			out[i] = serde.Name()
+		}
+		return out
+	}
+
+	reordered := names(svc.registryFirst)
+	assert.Equal(t, []PayloadEncoding{
+		PayloadEncodingNull,
+		PayloadEncodingJSONSchema,
+		PayloadEncodingAvro,
+		PayloadEncodingProtobufSchema,
+		PayloadEncodingJSON,
+	}, reordered[:5])
+	assert.ElementsMatch(t, names(svc.SerDes), reordered)
+}
+
 func TestSchemaLocator_ProtobufMessage(t *testing.T) {
 	tests := []struct {
 		name       string
