@@ -1,4 +1,3 @@
-import { isObject } from 'utils/type-guards';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -9,6 +8,8 @@ import { isObject } from 'utils/type-guards';
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+
+import { isObject } from 'utils/type-guards';
 
 import { FEATURE_FLAGS } from '../../components/constants';
 import { config } from '../../runtime-config';

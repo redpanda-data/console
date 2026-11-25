@@ -1,5 +1,3 @@
-import { isPresent } from './type-guards';
-
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -11,6 +9,7 @@ import { isPresent } from './type-guards';
  * by the Apache License, Version 2.0
  */
 
+import { isPresent } from './type-guards';
 export type TimeSeriesResult = { values: { timestamp?: { seconds: bigint }; value?: number }[]; name?: string };
 // null values mark no-data gaps so recharts breaks the line (see insertGapMarkers).
 export type MergedPoint = { timestamp: number; ingress: number | null; egress: number | null };

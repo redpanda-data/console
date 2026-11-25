@@ -1,5 +1,3 @@
-import 'components/legacy-layout.css';
-import type { ComponentStyleVars } from 'components/style-vars';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -11,7 +9,9 @@ import type { ComponentStyleVars } from 'components/style-vars';
  * by the Apache License, Version 2.0
  */
 
+import 'components/legacy-layout.css';
 import { Slider } from 'components/redpanda-ui/components/slider';
+import type { ComponentStyleVars } from 'components/style-vars';
 import { useState } from 'react';
 
 import type { uiSettings } from '../../../../state/ui';

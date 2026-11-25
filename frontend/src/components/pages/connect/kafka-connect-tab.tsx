@@ -1,5 +1,3 @@
-import { Button } from 'components/redpanda-ui/components/button';
-import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -11,6 +9,8 @@ import 'components/legacy-layout.css';
  * by the Apache License, Version 2.0
  */
 
+import { Button } from 'components/redpanda-ui/components/button';
+import 'components/legacy-layout.css';
 import { ErrorResult } from 'components/misc/error-result';
 import {
   DataTable,

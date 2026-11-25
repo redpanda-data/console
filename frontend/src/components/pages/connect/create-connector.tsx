@@ -1,4 +1,3 @@
-import { isObject } from 'utils/type-guards';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -20,6 +19,7 @@ import { Link } from 'components/redpanda-ui/components/typography';
 import { useEffect, useState } from 'react';
 import { docsLinks } from 'utils/docs-links';
 import { showToast } from 'utils/toast.utils';
+import { isObject } from 'utils/type-guards';
 
 import { ConnectorBoxCard, type ConnectorPlugin, getConnectorFriendlyName } from './connector-box-card';
 import { ConfigPage } from './dynamic-ui/components';

@@ -1,6 +1,3 @@
-import { isObject } from 'utils/type-guards';
-import 'components/legacy-layout.css';
-import type { ComponentStyleVars } from 'components/style-vars';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -12,7 +9,10 @@ import type { ComponentStyleVars } from 'components/style-vars';
  * by the Apache License, Version 2.0
  */
 
+import { isObject } from 'utils/type-guards';
+import 'components/legacy-layout.css';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
+import type { ComponentStyleVars } from 'components/style-vars';
 import type { FC } from 'react';
 import { useMemo } from 'react';
 import { useExecuteRangeQuery } from 'react-query/api/observability';

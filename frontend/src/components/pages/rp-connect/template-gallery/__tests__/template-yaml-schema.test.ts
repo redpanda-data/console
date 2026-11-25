@@ -1,10 +1,3 @@
-import { type Document, isMap, isScalar, isSeq, type Pair, parseDocument } from 'yaml';
-
-import { describe, expect, test } from 'bun:test';
-import { isNonEmptyString } from '../../../../../utils/string-utils';
-import { isPresent } from '../../../../../utils/type-guards';
-import type { RawFieldSpec } from '../../types/schema';
-import { componentList } from '../../utils/__fixtures__/schema-snapshot';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -16,6 +9,13 @@ import { componentList } from '../../utils/__fixtures__/schema-snapshot';
  * by the Apache License, Version 2.0
  */
 
+import { type Document, isMap, isScalar, isSeq, type Pair, parseDocument } from 'yaml';
+
+import { describe, expect, test } from 'bun:test';
+import { isNonEmptyString } from '../../../../../utils/string-utils';
+import { isPresent } from '../../../../../utils/type-guards';
+import type { RawFieldSpec } from '../../types/schema';
+import { componentList } from '../../utils/__fixtures__/schema-snapshot';
 import { checkRequired, findComponentByName, resolveFieldByPath } from '../../utils/schema';
 import type { PipelineTemplate, TemplateSlot } from '../pipeline-template-types';
 import { PIPELINE_TEMPLATES } from '../pipeline-templates';

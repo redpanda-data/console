@@ -1,4 +1,3 @@
-import { create } from '@bufbuild/protobuf';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -10,6 +9,7 @@ import { create } from '@bufbuild/protobuf';
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
 import type { SortingState } from '@tanstack/react-table';
 import {
   Quota_EntityType,

@@ -1,4 +1,3 @@
-import { ConnectConfigsPanel, DebugSection, EmptyState, PopIn } from './debug-configs-panel';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -54,6 +53,7 @@ import { Fragment, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 
+import { ConnectConfigsPanel, DebugSection, EmptyState, PopIn } from './debug-configs-panel';
 import { DebugPanda } from './debug-panda';
 import {
   clearOverrides as clearFlagOverrides,

@@ -1,7 +1,3 @@
-import { installUISettingsSideEffects, useUISettingsStore } from '../state/ui';
-import { createTopicDetailsSettings, decodeTopicSettings } from '../types/topic-settings';
-import { decodeUiSettings } from '../types/ui-settings';
-
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -13,6 +9,9 @@ import { decodeUiSettings } from '../types/ui-settings';
  * by the Apache License, Version 2.0
  */
 
+import { installUISettingsSideEffects, useUISettingsStore } from '../state/ui';
+import { createTopicDetailsSettings, decodeTopicSettings } from '../types/topic-settings';
+import { decodeUiSettings } from '../types/ui-settings';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *

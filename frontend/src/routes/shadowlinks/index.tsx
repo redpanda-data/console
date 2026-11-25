@@ -1,8 +1,3 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { ShieldIcon } from 'components/icons';
-import { ShadowLinkListPage } from 'components/pages/shadowlinks/list/shadowlink-list-page';
-
-import { loadShadowlinks } from '../../components/pages/shadowlinks/list/load-shadowlinks';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -14,7 +9,12 @@ import { loadShadowlinks } from '../../components/pages/shadowlinks/list/load-sh
  * by the Apache License, Version 2.0
  */
 
+import { createFileRoute } from '@tanstack/react-router';
+import { ShieldIcon } from 'components/icons';
+import { ShadowLinkListPage } from 'components/pages/shadowlinks/list/shadowlink-list-page';
 import { z } from 'zod';
+
+import { loadShadowlinks } from '../../components/pages/shadowlinks/list/load-shadowlinks';
 
 const searchSchema = z.object({
   tab: z.enum(['links', 'source']).optional().catch(undefined),

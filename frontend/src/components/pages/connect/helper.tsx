@@ -1,4 +1,3 @@
-import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -10,6 +9,7 @@ import 'components/legacy-layout.css';
  * by the Apache License, Version 2.0
  */
 
+import 'components/legacy-layout.css';
 import { AlertIcon, CheckCircleIcon, HourglassIcon, PauseCircleIcon, WarningIcon } from 'components/icons';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';

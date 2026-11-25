@@ -1,4 +1,3 @@
-import { onboardingWizardFormSchema } from '../components/pages/rp-connect/types/wizard';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -20,6 +19,7 @@ import type {
   MinimalUserData,
   OnboardingWizardFormData,
 } from '../components/pages/rp-connect/types/wizard';
+import { onboardingWizardFormSchema } from '../components/pages/rp-connect/types/wizard';
 
 const wizardConnectionsSchema = onboardingWizardFormSchema.pick({ input: true, output: true });
 

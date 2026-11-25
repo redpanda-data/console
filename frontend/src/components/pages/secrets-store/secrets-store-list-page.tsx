@@ -1,4 +1,3 @@
-import { stringValue } from 'utils/type-guards';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -43,6 +42,7 @@ import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 import { asyncEvent } from 'utils/async-event';
 import { formatToastErrorMessageGRPC, reportActionError } from 'utils/toast.utils';
+import { stringValue } from 'utils/type-guards';
 
 import { SecretScopeBadge } from './secret-scope-badge';
 import { SecretsStoreActionsCell } from './secrets-store-actions';

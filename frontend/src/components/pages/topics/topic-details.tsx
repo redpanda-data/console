@@ -1,4 +1,3 @@
-import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -10,6 +9,7 @@ import 'components/legacy-layout.css';
  * by the Apache License, Version 2.0
  */
 
+import 'components/legacy-layout.css';
 import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
 import { ErrorIcon, LockIcon, WarningIcon } from 'components/icons';
 import { ErrorBoundary } from 'components/misc/error-boundary';

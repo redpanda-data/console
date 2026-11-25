@@ -1,5 +1,3 @@
-import 'components/legacy-layout.css';
-import type { ComponentStyleVars } from 'components/style-vars';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -11,6 +9,7 @@ import type { ComponentStyleVars } from 'components/style-vars';
  * by the Apache License, Version 2.0
  */
 
+import 'components/legacy-layout.css';
 import { useNavigate } from '@tanstack/react-router';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
@@ -25,6 +24,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import type { ComponentStyleVars } from 'components/style-vars';
 import { Info, RefreshCw, X } from 'lucide-react';
 import type { ShadowTopic } from 'protogen/redpanda/api/dataplane/v1/shadowlink_pb';
 import { ShadowTopicState } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';

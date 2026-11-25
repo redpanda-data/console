@@ -1,4 +1,3 @@
-import { isNonEmptyString } from '../../../../../utils/string-utils';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -12,6 +11,7 @@ import { isNonEmptyString } from '../../../../../utils/string-utils';
 
 import type React from 'react';
 
+import { isNonEmptyString } from '../../../../../utils/string-utils';
 import type { UnifiedTLSSettings } from '../../model';
 
 const ConfigField = ({ label, value, testId }: { label: string; value: React.ReactNode; testId?: string }) => (

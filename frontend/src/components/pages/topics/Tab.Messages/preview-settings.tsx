@@ -1,5 +1,3 @@
-import { isObject } from 'utils/type-guards';
-import 'components/legacy-layout.css';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -11,6 +9,8 @@ import 'components/legacy-layout.css';
  * by the Apache License, Version 2.0
  */
 
+import { isObject } from 'utils/type-guards';
+import 'components/legacy-layout.css';
 import {
   DragDropContext,
   Draggable,

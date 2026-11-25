@@ -1,4 +1,3 @@
-import { initialPropertyValue, parsePropertyValue } from '../../types/kafka-connect-properties';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -15,6 +14,7 @@ import { waitFor } from '@testing-library/dom';
 import { afterAll, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import type { ConnectorProperty, ConnectorValidationResult } from '../../types/kafka-connect';
 import { DataType, PropertyImportance, PropertyWidth } from '../../types/kafka-connect';
+import { initialPropertyValue, parsePropertyValue } from '../../types/kafka-connect-properties';
 import { type api, useApiStore } from '../backend-api';
 
 const mockValidateConnectorConfig = spyOn(useApiStore.getState(), 'validateConnectorConfig').mockImplementation(

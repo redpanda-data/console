@@ -1,4 +1,3 @@
-import { parseJsonSchema } from 'types/json-schema';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -17,6 +16,7 @@ import type { editor } from 'monaco-editor';
 import { configureMonacoYaml, type MonacoYaml, type MonacoYamlOptions } from 'monaco-yaml';
 import { lazy, useEffect, useMemo, useState } from 'react';
 import { useListComponentsQuery } from 'react-query/api/connect';
+import { parseJsonSchema } from 'types/json-schema';
 
 import benthosSchema from '../../assets/rp-connect-schema.json' with { type: 'json' };
 import { useDeprecationMarkers } from '../pages/rp-connect/pipeline/use-deprecation-markers';

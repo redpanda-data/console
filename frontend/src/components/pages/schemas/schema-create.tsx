@@ -1,7 +1,3 @@
-import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
-
-import { exampleSchema } from './schema-examples';
-import { MetadataPropertiesEditor, ReferencesEditor } from './schema-references-editor';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -14,6 +10,7 @@ import { MetadataPropertiesEditor, ReferencesEditor } from './schema-references-
  */
 
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
+import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
@@ -55,6 +52,8 @@ import {
   type SchemaEditorStateData,
   type SchemaEditorStateHelper,
 } from './schema-create-state';
+import { exampleSchema } from './schema-examples';
+import { MetadataPropertiesEditor, ReferencesEditor } from './schema-references-editor';
 import {
   useListSchemasQuery,
   useSchemaRegistryContextsQuery,

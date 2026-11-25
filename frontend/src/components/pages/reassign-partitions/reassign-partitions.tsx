@@ -1,4 +1,3 @@
-import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -10,6 +9,7 @@ import 'components/legacy-layout.css';
  * by the Apache License, Version 2.0
  */
 
+import 'components/legacy-layout.css';
 import { ConnectError } from '@connectrpc/connect';
 import { AlertIcon, ChevronLeftIcon, ChevronRightIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';

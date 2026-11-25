@@ -1,4 +1,3 @@
-import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -11,6 +10,7 @@ import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
  */
 
 import { Button } from 'components/redpanda-ui/components/button';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import {
   Empty,
   EmptyContent,

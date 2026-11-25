@@ -1,9 +1,3 @@
-import { FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
-import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
-import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
-import { stringArrayValue } from 'utils/type-guards';
-
-import { type DeleteTarget, SubjectDeleteDialogs } from './schema-subject-delete-dialogs';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -17,6 +11,8 @@ import { type DeleteTarget, SubjectDeleteDialogs } from './schema-subject-delete
 
 import { Link } from '@tanstack/react-router';
 import type { ColumnFiltersState, FilterFn, PaginationState, Updater } from '@tanstack/react-table';
+import { FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
+import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
 import { ArchiveIcon, MoreHorizontalIcon, TrashIcon } from 'components/icons';
 import { DescriptionWithHelp } from 'components/pages/security/shared/description-with-help';
 import { Alert, AlertTitle } from 'components/redpanda-ui/components/alert';
@@ -42,6 +38,7 @@ import { Skeleton } from 'components/redpanda-ui/components/skeleton';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 import { SearchIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
@@ -50,6 +47,7 @@ import { asyncEvent } from 'utils/async-event';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { sortingParser } from 'utils/sorting-parser';
 import { reportActionError } from 'utils/toast.utils';
+import { stringArrayValue } from 'utils/type-guards';
 
 import {
   ALL_CONTEXT_ID,
@@ -61,6 +59,7 @@ import {
 import { subjectsInContext, subjectsMatchingSearch } from './schema-list-filters';
 import { SchemaListStats } from './schema-list-stats';
 import { SchemaNotConfiguredPage } from './schema-not-configured';
+import { type DeleteTarget, SubjectDeleteDialogs } from './schema-subject-delete-dialogs';
 import { useQueryStateWithCallback } from '../../../hooks/use-query-state-with-callback';
 import {
   useListSchemasQuery,

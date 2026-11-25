@@ -1,5 +1,3 @@
-import { ConnectError } from '@connectrpc/connect';
-
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -12,6 +10,7 @@ import { ConnectError } from '@connectrpc/connect';
  */
 
 import { create } from '@bufbuild/protobuf';
+import { ConnectError } from '@connectrpc/connect';
 import { FenceGuardedButton } from 'components/cluster-fence/fence-guarded-controls';
 import { KeyRoundIcon } from 'lucide-react';
 import {

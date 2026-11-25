@@ -1,5 +1,3 @@
-import type { Interceptor } from '@connectrpc/connect';
-import type { ExecuteRangeQueryRequest } from 'protogen/redpanda/api/dataplane/v1alpha3/observability_pb';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -13,7 +11,9 @@ import type { ExecuteRangeQueryRequest } from 'protogen/redpanda/api/dataplane/v
 
 import { create } from '@bufbuild/protobuf';
 import { timestampFromMs } from '@bufbuild/protobuf/wkt';
+import type { Interceptor } from '@connectrpc/connect';
 import { createRouterTransport } from '@connectrpc/connect';
+import type { ExecuteRangeQueryRequest } from 'protogen/redpanda/api/dataplane/v1alpha3/observability_pb';
 import {
   DataPointSchema,
   ExecuteRangeQueryResponseSchema,

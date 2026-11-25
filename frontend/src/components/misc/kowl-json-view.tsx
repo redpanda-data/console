@@ -1,4 +1,3 @@
-import { cn } from 'components/redpanda-ui/lib/utils';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -10,6 +9,7 @@ import { cn } from 'components/redpanda-ui/lib/utils';
  * by the Apache License, Version 2.0
  */
 
+import { cn } from 'components/redpanda-ui/lib/utils';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { JsonViewEditor } from './json-view-editor';

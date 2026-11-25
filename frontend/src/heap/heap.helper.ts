@@ -1,5 +1,3 @@
-import { isNonEmptyString } from '../utils/string-utils';
-
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -11,6 +9,7 @@ import { isNonEmptyString } from '../utils/string-utils';
  * by the Apache License, Version 2.0
  */
 
+import { isNonEmptyString } from '../utils/string-utils';
 // Heap Analytics Configuration Constants
 export const HEAP_APP_ID = '328327039';
 

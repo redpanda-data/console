@@ -1,5 +1,3 @@
-import type { ComponentStyleVars } from 'components/style-vars';
-import 'components/legacy-layout.css';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -11,6 +9,8 @@ import 'components/legacy-layout.css';
  * by the Apache License, Version 2.0
  */
 
+import type { ComponentStyleVars } from 'components/style-vars';
+import 'components/legacy-layout.css';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';

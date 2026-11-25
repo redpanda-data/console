@@ -1,4 +1,3 @@
-import { createTopicMessage } from '../message-test-helpers';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -15,6 +14,7 @@ import { renderHook } from '@testing-library/react';
 
 import { matchesQuickSearch, useClientFilters } from './use-client-filters';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
+import { createTopicMessage } from '../message-test-helpers';
 
 const makeMsg = (overrides: { offset?: number; partitionID?: number; value?: unknown }): TopicMessage =>
   createTopicMessage({

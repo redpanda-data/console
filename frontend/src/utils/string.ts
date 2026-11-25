@@ -1,5 +1,3 @@
-import { isNonEmptyString } from './string-utils';
-
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -10,6 +8,8 @@ import { isNonEmptyString } from './string-utils';
  * the Business Source License, use of this software will be governed
  * by the Apache License, Version 2.0
  */
+
+import { isNonEmptyString } from './string-utils';
 
 const CAMEL_CASE_REGEX = /([A-Z])/g;
 const FIRST_CHAR_REGEX = /^\w/;

@@ -1,4 +1,3 @@
-import { stringArrayValue, stringValue } from 'utils/type-guards';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -22,6 +21,7 @@ import { useLegacyListConsumerGroupsFullQuery } from 'react-query/api/consumer-g
 import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { reportActionError } from 'utils/toast.utils';
+import { stringArrayValue, stringValue } from 'utils/type-guards';
 
 import { appGlobal } from '../../../state/app-global';
 import { setPageHeader } from '../../../state/ui-state';

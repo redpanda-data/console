@@ -1,4 +1,3 @@
-import { isObject } from '../../../../utils/type-guards';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -11,6 +10,8 @@ import { isObject } from '../../../../utils/type-guards';
  */
 
 import { pluralizeWithNumber } from 'utils/string';
+
+import { isObject } from '../../../../utils/type-guards';
 
 // A metadata line shown on an expanded pipeline node card.
 export type NodeMetaEntry = { label: string; value: string };

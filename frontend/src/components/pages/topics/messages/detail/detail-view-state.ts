@@ -1,4 +1,3 @@
-import { isObject } from 'utils/type-guards';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -10,6 +9,7 @@ import { isObject } from 'utils/type-guards';
  * by the Apache License, Version 2.0
  */
 
+import { isObject } from 'utils/type-guards';
 export type DetailSectionKey = 'metadata' | 'key' | 'headers' | 'value';
 
 /** Every persisted preference of the message detail, stored as one object. */

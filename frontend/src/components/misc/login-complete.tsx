@@ -1,6 +1,3 @@
-import { AuthenticationMethod } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
-import { isObject } from 'utils/type-guards';
-import { z } from 'zod';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -14,7 +11,10 @@ import { z } from 'zod';
 
 import { useParams } from '@tanstack/react-router';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { AuthenticationMethod } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
 import { Component } from 'react';
+import { isObject } from 'utils/type-guards';
+import { z } from 'zod';
 
 import { appGlobal } from '../../state/app-global';
 import { api } from '../../state/backend-api';

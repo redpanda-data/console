@@ -1,5 +1,3 @@
-import type { ComponentStyleVars } from 'components/style-vars';
-import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -11,6 +9,8 @@ import 'components/legacy-layout.css';
  * by the Apache License, Version 2.0
  */
 
+import type { ComponentStyleVars } from 'components/style-vars';
+import 'components/legacy-layout.css';
 import { useApiStoreHook } from '../../../../state/backend-api';
 import type { Broker, Partition } from '../../../../state/rest-interfaces';
 import { arrayDistinct, arraySum } from '../../../../utils/array-utils';

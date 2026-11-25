@@ -1,4 +1,3 @@
-import { createTopicMessage } from '../message-test-helpers';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -14,6 +13,7 @@ import { applyDisplayWindow } from './live-window';
 import { orderForContinuousNewest, visiblePageKeys } from './message-order';
 import { describe, expect, test } from 'bun:test';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
+import { createTopicMessage } from '../message-test-helpers';
 
 const msg = (partitionID: number, offset: number, timestamp: number): TopicMessage =>
   createTopicMessage({ partitionID, offset, timestamp });

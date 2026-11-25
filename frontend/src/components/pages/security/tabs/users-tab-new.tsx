@@ -1,4 +1,3 @@
-import { stringValue } from 'utils/type-guards';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -25,6 +24,7 @@ import { useState } from 'react';
 import { columnMeta } from 'utils/data-table-column-meta';
 import { docsLinks } from 'utils/docs-links';
 import { pluralize } from 'utils/string';
+import { stringValue } from 'utils/type-guards';
 
 import { SASLMechanism } from '../../../../protogen/redpanda/api/dataplane/v1/user_pb';
 import { useListRolesQuery } from '../../../../react-query/api/security';

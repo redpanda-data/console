@@ -1,4 +1,3 @@
-import { deleteTransformAndRefresh } from './delete-transform';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -29,6 +28,7 @@ import {
 } from 'react';
 import { reportActionError } from 'utils/toast.utils';
 
+import { deleteTransformAndRefresh } from './delete-transform';
 import { openDeleteModal } from './modals';
 import { PartitionStatus } from './transforms-list';
 import { PayloadEncoding } from '../../../protogen/redpanda/api/console/v1alpha1/common_pb';

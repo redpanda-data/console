@@ -1,4 +1,3 @@
-import { stringValue } from 'utils/type-guards';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -34,6 +33,7 @@ import type { FC } from 'react';
 import { useState } from 'react';
 import { columnMeta } from 'utils/data-table-column-meta';
 import { docsLinks } from 'utils/docs-links';
+import { stringValue } from 'utils/type-guards';
 
 import { ErrorResult } from '../../../../components/misc/error-result';
 import { useDeleteRoleMutation } from '../../../../react-query/api/security';

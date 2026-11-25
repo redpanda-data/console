@@ -1,4 +1,3 @@
-import 'components/legacy-layout.css';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -10,6 +9,7 @@ import 'components/legacy-layout.css';
  * by the Apache License, Version 2.0
  */
 
+import 'components/legacy-layout.css';
 import { WarningIcon } from 'components/icons';
 import type { ReactNode } from 'react';
 

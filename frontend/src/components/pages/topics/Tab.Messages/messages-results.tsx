@@ -1,6 +1,3 @@
-import { cn } from 'components/redpanda-ui/lib/utils';
-import 'components/legacy-layout.css';
-import type { ComponentStyleVars } from 'components/style-vars';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -12,6 +9,8 @@ import type { ComponentStyleVars } from 'components/style-vars';
  * by the Apache License, Version 2.0
  */
 
+import { cn } from 'components/redpanda-ui/lib/utils';
+import 'components/legacy-layout.css';
 import clsx from 'clsx';
 import { DownloadIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
@@ -30,6 +29,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from 'components/redpanda-ui/components/table';
+import type { ComponentStyleVars } from 'components/style-vars';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import React, { useCallback } from 'react';
 import { asyncEvent } from 'utils/async-event';

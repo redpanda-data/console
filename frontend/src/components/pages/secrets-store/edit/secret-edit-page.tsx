@@ -1,4 +1,3 @@
-import type { z } from 'zod';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -37,6 +36,7 @@ import { uiState } from 'state/ui-state';
 import { asyncEvent } from 'utils/async-event';
 import { formatToastErrorMessageGRPC, reportActionError } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
+import type { z } from 'zod';
 
 import { SecretUpdateFormSchema, type SecretUpdateFormValues } from './secret-edit-form-schema';
 import { isNonEmptyString } from '../../../../utils/string-utils';

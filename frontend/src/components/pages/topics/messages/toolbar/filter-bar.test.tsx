@@ -1,5 +1,3 @@
-import { createFilterEntry } from '../../../../../types/topic-settings';
-import { createTopicMessage } from '../message-test-helpers';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -18,6 +16,8 @@ import { useEffect, useRef, useState } from 'react';
 
 import { FilterBar, type FilterBarProps } from './filter-bar';
 import type { TopicMessage } from '../../../../../state/rest-interfaces';
+import { createFilterEntry } from '../../../../../types/topic-settings';
+import { createTopicMessage } from '../message-test-helpers';
 import type { FieldFilterToken } from '../types';
 
 const makeMsg = (partitionID: number, offset: number, value: unknown): TopicMessage =>

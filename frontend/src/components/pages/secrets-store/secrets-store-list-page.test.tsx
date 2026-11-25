@@ -1,4 +1,3 @@
-import type { ListSecretsRequest } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -13,6 +12,7 @@ import type { ListSecretsRequest } from 'protogen/redpanda/api/console/v1alpha1/
 import { create } from '@bufbuild/protobuf';
 import { createRouterTransport } from '@connectrpc/connect';
 import userEvent, { type UserEvent } from '@testing-library/user-event';
+import type { ListSecretsRequest } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { type ListSecretsResponse, ListSecretsResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
 import { listSecrets } from 'protogen/redpanda/api/console/v1alpha1/secret-SecretService_connectquery';
 import { Scope, type Secret, SecretSchema } from 'protogen/redpanda/api/dataplane/v1/secret_pb';

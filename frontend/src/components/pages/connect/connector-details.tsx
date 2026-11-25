@@ -1,5 +1,3 @@
-import { LOGS_TOPIC_NAME, LogsTab } from './connector-logs-tab';
-import 'components/legacy-layout.css';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -11,6 +9,8 @@ import 'components/legacy-layout.css';
  * by the Apache License, Version 2.0
  */
 
+import { LOGS_TOPIC_NAME, LogsTab } from './connector-logs-tab';
+import 'components/legacy-layout.css';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import React, { useEffect, useState } from 'react';

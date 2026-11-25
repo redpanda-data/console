@@ -1,5 +1,3 @@
-import 'components/legacy-layout.css';
-import type { ComponentStyleVars } from 'components/style-vars';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -11,6 +9,7 @@ import type { ComponentStyleVars } from 'components/style-vars';
  * by the Apache License, Version 2.0
  */
 
+import 'components/legacy-layout.css';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
@@ -31,6 +30,7 @@ import { Spinner } from 'components/redpanda-ui/components/spinner';
 import { StatusDot } from 'components/redpanda-ui/components/status-dot';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
+import type { ComponentStyleVars } from 'components/style-vars';
 import {
   Braces,
   CircleSlash,

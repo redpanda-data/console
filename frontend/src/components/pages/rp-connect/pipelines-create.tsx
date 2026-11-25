@@ -1,4 +1,3 @@
-import { isObject } from '../../../utils/type-guards';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -40,6 +39,7 @@ import { isFeatureFlagEnabled } from '../../../runtime-config';
 import { appGlobal } from '../../../state/app-global';
 import { pipelinesApi, rpcnSecretManagerApi } from '../../../state/backend-api';
 import { DefaultSkeleton } from '../../../utils/tsx-utils';
+import { isObject } from '../../../utils/type-guards';
 import { PageContent } from '../../misc/page-content';
 import { PipelinesYamlEditor } from '../../misc/pipelines-yaml-editor';
 import { Tabs } from '../../misc/tabs/tabs';

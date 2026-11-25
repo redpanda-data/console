@@ -1,12 +1,3 @@
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from 'components/redpanda-ui/components/table';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -22,6 +13,15 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from 'components/re
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { CopyButton } from 'components/redpanda-ui/components/copy-button';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from 'components/redpanda-ui/components/table';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { AlertTriangleIcon, ChevronRightIcon } from 'lucide-react';
 import type { ReactNode } from 'react';

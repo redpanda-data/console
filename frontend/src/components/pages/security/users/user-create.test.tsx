@@ -1,5 +1,3 @@
-import type { MethodImpl } from '@connectrpc/connect';
-import type { Mock } from '@rstest/core';
 /**
  * Copyright 2025 Redpanda Data, Inc.
  *
@@ -12,7 +10,9 @@ import type { Mock } from '@rstest/core';
  */
 
 import { create } from '@bufbuild/protobuf';
+import type { MethodImpl } from '@connectrpc/connect';
 import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
+import type { Mock } from '@rstest/core';
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {

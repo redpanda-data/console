@@ -1,14 +1,3 @@
-import { create } from '@bufbuild/protobuf';
-import type { ConnectError } from '@connectrpc/connect';
-import { QueryClient, QueryObserver, skipToken } from '@tanstack/react-query';
-import type { GetTopicConfigurationsResponse } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
-import {
-  type DescribeTableResponse,
-  DescribeTableResponseSchema,
-  type ListTablesResponse,
-} from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
-
-import { trackedQueryClients } from '../../../../tests/harness-cleanup';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -20,11 +9,21 @@ import { trackedQueryClients } from '../../../../tests/harness-cleanup';
  * by the Apache License, Version 2.0
  */
 
+import { create } from '@bufbuild/protobuf';
+import type { ConnectError } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { QueryClient, QueryObserver, skipToken } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
+import type { GetTopicConfigurationsResponse } from 'protogen/redpanda/api/dataplane/v1/topic_pb';
+import {
+  type DescribeTableResponse,
+  DescribeTableResponseSchema,
+  type ListTablesResponse,
+} from 'protogen/redpanda/api/dataplane/v1alpha3/sql_pb';
 
 import { CatalogTree } from './catalog-tree';
 import type { Catalog, TableRef } from './sql-types';
+import { trackedQueryClients } from '../../../../tests/harness-cleanup';
 import { useDescribeTableQuery, useListTablesQuery, useTopicIcebergQuery } from '../../../react-query/api/sql';
 import { render, screen } from '../../../test-utils';
 

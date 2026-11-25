@@ -1,4 +1,3 @@
-import { createTopicMessage } from '../messages/message-test-helpers';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -22,6 +21,7 @@ import {
 import { describe, expect, test } from 'bun:test';
 import type { TopicMessage } from '../../../../state/rest-interfaces';
 import type { FilterEntry } from '../../../../state/ui';
+import { createTopicMessage } from '../messages/message-test-helpers';
 
 function filter(overrides: Partial<FilterEntry>): FilterEntry {
   return {

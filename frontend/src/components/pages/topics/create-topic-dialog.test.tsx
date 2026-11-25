@@ -1,5 +1,3 @@
-import { Code, ConnectError, createRouterTransport, type MethodImpl } from '@connectrpc/connect';
-import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -11,8 +9,10 @@ import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicServi
  * by the Apache License, Version 2.0
  */
 
+import { Code, ConnectError, createRouterTransport, type MethodImpl } from '@connectrpc/connect';
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
+import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 
 import { act, fireEvent, renderWithFileRoutes, screen, waitFor } from '../../../test-utils';
 

@@ -1,4 +1,3 @@
-import { AuthenticationService } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -13,6 +12,7 @@ import { AuthenticationService } from 'protogen/redpanda/api/console/v1alpha1/au
 import { Code, ConnectError, createClient, createRouterTransport } from '@connectrpc/connect';
 import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
+import { AuthenticationService } from 'protogen/redpanda/api/console/v1alpha1/authentication_pb';
 
 import { RequireAuth } from './require-auth';
 import { config as appConfig } from '../runtime-config';

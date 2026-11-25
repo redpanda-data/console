@@ -1,4 +1,3 @@
-import { asyncEvent } from 'utils/async-event';
 /**
  * Copyright 2022 Redpanda Data, Inc.
  *
@@ -23,6 +22,7 @@ import {
 import { RefreshCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
+import { asyncEvent } from 'utils/async-event';
 import { formatToastErrorMessageGRPC, reportActionError, showToast } from 'utils/toast.utils';
 
 import { openDeleteModal } from './modals';
