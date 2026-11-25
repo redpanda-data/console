@@ -11,7 +11,6 @@ package serde
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 
@@ -38,25 +37,18 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 		return &RecordPayload{}, errors.New("no schema registry configured")
 	}
 
-	payload := payloadFromRecord(record, payloadType)
-
-	if len(payload) <= 5 {
-		return &RecordPayload{}, errors.New("payload size is <= 5")
+	loc, err := locateSchema(record, payloadType)
+	if err != nil {
+		return &RecordPayload{}, err
 	}
 
-	if payload[0] != byte(0) {
-		return &RecordPayload{}, errors.New("incorrect magic byte for avro")
-	}
-
-	schemaID := binary.BigEndian.Uint32(payload[1:5])
-
-	avroSch, err := d.schemaClient.AvroSchemaByID(ctx, int(schemaID))
+	avroSch, err := d.schemaClient.AvroSchemaByID(ctx, loc.id)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("getting avro schema from registry: %w", err)
 	}
 
 	var obj any
-	_, err = avroSch.Decode(payload[5:], &obj)
+	_, err = avroSch.Decode(loc.message(), &obj)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("decoding avro: %w", err)
 	}
@@ -65,6 +57,8 @@ func (d AvroSerde) DeserializePayload(ctx context.Context, record *kgo.Record, p
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("serializing avro: %w", err)
 	}
+
+	schemaID := uint32(loc.id)
 
 	return &RecordPayload{
 		NormalizedPayload:   jsonBytes,

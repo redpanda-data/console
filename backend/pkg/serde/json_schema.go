@@ -11,7 +11,6 @@ package serde
 
 import (
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -36,23 +35,18 @@ func (JSONSchemaSerde) Name() PayloadEncoding {
 
 // DeserializePayload deserializes the kafka record to our internal record payload representation.
 func (JSONSchemaSerde) DeserializePayload(_ context.Context, record *kgo.Record, payloadType PayloadType) (*RecordPayload, error) {
-	payload := payloadFromRecord(record, payloadType)
-
-	if len(payload) <= 5 {
-		return &RecordPayload{}, errors.New("payload size is < 5 for json schema")
+	loc, err := locateSchema(record, payloadType)
+	if err != nil {
+		return &RecordPayload{}, err
 	}
 
-	if payload[0] != byte(0) {
-		return &RecordPayload{}, errors.New("incorrect magic byte for json schema")
-	}
-
-	schemaID := binary.BigEndian.Uint32(payload[1:5])
-
-	jsonPayload := payload[5:]
+	jsonPayload := loc.message()
 	obj, err := jsonDeserializePayload(jsonPayload)
 	if err != nil {
 		return &RecordPayload{}, err
 	}
+
+	schemaID := uint32(loc.id)
 
 	return &RecordPayload{
 		NormalizedPayload:   jsonPayload,

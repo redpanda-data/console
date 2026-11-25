@@ -11,7 +11,6 @@ package serde
 
 import (
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -44,45 +43,17 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 		return &RecordPayload{}, errors.New("schema registry client is not configured")
 	}
 
-	payload := payloadFromRecord(record, payloadType)
-
-	if len(payload) <= 5 {
-		return &RecordPayload{}, errors.New("payload size is <= 5")
-	}
-
-	if payload[0] != byte(0) {
-		return &RecordPayload{}, errors.New("incorrect magic byte for protobuf schema")
-	}
-
-	var srSerde sr.Serde
-	schemaID, remainingData, err := srSerde.DecodeID(payload)
+	loc, err := locateSchema(record, payloadType)
 	if err != nil {
-		return &RecordPayload{}, fmt.Errorf("decoding schema id: %w", err)
+		return &RecordPayload{}, err
 	}
 
-	// Quick sanity check whether the number of indexes that denote the to be used
-	// protobuf types is a reasonable number. It may not be because we are just
-	// guessing that this piece of binary data may be protobuf data in wire format.
-	arrLength, n := binary.Varint(remainingData)
-	if n <= 0 {
-		var err error
-		if n == 0 {
-			err = errors.New("buffer is too small")
-		} else {
-			err = errors.New("buffer overflow")
-		}
-		return &RecordPayload{}, fmt.Errorf("failed decoding protobuf index path (unexpected arr length): %w", err)
-	}
-	if arrLength > 128 || arrLength < 0 {
-		return nil, errors.New("arrLength is out of expected bounds, unlikely a legit envelope")
-	}
-
-	indexPath, binaryPayload, err := srSerde.DecodeIndex(remainingData, int(arrLength))
+	indexPath, binaryPayload, err := loc.protobufMessage()
 	if err != nil {
-		return &RecordPayload{}, fmt.Errorf("failed decoding protobuf index path: %w", err)
+		return &RecordPayload{}, err
 	}
 
-	compiledProtoFiles, rootFilename, err := d.schemaClient.ProtoFilesByID(ctx, schemaID)
+	compiledProtoFiles, rootFilename, err := d.schemaClient.ProtoFilesByID(ctx, loc.id)
 	if err != nil {
 		return &RecordPayload{}, fmt.Errorf("failed getting proto files: %w", err)
 	}
@@ -99,7 +70,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 	protoMessage := dynamicpb.NewMessage(messageDescriptor)
 	err = proto.Unmarshal(binaryPayload, protoMessage)
 	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshall protobuf encoded record into the message: %w", err)
+		return &RecordPayload{}, fmt.Errorf("unable to unmarshall protobuf encoded record into the message: %w", err)
 	}
 
 	// Marshal proto message into JSON
@@ -115,7 +86,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 	}
 	jsonBytes, err := o.Marshal(protoMessage)
 	if err != nil {
-		return nil, fmt.Errorf("unable to marshal protobuf message as JSON: %v", err)
+		return &RecordPayload{}, fmt.Errorf("unable to marshal protobuf message as JSON: %w", err)
 	}
 
 	var native any
@@ -124,7 +95,7 @@ func (d ProtobufSchemaSerde) DeserializePayload(ctx context.Context, record *kgo
 		return &RecordPayload{}, fmt.Errorf("failed to serialize protobuf payload into JSON: %w", err)
 	}
 
-	sID := uint32(schemaID)
+	sID := uint32(loc.id)
 
 	return &RecordPayload{
 		DeserializedPayload: native,

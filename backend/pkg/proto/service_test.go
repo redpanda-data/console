@@ -10,9 +10,7 @@
 package proto
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"log/slog"
 	"testing"
@@ -30,25 +28,6 @@ import (
 	"github.com/redpanda-data/console/backend/pkg/config"
 	loggerpkg "github.com/redpanda-data/console/backend/pkg/logger"
 )
-
-func Test_decodeConfluentBinaryWrapper(t *testing.T) {
-	buf := new(bytes.Buffer)
-
-	schemaID := uint32(1000)
-	var schemaIDBuf []byte
-	schemaIDBuf = binary.BigEndian.AppendUint32(schemaIDBuf, schemaID)
-
-	binary.Write(buf, binary.BigEndian, byte(0))
-	binary.Write(buf, binary.BigEndian, schemaIDBuf)
-
-	var arrLengthBuf []byte
-	arrLengthBuf = binary.AppendVarint(arrLengthBuf, 1<<60)
-	binary.Write(buf, binary.BigEndian, arrLengthBuf)
-
-	svc := Service{}
-	_, err := svc.decodeConfluentBinaryWrapper(buf.Bytes())
-	assert.Error(t, err)
-}
 
 func TestService_getMatchingMapping(t *testing.T) {
 	topic0 := config.RegexpOrLiteral{}

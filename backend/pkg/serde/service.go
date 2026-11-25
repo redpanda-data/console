@@ -118,8 +118,6 @@ func (s *Service) DeserializeRecord(ctx context.Context, record *kgo.Record, opt
 func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, payloadType PayloadType, opts *DeserializationOptions) *RecordPayload {
 	payload := payloadFromRecord(record, payloadType)
 
-	troubleshooting := make([]TroubleshootingReport, 0, len(s.SerDes))
-
 	serdeEncoding := opts.KeyEncoding
 	if payloadType == PayloadTypeValue {
 		serdeEncoding = opts.ValueEncoding
@@ -128,32 +126,7 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 	// When deserializing, clients can optionally specify the desired encoding
 	doSpecificEncoding := serdeEncoding != PayloadEncodingUnspecified && serdeEncoding != ""
 
-	// Try all registered SerDes in the order they were registered
-	var rp *RecordPayload
-	for _, serde := range s.SerDes {
-		if doSpecificEncoding {
-			if serdeEncoding != serde.Name() {
-				continue
-			}
-		}
-
-		var err error
-		rp, err = serde.DeserializePayload(ctx, record, payloadType)
-		if err == nil {
-			// found the matching serde
-			break
-		}
-
-		if doSpecificEncoding {
-			// If the specific encoding failed, it wouldn't be set. Hence, we set it here.
-			rp.Encoding = serdeEncoding
-		}
-
-		troubleshooting = append(troubleshooting, TroubleshootingReport{
-			SerdeName: string(serde.Name()),
-			Message:   err.Error(),
-		})
-	}
+	rp, troubleshooting := s.trySerdes(ctx, record, payloadType, serdeEncoding, doSpecificEncoding)
 
 	rp.PayloadSizeBytes = len(payload)
 	rp.IsPayloadNull = payload == nil
@@ -173,6 +146,45 @@ func (s *Service) deserializePayload(ctx context.Context, record *kgo.Record, pa
 	}
 
 	return rp
+}
+
+// trySerdes runs the serdes in the order they were registered until one
+// decodes the payload. With a specific encoding only that serde runs. It
+// always returns a payload, with the report of every serde that failed.
+func (s *Service) trySerdes(ctx context.Context, record *kgo.Record, payloadType PayloadType, encoding PayloadEncoding, specific bool) (*RecordPayload, []TroubleshootingReport) {
+	troubleshooting := make([]TroubleshootingReport, 0, len(s.SerDes))
+
+	var rp *RecordPayload
+	for _, serde := range s.SerDes {
+		if specific && encoding != serde.Name() {
+			continue
+		}
+
+		var err error
+		rp, err = serde.DeserializePayload(ctx, record, payloadType)
+		if err == nil {
+			return rp, troubleshooting
+		}
+		if rp == nil {
+			rp = &RecordPayload{}
+		}
+
+		if specific {
+			// If the specific encoding failed, it wouldn't be set. Hence, we set it here.
+			rp.Encoding = encoding
+		}
+
+		troubleshooting = append(troubleshooting, TroubleshootingReport{
+			SerdeName: string(serde.Name()),
+			Message:   err.Error(),
+		})
+	}
+
+	if rp == nil {
+		// No serde has the requested encoding.
+		rp = &RecordPayload{Encoding: encoding}
+	}
+	return rp, troubleshooting
 }
 
 // DeserializationOptions that can be provided by the requester to influence

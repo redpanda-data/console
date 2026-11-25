@@ -211,7 +211,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
-				assert.Equal(t, "payload size is <= 5", err.Error())
+				assert.Equal(t, "payload has no schema ID: truncated schema ID, got 4 of 5 bytes", err.Error())
 			},
 		},
 		{
@@ -222,7 +222,7 @@ func TestProtobufSchemaSerde_DeserializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
-				assert.Equal(t, "incorrect magic byte for protobuf schema", err.Error())
+				assert.Equal(t, "payload has no schema ID: unknown magic byte 0x01", err.Error())
 			},
 		},
 		{
