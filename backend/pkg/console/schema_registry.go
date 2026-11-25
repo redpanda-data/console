@@ -359,6 +359,7 @@ func mapSubjectSchema(in sr.SubjectSchema, isSoftDeleted bool) SchemaRegistryVer
 		Schema:        in.Schema.Schema,
 		References:    references,
 		Metadata:      metadata,
+		GUID:          in.GUID,
 	}
 }
 
@@ -621,6 +622,8 @@ type SchemaRegistryVersionedSchema struct {
 	References    []Reference             `json:"references"`
 	Metadata      *SchemaMetadata         `json:"metadata,omitempty"`
 	MessageTypes  []proto.MessageTypeInfo `json:"messageTypes,omitempty"` // Protobuf only.
+	// GUID identifies the schema in every context. Empty if the registry has no schema GUIDs.
+	GUID string `json:"guid,omitempty"`
 }
 
 // Reference describes a reference to a different schema stored in the schema registry.
@@ -975,30 +978,50 @@ func (s *Service) GetSchemaUsagesByID(ctx context.Context, schemaID int, subject
 	return schemaUsagesAcrossContexts(ctx, srClient, schemaID)
 }
 
+// GetSchemaUsagesByGUID returns all subject-versions that use the schema with
+// the given GUID, in every context. An unknown GUID has no usages.
+func (s *Service) GetSchemaUsagesByGUID(ctx context.Context, guid string) ([]SchemaVersion, error) {
+	srClient, err := s.schemaClientFactory.GetSchemaRegistryClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ids, err := srClient.SchemaIDsByGUID(ctx, guid)
+	if err != nil {
+		return nil, err
+	}
+	return schemaUsagesByContextIDs(ctx, srClient, ids)
+}
+
 // schemaUsagesAcrossContexts looks up the subjects using schemaID in every
 // context, since schema IDs are context-local.
 func schemaUsagesAcrossContexts(ctx context.Context, srClient *rpsr.Client, schemaID int) ([]SchemaVersion, error) {
 	// Always search the default context; registries without contexts fail /contexts.
-	contextNames := []string{""}
+	ids := []sr.ContextID{{ID: schemaID}}
 	if contexts, err := srClient.Contexts(ctx); err == nil {
 		for _, name := range contexts {
 			if normalized := schemacache.NormalizeContextName(name); normalized != "" {
-				contextNames = append(contextNames, normalized)
+				ids = append(ids, sr.ContextID{Context: normalized, ID: schemaID})
 			}
 		}
 	}
+	return schemaUsagesByContextIDs(ctx, srClient, ids)
+}
 
-	results := make([][]sr.SubjectSchema, len(contextNames))
-	errs := make([]error, len(contextNames))
+// schemaUsagesByContextIDs looks up the subjects that use each schema ID in
+// its context and merges them.
+func schemaUsagesByContextIDs(ctx context.Context, srClient *rpsr.Client, ids []sr.ContextID) ([]SchemaVersion, error) {
+	results := make([][]sr.SubjectSchema, len(ids))
+	errs := make([]error, len(ids))
 	grp, grpCtx := errgroup.WithContext(ctx)
 	grp.SetLimit(10)
-	for i, name := range contextNames {
+	for i, id := range ids {
 		grp.Go(func() error {
 			callCtx := grpCtx
-			if name != "" {
+			if name := schemacache.NormalizeContextName(id.Context); name != "" {
 				callCtx = sr.InContext(grpCtx, name)
 			}
-			results[i], errs[i] = srClient.SchemaUsagesByID(callCtx, schemaID)
+			results[i], errs[i] = srClient.SchemaUsagesByID(callCtx, id.ID)
 			return nil
 		})
 	}
