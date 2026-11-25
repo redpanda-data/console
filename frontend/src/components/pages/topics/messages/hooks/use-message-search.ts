@@ -11,7 +11,7 @@
 
 import { create } from '@bufbuild/protobuf';
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from 'react';
-import { showToast } from 'utils/toast.utils';
+import { closeToast, showToast } from 'utils/toast.utils';
 
 import { config as appConfig } from '../../../../../config';
 import type { PayloadEncoding } from '../../../../../protogen/redpanda/api/console/v1alpha1/common_pb';
@@ -131,6 +131,8 @@ type SearchSession = {
   lastParams: MessageSearchParams | null;
   /** Live tail flashes every arriving row; loadMore appends without flashing. */
   trackNew: boolean;
+  /** Distinct backend `error` frames in the current search, listed in one toast. */
+  backendErrors: string[];
 };
 
 const createSearchSession = (): SearchSession => ({
@@ -141,6 +143,7 @@ const createSearchSession = (): SearchSession => ({
   abortController: null,
   lastParams: null,
   trackNew: false,
+  backendErrors: [],
 });
 
 type SearchSetters = {
@@ -234,9 +237,13 @@ const clearResults = (session: SearchSession, setters: SearchSetters) => {
   setters.setNewKeys(new Set());
 };
 
+const BACKEND_ERROR_TOAST_ID = 'message-search-backend-error';
+
 const resetRunState = (session: SearchSession, setters: SearchSetters, append: boolean) => {
   if (!append) {
     clearResults(session, setters);
+    session.backendErrors = [];
+    closeToast(BACKEND_ERROR_TOAST_ID);
   }
   setters.setError(null);
   setters.setIsLoadingMore(append);
@@ -296,12 +303,16 @@ const onDoneFrame = (done: ListMessagesResponse_StreamCompletedMessage, run: Str
 const onErrorFrame = (value: ListMessagesResponse_ErrorMessage, run: StreamRun) => {
   // Doesn't necessarily mean the whole request failed (e.g. "N partitions
   // offline") — the stream can still reach `done` normally afterwards.
-  // One toast across searches and frames: a repeated id updates it in place.
+  const { backendErrors } = run.session;
+  if (!backendErrors.includes(value.message)) {
+    backendErrors.push(value.message);
+  }
+  // A repeated id updates the toast in place.
   showToast({
-    id: 'message-search-backend-error',
+    id: BACKEND_ERROR_TOAST_ID,
     status: 'error',
-    title: 'Backend error',
-    description: value.message,
+    title: backendErrors.length > 1 ? 'Backend errors' : 'Backend error',
+    description: backendErrors.join('; '),
   });
   run.pendingBackendError = new Error(value.message);
 };

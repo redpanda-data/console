@@ -43,7 +43,7 @@ export function useAclSharedConfig(propSharedConfig: Partial<SharedConfig> | und
   );
 
   const submitIfPrincipalNamed = (submit: () => void) => {
-    if (parsePrincipal(sharedConfig.principal).name) {
+    if (parsePrincipal(sharedConfig.principal).name.trim()) {
       submit();
     } else {
       setPrincipalError('Principal is required');

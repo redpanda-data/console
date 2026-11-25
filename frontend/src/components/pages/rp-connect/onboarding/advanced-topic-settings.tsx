@@ -10,7 +10,7 @@ import {
 } from 'components/redpanda-ui/components/select';
 import { cn } from 'components/redpanda-ui/lib/utils';
 import { memo, useMemo } from 'react';
-import { type UseFormReturn, useFormState, useWatch } from 'react-hook-form';
+import { type UseFormReturn, useWatch } from 'react-hook-form';
 import { attachedFirstClassName, attachedLastClassName } from 'utils/attached-controls';
 
 import type { AddTopicFormData } from '../types/wizard';
@@ -123,9 +123,6 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
     // stay interactive in both cases so the user can switch back off "infinite".
     const lockedForEdit = isExistingTopic || disabled;
     const isValueDisabled = isRetentionUnitDisabled(unitValue) || lockedForEdit;
-    // Below the attached row rather than in the value's FormItem, which would stretch the unit select.
-    const { errors } = useFormState({ control: form.control, name: valueField });
-    const valueError = errors[valueField]?.message;
 
     return (
       <div className="space-y-2">
@@ -133,51 +130,54 @@ const RetentionInputGroup = memo<RetentionInputGroupProps>(
         {Boolean(isExistingTopic) && (
           <p className="mb-2 text-body-sm text-subtle">Existing topic values cannot be modified</p>
         )}
-        <div className="flex w-full items-stretch">
-          <FormField
-            control={form.control}
-            disabled={isValueDisabled}
-            name={valueField as 'retentionTimeMs' | 'retentionSize'}
-            render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormControl>
-                  <Input
-                    className={attachedFirstClassName}
-                    min="0"
-                    placeholder={field.value?.toString() || '0'}
-                    type="number"
-                    {...field}
-                    onChange={onChange(field.onChange)}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            disabled={lockedForEdit}
-            name={unitField as 'retentionTimeUnit' | 'retentionSizeUnit'}
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <Select disabled={field.disabled} items={units} onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className={cn(attachedLastClassName, 'w-32')} disabled={field.disabled}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {units.map(({ value, label: unitLabel }) => (
-                        <SelectItem disabled={field.disabled} key={value} value={value}>
-                          {unitLabel}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
-        {valueError ? <p className="text-body text-destructive">{String(valueError)}</p> : null}
+        {/* The value's FormItem holds the attached row, so its message sits below both controls. */}
+        <FormField
+          control={form.control}
+          disabled={isValueDisabled}
+          name={valueField as 'retentionTimeMs' | 'retentionSize'}
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex w-full items-stretch">
+                <div className="flex-1">
+                  <FormControl>
+                    <Input
+                      className={attachedFirstClassName}
+                      min="0"
+                      placeholder={field.value?.toString() || '0'}
+                      type="number"
+                      {...field}
+                      onChange={onChange(field.onChange)}
+                    />
+                  </FormControl>
+                </div>
+                <FormField
+                  control={form.control}
+                  disabled={lockedForEdit}
+                  name={unitField as 'retentionTimeUnit' | 'retentionSizeUnit'}
+                  render={({ field: unit }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Select disabled={unit.disabled} items={units} onValueChange={unit.onChange} value={unit.value}>
+                          <SelectTrigger className={cn(attachedLastClassName, 'w-32')} disabled={unit.disabled}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {units.map(({ value, label: unitLabel }) => (
+                              <SelectItem disabled={unit.disabled} key={value} value={value}>
+                                {unitLabel}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
     );
   }

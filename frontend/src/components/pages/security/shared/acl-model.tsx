@@ -626,7 +626,8 @@ export const handleResponses = (errors: ConnectError[], created: boolean) => {
     });
     return;
   }
-  showToast({ status: 'error', ...failureSummary(messages, `Failed to create ${errors.length} ACLs`) });
+  // `errors` holds one per error code, so it doesn't count the failed ACLs.
+  showToast({ status: 'error', ...failureSummary(messages, 'Failed to create ACLs') });
 };
 
 export const handleUrlWithHost = (baseUrl: string, host?: string): string =>

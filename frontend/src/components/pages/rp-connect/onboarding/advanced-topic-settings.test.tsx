@@ -40,13 +40,15 @@ function Harness() {
 }
 
 describe('the advanced topic settings', () => {
-  test('shows a retention value error below its attached row', async () => {
+  test('shows a retention value error below its attached row, describing the input', async () => {
     render(<Harness />);
 
     // Typed a character at a time, `-` alone is not a number, so set the value whole.
     const [retentionTime] = screen.getAllByPlaceholderText('7');
     fireEvent.change(retentionTime, { target: { value: '-5' } });
 
-    expect(await screen.findByText('Retention time must be at least 0.')).toBeInTheDocument();
+    const message = await screen.findByText('Retention time must be at least 0.');
+    expect(retentionTime).toHaveAttribute('aria-invalid', 'true');
+    expect(retentionTime.getAttribute('aria-describedby')?.split(' ')).toContain(message.id);
   });
 });

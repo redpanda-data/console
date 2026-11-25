@@ -11,6 +11,7 @@
 
 import { beforeEach, describe, expect, rs, test } from '@rstest/core';
 import { act, type RenderHookResult, renderHook, waitFor } from '@testing-library/react';
+import { toast } from 'components/redpanda-ui/components/toast/manager';
 import { aToast, spyOnToasts } from 'test-toasts';
 
 import { type MessageSearchParams, type MessageSearchResult, useMessageSearch } from './use-message-search';
@@ -119,6 +120,7 @@ function renderWithRunningSearch() {
 const requestAt = (index: number) => listMessagesMock.mock.calls[index][0];
 
 const toasts = spyOnToasts();
+const BACKEND_ERROR_TOAST = 'message-search-backend-error';
 
 describe('useMessageSearch', () => {
   beforeEach(() => {
@@ -282,6 +284,25 @@ describe('useMessageSearch', () => {
       });
       expect(result.current.error).toBeNull();
       expect(toasts).toHaveBeenCalledWith(aToast('error', 'Backend error', { description: 'N partitions offline' }));
+    });
+
+    test('lists a search’s distinct backend errors in one toast that the next search closes', async () => {
+      const closes = rs.spyOn(toast, 'close');
+      const partitionError = (message: string): Frame => ({ case: 'error', value: { message } });
+      scriptStream(partitionError('partition 3 offline'), partitionError('partition 7 offline'), doneFrame());
+      const result = await startSearch();
+      expect(toasts).toHaveBeenLastCalledWith(
+        aToast('error', 'Backend errors', {
+          id: BACKEND_ERROR_TOAST,
+          description: 'partition 3 offline; partition 7 offline',
+        })
+      );
+
+      const closedBefore = closes.mock.calls.length;
+      scriptStream(doneFrame());
+      await act(() => result.current.start(baseParams));
+      expect(closes.mock.calls.slice(closedBefore)).toEqual([[BACKEND_ERROR_TOAST]]);
+      closes.mockRestore();
     });
 
     // Without a following `done`, the error frame was the last thing the stream said before
