@@ -246,12 +246,36 @@ describe('useLogSearch history mode', () => {
   beforeEach(() => {
     rs.useFakeTimers({ shouldAdvanceTime: true });
     rs.clearAllMocks();
+    mockListMessages.mockReset();
     convertCallIndex = 0;
     fakeMessages.length = 0;
   });
 
   afterEach(() => {
     rs.useRealTimers();
+  });
+
+  test('reads fresh history when the filtering mode changes', async () => {
+    mockListMessages.mockImplementation(function* streamMessages(request: { filterInterpreterCode: string }) {
+      if (request.filterInterpreterCode) {
+        yield dataOf(makeMessage(1));
+      } else {
+        yield dataOf(makeMessage(2));
+        yield dataOf(makeMessage(3, 'different-pipeline'));
+      }
+      yield DONE;
+    });
+
+    const { result, rerender } = renderHook(
+      ({ serverless }: { serverless: boolean }) =>
+        useLogSearch({ pipelineId: 'pipeline-1', live: false, enabled: true, serverless }),
+      { wrapper: createWrapper(), initialProps: { serverless: false } }
+    );
+    await waitFor(() => expect(result.current.messages.map((message) => message.offset)).toStrictEqual([1]));
+
+    rerender({ serverless: true });
+
+    await waitFor(() => expect(result.current.messages.map((message) => message.offset)).toStrictEqual([2]));
   });
 
   test('reports progress during history streaming', async () => {
