@@ -56,7 +56,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260804154521-adb3a18abe14
 	github.com/twmb/franz-go/pkg/kmsg v1.15.1
 	github.com/twmb/franz-go/pkg/sasl/kerberos v1.1.0
-	github.com/twmb/franz-go/pkg/sr v1.7.0
+	github.com/twmb/franz-go/pkg/sr v1.8.1-0.20261126224154-47f839eccdc3
 	github.com/twmb/franz-go/plugin/kslog v1.0.0
 	github.com/twmb/go-cache v1.2.1
 	github.com/twmb/tlscfg v1.2.1
