@@ -173,3 +173,84 @@ func TestEncodingRoundTrip(t *testing.T) {
 		})
 	}
 }
+
+func TestToProtoRecordPayload(t *testing.T) {
+	schemaID := uint32(7)
+
+	tests := []struct {
+		name       string
+		payload    *serde.RecordPayload
+		validateFn func(t *testing.T, got *v1alpha.KafkaRecordPayload)
+	}{
+		{
+			name: "payload without a schema",
+			payload: &serde.RecordPayload{
+				Encoding:          serde.PayloadEncodingText,
+				NormalizedPayload: []byte("hello"),
+				PayloadSizeBytes:  5,
+			},
+			validateFn: func(t *testing.T, got *v1alpha.KafkaRecordPayload) {
+				assert.Equal(t, v1alpha.PayloadEncoding_PAYLOAD_ENCODING_TEXT, got.GetEncoding())
+				assert.Equal(t, []byte("hello"), got.GetNormalizedPayload())
+				assert.EqualValues(t, 5, got.GetPayloadSize())
+				assert.Nil(t, got.SchemaId)
+				assert.Nil(t, got.SchemaGuid)
+				assert.Empty(t, got.GetSchemaContext())
+				assert.Equal(t, v1alpha.SchemaIdLocation_SCHEMA_ID_LOCATION_UNSPECIFIED, got.GetSchemaIdLocation())
+				assert.NotNil(t, got.TroubleshootReport)
+				assert.Empty(t, got.TroubleshootReport)
+			},
+		},
+		{
+			name: "schema ID in the payload",
+			payload: &serde.RecordPayload{
+				Encoding:         serde.PayloadEncodingAvro,
+				SchemaID:         &schemaID,
+				SchemaIDLocation: serde.SchemaIDLocationPayload,
+			},
+			validateFn: func(t *testing.T, got *v1alpha.KafkaRecordPayload) {
+				assert.EqualValues(t, 7, got.GetSchemaId())
+				assert.Nil(t, got.SchemaGuid)
+				assert.Empty(t, got.GetSchemaContext())
+				assert.Equal(t, v1alpha.SchemaIdLocation_SCHEMA_ID_LOCATION_PAYLOAD, got.GetSchemaIdLocation())
+			},
+		},
+		{
+			name: "schema GUID in a header, resolved in a named context",
+			payload: &serde.RecordPayload{
+				Encoding:         serde.PayloadEncodingProtobuf,
+				SchemaID:         &schemaID,
+				SchemaGUID:       "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9",
+				SchemaContext:    ".prod",
+				SchemaIDLocation: serde.SchemaIDLocationHeader,
+			},
+			validateFn: func(t *testing.T, got *v1alpha.KafkaRecordPayload) {
+				assert.EqualValues(t, 7, got.GetSchemaId())
+				assert.Equal(t, "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9", got.GetSchemaGuid())
+				assert.Equal(t, ".prod", got.GetSchemaContext())
+				assert.Equal(t, v1alpha.SchemaIdLocation_SCHEMA_ID_LOCATION_HEADER, got.GetSchemaIdLocation())
+			},
+		},
+		{
+			name: "troubleshooting reports",
+			payload: &serde.RecordPayload{
+				Encoding: serde.PayloadEncodingBinary,
+				Troubleshooting: []serde.TroubleshootingReport{
+					{SerdeName: "avro", Message: "schema GUID x not found"},
+				},
+			},
+			validateFn: func(t *testing.T, got *v1alpha.KafkaRecordPayload) {
+				if assert.Len(t, got.GetTroubleshootReport(), 1) {
+					assert.Equal(t, "avro", got.GetTroubleshootReport()[0].GetSerdeName())
+					assert.Equal(t, "schema GUID x not found", got.GetTroubleshootReport()[0].GetMessage())
+				}
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.validateFn(t, toProtoRecordPayload(tc.payload))
+		})
+	}
+}

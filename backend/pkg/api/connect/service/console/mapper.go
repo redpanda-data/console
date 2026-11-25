@@ -101,6 +101,48 @@ func rpcCompressionTypeToKgoCodec(compressionType v1alpha.CompressionType) []kgo
 	}
 }
 
+// toProtoRecordPayload maps the decoded key or value of a record.
+func toProtoRecordPayload(payload *serde.RecordPayload) *v1alpha.KafkaRecordPayload {
+	out := &v1alpha.KafkaRecordPayload{
+		OriginalPayload:    payload.OriginalPayload,
+		PayloadSize:        int32(payload.PayloadSizeBytes),
+		NormalizedPayload:  payload.NormalizedPayload,
+		IsPayloadTooLarge:  payload.IsPayloadTooLarge,
+		Encoding:           toProtoEncoding(payload.Encoding),
+		TroubleshootReport: make([]*v1alpha.TroubleshootReport, 0, len(payload.Troubleshooting)),
+		SchemaContext:      payload.SchemaContext,
+		SchemaIdLocation:   toProtoSchemaIDLocation(payload.SchemaIDLocation),
+	}
+
+	if payload.SchemaID != nil {
+		schemaID := int32(*payload.SchemaID)
+		out.SchemaId = &schemaID
+	}
+	if payload.SchemaGUID != "" {
+		out.SchemaGuid = &payload.SchemaGUID
+	}
+
+	for _, ts := range payload.Troubleshooting {
+		out.TroubleshootReport = append(out.TroubleshootReport, &v1alpha.TroubleshootReport{
+			SerdeName: ts.SerdeName,
+			Message:   ts.Message,
+		})
+	}
+
+	return out
+}
+
+func toProtoSchemaIDLocation(location serde.SchemaIDLocation) v1alpha.SchemaIdLocation {
+	switch location {
+	case serde.SchemaIDLocationPayload:
+		return v1alpha.SchemaIdLocation_SCHEMA_ID_LOCATION_PAYLOAD
+	case serde.SchemaIDLocationHeader:
+		return v1alpha.SchemaIdLocation_SCHEMA_ID_LOCATION_HEADER
+	default:
+		return v1alpha.SchemaIdLocation_SCHEMA_ID_LOCATION_UNSPECIFIED
+	}
+}
+
 func toProtoEncoding(serdeEncoding serde.PayloadEncoding) v1alpha.PayloadEncoding { //nolint:cyclop // we have to map all possible values here
 	encoding := v1alpha.PayloadEncoding_PAYLOAD_ENCODING_BINARY
 

@@ -1040,14 +1040,16 @@ func (s *Service) startMessageWorker(ctx context.Context, wg *sync.WaitGroup,
 
 		// Check if message passes filter code
 		args := interpreterArguments{
-			PartitionID:   record.Partition,
-			Offset:        record.Offset,
-			Timestamp:     record.Timestamp,
-			Key:           deserializedRec.Key.DeserializedPayload,
-			Value:         deserializedRec.Value.DeserializedPayload,
-			HeadersByKey:  headersByKey,
-			KeySchemaID:   deserializedRec.Key.SchemaID,
-			ValueSchemaID: deserializedRec.Value.SchemaID,
+			PartitionID:     record.Partition,
+			Offset:          record.Offset,
+			Timestamp:       record.Timestamp,
+			Key:             deserializedRec.Key.DeserializedPayload,
+			Value:           deserializedRec.Value.DeserializedPayload,
+			HeadersByKey:    headersByKey,
+			KeySchemaID:     deserializedRec.Key.SchemaID,
+			ValueSchemaID:   deserializedRec.Value.SchemaID,
+			KeySchemaGUID:   deserializedRec.Key.SchemaGUID,
+			ValueSchemaGUID: deserializedRec.Value.SchemaGUID,
 		}
 
 		isOK, err := isMessageOK(args)

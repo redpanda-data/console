@@ -28,6 +28,9 @@ type interpreterArguments struct {
 	HeadersByKey  map[string][]byte
 	KeySchemaID   *uint32
 	ValueSchemaID *uint32
+	// The schema GUID that the record carries for its key or value, or "".
+	KeySchemaGUID   string
+	ValueSchemaGUID string
 }
 
 type isMessageOkFunc = func(args interpreterArguments) (bool, error)
@@ -96,6 +99,10 @@ func (*Service) setupInterpreter(interpreterCode string) (isMessageOkFunc, error
 		if args.ValueSchemaID != nil {
 			vm.Set("valueSchemaID", *args.ValueSchemaID)
 		}
+
+		// Set for every record: the VM is shared and would keep the last value.
+		vm.Set("keySchemaGUID", args.KeySchemaGUID)
+		vm.Set("valueSchemaGUID", args.ValueSchemaGUID)
 
 		isOkRes, err := vm.RunString("isMessageOk()")
 		if err != nil {
