@@ -43,16 +43,12 @@ const RoleCreatePage = () => {
   const { createAcls } = useCreateAcls();
   const { mutateAsync: createRole } = useCreateRoleMutation();
 
-  const createRoleWithAcls = async (roleName: string, principal: string, host: string, rules: Rule[]) => {
-    // First create the role
-    await createRole(create(CreateRoleRequestSchema, { role: { name: roleName } }));
+  const addRoleAcls = async (roleName: string, principal: string, host: string, rules: Rule[]) => {
     showToast({ status: 'success', title: `Role "${roleName}" created` });
 
-    // Then create the ACLs for the role
     const applyResult = await createAcls(convertRulesToCreateACLRequests(rules, principal, host));
     handleResponses(applyResult.errors, applyResult.created);
 
-    // Handled here so a navigation failure is not reported as a failed role create.
     navigate({ to: `/security/roles/${roleName}/details` }).catch((error: unknown) => {
       showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
     });
@@ -67,13 +63,13 @@ const RoleCreatePage = () => {
       return;
     }
 
-    try {
-      await createRoleWithAcls(roleName, principal, host, rules);
-    } catch (error) {
-      showToast({
-        status: 'error',
-        title: `Failed to create role: ${error instanceof Error ? error.message : String(error)}`,
-      });
+    // useCreateRoleMutation reports a failed create, so only a created role goes on to its ACLs.
+    const created = await createRole(create(CreateRoleRequestSchema, { role: { name: roleName } })).then(
+      () => true,
+      () => false
+    );
+    if (created) {
+      await addRoleAcls(roleName, principal, host, rules);
     }
   };
 

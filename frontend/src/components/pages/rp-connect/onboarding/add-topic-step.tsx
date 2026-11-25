@@ -257,7 +257,14 @@ function useAddTopicSubmit(existingTopicSelected?: ListedTopic) {
           };
         }
 
-        await createTopicMutation.mutateAsync(buildCreateTopicRequest(data));
+        const created = await createTopicMutation.mutateAsync(buildCreateTopicRequest(data)).then(
+          () => true,
+          () => false
+        );
+        if (!created) {
+          // useCreateTopicMutation reports the failure, so the result carries no error to show again.
+          return { success: false };
+        }
 
         await queryClient.invalidateQueries({
           queryKey: createConnectQueryKey({
