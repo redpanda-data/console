@@ -20,7 +20,7 @@ type UserInformationCardProps = {
 
 export const UserInformationCard = ({ username, onEditPassword }: UserInformationCardProps) => {
   return (
-    <Card size="full">
+    <Card>
       <CardHeader>
         <CardTitle>User information</CardTitle>
       </CardHeader>

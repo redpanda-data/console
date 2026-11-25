@@ -33,25 +33,26 @@ export function DataTableViewOptions<TData extends RowData>({
                 </Button>
               }
             />
-            <DropdownMenuContent align="end" className="min-w-[150px] max-w-[300px]">
+            <DropdownMenuContent align="end" className="max-w-[300px] min-w-[150px]">
               <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {table
-                .getAllColumns()
-                .filter((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide())
-                .map((column) => {
-                  const label = column.columnDef.meta?.label;
-                  return (
-                    <DropdownMenuCheckboxItem
-                      checked={column.getIsVisible()}
-                      className={label ? undefined : 'capitalize'}
-                      key={column.id}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    >
-                      {label ?? column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
+              {table.getAllColumns().flatMap((column) => {
+                if (!(typeof column.accessorFn !== 'undefined' && column.getCanHide())) {
+                  return [];
+                }
+                const label = column.columnDef.meta?.label;
+                return [
+                  <DropdownMenuCheckboxItem
+                    checked={column.getIsVisible()}
+                    key={column.id}
+                    onCheckedChange={(value) => {
+                      column.toggleVisibility(value);
+                    }}
+                  >
+                    {label ?? column.id}
+                  </DropdownMenuCheckboxItem>,
+                ];
+              })}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

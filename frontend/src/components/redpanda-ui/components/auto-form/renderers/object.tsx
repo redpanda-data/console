@@ -1,7 +1,7 @@
 'use client';
 
 import { useFormContext } from 'react-hook-form';
-import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
+import { useAutoForm } from '../context';
 import type { ParsedField } from '../core-types';
 import { getPathInObject } from '../field-utils';
 import { getFieldErrorMessage } from '../helpers';
@@ -18,9 +18,9 @@ export function ObjectFieldRenderer({
   NestedField: NestedFieldRenderer;
   field: ParsedField;
   path: string[];
-  inheritedDisabled?: boolean;
+  inheritedDisabled?: boolean | undefined;
 }) {
-  const { uiComponents } = useAutoFormRenderContext();
+  const { uiComponents, testIdPrefix } = useAutoForm();
   const {
     formState: { errors },
   } = useFormContext<Record<string, unknown>>();
@@ -28,10 +28,9 @@ export function ObjectFieldRenderer({
   const error = getFieldErrorMessage(errors, path);
   const label = getRenderedLabel(field);
   const { isVisible, renderField } = useFieldPresentation(field, path, inheritedDisabled);
-  const { testIdPrefix } = useAutoFormRuntimeContext();
 
   // Include descendant errors so collapsible sections auto-expand when a child is invalid.
-  const errorAtPath = getPathInObject(errors as Record<string, unknown>, path);
+  const errorAtPath = getPathInObject(errors, path);
   const hasDescendantError = errorAtPath !== undefined && errorAtPath !== null && typeof errorAtPath === 'object';
   const hasError = Boolean(error) || hasDescendantError;
 
@@ -49,15 +48,15 @@ export function ObjectFieldRenderer({
         {(renderField.schema ?? []).map((subField) => (
           <NestedField
             field={subField}
-            inheritedDisabled={Boolean(renderField.fieldConfig?.inputProps?.disabled)}
+            inheritedDisabled={Boolean(renderField.fieldConfig?.inputProps?.['disabled'])}
             key={`${path.join('.')}.${subField.key}`}
             path={[...path, subField.key]}
           />
         ))}
       </ObjectWrapperComponent>
-      {error ? (
+      {error !== undefined && error !== '' ? (
         <div
-          className="whitespace-pre-wrap text-body-sm text-destructive"
+          className="text-body-sm whitespace-pre-wrap text-destructive"
           data-testid={getAutoFormFieldTestId(testIdPrefix, fullPath, 'error')}
         >
           {error}

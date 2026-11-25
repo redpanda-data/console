@@ -50,7 +50,7 @@ test.describe('user deletion - error paths', () => {
     await expect(page).toHaveURL(appURL(`/security/users/${username}/details`));
 
     // Toast copy: formatToastErrorMessageGRPC composes "Failed to delete user: <rawMessage>".
-    // Asserted before the list-reload below — sonner toasts do not survive page navigation.
+    // Asserted before the list-reload below — toasts do not survive page navigation.
     await expect(page.getByText('Failed to delete user: user has dependent ACLs').first()).toBeVisible({
       timeout: 10_000,
     });

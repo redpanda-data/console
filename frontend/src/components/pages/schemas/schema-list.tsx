@@ -44,9 +44,9 @@ import { SearchIcon } from 'lucide-react';
 import { parseAsArrayOf, parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { sortingParser } from 'utils/sorting-parser';
+import { showToast } from 'utils/toast.utils';
 
 import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { SchemaContextSelector } from './schema-context-selector';
@@ -616,8 +616,9 @@ function SubjectDeleteDialogs({ deleteTarget, onClose }: { deleteTarget: DeleteT
           deleteSchemaMutation.mutate(
             { subjectName: deleteTarget.name, permanent: false },
             {
-              onSuccess: () => toast.success('Subject soft-deleted'),
-              onError: (err) => toast.error('Failed to soft-delete subject', { description: String(err) }),
+              onSuccess: () => showToast({ status: 'success', title: 'Subject soft-deleted' }),
+              onError: (err) =>
+                showToast({ status: 'error', title: 'Failed to soft-delete subject', description: String(err) }),
             }
           );
         }}
@@ -637,8 +638,9 @@ function SubjectDeleteDialogs({ deleteTarget, onClose }: { deleteTarget: DeleteT
           deleteSchemaMutation.mutate(
             { subjectName: deleteTarget.name, permanent: true },
             {
-              onSuccess: () => toast.success('Subject permanently deleted'),
-              onError: (err) => toast.error('Failed to permanently delete subject', { description: String(err) }),
+              onSuccess: () => showToast({ status: 'success', title: 'Subject permanently deleted' }),
+              onError: (err) =>
+                showToast({ status: 'error', title: 'Failed to permanently delete subject', description: String(err) }),
             }
           );
         }}

@@ -1,12 +1,18 @@
-export function isPromiseLike<T>(value: T | Promise<T>): value is Promise<T> {
-  return Boolean(value && typeof value === 'object' && 'then' in (value as Record<string, unknown>));
+export function isPromiseLike<T>(value: T | PromiseLike<T>): value is PromiseLike<T> {
+  return (
+    value !== null &&
+    (typeof value === 'object' || typeof value === 'function') &&
+    'then' in value &&
+    typeof value.then === 'function'
+  );
 }
 
 export function safeStringify(value: unknown): string {
   try {
-    return JSON.stringify(
+    // The replacer overload claims string, but unsupported top-level values still return undefined.
+    const serialized: unknown = JSON.stringify(
       value,
-      (_key, currentValue) => {
+      (_key: string, currentValue: unknown) => {
         if (typeof currentValue === 'bigint') {
           return currentValue.toString();
         }
@@ -17,6 +23,7 @@ export function safeStringify(value: unknown): string {
       },
       2
     );
+    return typeof serialized === 'string' ? serialized : 'undefined';
   } catch {
     return '/* serialization error */';
   }

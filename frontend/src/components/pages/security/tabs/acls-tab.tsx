@@ -20,7 +20,7 @@ import {
 import { InfoIcon } from 'lucide-react';
 import type { FC } from 'react';
 import { createContext, useContext, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import ErrorResult from '../../../../components/misc/error-result';
 import { type SimpleAcl, useListACLAsPrincipalGroups } from '../../../../react-query/api/acl';
@@ -249,7 +249,7 @@ const AclsTabBody = ({
               to: '/security/acls/create',
               search: { principalType: undefined, principalName: undefined },
             }).catch((error: unknown) => {
-              toast.error('Failed to navigate', { description: String(error) });
+              showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
             });
           }}
         >

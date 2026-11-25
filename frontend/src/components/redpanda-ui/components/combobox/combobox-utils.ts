@@ -1,3 +1,4 @@
+import { omitUndefined } from '../../lib/utils/omit-undefined';
 import type { ComboboxOption } from './index';
 
 /** Selection value of the "Create" row, kept apart from every consumer option value. */
@@ -17,7 +18,7 @@ export interface ComboboxListGroup {
   readonly heading: string;
   readonly items: readonly ComboboxListItem[];
   readonly key: string;
-  readonly testId?: string;
+  readonly testId?: string | undefined;
 }
 
 export const isCreateItem = (item: ComboboxListItem): item is ComboboxCreateItem => 'create' in item;
@@ -28,10 +29,10 @@ export const groupOptions = (options: readonly ComboboxOption[]): ComboboxListGr
   for (const option of options) {
     const heading = option.group ?? '';
     const group = groups.get(heading);
-    if (group) {
-      group.items.push(option);
+    if (group === undefined) {
+      groups.set(heading, omitUndefined({ items: [option] satisfies ComboboxOption[], testId: option.groupTestId }));
     } else {
-      groups.set(heading, { items: [option], testId: option.groupTestId });
+      group.items.push(option);
     }
   }
   return Array.from(groups, ([heading, group]) => ({
@@ -49,8 +50,8 @@ export const canCreateOption = (options: readonly ComboboxOption[], text: string
     return false;
   }
   const lowerQuery = query.toLowerCase();
-  return !options.some(
-    (option) => option.value.toLowerCase() === lowerQuery || option.label.toLowerCase() === lowerQuery
+  return options.every(
+    (option) => option.value.toLowerCase() !== lowerQuery && option.label.toLowerCase() !== lowerQuery
   );
 };
 

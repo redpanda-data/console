@@ -40,7 +40,7 @@ type ShadowLinkEmptyStateProps = {
 };
 
 export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProps) => (
-  <Card size={'full'}>
+  <Card>
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
@@ -57,7 +57,7 @@ export const ShadowLinkEmptyState = ({ onCreateClick }: ShadowLinkEmptyStateProp
 );
 
 export const ShadowLinkEmptyStateCloud = ({ onCreateClick }: ShadowLinkEmptyStateProps) => (
-  <Card size={'full'}>
+  <Card>
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
@@ -74,7 +74,7 @@ export const ShadowLinkEmptyStateCloud = ({ onCreateClick }: ShadowLinkEmptyStat
 );
 
 export const ShadowLinkNoPermissionState = () => (
-  <Card data-testid="shadowlink-no-permission-card" size="full">
+  <Card data-testid="shadowlink-no-permission-card">
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
@@ -90,7 +90,7 @@ export const ShadowLinkNoPermissionState = () => (
 );
 
 export const ShadowLinkFeatureDisabledState = () => (
-  <Card data-testid="shadowlink-feature-disabled-card" size="full">
+  <Card data-testid="shadowlink-feature-disabled-card">
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
@@ -107,7 +107,7 @@ export const ShadowLinkFeatureDisabledState = () => (
 );
 
 export const ShadowLinkUnavailableState = () => (
-  <Card data-testid="shadowlink-unavailable-card" size="full">
+  <Card data-testid="shadowlink-unavailable-card">
     <CardHeader>
       <CardTitle>Shadowing</CardTitle>
     </CardHeader>
@@ -129,7 +129,7 @@ type ShadowLinkErrorStateProps = {
 };
 
 export const ShadowLinkErrorState = ({ errorMessage, onRetry }: ShadowLinkErrorStateProps) => (
-  <Card data-testid="shadowlink-error-card" size="full">
+  <Card data-testid="shadowlink-error-card">
     <CardHeader>
       <CardTitle>Error loading shadow links</CardTitle>
     </CardHeader>

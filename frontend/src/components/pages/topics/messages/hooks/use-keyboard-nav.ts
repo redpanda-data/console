@@ -12,7 +12,7 @@
 import { useCopyToClipboard } from 'components/redpanda-ui/lib/use-copy-to-clipboard';
 import { isTypingTarget } from 'hooks/use-hot-key';
 import { useEffect } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 export type KeyboardNavOptions = {
   /** Row keys in on-screen (sorted, paginated) order. */
@@ -75,7 +75,9 @@ const KEY_HANDLERS = new Map<string, (e: KeyboardEvent, context: KeyContext) => 
  * the detail panel itself.
  */
 export function useKeyboardNav({ visibleKeys, selectedKey, onSelect, getCopyText, enabled }: KeyboardNavOptions) {
-  const { copyToClipboard } = useCopyToClipboard({ onCopy: () => toast.success('Value copied to clipboard') });
+  const { copyToClipboard } = useCopyToClipboard({
+    onCopy: () => showToast({ status: 'success', title: 'Value copied to clipboard' }),
+  });
   useEffect(() => {
     if (!enabled) {
       return;

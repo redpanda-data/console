@@ -3,11 +3,11 @@
 import React from 'react';
 import { useAutoForm } from '../context';
 import type { ParsedField } from '../core-types';
-import { defaultRegistry } from '../fields';
-import { getFieldUiConfig, resolveRenderFieldType } from '../helpers';
+import { defaultRegistry } from '../fields/built-ins';
+import { resolveRenderFieldType } from '../helpers';
 import { buildFieldMatchContext, type FieldTypeRegistry } from '../registry';
-import type { AutoFormSlotProps } from '../slot';
-import type { FieldTypes } from '../types';
+import { type AutoFormSlotDescriptor, EMPTY_AUTO_FORM_SLOTS, indexAutoFormSlots } from '../slots';
+import { getFieldUiConfig } from '../ui-config';
 import { ArrayFieldRenderer } from './array';
 import { ControlledFieldRenderer } from './controlled';
 import { MapFieldRenderer } from './map';
@@ -15,15 +15,15 @@ import { ObjectFieldRenderer } from './object';
 import { OneofFieldRenderer } from './oneof';
 import type { AutoFormFieldRendererProps } from './renderer-types';
 
-function resolveFieldType(field: ParsedField, registry: FieldTypeRegistry): FieldTypes {
+function resolveFieldType(field: ParsedField, registry: FieldTypeRegistry): string {
   const explicitControl = getFieldUiConfig(field).control;
-  if (explicitControl) {
+  if (explicitControl !== undefined && explicitControl !== '') {
     return explicitControl;
   }
 
   const matchContext = buildFieldMatchContext(field);
   const resolved = registry.resolve(field, matchContext);
-  return (resolved?.name as FieldTypes) ?? resolveRenderFieldType(field);
+  return resolved?.name ?? resolveRenderFieldType(field);
 }
 
 export function AutoFormFieldRenderer({
@@ -95,71 +95,31 @@ export function AutoFormFieldRenderer({
   }
 }
 
-interface SlotEntry {
-  after?: string;
-  before?: string;
-  content: React.ReactNode;
+function renderSlot({ id, content }: AutoFormSlotDescriptor) {
+  return <React.Fragment key={id}>{content}</React.Fragment>;
 }
 
-function extractSlots(children: React.ReactNode): { slots: SlotEntry[]; other: React.ReactNode[] } {
-  const slots: SlotEntry[] = [];
-  const other: React.ReactNode[] = [];
-
-  React.Children.forEach(children, (child) => {
-    if (React.isValidElement(child) && (child.type as { displayName?: string }).displayName === 'AutoFormSlot') {
-      const props = child.props as AutoFormSlotProps;
-      slots.push({
-        before: props.before,
-        after: props.after,
-        content: props.children,
-      });
-    } else if (child !== null && child !== undefined) {
-      other.push(child);
-    }
-  });
-
-  return { slots, other };
-}
-
-export function AutoFormFields({ fields, children }: { fields: ParsedField[]; children?: React.ReactNode }) {
+export function AutoFormFields({
+  fields,
+  children,
+  slots = EMPTY_AUTO_FORM_SLOTS,
+}: {
+  fields: ParsedField[];
+  children?: React.ReactNode | undefined;
+  slots?: readonly AutoFormSlotDescriptor[] | undefined;
+}) {
   const { fieldRegistry } = useAutoForm();
-  const { slots, other } = React.useMemo(() => extractSlots(children), [children]);
-
-  const beforeSlots = React.useMemo(() => {
-    const map = new Map<string, React.ReactNode[]>();
-    for (const slot of slots) {
-      if (slot.before) {
-        const existing = map.get(slot.before) ?? [];
-        existing.push(slot.content);
-        map.set(slot.before, existing);
-      }
-    }
-    return map;
-  }, [slots]);
-
-  const afterSlots = React.useMemo(() => {
-    const map = new Map<string, React.ReactNode[]>();
-    for (const slot of slots) {
-      if (slot.after) {
-        const existing = map.get(slot.after) ?? [];
-        existing.push(slot.content);
-        map.set(slot.after, existing);
-      }
-    }
-    return map;
-  }, [slots]);
-
-  const topSlots = slots.filter((s) => !(s.before || s.after)).map((s) => s.content);
+  const indexedSlots = indexAutoFormSlots(slots);
 
   return (
     <>
-      {React.Children.toArray(topSlots)}
-      {React.Children.toArray(other)}
+      {indexedSlots.start.map(renderSlot)}
+      {children}
       {fields.map((field) => (
         <React.Fragment key={field.key}>
-          {React.Children.toArray(beforeSlots.get(field.key))}
+          {indexedSlots.before.get(field.key)?.map(renderSlot)}
           <AutoFormFieldRenderer field={field} path={[field.key]} registry={fieldRegistry} />
-          {React.Children.toArray(afterSlots.get(field.key))}
+          {indexedSlots.after.get(field.key)?.map(renderSlot)}
         </React.Fragment>
       ))}
     </>

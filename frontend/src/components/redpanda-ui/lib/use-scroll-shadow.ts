@@ -1,11 +1,44 @@
 'use client';
 
-import { type RefObject, useCallback, useEffect, useState } from 'react';
+import { type RefObject, useEffect, useState } from 'react';
 
 type Orientation = 'vertical' | 'horizontal';
 interface ScrollEdges {
   end: boolean;
   start: boolean;
+}
+
+function observeScrollContent(element: HTMLElement, update: () => void): () => void {
+  const resize = new ResizeObserver(update);
+  const observedChildren = new Set<Element>();
+  resize.observe(element);
+
+  function syncChildren() {
+    const children = new Set(element.children);
+    for (const child of observedChildren) {
+      if (!children.has(child)) {
+        resize.unobserve(child);
+        observedChildren.delete(child);
+      }
+    }
+    for (const child of children) {
+      if (!observedChildren.has(child)) {
+        resize.observe(child);
+        observedChildren.add(child);
+      }
+    }
+    update();
+  }
+
+  const mutation = new MutationObserver(syncChildren);
+  mutation.observe(element, { childList: true });
+  syncChildren();
+  element.addEventListener('scroll', update, { passive: true });
+  return () => {
+    element.removeEventListener('scroll', update);
+    resize.disconnect();
+    mutation.disconnect();
+  };
 }
 
 /**
@@ -23,50 +56,26 @@ export function useScrollShadow<T extends HTMLElement>(
 ): ScrollEdges {
   const [edges, setEdges] = useState<ScrollEdges>({ start: false, end: false });
 
-  const update = useCallback(() => {
-    const el = ref.current;
-    if (!el) {
-      return;
-    }
-    const isVertical = orientation === 'vertical';
-    // Horizontal assumes LTR (scrollLeft grows from 0 at the start edge); RTL is not handled.
-    const scroll = isVertical ? el.scrollTop : el.scrollLeft;
-    const max = isVertical ? el.scrollHeight - el.clientHeight : el.scrollWidth - el.clientWidth;
-    const start = scroll > 1;
-    const end = scroll < max - 1;
-    // Re-render only when an edge actually flips, not on every scroll frame.
-    setEdges((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
-  }, [ref, orientation]);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!(el && enabled)) {
-      return;
-    }
-    update();
-    el.addEventListener('scroll', update, { passive: true });
-    // Observe the container and its content so edges re-evaluate as either grows. Re-observing an
-    // existing child is a no-op, so syncing on every mutation just picks up newly added children.
-    const resize = new ResizeObserver(update);
-    resize.observe(el);
-    const observeChildren = () => {
-      for (const child of Array.from(el.children)) {
-        resize.observe(child);
+  useEffect(
+    function observeScrollEdges() {
+      const el = ref.current;
+      if (el === null || !enabled) {
+        return;
       }
-    };
-    observeChildren();
-    // Children swapped/added after mount aren't covered by the snapshot above; re-sync on mutation.
-    const mutation = new MutationObserver(() => {
-      observeChildren();
-      update();
-    });
-    mutation.observe(el, { childList: true });
-    return () => {
-      el.removeEventListener('scroll', update);
-      resize.disconnect();
-      mutation.disconnect();
-    };
-  }, [ref, enabled, update]);
+      const update = () => {
+        const isVertical = orientation === 'vertical';
+        // Horizontal assumes LTR (scrollLeft grows from 0 at the start edge); RTL is not handled.
+        const scroll = isVertical ? el.scrollTop : el.scrollLeft;
+        const max = isVertical ? el.scrollHeight - el.clientHeight : el.scrollWidth - el.clientWidth;
+        const start = scroll > 1;
+        const end = scroll < max - 1;
+        // Re-render only when an edge actually flips, not on every scroll frame.
+        setEdges((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
+      };
+      return observeScrollContent(el, update);
+    },
+    [ref, enabled, orientation]
+  );
 
   return edges;
 }

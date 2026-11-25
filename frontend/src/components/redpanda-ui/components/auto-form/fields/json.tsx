@@ -1,34 +1,27 @@
 'use client';
 
 import { JSONField } from '../../json-field';
+import { isJSONValue, validateJSONValue } from '../../json-field/json-value';
+import { getProtoFieldCustomData } from '../../../lib/protobuf-provider';
 import type { AutoFormFieldProps } from '../core-types';
-import { getProtoFieldCustomData, getProtoJsonSchema } from '../proto';
-import type { FieldTypeDefinition } from '../registry';
-import { useFieldTestIds } from './shared';
+import { getProtoJsonSchema } from '../proto/conversion';
+import { useFieldTestIds } from './use-field-test-ids';
 
 function JsonFieldComponent({ field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
+  const value = inputProps.value ?? (getProtoFieldCustomData(field)?.jsonKind === 'listValue' ? [] : {});
 
   return (
     <JSONField
       maxDepth={3}
       onBlur={inputProps.onBlur}
-      onChange={(value) => inputProps.onValueChange(value)}
-      schema={getProtoJsonSchema(field) as never}
+      onChange={inputProps.onValueChange}
+      schema={getProtoJsonSchema(field)}
       showPlaceholder={false}
       testId={testIds.control}
-      value={
-        ((inputProps.value as unknown) ?? (getProtoFieldCustomData(field)?.jsonKind === 'listValue' ? [] : {})) as never
-      }
+      value={isJSONValue(value) ? value : validateJSONValue(value)}
     />
   );
 }
 
 export { JsonFieldComponent };
-
-export const jsonFieldDefinition: FieldTypeDefinition = {
-  name: 'json',
-  priority: 10,
-  match: (field) => field.type === 'json',
-  component: JsonFieldComponent,
-};

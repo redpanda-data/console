@@ -1,6 +1,5 @@
 import { cva } from 'class-variance-authority';
 import type React from 'react';
-
 import { Badge } from './badge';
 import { Spinner } from './spinner';
 import { StatusDot } from './status-dot';
@@ -36,12 +35,6 @@ const DEFAULT_LABEL: Record<StatusBadgeVariant, string> = {
   stopping: 'Stopping',
 };
 
-// StatusBadge keeps its historical faint secondary-tinted chrome. The `secondary`
-// color family is no longer a recommended Badge tone, so these styles are applied
-// directly here rather than via the deprecated `variant="secondary-inverted"`.
-const STATUS_BADGE_CHROME =
-  'border-transparent bg-secondary-wash text-secondary [&:is(a,button)]:hover:bg-secondary-wash-pressed';
-
 const badgeSizeStyles = cva('rounded-full', {
   variants: {
     size: {
@@ -65,9 +58,9 @@ function StatusBadge({
   ...props
 }: React.ComponentProps<'span'> &
   SharedProps & {
-    variant?: StatusBadgeVariant;
-    pulsing?: boolean;
-    size?: StatusBadgeSize;
+    variant?: StatusBadgeVariant | undefined;
+    pulsing?: boolean | undefined;
+    size?: StatusBadgeSize | undefined;
   }) {
   const isTransitioning = variant === 'starting' || variant === 'stopping';
   const badgeSize = size ?? 'md';
@@ -83,7 +76,7 @@ function StatusBadge({
 
   return (
     <Badge
-      className={cn(badgeSizeStyles({ size }), STATUS_BADGE_CHROME, className)}
+      className={cn(badgeSizeStyles({ size }), className)}
       data-slot="status-badge"
       data-testid={testId}
       icon={icon}

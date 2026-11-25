@@ -3,11 +3,16 @@
 import { format } from 'date-fns';
 import { CalendarIcon, Clock3Icon } from 'lucide-react';
 import { Calendar } from '../../calendar';
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput, InputGroupText } from '../../input-group';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  InputGroupText,
+} from '../../input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../../popover';
 import type { AutoFormFieldProps } from '../core-types';
-import { getFieldUiConfig } from '../helpers';
-import type { FieldTypeDefinition } from '../registry';
+import { getFieldUiConfig } from '../ui-config';
 import {
   buildTimestampValue,
   getControlLabel,
@@ -15,8 +20,8 @@ import {
   normalizeTimeValue,
   parseCalendarDate,
   resolveControlTestId,
-  useFieldTestIds,
-} from './shared';
+} from './field-values';
+import { useFieldTestIds } from './use-field-test-ids';
 
 function DateFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -32,8 +37,10 @@ function DateFieldComponent({ error, field, id, inputProps, label }: AutoFormFie
           disabled={inputProps.disabled}
           id={id}
           onBlur={inputProps.onBlur}
-          onChange={(event) => inputProps.onValueChange(event.target.value)}
-          placeholder={getFieldUiConfig(field).placeholder || 'YYYY-MM-DD'}
+          onChange={(event) => {
+            inputProps.onValueChange(event.target.value);
+          }}
+          placeholder={getFieldUiConfig(field).placeholder ?? 'YYYY-MM-DD'}
           testId={`${controlTestId}-input`}
           value={value}
         />
@@ -45,17 +52,17 @@ function DateFieldComponent({ error, field, id, inputProps, label }: AutoFormFie
                 disabled={inputProps.disabled}
                 testId={`${controlTestId}-calendar`}
               >
-                <CalendarIcon className="h-4 w-4" />
+                <CalendarIcon className="size-4" />
               </InputGroupButton>
             }
           />
         </InputGroupAddon>
       </InputGroup>
-      <PopoverContent className="w-auto p-0">
+      <PopoverContent className="w-auto" padding="none">
         <Calendar
           mode="single"
           onSelect={(date) => {
-            inputProps.onValueChange(date ? format(date, 'yyyy-MM-dd') : '');
+            inputProps.onValueChange(date === undefined ? '' : format(date, 'yyyy-MM-dd'));
           }}
           selected={selectedDate}
         />
@@ -79,7 +86,9 @@ function TimestampFieldComponent({ error, field, id, inputProps, label }: AutoFo
           ...inputProps,
           testId: testIds.controlPart('date'),
           value: dateValue,
-          onValueChange: (nextDate: string) => inputProps.onValueChange(buildTimestampValue(nextDate, timeValue)),
+          onValueChange: (nextDate: string) => {
+            inputProps.onValueChange(buildTimestampValue(nextDate, timeValue));
+          },
         }}
         label={label}
         path={[]}
@@ -88,14 +97,16 @@ function TimestampFieldComponent({ error, field, id, inputProps, label }: AutoFo
       <InputGroup testId={testIds.controlPart('time')}>
         <InputGroupAddon>
           <InputGroupText>
-            <Clock3Icon className="h-4 w-4" />
+            <Clock3Icon className="size-4" />
           </InputGroupText>
         </InputGroupAddon>
         <InputGroupInput
           aria-invalid={Boolean(error)}
           disabled={inputProps.disabled}
           onBlur={inputProps.onBlur}
-          onChange={(event) => inputProps.onValueChange(buildTimestampValue(dateValue, event.target.value))}
+          onChange={(event) => {
+            inputProps.onValueChange(buildTimestampValue(dateValue, event.target.value));
+          }}
           placeholder="HH:mm"
           testId={testIds.controlPart('time-input')}
           value={timeValue}
@@ -106,17 +117,3 @@ function TimestampFieldComponent({ error, field, id, inputProps, label }: AutoFo
 }
 
 export { DateFieldComponent, TimestampFieldComponent };
-
-export const dateFieldDefinition: FieldTypeDefinition = {
-  name: 'date',
-  priority: 10,
-  match: (field) => field.type === 'date',
-  component: DateFieldComponent,
-};
-
-export const timestampFieldDefinition: FieldTypeDefinition = {
-  name: 'timestamp',
-  priority: 10,
-  match: (field) => field.type === 'timestamp',
-  component: TimestampFieldComponent,
-};

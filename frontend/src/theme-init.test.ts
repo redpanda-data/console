@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { themeScript } from './components/redpanda-ui/components/theme-provider';
+import { themeScript } from './components/redpanda-ui/components/theme-provider/theme-script';
 import {
   AVAILABLE_THEME_INIT,
   DARK_MODE_AVAILABLE_KEY,

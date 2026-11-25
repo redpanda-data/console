@@ -1,6 +1,6 @@
 import type { ConnectError } from '@connectrpc/connect';
 import { hasFenceActivity } from 'components/cluster-fence/cluster-fence-model';
-import { toast } from 'components/redpanda-ui/components/toast';
+import { toast } from 'components/redpanda-ui/components/toast/manager';
 import {
   BadRequestSchema,
   ErrorInfoSchema,
@@ -33,9 +33,11 @@ export type ShowToastOptions = {
   duration?: number | null;
   /** Fires when the user closes the toast or it times out. */
   onClose?: () => void;
+  /** A button in the toast, such as Undo. */
+  action?: { label: ReactNode; onClick: () => void };
 };
 
-export type UpdateToastOptions = Omit<ShowToastOptions, 'id' | 'resourceName'>;
+export type UpdateToastOptions = Omit<ShowToastOptions, 'id' | 'resourceName' | 'action'>;
 
 const DEFAULT_TOAST_DURATION = 5000;
 
@@ -72,6 +74,7 @@ export const showToast = ({
   description,
   duration,
   onClose,
+  action,
 }: ShowToastOptions): string =>
   toast.add({
     id: getToastId({ initialId: id, resourceName }),
@@ -80,6 +83,7 @@ export const showToast = ({
     description,
     timeout: toTimeout(status, duration),
     onClose,
+    ...(action && { actionProps: { children: action.label, onClick: action.onClick } }),
   });
 
 /** Only the fields given change. A new status re-applies its dismiss default unless `duration` is given. */
@@ -91,6 +95,18 @@ export const updateToast = (id: string, { status, title, description, duration }
     ...(title !== undefined && { title }),
     ...(description !== undefined && { description }),
   });
+};
+
+/**
+ * Title and description for one toast that reports a batch of failures. Error toasts stay until closed,
+ * so a toast per failure would each need closing; a single failure keeps its message as the title.
+ */
+export const failureSummary = (
+  messages: readonly string[],
+  batchTitle: string
+): Pick<ShowToastOptions, 'title' | 'description'> => {
+  const unique = [...new Set(messages)];
+  return messages.length === 1 ? { title: unique[0] } : { title: batchTitle, description: unique.join('; ') };
 };
 
 // Base UI closes every toast when the id is missing.

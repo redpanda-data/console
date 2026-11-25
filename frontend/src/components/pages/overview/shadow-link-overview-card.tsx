@@ -37,7 +37,7 @@ export const ShadowLinkOverviewCard: React.FC<ShadowLinkOverviewCardProps> = ({ 
     : undefined;
 
   return (
-    <Card size="full" testId="shadow-link-overview-card">
+    <Card testId="shadow-link-overview-card">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Shadow Cluster</CardTitle>
         <CardAction>

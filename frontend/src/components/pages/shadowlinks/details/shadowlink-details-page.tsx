@@ -26,7 +26,6 @@ import {
   useFailoverShadowLinkMutation,
   useGetShadowLinkUnified,
 } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
 
 import { ShadowLinkConfiguration } from './config/shadow-link-configuration';
@@ -37,7 +36,7 @@ import { FailoverTab } from './failover-tab';
 import { ShadowLinkDetails } from './shadow-link-details';
 import { TasksTable } from './tasks-table';
 import { useFailoverReadiness } from './use-failover-readiness';
-import { formatToastErrorMessageGRPC } from '../../../../utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from '../../../../utils/toast.utils';
 import { ShadowLinkLoadErrorState, ShadowLinkNotFoundState } from '../list/shadowlink-empty-state';
 import type { UnifiedShadowLink } from '../model';
 
@@ -138,7 +137,7 @@ const useDetailsTab = (name: string, requested: DetailsTab | undefined) => {
     if (inUrl) {
       navigate({ to: '/shadowlinks/$name', params: { name }, search: { tab: next }, replace: true }).catch(
         (error: unknown) => {
-          toast.error('Failed to navigate', { description: String(error) });
+          showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
         }
       );
     }
@@ -186,19 +185,20 @@ const useShadowLinkDelete = (name: string) => {
     deleteShadowLink({
       force: false,
       onSuccess: () => {
-        toast.success(`Shadowlink ${name} deleted`);
+        showToast({ status: 'success', title: `Shadowlink ${name} deleted` });
         navigate({ to: '/shadowlinks' }).catch((error: unknown) => {
-          toast.error('Failed to navigate', { description: String(error) });
+          showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
         });
       },
       onError: (error) => {
-        toast.error(
-          formatToastErrorMessageGRPC({
+        showToast({
+          status: 'error',
+          title: formatToastErrorMessageGRPC({
             error,
             action: 'delete',
             entity: 'shadowlink',
-          })
-        );
+          }),
+        });
       },
     });
   };
@@ -218,13 +218,16 @@ const useShadowLinkFailover = (
   const { mutate: failoverShadowLink, isPending: isFailingOver } = useFailoverShadowLinkMutation({
     refreshTopics: guided,
     onSuccess: async () => {
-      toast.success(failoverTopicName ? `Topic ${failoverTopicName} failed over` : 'Shadow link failed over');
+      showToast({
+        status: 'success',
+        title: failoverTopicName ? `Topic ${failoverTopicName} failed over` : 'Shadow link failed over',
+      });
       setShowFailoverDialog(false);
       setFailoverTopicName('');
       await refetch();
     },
     onError: (error) => {
-      toast.error(`Failed to failover: ${error.message}`);
+      showToast({ status: 'error', title: `Failed to failover: ${error.message}` });
       setShowFailoverDialog(false);
       setFailoverTopicName('');
     },

@@ -21,7 +21,7 @@ Make API calls with Connect Query and handle responses properly.
 |--------|------|
 | Fetch data | `use-connect-query.md` |
 | After mutation | `api-invalidate-cache.md` |
-| Handle errors | `api-toast-errors.md` (use `formatToastErrorMessage` in onError) |
+| Handle errors | `api-toast-errors.md` (`showToast` with `formatToastErrorMessageGRPC` in onError) |
 | Protobuf files | `protobuf-no-edit.md` |
 
 ## Key Locations

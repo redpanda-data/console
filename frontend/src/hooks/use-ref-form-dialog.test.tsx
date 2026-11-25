@@ -11,16 +11,9 @@
 
 import { afterEach, describe, expect, it, rs } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
+import { aToast, spyOnToasts } from 'test-toasts';
 
 import { type RefFormSubmittable, useRefFormDialog } from './use-ref-form-dialog';
-
-rs.mock('sonner', () => ({ toast: { error: rs.fn() } }));
-
-// Import after mock so we get the mocked version
-const getToastError = async () => {
-  const { toast } = await import('sonner');
-  return toast.error as ReturnType<typeof rs.fn>;
-};
 
 // Renders the hook around a form whose submit is `triggerSubmit`, with the dialog already open.
 function renderOpenDialog(
@@ -46,6 +39,8 @@ function startSubmit(result: { current: { submit: () => Promise<void> } }): Prom
   });
   return submitPromise;
 }
+
+const toasts = spyOnToasts();
 
 describe('useRefFormDialog', () => {
   afterEach(() => {
@@ -199,8 +194,7 @@ describe('useRefFormDialog', () => {
       await submitPromise;
     });
 
-    const toastError = await getToastError();
-    expect(toastError).toHaveBeenCalledWith('Request timed out');
+    expect(toasts).toHaveBeenCalledWith(aToast('error', 'Request timed out'));
     expect(result.current.isOpen).toBe(false);
     expect(result.current.isSubmitting).toBe(false);
   });

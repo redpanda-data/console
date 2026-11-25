@@ -25,7 +25,7 @@ import { ArrowLeft, KeyRound } from 'lucide-react';
 import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import type { PipelineTemplate } from './pipeline-template-types';
 import {
@@ -205,7 +205,7 @@ export const TemplateGalleryDialog = ({ open, onClose, onSubmit }: TemplateGalle
     if (!result.success && result.error) {
       // AddTopicStep shows field-level validation in its own form; only toast
       // the higher-level failure.
-      toast.error(result.message ?? result.error);
+      showToast({ status: 'error', title: result.message ?? result.error });
     }
   };
 

@@ -1,14 +1,16 @@
+'use client';
+
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react';
 import type React from 'react';
-
-import { type Button, buttonVariants } from './button';
+import { Button } from './button';
+import { buttonVariants } from './button/variants';
 import { cn, type SharedProps } from '../lib/utils';
 
 function Pagination({ className, testId, ...props }: React.ComponentProps<'nav'> & SharedProps) {
   return (
     <nav
       aria-label="pagination"
-      className={cn('mx-auto flex w-full justify-center', className)}
+      className={cn('mx-auto flex w-full min-w-0 justify-center', className)}
       data-slot="pagination"
       data-testid={testId}
       {...props}
@@ -19,7 +21,7 @@ function Pagination({ className, testId, ...props }: React.ComponentProps<'nav'>
 function PaginationContent({ className, testId, ...props }: React.ComponentProps<'ul'> & SharedProps) {
   return (
     <ul
-      className={cn('flex flex-row items-center gap-1', className)}
+      className={cn('flex min-w-0 flex-wrap items-center justify-center gap-1', className)}
       data-slot="pagination-content"
       data-testid={testId}
       {...props}
@@ -32,18 +34,18 @@ function PaginationItem({ testId, ...props }: React.ComponentProps<'li'> & Share
 }
 
 type PaginationLinkProps = {
-  isActive?: boolean;
-  testId?: string;
+  isActive?: boolean | undefined;
+  testId?: string | undefined;
 } & Pick<React.ComponentProps<typeof Button>, 'size'> &
   React.ComponentProps<'a'>;
 
 function PaginationLink({ className, isActive, size = 'icon', testId, ...props }: PaginationLinkProps) {
   return (
     <a
-      aria-current={isActive ? 'page' : undefined}
+      aria-current={isActive === true ? 'page' : undefined}
       className={cn(
         buttonVariants({
-          variant: isActive ? 'outline' : 'ghost',
+          variant: isActive === true ? 'outline' : 'ghost',
           size,
         }),
         className
@@ -60,14 +62,9 @@ function PaginationPrevious({
   className,
   text = 'Previous',
   ...props
-}: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
+}: React.ComponentProps<typeof PaginationLink> & { text?: string | undefined }) {
   return (
-    <PaginationLink
-      aria-label="Go to previous page"
-      className={cn('gap-1 px-2.5 sm:pl-2.5', className)}
-      size="md"
-      {...props}
-    >
+    <PaginationLink aria-label="Go to previous page" className={className} size="md" {...props}>
       <ChevronLeftIcon />
       <span className="hidden text-body sm:block">{text}</span>
     </PaginationLink>
@@ -78,14 +75,9 @@ function PaginationNext({
   className,
   text = 'Next',
   ...props
-}: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
+}: React.ComponentProps<typeof PaginationLink> & { text?: string | undefined }) {
   return (
-    <PaginationLink
-      aria-label="Go to next page"
-      className={cn('gap-1 px-2.5 sm:pr-2.5', className)}
-      size="md"
-      {...props}
-    >
+    <PaginationLink aria-label="Go to next page" className={className} size="md" {...props}>
       <span className="hidden text-body sm:block">{text}</span>
       <ChevronRightIcon />
     </PaginationLink>
@@ -108,12 +100,12 @@ function PaginationEllipsis({ className, testId, ...props }: React.ComponentProp
 }
 
 interface SimplePaginationProps {
-  className?: string;
+  className?: string | undefined;
   currentPage: number;
-  maxVisiblePages?: number;
-  onPageChange?: (page: number) => void;
-  showEllipsis?: boolean;
-  testId?: string;
+  maxVisiblePages?: number | undefined;
+  onPageChange?: ((page: number) => void) | undefined;
+  showEllipsis?: boolean | undefined;
+  testId?: string | undefined;
   totalPages: number;
 }
 
@@ -164,7 +156,7 @@ function SimplePagination({
   };
 
   const handlePageClick = (page: number) => {
-    if (onPageChange && page !== currentPage && page >= 1 && page <= totalPages) {
+    if (onPageChange !== undefined && page !== currentPage && page >= 1 && page <= totalPages) {
       onPageChange(page);
     }
   };
@@ -177,48 +169,57 @@ function SimplePagination({
     <Pagination className={className} testId={testId}>
       <PaginationContent>
         <PaginationItem>
-          <PaginationPrevious
-            aria-disabled={isFirstPage || undefined}
-            className={isFirstPage ? 'pointer-events-none opacity-50' : undefined}
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
+          <Button
+            aria-label="Go to previous page"
+            disabled={isFirstPage || onPageChange === undefined}
+            onClick={() => {
               handlePageClick(currentPage - 1);
             }}
-            tabIndex={isFirstPage ? -1 : undefined}
-          />
+            size="md"
+            type="button"
+            variant="ghost"
+          >
+            <ChevronLeftIcon />
+            <span className="hidden sm:block">Previous</span>
+          </Button>
         </PaginationItem>
 
-        {pages.map((page, index) => (
-          <PaginationItem key={typeof page === 'string' ? `ellipsis-${index}` : `page-${page}`}>
+        {pages.map((page) => (
+          <PaginationItem key={typeof page === 'string' ? page : `page-${page}`}>
             {typeof page === 'string' ? (
               <PaginationEllipsis />
             ) : (
-              <PaginationLink
-                href="#"
-                isActive={page === currentPage}
-                onClick={(e) => {
-                  e.preventDefault();
+              <Button
+                aria-current={page === currentPage ? 'page' : undefined}
+                aria-label={`Go to page ${page}`}
+                disabled={onPageChange === undefined}
+                onClick={() => {
                   handlePageClick(page);
                 }}
+                size="icon"
+                type="button"
+                variant={page === currentPage ? 'outline' : 'ghost'}
               >
                 {page}
-              </PaginationLink>
+              </Button>
             )}
           </PaginationItem>
         ))}
 
         <PaginationItem>
-          <PaginationNext
-            aria-disabled={isLastPage || undefined}
-            className={isLastPage ? 'pointer-events-none opacity-50' : undefined}
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
+          <Button
+            aria-label="Go to next page"
+            disabled={isLastPage || onPageChange === undefined}
+            onClick={() => {
               handlePageClick(currentPage + 1);
             }}
-            tabIndex={isLastPage ? -1 : undefined}
-          />
+            size="md"
+            type="button"
+            variant="ghost"
+          >
+            <span className="hidden sm:block">Next</span>
+            <ChevronRightIcon />
+          </Button>
         </PaginationItem>
       </PaginationContent>
     </Pagination>

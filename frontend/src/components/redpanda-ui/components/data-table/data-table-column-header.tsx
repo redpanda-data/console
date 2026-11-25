@@ -46,27 +46,39 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button className="-ml-3 h-8 data-[popup-open]:bg-accent" size="sm" variant="ghost">
+              <Button className="-ml-3 h-8" size="sm" variant="ghost">
                 <span>{title}</span>
                 {sorted === 'desc' && <ArrowDown />}
                 {sorted === 'asc' && <ArrowUp />}
-                {!sorted && <ChevronsUpDown />}
+                {sorted === false && <ChevronsUpDown />}
               </Button>
             }
           />
           <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+            <DropdownMenuItem
+              onClick={() => {
+                column.toggleSorting(false);
+              }}
+            >
               <ArrowUp />
               Asc
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+            <DropdownMenuItem
+              onClick={() => {
+                column.toggleSorting(true);
+              }}
+            >
               <ArrowDown />
               Desc
             </DropdownMenuItem>
             {column.getCanHide() && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    column.toggleVisibility(false);
+                  }}
+                >
                   <EyeOff />
                   Hide
                 </DropdownMenuItem>
@@ -82,7 +94,7 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
     <Subscribe
       selector={(sorting) => {
         const columnSort = sorting.find((sort) => sort.id === column.id);
-        if (!columnSort) {
+        if (columnSort === undefined) {
           return false;
         }
         return columnSort.desc ? 'desc' : 'asc';

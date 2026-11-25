@@ -17,7 +17,7 @@ import { render, screen } from 'test-utils';
 import { SchemaContextSelector } from './schema-context-selector';
 import { ALL_CONTEXT_ID, DEFAULT_CONTEXT_ID, type DerivedContext } from './schema-context-utils';
 
-// Happy DOM polyfills needed by Radix Popover + cmdk
+// Happy DOM polyfills needed by the registry Popover and Command
 global.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
@@ -49,6 +49,12 @@ const makeContexts = (): DerivedContext[] => [
   { id: DEFAULT_CONTEXT_ID, label: 'Default', subjectCount: 2, mode: 'READWRITE', compatibility: 'BACKWARD' },
   { id: '.staging', label: '.staging', subjectCount: 3, mode: 'READWRITE', compatibility: 'FULL' },
   { id: ALL_CONTEXT_ID, label: 'All', subjectCount: 5, mode: 'READWRITE', compatibility: 'BACKWARD' },
+];
+
+// `.prod` sorts first, so a filter that drops the typed hyphen highlights it.
+const PROD_CONTEXTS: DerivedContext[] = [
+  { id: '.prod', label: '.prod', subjectCount: 1, mode: 'READWRITE', compatibility: 'BACKWARD' },
+  { id: '.prod-us', label: '.prod-us', subjectCount: 1, mode: 'READWRITE', compatibility: 'BACKWARD' },
 ];
 
 describe('the SchemaContextSelector', () => {
@@ -87,6 +93,21 @@ describe('the SchemaContextSelector', () => {
     await user.click(screen.getByText('.staging'));
 
     expect(onContextChange).toHaveBeenCalledWith('.staging');
+  });
+
+  test('a typed hyphen narrows the search, so Enter picks the hyphenated context', async () => {
+    const user = userEvent.setup();
+    const onContextChange = rs.fn();
+    renderSelector({ contexts: PROD_CONTEXTS, onContextChange, selectedContext: ALL_CONTEXT_ID });
+
+    await user.click(screen.getByTestId('schema-context-selector'));
+    await user.type(screen.getByPlaceholderText('Search contexts...'), '.prod-');
+
+    const options = screen.getAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveTextContent('.prod-us');
+    await user.keyboard('{Enter}');
+    expect(onContextChange).toHaveBeenCalledWith('.prod-us');
   });
 
   test('displays subject count per context', async () => {

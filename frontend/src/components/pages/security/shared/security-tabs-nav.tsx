@@ -12,7 +12,7 @@
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { ListLayoutNavigation } from 'components/redpanda-ui/components/list-layout';
 import { isServerless } from 'config';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { useApiStoreHook } from '../../../../state/backend-api';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
@@ -101,7 +101,7 @@ export function SecurityTabsNav() {
     const tab = tabs.find((t) => t.key === tabKey);
     if (tab && !tab.disabled) {
       navigate({ to: tab.path }).catch((error: unknown) => {
-        toast.error('Failed to navigate', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
       });
     }
   };

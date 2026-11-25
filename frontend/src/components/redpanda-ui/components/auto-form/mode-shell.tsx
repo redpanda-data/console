@@ -1,5 +1,6 @@
 'use client';
 
+import { clsx } from 'clsx';
 import { MotionConfig } from 'motion/react';
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from '../alert';
@@ -33,13 +34,13 @@ function JsonBlock({ description, jsonText, title }: { title: string; descriptio
       </div>
       <div className="space-y-3 px-5 py-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="font-medium text-body-sm text-subtle uppercase tracking-wide">Payload JSON</div>
+          <div className="text-body-sm font-medium tracking-wide text-subtle uppercase">Payload JSON</div>
           <CopyButton content={jsonText} size="sm" variant="outline">
             Copy JSON
           </CopyButton>
         </div>
         <div className="max-h-[min(60vh,38rem)] overflow-auto rounded-xl bg-surface-recess p-4">
-          <pre className="overflow-auto whitespace-pre-wrap break-words font-mono text-body-sm leading-5">
+          <pre className="overflow-auto font-mono text-body-sm leading-5 wrap-break-word whitespace-pre-wrap">
             {jsonText}
           </pre>
         </div>
@@ -58,13 +59,16 @@ function JsonEditorPanel({
   testIdPrefix,
 }: {
   bestEffort: boolean;
-  editorError?: string;
+  editorError?: string | undefined;
   jsonText: string;
   onFormat: () => void;
   onJsonTextChange: (value: string) => void;
   onReset: () => void;
   testIdPrefix: string;
 }) {
+  const editorErrorId = React.useId();
+  const hasEditorError = editorError !== undefined && editorError !== '';
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -94,17 +98,23 @@ function JsonEditorPanel({
           </AlertDescription>
         </Alert>
       ) : null}
-      {editorError ? (
-        <Alert variant="destructive">
+      {hasEditorError ? (
+        <Alert id={editorErrorId} variant="destructive">
           <AlertTitle>Invalid JSON</AlertTitle>
           <AlertDescription>{editorError}</AlertDescription>
         </Alert>
       ) : null}
       <Textarea
-        className="min-h-[420px] font-mono text-body-sm leading-5"
-        onChange={(event) => onJsonTextChange(event.target.value)}
+        aria-describedby={hasEditorError ? editorErrorId : undefined}
+        aria-invalid={hasEditorError || undefined}
+        aria-label="Payload JSON"
+        className="min-h-[420px]"
+        onChange={(event) => {
+          onJsonTextChange(event.target.value);
+        }}
         resize="vertical"
         testId={buildAutoFormTestId(testIdPrefix, 'json-editor')}
+        textStyle="code"
         value={jsonText}
       />
     </div>
@@ -121,7 +131,7 @@ function FormPanel<T extends Record<string, unknown>>({
   children: React.ReactNode;
   context: AutoFormSummaryContext<T>;
   payload: unknown;
-  renderSummary?: (payload: unknown, context: AutoFormSummaryContext<T>) => React.ReactNode;
+  renderSummary?: ((payload: unknown, context: AutoFormSummaryContext<T>) => React.ReactNode) | undefined;
   testIdPrefix: string;
 }) {
   const payloadText = safeStringify(payload);
@@ -130,21 +140,21 @@ function FormPanel<T extends Record<string, unknown>>({
     // A container, so the summary sits beside the form only when the form's own space allows it, not
     // whenever the viewport is past `lg`: in a panel or a docs preview it would squeeze the labels.
     <div className="@container/auto-form">
-      <div className="grid @4xl/auto-form:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] @4xl/auto-form:items-start @4xl/auto-form:gap-10 gap-6">
+      <div className="grid gap-6 @4xl/auto-form:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] @4xl/auto-form:items-start @4xl/auto-form:gap-10">
         {/* formSpacing.form drives the column rhythm to match the <Form> primitive's internal spacing. */}
-        <div className={`min-w-0 @4xl/auto-form:pr-2 ${formSpacing.form}`}>{children}</div>
+        <div className={clsx('min-w-0 @4xl/auto-form:pr-2', formSpacing.form)}>{children}</div>
         <aside
-          className="@4xl/auto-form:sticky @4xl/auto-form:top-6 min-w-0 @4xl/auto-form:self-start"
+          className="min-w-0 @4xl/auto-form:sticky @4xl/auto-form:top-6 @4xl/auto-form:self-start"
           data-testid={buildAutoFormTestId(testIdPrefix, 'summary')}
         >
-          {renderSummary ? (
-            renderSummary(payload, context)
-          ) : (
+          {renderSummary === undefined ? (
             <JsonBlock
               description="Payload preview for the request AutoForm is preparing. On wider screens this stays pinned on the right, and it drops below the form when space gets tight."
               jsonText={payloadText}
               title="Summary"
             />
+          ) : (
+            renderSummary(payload, context)
           )}
         </aside>
       </div>
@@ -170,7 +180,7 @@ export function AutoFormModeShell<T extends Record<string, unknown>>({
   testIdPrefix,
 }: {
   bestEffort: boolean;
-  jsonEditorError?: string;
+  jsonEditorError?: string | undefined;
   jsonText: string;
   mode: AutoFormMode;
   modes: AutoFormMode[];
@@ -179,59 +189,43 @@ export function AutoFormModeShell<T extends Record<string, unknown>>({
   onModeChange: (mode: AutoFormMode) => void;
   onResetJson: () => void;
   payload: unknown;
-  renderSummary?: (payload: unknown, context: AutoFormSummaryContext<T>) => React.ReactNode;
+  renderSummary?: ((payload: unknown, context: AutoFormSummaryContext<T>) => React.ReactNode) | undefined;
   summaryContext: AutoFormSummaryContext<T>;
   renderFormMode: (mode: Exclude<AutoFormMode, 'json'>) => React.ReactNode;
   showSummary: boolean;
   testIdPrefix: string;
 }) {
-  const renderModeBody = React.useCallback(
-    (targetMode: AutoFormMode) => {
-      if (targetMode === 'json') {
-        return (
-          <JsonEditorPanel
-            bestEffort={bestEffort}
-            editorError={jsonEditorError}
-            jsonText={jsonText}
-            onFormat={onFormatJson}
-            onJsonTextChange={onJsonTextChange}
-            onReset={onResetJson}
-            testIdPrefix={testIdPrefix}
-          />
-        );
-      }
-
-      const formContent = renderFormMode(targetMode);
-      if (!showSummary) {
-        return formContent;
-      }
-
+  const renderModeBody = (targetMode: AutoFormMode) => {
+    if (targetMode === 'json') {
       return (
-        <FormPanel
-          context={{ ...summaryContext, mode: targetMode }}
-          payload={payload}
-          renderSummary={renderSummary}
+        <JsonEditorPanel
+          bestEffort={bestEffort}
+          editorError={jsonEditorError}
+          jsonText={jsonText}
+          onFormat={onFormatJson}
+          onJsonTextChange={onJsonTextChange}
+          onReset={onResetJson}
           testIdPrefix={testIdPrefix}
-        >
-          {formContent}
-        </FormPanel>
+        />
       );
-    },
-    [
-      bestEffort,
-      jsonEditorError,
-      jsonText,
-      onFormatJson,
-      onJsonTextChange,
-      onResetJson,
-      payload,
-      renderFormMode,
-      renderSummary,
-      showSummary,
-      summaryContext,
-      testIdPrefix,
-    ]
-  );
+    }
+
+    const formContent = renderFormMode(targetMode);
+    if (!showSummary) {
+      return formContent;
+    }
+
+    return (
+      <FormPanel
+        context={{ ...summaryContext, mode: targetMode }}
+        payload={payload}
+        renderSummary={renderSummary}
+        testIdPrefix={testIdPrefix}
+      >
+        {formContent}
+      </FormPanel>
+    );
+  };
 
   if (modes.length <= 1) {
     return <>{renderModeBody(mode)}</>;
@@ -240,7 +234,12 @@ export function AutoFormModeShell<T extends Record<string, unknown>>({
   return (
     <MotionConfig reducedMotion="always">
       <Tabs
-        onValueChange={(value) => onModeChange(value as AutoFormMode)}
+        onValueChange={(value: unknown) => {
+          if (value !== 'simple' && value !== 'advanced' && value !== 'json') {
+            throw new TypeError('Invalid AutoForm display mode');
+          }
+          onModeChange(value);
+        }}
         testId={buildAutoFormTestId(testIdPrefix, 'tabs')}
         value={mode}
       >

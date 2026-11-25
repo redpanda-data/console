@@ -1,10 +1,7 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import { RotateCwIcon } from 'lucide-react';
-import {
-  UpdateRoleMembershipRequestSchema,
-  type UpdateRoleMembershipResponse,
-} from 'protogen/redpanda/api/dataplane/v1/security_pb';
+import { UpdateRoleMembershipRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { UpdateUserRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useEffect, useState } from 'react';
 import { generatePassword } from 'utils/password';
@@ -44,27 +41,21 @@ export const ChangePasswordModal = ({ userName, isOpen, setIsOpen }: ChangePassw
   const [mechanism, setMechanism] = useState<SaslMechanism | undefined>(undefined);
   const [generateWithSpecialChars, setGenerateWithSpecialChars] = useState(false);
   const isValidPassword = password && password.length >= 4 && password.length <= 64;
-  const { mutateAsync: updateUser, isPending: isUpdateUserPending } = useUpdateUserMutationWithToast();
+  const { mutate: updateUser, isPending: isUpdateUserPending } = useUpdateUserMutationWithToast();
 
-  const onSavePassword = async () => {
-    try {
-      await updateUser(
-        create(UpdateUserRequestSchema, {
-          user: { name: userName, mechanism: mechanism ? getSASLMechanism(mechanism) : undefined, password },
-        })
-      );
-      showToast({ status: 'success', title: `Password for user ${userName} updated` });
-      setIsOpen(false);
-    } catch (error) {
-      showToast({
-        status: 'error',
-        title: formatToastErrorMessageGRPC({
-          error: ConnectError.from(error),
-          action: 'update',
-          entity: 'user',
-        }),
-      });
-    }
+  const onSavePassword = () => {
+    // useUpdateUserMutationWithToast reports a failure.
+    updateUser(
+      create(UpdateUserRequestSchema, {
+        user: { name: userName, mechanism: mechanism ? getSASLMechanism(mechanism) : undefined, password },
+      }),
+      {
+        onSuccess: () => {
+          showToast({ status: 'success', title: `Password for user ${userName} updated` });
+          setIsOpen(false);
+        },
+      }
+    );
   };
 
   return (
@@ -184,6 +175,14 @@ const toMembershipUpdates = (userName: string, addedRoles: string[], removedRole
   ...addedRoles.map((r) => create(UpdateRoleMembershipRequestSchema, { roleName: r, add: [{ principal: userName }] })),
 ];
 
+/** Waits for every update, then refreshes the legacy roles store; true when all of them succeeded. */
+const settleMembershipUpdates = async (updates: Promise<unknown>[]) => {
+  const results = await Promise.allSettled(updates);
+  // TODO: Until we haven't migrated everything from mobx is better to not remove this
+  await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
+  return results.every((result) => result.status === 'fulfilled');
+};
+
 export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesModalProps) => {
   const featureRolesApi = useSupportedFeaturesStore((s) => s.rolesApi);
   const [selectedRoles, setSelectedRoles] = useState<string[] | undefined>(undefined);
@@ -203,16 +202,15 @@ export const ChangeRolesModal = ({ userName, isOpen, setIsOpen }: ChangeRolesMod
     }
 
     const { addedRoles, removedRoles } = getRoleChanges(originalRoles, selectedRoles ?? []);
-    const promises: Promise<UpdateRoleMembershipResponse>[] = toMembershipUpdates(
-      userName,
-      addedRoles,
-      removedRoles
-    ).map((request) => updateRoleMembership(request));
+    const updates = toMembershipUpdates(userName, addedRoles, removedRoles).map((request) =>
+      updateRoleMembership(request)
+    );
 
     try {
-      await Promise.allSettled(promises);
-      // TODO: Until we haven't migrated everything from mobx is better to not remove this
-      await Promise.all([rolesApi.refreshRoles(), rolesApi.refreshRoleMembers()]);
+      // useUpdateRoleMembershipMutation reports each failed update; the dialog stays open to retry them.
+      if (!(await settleMembershipUpdates(updates))) {
+        return;
+      }
       showToast({
         status: 'success',
         title: `${addedRoles.length} roles added, ${removedRoles.length} removed from user ${userName}`,

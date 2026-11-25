@@ -48,8 +48,7 @@ import {
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useCreateSecretMutation } from "react-query/api/secret";
-import { toast } from "sonner";
-import { formatToastErrorMessageGRPC } from "utils/toast.utils";
+import { formatToastErrorMessageGRPC, showToast } from "utils/toast.utils";
 import { base64ToUInt8Array, encodeBase64 } from "utils/utils";
 import { z } from "zod";
 import { extractSecretName } from "./secret-utils";
@@ -159,7 +158,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 				}),
 			);
 
-			toast.success(`Secret "${data.name}" created`);
+			showToast({ status: 'success', title: `Secret "${data.name}" created` });
 
 			// Select the newly created secret
 			onChange(data.name);
@@ -176,7 +175,7 @@ export const SecretSelector: React.FC<SecretSelectorProps> = ({
 				action: "create",
 				entity: `secret ${data.name}`,
 			});
-			toast.error(errorMessage);
+			showToast({ status: 'error', title: errorMessage });
 		}
 	};
 

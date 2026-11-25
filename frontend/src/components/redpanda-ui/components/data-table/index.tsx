@@ -2,13 +2,14 @@
 
 'use client';
 
-export { DataTable, type DataTableClassNames, type DataTableProps } from './data-table';
+export { DataTable, type DataTableProps } from './data-table';
 export { DataTableColumnHeader } from './data-table-column-header';
 export { DataTableFacetedFilter } from './data-table-faceted-filter';
 export {
   createDataTableColumnHelper,
   type DataTableColumn,
   type DataTableColumnDef,
+  type DataTableController,
   type DataTableFeatures,
   type DataTableInstance,
   type DataTableOptions,
@@ -21,6 +22,7 @@ export {
 } from './data-table-features';
 export { DataTablePagination } from './data-table-pagination';
 export { isInteractiveTarget, isRowActivationClick } from './data-table-utils';
+export { type DataTableClassNames, DataTableView, type DataTableViewProps } from './data-table-view';
 export { DataTableViewOptions } from './data-table-view-options';
 export {
   type DataTableResponsiveColumnRule,

@@ -1,34 +1,13 @@
 'use client';
 
+import { useRender } from '@base-ui/react/use-render';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Eye, EyeOff, Minus, Plus } from 'lucide-react';
 import React, { createContext, useEffect, useState } from 'react';
-
 import { Button } from './button';
 import { useFieldContext } from './field';
-import { groupItemClasses, useGroup } from './group';
-import { cn, type SharedProps } from '../lib/utils';
-
-export const inputVariants = cva(
-  'placeholder:!text-placeholder !border-input hover:not-disabled:!border-input-hover focus-visible:!border-ring aria-invalid:!border-destructive flex w-full min-w-0 border bg-input-fill text-body-lg shadow-xs outline-none transition-[color,background-color,border-color,box-shadow] [-moz-appearance:textfield] selection:bg-selection selection:text-selection-foreground file:inline-flex file:border-0 file:bg-transparent file:font-medium file:text-body file:text-foreground hover:not-disabled:bg-input-fill-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-invalid motion-reduce:transition-none md:text-body [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
-  {
-    variants: {
-      size: {
-        sm: 'h-8 px-2.5 py-1 text-body file:h-6',
-        md: 'h-9 px-3 py-1 file:h-7',
-        lg: 'h-10 px-4 py-2 file:h-8',
-      },
-      variant: {
-        standard: '',
-        password: 'pr-10',
-      },
-    },
-    defaultVariants: {
-      size: 'md',
-      variant: 'standard',
-    },
-  }
-);
+import { cn, type DataAttributes, type SharedProps } from '../lib/utils';
+import { inputVariants } from './input/variants';
 
 const stepControlVariants = cva('flex items-center justify-center', {
   variants: {
@@ -60,40 +39,116 @@ export interface InputProps
   extends Omit<React.ComponentProps<'input'>, 'size'>,
     VariantProps<typeof inputVariants>,
     SharedProps {
-  children?: React.ReactNode;
-  containerClassName?: string;
-  showStepControls?: boolean;
+  children?: React.ReactNode | undefined;
+  containerClassName?: string | undefined;
+  showStepControls?: boolean | undefined;
 }
 
-function useNumberInputHandlers(inputRef: React.RefObject<HTMLInputElement | null>, step: number) {
+function useNumberInputHandlers(inputRef: React.RefObject<HTMLInputElement | null>) {
   // Use the native setter + dispatch a real 'input' event so React fires a genuine ChangeEvent, not a fake object.
   const setNativeValue = (newValue: string) => {
     const input = inputRef.current;
-    if (!input) {
+    if (input === null) {
       return;
     }
-    const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-    valueSetter?.call(input, newValue);
+    const valueDescriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+    valueDescriptor?.set?.call(input, newValue);
     input.dispatchEvent(new Event('input', { bubbles: true }));
   };
 
   const stepBy = (direction: 1 | -1) => {
-    const currentValue = Number.parseFloat(inputRef.current?.value ?? '') || 0;
-    setNativeValue((currentValue + direction * step).toString());
+    const input = inputRef.current;
+    if (input === null || input.step === 'any') {
+      return;
+    }
+    const previousValue = input.value;
+    // Native stepping respects the step base, bounds, and decimal precision.
+    if (direction === 1) {
+      input.stepUp();
+    } else {
+      input.stepDown();
+    }
+    if (input.value !== previousValue) {
+      setNativeValue(input.value);
+    }
   };
 
-  const increment = () => stepBy(1);
-  const decrement = () => stepBy(-1);
+  const increment = () => {
+    stepBy(1);
+  };
+  const decrement = () => {
+    stepBy(-1);
+  };
 
   return { increment, decrement };
+}
+
+function adornmentPadding(width: number | undefined): string | undefined {
+  if (width === undefined || width === 0 || Number.isNaN(width)) {
+    return;
+  }
+  return `${width + 16}px`;
+}
+
+function adornmentLayout(startWidth: number | undefined, endWidth: number | undefined) {
+  const startPadding = adornmentPadding(startWidth);
+  const endPadding = adornmentPadding(endWidth);
+
+  return {
+    className: cn(
+      startPadding !== undefined && 'pl-(--input-start-padding)',
+      endPadding !== undefined && 'pr-(--input-end-padding)'
+    ),
+    startPadding,
+    endPadding,
+  };
+}
+
+function inputLayout(type: InputProps['type'], showControls: boolean, variant: InputProps['variant']) {
+  if (showControls) {
+    return 'number';
+  }
+  return type === 'password' ? 'password' : variant;
+}
+
+function PasswordToggle({
+  showPassword,
+  onToggle,
+  disabled,
+  size,
+}: {
+  showPassword: boolean;
+  onToggle: () => void;
+  disabled: boolean;
+  size: InputProps['size'];
+}) {
+  return (
+    <InputEnd className="pointer-events-auto">
+      <Button
+        aria-label={showPassword ? 'Hide password' : 'Show password'}
+        aria-pressed={showPassword}
+        disabled={disabled}
+        onClick={onToggle}
+        size={size === 'sm' ? 'icon-xs' : 'icon-sm'}
+        type="button"
+        variant="ghost"
+      >
+        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+      </Button>
+    </InputEnd>
+  );
 }
 
 function Input({
   className,
   type,
   showStepControls,
+  step = 1,
   size,
   variant,
+  appearance,
+  textStyle,
+  tone,
   testId,
   children,
   containerClassName,
@@ -107,63 +162,48 @@ function Input({
   const [endWidth, setEndWidth] = useState<number | undefined>();
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const setRefs = React.useCallback(
-    (node: HTMLInputElement | null) => {
-      inputRef.current = node;
-      if (typeof ref === 'function') {
-        ref(node);
-      } else if (ref) {
-        ref.current = node;
-      }
-    },
-    [ref]
-  );
-
   const isNumberInput = type === 'number';
   const isPasswordInput = type === 'password';
-  const shouldShowControls = isNumberInput && showStepControls;
-  const step = props.step ? Number(props.step) : 1;
+  const shouldShowControls = isNumberInput && showStepControls === true;
+  const locked = props.disabled === true || readOnly === true;
+  // HTML defines no step lattice for `any`, so native stepUp/stepDown are unavailable.
+  const stepControlsDisabled = locked || step === 'any';
   const inputVariant = isPasswordInput ? 'password' : variant;
-  const { position: groupPosition, attached: groupAttached } = useGroup();
-  const attached = groupAttached || isPasswordInput;
 
-  const { increment, decrement } = useNumberInputHandlers(inputRef, step);
+  const { increment, decrement } = useNumberInputHandlers(inputRef);
 
-  // Map input size to a button icon size that fits inside the input (sm → icon-xs, md/lg → icon-sm).
-  const passwordToggleSize = size === 'sm' ? ('icon-xs' as const) : ('icon-sm' as const);
+  const inputType = isPasswordInput && showPassword ? 'text' : type;
+  const layout = inputLayout(type, shouldShowControls, variant);
 
-  const positionClasses = groupItemClasses(attached, groupPosition);
+  const adornments = adornmentLayout(startWidth, endWidth);
+  const measuredPadding: React.CSSProperties & {
+    '--input-start-padding': string | undefined;
+    '--input-end-padding': string | undefined;
+  } = {
+    '--input-start-padding': adornments.startPadding,
+    '--input-end-padding': adornments.endPadding,
+  };
 
-  let inputType = type;
-  if (isPasswordInput) {
-    inputType = showPassword ? 'text' : 'password';
-  }
-
-  let layout: 'number' | 'password' | typeof variant = variant;
-  if (shouldShowControls) {
-    layout = 'number';
-  } else if (isPasswordInput) {
-    layout = 'password';
-  }
-
-  const inputElement = (
-    <input
-      {...props}
-      aria-describedby={props['aria-describedby'] ?? fieldCtx.errorId}
-      aria-invalid={props['aria-invalid'] ?? (fieldCtx.invalid || undefined)}
-      className={cn(inputVariants({ size, variant: inputVariant }), positionClasses, className)}
-      data-slot="input"
-      {...(testId !== undefined && { 'data-testid': testId })}
-      readOnly={readOnly}
-      ref={setRefs}
-      step={isNumberInput ? step : undefined}
-      style={{
-        paddingLeft: startWidth ? startWidth + 16 : undefined,
-        paddingRight: endWidth ? endWidth + 16 : undefined,
-      }}
-      type={inputType}
-    />
-  );
+  const inputElement = useRender({
+    defaultTagName: 'input',
+    ref: [inputRef, ref ?? null],
+    props: {
+      ...props,
+      'aria-describedby': props['aria-describedby'] ?? fieldCtx.errorId,
+      'aria-invalid': props['aria-invalid'] ?? (fieldCtx.invalid || undefined),
+      className: cn(
+        'rounded-md',
+        inputVariants({ size, variant: inputVariant, appearance, textStyle, tone }),
+        className,
+        adornments.className
+      ),
+      'data-slot': 'input',
+      ...(testId !== undefined && { 'data-testid': testId }),
+      readOnly,
+      step: isNumberInput ? step : undefined,
+      type: inputType,
+    } satisfies React.ComponentProps<'input'> & DataAttributes,
+  });
 
   return (
     <InputContext.Provider
@@ -181,30 +221,26 @@ function Input({
           }),
           containerClassName
         )}
+        style={measuredPadding}
       >
         {inputElement}
         {children}
         {isPasswordInput ? (
-          <InputEnd className="pointer-events-auto">
-            <Button
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              aria-pressed={showPassword}
-              disabled={props.disabled || readOnly}
-              onClick={() => setShowPassword(!showPassword)}
-              size={passwordToggleSize}
-              type="button"
-              variant="ghost"
-            >
-              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-            </Button>
-          </InputEnd>
+          <PasswordToggle
+            disabled={locked}
+            onToggle={() => {
+              setShowPassword(!showPassword);
+            }}
+            showPassword={showPassword}
+            size={size}
+          />
         ) : null}
         {shouldShowControls ? (
           <div className="flex flex-row gap-1">
             <Button
               aria-label="Increment value"
               className={stepControlVariants({ size })}
-              disabled={props.disabled || readOnly}
+              disabled={stepControlsDisabled}
               onClick={increment}
               type="button"
               variant="outline"
@@ -214,7 +250,7 @@ function Input({
             <Button
               aria-label="Decrement value"
               className={stepControlVariants({ size })}
-              disabled={props.disabled || readOnly}
+              disabled={stepControlsDisabled}
               onClick={decrement}
               type="button"
               variant="outline"
@@ -235,32 +271,30 @@ const InputContext = createContext<{
   setEndWidth: (width: number) => void;
   startWidth: number | undefined;
   endWidth: number | undefined;
-}>({
-  setStartWidth: () => {
-    // no-op
-  },
-  setEndWidth: () => {
-    // no-op
-  },
-  startWidth: undefined,
-  endWidth: undefined,
-});
+} | null>(null);
 
 const useInputContext = () => {
   const context = React.useContext(InputContext);
-  if (!context) {
+  if (context === null) {
     throw new Error('useInputContext must be used within an InputContextProvider');
   }
   return context;
 };
 
-const InputStart = ({ children, className, ...props }: { children: React.ReactNode; className?: string }) => {
+const InputStart = ({
+  children,
+  className,
+  ...props
+}: {
+  children: React.ReactNode;
+  className?: string | undefined;
+}) => {
   const { setStartWidth } = useInputContext();
   const startRef = React.useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const node = startRef.current;
-    if (!node) {
+    if (node === null) {
       return;
     }
     setStartWidth(node.offsetWidth);
@@ -284,13 +318,13 @@ const InputStart = ({ children, className, ...props }: { children: React.ReactNo
   );
 };
 
-const InputEnd = ({ children, className, ...props }: { children: React.ReactNode; className?: string }) => {
+const InputEnd = ({ children, className, ...props }: { children: React.ReactNode; className?: string | undefined }) => {
   const { setEndWidth } = useInputContext();
   const endRef = React.useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const node = endRef.current;
-    if (!node) {
+    if (node === null) {
       return;
     }
     setEndWidth(node.offsetWidth);
@@ -310,4 +344,27 @@ const InputEnd = ({ children, className, ...props }: { children: React.ReactNode
   );
 };
 
-export { Input, InputEnd, InputStart };
+export interface ColorInputProps
+  extends Omit<React.ComponentProps<'input'>, 'type' | 'children' | 'size'>,
+    SharedProps {
+  /** Swatch pickers sit over an already-painted proxy and reveal their native control on keyboard focus. */
+  presentation?: 'native' | 'swatch' | undefined;
+}
+
+function ColorInput({ className, presentation = 'native', testId, ...props }: ColorInputProps) {
+  return (
+    <input
+      {...props}
+      className={cn(
+        'cursor-pointer focus-visible:ring-3 focus-visible:ring-ring',
+        presentation === 'swatch' && 'size-full opacity-0 focus-visible:opacity-100',
+        className
+      )}
+      data-slot="color-input"
+      {...(testId !== undefined && { 'data-testid': testId })}
+      type="color"
+    />
+  );
+}
+
+export { ColorInput, Input, InputEnd, InputStart };

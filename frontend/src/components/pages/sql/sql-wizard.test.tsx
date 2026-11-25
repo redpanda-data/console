@@ -15,12 +15,12 @@ import { render, screen } from 'test-utils';
 
 import { SqlWizard, type SqlWizardProps, type WizardTopic } from './sql-wizard';
 
-function MockSyncCodeBlock({ code }: { code: string }) {
+function MockSimpleCodeBlock({ code }: { code: string }) {
   return <div data-testid="sql-preview">{code}</div>;
 }
 
-rs.mock('components/redpanda-ui/components/code-block-dynamic', () => ({
-  SyncCodeBlock: MockSyncCodeBlock,
+rs.mock('components/redpanda-ui/components/code-block', () => ({
+  SimpleCodeBlock: MockSimpleCodeBlock,
 }));
 
 const TOPICS: WizardTopic[] = [

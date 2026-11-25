@@ -48,7 +48,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/react-router';
 import { protobufRegistry } from 'protobuf-registry';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { FederatedProviders } from './federated-providers';
 import { federatedRootRoute } from './federated-routes';
@@ -458,7 +458,7 @@ function useHostNavigation(
       // As an href, so the router parses the search the way it writes it: the host's router quotes
       // values that would read as JSON, such as a user named `1001`.
       router.navigate({ href: navigateTo }).catch((error: unknown) => {
-        toast.error('Failed to navigate', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
       });
     }
   }, [navigateTo, isInitialized, router]);

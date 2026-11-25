@@ -170,7 +170,7 @@
   mask-repeat: no-repeat;
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
-  &:where([dir='rtl'], [dir='rtl'] *) {
+  @variant rtl {
     --scroll-fade-inline: linear-gradient(
       to left,
       transparent 0,
@@ -294,7 +294,7 @@
   mask-repeat: no-repeat;
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
-  &:where([dir='rtl'], [dir='rtl'] *) {
+  @variant rtl {
     --scroll-fade-mask: linear-gradient(to left, transparent 0, #000 var(--scroll-fade-s, 0px), #000 100%);
   }
 
@@ -319,7 +319,7 @@
   mask-repeat: no-repeat;
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
-  &:where([dir='rtl'], [dir='rtl'] *) {
+  @variant rtl {
     --scroll-fade-mask: linear-gradient(to left, #000 0, #000 calc(100% - var(--scroll-fade-e, 0px)), transparent 100%);
   }
 
@@ -410,15 +410,17 @@
   background-repeat: no-repeat;
   background-position: 0 0;
   -webkit-background-clip: text;
-  background-clip: text;
   background-size: calc(200% + var(--_spread) * 2) 100%;
   animation: tw-shimmer var(--shimmer-duration, 2s) linear infinite;
+  @supports (background-clip: text) {
+    background-clip: text;
+  }
 
   @variant dark {
     --_highlight: var(--shimmer-color, oklch(from currentColor max(0.8, calc(l + 0.4)) c h / calc(alpha + 0.4)));
   }
 
-  &:where([dir='rtl'], [dir='rtl'] *) {
+  @variant rtl {
     animation-direction: reverse;
   }
 

@@ -1,16 +1,18 @@
 'use client';
 
+import { clsx } from 'clsx';
 import { TrashIcon } from 'lucide-react';
 import React from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 import { Button } from '../../button';
-import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
+import { useAutoForm } from '../context';
 import type { ParsedField } from '../core-types';
 import { formSpacing } from '../form-spacing';
 import { createEmptyFieldValue, getFieldErrorMessage } from '../helpers';
 import { getAutoFormCollectionRemoveTestId, getAutoFormCollectionRowTestId, getAutoFormFieldTestId } from '../test-ids';
 import type { NestedFieldRenderer } from './renderer-types';
 import { cloneFieldForCompactRow, getRenderedLabel, isComplexCollectionField, useFieldPresentation } from './shared';
+import { useFormCollection } from './use-form-collection';
 
 const COMPACT_ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3';
 
@@ -23,42 +25,41 @@ export function ArrayFieldRenderer({
   NestedField: NestedFieldRenderer;
   field: ParsedField;
   path: string[];
-  inheritedDisabled?: boolean;
+  inheritedDisabled?: boolean | undefined;
 }) {
-  const { uiComponents } = useAutoFormRenderContext();
+  const { uiComponents, testIdPrefix } = useAutoForm();
   const form = useFormContext<Record<string, unknown>>();
-  const { testIdPrefix } = useAutoFormRuntimeContext();
   const fullPath = path.join('.');
-  const { fields: rhfFields, append, remove } = useFieldArray({ control: form.control, name: fullPath as never });
+  const { fields: rhfFields, append, remove } = useFormCollection(fullPath);
   const itemField = field.schema?.[0];
-  const error = getFieldErrorMessage(form.formState.errors, path);
+  const error = getFieldErrorMessage(form.formState.errors, path, field.type);
   const label = getRenderedLabel(field);
   const { isDisabled, isVisible, renderField } = useFieldPresentation(field, path, inheritedDisabled);
-  const FieldWrapperComponent = field.fieldConfig?.fieldWrapper || uiComponents.FieldWrapper;
+  const FieldWrapperComponent = field.fieldConfig?.fieldWrapper ?? uiComponents.FieldWrapper;
   const ArrayWrapperComponent = uiComponents.ArrayWrapper as React.ComponentType<
     React.ComponentProps<typeof uiComponents.ArrayWrapper> & {
       addButtonTestId?: string;
-      testId?: string;
+      testId?: string | undefined;
     }
   >;
   const ArrayElementWrapperComponent = uiComponents.ArrayElementWrapper as React.ComponentType<
     React.ComponentProps<typeof uiComponents.ArrayElementWrapper> & {
       removeButtonTestId?: string;
-      testId?: string;
+      testId?: string | undefined;
     }
   >;
-  const compactItemField = itemField ? cloneFieldForCompactRow(itemField) : undefined;
-  const useCompactRows = itemField ? !isComplexCollectionField(itemField) : false;
+  const compactItemField = itemField === undefined ? undefined : cloneFieldForCompactRow(itemField);
+  const useCompactRows = itemField === undefined ? false : !isComplexCollectionField(itemField);
 
   // Seed one blank item when a required array is empty so the user can type immediately.
   // Runs once per mount-when-empty so later user removals are respected.
   const hasSeededRef = React.useRef(false);
   React.useEffect(() => {
-    if (hasSeededRef.current || isDisabled || !field.required || rhfFields.length > 0 || !itemField) {
+    if (hasSeededRef.current || isDisabled || !field.required || rhfFields.length > 0 || itemField === undefined) {
       return;
     }
     hasSeededRef.current = true;
-    append(createEmptyFieldValue(itemField) as never);
+    append(createEmptyFieldValue(itemField));
   }, [append, field.required, isDisabled, itemField, rhfFields.length]);
 
   if (!isVisible) {
@@ -75,7 +76,7 @@ export function ArrayFieldRenderer({
           if (isDisabled) {
             return;
           }
-          append(createEmptyFieldValue(itemField) as never);
+          append(createEmptyFieldValue(itemField));
         }}
         testId={getAutoFormFieldTestId(testIdPrefix, fullPath, 'items')}
       >
@@ -89,10 +90,10 @@ export function ArrayFieldRenderer({
             remove(index);
           };
 
-          if (compactItemField && useCompactRows) {
+          if (compactItemField !== undefined && useCompactRows) {
             return (
               <div
-                className={index > 0 ? `${COMPACT_ROW_GRID} ${formSpacing.arrayItemSeparator}` : COMPACT_ROW_GRID}
+                className={index > 0 ? clsx(COMPACT_ROW_GRID, formSpacing.arrayItemSeparator) : COMPACT_ROW_GRID}
                 data-testid={rowTestId}
                 key={rhfField.id}
               >
@@ -106,7 +107,7 @@ export function ArrayFieldRenderer({
                   type="button"
                   variant="ghost"
                 >
-                  <TrashIcon className="h-4 w-4" />
+                  <TrashIcon className="size-4" />
                 </Button>
               </div>
             );
@@ -120,9 +121,9 @@ export function ArrayFieldRenderer({
               removeButtonTestId={removeButtonTestId}
               testId={rowTestId}
             >
-              {itemField ? (
+              {itemField === undefined ? null : (
                 <NestedField field={itemField} inheritedDisabled={isDisabled} path={[...path, String(index)]} />
-              ) : null}
+              )}
             </ArrayElementWrapperComponent>
           );
         })}

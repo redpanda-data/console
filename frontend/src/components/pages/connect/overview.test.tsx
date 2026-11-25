@@ -16,7 +16,7 @@ import { config, isEmbedded } from 'config';
 import { ListPipelinesResponseSchema } from 'protogen/redpanda/api/console/v1alpha1/pipeline_pb';
 import { listPipelines } from 'protogen/redpanda/api/console/v1alpha1/pipeline-PipelineService_connectquery';
 import { SecretService } from 'protogen/redpanda/api/console/v1alpha1/secret_pb';
-import { toast } from 'sonner';
+import { anyToast, spyOnToasts } from 'test-toasts';
 import { renderWithFileRoutes, screen, waitFor } from 'test-utils';
 
 rs.mock('config', () => ({
@@ -74,7 +74,7 @@ describe('connect overview mount', () => {
   });
 
   it('loads connectors without probing unused secret scope permissions', async () => {
-    const toastError = rs.spyOn(toast, 'error');
+    const toasts = spyOnToasts();
     config.rpcnSecretsClient = createClient(
       SecretService,
       createRouterTransport(({ rpc }) => {
@@ -90,6 +90,6 @@ describe('connect overview mount', () => {
     await waitFor(() =>
       expect(useApiStore.getState().connectConnectors).toEqual({ isConfigured: false, clusters: null })
     );
-    expect(toastError).not.toHaveBeenCalled();
+    expect(toasts).not.toHaveBeenCalledWith(anyToast('error'));
   });
 });

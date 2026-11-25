@@ -3,7 +3,6 @@
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
 import type React from 'react';
-
 import { DragScrollArea } from './drag-scroll-area';
 import { cn, type SharedProps } from '../lib/utils';
 
@@ -58,13 +57,9 @@ const tabsListVariants = cva(
         default: 'w-fit gap-1 rounded-lg bg-surface-subtle p-1',
         // No fill: this variant's chrome is the baseline, so its own ground only slabs over the
         // surface the strip sits on.
-        underline: '!border-border relative w-full justify-start rounded-t-xl border-b py-0 text-current',
-        /**
-         * [upstream] Added `nav`: a section list beside the content it switches, as in a settings
-         * sidebar. No chrome of its own; vertical, its rows stretch to the list's width. Not in the
-         * registry yet; upstream it, then drop this note.
-         */
-        nav: 'h-auto gap-0.5 text-current data-[orientation=vertical]:items-stretch',
+        underline: 'relative w-full justify-start rounded-t-xl border-b !border-border py-0 text-current',
+        // A section list beside the content it switches, as in a settings sidebar. No chrome of its own.
+        nav: 'h-auto justify-start gap-0.5 text-current',
       },
       layout: {
         auto: '',
@@ -94,8 +89,9 @@ const tabsListActiveVariants = cva('rounded-sm bg-background shadow-sm', {
       default: '',
       underline:
         "rounded-none bg-transparent shadow-none after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-selected after:content-[''] data-[orientation=vertical]:after:top-0 data-[orientation=vertical]:after:-right-px data-[orientation=vertical]:after:bottom-0 data-[orientation=vertical]:after:left-auto data-[orientation=vertical]:after:h-auto data-[orientation=vertical]:after:w-0.5",
-      /** [upstream] `nav`: the active row is filled, with an accent bar at its leading edge. */
-      nav: "rounded-md bg-selected-wash shadow-none before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-selected before:content-['']",
+      // The active row is filled, with a bar at its inline start so it follows `dir`. Side by side,
+      // horizontal tabs have no leading edge to mark, so the fill alone shows the active one.
+      nav: "rounded-md bg-selected-wash shadow-none before:absolute before:inset-y-2 before:inset-s-0 before:w-0.5 before:rounded-full before:bg-selected before:content-[''] data-[orientation=horizontal]:before:hidden",
     },
   },
   defaultVariants: {
@@ -106,8 +102,8 @@ const tabsListActiveVariants = cva('rounded-sm bg-background shadow-sm', {
 type TabsListProps = TabsPrimitive.List.Props &
   VariantProps<typeof tabsListVariants> &
   SharedProps & {
-    activeClassName?: string;
-    columns?: number;
+    activeClassName?: string | undefined;
+    columns?: number | undefined;
   };
 
 function TabsList({
@@ -123,16 +119,30 @@ function TabsList({
   style,
   ...props
 }: TabsListProps) {
+  const hasEqualColumns = layout === 'equal' && columns !== undefined && columns !== 0 && !Number.isNaN(columns);
+  const gridStyle: React.CSSProperties & { '--tabs-grid-columns': string | undefined } = {
+    '--tabs-grid-columns': hasEqualColumns ? `repeat(${columns}, minmax(0, 1fr))` : undefined,
+  };
   // To make an overflowing strip drag-scrollable, wrap <TabsList> in <DragScrollArea> and add
   // `w-max min-w-full` to size the list to its content. See the scrollable tabs demos.
   return (
     <TabsPrimitive.List
       activateOnFocus={activateOnFocus}
-      className={cn('relative', tabsListVariants({ variant, layout, gap }), className)}
+      className={cn(
+        'relative',
+        tabsListVariants({ variant, layout, gap }),
+        className,
+        hasEqualColumns && 'grid-cols-(--tabs-grid-columns)'
+      )}
       data-slot="tabs-list"
       data-testid={testId}
       style={
-        layout === 'equal' && columns ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, ...style } : style
+        hasEqualColumns
+          ? (state) => ({
+              ...gridStyle,
+              ...(typeof style === 'function' ? style(state) : style),
+            })
+          : style
       }
       {...props}
     >
@@ -155,9 +165,9 @@ function TabsList({
 type ScrollableTabsListProps = TabsListProps & {
   // Classes for the scroll viewport (the DragScrollArea wrapper) — `className`/`style` go to the
   // list itself, so use this to size or constrain the viewport, e.g. `scrollAreaClassName="max-w-sm"`.
-  scrollAreaClassName?: string;
+  scrollAreaClassName?: string | undefined;
   // Width of the edge fade in px (forwarded to DragScrollArea).
-  fadeSize?: number;
+  fadeSize?: number | undefined;
 };
 
 // Keep the bottom 4px opaque through the edge fade so the baseline border and active indicator
@@ -166,18 +176,19 @@ const UNDERLINE_OPAQUE_PX = 4;
 
 /**
  * `TabsList` pre-composed with `DragScrollArea` for overflowing strips: handles the content sizing
- * (`w-max min-w-full`) and, for `underline`, the wrapper padding and crisp baseline. Drop in for
+ * (`w-max min-w-full`) and, for `underline`, owned content padding and a crisp baseline. Drop in for
  * `TabsList` when the strip can overflow.
  */
 function ScrollableTabsList({ className, scrollAreaClassName, fadeSize, variant, ...props }: ScrollableTabsListProps) {
   const underline = variant === 'underline';
+  const list = <TabsList className={cn('w-max min-w-full', className)} variant={variant} {...props} />;
   return (
     <DragScrollArea
-      className={cn(underline && 'pb-px', scrollAreaClassName)}
+      className={scrollAreaClassName}
       fadeSize={fadeSize}
       preserveBottomEdge={underline ? UNDERLINE_OPAQUE_PX : 0}
     >
-      <TabsList className={cn('w-max min-w-full', className)} variant={variant} {...props} />
+      {underline ? <div className="w-max min-w-full pb-px">{list}</div> : list}
     </DragScrollArea>
   );
 }
@@ -186,7 +197,7 @@ const tabsTriggerVariants = cva(
   // Base UI uses `aria-disabled`/`data-disabled` (not native `disabled`) and `data-active`.
   // Height fills the strip, width comes from the label: a `w-full` here has every trigger claim the
   // whole list, overriding `layout` and leaving `underline`'s `justify-start` nothing to align.
-  'z-[1] inline-flex h-full cursor-pointer items-center justify-center whitespace-nowrap rounded-sm font-medium text-body outline-none transition-all focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start data-[active]:text-foreground motion-reduce:transition-none',
+  'z-[1] inline-flex h-full cursor-pointer items-center justify-center rounded-sm text-body font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-3 focus-visible:ring-ring/50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active]:text-foreground data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start motion-reduce:transition-none',
   {
     variants: {
       variant: {
@@ -194,9 +205,11 @@ const tabsTriggerVariants = cva(
         // reads as nothing. Scoped off the active tab, which its indicator already marks.
         default: 'px-3 py-1.5 hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground',
         underline:
-          'px-4 py-2 text-subtle hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground data-[active]:text-selected',
-        /** [upstream] `nav`: left-aligned rows that tint on hover; the active one takes the selection colour. */
-        nav: 'justify-start rounded-md px-3 py-2 font-normal text-subtle hover:not-data-[active]:bg-accent/60 hover:not-data-[active]:text-foreground data-[active]:font-medium data-[active]:text-selected',
+          'px-4 py-2 text-subtle hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground focus-visible:ring-inset data-[active]:text-selected',
+        // Rows that tint on hover; the active one takes the selection colour. The weight stays put, so
+        // activating a row never changes its width, and the ring is inset because rows meet the
+        // list's edges, where a scrolling sidebar would clip an outer one.
+        nav: 'rounded-md px-3 py-2 font-normal text-subtle hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground focus-visible:ring-inset data-[active]:text-selected',
       },
     },
     defaultVariants: {
@@ -207,12 +220,13 @@ const tabsTriggerVariants = cva(
 
 type TabsTriggerProps = TabsPrimitive.Tab.Props &
   SharedProps & {
-    variant?: VariantProps<typeof tabsTriggerVariants>['variant'];
+    variant?: VariantProps<typeof tabsTriggerVariants>['variant'] | undefined;
   };
 
-function TabsTrigger({ className, value, variant, testId, render, ...props }: TabsTriggerProps) {
+function TabsTrigger({ className, value: unsafeValue, variant, testId, render, ...props }: TabsTriggerProps) {
+  const value: unknown = unsafeValue;
   // For a non-button render (e.g. `<a href>` link tabs), tell Base UI to polyfill button semantics instead of asserting a native button.
-  const isNonButtonElement = typeof render === 'object' && render !== null && 'type' in render;
+  const isNonButtonElement = typeof render === 'object' && 'type' in render;
   const nativeButton =
     isNonButtonElement && typeof render.type === 'string' && render.type !== 'button' ? false : undefined;
 

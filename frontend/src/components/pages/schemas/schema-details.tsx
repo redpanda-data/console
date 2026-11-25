@@ -16,7 +16,7 @@ import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence
 import { EditIcon } from 'components/icons';
 import { Alert, AlertDescription, AlertTitle } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from 'components/redpanda-ui/components/empty';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Separator } from 'components/redpanda-ui/components/separator';
@@ -29,7 +29,7 @@ import { hoverableWhenDisabled } from 'components/ui/disabled-reason-tooltip';
 const routeApi = getRouteApi('/schema-registry/subjects/$subjectName/');
 
 import React, { useEffect, useId, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { DeleteDialog, PermanentDeleteDialog } from './modals';
 import { parseSubjectContext } from './schema-context-utils';
@@ -56,7 +56,7 @@ import { SmallStat } from '../../misc/small-stat';
 
 // These navigations run detached from effects and mutation callbacks, so report a failure instead of dropping it.
 function reportNavigationError(error: unknown) {
-  toast.error('Failed to navigate', { description: String(error) });
+  showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
 }
 
 // A `version` search param that names a specific version, else null ("latest" or missing).
@@ -146,13 +146,15 @@ function useSubjectDeletion(subjectNameRaw: string) {
       { subjectName: subjectNameRaw, permanent },
       {
         onSuccess: () => {
-          toast.success(permanent ? 'Subject permanently deleted' : 'Subject soft-deleted');
+          showToast({ status: 'success', title: permanent ? 'Subject permanently deleted' : 'Subject soft-deleted' });
           if (permanent) {
             navigate({ to: '/schema-registry' }).catch(reportNavigationError);
           }
         },
         onError: (err) => {
-          toast.error(permanent ? 'Failed to permanently delete subject' : 'Failed to soft-delete subject', {
+          showToast({
+            status: 'error',
+            title: permanent ? 'Failed to permanently delete subject' : 'Failed to soft-delete subject',
             description: String(err),
           });
         },
@@ -392,7 +394,9 @@ function useMissingVersionRedirect({
   const navigate = useNavigate({ from: '/schema-registry/subjects/$subjectName/' });
   useEffect(() => {
     if (versionNumber && !requestedVersionExists) {
-      toast.warning(`Version ${versionNumber} not found`, {
+      showToast({
+        status: 'warning',
+        title: `Version ${versionNumber} not found`,
         description: `Showing version ${fallbackVersion} instead`,
       });
       navigate({ search: { version: String(fallbackVersion) }, replace: true }).catch(reportNavigationError);
@@ -442,7 +446,7 @@ function useSchemaVersionActions(
       { subjectName: subjectData.name, version: schema.version, permanent: true },
       {
         onSuccess: async () => {
-          toast.success('Schema version permanently deleted');
+          showToast({ status: 'success', title: 'Schema version permanently deleted' });
 
           // Invalidate and refetch to get updated details
           await queryClient.invalidateQueries({
@@ -462,7 +466,11 @@ function useSchemaVersionActions(
           }
         },
         onError: (err) => {
-          toast.error('Failed to permanently delete schema version', { description: String(err) });
+          showToast({
+            status: 'error',
+            title: 'Failed to permanently delete schema version',
+            description: String(err),
+          });
         },
       }
     );
@@ -478,7 +486,9 @@ function useSchemaVersionActions(
       },
       {
         onSuccess: (result) => {
-          toast.success(`Schema ${subjectData.name} ${schema.version} has been recovered`, {
+          showToast({
+            status: 'success',
+            title: `Schema ${subjectData.name} ${schema.version} has been recovered`,
             description: `Schema ID: ${result.id}`,
           });
 
@@ -490,7 +500,9 @@ function useSchemaVersionActions(
           }).catch(reportNavigationError);
         },
         onError: (err) => {
-          toast.error(`Failed to recover schema ${subjectData.name} ${schema.version}`, {
+          showToast({
+            status: 'error',
+            title: `Failed to recover schema ${subjectData.name} ${schema.version}`,
             description: String(err),
           });
         },
@@ -503,10 +515,14 @@ function useSchemaVersionActions(
       { subjectName: subjectData.name, version: schema.version, permanent: false },
       {
         onSuccess: () => {
-          toast.success('Schema version deleted', { description: 'You can recover or permanently delete it.' });
+          showToast({
+            status: 'success',
+            title: 'Schema version deleted',
+            description: 'You can recover or permanently delete it.',
+          });
         },
         onError: (err) => {
-          toast.error('Failed to delete schema version', { description: String(err) });
+          showToast({ status: 'error', title: 'Failed to delete schema version', description: String(err) });
         },
       }
     );
@@ -667,10 +683,12 @@ const SubjectVersionDefinition = ({
         )}
 
         {/* Code Block */}
-        <DynamicCodeBlock
+        <SimpleCodeBlock
+          className="my-4"
           code={getFormattedSchemaText(schema)}
-          lang={schemaTypeToCodeBlockLanguage(schema.type)}
+          language={schemaTypeToCodeBlockLanguage(schema.type)}
           testId="schema-definition-code-block"
+          width="full"
         />
       </div>
       {/* References Box */}

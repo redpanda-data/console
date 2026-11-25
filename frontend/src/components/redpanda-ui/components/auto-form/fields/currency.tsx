@@ -3,9 +3,9 @@
 import { DollarSignIcon } from 'lucide-react';
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '../../input-group';
 import type { AutoFormFieldProps } from '../core-types';
-import { CURRENCY_FIELD_PATTERN, getFieldUiConfig } from '../helpers';
-import type { FieldTypeDefinition } from '../registry';
-import { useFieldTestIds } from './shared';
+import { getFieldUiConfig } from '../ui-config';
+import { normalizeScalarInput } from './field-values';
+import { useFieldTestIds } from './use-field-test-ids';
 
 function CurrencyFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -14,7 +14,7 @@ function CurrencyFieldComponent({ error, field, id, inputProps }: AutoFormFieldP
     <InputGroup testId={testIds.control}>
       <InputGroupAddon>
         <InputGroupText>
-          <DollarSignIcon className="h-4 w-4" />
+          <DollarSignIcon className="size-4" />
         </InputGroupText>
       </InputGroupAddon>
       <InputGroupInput
@@ -23,20 +23,15 @@ function CurrencyFieldComponent({ error, field, id, inputProps }: AutoFormFieldP
         id={id}
         inputMode="decimal"
         onBlur={inputProps.onBlur}
-        onChange={(event) => inputProps.onValueChange(event.target.value)}
+        onChange={(event) => {
+          inputProps.onValueChange(event.target.value);
+        }}
         placeholder={getFieldUiConfig(field).placeholder}
         testId={testIds.controlPart('input')}
-        value={(inputProps.value as string | number | undefined)?.toString() ?? ''}
+        value={normalizeScalarInput(inputProps.value)}
       />
     </InputGroup>
   );
 }
 
 export { CurrencyFieldComponent };
-
-export const currencyFieldDefinition: FieldTypeDefinition = {
-  name: 'currency',
-  priority: 18,
-  match: (field, context) => field.type === 'string' && CURRENCY_FIELD_PATTERN.test(context.identity),
-  component: CurrencyFieldComponent,
-};

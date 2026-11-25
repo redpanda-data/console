@@ -1,11 +1,11 @@
 'use client';
 
 import { Textarea } from '../../textarea';
+import { getProtoFieldCustomData } from '../../../lib/protobuf-provider';
 import type { AutoFormFieldProps } from '../core-types';
-import { FIELD_MASK_PATH_SPLIT_PATTERN, getFieldUiConfig } from '../helpers';
-import { getProtoFieldCustomData } from '../proto';
-import type { FieldTypeDefinition } from '../registry';
-import { useFieldTestIds } from './shared';
+import { FIELD_MASK_PATH_SPLIT_PATTERN } from '../helpers';
+import { getFieldUiConfig } from '../ui-config';
+import { useFieldTestIds } from './use-field-test-ids';
 
 function FieldMaskFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -16,7 +16,6 @@ function FieldMaskFieldComponent({ error, field, id, inputProps }: AutoFormField
     <div className="space-y-2">
       <Textarea
         aria-invalid={Boolean(error)}
-        className={error ? 'border-destructive font-mono' : 'font-mono'}
         disabled={inputProps.disabled}
         id={id}
         onBlur={inputProps.onBlur}
@@ -27,12 +26,13 @@ function FieldMaskFieldComponent({ error, field, id, inputProps }: AutoFormField
             .filter(Boolean);
           inputProps.onValueChange(paths);
         }}
-        placeholder={getFieldUiConfig(field).placeholder || 'profile\nnotifications.email'}
+        placeholder={getFieldUiConfig(field).placeholder ?? 'profile\nnotifications.email'}
         resize="vertical"
         testId={testIds.control}
+        textStyle="monospace"
         value={textValue}
       />
-      {allowedPaths?.length ? (
+      {allowedPaths !== undefined && allowedPaths.length > 0 ? (
         <div className="text-body-sm text-subtle">Allowed paths: {allowedPaths.join(', ')}</div>
       ) : null}
     </div>
@@ -40,10 +40,3 @@ function FieldMaskFieldComponent({ error, field, id, inputProps }: AutoFormField
 }
 
 export { FieldMaskFieldComponent };
-
-export const fieldMaskFieldDefinition: FieldTypeDefinition = {
-  name: 'fieldMask',
-  priority: 10,
-  match: (field) => field.type === 'fieldMask',
-  component: FieldMaskFieldComponent,
-};

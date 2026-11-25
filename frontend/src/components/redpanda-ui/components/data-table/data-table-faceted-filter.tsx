@@ -3,7 +3,6 @@
 import { type Column, type RowData, Subscribe } from '@tanstack/react-table';
 import { Check } from 'lucide-react';
 import type React from 'react';
-
 import { Badge } from '../badge';
 import { Button } from '../button';
 import {
@@ -18,18 +17,17 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '../popover';
 import { Separator } from '../separator';
 import { cn, type SharedProps } from '../../lib/utils';
-
 import type { DataTableFeatures } from './data-table-features';
 
 interface DataTableFacetedFilterProps<TData extends RowData, TValue> extends SharedProps {
-  column?: Column<DataTableFeatures, TData, TValue>;
-  labelClassName?: string;
+  column?: Column<DataTableFeatures, TData, TValue> | undefined;
+  labelClassName?: string | undefined;
   options: {
     label: string;
     value: string;
-    icon?: React.ComponentType<{ className?: string }>;
+    icon?: React.ComponentType<{ className?: string | undefined }> | undefined;
   }[];
-  title?: string;
+  title?: string | undefined;
 }
 
 export function DataTableFacetedFilter<TData extends RowData, TValue>({
@@ -55,23 +53,25 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
               {selectedValues.size > 0 && (
                 <>
                   <Separator className="mx-2 h-4 self-center" orientation="vertical" />
-                  <Badge className="font-normal lg:hidden" size="sm" tone="default" variant="subtle">
+                  <Badge className="lg:hidden" size="sm" tone="default" variant="subtle">
                     {selectedValues.size}
                   </Badge>
                   <div className="hidden gap-1 lg:flex">
                     {selectedValues.size > 2 ? (
-                      <Badge className="font-normal" size="sm" tone="default" variant="subtle">
+                      <Badge size="sm" tone="default" variant="subtle">
                         {selectedValues.size} selected
                       </Badge>
                     ) : (
-                      options
-                        .filter((option) => selectedValues.has(option.value))
-                        .map((option) => (
-                          <Badge className="font-normal" key={option.value} size="sm" tone="default" variant="subtle">
-                            {option.icon ? <option.icon /> : null}
-                            {option.label}
-                          </Badge>
-                        ))
+                      options.flatMap((option) =>
+                        selectedValues.has(option.value)
+                          ? [
+                              <Badge key={option.value} size="sm" tone="default" variant="subtle">
+                                {option.icon === undefined ? null : <option.icon />}
+                                {option.label}
+                              </Badge>,
+                            ]
+                          : []
+                      )
                     )}
                   </div>
                 </>
@@ -79,7 +79,7 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
             </Button>
           }
         />
-        <PopoverContent align="start" className="w-auto min-w-[200px] max-w-[300px] p-0">
+        <PopoverContent align="start" className="w-auto max-w-[300px] min-w-[200px]" padding="none">
           <Command>
             <CommandInput placeholder={title} />
             <CommandList>
@@ -94,7 +94,7 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
                         const filterValues = isSelected
                           ? Array.from(selectedValues).filter((v) => v !== option.value)
                           : [...Array.from(selectedValues), option.value];
-                        column?.setFilterValue(filterValues.length ? filterValues : undefined);
+                        column?.setFilterValue(filterValues.length > 0 ? filterValues : undefined);
                       }}
                       // Explicit value keeps cmdk typeahead off the sr-only marker and facet count.
                       value={option.label}
@@ -109,15 +109,15 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
                       >
                         <Check className="size-3.5 text-primary-foreground" />
                       </div>
-                      {option.icon ? <option.icon className="size-4 shrink-0 text-subtle" /> : null}
+                      {option.icon === undefined ? null : <option.icon className="size-4 shrink-0 text-subtle" />}
                       <span className={cn(labelClassName)}>{option.label}</span>
                       {/* cmdk reserves aria-selected for highlight, so this is the only SR signal. */}
                       {isSelected ? <span className="sr-only">, selected</span> : null}
-                      {facets?.get(option.value) ? (
+                      {(facets?.get(option.value) ?? 0) === 0 ? null : (
                         <span className="ml-auto flex size-4 items-center justify-center font-mono text-body-sm text-subtle">
-                          {facets.get(option.value)}
+                          {facets?.get(option.value)}
                         </span>
-                      ) : null}
+                      )}
                     </CommandItem>
                   );
                 })}
@@ -142,7 +142,7 @@ export function DataTableFacetedFilter<TData extends RowData, TValue>({
     );
   }
 
-  if (!column) {
+  if (column === undefined) {
     return renderFilter();
   }
 

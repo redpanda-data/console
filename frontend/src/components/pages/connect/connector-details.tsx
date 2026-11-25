@@ -33,7 +33,7 @@ import './helper';
 import { AlertIcon, ChevronDownIcon, ChevronRightIcon, WarningIcon } from 'components/icons';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
-import { SyncCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import {
   DataTable,
   type DataTableColumnDef,
@@ -570,7 +570,7 @@ const ConnectorErrorModal = (p: { error: ConnectorError }) => {
             <DialogTitle>{p.error.title}</DialogTitle>
           </DialogHeader>
           <DialogBody>
-            <SyncCodeBlock code={p.error.content} lang="json" />
+            <SimpleCodeBlock className="my-4" code={p.error.content} language="json" width="full" />
           </DialogBody>
           <DialogFooter>
             {Boolean(hasConnectorLogs) && (

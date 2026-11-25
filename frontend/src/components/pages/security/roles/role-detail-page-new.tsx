@@ -18,8 +18,8 @@ import {
 } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { ListUsersRequestSchema } from 'protogen/redpanda/api/dataplane/v1/user_pb';
 import { useLayoutEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
+import { showToast } from 'utils/toast.utils';
 
 import { useGetAclsByPrincipal } from '../../../../react-query/api/acl';
 import { useListRoleMembersQuery, useUpdateRoleMembershipMutation } from '../../../../react-query/api/security';
@@ -141,7 +141,7 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
           create: true,
         })
       );
-      toast.success(`User "${userName}" added to role successfully`);
+      showToast({ status: 'success', title: `User "${userName}" added to role successfully` });
     } catch {
       // Error handled by onError in mutation
     }
@@ -158,7 +158,7 @@ const RolePrincipalsSection = ({ roleName }: { roleName: string }) => {
           create: false,
         })
       );
-      toast.success(`User "${parsePrincipal(memberPrincipal).name}" removed from role`);
+      showToast({ status: 'success', title: `User "${parsePrincipal(memberPrincipal).name}" removed from role` });
     } catch {
       // Error handled by onError in mutation
     } finally {

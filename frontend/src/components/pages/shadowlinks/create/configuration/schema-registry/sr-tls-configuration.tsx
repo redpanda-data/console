@@ -19,8 +19,8 @@ import { Scope } from 'protogen/redpanda/api/dataplane/v1/secret_pb';
 import { useCallback, useMemo, useState } from 'react';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { useListSecretsQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
+import { showToast } from 'utils/toast.utils';
 
 import { CertificateUploadRow, ConfiguredBadge, UploadedFileName } from '../../certificate-upload';
 import { extractSecretId, toSecretReference } from '../../connection/secret-reference';
@@ -56,7 +56,7 @@ const CERTIFICATE_PAIR_SIBLING: Partial<Record<SrCertificateType, SrCertificateT
 // trigger() runs detached from these handlers and rejects only if the resolver
 // itself throws; report that instead of dropping it.
 const reportRevalidationError = (error: unknown) => {
-  toast.error('Failed to validate the form', { description: String(error) });
+  showToast({ status: 'error', title: 'Failed to validate the form', description: String(error) });
 };
 
 /**
@@ -128,8 +128,9 @@ function SrCertificateDropzone({ certType, optional }: { certType: SrCertificate
     [certType, label, setValue, trigger]
   );
 
-  const handleUploadError = useCallback((error: Error) => {
-    setUploadError(error.message || 'File was not accepted.');
+  // Dropzone reports a rejected file itself; clear a stale read error so only one shows.
+  const handleUploadError = useCallback(() => {
+    setUploadError(null);
   }, []);
 
   const handleRemove = useCallback(() => {

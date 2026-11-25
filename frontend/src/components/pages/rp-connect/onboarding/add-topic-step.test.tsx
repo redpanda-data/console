@@ -17,6 +17,7 @@ import { CreateTopicResponseSchema } from 'protogen/redpanda/api/dataplane/v1/to
 import { createTopic } from 'protogen/redpanda/api/dataplane/v1/topic-TopicService_connectquery';
 import type { ComponentProps } from 'react';
 import { useRef } from 'react';
+import { aToast, spyOnToasts } from 'test-toasts';
 import { render, screen, waitFor } from 'test-utils';
 
 import type { AddTopicFormData, BaseStepRef } from '../types/wizard';
@@ -56,7 +57,7 @@ rs.mock('./advanced-topic-settings', () => ({
   AdvancedTopicSettings: MockAdvancedTopicSettings,
 }));
 
-// 4. Polyfill scrollIntoView (not available in JSDOM, used by cmdk)
+// 4. Polyfill scrollIntoView (not available in Happy DOM, used by the registry Command)
 Element.prototype.scrollIntoView = rs.fn();
 
 // Import component after mocks
@@ -122,6 +123,24 @@ async function selectComboboxOption(user: ReturnType<typeof userEvent.setup>, pl
   await user.click(option);
 }
 
+// Submits a valid new topic and exposes the step's latest result.
+async function submitNewTopicAgainst(createTopicMock: ReturnType<typeof rs.fn>) {
+  const user = userEvent.setup();
+  const result: { current: unknown } = { current: undefined };
+  render(
+    <TestHarness
+      onResult={(r) => {
+        result.current = r;
+      }}
+      selectionMode="new"
+    />,
+    { transport: createTransport({ createTopicMock }) }
+  );
+  await user.type(screen.getByPlaceholderText('Enter a topic name'), 'valid-topic');
+  await user.click(screen.getByTestId('submit'));
+  return result;
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────
 
 describe('the AddTopicStep', () => {
@@ -162,7 +181,7 @@ describe('the AddTopicStep', () => {
 
       // The component starts in "Existing" mode when topics exist.
       // Open the combobox, type to filter, then click the matching option.
-      // (Pressing Enter races cmdk's highlighted-value bookkeeping in CI under
+      // (Pressing Enter races Command's highlighted-value bookkeeping in CI under
       // load — clicking the rendered option is deterministic.)
       await selectComboboxOption(user, 'Select a topic', 'my-topic');
 
@@ -285,36 +304,19 @@ describe('the AddTopicStep', () => {
       });
     });
 
-    it('createTopic error returns failure result', async () => {
-      const user = userEvent.setup();
-      const createTopicMock = rs.fn().mockRejectedValue(new ConnectError('topic creation failed', 13));
-      const transport = createTransport({ createTopicMock });
-
-      let result: unknown;
-      render(
-        <TestHarness
-          onResult={(r) => {
-            result = r;
-          }}
-          selectionMode="new"
-        />,
-        { transport }
+    it('a createTopic error is reported once, by the mutation', async () => {
+      const toasts = spyOnToasts();
+      const result = await submitNewTopicAgainst(
+        rs.fn().mockRejectedValue(new ConnectError('topic creation failed', 13))
       );
 
-      const input = screen.getByPlaceholderText('Enter a topic name');
-      await user.type(input, 'valid-topic');
-
-      const submitBtn = screen.getByTestId('submit');
-      await user.click(submitBtn);
-
+      // No error in the result, so the dialogs that host this step don't toast it again.
       await waitFor(() => {
-        expect(result).toEqual(
-          expect.objectContaining({
-            success: false,
-            message: 'Failed to save topic configuration',
-          })
-        );
+        expect(result.current).toEqual({ success: false });
       });
+      expect(toasts).toHaveBeenCalledTimes(1);
+      expect(toasts).toHaveBeenCalledWith(aToast('error', 'Failed to create topic: topic creation failed'));
+      toasts.mockRestore();
     });
   });
 

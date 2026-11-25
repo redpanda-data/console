@@ -11,8 +11,9 @@
 
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from 'components/redpanda-ui/components/form';
+import { FormControl, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
+import { labelStyles } from 'components/redpanda-ui/components/label/label-styles';
 import { Trash } from 'lucide-react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
@@ -33,12 +34,17 @@ export const BootstrapServers = () => {
   });
 
   return (
-    <Card data-testid="bootstrap-servers-card" size="full">
+    <Card data-testid="bootstrap-servers-card">
       <CardHeader>
         <CardTitle>Source cluster</CardTitle>
       </CardHeader>
       <CardContent>
-        <FormLabel required>Bootstrap servers</FormLabel>
+        <div className={labelStyles({})}>
+          Bootstrap servers
+          <span aria-hidden="true" className="ml-1 text-destructive">
+            *
+          </span>
+        </div>
         {bootstrapServerFields.map((field, index) => (
           <div className="flex items-start gap-2" data-testid={`bootstrap-server-row-${index}`} key={field.id}>
             <FormField

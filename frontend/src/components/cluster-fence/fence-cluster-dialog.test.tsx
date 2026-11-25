@@ -31,7 +31,6 @@ rs.mock('react-query/api/cluster-fence', () => {
   };
 });
 rs.mock('react-query/api/shadowlink', () => ({ useListShadowLinksQuery: rs.fn() }));
-rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
 import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
@@ -213,7 +212,7 @@ describe('the FenceClusterDialog', () => {
       const user = userEvent.setup();
       renderDialog();
 
-      await user.click(await screen.findByLabelText('Remove tag'));
+      await user.click(await screen.findByLabelText('Remove shadow-orders'));
       expect(screen.getByTestId('fence-preflight-reader-orders-dr')).toHaveAttribute('data-status', 'warn');
       expect(screen.queryByTestId('fence-preflight-policy-empty')).not.toBeInTheDocument();
     });

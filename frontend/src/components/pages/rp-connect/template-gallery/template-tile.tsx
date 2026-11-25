@@ -57,7 +57,7 @@ export const TemplateTile = ({ template, onSelect }: TemplateTileProps) => {
       onClick={() => onSelect(template)}
       type="button"
     >
-      <Card className="h-full" size="full" variant="standard">
+      <Card className="h-full">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <ComponentIcon name={template.source.component} override={template.source.logoOverride} />

@@ -1,16 +1,18 @@
 'use client';
 
 import type React from 'react';
-import { cn } from '../../lib/utils';
 import { Button } from '../button';
 import { FieldLabel } from '../field';
+import { hasSlotContent } from '../../lib/has-slot-content';
+import { cn } from '../../lib/utils';
+import { headingLevelForDepth } from './depth';
 import { formSpacing } from './form-spacing';
-import { DepthHeading, FormDepthProvider, headingLevelForDepth, useFormDepth } from './layout-context';
+import { DepthHeading, FormDepthProvider, useFormDepth } from './layout-context';
 
 export interface FormLayoutProps extends Omit<React.ComponentProps<'form'>, 'children'> {
-  children?: React.ReactNode;
-  ref?: React.Ref<HTMLFormElement>;
-  testId?: string;
+  children?: React.ReactNode | undefined;
+  ref?: React.Ref<HTMLFormElement> | undefined;
+  testId?: string | undefined;
 }
 
 export function FormLayout({ children, className, testId, ref, ...formProps }: FormLayoutProps) {
@@ -22,35 +24,33 @@ export function FormLayout({ children, className, testId, ref, ...formProps }: F
 }
 
 export interface FormSectionProps {
-  children?: React.ReactNode;
-  className?: string;
-  description?: React.ReactNode;
+  children?: React.ReactNode | undefined;
+  className?: string | undefined;
+  description?: React.ReactNode | undefined;
   /** Override divider visibility. Defaults to true when a title is present. */
-  divider?: boolean;
-  required?: boolean;
-  testId?: string;
-  title?: React.ReactNode;
+  divider?: boolean | undefined;
+  required?: boolean | undefined;
+  testId?: string | undefined;
+  title?: React.ReactNode | undefined;
 }
 
 export function FormSection({ title, description, divider, required, testId, className, children }: FormSectionProps) {
   const depth = useFormDepth();
-  const hasHeader = Boolean(title) || Boolean(description);
-  const showDivider = hasHeader && (divider ?? Boolean(title));
+  const hasHeader = hasSlotContent(title) || hasSlotContent(description);
+  const showDivider = hasHeader && (divider ?? hasSlotContent(title));
   const level = headingLevelForDepth(depth);
 
   return (
     <section className={cn(formSpacing.field, className)} data-testid={testId}>
       {hasHeader ? (
         <div className={cn(formSpacing.sectionHeader, showDivider && formSpacing.sectionDivider)}>
-          {title ? (
+          {hasSlotContent(title) ? (
             <div className="flex items-center gap-2">
-              <DepthHeading className="font-medium" level={level}>
-                {title}
-              </DepthHeading>
-              {required ? <span className="text-body-sm text-destructive">*</span> : null}
+              <DepthHeading level={level}>{title}</DepthHeading>
+              {required === true ? <span className="text-body-sm text-destructive">*</span> : null}
             </div>
           ) : null}
-          {description ? <div className="text-body-sm text-subtle">{description}</div> : null}
+          {hasSlotContent(description) ? <div className="text-body-sm text-subtle">{description}</div> : null}
         </div>
       ) : null}
       <FormDepthProvider depth={depth + 1}>
@@ -62,29 +62,29 @@ export function FormSection({ title, description, divider, required, testId, cla
 
 export interface FormFieldProps {
   children: React.ReactNode;
-  className?: string;
-  error?: React.ReactNode;
-  helpText?: React.ReactNode;
-  htmlFor?: string;
-  label?: React.ReactNode;
-  required?: boolean;
-  testId?: string;
+  className?: string | undefined;
+  error?: React.ReactNode | undefined;
+  helpText?: React.ReactNode | undefined;
+  htmlFor?: string | undefined;
+  label?: React.ReactNode | undefined;
+  required?: boolean | undefined;
+  testId?: string | undefined;
 }
 
 export function FormField({ label, helpText, error, required, htmlFor, testId, className, children }: FormFieldProps) {
   let supportingContent: React.ReactNode = null;
-  if (error) {
+  if (hasSlotContent(error)) {
     supportingContent = <span className="text-body-sm text-destructive">{error}</span>;
-  } else if (helpText) {
+  } else if (hasSlotContent(helpText)) {
     supportingContent = <span className="text-body-sm text-subtle">{helpText}</span>;
   }
 
   return (
     <div className={cn(formSpacing.labelStack, className)} data-testid={testId}>
-      {label ? (
-        <FieldLabel className="flex items-center gap-2" htmlFor={htmlFor}>
-          <span className="font-semibold text-label">{label}</span>
-          {required ? <span className="text-body-sm text-destructive">*</span> : null}
+      {hasSlotContent(label) ? (
+        <FieldLabel htmlFor={htmlFor}>
+          <span className="text-label font-semibold">{label}</span>
+          {required === true ? <span className="text-body-sm text-destructive">*</span> : null}
         </FieldLabel>
       ) : null}
       {children}
@@ -94,8 +94,8 @@ export function FormField({ label, helpText, error, required, htmlFor, testId, c
 }
 
 export interface FormSubmitProps extends React.ComponentProps<typeof Button> {
-  children?: React.ReactNode;
-  ref?: React.Ref<HTMLButtonElement>;
+  children?: React.ReactNode | undefined;
+  ref?: React.Ref<HTMLButtonElement> | undefined;
 }
 
 export function FormSubmit({ children = 'Submit', type = 'submit', ref, ...props }: FormSubmitProps) {

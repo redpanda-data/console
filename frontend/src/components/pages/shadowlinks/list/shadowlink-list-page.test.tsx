@@ -43,19 +43,11 @@ rs.mock('state/ui-state', () => ({
   },
 }));
 
-// Mock toast notifications so we can assert on them.
-rs.mock('sonner', () => ({
-  toast: {
-    success: rs.fn(),
-    error: rs.fn(),
-  },
-}));
-
 import { listShadowLinks } from 'protogen/redpanda/api/console/v1alpha1/shadowlink-ShadowLinkService_connectquery';
 import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
 import { useListShadowLinksQuery } from 'react-query/api/shadowlink';
-import { toast } from 'sonner';
 import { useClusterFenceStore } from 'stores/cluster-fence-store';
+import { anyToast, aToast, spyOnToasts } from 'test-toasts';
 import { renderWithFileRoutes } from 'test-utils';
 
 const mockedUseListShadowLinksQuery = rs.mocked(useListShadowLinksQuery);
@@ -85,6 +77,8 @@ const mockFence = (status: { available: boolean; known?: boolean; phase?: string
     summary: { phase: status.phase ?? 'unfenced' },
   } as unknown as ReturnType<typeof useClusterFenceStatusQuery>);
 
+const toasts = spyOnToasts();
+
 describe('the ShadowLinkListPage', () => {
   beforeEach(() => {
     rs.clearAllMocks();
@@ -113,7 +107,7 @@ describe('the ShadowLinkListPage', () => {
     renderWithFileRoutes(<ShadowLinkListPage />);
 
     await screen.findByTestId('shadowlink-no-permission-card');
-    expect(toast.error).not.toHaveBeenCalled();
+    expect(toasts).not.toHaveBeenCalledWith(anyToast('error'));
   });
 
   test('still renders the generic error state (and toasts) for unexpected errors', async () => {
@@ -124,7 +118,7 @@ describe('the ShadowLinkListPage', () => {
 
     expect(await screen.findByTestId('shadowlink-error-card')).toBeInTheDocument();
     expect(screen.queryByTestId('shadowlink-no-permission-card')).not.toBeInTheDocument();
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to load shadowlinks', expect.anything()));
+    await waitFor(() => expect(toasts).toHaveBeenCalledWith(aToast('error', 'Failed to load shadowlinks')));
   });
 });
 

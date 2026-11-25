@@ -1,21 +1,31 @@
 'use client';
 
 import { useFieldContext } from '../../field';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../../select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '../../select';
+import { hasSlotContent } from '../../../lib/has-slot-content';
 import { useAutoForm } from '../context';
 import type { AutoFormFieldProps } from '../core-types';
 import { type DataProviderOption, resolveDataProvider } from '../data-providers';
+import { getRenderableText } from '../field-utils';
 import { UNSET_SELECT_VALUE } from '../helpers';
-import type { FieldTypeDefinition } from '../registry';
 import {
   getControlLabel,
   getFlatOptions,
   getGroupedOptions,
   hasNumericOptions,
+  normalizeScalarInput,
   readDataProviderId,
-  renderOptionLabel,
-  useFieldTestIds,
-} from './shared';
+} from './field-values';
+import { OptionLabel } from './shared';
+import { useFieldTestIds } from './use-field-test-ids';
 
 function renderUnsetValue(required: boolean) {
   return required ? null : 'Not set';
@@ -26,8 +36,8 @@ function renderStaticSelectedValue(value: unknown, options: ReturnType<typeof ge
     return renderUnsetValue(required);
   }
 
-  const option = options.find((candidate) => candidate.value === String(value));
-  return option ? renderOptionLabel(option) : renderUnsetValue(required);
+  const option = options.find((candidate) => candidate.value === normalizeScalarInput(value));
+  return option === undefined ? renderUnsetValue(required) : <OptionLabel option={option} />;
 }
 
 function renderProviderSelectedValue(value: unknown, options: DataProviderOption[], required: boolean) {
@@ -35,8 +45,8 @@ function renderProviderSelectedValue(value: unknown, options: DataProviderOption
     return renderUnsetValue(required);
   }
 
-  const option = options.find((candidate) => candidate.value === String(value));
-  return option ? <ProviderOptionLabel option={option} /> : String(value);
+  const option = options.find((candidate) => candidate.value === normalizeScalarInput(value));
+  return option === undefined ? normalizeScalarInput(value) : <ProviderOptionLabel option={option} />;
 }
 
 function SelectFieldComponent({ error, field, id, inputProps, label }: AutoFormFieldProps) {
@@ -47,12 +57,14 @@ function SelectFieldComponent({ error, field, id, inputProps, label }: AutoFormF
   const provider = resolveDataProvider(dataProviders, providerId);
   const numericOptions = hasNumericOptions(field);
   const currentValue =
-    inputProps.value === undefined || inputProps.value === null ? UNSET_SELECT_VALUE : String(inputProps.value);
+    inputProps.value === undefined || inputProps.value === null
+      ? UNSET_SELECT_VALUE
+      : normalizeScalarInput(inputProps.value);
   const fieldLabel = getControlLabel(label, field);
   const optionGroups = getGroupedOptions(field);
   const flatOptions = getFlatOptions(field);
 
-  if (provider) {
+  if (provider !== undefined) {
     return (
       <SelectFieldFromProvider
         currentValue={currentValue}
@@ -79,10 +91,9 @@ function SelectFieldComponent({ error, field, id, inputProps, label }: AutoFormF
       value={currentValue}
     >
       <SelectTrigger
-        aria-describedby={error ? errorId : undefined}
+        aria-describedby={error !== undefined && error !== '' ? errorId : undefined}
         aria-invalid={Boolean(error)}
         aria-label={fieldLabel}
-        className={error ? 'border-destructive' : ''}
         disabled={inputProps.disabled}
         id={id}
         testId={testIds.control}
@@ -97,23 +108,23 @@ function SelectFieldComponent({ error, field, id, inputProps, label }: AutoFormF
             Not set
           </SelectItem>
         )}
-        {optionGroups?.length
+        {optionGroups !== undefined && optionGroups.length > 0
           ? optionGroups.map((group) => (
               <SelectGroup
                 key={JSON.stringify(group.options.map((option) => option.value))}
-                testId={testIds.group(String(group.label ?? 'options'))}
+                testId={testIds.group(getRenderableText(group.label, 'options'))}
               >
-                {group.label ? <SelectLabel>{group.label}</SelectLabel> : null}
+                {hasSlotContent(group.label) ? <SelectLabel>{group.label}</SelectLabel> : null}
                 {group.options.map((option) => (
                   <SelectItem key={option.value} testId={testIds.option(option.value)} value={option.value}>
-                    {renderOptionLabel(option)}
+                    <OptionLabel option={option} />
                   </SelectItem>
                 ))}
               </SelectGroup>
             ))
           : flatOptions.map((option) => (
               <SelectItem key={option.value} testId={testIds.option(option.value)} value={option.value}>
-                {renderOptionLabel(option)}
+                <OptionLabel option={option} />
               </SelectItem>
             ))}
       </SelectContent>
@@ -137,13 +148,13 @@ function SelectFieldFromProvider({
   fieldLabel: string;
   id: string;
   inputProps: AutoFormFieldProps['inputProps'];
-  provider: () => { options: DataProviderOption[]; isLoading?: boolean; error?: unknown };
+  provider: () => { options: DataProviderOption[]; isLoading?: boolean | undefined; error?: unknown };
   testIds: ReturnType<typeof useFieldTestIds>;
 }) {
   const { errorId } = useFieldContext();
   const { options, isLoading, error: providerError } = provider();
 
-  if (providerError) {
+  if (providerError !== undefined && providerError !== null) {
     // SelectTrigger/SelectValue need Select.Root context, so wrap the failure
     // state in a disabled <Select> rather than rendering them bare (Radix throws).
     return (
@@ -157,7 +168,7 @@ function SelectFieldFromProvider({
 
   const grouped = options.reduce<Record<string, DataProviderOption[]>>((acc, option) => {
     const key = option.group ?? '';
-    acc[key] = acc[key] ? [...acc[key], option] : [option];
+    acc[key] = acc[key] === undefined ? [option] : [...acc[key], option];
     return acc;
   }, {});
   const hasGroups = Object.keys(grouped).some((k) => k !== '');
@@ -174,15 +185,14 @@ function SelectFieldFromProvider({
       value={currentValue}
     >
       <SelectTrigger
-        aria-describedby={error ? errorId : undefined}
+        aria-describedby={error !== undefined && error !== '' ? errorId : undefined}
         aria-invalid={Boolean(error)}
         aria-label={fieldLabel}
-        className={error ? 'border-destructive' : ''}
-        disabled={inputProps.disabled || isLoading}
+        disabled={inputProps.disabled === true || isLoading === true}
         id={id}
         testId={testIds.control}
       >
-        <SelectValue placeholder={isLoading ? 'Loading…' : 'Select an option'}>
+        <SelectValue placeholder={isLoading === true ? 'Loading…' : 'Select an option'}>
           {(value) => renderProviderSelectedValue(value, options, field.required)}
         </SelectValue>
       </SelectTrigger>
@@ -192,15 +202,15 @@ function SelectFieldFromProvider({
             Not set
           </SelectItem>
         )}
-        {options.length === 0 && !isLoading ? (
+        {options.length === 0 && isLoading !== true ? (
           <SelectItem disabled testId={testIds.option('empty')} value="__empty">
             No options available
           </SelectItem>
         ) : null}
         {hasGroups
           ? Object.entries(grouped).map(([groupLabel, groupOptions]) => (
-              <SelectGroup key={groupLabel} testId={testIds.group(groupLabel || 'ungrouped')}>
-                {groupLabel ? <SelectLabel>{groupLabel}</SelectLabel> : null}
+              <SelectGroup key={groupLabel} testId={testIds.group(groupLabel === '' ? 'ungrouped' : groupLabel)}>
+                {groupLabel === '' ? null : <SelectLabel>{groupLabel}</SelectLabel>}
                 {groupOptions.map((option) => (
                   <SelectItem key={option.value} testId={testIds.option(option.value)} value={option.value}>
                     <ProviderOptionLabel option={option} />
@@ -219,18 +229,16 @@ function SelectFieldFromProvider({
 }
 
 function ProviderOptionLabel({ option }: { option: DataProviderOption }) {
-  const labelWithIcon = option.icon ? (
+  const labelWithIcon = hasSlotContent(option.icon) ? (
     <span className="flex items-center gap-2">
-      <span className="flex h-4 w-4 shrink-0 items-center justify-center [&>svg]:h-full [&>svg]:w-full">
-        {option.icon}
-      </span>
+      <span className="flex size-4 shrink-0 items-center justify-center [&>svg]:size-full">{option.icon}</span>
       <span>{option.label}</span>
     </span>
   ) : (
     <span>{option.label}</span>
   );
 
-  if (!option.description) {
+  if (option.description === undefined || option.description === '') {
     return labelWithIcon;
   }
   return (
@@ -242,31 +250,3 @@ function ProviderOptionLabel({ option }: { option: DataProviderOption }) {
 }
 
 export { SelectFieldComponent };
-
-export const selectFieldDefinition: FieldTypeDefinition = {
-  name: 'select',
-  priority: 12,
-  match: (field) => {
-    if (field.type !== 'select') {
-      return false;
-    }
-    const optionCount = field.options?.length ?? 0;
-    return optionCount > 3 && optionCount <= 8;
-  },
-  component: SelectFieldComponent,
-};
-
-// Routes any `data_provider`-annotated field to SelectFieldComponent regardless
-// of proto type. High priority so the annotation beats string/password/email matchers.
-export const dataProviderSelectFieldDefinition: FieldTypeDefinition = {
-  name: 'dataProviderSelect',
-  priority: 120,
-  match: (field) => {
-    // Arrays/maps/objects keep their native renderers even when annotated.
-    if (field.type !== 'string' && field.type !== 'number') {
-      return false;
-    }
-    return readDataProviderId(field) !== undefined;
-  },
-  component: SelectFieldComponent,
-};

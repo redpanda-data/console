@@ -24,7 +24,7 @@ import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/ra
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Trash2 } from 'lucide-react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { TagChipInput } from './tag-chip-input';
 import type { FormValues } from '../../model';
@@ -41,8 +41,11 @@ export const ScopeSection = () => {
     setValue('schemaRegistry.scopeMode', mode as 'all' | 'specify', { shouldValidate: true });
   };
 
-  const handleDestinationModeChange = (mode: string) => {
-    setValue('schemaRegistry.destinationContextsMode', mode as 'preserve' | 'map', { shouldValidate: true });
+  const handleDestinationModeChange = (mode: unknown) => {
+    if (mode !== 'preserve' && mode !== 'map') {
+      return;
+    }
+    setValue('schemaRegistry.destinationContextsMode', mode, { shouldValidate: true });
 
     // Keep any rows the user entered when toggling to preserve; the request
     // builder ignores them unless mode is map.
@@ -56,7 +59,7 @@ export const ScopeSection = () => {
   const revalidateScope = () => {
     // trigger() rejects only if the resolver itself throws; report that instead of dropping it.
     trigger('schemaRegistry.contexts').catch((error: unknown) => {
-      toast.error('Failed to validate the form', { description: String(error) });
+      showToast({ status: 'error', title: 'Failed to validate the form', description: String(error) });
     });
   };
 

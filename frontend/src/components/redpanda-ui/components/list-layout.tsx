@@ -1,6 +1,6 @@
 import React from 'react';
-
 import { Input, type InputProps } from './input';
+import { hasSlotContent } from '../lib/has-slot-content';
 import { cn, type SharedProps } from '../lib/utils';
 
 const ListLayoutContext = React.createContext<{
@@ -10,7 +10,7 @@ const ListLayoutContext = React.createContext<{
 });
 
 interface ListLayoutProps extends React.HTMLAttributes<HTMLDivElement>, SharedProps {
-  orientation?: 'horizontal' | 'vertical';
+  orientation?: 'horizontal' | 'vertical' | undefined;
 }
 
 const ListLayout = ({
@@ -19,7 +19,7 @@ const ListLayout = ({
   testId,
   ref,
   ...props
-}: ListLayoutProps & { ref?: React.Ref<HTMLDivElement> }) => (
+}: ListLayoutProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
   <ListLayoutContext.Provider value={{ orientation }}>
     <div
       className={cn('flex min-h-screen w-full flex-col gap-4 sm:gap-6', className)}
@@ -32,8 +32,8 @@ const ListLayout = ({
 ListLayout.displayName = 'ListLayout';
 
 interface ListLayoutHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
-  actions?: React.ReactNode;
-  description?: string;
+  actions?: React.ReactNode | undefined;
+  description?: string | undefined;
   title: string;
 }
 
@@ -44,13 +44,15 @@ const ListLayoutHeader = ({
   actions,
   ref,
   ...props
-}: ListLayoutHeaderProps & { ref?: React.Ref<HTMLDivElement> }) => (
+}: ListLayoutHeaderProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
   <div className={cn('flex flex-col gap-2', className)} ref={ref} {...props}>
     <div className="flex items-center gap-2">
-      <h1 className="text-foreground text-heading-lg sm:text-heading-xl">{title}</h1>
-      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      <h1 className="text-heading-lg text-foreground sm:text-heading-xl">{title}</h1>
+      {hasSlotContent(actions) ? <div className="flex items-center gap-2">{actions}</div> : null}
     </div>
-    {description ? <p className="text-body text-subtle sm:text-body-lg">{description}</p> : null}
+    {description !== undefined && description !== '' ? (
+      <p className="text-body text-subtle sm:text-body-lg">{description}</p>
+    ) : null}
   </div>
 );
 ListLayoutHeader.displayName = 'ListLayoutHeader';
@@ -64,7 +66,7 @@ const ListLayoutNavigation = ({
   children,
   ref,
   ...props
-}: ListLayoutNavigationProps & { ref?: React.Ref<HTMLDivElement> }) => (
+}: ListLayoutNavigationProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
   <div className={cn('flex gap-1', className)} ref={ref} {...props}>
     {children}
   </div>
@@ -72,7 +74,7 @@ const ListLayoutNavigation = ({
 ListLayoutNavigation.displayName = 'ListLayoutNavigation';
 
 interface ListLayoutFiltersProps extends React.HTMLAttributes<HTMLDivElement> {
-  actions?: React.ReactNode;
+  actions?: React.ReactNode | undefined;
   children: React.ReactNode;
 }
 
@@ -82,14 +84,14 @@ const ListLayoutFilters = ({
   actions,
   ref,
   ...props
-}: ListLayoutFiltersProps & { ref?: React.Ref<HTMLDivElement> }) => (
+}: ListLayoutFiltersProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
   <div
     className={cn('flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between', className)}
     ref={ref}
     {...props}
   >
     <div className="flex flex-1 flex-wrap items-center gap-2">{children}</div>
-    {actions ? <div className="flex shrink-0 items-center gap-2 lg:ml-4">{actions}</div> : null}
+    {hasSlotContent(actions) ? <div className="flex shrink-0 items-center gap-2 lg:ml-4">{actions}</div> : null}
   </div>
 );
 ListLayoutFilters.displayName = 'ListLayoutFilters';
@@ -103,7 +105,7 @@ const ListLayoutContent = ({
   children,
   ref,
   ...props
-}: ListLayoutContentProps & { ref?: React.Ref<HTMLDivElement> }) => (
+}: ListLayoutContentProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
   <div className={cn('min-h-0 flex-1 overflow-hidden', className)} ref={ref} {...props}>
     <div className="h-full overflow-auto">{children}</div>
   </div>
@@ -119,8 +121,8 @@ const ListLayoutFooter = ({
   children,
   ref,
   ...props
-}: ListLayoutFooterProps & { ref?: React.Ref<HTMLDivElement> }) => (
-  <div className={cn('!border-border flex items-center justify-between border-t pt-4', className)} ref={ref} {...props}>
+}: ListLayoutFooterProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
+  <div className={cn('flex items-center justify-between border-t !border-border pt-4', className)} ref={ref} {...props}>
     {children}
   </div>
 );
@@ -135,7 +137,7 @@ const ListLayoutSearch = ({
   children,
   ref,
   ...props
-}: ListLayoutSearchProps & { ref?: React.Ref<HTMLDivElement> }) => (
+}: ListLayoutSearchProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
   <div className={cn('mb-4 flex items-center gap-2', className)} ref={ref} {...props}>
     {children}
   </div>
@@ -148,13 +150,11 @@ const ListLayoutSearchInput = ({
   className,
   ref,
   ...props
-}: ListLayoutSearchInputProps & { ref?: React.Ref<HTMLInputElement> }) => (
+}: ListLayoutSearchInputProps & { ref?: React.Ref<HTMLInputElement> | undefined }) => (
   <Input
-    className={cn(
-      '!border-input hover:not-disabled:!border-input-hover focus-visible:!border-ring flex h-8 w-full min-w-[140px] max-w-[300px] rounded-md border bg-input-fill px-3 py-2 text-body outline-none transition-colors file:border-0 file:bg-transparent file:font-medium file:text-body placeholder:text-placeholder hover:not-disabled:bg-input-fill-hover focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none sm:w-[200px] lg:w-[250px]',
-      className
-    )}
+    className={cn('w-full max-w-[300px] min-w-[140px] sm:w-[200px] lg:w-[250px]', className)}
     ref={ref}
+    size="sm"
     {...props}
   />
 );
@@ -169,7 +169,7 @@ const ListLayoutFilterRow = ({
   children,
   ref,
   ...props
-}: ListLayoutFilterRowProps & { ref?: React.Ref<HTMLDivElement> }) => (
+}: ListLayoutFilterRowProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
   <div className={cn('mb-4 flex flex-wrap items-center gap-2', className)} ref={ref} {...props}>
     {children}
   </div>
@@ -185,7 +185,7 @@ const ListLayoutActions = ({
   children,
   ref,
   ...props
-}: ListLayoutActionsProps & { ref?: React.Ref<HTMLDivElement> }) => (
+}: ListLayoutActionsProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
   <div className={cn('mb-4 flex items-center justify-between', className)} ref={ref} {...props}>
     {children}
   </div>
@@ -201,7 +201,7 @@ const ListLayoutPagination = ({
   children,
   ref,
   ...props
-}: ListLayoutPaginationProps & { ref?: React.Ref<HTMLDivElement> }) => (
+}: ListLayoutPaginationProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
   <div
     className={cn('flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between', className)}
     ref={ref}

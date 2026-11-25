@@ -11,18 +11,13 @@
 
 import { InfoIcon } from 'components/icons';
 import { Button } from 'components/redpanda-ui/components/button';
-import {
-  Choicebox,
-  ChoiceboxItem,
-  ChoiceboxItemDescription,
-  ChoiceboxItemHeader,
-  ChoiceboxItemTitle,
-} from 'components/redpanda-ui/components/choicebox';
-import { DynamicCodeBlock } from 'components/redpanda-ui/components/code-block-dynamic';
+import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
+import { RadioGroup } from 'components/redpanda-ui/components/radio-group';
 import { Skeleton, SkeletonGroup } from 'components/redpanda-ui/components/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from 'components/redpanda-ui/components/tooltip';
+import { ChoiceCard } from 'components/ui/choice-card';
 import { type FC, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { getFormattedSchemaText, schemaTypeToCodeBlockLanguage } from './schema-details';
 import {
@@ -187,11 +182,11 @@ function useSaveCompatibility({ subjectName, contextName }: SchemaEditTarget, on
   return (configMode: SchemaRegistryCompatibilityModeWithDefault) => {
     const callbacks = {
       onSuccess: () => {
-        toast.success(`Compatibility mode updated to ${configMode}`);
+        showToast({ status: 'success', title: `Compatibility mode updated to ${configMode}` });
         onClose();
       },
       onError: (err: Error) => {
-        toast.error('Failed to update compatibility mode', { description: String(err) });
+        showToast({ status: 'error', title: 'Failed to update compatibility mode', description: String(err) });
       },
     };
 
@@ -264,22 +259,22 @@ function EditSchemaCompatibility(p: {
         </div>
 
         <div className="mt-6 max-w-[800px]">
-          <Choicebox
+          <RadioGroup
             aria-label="Schema compatibility mode"
             className="w-full"
-            data-testid="edit-compatibility-mode-radio"
             onValueChange={(value) => setConfigMode(value as SchemaRegistryCompatibilityModeWithDefault)}
+            testId="edit-compatibility-mode-radio"
             value={configMode}
           >
             {allOptions.map((option) => (
-              <ChoiceboxItem className="max-w-full" key={option.value} value={option.value}>
-                <ChoiceboxItemHeader>
-                  <ChoiceboxItemTitle>{option.title}</ChoiceboxItemTitle>
-                  <ChoiceboxItemDescription>{option.description}</ChoiceboxItemDescription>
-                </ChoiceboxItemHeader>
-              </ChoiceboxItem>
+              <ChoiceCard
+                description={option.description}
+                key={option.value}
+                title={option.title}
+                value={option.value}
+              />
             ))}
-          </Choicebox>
+          </RadioGroup>
 
           <div className="mt-6 flex items-center gap-4">
             <Tooltip>
@@ -317,7 +312,12 @@ function EditSchemaCompatibility(p: {
             {subjectName}
           </div>
           <div className="mt-8 mb-4 text-heading-md font-bold">Schema</div>
-          <DynamicCodeBlock code={getFormattedSchemaText(schema)} lang={schemaTypeToCodeBlockLanguage(schema.type)} />
+          <SimpleCodeBlock
+            className="my-4"
+            code={getFormattedSchemaText(schema)}
+            language={schemaTypeToCodeBlockLanguage(schema.type)}
+            width="full"
+          />
         </div>
       )}
     </div>

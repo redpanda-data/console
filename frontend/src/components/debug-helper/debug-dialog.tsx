@@ -54,10 +54,10 @@ import {
   Zap,
 } from 'lucide-react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
-import { Fragment, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { toast } from 'sonner';
 import { pluralizeWithNumber } from 'utils/string';
+import { showToast, updateToast } from 'utils/toast.utils';
 
 import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
 import { DebugPanda } from './debug-panda';
@@ -98,8 +98,8 @@ type ButtonVariant = React.ComponentProps<typeof Button>['variant'];
 function copyToClipboard(text: string, successMsg = 'Copied to clipboard') {
   navigator.clipboard
     .writeText(text)
-    .then(() => toast.success(successMsg))
-    .catch(() => toast.error('Failed to copy to clipboard'));
+    .then(() => showToast({ status: 'success', title: successMsg }))
+    .catch(() => showToast({ status: 'error', title: 'Failed to copy to clipboard' }));
 }
 
 function emitConsole(level: 'log' | 'info' | 'warn' | 'error', message: string): void {
@@ -161,7 +161,7 @@ function DebugSection({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="w-full max-w-full overflow-hidden" size="sm" variant="standard">
+    <Card className="w-full max-w-full overflow-hidden" size="sm">
       <CardHeader spacing="tight">
         <CardTitle>
           <span className="text-body-sm font-medium">{title}</span>
@@ -397,25 +397,42 @@ function ErrorThrower(): never {
 }
 
 const TOAST_ACTIONS: { label: string; variant: ButtonVariant; run: () => void }[] = [
-  { label: 'Success', variant: 'primary', run: () => toast.success('Looking good — operation succeeded.') },
-  { label: 'Info', variant: 'outline', run: () => toast.info('Heads up — informational toast.') },
-  { label: 'Warning', variant: 'outline', run: () => toast.warning('Be careful — this might be slow.') },
-  { label: 'Error', variant: 'destructive', run: () => toast.error('Something broke. Check the console.') },
+  {
+    label: 'Success',
+    variant: 'primary',
+    run: () => showToast({ status: 'success', title: 'Looking good — operation succeeded.' }),
+  },
+  {
+    label: 'Info',
+    variant: 'outline',
+    run: () => showToast({ status: 'info', title: 'Heads up — informational toast.' }),
+  },
+  {
+    label: 'Warning',
+    variant: 'outline',
+    run: () => showToast({ status: 'warning', title: 'Be careful — this might be slow.' }),
+  },
+  {
+    label: 'Error',
+    variant: 'destructive',
+    run: () => showToast({ status: 'error', title: 'Something broke. Check the console.' }),
+  },
   {
     label: 'With action',
     variant: 'outline',
     run: () =>
-      toast.message('Action required', {
+      showToast({
+        title: 'Action required',
         description: 'A toast with a description and an action button.',
-        action: { label: 'Undo', onClick: () => toast('Undone') },
+        action: { label: 'Undo', onClick: () => showToast({ title: 'Undone' }) },
       }),
   },
   {
     label: 'Loading → success',
     variant: 'outline',
     run: () => {
-      const id = toast.loading('Processing… (5s)');
-      setTimeout(() => toast.success('Done', { id }), 5000);
+      const id = showToast({ status: 'loading', title: 'Processing… (5s)' });
+      setTimeout(() => updateToast(id, { status: 'success', title: 'Done' }), 5000);
     },
   },
   {
@@ -423,7 +440,7 @@ const TOAST_ACTIONS: { label: string; variant: ButtonVariant; run: () => void }[
     variant: 'outline',
     run: () => {
       for (let i = 0; i < 6; i++) {
-        toast(`Stacked toast #${i + 1}`);
+        showToast({ title: `Stacked toast #${i + 1}` });
       }
     },
   },
@@ -433,10 +450,7 @@ function SimulatePanel({ onClose }: { onClose: () => void }) {
   const [renderThrow, setRenderThrow] = useState(false);
   return (
     <div className="flex flex-col gap-4">
-      <DebugSection
-        description="Fire each toast variant to verify rendering, stacking, and rich colors."
-        title="Toasts"
-      >
+      <DebugSection description="Fire each toast variant to verify rendering and stacking." title="Toasts">
         <div className="flex flex-wrap gap-1.5">
           {TOAST_ACTIONS.map(({ label, variant, run }) => (
             <Button key={label} onClick={run} size="sm" variant={variant}>
@@ -485,7 +499,7 @@ function SimulatePanel({ onClose }: { onClose: () => void }) {
               emitConsole('warn', 'DebugDialog: synthetic console.warn');
               emitConsole('error', 'DebugDialog: synthetic console.error');
               emitConsole('info', 'DebugDialog: synthetic console.info');
-              toast.success('Wrote 3 messages to the console');
+              showToast({ status: 'success', title: 'Wrote 3 messages to the console' });
             }}
             size="sm"
             variant="outline"
@@ -511,7 +525,7 @@ function VisualPanel({ onMutate }: { onMutate: () => void }) {
           icon={<Trash2 />}
           onClick={() => {
             clearVisualDebuggers();
-            toast.success('Disabled all visual debuggers');
+            showToast({ status: 'success', title: 'Disabled all visual debuggers' });
             onMutate();
           }}
           size="xs"
@@ -686,7 +700,7 @@ function StoragePanel() {
     const storage = kind === 'local' ? window.localStorage : window.sessionStorage;
     const before = storage.length;
     storage.clear();
-    toast.success(`Cleared ${before} ${kind}Storage entries — reload to apply state`);
+    showToast({ status: 'success', title: `Cleared ${before} ${kind}Storage entries — reload to apply state` });
     setConfirmingClear(null);
     forceUpdate();
   };
@@ -814,7 +828,7 @@ function FeatureFlagsPanel({ onMutate }: { onMutate: () => void }) {
           icon={<Trash2 />}
           onClick={() => {
             clearFlagOverrides();
-            toast.success('Cleared all feature-flag overrides');
+            showToast({ status: 'success', title: 'Cleared all feature-flag overrides' });
             onMutate();
           }}
           size="xs"
@@ -1001,7 +1015,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
   return (
     <ItemGroup className="overflow-hidden">
       {rows.map(({ panel, icon, label, value, active }, index) => (
-        <Fragment key={panel}>
+        <li key={panel}>
           {/* Bare border-b (not the divider token) so it matches the container's border color in both themes */}
           {index > 0 ? <ItemSeparator /> : null}
           <Item
@@ -1025,7 +1039,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
             </AnimatePresence>
             <ChevronRight className="h-3.5 w-3.5 shrink-0" color="var(--color-muted-foreground)" />
           </Item>
-        </Fragment>
+        </li>
       ))}
     </ItemGroup>
   );

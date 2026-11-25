@@ -14,6 +14,7 @@
 import {
   MultiSelect,
   MultiSelectContent,
+  MultiSelectControl,
   MultiSelectEmpty,
   MultiSelectItem,
   MultiSelectList,
@@ -68,9 +69,10 @@ export const TopicSelector = ({ selectedTopics, onTopicsChange, isReadOnly = fal
       onValueChange={handleValueChange}
       value={selectedTopics}
     >
-      <MultiSelectTrigger className="w-full">
-        <MultiSelectValue placeholder={isLoading ? 'Loading topics...' : 'Select topics...'} />
-      </MultiSelectTrigger>
+      <MultiSelectControl className="w-full">
+        <MultiSelectValue />
+        <MultiSelectTrigger aria-label="Topics" placeholder={isLoading ? 'Loading topics...' : 'Select topics...'} />
+      </MultiSelectControl>
       <MultiSelectContent>
         <MultiSelectSearch placeholder="Search topics..." />
         <MultiSelectList>

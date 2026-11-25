@@ -1,5 +1,6 @@
 import { celEnv, isCelError, parse, plan } from '@bufbuild/cel';
 
+import { createRuleBindings } from './cel-input';
 import type { AutoFormUiRule } from './types';
 
 const env = celEnv();
@@ -8,7 +9,7 @@ const compiledRuleCache = new Map<string, ReturnType<typeof plan>>();
 
 function getCompiledRule(expression: string) {
   const cached = compiledRuleCache.get(expression);
-  if (cached) {
+  if (cached !== undefined) {
     return cached;
   }
 
@@ -19,7 +20,12 @@ function getCompiledRule(expression: string) {
     }
   }
 
-  const compiled = plan(env, parse(expression));
+  let compiled: ReturnType<typeof plan>;
+  try {
+    compiled = plan(env, parse(expression));
+  } catch (error) {
+    throw new Error('Invalid UI rule expression.', { cause: error });
+  }
   compiledRuleCache.set(expression, compiled);
   return compiled;
 }
@@ -31,16 +37,14 @@ export function evaluateUiRules(
     thisValue: unknown;
   }
 ): boolean {
-  if (!rules?.length) {
+  if (!(rules !== undefined && rules.length > 0)) {
     return true;
   }
 
   return rules.every((rule) => {
+    const compiled = getCompiledRule(rule.expression);
     try {
-      const result = getCompiledRule(rule.expression)({
-        form: context.form as never,
-        this: context.thisValue as never,
-      } as never);
+      const result = compiled(createRuleBindings(context.form, context.thisValue));
 
       if (isCelError(result)) {
         return false;

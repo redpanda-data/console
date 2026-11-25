@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert
 import { Badge } from 'components/redpanda-ui/components/badge';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent } from 'components/redpanda-ui/components/card';
-import { FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
+import { FormField, FormItem } from 'components/redpanda-ui/components/form';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { Info, Trash } from 'lucide-react';
 import { FilterType, PatternType } from 'protogen/redpanda/core/admin/v2/shadow_link_pb';
@@ -144,7 +144,6 @@ const FilterItemEditor = ({
       </Button>
     </div>
     {children}
-    <FormMessage />
     {Boolean(showMatchAllMessage) && (
       <Alert variant="warning">
         <Info className="h-4 w-4" />
@@ -185,7 +184,7 @@ export const FilterItem = <TFieldValues extends FieldValues>({
 
   // Editable view (full form)
   return (
-    <Card data-testid={dataTestId} size="full" variant="elevated">
+    <Card data-testid={dataTestId}>
       <CardContent>
         <FormField
           control={control}

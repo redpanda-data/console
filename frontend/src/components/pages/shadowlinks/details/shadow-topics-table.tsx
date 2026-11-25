@@ -290,7 +290,7 @@ export const ShadowTopicsTable: React.FC<ShadowTopicsTableProps> = ({
 
   return (
     <TooltipProvider>
-      <Card size="full">
+      <Card>
         <CardHeader>
           <CardTitle>Replicated topics</CardTitle>
           <CardAction>

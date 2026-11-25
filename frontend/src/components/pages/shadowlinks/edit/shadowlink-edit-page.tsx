@@ -17,9 +17,9 @@ import { Form } from 'components/redpanda-ui/components/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
 import { useEffect, useState } from 'react';
 import { type FieldErrors, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { useSupportedFeaturesStore } from 'state/supported-features';
 import { uiState } from 'state/ui-state';
+import { showToast } from 'utils/toast.utils';
 
 import { ShadowingTab } from './shadowing-tab';
 import { SourceTab } from './source-tab';
@@ -107,9 +107,9 @@ const useShadowLinkUpdateFeedback = (
   // Handle success/error for mutations
   useEffect(() => {
     if (dataplaneUpdate.isSuccess || controlplaneUpdate.isSuccess) {
-      toast.success('Shadow link updated');
+      showToast({ status: 'success', title: 'Shadow link updated' });
       navigate({ to: `/shadowlinks/${name}` }).catch((error: unknown) => {
-        toast.error('Failed to navigate', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
       });
     }
   }, [dataplaneUpdate.isSuccess, controlplaneUpdate.isSuccess, navigate, name]);
@@ -117,9 +117,7 @@ const useShadowLinkUpdateFeedback = (
   useEffect(() => {
     const error = dataplaneUpdate.error || controlplaneUpdate.error;
     if (error) {
-      toast.error('Shadow link update failed', {
-        description: error.message,
-      });
+      showToast({ status: 'error', title: 'Shadow link update failed', description: error.message });
     }
   }, [dataplaneUpdate.error, controlplaneUpdate.error]);
 };
@@ -145,10 +143,12 @@ const reportValidationErrors = (errors: FieldErrors<FormValues>, showTab: (tab: 
     // Format tab name for display
     const tabName = tabDisplayNames[errorTab] || errorTab;
 
-    // Show toast notification with tab information
-    toast.error(`Found ${errorCount} validation ${errorCount === 1 ? 'error' : 'errors'}`, {
+    // Show toast notification with tab information; the id updates it on each submit instead of stacking
+    showToast({
+      id: 'shadowlink-validation-errors',
+      status: 'error',
+      title: `Found ${errorCount} validation ${errorCount === 1 ? 'error' : 'errors'}`,
       description: `Navigated to ${tabName} tab`,
-      testId: 'validation-error-toast',
     });
   }
 };

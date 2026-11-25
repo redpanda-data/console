@@ -10,7 +10,7 @@
  */
 
 import { useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { Card, CardContent, CardHeader, CardTitle } from '../../../redpanda-ui/components/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../redpanda-ui/components/table';
@@ -27,7 +27,7 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
 
   return (
     <div className="flex w-2/3 items-center">
-      <Card size={'full'}>
+      <Card>
         <CardHeader>
           <CardTitle>Multiple hosts found</CardTitle>
         </CardHeader>
@@ -53,7 +53,7 @@ export const HostSelector = ({ principalName, hosts, baseUrl }: HostSelectorProp
                   key={hostValue}
                   onClick={() => {
                     navigate({ to: baseUrl, search: { host: hostValue } }).catch((error: unknown) => {
-                      toast.error('Failed to navigate', { description: String(error) });
+                      showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
                     });
                   }}
                   testId={`host-selector-row-${hostValue}`}

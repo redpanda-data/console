@@ -30,9 +30,8 @@ import type React from 'react';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useCreateSecretMutation } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { ALPHANUMERIC_WITH_HYPHENS } from 'utils/regex';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { failureSummary, formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 import { z } from 'zod';
 
@@ -183,9 +182,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       if (onError) {
         onError(errorMessages);
       } else {
-        for (const message of errorMessages) {
-          toast.error(message);
-        }
+        showToast({ status: 'error', ...failureSummary(errorMessages, `Failed to create ${errorMessages.length} secrets`) });
       }
     }
   };
@@ -198,7 +195,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       if (onError) {
         onError([errorMessage]);
       } else {
-        toast.error(errorMessage);
+        showToast({ status: 'error', title: errorMessage });
       }
       return;
     }
@@ -222,7 +219,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       onSecretsCreated?.([normalizedName]);
       newSecretForm.reset();
 
-      toast.success(`Secret "${normalizedName}" created`);
+      showToast({ status: 'success', title: `Secret "${normalizedName}" created` });
     } catch (error) {
       const errorMessage = formatToastErrorMessageGRPC({
         error: error as ConnectError,
@@ -233,7 +230,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
       if (onError) {
         onError([errorMessage]);
       } else {
-        toast.error(errorMessage);
+        showToast({ status: 'error', title: errorMessage });
       }
     }
   };
@@ -380,7 +377,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
         (inline ? (
           <div className="space-y-4">{requiredSecretsForm}</div>
         ) : (
-          <Card size="full" variant="elevated">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-4 w-4" />
@@ -423,7 +420,7 @@ export const QuickAddSecrets: React.FC<QuickAddSecretsProps> = ({
             </div>
           )
         ) : (
-          <Card size="full">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-4 w-4" />

@@ -10,6 +10,7 @@
 @import '@fontsource/geist-mono/600.css';
 @import 'inter-ui/inter-display.css';
 @import './chat-utilities.css';
+@import './artwork-colors.css';
 
 /* =============================================================================
    Both colour blocks carry the same groups in the same order, so a token's two values sit at the same
@@ -99,6 +100,17 @@
   /* The one knob for the shape language; its rungs are in the `@theme inline` block below. */
   --radius: 0.5rem;
 
+  /* Auth0's hosted-login surface is brand-locked, not the app's reactive palette. */
+  --color-static-auth0-border: #c9cace;
+  --color-static-auth0-foreground: #1e212a;
+  --color-static-auth0-background: #f3f3f3;
+  --color-static-auth0-action: #e24329;
+  --color-static-auth0-action-hover: #d03c38;
+  --color-static-auth0-focus-background: rgba(226, 67, 41, 0.15);
+  --color-static-auth0-hover-overlay: rgba(0, 0, 0, 0.1);
+  --color-static-auth0-focus-ring: rgba(0, 123, 173, 0.15);
+  --color-static-auth0-modal-shadow: rgba(0, 0, 0, 0.12);
+
   /* Elevation — every rung mixes its strength out of `--color-shadow`, the only part that flips:
      black on a light page, white on a dark one, where black paints nothing.
 
@@ -123,7 +135,11 @@
     0 20px 25px -5px color-mix(in srgb, var(--color-shadow) 10%, transparent),
     0 10px 10px 0 color-mix(in srgb, var(--color-shadow) 4%, transparent);
   --shadow-3xl: 0 25px 50px -12px color-mix(in srgb, var(--color-shadow) 25%, transparent);
-  --shadow-elevated: 4px 4px 0px 0px color-mix(in srgb, var(--color-shadow) 8%, transparent);
+  /* The resting surface — card, table, list view — not a control: a contact line under the edge
+     plus a wide, faint spread, because a 2px blur under a 400px surface reads as a hairline. */
+  --shadow-elevated:
+    0 1px 2px 0 color-mix(in srgb, var(--color-shadow) 4%, transparent),
+    0 4px 12px -2px color-mix(in srgb, var(--color-shadow) 6%, transparent);
 
   /* ===================================================================
      COLOUR — light defaults
@@ -221,6 +237,12 @@
      other. A literal rather than a `color-mix()` so the contrast tests read it like every other. */
   --color-surface-recess: rgba(220, 220, 222, 0.5);
   --color-surface-recess-foreground: var(--color-foreground);
+  /* A muted card: a tint that reads on the page and inside a panel, in both themes. A role, not a
+     rung — it borrows `surface-recess` here and `surface-subtle` in dark, where a half-alpha grey over
+     `#060606` or `#161616` lands within 1.06:1 of the card it should differ from. Both are `var()`
+     references, so a sheet that recolours those two recolours this. */
+  --color-surface-muted: var(--color-surface-recess);
+  --color-surface-muted-foreground: var(--color-foreground);
   --color-surface-strong: #c3c4c6;
   --color-surface-strong-foreground: var(--color-foreground);
   --color-surface-strong-hover: #b0b1b3;
@@ -403,6 +425,21 @@
    reintroduces cascade-order dependence.
    ============================================================================= */
 
+/* DnD Kit supplies a complete transition shorthand, not transition-property. */
+@utility transition-sortable {
+  transition: var(--sortable-transition, none);
+}
+
+/* Shared comparison layouts keep structural columns out of consumer overrides. */
+@utility grid-cols-comparison {
+  grid-template-columns: 1fr auto 1fr;
+}
+
+/* The state catalogue supplies only its dynamic column count. */
+@utility grid-cols-state-matrix {
+  grid-template-columns: auto repeat(var(--state-columns), minmax(--spacing(20), 1fr));
+}
+
 @utility text-heading-xl {
   font-family: var(--font-display);
   font-size: var(--text-2xl);
@@ -474,7 +511,7 @@
     }
   }
 
-  &:focus-visible {
+  @variant focus-visible {
     text-decoration-color: currentcolor;
   }
 }
@@ -491,7 +528,7 @@
     }
   }
 
-  &:focus-visible {
+  @variant focus-visible {
     text-decoration-color: currentcolor;
   }
 }
@@ -591,6 +628,7 @@
   --color-surface-subtle-hover: #323232;
   --color-surface-subtle-pressed: #3f3f3f;
   --color-surface-recess: rgba(35, 35, 35, 0.5);
+  --color-surface-muted: var(--color-surface-subtle);
   --color-surface-strong: #333333;
   --color-surface-strong-hover: #434343;
   --color-primary-wash: rgba(92, 212, 203, 0.09);
@@ -737,17 +775,19 @@
     @apply bg-page text-foreground;
   }
 
-  ::selection {
-    color: var(--color-selection-foreground);
-    background-color: var(--color-selection);
-  }
+  @supports selector(::selection) {
+    ::selection {
+      color: var(--color-selection-foreground);
+      background-color: var(--color-selection);
+    }
 
-  /* The sidebar is dark in both themes, so it cannot take `selection`. Exact slot match, never
-     `*='sidebar'`: that also matched `sidebar-wrapper`, which wraps the whole app. */
-  [data-sidebar] *::selection,
-  [data-slot='sidebar'] *::selection {
-    color: var(--color-sidebar-primary-foreground);
-    background-color: var(--color-sidebar-primary);
+    /* The sidebar is dark in both themes, so it cannot take `selection`. Exact slot match, never
+       `*='sidebar'`: that also matched `sidebar-wrapper`, which wraps the whole app. */
+    [data-sidebar] *::selection,
+    [data-slot='sidebar'] *::selection {
+      color: var(--color-sidebar-primary-foreground);
+      background-color: var(--color-sidebar-primary);
+    }
   }
 
   @keyframes blink {
@@ -760,6 +800,15 @@
 /* >>> light scope — generated by `tokens:states`; edit @theme instead. */
 [data-theme='light'],
 .light {
+  --color-static-auth0-border: #c9cace;
+  --color-static-auth0-foreground: #1e212a;
+  --color-static-auth0-background: #f3f3f3;
+  --color-static-auth0-action: #e24329;
+  --color-static-auth0-action-hover: #d03c38;
+  --color-static-auth0-focus-background: rgba(226, 67, 41, 0.15);
+  --color-static-auth0-hover-overlay: rgba(0, 0, 0, 0.1);
+  --color-static-auth0-focus-ring: rgba(0, 123, 173, 0.15);
+  --color-static-auth0-modal-shadow: rgba(0, 0, 0, 0.12);
   --color-shadow: #000000;
   --color-background: #ffffff;
   --color-foreground: #48484a;
@@ -813,6 +862,8 @@
   --color-surface-subtle-pressed: #b9b9bb;
   --color-surface-recess: rgba(220, 220, 222, 0.5);
   --color-surface-recess-foreground: var(--color-foreground);
+  --color-surface-muted: var(--color-surface-recess);
+  --color-surface-muted-foreground: var(--color-foreground);
   --color-surface-strong: #c3c4c6;
   --color-surface-strong-foreground: var(--color-foreground);
   --color-surface-strong-hover: #b0b1b3;

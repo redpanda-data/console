@@ -1,9 +1,8 @@
 'use client';
 
-import type React from 'react';
 import { useController, useFormContext } from 'react-hook-form';
-import { useAutoFormRenderContext, useAutoFormRuntimeContext } from '../context';
-import type { AutoFormFieldProps, ParsedField } from '../core-types';
+import { useAutoForm } from '../context';
+import type { AutoFormValue, ParsedField } from '../core-types';
 import { getFieldErrorMessage } from '../helpers';
 import { getAutoFormFieldTestId } from '../test-ids';
 import { getRenderedLabel, useFieldPresentation } from './shared';
@@ -16,33 +15,34 @@ export function ControlledFieldRenderer({
 }: {
   field: ParsedField;
   path: string[];
-  renderType?: string;
-  inheritedDisabled?: boolean;
+  renderType?: string | undefined;
+  inheritedDisabled?: boolean | undefined;
 }) {
-  const { formComponents, uiComponents } = useAutoFormRenderContext();
+  const { formComponents, uiComponents, testIdPrefix } = useAutoForm();
   const {
     formState: { errors },
   } = useFormContext<Record<string, unknown>>();
   const fullPath = path.join('.');
   const label = getRenderedLabel(field);
-  const error = getFieldErrorMessage(errors, path);
-  const { field: controllerField } = useController({ name: fullPath });
+  const error = getFieldErrorMessage(errors, path, field.type);
+  const { field: controllerField } = useController<Record<string, unknown>>({ name: fullPath });
   const {
     isVisible,
     renderField,
     renderType: inferredRenderType,
   } = useFieldPresentation(field, path, inheritedDisabled);
-  const { testIdPrefix } = useAutoFormRuntimeContext();
 
   if (!isVisible) {
     return null;
   }
 
   const resolvedRenderType = renderType ?? inferredRenderType;
-  const FieldWrapperComponent = field.fieldConfig?.fieldWrapper || uiComponents.FieldWrapper;
-  const FieldComponent = (formComponents[resolvedRenderType] ??
-    formComponents[renderField.type] ??
-    formComponents.fallback) as React.ComponentType<AutoFormFieldProps>;
+  const FieldWrapperComponent = field.fieldConfig?.fieldWrapper ?? uiComponents.FieldWrapper;
+  const FieldComponent = formComponents[resolvedRenderType] ?? formComponents['fallback'];
+  if (FieldComponent === undefined) {
+    throw new Error(`No form renderer is registered for ${resolvedRenderType}.`);
+  }
+  const value = requireFormValue(controllerField.value);
 
   return (
     <FieldWrapperComponent error={error} field={renderField} id={fullPath} label={label}>
@@ -58,12 +58,26 @@ export function ControlledFieldRenderer({
           ref: controllerField.ref,
           required: renderField.required,
           testId: getAutoFormFieldTestId(testIdPrefix, path, 'control'),
-          value: controllerField.value,
+          value,
         }}
         label={label}
         path={path}
-        value={controllerField.value}
+        value={value}
       />
     </FieldWrapperComponent>
   );
+}
+
+function requireFormValue(value: unknown): AutoFormValue {
+  if (
+    value === null ||
+    value === undefined ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'object'
+  ) {
+    return value;
+  }
+  throw new TypeError('Form values must be scalars or structured data, not functions or symbols.');
 }

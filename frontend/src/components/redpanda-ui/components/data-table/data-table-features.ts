@@ -104,4 +104,14 @@ export const {
   createAppColumnHelper: createDataTableColumnHelper,
   useAppTable: useDataTable,
   useTableContext: useDataTableContext,
-} = createTableHook({ features: dataTableFeatures });
+} = createTableHook({
+  features: dataTableFeatures,
+  tableComponents: {},
+  cellComponents: {},
+  headerComponents: {},
+});
+
+/** The bound controller, including its AppTable context and honest selected state. */
+export type DataTableController<TData extends RowData, TSelected = TableState<DataTableFeatures>> = ReturnType<
+  typeof useDataTable<TData, TSelected>
+>;

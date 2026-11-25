@@ -10,11 +10,10 @@
  */
 
 import { create } from '@bufbuild/protobuf';
-import { ConnectError } from '@connectrpc/connect';
 import { useNavigate } from '@tanstack/react-router';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { useCreateRoleMutation } from '../../../../react-query/api/security';
 import { FenceGuardedButton } from '../../../cluster-fence/fence-guarded-controls';
@@ -46,10 +45,9 @@ const useRoleNameChecks = (roleName: string) => ({
 
 export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) => {
   const [roleName, setRoleName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
-  const { mutateAsync: createRole } = useCreateRoleMutation();
+  const { mutate: createRole, isPending } = useCreateRoleMutation();
   const { trimmed, alreadyExists, fenced } = useRoleNameChecks(roleName);
 
   const handleClose = () => {
@@ -58,33 +56,27 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
     onOpenChange(false);
   };
 
-  const createAndOpenRole = async (name: string) => {
-    await createRole(create(CreateRoleRequestSchema, { role: { name } }));
-    toast.success(`Role "${name}" created`);
+  const openCreatedRole = (name: string) => {
+    showToast({ status: 'success', title: `Role "${name}" created` });
     handleClose();
-    // Handled here so a navigation failure is not reported as a failed role create.
     navigate({
       to: '/security/roles/$roleName/details',
       params: { roleName: encodeURIComponent(name) },
       search: { host: undefined },
     }).catch((error: unknown) => {
-      toast.error('Failed to navigate', { description: String(error) });
+      showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
     });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     setSubmitted(true);
     if (!trimmed || alreadyExists || fenced) {
       return;
     }
-    setIsSubmitting(true);
-    try {
-      await createAndOpenRole(trimmed);
-    } catch (err) {
-      toast.error(`Failed to create role: ${ConnectError.from(err).message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
+    // useCreateRoleMutation reports a failure, and the dialog stays open to retry.
+    createRole(create(CreateRoleRequestSchema, { role: { name: trimmed } }), {
+      onSuccess: () => openCreatedRole(trimmed),
+    });
   };
 
   return (
@@ -113,7 +105,7 @@ export const RoleCreateDialog = ({ open, onOpenChange }: RoleCreateDialogProps) 
           </Button>
           <FenceGuardedButton
             action="editRoles"
-            disabled={!trimmed || (submitted && alreadyExists) || isSubmitting}
+            disabled={!trimmed || (submitted && alreadyExists) || isPending}
             onClick={handleSubmit}
           >
             Create

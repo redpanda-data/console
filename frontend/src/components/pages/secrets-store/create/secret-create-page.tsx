@@ -19,6 +19,7 @@ import { Input } from 'components/redpanda-ui/components/input';
 import {
   MultiSelect,
   MultiSelectContent,
+  MultiSelectControl,
   MultiSelectEmpty,
   MultiSelectItem,
   MultiSelectList,
@@ -31,9 +32,8 @@ import { CreateSecretRequestSchema } from 'protogen/redpanda/api/dataplane/v1/se
 import { useEffect } from 'react';
 import { Controller, type Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useCreateSecretMutation, useListSecretsQuery } from 'react-query/api/secret';
-import { toast } from 'sonner';
 import { uiState } from 'state/ui-state';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
 import { initialValues, SecretCreateFormSchema, type SecretCreateFormValues } from './secret-create-form-schema';
@@ -76,14 +76,17 @@ export const SecretCreatePage = () => {
 
     try {
       await createSecret({ request });
-      toast.success('Secret created');
+      showToast({ status: 'success', title: 'Secret created' });
       // Handled here so a navigation failure is not reported as a failed create.
       navigate({ to: '/secrets' }).catch((navigationError: unknown) => {
-        toast.error('Failed to navigate', { description: String(navigationError) });
+        showToast({ status: 'error', title: 'Failed to navigate', description: String(navigationError) });
       });
     } catch (error) {
       const connectError = ConnectError.from(error);
-      toast.error(formatToastErrorMessageGRPC({ error: connectError, action: 'create', entity: 'secret' }));
+      showToast({
+        status: 'error',
+        title: formatToastErrorMessageGRPC({ error: connectError, action: 'create', entity: 'secret' }),
+      });
     }
   };
 
@@ -144,9 +147,10 @@ export const SecretCreatePage = () => {
                 onValueChange={(values) => field.onChange(values.map(Number))}
                 value={field.value.map(String)}
               >
-                <MultiSelectTrigger className="w-full" data-testid="secret-scopes-select">
-                  <MultiSelectValue placeholder="Select scopes" />
-                </MultiSelectTrigger>
+                <MultiSelectControl className="w-full">
+                  <MultiSelectValue />
+                  <MultiSelectTrigger aria-label="Scopes" placeholder="Select scopes" testId="secret-scopes-select" />
+                </MultiSelectControl>
                 <MultiSelectContent>
                   <MultiSelectList>
                     {SCOPE_OPTIONS.map((option) => (

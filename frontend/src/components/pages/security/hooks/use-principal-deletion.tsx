@@ -6,7 +6,7 @@ import {
   ACL_ResourceType,
   DeleteACLsRequestSchema,
 } from 'protogen/redpanda/api/dataplane/v1/acl_pb';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import type { PrincipalPermissionGroup } from './use-principal-permissions';
 import { useDeleteAclMutation } from '../../../../react-query/api/acl';
@@ -46,20 +46,26 @@ export function usePrincipalDeletion(onError: (err: unknown) => void) {
         },
       })
     );
-    toast.success(
-      <span>
-        Deleted ACLs for <CodeEl>{principalName}</CodeEl>
-      </span>
-    );
+    showToast({
+      status: 'success',
+      title: (
+        <span>
+          Deleted ACLs for <CodeEl>{principalName}</CodeEl>
+        </span>
+      ),
+    });
   };
 
   const deleteUser = async ({ principalName }: PrincipalPermissionGroup) => {
     await deleteUserMutation({ name: principalName });
-    toast.success(
-      <span>
-        Deleted user <CodeEl>{principalName}</CodeEl>
-      </span>
-    );
+    showToast({
+      status: 'success',
+      title: (
+        <span>
+          Deleted user <CodeEl>{principalName}</CodeEl>
+        </span>
+      ),
+    });
   };
 
   return async (group: PrincipalPermissionGroup, shouldDeleteUser: boolean, shouldDeleteAcls: boolean) => {

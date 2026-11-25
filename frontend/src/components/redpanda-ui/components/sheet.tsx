@@ -4,7 +4,6 @@ import { Dialog as SheetPrimitive } from '@base-ui/react/dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import type React from 'react';
-
 import { usePortalContainer } from '../lib/use-portal-container';
 import { cn, type FixedPositionContentProps, type SharedProps } from '../lib/utils';
 
@@ -85,20 +84,12 @@ const sheetVariants = cva(
       side: {
         top: 'inset-x-0 top-0 h-auto border-b',
         bottom: 'inset-x-0 bottom-0 h-auto border-t',
-        left: 'inset-y-0 left-0 h-full w-full border-r',
-        right: 'inset-y-0 right-0 h-full w-full border-l',
+        left: 'inset-y-0 left-0 size-full border-r',
+        right: 'inset-y-0 right-0 size-full border-l',
       },
-      /** Keyed empty so the prop keeps its type; the caps are compound variants, per `SHEET_MAX_WIDTH`. */
-      size: Object.fromEntries(Object.keys(SHEET_MAX_WIDTH).map((size) => [size, ''])) as Record<SheetSize, string>,
     },
-    compoundVariants: Object.entries(SHEET_MAX_WIDTH).map(([size, className]) => ({
-      class: className,
-      side: ['left', 'right'] as ('left' | 'right')[],
-      size: size as SheetSize,
-    })),
     defaultVariants: {
       side: 'right',
-      size: 'xl',
     },
   }
 );
@@ -111,14 +102,14 @@ type SheetContentProps = SheetPrimitive.Popup.Props &
      * Caps the width of a `left`/`right` sheet. A `top`/`bottom` sheet spans the viewport and takes
      * its height from its content, so this does not apply to one.
      */
-    size?: SheetSize;
-    showCloseButton?: boolean;
+    size?: SheetSize | undefined;
+    showCloseButton?: boolean | undefined;
     /**
      * Pads the top so content starts below the close button instead of under it. Opt-in because it
      * moves content down. Ignored when `showCloseButton` is false.
      * @default false
      */
-    closeButtonGutter?: boolean;
+    closeButtonGutter?: boolean | undefined;
   };
 
 function SheetContent({
@@ -140,9 +131,13 @@ function SheetContent({
       {showOverlay ? <SheetOverlay /> : null}
       <SheetPrimitive.Popup
         aria-modal="true"
-        // pt-16: the close button ends 48px down (top-5 + a 28px icon), plus one gap-4. Last, so a
-        // padding shorthand in `className` cannot merge it away.
-        className={cn(sheetVariants({ side, size }), className, showCloseButton && closeButtonGutter && 'pt-16')}
+        // The close button ends 48px down; reserve one more gap-4 when clearance is requested.
+        className={cn(
+          sheetVariants({ side }),
+          (side === 'left' || side === 'right') && SHEET_MAX_WIDTH[size],
+          className,
+          showCloseButton && closeButtonGutter && 'pt-16'
+        )}
         data-side={side}
         data-slot="sheet-content"
         data-testid={testId}
@@ -151,10 +146,10 @@ function SheetContent({
         {children}
         {showCloseButton ? (
           <SheetPrimitive.Close
-            className="absolute top-5 right-5 cursor-pointer rounded-sm opacity-70 outline-none transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none motion-reduce:transition-none"
+            className="absolute top-5 right-5 cursor-pointer rounded-sm opacity-70 transition-opacity outline-none hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none motion-reduce:transition-none"
             data-slot="sheet-close"
           >
-            <X className="h-7 w-7" />
+            <X className="size-7" />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>
         ) : null}
@@ -176,8 +171,8 @@ function SheetFooter({ className, ...props }: SheetFooterProps) {
 }
 
 type SheetTitleProps = Omit<SheetPrimitive.Title.Props, 'className'> & {
-  className?: string;
-  level?: 1 | 2 | 3 | 4;
+  className?: string | undefined;
+  level?: 1 | 2 | 3 | 4 | undefined;
 };
 
 // Maps a sheet title level (1–4) to its heading utility class (literals so Tailwind can scan them).

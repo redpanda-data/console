@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from 'components/redpanda-ui/components/dropdown-menu';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { MessageKeyPreview } from './message-display/message-key-preview';
 import { MessagePreview } from './message-display/message-preview';
@@ -85,7 +85,7 @@ export function onCopyValue(original: TopicMessage) {
   navigator.clipboard
     .writeText(getPayloadAsString((original.value.payload ?? original.value.rawBytes) as string | Uint8Array | object))
     .then(() => {
-      toast.success('Value copied to clipboard');
+      showToast({ status: 'success', title: 'Value copied to clipboard' });
     })
     .catch(navigatorClipboardErrorHandler);
 }
@@ -94,7 +94,7 @@ export function onCopyKey(original: TopicMessage) {
   navigator.clipboard
     .writeText(getPayloadAsString((original.key.payload ?? original.key.rawBytes) as string | Uint8Array | object))
     .then(() => {
-      toast.success('Key copied to clipboard');
+      showToast({ status: 'success', title: 'Key copied to clipboard' });
     })
     .catch(navigatorClipboardErrorHandler);
 }
@@ -255,7 +255,7 @@ function buildActionColumn(onSaveMessage: (message: TopicMessage) => void): Data
               navigator.clipboard
                 .writeText(getMessageAsString(original))
                 .then(() => {
-                  toast.success('Message copied to clipboard');
+                  showToast({ status: 'success', title: 'Message copied to clipboard' });
                 })
                 .catch(navigatorClipboardErrorHandler);
             }}
@@ -273,7 +273,7 @@ function buildActionColumn(onSaveMessage: (message: TopicMessage) => void): Data
               navigator.clipboard
                 .writeText(original.timestamp.toString())
                 .then(() => {
-                  toast.success('Epoch Timestamp copied to clipboard');
+                  showToast({ status: 'success', title: 'Epoch Timestamp copied to clipboard' });
                 })
                 .catch(navigatorClipboardErrorHandler);
             }}

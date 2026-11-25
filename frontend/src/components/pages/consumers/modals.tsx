@@ -13,8 +13,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { SortingState } from '@tanstack/react-table';
 import { ChevronLeftIcon, ChevronRightIcon, SkipIcon, TrashIcon, WarningIcon } from 'components/icons';
 import { Component, type ReactNode, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
+import { showToast } from 'utils/toast.utils';
 
 import { withProgressToast } from './with-progress-toast';
 import { appGlobal } from '../../../state/app-global';
@@ -557,7 +557,7 @@ export class EditOffsetsModal extends Component<{
         // in order to know earliest/latest offsets
         const topics = this.props.group.topicOffsets.map((x) => x.topic).distinct();
         api.refreshPartitions(topics, true).catch((error: unknown) => {
-          toast.error('Failed to load partition offsets', { description: String(error) });
+          showToast({ status: 'error', title: 'Failed to load partition offsets', description: String(error) });
         });
 
         // reset settings
@@ -904,7 +904,7 @@ const useDeleteOffsets = ({
       api.refreshConsumerGroups(true);
       // Caught here so a failed refresh can't replace the delete's own outcome or escape the click.
       await queryClient.invalidateQueries({ queryKey: ['consumer-groups'] }).catch((error: unknown) => {
-        toast.error('Failed to refresh consumer groups', { description: String(error) });
+        showToast({ status: 'error', title: 'Failed to refresh consumer groups', description: String(error) });
       });
     }
   };

@@ -2,76 +2,15 @@
 
 // Copyright 2026 Redpanda Data, Inc.
 
-import { cva, type VariantProps } from 'class-variance-authority';
+import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
+import type { VariantProps } from 'class-variance-authority';
 import React from 'react';
-
 import { CopyButton } from './copy-button';
-import { escapeHtmlText, SanitizedHtml } from './sanitized-html';
-import { Tabs, TabsContent, TabsContents, TabsList, type TabsProps, TabsTrigger } from './tabs';
+import { SanitizedHtml } from './sanitized-html';
+import { escapeHtmlText } from './sanitized-html/html';
 import { cn } from '../lib/utils';
-
-const codeTabsVariants = cva('w-full gap-0 overflow-hidden rounded-xl border bg-card', {
-  variants: {
-    variant: {
-      standard: 'w-full gap-0 overflow-hidden rounded-xl border bg-card',
-    },
-  },
-  defaultVariants: {
-    variant: 'standard',
-  },
-});
-
-/**
- * Shiki emits both themes' colours as custom properties per span; these rules pick the one matching the
- * app theme, so the block follows it with no prop and no JS. Scoped to the component so installing it
- * alone cannot restyle another highlighter on the page. `.dark` rides along as theme.css accepts it.
- */
-const dualThemeStyles = `
-[data-slot='install-tabs'] .shiki code span { color: var(--shiki-light); }
-[data-theme='dark'] [data-slot='install-tabs'] .shiki code span { color: var(--shiki-dark); }
-.dark [data-slot='install-tabs'] .shiki code span { color: var(--shiki-dark); }
-`;
-
-const codeTabsListVariants = cva(
-  '!border-border relative h-10 w-full justify-between rounded-none border-b bg-surface-subtle px-4 py-0 text-current',
-  {
-    variants: {
-      variant: {
-        standard:
-          '!border-border relative h-10 w-full justify-between rounded-none border-b bg-surface-subtle px-4 py-0 text-current',
-      },
-    },
-    defaultVariants: {
-      variant: 'standard',
-    },
-  }
-);
-
-const codeTabsActiveVariants = cva(
-  "rounded-none bg-transparent shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:bg-selected after:content-['']",
-  {
-    variants: {
-      variant: {
-        standard:
-          "rounded-none bg-transparent shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-t-full after:bg-selected after:content-['']",
-      },
-    },
-    defaultVariants: {
-      variant: 'standard',
-    },
-  }
-);
-
-const codeTabsContentVariants = cva('flex w-full items-center overflow-auto p-4 text-body', {
-  variants: {
-    variant: {
-      standard: 'flex w-full items-center overflow-auto p-4 text-body',
-    },
-  },
-  defaultVariants: {
-    variant: 'standard',
-  },
-});
+import { omitUndefined } from '../lib/utils/omit-undefined';
+import { codeTabsActiveVariants, codeTabsContentVariants, codeTabsListVariants, codeTabsVariants } from './code-tabs/variants';
 
 interface CodeTabItem {
   code: string;
@@ -95,7 +34,7 @@ async function highlightCodeTabs({
   theme,
 }: HighlightCodeTabsInput): Promise<CodeTabItem[]> {
   const { codeToHtml } = await import('shiki');
-  return Promise.all(
+  return await Promise.all(
     items.map(async (item) => ({
       id: item.id,
       label: item.label,
@@ -114,28 +53,45 @@ function createFallbackItems(items: CodeTabItem[]): CodeTabItem[] {
 }
 
 type CodeTabsProps = {
-  codes?: Record<string, string>;
-  items?: CodeTabItem[];
-  lang?: string;
-  themes?: {
-    light: string;
-    dark: string;
-  };
-  theme?: 'light' | 'dark' | 'system';
-  copyButton?: boolean;
-  onCopy?: (content: string) => void;
-  testId?: string;
-} & Omit<TabsProps, 'children'> &
+  codes?: Record<string, string> | undefined;
+  value?: string | undefined;
+  defaultValue?: string | undefined;
+  onValueChange?: ((value: string, details: TabsPrimitive.Root.ChangeEventDetails) => void) | undefined;
+  items?: CodeTabItem[] | undefined;
+  lang?: string | undefined;
+  themes?:
+    | {
+        light: string;
+        dark: string;
+      }
+    | undefined;
+  theme?: 'light' | 'dark' | 'system' | undefined;
+  copyButton?: boolean | undefined;
+  onCopy?: ((content: string) => void) | undefined;
+  testId?: string | undefined;
+} & Omit<TabsPrimitive.Root.Props, 'children' | 'value' | 'defaultValue' | 'onValueChange' | 'onCopy'> &
   VariantProps<typeof codeTabsVariants>;
+
+const DEFAULT_THEMES = { light: 'github-light-high-contrast', dark: 'github-dark-default' };
+
+function normalizeCodeItems(
+  items: CodeTabItem[] | undefined,
+  codes: Record<string, string> | undefined
+): CodeTabItem[] {
+  if (items !== undefined) {
+    return items;
+  }
+  if (codes !== undefined) {
+    return Object.entries(codes).map(([id, code]) => ({ id, label: id, code }));
+  }
+  return [];
+}
 
 function CodeTabs({
   codes,
   items,
   lang = 'bash',
-  themes = {
-    light: 'github-light',
-    dark: 'github-dark-default',
-  },
+  themes = DEFAULT_THEMES,
   theme,
   className,
   defaultValue,
@@ -148,110 +104,122 @@ function CodeTabs({
   ...props
 }: CodeTabsProps) {
   // Accept either `items` or the simpler `codes` shape; normalize to items.
-  const normalizedItems = React.useMemo<CodeTabItem[]>(() => {
-    if (items) {
-      return items;
-    }
-    if (codes) {
-      return Object.entries(codes).map(([key, code]) => ({
-        id: key,
-        label: key,
-        code,
-      }));
-    }
-    return [];
-  }, [codes, items]);
+  const normalizedItems = normalizeCodeItems(items, codes);
 
   const [highlightedItems, setHighlightedItems] = React.useState<CodeTabItem[] | null>(null);
-  const [selectedCode, setSelectedCode] = React.useState<string>(value ?? defaultValue ?? normalizedItems[0]?.id ?? '');
+  const [localSelectedCode, setSelectedCode] = React.useState<string>(defaultValue ?? normalizedItems[0]?.id ?? '');
+  const selectedCode = value ?? localSelectedCode;
   const { dark: darkTheme, light: lightTheme } = themes;
+  const [request, setRequest] = React.useState({
+    codes,
+    sourceItems: items,
+    lang,
+    darkTheme,
+    lightTheme,
+    theme,
+    pending: true,
+  });
+  const requestChanged =
+    request.codes !== codes ||
+    request.sourceItems !== items ||
+    request.lang !== lang ||
+    request.darkTheme !== darkTheme ||
+    request.lightTheme !== lightTheme ||
+    request.theme !== theme;
+  if (requestChanged) {
+    setRequest({ codes, sourceItems: items, lang, darkTheme, lightTheme, theme, pending: true });
+  }
+  const pending = requestChanged || request.pending;
 
-  React.useEffect(() => {
-    let cancelled = false;
-    highlightCodeTabs({ darkTheme, items: normalizedItems, lang, lightTheme, theme })
-      .then((newHighlightedItems) => {
-        if (!cancelled) {
-          setHighlightedItems(newHighlightedItems);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setHighlightedItems(createFallbackItems(normalizedItems));
-        }
-      });
+  React.useEffect(
+    function highlightCodeItems() {
+      let cancelled = false;
+      const sourceItems = normalizeCodeItems(items, codes);
+      const complete = (result: CodeTabItem[]) => {
+        setHighlightedItems(result);
+        setRequest({ codes, sourceItems: items, lang, darkTheme, lightTheme, theme, pending: false });
+      };
+      highlightCodeTabs(omitUndefined({ darkTheme, items: sourceItems, lang, lightTheme, theme }))
+        .then((newHighlightedItems) => {
+          if (!cancelled) {
+            complete(newHighlightedItems);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            complete(createFallbackItems(sourceItems));
+          }
+        });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [darkTheme, lang, lightTheme, normalizedItems, theme]);
+      return () => {
+        cancelled = true;
+      };
+    },
+    [codes, darkTheme, items, lang, lightTheme, theme]
+  );
 
   const selectedItem = normalizedItems.find((item) => item.id === selectedCode);
 
   return (
-    <Tabs
+    <TabsPrimitive.Root
       className={cn(codeTabsVariants({ variant }), className)}
+      data-highlight-pending={pending || undefined}
       data-slot="install-tabs"
       data-testid={testId}
       {...props}
-      onValueChange={(val, eventDetails) => {
-        setSelectedCode(val);
+      onValueChange={(val: unknown, eventDetails) => {
+        if (typeof val !== 'string') {
+          throw new TypeError('CodeTabs values must be string item identifiers.');
+        }
+        if (value === undefined) {
+          setSelectedCode(val);
+        }
         onValueChange?.(val, eventDetails);
       }}
       value={selectedCode}
     >
-      <style>{dualThemeStyles}</style>
-      <TabsList
-        activeClassName={codeTabsActiveVariants({ variant })}
-        className={codeTabsListVariants({ variant })}
-        data-slot="install-tabs-list"
-      >
-        <div className="flex h-full gap-x-1 overflow-x-auto [scrollbar-width:none] sm:gap-x-2 [&::-webkit-scrollbar]:hidden">
+      <div className={codeTabsListVariants({ variant })} data-slot="install-tabs-list">
+        <TabsPrimitive.List className="relative flex h-full min-w-0 [scrollbar-width:none] gap-x-1 overflow-x-auto sm:gap-x-2 [&::-webkit-scrollbar]:hidden">
+          <TabsPrimitive.Indicator
+            aria-hidden
+            className={cn(
+              'pointer-events-none absolute top-(--active-tab-top) left-(--active-tab-left) z-0 h-(--active-tab-height) w-(--active-tab-width)',
+              codeTabsActiveVariants({ variant })
+            )}
+            data-slot="code-tabs-indicator"
+          />
           {highlightedItems?.map((item) => (
-            <TabsTrigger
-              className="shrink-0 px-2 text-body-sm text-subtle data-[active]:text-selected sm:px-3"
+            <TabsPrimitive.Tab
+              className="relative z-10 inline-flex h-full shrink-0 cursor-pointer items-center justify-center rounded-sm px-2 text-body-sm font-medium whitespace-nowrap text-subtle transition-colors outline-none hover:not-data-[active]:bg-accent hover:not-data-[active]:text-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 data-[active]:text-selected motion-reduce:transition-none sm:px-3"
+              data-slot="code-tabs-trigger"
               key={item.id}
               value={item.id}
             >
               {item.label}
-            </TabsTrigger>
+            </TabsPrimitive.Tab>
           ))}
-        </div>
+        </TabsPrimitive.List>
 
-        {copyButton && highlightedItems && selectedItem ? (
-          <CopyButton
-            className="-me-2 bg-transparent hover:bg-accent active:bg-accent-pressed"
-            content={selectedItem.code}
-            onCopy={onCopy}
-            size="sm"
-            variant="ghost"
-          />
+        {copyButton && highlightedItems !== null && selectedItem !== undefined ? (
+          <CopyButton className="-me-2" content={selectedItem.code} onCopy={onCopy} size="sm" variant="ghost" />
         ) : null}
-      </TabsList>
-      <TabsContents data-slot="install-tabs-contents">
+      </div>
+      <div data-slot="install-tabs-contents">
         {highlightedItems?.map((item) => (
-          <TabsContent
+          <TabsPrimitive.Panel
             className={codeTabsContentVariants({ variant })}
             data-slot="install-tabs-content"
             key={item.id}
             value={item.id}
           >
-            <SanitizedHtml
-              className="[&>pre,_&_code]:!bg-transparent [&_code]:!text-body [&>pre,_&_code]:border-none [&>pre,_&_code]:[background:transparent_!important]"
-              html={item.code}
-            />
-          </TabsContent>
+            <div className="[&_.shiki_code_span]:code-token [&_code]:!text-body [&_pre,_&_code]:border-none [&_pre,_&_code]:!bg-transparent">
+              <SanitizedHtml html={item.code} />
+            </div>
+          </TabsPrimitive.Panel>
         ))}
-      </TabsContents>
-    </Tabs>
+      </div>
+    </TabsPrimitive.Root>
   );
 }
 
-export {
-  type CodeTabItem,
-  CodeTabs,
-  type CodeTabsProps,
-  codeTabsActiveVariants,
-  codeTabsContentVariants,
-  codeTabsListVariants,
-  codeTabsVariants,
-};
+export { type CodeTabItem, CodeTabs, type CodeTabsProps };

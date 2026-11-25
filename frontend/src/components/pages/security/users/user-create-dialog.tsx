@@ -12,7 +12,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import { CreateUserButton, CreateUserConfirmationModal, CreateUserModal } from './user-create';
 import {
@@ -41,7 +41,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
   const onGoToUserDetails = () => {
     handleClose();
     navigate({ to: `/security/users/${username}/details` }).catch((error: unknown) => {
-      toast.error('Failed to navigate', { description: String(error) });
+      showToast({ status: 'error', title: 'Failed to navigate', description: String(error) });
     });
   };
 

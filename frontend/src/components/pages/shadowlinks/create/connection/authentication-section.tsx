@@ -105,7 +105,7 @@ export const AuthenticationSection = () => {
   const showCredentials = authMethod === AUTH_METHOD.SCRAM || authMethod === AUTH_METHOD.PLAIN;
 
   return (
-    <Card size="full">
+    <Card>
       <CardHeader>
         <CardTitle>Authentication</CardTitle>
       </CardHeader>

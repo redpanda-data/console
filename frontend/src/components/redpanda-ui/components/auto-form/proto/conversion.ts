@@ -1,20 +1,15 @@
-import type { DescMessage } from '@bufbuild/protobuf';
+import { type DescMessage, isMessage } from '@bufbuild/protobuf';
+import type { JSONSchemaType } from '../../json-field/json-value';
 
 import type { ParsedField } from '../../../lib/form-types';
-import {
-  getProtoFieldCustomData,
-  type ProtoMapFormEntry,
-  protoFormValuesToPayload,
-  protoPayloadToFormValues,
-  protoToFormValues,
-} from '../../../lib/protobuf-provider';
+import { protoToFormValues } from '../../../lib/protobuf-provider/form-values';
+import { getProtoFieldCustomData } from '../../../lib/protobuf-provider/metadata';
 
-export { protoFormValuesToPayload, protoPayloadToFormValues, protoToFormValues };
-
-export function getProtoJsonSchema(field: ParsedField): Record<string, unknown> {
+export function getProtoJsonSchema(field: ParsedField): JSONSchemaType {
   const protoData = getProtoFieldCustomData(field);
 
-  switch (protoData?.jsonKind) {
+  const jsonKind = protoData?.jsonKind;
+  switch (jsonKind) {
     case 'listValue':
       return { type: 'array' };
     case 'any':
@@ -25,30 +20,26 @@ export function getProtoJsonSchema(field: ParsedField): Record<string, unknown> 
           valueBase64: { type: 'string', title: 'Base64 Payload' },
         },
       };
-    default:
+    case undefined:
+    case 'struct':
+    case 'value':
       return { type: 'object' };
+    default:
+      throw new Error(jsonKind satisfies never);
   }
-}
-
-export function isProtoMapEntries(value: unknown): value is ProtoMapFormEntry[] {
-  return Array.isArray(value);
-}
-
-function isProtoMessageShape(value: unknown): boolean {
-  return Boolean(value && typeof value === 'object' && '$typeName' in (value as Record<string, unknown>));
 }
 
 export function normalizeProtoInitialValues(
   desc: DescMessage,
   values?: Partial<Record<string, unknown>>
 ): Record<string, unknown> | undefined {
-  if (!values) {
+  if (values === undefined) {
     return;
   }
 
-  if (isProtoMessageShape(values)) {
-    return protoToFormValues(desc, values as never);
+  if (isMessage(values, desc)) {
+    return protoToFormValues(desc, values);
   }
 
-  return values as Record<string, unknown>;
+  return values;
 }

@@ -2,58 +2,26 @@
 
 // Copyright 2026 Redpanda Data, Inc.
 
-import { cva, type VariantProps } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 import { CheckIcon, CopyIcon, XIcon } from 'lucide-react';
-import { AnimatePresence, type HTMLMotionProps, motion } from 'motion/react';
+import { AnimatePresence, domMax, type HTMLMotionProps, LazyMotion } from 'motion/react';
+import { button as MotionButton, span as MotionSpan } from 'motion/react-m';
 import React from 'react';
-
+import { hasSlotContent } from '../lib/has-slot-content';
 import { cn } from '../lib/utils';
-
-const buttonVariants = cva(
-  "focus-visible:!border-ring aria-invalid:!border-destructive inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium text-body outline-none transition-all focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:ring-invalid motion-reduce:transition-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
-  {
-    variants: {
-      // A subset of Button's variants, and each one paints Button's tones — the same name means the
-      // same colour in both. `default` is the neutral member, and what a bare CopyButton gets.
-      variant: {
-        default:
-          'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary-hover active:bg-secondary-pressed',
-        primary: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover active:bg-primary-pressed',
-        destructive:
-          'bg-surface-destructive text-destructive-foreground shadow-xs hover:bg-surface-destructive-hover focus-visible:ring-destructive/50 active:bg-surface-destructive-pressed',
-        outline:
-          '!border-secondary-line hover:!border-secondary-line-hover active:!border-secondary-line-pressed disabled:!border-border border bg-transparent text-secondary shadow-xs hover:bg-secondary-wash active:bg-secondary-wash-pressed disabled:text-disabled',
-
-        ghost:
-          'bg-transparent text-secondary hover:bg-secondary-wash active:bg-secondary-wash-pressed disabled:text-disabled',
-      },
-      size: {
-        sm: 'h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5',
-        md: 'h-9 px-4 py-2 has-[>svg]:px-3',
-        lg: 'h-10 rounded-md px-6 has-[>svg]:px-4',
-        icon: 'size-9',
-        // Mirrors Button's icon-xs, for a copy affordance inside a table row.
-        'icon-xs': 'size-6 [&_svg]:size-3.5',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'md',
-    },
-  }
-);
+import { buttonVariants } from './copy-button/variants';
 
 const ICONS = { copied: CheckIcon, error: XIcon, idle: CopyIcon } as const;
 
 type CopyButtonProps = Omit<HTMLMotionProps<'button'>, 'onCopy' | 'children'> &
   VariantProps<typeof buttonVariants> & {
-    content?: string;
-    delay?: number;
-    onCopy?: (content: string) => void;
-    isCopied?: boolean;
-    onCopyChange?: (isCopied: boolean) => void;
-    testId?: string;
-    children?: React.ReactNode;
+    content?: string | undefined;
+    delay?: number | undefined;
+    onCopy?: ((content: string) => void) | undefined;
+    isCopied?: boolean | undefined;
+    onCopyChange?: ((isCopied: boolean) => void) | undefined;
+    testId?: string | undefined;
+    children?: React.ReactNode | undefined;
   };
 
 function CopyButton({
@@ -73,12 +41,20 @@ function CopyButton({
   const [localIsCopied, setLocalIsCopied] = React.useState(false);
   const [isErrored, setIsErrored] = React.useState(false);
   const copied = isCopied ?? localIsCopied;
-  const state = (copied && 'copied') || (isErrored && 'error') || 'idle';
+  let state: keyof typeof ICONS = 'idle';
+  if (copied) {
+    state = 'copied';
+  }
+  if (isErrored) {
+    state = 'error';
+  }
   const Icon = ICONS[state];
   const resetTimeout = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   React.useEffect(function clearCopyResetOnUnmount() {
-    return () => clearTimeout(resetTimeout.current);
+    return () => {
+      clearTimeout(resetTimeout.current);
+    };
   }, []);
 
   const scheduleReset = (reset: () => void) => {
@@ -93,38 +69,49 @@ function CopyButton({
     onCopyChange?.(isCopiedState);
   };
 
+  const handleCopyFailure = () => {
+    setLocalIsCopied(false);
+    setIsErrored(true);
+    scheduleReset(() => {
+      setIsErrored(false);
+    });
+  };
+
   const handleCopy = async (event: React.MouseEvent<HTMLButtonElement>) => {
     onClick?.(event);
-    if (!content) {
+    if (!(content !== undefined && content !== '')) {
       return;
     }
     try {
       await navigator.clipboard.writeText(content);
     } catch {
+      handleCopyFailure();
       handleIsCopied(false);
-      setIsErrored(true);
-      scheduleReset(() => setIsErrored(false));
       return;
     }
     setIsErrored(false);
     handleIsCopied(true);
-    scheduleReset(() => handleIsCopied(false));
+    scheduleReset(() => {
+      handleIsCopied(false);
+    });
     onCopy?.(content);
   };
 
   return (
-    <>
-      <motion.button
-        aria-label={children ? undefined : 'Copy'}
+    <LazyMotion features={domMax}>
+      <MotionButton
+        aria-label={hasSlotContent(children) ? undefined : 'Copy'}
         className={cn(buttonVariants({ variant, size }), className)}
         data-slot="copy-button"
         data-testid={testId}
-        onClick={handleCopy}
+        onClick={(event) => {
+          handleCopy(event).catch(handleCopyFailure);
+        }}
         type="button"
         {...props}
       >
         <AnimatePresence mode="wait">
-          <motion.span
+          <MotionSpan
             animate={{ scale: 1 }}
             data-slot="copy-button-icon"
             data-state={state}
@@ -134,17 +121,17 @@ function CopyButton({
             transition={{ duration: 0.15 }}
           >
             <Icon />
-          </motion.span>
+          </MotionSpan>
         </AnimatePresence>
         {children}
-      </motion.button>
+      </MotionButton>
       {isErrored ? (
         <span className="sr-only" role="alert">
           Copy failed
         </span>
       ) : null}
-    </>
+    </LazyMotion>
   );
 }
 
-export { buttonVariants, CopyButton, type CopyButtonProps };
+export { CopyButton, type CopyButtonProps };

@@ -11,7 +11,7 @@
 
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 import type { MessagePagingParams, MessageQueryParams } from './use-message-view-params';
 import { isServerless } from '../../../../../config';
@@ -527,7 +527,11 @@ function startLoadMore({
       (err: unknown) => {
         const shouldReport = isMountedRef.current && !abortController.signal.aborted;
         if (shouldReport) {
-          toast.error('Failed to load more messages', { description: getSearchErrorMessage(err) });
+          showToast({
+            status: 'error',
+            title: 'Failed to load more messages',
+            description: getSearchErrorMessage(err),
+          });
         }
         return { type: 'error' as const, shouldReport };
       }

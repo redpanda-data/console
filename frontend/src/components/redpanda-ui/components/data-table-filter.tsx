@@ -3,11 +3,10 @@
 import type { RowData } from '@tanstack/react-table';
 import { Ellipsis, FilterIcon, X } from 'lucide-react';
 import type React from 'react';
-import { isValidElement, memo, useCallback, useEffect, useMemo, useState } from 'react';
-
-import { type BadgeVariantKey, badgeVariants } from './badge';
-import { Button } from './button';
-import { Checkbox } from './checkbox';
+import { isValidElement, useEffect, useEffectEvent, useRef, useState } from 'react';
+import type { BadgeEmphasis, BadgeTone } from './badge';
+import { badgeVariants } from './badge/variants';
+import { CheckboxView } from './checkbox';
 import {
   Command,
   CommandEmpty,
@@ -25,12 +24,14 @@ import { Input } from './input';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { Separator } from './separator';
 import type { DataTableFilterActions } from '../lib/use-data-table-filter';
-import type { FilterModel, FilterOperatorMap, FiltersState, FilterType } from '../lib/filter-utils';
+import type { FilterModel, FiltersState } from '../lib/filter-utils';
 import { getOperatorsForType } from '../lib/filter-utils';
 import { cn } from '../lib/utils';
+import { omitUndefined } from '../lib/utils/omit-undefined';
+import { FacetedControl } from './data-table-filter/faceted-control';
 
-/** A `badgeVariants` key, used to style the filter chip. */
-export type DataTableFilterVariant = BadgeVariantKey;
+/** Emphasis applied to filter controls and active chips. */
+export type DataTableFilterVariant = BadgeEmphasis;
 
 export interface FilterOption {
   icon?: React.ComponentType<{ className?: string }>;
@@ -64,19 +65,21 @@ function collectMatchingOptions<TData extends RowData>(
 ): MatchingOption[] {
   const results: MatchingOption[] = [];
   for (const col of columns) {
-    if (col.type === 'text' || !('options' in col) || !col.options) {
+    if (col.type === 'text' || col.options === undefined) {
       continue;
     }
     const facetedCounts = table?.getColumn(col.id)?.getFacetedUniqueValues();
     for (const opt of col.options) {
       if (opt.label.toLowerCase().includes(term)) {
-        results.push({
-          columnId: col.id,
-          columnDisplayName: col.displayName,
-          columnIcon: col.icon,
-          option: opt,
-          count: facetedCounts?.get(opt.value),
-        });
+        results.push(
+          omitUndefined({
+            columnId: col.id,
+            columnDisplayName: col.displayName,
+            columnIcon: col.icon,
+            option: opt,
+            count: facetedCounts?.get(opt.value),
+          })
+        );
       }
     }
   }
@@ -84,7 +87,7 @@ function collectMatchingOptions<TData extends RowData>(
 }
 
 function renderIcon(icon: React.ComponentType<{ className?: string }> | undefined, className: string) {
-  if (!icon) {
+  if (icon === undefined) {
     return null;
   }
   const Icon = icon;
@@ -94,6 +97,7 @@ function renderIcon(icon: React.ComponentType<{ className?: string }> | undefine
 function RadioIndicator({ checked }: { checked: boolean }) {
   return (
     <span
+      aria-hidden="true"
       className={cn(
         'mr-1 flex size-4 shrink-0 items-center justify-center rounded-full border border-primary',
         checked ? 'opacity-100' : 'opacity-0 group-data-[selected=true]:opacity-100'
@@ -106,11 +110,12 @@ function RadioIndicator({ checked }: { checked: boolean }) {
 
 interface DataTableFilterProps<TData extends RowData> {
   actions: DataTableFilterActions;
-  className?: string;
+  className?: string | undefined;
   columns: FilterColumnConfig[];
   filters: FiltersState;
-  table?: Table<TData>;
-  variant?: DataTableFilterVariant;
+  table?: Table<TData> | undefined;
+  tone?: BadgeTone | undefined;
+  variant?: DataTableFilterVariant | undefined;
 }
 
 export function DataTableFilter<TData extends RowData>({
@@ -119,14 +124,22 @@ export function DataTableFilter<TData extends RowData>({
   actions,
   table,
   className,
-  variant = 'primary-inverted',
+  tone = 'primary',
+  variant = 'subtle',
 }: DataTableFilterProps<TData>) {
   return (
     <div className={cn('flex w-full flex-wrap items-center gap-2', className)}>
-      <FilterSelector actions={actions} columns={columns} filters={filters} table={table} variant={variant} />
+      <FilterSelector
+        actions={actions}
+        columns={columns}
+        filters={filters}
+        table={table}
+        tone={tone}
+        variant={variant}
+      />
       {filters.map((filter) => {
         const col = columns.find((c) => c.id === filter.columnId);
-        if (!col) {
+        if (col === undefined) {
           return null;
         }
         return (
@@ -136,11 +149,12 @@ export function DataTableFilter<TData extends RowData>({
             filter={filter}
             key={filter.columnId}
             table={table}
+            tone={tone}
             variant={variant}
           />
         );
       })}
-      <FilterActions actions={actions} hasFilters={filters.length > 0} variant={variant} />
+      <FilterActions actions={actions} hasFilters={filters.length > 0} tone={tone} variant={variant} />
     </div>
   );
 }
@@ -155,37 +169,38 @@ function MatchingOptionItem({
   match: MatchingOption;
   isSelected: boolean;
   onSelect: () => void;
-  singleMode?: boolean;
+  singleMode?: boolean | undefined;
 }) {
   const { icon: MatchIcon } = match.option;
   const ColIcon = match.columnIcon;
   return (
     <CommandItem
-      className="group flex items-center gap-1.5"
+      aria-description={isSelected ? 'Included in filter' : 'Not included in filter'}
+      className="group"
       keywords={[match.option.label, match.columnDisplayName]}
       onSelect={onSelect}
       value={`${match.columnId}:${match.option.value}`}
     >
-      {singleMode ? (
+      {singleMode === true ? (
         <RadioIndicator checked={isSelected} />
       ) : (
-        <Checkbox
+        <CheckboxView
           checked={isSelected}
-          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
+          className="invisible mr-1 group-data-[selected=true]:visible data-[state=checked]:visible"
         />
       )}
       <span className="inline-flex items-center gap-1 text-subtle">
-        {ColIcon ? <ColIcon className="size-3.5" /> : null}
+        {ColIcon === undefined ? null : <ColIcon className="size-3.5" />}
         <span>{match.columnDisplayName}</span>
         <span>&gt;</span>
       </span>
-      {MatchIcon ? renderIcon(MatchIcon, 'size-4 text-primary') : null}
+      {MatchIcon === undefined ? null : renderIcon(MatchIcon, 'size-4 text-primary')}
       <span>
         {match.option.label}
         {match.count === undefined ? null : (
           <sup
             className={cn(
-              'ml-0.5 text-subtle tabular-nums tracking-tight',
+              'ml-0.5 tracking-tight text-subtle tabular-nums',
               match.count === 0 ? 'slashed-zero' : undefined
             )}
           >
@@ -201,16 +216,18 @@ interface FilterSelectorProps<TData extends RowData> {
   actions: DataTableFilterActions;
   columns: FilterColumnConfig[];
   filters: FiltersState;
-  table?: Table<TData>;
-  variant?: DataTableFilterVariant;
+  table?: Table<TData> | undefined;
+  tone?: BadgeTone | undefined;
+  variant?: DataTableFilterVariant | undefined;
 }
 
-const FilterSelector = memo(function FilterSelectorImpl<TData extends RowData>({
+function FilterSelector<TData extends RowData>({
   columns,
   filters,
   actions,
   table,
-  variant = 'primary-inverted',
+  tone = 'primary',
+  variant = 'subtle',
 }: FilterSelectorProps<TData>) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -218,42 +235,35 @@ const FilterSelector = memo(function FilterSelectorImpl<TData extends RowData>({
 
   const hasFilters = filters.length > 0;
 
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!open) {
       const timer = setTimeout(() => {
         setSearch('');
         setActiveColumnId(null);
       }, 150);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+      };
     }
-    return;
+    return undefined;
   }, [open]);
 
-  const matchingOptions = useMemo(() => {
-    if (!search || activeColumnId) {
-      return [];
-    }
-    return collectMatchingOptions(columns, search.toLowerCase(), table);
-  }, [search, activeColumnId, columns, table]);
+  const matchingOptions =
+    search === '' || (activeColumnId !== null && activeColumnId !== '')
+      ? []
+      : collectMatchingOptions(columns, search.toLowerCase(), table);
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger
         render={
-          <Button
-            className={cn(
-              'h-7',
-              hasFilters ? 'w-fit px-2!' : undefined,
-              variant ? badgeVariants({ variant }) : undefined
-            )}
-            variant="ghost"
-          >
+          <FacetedControl aria-label="Add filter" kind="add" tone={tone} variant={variant}>
             <FilterIcon className="size-4" />
             {hasFilters ? null : <span>Filter</span>}
-          </Button>
+          </FacetedControl>
         }
       />
-      <PopoverContent align="start" className="w-fit p-0" side="bottom">
+      <PopoverContent align="start" className="w-fit" padding="none" side="bottom">
         <Command loop>
           <CommandInput onValueChange={setSearch} placeholder="Search..." value={search} />
           <CommandEmpty>No results found.</CommandEmpty>
@@ -264,12 +274,14 @@ const FilterSelector = memo(function FilterSelectorImpl<TData extends RowData>({
                 return (
                   <CommandSub
                     key={col.id}
-                    onOpenChange={(isOpen) => setActiveColumnId(isOpen ? col.id : null)}
+                    onOpenChange={(isOpen) => {
+                      setActiveColumnId(isOpen ? col.id : null);
+                    }}
                     open={activeColumnId === col.id}
                   >
                     <CommandSubTrigger keywords={[col.displayName]} value={col.id}>
                       <div className="flex items-center gap-1.5">
-                        {col.icon ? <col.icon className="size-4" /> : null}
+                        {col.icon === undefined ? null : <col.icon className="size-4" />}
                         <span>{col.displayName}</span>
                       </div>
                     </CommandSubTrigger>
@@ -323,8 +335,7 @@ const FilterSelector = memo(function FilterSelectorImpl<TData extends RowData>({
       </PopoverContent>
     </Popover>
   );
-}) as <TData extends RowData>(props: FilterSelectorProps<TData>) => React.ReactElement;
-(FilterSelector as { displayName?: string }).displayName = 'FilterSelector';
+}
 
 function FilterKeySubmenu<TData extends RowData>({
   filterColumn,
@@ -335,7 +346,7 @@ function FilterKeySubmenu<TData extends RowData>({
   filterColumn: FilterColumnConfig;
   selectedValues: string[];
   actions: DataTableFilterActions;
-  table?: Table<TData>;
+  table?: Table<TData> | undefined;
 }) {
   switch (filterColumn.type) {
     case 'text':
@@ -344,6 +355,7 @@ function FilterKeySubmenu<TData extends RowData>({
           actions={actions}
           columnId={filterColumn.id}
           initialValue={selectedValues[0] ?? ''}
+          label={filterColumn.displayName}
           placeholder={'placeholder' in filterColumn ? filterColumn.placeholder : undefined}
         />
       );
@@ -367,8 +379,9 @@ interface ActiveFilterProps<TData extends RowData> {
   actions: DataTableFilterActions;
   column: FilterColumnConfig;
   filter: FilterModel;
-  table?: Table<TData>;
-  variant?: DataTableFilterVariant;
+  table?: Table<TData> | undefined;
+  tone?: BadgeTone | undefined;
+  variant?: DataTableFilterVariant | undefined;
 }
 
 function ActiveFilter<TData extends RowData>({
@@ -376,28 +389,26 @@ function ActiveFilter<TData extends RowData>({
   column: col,
   actions,
   table,
-  variant = 'primary-inverted',
+  tone = 'primary',
+  variant = 'subtle',
 }: ActiveFilterProps<TData>) {
   return (
-    <div
-      className={cn(
-        badgeVariants({ variant: variant ?? 'neutral-inverted' }),
-        'flex h-7 items-center rounded-2xl text-body-sm shadow-xs'
-      )}
-    >
+    <div className={cn(badgeVariants({ tone, variant }), 'flex h-7 items-center rounded-2xl text-body-sm shadow-xs')}>
       <FilterSubject filterColumn={col} />
       <Separator orientation="vertical" />
-      <FilterOperator actions={actions} filter={filter} />
+      <FilterOperator actions={actions} columnName={col.displayName} filter={filter} />
       <Separator orientation="vertical" />
       <FilterValue actions={actions} filter={filter} filterColumn={col} table={table} />
       <Separator orientation="vertical" />
-      <Button
-        className="h-full w-7 rounded-none rounded-r-2xl text-current"
-        onClick={() => actions.removeFilter(filter.columnId)}
-        variant="ghost"
+      <FacetedControl
+        aria-label={`Remove ${col.displayName} filter`}
+        kind="remove"
+        onClick={() => {
+          actions.removeFilter(filter.columnId);
+        }}
       >
         <X className="size-3.5" />
-      </Button>
+      </FacetedControl>
     </div>
   );
 }
@@ -405,8 +416,8 @@ ActiveFilter.displayName = 'ActiveFilter';
 
 function FilterSubject({ filterColumn }: { filterColumn: FilterColumnConfig }) {
   return (
-    <span className="flex select-none items-center gap-1 whitespace-nowrap px-2 font-medium opacity-75">
-      {filterColumn.icon ? <filterColumn.icon className="size-4" /> : null}
+    <span className="flex items-center gap-1 px-2 font-medium whitespace-nowrap opacity-75 select-none">
+      {filterColumn.icon === undefined ? null : <filterColumn.icon className="size-4" />}
       <span>{filterColumn.displayName}</span>
     </span>
   );
@@ -415,13 +426,15 @@ FilterSubject.displayName = 'FilterSubject';
 
 interface FilterOperatorProps {
   actions: DataTableFilterActions;
+  columnName: string;
   filter: FilterModel;
 }
 
-function FilterOperator({ filter, actions }: FilterOperatorProps) {
+function FilterOperator({ filter, actions, columnName }: FilterOperatorProps) {
   const [open, setOpen] = useState(false);
+  const commandRef = useRef<HTMLDivElement>(null);
 
-  const operators = getOperatorsForType(filter.type) as FilterOperatorMap<FilterType>;
+  const operators = getOperatorsForType(filter.type);
   const currentOp = operators[filter.operator];
   const currentTarget = currentOp?.target ?? 'single';
   const relatedOperators = Object.values(operators).filter((o) => o.target === currentTarget);
@@ -430,17 +443,14 @@ function FilterOperator({ filter, actions }: FilterOperatorProps) {
     <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger
         render={
-          <Button
-            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-body-sm text-current"
-            variant="ghost"
-          >
+          <FacetedControl aria-description={filter.operator} aria-label={`Edit ${columnName} operator`} kind="segment">
             <span className="opacity-80">{filter.operator}</span>
-          </Button>
+          </FacetedControl>
         }
       />
-      <PopoverContent align="start" className="w-fit p-0">
-        <Command loop>
-          <CommandList className="max-h-fit">
+      <PopoverContent align="start" className="w-fit" initialFocus={commandRef} padding="none">
+        <Command defaultValue={filter.operator} loop>
+          <CommandList className="max-h-fit" label={`${columnName} operators`} ref={commandRef}>
             <CommandGroup>
               {relatedOperators.map((op) => (
                 <CommandItem
@@ -467,34 +477,37 @@ interface FilterValueProps<TData extends RowData> {
   actions: DataTableFilterActions;
   filter: FilterModel;
   filterColumn: FilterColumnConfig;
-  table?: Table<TData>;
+  table?: Table<TData> | undefined;
 }
 
-const FilterValue = memo(function FilterValueImpl<TData extends RowData>({
-  filter,
-  filterColumn,
-  actions,
-  table,
-}: FilterValueProps<TData>) {
+function FilterValue<TData extends RowData>({ filter, filterColumn, actions, table }: FilterValueProps<TData>) {
   return (
     <Popover>
       <PopoverTrigger
         render={
-          <Button
-            className="m-0 h-full w-fit whitespace-nowrap rounded-none p-0 px-2 text-body-sm text-current"
-            variant="ghost"
+          <FacetedControl
+            aria-description={describeFilterValues(filter, filterColumn)}
+            aria-label={`Edit ${filterColumn.displayName} values`}
+            kind="segment"
           >
             <FilterValueDisplay filter={filter} filterColumn={filterColumn} />
-          </Button>
+          </FacetedControl>
         }
       />
-      <PopoverContent align="start" className="w-fit p-0" side="bottom">
+      <PopoverContent align="start" className="w-fit" padding="none" side="bottom">
         <FilterValueController actions={actions} filter={filter} filterColumn={filterColumn} table={table} />
       </PopoverContent>
     </Popover>
   );
-}) as <TData extends RowData>(props: FilterValueProps<TData>) => React.ReactElement;
-(FilterValue as { displayName?: string }).displayName = 'FilterValue';
+}
+
+function describeFilterValues(filter: FilterModel, column: FilterColumnConfig): string {
+  if (filter.values.length === 0) {
+    return 'No values selected';
+  }
+  const options = column.type === 'text' ? [] : (column.options ?? []);
+  return filter.values.map((value) => options.find((option) => option.value === value)?.label ?? value).join(', ');
+}
 
 function FilterValueDisplay({ filter, filterColumn }: { filter: FilterModel; filterColumn: FilterColumnConfig }) {
   if (filter.values.length === 0) {
@@ -520,40 +533,42 @@ function OptionValueDisplay({
   filterColumn: FilterColumnConfig & { type: 'option' | 'multiOption' };
 }) {
   const options = filterColumn.options ?? [];
-  const selected = options.filter((o) => filter.values.includes(o.value));
+  const selectedValues = new Set(filter.values);
+  const selected = options.filter((o) => selectedValues.has(o.value));
 
   if (selected.length === 0 && filter.values.length > 0) {
     return <span>{filter.values.length === 1 ? filter.values[0] : `${filter.values.length} selected`}</span>;
   }
 
-  if (selected.length === 1) {
-    const { label, icon: ItemIcon } = selected[0];
+  const selectedOption = selected.at(0);
+  if (selected.length === 1 && selectedOption !== undefined) {
+    const { label, icon: ItemIcon } = selectedOption;
     return (
       <span className="inline-flex items-center gap-1">
-        {ItemIcon ? renderIcon(ItemIcon, 'size-4') : null}
+        {ItemIcon === undefined ? null : renderIcon(ItemIcon, 'size-4')}
         <span>{label}</span>
       </span>
     );
   }
 
   const name = (filterColumn.displayNamePlural ?? `${filterColumn.displayName}s`).toLowerCase();
-  const hasIcons = options.length > 0 && !options.some((o) => !o.icon);
+  const hasIcons = options.length > 0 && options.every((o) => o.icon !== undefined);
 
   return (
-    <div className="inline-flex items-center gap-0.5">
+    <span className="inline-flex items-center gap-0.5">
       {hasIcons
         ? selected.slice(0, 3).map(({ value, icon }) => {
-            if (!icon) {
+            if (icon === undefined) {
               return null;
             }
             const el = renderIcon(icon, 'size-4');
-            return el ? <span key={value}>{el}</span> : <span key={value} />;
+            return el === null ? <span key={value} /> : <span key={value}>{el}</span>;
           })
         : null}
       <span className={cn(hasIcons ? 'ml-1.5' : undefined)}>
         {selected.length} {name}
       </span>
-    </div>
+    </span>
   );
 }
 
@@ -566,7 +581,7 @@ function FilterValueController<TData extends RowData>({
   filter: FilterModel;
   filterColumn: FilterColumnConfig;
   actions: DataTableFilterActions;
-  table?: Table<TData>;
+  table?: Table<TData> | undefined;
 }) {
   switch (filterColumn.type) {
     case 'text':
@@ -575,6 +590,7 @@ function FilterValueController<TData extends RowData>({
           actions={actions}
           columnId={filter.columnId}
           initialValue={filter.values[0] ?? ''}
+          label={filterColumn.displayName}
           placeholder={'placeholder' in filterColumn ? filterColumn.placeholder : undefined}
         />
       );
@@ -598,28 +614,42 @@ function TextValueController({
   columnId,
   initialValue,
   actions,
+  label,
   placeholder,
 }: {
   columnId: string;
   initialValue: string;
   actions: DataTableFilterActions;
-  placeholder?: string;
+  label: string;
+  placeholder?: string | undefined;
 }) {
-  const [value, setValue] = useState(initialValue);
+  const [draft, setDraft] = useState<string | null>(null);
+  const value = draft ?? initialValue;
+  const applyValue = useEffectEvent((nextColumnId: string, nextValue: string) => {
+    actions.setFilterValues(nextColumnId, nextValue.trim() === '' ? [] : [nextValue]);
+  });
 
   useEffect(() => {
+    if (draft === null) {
+      return;
+    }
     const timer = setTimeout(() => {
-      actions.setFilterValues(columnId, value.trim() ? [value] : []);
+      applyValue(columnId, draft);
     }, 200);
-    return () => clearTimeout(timer);
-  }, [value, columnId, actions]);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [draft, columnId]);
 
   return (
     <div className="p-2">
       <Input
+        aria-label={`Filter ${label}`}
         autoFocus
         className="h-8"
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          setDraft(e.target.value);
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -634,36 +664,42 @@ function TextValueController({
 
 interface OptionItemProps {
   onToggle: (value: string, checked: boolean) => void;
-  option: FilterOption & { selected: boolean; count?: number };
-  singleMode?: boolean;
+  option: FilterOption & { selected: boolean; count?: number | undefined };
+  singleMode?: boolean | undefined;
 }
 
-const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }: OptionItemProps) {
+function OptionItem({ option, onToggle, singleMode }: OptionItemProps) {
   const { value, label, icon: ItemIcon, selected, count } = option;
 
-  const handleSelect = useCallback(() => {
-    if (singleMode && selected) {
+  const handleSelect = () => {
+    if (singleMode === true && selected) {
       return;
     }
     onToggle(value, !selected);
-  }, [onToggle, value, selected, singleMode]);
+  };
 
   return (
-    <CommandItem className="group flex items-center gap-1.5" onSelect={handleSelect}>
-      {singleMode ? (
+    <CommandItem
+      aria-description={selected ? 'Included in filter' : 'Not included in filter'}
+      className="group"
+      keywords={[label]}
+      onSelect={handleSelect}
+      value={value}
+    >
+      {singleMode === true ? (
         <RadioIndicator checked={selected} />
       ) : (
-        <Checkbox
+        <CheckboxView
           checked={selected}
-          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
+          className="invisible mr-1 group-data-[selected=true]:visible data-[state=checked]:visible"
         />
       )}
-      {ItemIcon ? renderIcon(ItemIcon, 'size-4 text-primary') : null}
+      {ItemIcon === undefined ? null : renderIcon(ItemIcon, 'size-4 text-primary')}
       <span>
         {label}
         {count === undefined ? null : (
           <sup
-            className={cn('ml-0.5 text-subtle tabular-nums tracking-tight', count === 0 ? 'slashed-zero' : undefined)}
+            className={cn('ml-0.5 tracking-tight text-subtle tabular-nums', count === 0 ? 'slashed-zero' : undefined)}
           >
             {count < 100 ? count : '100+'}
           </sup>
@@ -671,8 +707,7 @@ const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }
       </span>
     </CommandItem>
   );
-});
-OptionItem.displayName = 'OptionItem';
+}
 
 function OptionValueController<TData extends RowData>({
   columnId,
@@ -685,34 +720,28 @@ function OptionValueController<TData extends RowData>({
   selectedValues: string[];
   filterColumn: FilterColumnConfig & { type: 'option' | 'multiOption' };
   actions: DataTableFilterActions;
-  table?: Table<TData>;
+  table?: Table<TData> | undefined;
 }) {
   const singleMode = filterColumn.type === 'option' && filterColumn.mode === 'single';
-  const baseOptions = filterColumn.options ?? [];
+  const baseOptions = filterColumn.options;
   const facetedCounts = table?.getColumn(columnId)?.getFacetedUniqueValues();
 
-  const enrichedOptions = useMemo(
-    () =>
-      baseOptions.map((o) => ({
-        ...o,
-        selected: selectedValues.includes(o.value),
-        count: facetedCounts?.get(o.value),
-      })),
-    [baseOptions, selectedValues, facetedCounts]
-  );
+  const selected = new Set(selectedValues);
+  const enrichedOptions = (baseOptions ?? []).map((o) => ({
+    ...o,
+    selected: selected.has(o.value),
+    count: facetedCounts?.get(o.value),
+  }));
 
-  const handleToggle = useCallback(
-    (val: string, checked: boolean) => {
-      if (singleMode && checked) {
-        actions.setFilterValues(columnId, [val]);
-      } else if (checked) {
-        actions.addFilterValue(columnId, val);
-      } else {
-        actions.removeFilterValue(columnId, val);
-      }
-    },
-    [actions, columnId, singleMode]
-  );
+  const handleToggle = (val: string, checked: boolean) => {
+    if (singleMode && checked) {
+      actions.setFilterValues(columnId, [val]);
+    } else if (checked) {
+      actions.addFilterValue(columnId, val);
+    } else {
+      actions.removeFilterValue(columnId, val);
+    }
+  };
 
   return (
     <Command loop>
@@ -729,23 +758,20 @@ function OptionValueController<TData extends RowData>({
   );
 }
 
-const FilterActions = memo(function FilterActionsImpl({
+function FilterActions({
   hasFilters,
   actions,
-  variant = 'primary-inverted',
+  tone = 'primary',
+  variant = 'subtle',
 }: {
   hasFilters: boolean;
   actions: DataTableFilterActions;
-  variant?: DataTableFilterVariant;
+  tone?: BadgeTone | undefined;
+  variant?: DataTableFilterVariant | undefined;
 }) {
-  return (
-    <Button
-      className={cn('h-7 px-2!', variant ? badgeVariants({ variant }) : undefined, hasFilters ? undefined : 'hidden')}
-      onClick={actions.removeAllFilters}
-      variant="ghost"
-    >
+  return hasFilters ? (
+    <FacetedControl kind="clear" onClick={actions.removeAllFilters} tone={tone} variant={variant}>
       <span>Clear</span>
-    </Button>
-  );
-});
-FilterActions.displayName = 'FilterActions';
+    </FacetedControl>
+  ) : null;
+}

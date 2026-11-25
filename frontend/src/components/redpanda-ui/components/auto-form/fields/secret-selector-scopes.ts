@@ -12,7 +12,7 @@ const SCOPE_MAP: Record<string, Scope> = {
 };
 
 export function resolveSecretScopes(scopeString: string | undefined): readonly unknown[] {
-  if (!scopeString) {
+  if (!(scopeString !== undefined && scopeString !== '')) {
     return [];
   }
   const scope = SCOPE_MAP[scopeString];

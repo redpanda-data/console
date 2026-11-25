@@ -8,8 +8,7 @@ import { CreateSecretRequestSchema, Scope } from 'protogen/redpanda/api/dataplan
 import { useCreateACLMutation } from 'react-query/api/acl';
 import { useCreateSecretMutation } from 'react-query/api/secret';
 import { useCreateUserMutation } from 'react-query/api/user';
-import { toast } from 'sonner';
-import { formatToastErrorMessageGRPC } from 'utils/toast.utils';
+import { formatToastErrorMessageGRPC, showToast } from 'utils/toast.utils';
 import type { SaslMechanism } from 'utils/user';
 import { base64ToUInt8Array, encodeBase64 } from 'utils/utils';
 
@@ -336,37 +335,22 @@ export const saslMechanismFromProto = (mechanism: SASLMechanism | undefined): Sa
     (name) => saslMechanismToProtoMapping[name] === mechanism
   );
 
-const createKafkaUser = async (
+const createKafkaUser = (
   userData: AddUserFormData,
   createUserMutation: ReturnType<typeof useCreateUserMutation>
-): Promise<OperationResult> => {
-  try {
-    const createUserRequest = create(CreateUserRequestSchema, {
-      user: {
-        name: userData.username,
-        password: userData.password,
-        mechanism: saslMechanismToProtoMapping[userData.saslMechanism],
-      },
-    });
-
-    await createUserMutation.mutateAsync(createUserRequest);
-    return {
-      operation: 'Create user',
-      success: true,
-      message: `User "${userData.username}" created`,
-    };
-  } catch (error) {
-    const connectError = ConnectError.from(error);
-    return {
-      operation: 'Create user',
-      success: false,
-      error: formatToastErrorMessageGRPC({
-        error: connectError,
-        action: 'create',
-        entity: 'user',
-      }),
-    };
-  }
+): Promise<boolean> => {
+  const createUserRequest = create(CreateUserRequestSchema, {
+    user: {
+      name: userData.username,
+      password: userData.password,
+      mechanism: saslMechanismToProtoMapping[userData.saslMechanism],
+    },
+  });
+  // useCreateUserMutation reports a failed create.
+  return createUserMutation.mutateAsync(createUserRequest).then(
+    () => true,
+    () => false
+  );
 };
 
 type CreateUserWithSecretsParams = {
@@ -378,19 +362,19 @@ type CreateUserWithSecretsParams = {
 
 const handleOperationResult = (result: OperationResult) => {
   if (result.success && result.message) {
-    toast.success(result.message);
+    showToast({ status: 'success', title: result.message });
   } else if (!result.success && result.error) {
-    toast.error(result.error);
+    showToast({ status: 'error', title: result.error });
   }
 };
 
 // Toasts a required step's outcome; false when it failed, so the flow stops there.
 const reportRequiredStep = (result: OperationResult, failureMessage: string, successMessage: string): boolean => {
   if (!result.success) {
-    toast.error(result.error || failureMessage);
+    showToast({ status: 'error', title: result.error || failureMessage });
     return false;
   }
-  toast.success(result.message || successMessage);
+  showToast({ status: 'success', title: result.message || successMessage });
   return true;
 };
 
@@ -401,11 +385,14 @@ const ensureUser = async (
   createUserMutation: ReturnType<typeof useCreateUserMutation>
 ): Promise<boolean> => {
   if (existingUserSelected) {
-    toast.success(`Using existing user "${userData.username}"`);
+    showToast({ status: 'success', title: `Using existing user "${userData.username}"` });
     return true;
   }
-  const userResult = await createKafkaUser(userData, createUserMutation);
-  return reportRequiredStep(userResult, 'Failed to create user', `User "${userData.username}" created`);
+  if (!(await createKafkaUser(userData, createUserMutation))) {
+    return false;
+  }
+  showToast({ status: 'success', title: `User "${userData.username}" created` });
+  return true;
 };
 
 // Step 2: Configure topic ACL if needed

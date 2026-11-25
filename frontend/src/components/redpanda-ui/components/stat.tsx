@@ -1,35 +1,9 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import type { VariantProps } from 'class-variance-authority';
 import { ArrowDown, ArrowUp, ArrowUpRight, Minus } from 'lucide-react';
-import React from 'react';
-
+import type React from 'react';
+import { hasSlotContent } from '../lib/has-slot-content';
 import { cn, type SharedProps } from '../lib/utils';
-
-export const statValueVariants = cva('leading-none', {
-  variants: {
-    size: {
-      sm: 'text-body',
-      md: 'text-body-lg',
-      lg: 'font-bold text-2xl tracking-tighter',
-    },
-    tone: {
-      default: 'text-foreground',
-      muted: 'text-subtle',
-      informative: 'text-informative',
-      success: 'text-success',
-      warning: 'text-warning',
-      destructive: 'text-destructive',
-    },
-    mono: {
-      true: 'font-mono tabular-nums',
-      false: '',
-    },
-  },
-  defaultVariants: {
-    size: 'md',
-    tone: 'default',
-    mono: false,
-  },
-});
+import { statGroupVariants, statValueVariants } from './stat/variants';
 
 export type StatDeltaDirection = 'up' | 'down' | 'neutral';
 
@@ -62,17 +36,24 @@ const deltaToneClasses: Record<NonNullable<StatDelta['tone']>, string> = {
   destructive: 'text-destructive',
 };
 
+export interface StatLabelLinkProps {
+  /** The label and decorative trailing arrow; render these as the link content. */
+  children: React.ReactNode;
+  /** Caption appearance owned by Stat; apply it to the link host. */
+  className: string;
+}
+
 export interface StatProps
   extends Omit<React.ComponentProps<'div'>, 'children'>,
     VariantProps<typeof statValueVariants>,
     SharedProps {
-  delta?: StatDelta;
+  delta?: StatDelta | undefined;
   /** Caption rendered above the value, uppercased and muted. */
   label: string;
-  /** Turns the label into a link. Pass a single link element with no children — label text and trailing arrow are injected and link styling merged in. */
-  labelLink?: React.ReactElement<{ className?: string }>;
+  /** Render a native or framework link with the supplied caption recipe and content; the caller owns routing, refs, and events. */
+  renderLabelLink?: ((props: StatLabelLinkProps) => React.ReactElement) | undefined;
   /** Secondary line rendered below the value (e.g. "6 partitions"), muted and smaller. */
-  sublabel?: React.ReactNode;
+  sublabel?: React.ReactNode | undefined;
   value: React.ReactNode;
 }
 
@@ -89,28 +70,30 @@ export const Stat = ({
   tone,
   mono,
   delta,
-  labelLink,
+  renderLabelLink,
   testId,
   ref,
   ...props
-}: StatProps & { ref?: React.Ref<HTMLDivElement> }) => {
-  const deltaTone = delta ? (delta.tone ?? deltaToneByDirection[delta.direction]) : undefined;
-  const DeltaIcon = delta ? deltaIcons[delta.direction] : undefined;
+}: StatProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => {
+  const deltaTone = delta === undefined ? undefined : (delta.tone ?? deltaToneByDirection[delta.direction]);
+  const DeltaIcon = delta === undefined ? undefined : deltaIcons[delta.direction];
 
-  const labelNode = labelLink ? (
-    React.cloneElement(
-      labelLink,
-      { className: cn(LABEL_LINK_CLASSNAME, labelLink.props.className) },
-      <>
+  const labelNode =
+    renderLabelLink === undefined ? (
+      <span className="text-body-sm font-semibold text-subtle uppercase" data-slot="stat-label">
         {label}
-        <ArrowUpRight aria-hidden="true" className="size-3" />
-      </>
-    )
-  ) : (
-    <span className="font-semibold text-body-sm text-subtle uppercase" data-slot="stat-label">
-      {label}
-    </span>
-  );
+      </span>
+    ) : (
+      renderLabelLink({
+        className: LABEL_LINK_CLASSNAME,
+        children: (
+          <>
+            {label}
+            <ArrowUpRight aria-hidden="true" className="size-3" />
+          </>
+        ),
+      })
+    );
 
   /**
    * Root is a 2-row grid (label + value block) so that `StatGroup` can opt each stat into
@@ -130,14 +113,17 @@ export const Stat = ({
          * once it has wrapped. `leading-0` keeps the wrapper's own line box (its strut) from adding
          * height, so a line is exactly as tall as the value's `leading-none`, as it was under flex.
          */}
-        <div className="break-words leading-0">
-          <span className={cn(statValueVariants({ size, tone, mono }), delta && 'me-2')} data-slot="stat-value">
+        <div className="leading-0 wrap-break-word">
+          <span
+            className={cn(statValueVariants({ size, tone, mono }), delta === undefined ? delta : 'me-2')}
+            data-slot="stat-value"
+          >
             {value}
           </span>
-          {delta && DeltaIcon ? (
+          {delta !== undefined && DeltaIcon !== undefined ? (
             <span
               className={cn(
-                'inline-flex items-center gap-0.5 font-medium text-body-sm',
+                'inline-flex items-center gap-0.5 text-body-sm font-medium',
                 deltaToneClasses[deltaTone ?? 'muted']
               )}
               data-slot="stat-delta"
@@ -147,8 +133,8 @@ export const Stat = ({
             </span>
           ) : null}
         </div>
-        {sublabel ? (
-          <span className="font-normal text-body-sm text-subtle" data-slot="stat-sublabel">
+        {hasSlotContent(sublabel) ? (
+          <span className="text-body-sm font-normal text-subtle" data-slot="stat-sublabel">
             {sublabel}
           </span>
         ) : null}
@@ -157,37 +143,6 @@ export const Stat = ({
   );
 };
 Stat.displayName = 'Stat';
-
-/**
- * Base establishes CSS subgrid row tracks and opts every child `[data-slot=stat]` into
- * `grid-rows-subgrid` spanning two rows. All labels in a row share one track height and all
- * values align, independent of label wrapping; `gap-y-0.5` keeps the label→value gap tight
- * regardless of the group's inter-cell `gap`.
- */
-export const statGroupVariants = cva(
-  'grid [&>[data-slot=stat]]:row-span-2 [&>[data-slot=stat]]:grid [&>[data-slot=stat]]:grid-rows-subgrid [&>[data-slot=stat]]:gap-y-0.5',
-  {
-    variants: {
-      // Container sizes, not viewport breakpoints: a group in a card or a docs preview can be far
-      // narrower than the viewport. Each step keeps a cell at roughly 135px or more.
-      columns: {
-        2: 'grid-cols-2',
-        3: '@md/stat-group:grid-cols-3 grid-cols-1',
-        4: '@2xl/stat-group:grid-cols-4 grid-cols-2',
-        6: '@2xl/stat-group:grid-cols-3 @4xl/stat-group:grid-cols-6 grid-cols-2',
-      },
-      gap: {
-        sm: 'gap-3',
-        md: 'gap-4',
-        lg: 'gap-6',
-      },
-    },
-    defaultVariants: {
-      columns: 4,
-      gap: 'md',
-    },
-  }
-);
 
 export interface StatGroupProps
   extends React.ComponentProps<'div'>,
@@ -202,7 +157,7 @@ export const StatGroup = ({
   children,
   ref,
   ...props
-}: StatGroupProps & { ref?: React.Ref<HTMLDivElement> }) => (
+}: StatGroupProps & { ref?: React.Ref<HTMLDivElement> | undefined }) => (
   // The wrapper is the size container the column steps query; the grid keeps the slot, ref, props and
   // caller className, so existing overrides and selectors still apply to it. `w-full` keeps the
   // container from collapsing in a shrink-to-fit parent, since a size container has no width of its own.

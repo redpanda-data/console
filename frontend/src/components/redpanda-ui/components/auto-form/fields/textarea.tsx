@@ -2,9 +2,9 @@
 
 import { Textarea } from '../../textarea';
 import type { AutoFormFieldProps } from '../core-types';
-import { getFieldUiConfig, LONG_TEXT_FIELD_PATTERN } from '../helpers';
-import type { FieldTypeDefinition } from '../registry';
-import { useFieldTestIds } from './shared';
+import { getFieldUiConfig } from '../ui-config';
+import { normalizeScalarInput } from './field-values';
+import { useFieldTestIds } from './use-field-test-ids';
 
 function TextareaFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);
@@ -12,26 +12,18 @@ function TextareaFieldComponent({ error, field, id, inputProps }: AutoFormFieldP
   return (
     <Textarea
       aria-invalid={Boolean(error)}
-      className={error ? 'border-destructive' : ''}
       disabled={inputProps.disabled}
       id={id}
       onBlur={inputProps.onBlur}
-      onChange={(event) => inputProps.onValueChange(event.target.value)}
+      onChange={(event) => {
+        inputProps.onValueChange(event.target.value);
+      }}
       placeholder={getFieldUiConfig(field).placeholder}
       resize="vertical"
       testId={testIds.control}
-      value={(inputProps.value as string | undefined) ?? ''}
+      value={normalizeScalarInput(inputProps.value)}
     />
   );
 }
 
 export { TextareaFieldComponent };
-
-export const textareaFieldDefinition: FieldTypeDefinition = {
-  name: 'textarea',
-  priority: 15,
-  match: (field, context) =>
-    field.type === 'string' &&
-    (context.inputType === 'textarea' || context.maxLength > 120 || LONG_TEXT_FIELD_PATTERN.test(context.identity)),
-  component: TextareaFieldComponent,
-};

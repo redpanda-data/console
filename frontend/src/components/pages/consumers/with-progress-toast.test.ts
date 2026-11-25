@@ -9,37 +9,34 @@
  * by the Apache License, Version 2.0
  */
 
-import { toast } from 'sonner';
+import { toast } from 'components/redpanda-ui/components/toast/manager';
 
 import { withProgressToast } from './with-progress-toast';
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 
 const TOAST_ID = 'progress-toast';
 
+const aToast = (type: string, title: string, rest: Record<string, unknown> = {}) =>
+  expect.objectContaining({ type, title, ...rest });
+
 describe('withProgressToast', () => {
-  let loading: ReturnType<typeof spyOn>;
-  let success: ReturnType<typeof spyOn>;
-  let error: ReturnType<typeof spyOn>;
+  let add: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    loading = spyOn(toast, 'loading').mockReturnValue(TOAST_ID);
-    success = spyOn(toast, 'success').mockReturnValue(TOAST_ID);
-    error = spyOn(toast, 'error').mockReturnValue(TOAST_ID);
+    add = spyOn(toast, 'add').mockReturnValue(TOAST_ID);
   });
 
   afterEach(() => {
-    loading.mockRestore();
-    success.mockRestore();
-    error.mockRestore();
+    add.mockRestore();
   });
 
   test('settles the loading toast to done and returns the task result', async () => {
     const result = await withProgressToast('Applying offsets', () => Promise.resolve(42));
 
     expect(result).toBe(42);
-    expect(loading).toHaveBeenCalledWith('Applying offsets...');
-    expect(success).toHaveBeenCalledWith('Applying offsets - done', { id: TOAST_ID });
-    expect(error).not.toHaveBeenCalled();
+    expect(add).toHaveBeenCalledWith(aToast('loading', 'Applying offsets...'));
+    expect(add).toHaveBeenCalledWith(aToast('success', 'Applying offsets - done', { id: TOAST_ID }));
+    expect(add).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
   });
 
   test('settles the loading toast to failed and rethrows', async () => {
@@ -47,8 +44,8 @@ describe('withProgressToast', () => {
 
     await expect(withProgressToast('Applying offsets', () => Promise.reject(failure))).rejects.toBe(failure);
 
-    expect(error).toHaveBeenCalledWith('Applying offsets - failed', { id: TOAST_ID });
-    expect(success).not.toHaveBeenCalled();
+    expect(add).toHaveBeenCalledWith(aToast('error', 'Applying offsets - failed', { id: TOAST_ID }));
+    expect(add).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'success' }));
   });
 
   test('uses the custom failure message when one is given', async () => {
@@ -60,7 +57,7 @@ describe('withProgressToast', () => {
       )
     ).rejects.toThrow('denied');
 
-    expect(loading).toHaveBeenCalledWith('Deleting offsets...');
-    expect(error).toHaveBeenCalledWith('Could not delete - denied', { id: TOAST_ID });
+    expect(add).toHaveBeenCalledWith(aToast('loading', 'Deleting offsets...'));
+    expect(add).toHaveBeenCalledWith(aToast('error', 'Could not delete - denied', { id: TOAST_ID }));
   });
 });

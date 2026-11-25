@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 /**
  * Runs `task` behind a loading toast labelled `<label>...`, which settles to `<label> - done` or, on failure,
@@ -20,13 +20,13 @@ export async function withProgressToast<T>(
   task: () => Promise<T>,
   failureMessage: (err: unknown) => string = () => `${label} - failed`
 ): Promise<T> {
-  const toastId = toast.loading(`${label}...`);
+  const toastId = showToast({ status: 'loading', title: `${label}...` });
   try {
     const result = await task();
-    toast.success(`${label} - done`, { id: toastId });
+    showToast({ status: 'success', title: `${label} - done`, id: toastId });
     return result;
   } catch (err) {
-    toast.error(failureMessage(err), { id: toastId });
+    showToast({ status: 'error', title: failureMessage(err), id: toastId });
     throw err;
   }
 }

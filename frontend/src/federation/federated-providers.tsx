@@ -14,7 +14,7 @@ import { TransportProvider } from '@connectrpc/connect-query';
 import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 
-import { Toaster as BaseUiToaster } from '../components/redpanda-ui/components/toast';
+import { Toaster } from '../components/redpanda-ui/components/toast';
 import { TooltipProvider } from '../components/redpanda-ui/components/tooltip';
 import { CustomFeatureFlagProvider } from '../custom-feature-flag-provider';
 
@@ -33,7 +33,7 @@ export function FederatedProviders({ children, transport, queryClient, featureFl
   return (
     <CustomFeatureFlagProvider initialFlags={featureFlags}>
       {/* showToast viewport; mirrors app.tsx */}
-      <BaseUiToaster testId="console-toasts" />
+      <Toaster testId="console-toasts" />
       <TransportProvider transport={transport}>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>{children}</TooltipProvider>

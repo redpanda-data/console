@@ -5,16 +5,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'components/redpanda-ui/components/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from 'components/redpanda-ui/components/form';
 import { Input } from 'components/redpanda-ui/components/input';
+import { labelStyles } from 'components/redpanda-ui/components/label/label-styles';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { ChevronDown, XIcon } from 'lucide-react';
 import { type MotionProps, motion } from 'motion/react';
@@ -35,8 +28,8 @@ import { type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { useGetKafkaInfoQuery } from 'react-query/api/cluster-status';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { LONG_LIVED_CACHE_STALE_TIME } from 'react-query/react-query.utils';
-import { toast } from 'sonner';
 import { isFalsy } from 'utils/falsy';
+import { showToast } from 'utils/toast.utils';
 
 import { AdvancedTopicSettings } from './advanced-topic-settings';
 import { StepSurface } from './step-surface';
@@ -264,7 +257,14 @@ function useAddTopicSubmit(existingTopicSelected?: ListedTopic) {
           };
         }
 
-        await createTopicMutation.mutateAsync(buildCreateTopicRequest(data));
+        const created = await createTopicMutation.mutateAsync(buildCreateTopicRequest(data)).then(
+          () => true,
+          () => false
+        );
+        if (!created) {
+          // useCreateTopicMutation reports the failure, so the result carries no error to show again.
+          return { success: false };
+        }
 
         await queryClient.invalidateQueries({
           queryKey: createConnectQueryKey({
@@ -338,7 +338,7 @@ function TopicNameInput({
                       }),
                     }),
                   ]).catch((error: unknown) => {
-                    toast.error('Failed to refresh topics', { description: String(error) });
+                    showToast({ status: 'error', title: 'Failed to refresh topics', description: String(error) });
                   });
                 }}
                 options={topicOptions}
@@ -371,8 +371,8 @@ function TopicNameSection({
 
   return (
     <div className="flex flex-col gap-2">
-      <FormLabel>Topic name</FormLabel>
-      <FormDescription>{TOPIC_NAME_DESCRIPTIONS[selectionMode]}</FormDescription>
+      <div className={labelStyles({})}>Topic name</div>
+      <div className="text-body-sm text-subtle">{TOPIC_NAME_DESCRIPTIONS[selectionMode]}</div>
       <div className="flex flex-col items-start gap-2">
         {selectionMode === 'both' && (
           <ToggleGroup

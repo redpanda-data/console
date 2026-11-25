@@ -28,7 +28,7 @@ import {
   useClusterFenceStatusQuery,
   useUpdateClusterFenceSettingsMutation,
 } from 'react-query/api/cluster-fence';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 import { z } from 'zod';
 
 import { type FenceSummary, isBlockingPhase, toExemptName } from './cluster-fence-model';
@@ -103,7 +103,9 @@ const ClusterFenceSettingsForm = ({ onClose, addPrincipal }: { onClose: () => vo
       { settings: values.settings, expectedRevision: opened.revision },
       {
         onSuccess: () => {
-          toast.success('Cluster fence settings saved', {
+          showToast({
+            status: 'success',
+            title: 'Cluster fence settings saved',
             description: refences
               ? 'The cluster is in Fencing until every broker has them. Writes stay blocked the whole time.'
               : 'The next Fence uses them.',

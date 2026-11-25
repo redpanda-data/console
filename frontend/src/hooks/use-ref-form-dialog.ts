@@ -11,7 +11,7 @@
 
 import type { RefObject } from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { showToast } from 'utils/toast.utils';
 
 /** Minimal contract a ref-based form must satisfy. */
 type RefFormSubmittable<TData> = {
@@ -126,7 +126,7 @@ function useRefFormDialog<TData, TTarget = boolean>(
         close();
       },
       onTimeout: () => {
-        toast.error('Request timed out');
+        showToast({ status: 'error', title: 'Request timed out' });
         close();
       },
       onFailed: () => {
