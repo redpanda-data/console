@@ -148,6 +148,13 @@ describe('the PipelineFlowCanvas — measured nodes', () => {
   const restoreSizes: (() => void)[] = [];
   beforeEach(() => {
     rs.stubGlobal('ResizeObserver', MeasureOnceResizeObserver);
+    // This fixture measures the initial viewport, which has no zoom.
+    rs.stubGlobal(
+      'DOMMatrixReadOnly',
+      class {
+        readonly m22 = 1;
+      }
+    );
     for (const [prop, size] of [
       ['offsetWidth', 200],
       ['offsetHeight', 80],

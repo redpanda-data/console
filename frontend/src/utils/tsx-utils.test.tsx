@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@rstest/core';
 import userEvent from '@testing-library/user-event';
-import { render, screen } from 'test-utils';
+import { fireEvent, render, screen } from 'test-utils';
 
 import { Label, OptionGroup } from './tsx-utils';
 
@@ -40,7 +40,8 @@ describe('label', () => {
     const control = screen.getByRole('checkbox');
     await user.click(screen.getByText('Pagination help'));
     expect(control).not.toBeChecked();
-    await user.click(screen.getByText('Continuous pagination'));
+    // Exercise the label's native click rather than user-event's synthetic label forwarding.
+    fireEvent.click(screen.getByText('Continuous pagination'));
     expect(control).toBeChecked();
   });
 });

@@ -24,6 +24,8 @@ test('bun preload provides DOM globals without replacing native networking', () 
         for (const [name, value] of Object.entries(globalThis.nativeNetworking)) {
           expect(globalThis[name], name).toBe(value);
         }
+        expect(btoa('console')).toBe('Y29uc29sZQ==');
+        expect(atob('Y29uc29sZQ==')).toBe('console');
         expect(await new Response(new Blob(['ready'])).text()).toBe('ready');
         const form = new FormData();
         form.set('key', 'value');

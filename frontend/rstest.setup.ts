@@ -1,6 +1,5 @@
 // Copyright 2026 Redpanda Data, Inc.
 
-// React 19 under Rstest's prebundled happy-dom no longer needs the former MessageChannel deletion workaround.
 import { afterEach, beforeEach, expect, rs } from '@rstest/core';
 import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
@@ -12,45 +11,144 @@ import { createMemoryStorage } from './tests/memory-storage';
 
 expect.extend(jestDomMatchers);
 
-// Node 24 exposes an opt-in global localStorage getter that returns undefined
-// unless --localstorage-file is provided. Install a deterministic per-worker
-// Storage implementation instead of letting that host getter shadow
-// happy-dom's storage.
+// Run DOM integration frames on the test clock without simulating display refresh.
+globalThis.requestAnimationFrame = (callback) => Number(setTimeout(() => callback(performance.now()), 0));
+globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
+// Turbo DOM's animate() stub never signals completion to Motion. Use Motion's JS fallback.
+Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+
+// Turbo DOM implements TreeWalker but omits the constant Base UI passes for live regions.
+if (typeof NodeFilter === 'undefined') {
+  Object.defineProperty(globalThis, 'NodeFilter', { configurable: true, value: { SHOW_TEXT: 4 } });
+}
+
+// Turbo DOM does not clear focus when a focused element is removed.
+const activeElement = Object.getOwnPropertyDescriptor(Document.prototype, 'activeElement');
+Object.defineProperty(Document.prototype, 'activeElement', {
+  ...activeElement,
+  get(this: Document) {
+    const focused: Element | null = activeElement?.get?.call(this);
+    return focused?.isConnected ? focused : this.body;
+  },
+});
+
+// Base UI reads :focus-visible to show keyboard-triggered hints.
+let keyboardFocus = true;
+document.addEventListener(
+  'keydown',
+  () => {
+    keyboardFocus = true;
+  },
+  true
+);
+document.addEventListener(
+  'pointerdown',
+  () => {
+    keyboardFocus = false;
+  },
+  true
+);
+const {
+  dispatchEvent: nativeDispatchEvent,
+  matches: nativeMatches,
+  querySelectorAll: nativeQuerySelectorAll,
+} = Element.prototype;
+Object.defineProperty(Element.prototype, 'matches', {
+  ...Object.getOwnPropertyDescriptor(Element.prototype, 'matches'),
+  value(this: Element, selector: string) {
+    if (selector === ':focus-visible') {
+      return keyboardFocus && this.ownerDocument.activeElement === this;
+    }
+    return nativeMatches.call(this, selector);
+  },
+});
+
+// Registry's row focus uses NodeList.item(), which Turbo DOM's arrays lack.
+Element.prototype.querySelectorAll = function querySelectorAll(this: Element, selector: string) {
+  const nodes = nativeQuerySelectorAll.call(this, selector);
+  if (!nodes.item) {
+    Object.defineProperty(nodes, 'item', { value: (index: number) => nodes[index] ?? null });
+  }
+  return nodes;
+};
+
+// Turbo DOM submits ancestor forms only; Console's dialog submit buttons use form="…".
+Element.prototype.dispatchEvent = function dispatchEvent(this: Element, event: Event) {
+  const accepted = nativeDispatchEvent.call(this, event);
+  if (accepted && event.type === 'click') {
+    const button = this.closest<HTMLButtonElement>('button[type="submit"][form]');
+    if (button && !button.disabled && !button.closest('form')) {
+      const form = button.ownerDocument.getElementById(button.getAttribute('form') ?? '');
+      if (form instanceof HTMLFormElement) {
+        form.requestSubmit(button);
+      }
+    }
+  }
+  return accepted;
+};
+
+// React initializes textarea content through defaultValue, not the value attribute.
+const defaultValue = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'defaultValue');
+Object.defineProperty(HTMLElement.prototype, 'defaultValue', {
+  ...defaultValue,
+  get(this: HTMLElement) {
+    return this.localName === 'textarea' ? this.textContent : defaultValue?.get?.call(this);
+  },
+  set(this: HTMLElement, value: string) {
+    if (this.localName === 'textarea') {
+      this.textContent = value;
+    } else {
+      defaultValue?.set?.call(this, value);
+    }
+  },
+});
+
+// Tests and Floating UI need rectangle values, not a layout engine.
+globalThis.DOMRect ??= class TestDOMRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  constructor(x = 0, y = 0, width = 0, height = 0) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+  }
+  get top() {
+    return Math.min(this.y, this.y + this.height);
+  }
+  get right() {
+    return Math.max(this.x, this.x + this.width);
+  }
+  get bottom() {
+    return Math.max(this.y, this.y + this.height);
+  }
+  get left() {
+    return Math.min(this.x, this.x + this.width);
+  }
+  toJSON() {
+    return {
+      x: this.x,
+      y: this.y,
+      width: this.width,
+      height: this.height,
+      top: this.top,
+      right: this.right,
+      bottom: this.bottom,
+      left: this.left,
+    };
+  }
+  static fromRect({ x, y, width, height }: DOMRectInit = {}) {
+    return new TestDOMRect(x, y, width, height);
+  }
+};
+
 const testLocalStorage = createMemoryStorage();
 Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
   value: testLocalStorage,
 });
-Object.defineProperty(window, 'localStorage', {
-  configurable: true,
-  value: testLocalStorage,
-});
-
-// ── happy-dom network / resource isolation ───────────────────────────
-// Unlike jsdom, happy-dom attempts real network requests for scripts,
-// images, and fetch calls. Disable external loading + same-origin policy
-// to suppress AbortError / ECONNREFUSED noise from unmocked endpoints.
-if (typeof window !== 'undefined' && 'happyDOM' in window) {
-  const happyDOM = Reflect.get(window, 'happyDOM');
-  if (typeof happyDOM === 'object' && happyDOM !== null) {
-    const settings = Reflect.get(happyDOM, 'settings');
-    if (typeof settings === 'object' && settings !== null) {
-      const navigation = Reflect.get(settings, 'navigation');
-      const fetchSettings = Reflect.get(settings, 'fetch');
-      Reflect.set(settings, 'navigation', {
-        ...(typeof navigation === 'object' && navigation !== null ? navigation : {}),
-        disableMainFrameNavigation: true,
-      });
-      Reflect.set(settings, 'fetch', {
-        ...(typeof fetchSettings === 'object' && fetchSettings !== null ? fetchSettings : {}),
-        disableSameOriginPolicy: true,
-      });
-      Reflect.set(settings, 'disableJavaScriptFileLoading', true);
-      Reflect.set(settings, 'disableCSSFileLoading', true);
-      Reflect.set(settings, 'disableJavaScriptEvaluation', true);
-    }
-  }
-}
 
 const unexpectedRequests: Error[] = [];
 
@@ -71,8 +169,7 @@ if (typeof window !== 'undefined') {
   );
 }
 
-// Polyfill Element/Document.getAnimations — happy-dom doesn't implement them
-// but Base UI's ScrollAreaViewport calls them from a setTimeout.
+// Base UI's ScrollAreaViewport calls getAnimations from a setTimeout.
 if (typeof Element !== 'undefined' && typeof Element.prototype.getAnimations !== 'function') {
   Element.prototype.getAnimations = () => [];
 }
@@ -80,23 +177,10 @@ if (typeof Document !== 'undefined' && typeof Document.prototype.getAnimations !
   Document.prototype.getAnimations = () => [];
 }
 
-// happy-dom >=20.12 implements Web Animations, but Animation.cancel() rejects
-// `finished` without marking it handled as the spec requires, so every
-// unmount mid-animation surfaces an unhandled AbortError
-// (capricorn86/happy-dom#2412). Mark it handled before cancelling.
-if (typeof Animation !== 'undefined') {
-  const originalCancel = Animation.prototype.cancel;
-  Animation.prototype.cancel = function cancel(this: Animation) {
-    this.finished.catch(() => undefined);
-    originalCancel.call(this);
-  };
-}
-
 // ── Mocks ────────────────────────────────────────────────────────────
-// happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively, but
-// matchMedia must be an rs.fn so media-query reads (the theme provider's
-// prefers-color-scheme, responsive hooks) return a deterministic `matches: false`.
+// Keep prefers-color-scheme and responsive hook results deterministic.
 beforeEach(() => {
+  keyboardFocus = true;
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: rs.fn().mockImplementation((query) => ({

@@ -38,11 +38,11 @@ function expectRuleViolations(report: LintReport, rule: string, violations: numb
 
 test.each([
   {
-    name: 'rejects direct legacy runner imports, including subpaths',
+    name: 'rejects legacy runner and DOM imports, including subpaths',
     source:
-      "import 'vitest'; import 'vitest/config'; import '@vitest/spy'; import 'jsdom'; import '@playwright/test'; void import('vitest/node'); export { JSDOM } from 'jsdom';",
+      "import 'vitest'; import 'vitest/config'; import '@vitest/spy'; import 'jsdom'; import 'happy-dom'; import '@happy-dom/global-registrator'; import '@playwright/test'; void import('vitest/node'); export { JSDOM } from 'jsdom';",
     rule: 'lint/style/noRestrictedImports',
-    violations: 7,
+    violations: 9,
   },
   {
     name: 'rejects focused suites and tests across runners',
@@ -52,9 +52,9 @@ test.each([
     violations: 2,
   },
   {
-    name: 'allows the supported runners, native browser APIs and DOM selector helpers',
+    name: 'allows the supported runners, DOM environment, native browser APIs and selector helpers',
     source:
-      "import 'bun:test'; import '@rstest/core'; import '@rstest/playwright'; import 'playwright'; import 'happy-dom'; import 'ivya';",
+      "import 'bun:test'; import '@rstest/core'; import '@rstest/playwright'; import 'playwright'; import '@miaskiewicz/turbo-dom/install'; import 'ivya';",
     rule: '',
     violations: 0,
   },

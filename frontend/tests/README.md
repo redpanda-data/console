@@ -9,10 +9,10 @@ Node must satisfy `package.json`. CI selects Node from `.nvmrc`.
 
 | Coverage | Runner/environment | Command |
 | --- | --- | --- |
-| Pure logic, transforms, mocked module contracts | Bun; Happy DOM supplies import-time browser globals | `bun run test:unit` |
-| React components, hooks, DOM, store/transport integration | Rstest + Happy DOM | `bun run test:integration` |
-| Bundler/configuration and subprocess integration | Rstest + Happy DOM | `bun run test:integration` |
-| Built Module Federation remote | Rstest federation plugin + Happy DOM | `bun run test:federation` |
+| Pure logic, transforms, mocked module contracts | Bun; Turbo DOM supplies import-time browser globals | `bun run test:unit` |
+| React components, hooks, DOM, store/transport integration | Rstest + Turbo DOM | `bun run test:integration` |
+| Bundler/configuration and subprocess integration | Rstest + Turbo DOM | `bun run test:integration` |
+| Built Module Federation remote | Rstest federation plugin + Turbo DOM | `bun run test:federation` |
 | Native CSS animation and browser hit testing | Rstest + Playwright Chromium | `bun run test:browser` |
 | Native input, viewport and fixture compatibility | Rstest + Playwright Chromium | `bun run test:e2e:canary` |
 | Production app, mocked REST/Connect boundary, bundle/worker budgets | Rstest + Playwright Chromium | `bun run build && bun run test:bundle` |
@@ -30,7 +30,8 @@ and controlled clocks. Real native-animation and service behavior stays in the b
 and full-stack suites; their shared configuration owns the required time budgets.
 Bun files share a module cache: use scoped spies and restore them instead of `mock.module()`
 replacements of shared modules. The React 18/19 legacy-host lifecycle suite runs in Rstest's
-isolated integration environment. Bun's DOM preload preserves its native networking globals.
+isolated integration environment. Bun's DOM preload preserves its native networking globals. Rstest's integration and
+federation projects install Turbo DOM through setup files in Node workers.
 
 Conversely, testing a route loader against a QueryClient/transport is integration even
 without JSX. The shared registry test remains upstream-owned and runs unchanged.
@@ -94,7 +95,7 @@ pending/skipped tests retain their conditions; the migration adds none.
 
 ## Helpers and native behavior
 
-Happy DOM integration tests reject unmocked `fetch` requests and fail at teardown,
+Turbo DOM integration tests reject unmocked `fetch` requests and fail at teardown,
 even when application error handling catches the rejection. Use explicit Connect
 router handlers or narrowly matched REST fixtures; unmatched requests still fail.
 There is no localhost success fallback or endpoint allowlist. This guard is confined
