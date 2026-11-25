@@ -121,7 +121,14 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         }}
       />
 
-      <ResizablePanelGroup className="items-stretch">
+      <ResizablePanelGroup
+        className="items-stretch"
+        onLayoutCommit={(layout) => {
+          if (layout[1] !== undefined) {
+            detail.handleDetailPanelResize(layout[1]);
+          }
+        }}
+      >
         <ResizablePanel minSize="40%">
           <div className="relative" ref={detail.fallbackFocusRef} tabIndex={-1}>
             <div className="absolute top-1 right-2 z-10 flex items-center gap-0.5 rounded-lg bg-card p-0.5">
@@ -183,12 +190,7 @@ export const TopicMessagesView = ({ topic }: TopicMessagesViewProps) => {
         {table.selectedMessage && !detail.detailExpanded && (
           <>
             <ResizableHandle className="mx-1.5" withHandle />
-            <ResizablePanel
-              defaultSize={`${detail.detailPanelSizeRef.current}%`}
-              maxSize="55%"
-              minSize="20%"
-              onResize={detail.handleDetailPanelResize}
-            >
+            <ResizablePanel defaultSize={`${detail.detailPanelSizeRef.current}%`} maxSize="55%" minSize="20%">
               <MessageDetailPanel
                 expandButtonRef={detail.expandButtonRef}
                 expanded={false}

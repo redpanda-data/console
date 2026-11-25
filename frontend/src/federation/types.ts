@@ -85,6 +85,8 @@ export type ConsoleAppProps = {
    * `path` is a Console path on that cluster, for example `/shadowlinks?tab=source`.
    */
   onOpenCluster?: (clusterId: string, path: string) => void;
+  /** Opt in only when Console owns WebMCP in this document. Defaults to false. */
+  enableWebMcp?: boolean;
 };
 
 /**

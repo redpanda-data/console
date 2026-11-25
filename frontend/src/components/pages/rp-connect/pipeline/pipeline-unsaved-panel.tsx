@@ -11,6 +11,7 @@
 
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
+import { PlainButton } from 'components/redpanda-ui/components/button';
 import { MousePointerClick } from 'lucide-react';
 
 import { FloatingChipPanel } from './floating-chip-panel';
@@ -43,7 +44,7 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
     >
       {(close) =>
         nodes.map((node) => (
-          <button
+          <PlainButton
             className="group flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left transition-colors hover:bg-muted/60"
             key={node.id}
             onClick={() => {
@@ -64,7 +65,7 @@ export function PipelineUnsavedPanel({ nodes, onSelect }: PipelineUnsavedPanelPr
             <span className="ml-auto inline-flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
               <TonedIcon className="size-3" icon={MousePointerClick} tone="muted" />
             </span>
-          </button>
+          </PlainButton>
         ))
       }
     </FloatingChipPanel>

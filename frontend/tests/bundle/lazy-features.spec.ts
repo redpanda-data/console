@@ -7,6 +7,32 @@ function tab(page: Page, name: string) {
   return page.getByRole('tab', { name, exact: true });
 }
 
+async function focusTopicPartitions(page: Page, initialUrl: string) {
+  const messages = tab(page, 'Messages');
+  await messages.press('ArrowRight');
+  await expect(tab(page, 'Consumers')).toBeFocused();
+  await expect(page).toHaveURL(initialUrl);
+  await page.keyboard.press('ArrowRight');
+  const partitions = tab(page, 'Partitions');
+  await expect(partitions).toBeFocused();
+  await expect(messages).toHaveAttribute('aria-selected', 'true');
+  await expect(page).toHaveURL(initialUrl);
+  return partitions;
+}
+
+test('keyboard focus does not change the topic URL until a tab is activated', async ({ page, errors, testInfo }) => {
+  await page.goto('/topics/bundle-test');
+  await expect(tab(page, 'Messages')).toHaveAttribute('aria-selected', 'true');
+  const initialUrl = page.url();
+  const partitions = await focusTopicPartitions(page, initialUrl);
+  await attachScreenshot(page, testInfo, 'topic-tab-focus.png');
+  await page.keyboard.press('Enter');
+  await expect(partitions).toHaveAttribute('aria-selected', 'true');
+  await expect(page).toHaveURL(`${initialUrl.split('#')[0]}#partitions`);
+  await attachScreenshot(page, testInfo, 'topic-tab-activation.png');
+  expect(errors).toEqual([]);
+});
+
 function monacoScripts(scripts: Iterable<string>) {
   return [...scripts].filter((path) => path.includes('monaco'));
 }

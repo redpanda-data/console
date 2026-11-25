@@ -9,14 +9,17 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from 'components/redpanda-ui/components/button';
+import { parseNumber } from '@ui-sdk/core/number';
+import { DateInput } from '@ui-sdk/react/date-input';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import { Calendar } from 'components/redpanda-ui/components/calendar';
+import { Field, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input, InputEnd } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from 'components/redpanda-ui/components/popover';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { CalendarIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useId, useState } from 'react';
 
 export type DateTimeInputMode = 'local' | 'utc';
 
@@ -33,9 +36,20 @@ export type DateTimeInputProps = {
   className?: string;
   placeholder?: string;
   'data-testid'?: string;
+  'aria-label'?: string;
 };
 
-const MS_PER_MINUTE = 60_000;
+const MACHINE_NUMBER = /^-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
+
+function parseTimestamp(text: string): number | null {
+  const raw = text.trim();
+  // A raw Unix decimal must keep its meaning even when the dot is a locale group separator.
+  const parsed = MACHINE_NUMBER.test(raw) ? Number(raw) : parseNumber(raw, globalThis.navigator?.language);
+  if (parsed === null) return null;
+
+  const utcMs = Math.abs(parsed) < 1e11 ? parsed * 1000 : parsed;
+  return Number.isFinite(new Date(utcMs).getTime()) ? utcMs : null;
+}
 
 const pad = (n: number, len = 2) => String(n).padStart(len, '0');
 
@@ -50,29 +64,27 @@ type DateParts = {
   seconds: number;
 };
 
-// UTC mode pre-shifts by the local offset so `Date#getX` returns UTC values.
 const partsFor = (utcMs: number, mode: DateTimeInputMode): DateParts => {
-  const d = mode === 'utc' ? new Date(utcMs + new Date(utcMs).getTimezoneOffset() * MS_PER_MINUTE) : new Date(utcMs);
+  const d = new Date(utcMs);
+  const utc = mode === 'utc';
   return {
-    year: d.getFullYear(),
-    month: d.getMonth(),
-    day: d.getDate(),
-    hours: d.getHours(),
-    minutes: d.getMinutes(),
-    seconds: d.getSeconds(),
+    year: utc ? d.getUTCFullYear() : d.getFullYear(),
+    month: utc ? d.getUTCMonth() : d.getMonth(),
+    day: utc ? d.getUTCDate() : d.getDate(),
+    hours: utc ? d.getUTCHours() : d.getHours(),
+    minutes: utc ? d.getUTCMinutes() : d.getMinutes(),
+    seconds: utc ? d.getUTCSeconds() : d.getSeconds(),
   };
 };
 
 const composeUtcMs = (parts: DateParts, mode: DateTimeInputMode): number => {
+  const date = new Date(0);
   if (mode === 'utc') {
-    return Date.UTC(parts.year, parts.month, parts.day, parts.hours, parts.minutes, parts.seconds);
+    date.setUTCHours(parts.hours, parts.minutes, parts.seconds);
+    return date.setUTCFullYear(parts.year, parts.month, parts.day);
   }
-  return new Date(parts.year, parts.month, parts.day, parts.hours, parts.minutes, parts.seconds).getTime();
-};
-
-const formatTimeInputValue = (utcMs: number, mode: DateTimeInputMode): string => {
-  const p = partsFor(utcMs, mode);
-  return `${pad(p.hours)}:${pad(p.minutes)}:${pad(p.seconds)}`;
+  date.setHours(parts.hours, parts.minutes, parts.seconds);
+  return date.setFullYear(parts.year, parts.month, parts.day);
 };
 
 type ModeToggleProps = {
@@ -112,30 +124,22 @@ const DateTimePickerPanel = ({
   disabled,
   hideTimezoneToggle,
 }: DateTimePickerPanelProps) => {
-  const baseMs = isFiniteNumber(value) ? value : Date.now();
+  const parts = partsFor(isFiniteNumber(value) ? value : Date.now(), mode);
+  const dateInputValue = `${pad(parts.year, 4)}-${pad(parts.month + 1)}-${pad(parts.day)}`;
+  const timeInputValue = `${pad(parts.hours)}:${pad(parts.minutes)}:${pad(parts.seconds)}`;
 
-  const calendarSelected = useMemo(() => {
-    const p = partsFor(baseMs, mode);
-    return new Date(p.year, p.month, p.day);
-  }, [baseMs, mode]);
-
-  const timeInputValue = useMemo(() => formatTimeInputValue(baseMs, mode), [baseMs, mode]);
-
-  const setFromCalendar = (next: Date | undefined) => {
-    if (!next) {
+  const setFromCalendar = (isoDay: string | null) => {
+    if (!isoDay) {
       return;
     }
-    const time = partsFor(baseMs, mode);
+    // Read ISO day parts without converting midnight through the local time zone.
+    const date = new Date(`${isoDay}T00:00:00Z`);
+    if (!Number.isFinite(date.getTime())) {
+      return;
+    }
     onChange(
       composeUtcMs(
-        {
-          year: next.getFullYear(),
-          month: next.getMonth(),
-          day: next.getDate(),
-          hours: time.hours,
-          minutes: time.minutes,
-          seconds: time.seconds,
-        },
+        { ...parts, year: date.getUTCFullYear(), month: date.getUTCMonth(), day: date.getUTCDate() },
         mode
       )
     );
@@ -149,8 +153,7 @@ const DateTimePickerPanel = ({
     if (![hours, minutes, seconds].every(Number.isFinite)) {
       return;
     }
-    const date = partsFor(baseMs, mode);
-    onChange(composeUtcMs({ ...date, hours, minutes, seconds }, mode));
+    onChange(composeUtcMs({ ...parts, hours, minutes, seconds }, mode));
   };
 
   return (
@@ -162,19 +165,34 @@ const DateTimePickerPanel = ({
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
     >
+      <Field className="gap-1.5" disabled={disabled}>
+        <FieldLabel>{mode === 'utc' ? 'UTC date' : 'Local date'}</FieldLabel>
+        <DateInput
+          className="flex min-h-9 items-center gap-0.5 rounded-md border border-input bg-background px-3 text-body focus-within:border-ring"
+          locale={globalThis.navigator?.language}
+          onValueChange={setFromCalendar}
+          value={dateInputValue}
+        />
+      </Field>
       {/* Scoped override: `--color-selected` and `--color-primary` are different shades, and this
       panel's other affordances (the "Now" button) paint `primary` — repaint the selected day to
       match without touching the shared Calendar. `p-0` strips Calendar's built-in padding, which
       otherwise stacks on this panel's own spacing. */}
       <div className="[--color-selected-foreground:var(--color-primary-foreground)] [--color-selected:var(--color-primary)]">
-        <Calendar className="p-0" mode="single" onSelect={setFromCalendar} selected={calendarSelected} />
+        <Calendar
+          className="p-0"
+          mode="single"
+          onValueChange={(date) => setFromCalendar(typeof date === 'string' ? date : null)}
+          value={dateInputValue}
+        />
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex flex-1 items-center gap-2">
           <Input
+            aria-label="Time"
             className="flex-1"
             disabled={disabled}
-            onChange={(e) => setFromTime(e.target.value)}
+            onValueChange={(inputText) => setFromTime(inputText)}
             step={1}
             type="time"
             value={timeInputValue}
@@ -193,8 +211,7 @@ const DateTimePickerPanel = ({
 
 const DEFAULT_PLACEHOLDER = 'Enter unix timestamp';
 
-// The text input takes raw unix milliseconds (commits on Enter/blur); the calendar icon opens a
-// popover with a calendar, time input, "Now" and a Local/UTC toggle. `value`/`onChange` are UTC ms.
+// Text accepts Unix seconds or milliseconds; the picker always commits UTC milliseconds.
 export const DateTimeInput = ({
   value,
   onChange,
@@ -207,22 +224,22 @@ export const DateTimeInput = ({
   ...rest
 }: DateTimeInputProps) => {
   const [mode, setMode] = useState<DateTimeInputMode>(defaultMode);
-  const [draft, setDraft] = useState<string>('');
+  const [draft, setDraft] = useState<string | null>(null);
 
+  const timestampId = useId();
+  const timestampLabel = rest['aria-label'] ?? 'Unix timestamp';
   const numericText = isFiniteNumber(value) ? String(value) : '';
-  const displayedNumber = draft === '' ? numericText : draft;
+  const displayedNumber = draft ?? numericText;
 
+  const writeNumeric = (text: string) => {
+    const utcMs = parseTimestamp(text);
+    if (utcMs === null) return false;
+    onChange(utcMs);
+    return true;
+  };
   const commitNumeric = () => {
-    if (draft === '') {
-      return;
-    }
-    const parsed = Number(draft);
-    if (Number.isFinite(parsed)) {
-      // Values < 10^11 are seconds (10^11 ms is 1973; 10^11 s is year 5138).
-      const utcMs = parsed < 1e11 ? parsed * 1000 : parsed;
-      onChange(utcMs);
-    }
-    setDraft('');
+    if (draft !== null) writeNumeric(draft);
+    setDraft(null);
   };
 
   const panel = (
@@ -241,25 +258,36 @@ export const DateTimeInput = ({
     'data-testid': rest['data-testid'],
     disabled,
     onBlur: commitNumeric,
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setDraft(e.target.value),
+    onValueChange: (next, details) => {
+      if (details.source === 'agent') {
+        if (!writeNumeric(next)) details.cancel();
+        else setDraft(null);
+        return;
+      }
+      setDraft(next);
+    },
+    id: timestampId,
+    'aria-label': timestampLabel,
     onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
         e.preventDefault();
         commitNumeric();
       }
     },
     placeholder,
     size: 'lg' as const,
-    type: 'number' as const,
+    inputMode: 'decimal' as const,
     value: displayedNumber,
-  };
+  } satisfies React.ComponentProps<typeof Input> & { 'data-testid'?: string };
 
   if (inline) {
     return (
       <div className="flex flex-col gap-3">
         {panel}
         <div className="flex flex-col gap-1.5">
-          <Label className="text-caption uppercase tracking-wide">Unix timestamp</Label>
+          <Label className="text-caption uppercase tracking-wide" htmlFor={timestampId}>
+            {timestampLabel}
+          </Label>
           <Input {...numberInputProps}>
             <InputEnd>
               <CalendarIcon className="size-4 text-muted-foreground" />
@@ -276,14 +304,14 @@ export const DateTimeInput = ({
         render={<Input {...numberInputProps}>
           <InputEnd className="pointer-events-auto">
             <PopoverTrigger
-              render={<button
+              render={<PlainButton
                 aria-label="Open calendar"
                 className="text-muted-foreground hover:text-foreground"
                 disabled={disabled}
                 type="button"
               >
                 <CalendarIcon className="size-4" />
-              </button>} />
+              </PlainButton>} />
           </InputEnd>
         </Input>} />
       <PopoverContent align="start" className="w-auto p-3">

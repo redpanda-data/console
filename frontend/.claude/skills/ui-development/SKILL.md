@@ -1,79 +1,26 @@
 ---
 name: ui-development
-description: Build UI with Redpanda Registry components, Tailwind v4, and accessibility best practices.
+description: Build Console UI with the shadcn registry, Tailwind v4, Base UI, and additive UI SDK behavior.
 ---
 
 # UI Development
 
-Build user interfaces with the Redpanda UI Registry.
+Reuse shadcn-based Redpanda components from `src/components/redpanda-ui/components/`.
+The shadcn config points to `@redpanda` and the Console Tailwind stylesheet. Review upstream
+changes before applying them over Console-local adapters.
 
-## Activation Conditions
-
-- Building/creating UI components or pages
-- Keywords: "design system", "ui", "frontend", "registry", "component"
-- Modifying existing registry components
-
-## Quick Reference
+- When editing an SDK enhancement, follow `node_modules/@ui-sdk/core/skills/ui-sdk/SKILL.md` and the installed React component docs.
+- Prefer existing wrappers and variants. Preserve Redpanda tokens, density, focus, and reduced-motion behavior.
+- Route human and SDK actions through the same validation. Native text handlers still work; use SDK change details when you need source or cancellation.
+- Keep Base UI as the behavior owner for standard controls; use metadata-only SDK parts for agent coordination. Supplemental SDK controls keep their own behavior owner.
+- Mark secret values with `data-agent-secret` and sensitive regions with `data-agent-hidden`.
+- `ConsoleWebMcp` owns scoped `console_` WebMCP tools and human-only activity controls. Hosts opt in; mutations require approval. Follow the history/secret/cleanup rules in `frontend/AGENTS.md`.
+- Verify keyboard/focus, pointer actions, disabled/read-only controls, and WebMCP callbacks.
 
 | Action | Rule |
 |--------|------|
-| Use components | `use-ui-registry.md` |
-| Add spacing | `style-no-margin-on-registry.md` |
-| Customize look | `style-use-variants.md` |
-| Pick a colour or text size | `style-use-tokens.md` |
-| Pull a new registry version | `registry-upgrade.md` |
-| Use icons | `icon-system.md` |
-
-## Workflow
-
-### 1. Fetch Documentation
-
-```
-FIRST: Use MCP tool mcp__redpanda-ui__search-docs or mcp__redpanda-ui__get_component
-```
-
-### 2. Check Existing Components
-
-```bash
-ls src/components/redpanda-ui/
-```
-
-## Critical Rules
-
-### ALWAYS
-
-- Use Registry components from `src/components/redpanda-ui/`
-- Call `mcp__redpanda-ui__get_component` as first action before writing UI code
-- Install components via CLI
-
-### NEVER
-
-- Copy/paste registry source (install via CLI)
-- Install external UI libraries without user request
-- Use inline `style` prop on registry components
-- Add margin `className` directly to registry components
-
-### NEVER (styling)
-
-- Raw palette classes (`bg-gray-100`, `text-red-600`) or raw hex/`bg-[#…]` — use theme tokens
-- Stock text sizes (`text-sm`, `text-lg`) — use `text-body-*` / `text-heading-*`
-- Retired v2 token names (`text-error`, `bg-surface-default`, `outline-*`, `*-subtle` on a tone) —
-  they compile to nothing. See `style-use-tokens.md`
-
-### WHEN MODIFYING REGISTRY COMPONENTS
-
-Only with explicit sign-off — that directory is synced, so a local edit is lost on the next pull
-unless someone re-applies it. If you do:
-
-1. Mark it `[upstream]` in a comment on the block, saying what it adds and why it isn't upstream yet.
-   `git grep '\[upstream\]'` is how the next upgrade finds these — an unmarked change is a silent
-   regression waiting for the next sync.
-2. Keep it minimal and backwards-compatible.
-3. Cover it with a test in the app, so a dropped local change fails a test rather than a screenshot.
-4. Track it for contribution upstream.
-
-See `registry-upgrade.md` for the pull-and-migrate procedure.
-
-## Rules
-
-See `rules/` directory for detailed guidance.
+| Use components | `rules/use-ui-registry.md` |
+| Customize look | `rules/style-use-variants.md` |
+| Tokens | `rules/style-use-tokens.md` |
+| Update registry components or UI SDK | `rules/registry-upgrade.md` |
+| Icons | `rules/icon-system.md` |

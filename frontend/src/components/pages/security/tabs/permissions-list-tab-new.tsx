@@ -31,7 +31,7 @@ import ErrorResult from '../../../../components/misc/error-result';
 import { useSupportedFeaturesStore } from '../../../../state/supported-features';
 import { Alert, AlertDescription, AlertTitle } from '../../../redpanda-ui/components/alert';
 import { Badge } from '../../../redpanda-ui/components/badge';
-import { Button } from '../../../redpanda-ui/components/button';
+import { Button, PlainAnchor, PlainButton } from '../../../redpanda-ui/components/button';
 import {
   Dialog,
   DialogBody,
@@ -70,9 +70,9 @@ const AclTableRow = ({ editHref, ...acl }: FlatAclEntry & { editHref?: string })
   <AclPermissionRow {...acl}>
     <TableCell align="right">
       {editHref && (
-        <a className="text-muted-foreground hover:text-foreground" href={editHref}>
+        <PlainAnchor className="text-muted-foreground hover:text-foreground" href={editHref}>
           <ExternalLink className="h-3.5 w-3.5" />
-        </a>
+        </PlainAnchor>
       )}
     </TableCell>
   </AclPermissionRow>
@@ -221,9 +221,9 @@ const PrincipalRow: FC<PrincipalRowProps> = ({ group, isExpanded, onToggle, onDe
                       render={
                         <Button
                           render={
-                            <button type="button">
+                            <PlainButton type="button">
                               <MoreHorizontalIcon className="h-4 w-4" />
-                            </button>
+                            </PlainButton>
                           }
                           size="icon-sm"
                           variant="ghost"
@@ -462,7 +462,7 @@ export const PermissionsListTabNew: FC = () => {
           }
         >
           <ListLayoutSearchInput
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onValueChange={(value) => setSearchQuery(value)}
             placeholder="Search principals, resources, roles..."
             value={searchQuery}
           />

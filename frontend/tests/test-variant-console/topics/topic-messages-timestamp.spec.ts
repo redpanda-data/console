@@ -141,7 +141,7 @@ test.describe('filter Messages by Timestamp', () => {
       await expect(page.locator('input[type="time"]')).not.toBeVisible({ timeout: 3000 });
 
       // The number input shows the unix-millisecond value directly.
-      const dateTimeInput = page.getByTestId('start-timestamp-input').locator('input[type="number"]');
+      const dateTimeInput = page.getByTestId('start-timestamp-input').getByRole('textbox', { name: 'Unix timestamp' });
       await expect(dateTimeInput).toBeVisible();
       const displayValue = await dateTimeInput.inputValue();
 
@@ -184,7 +184,7 @@ test.describe('filter Messages by Timestamp', () => {
       const timestampInSeconds = 1_704_067_200; // 2024-01-01 00:00:00 UTC
       const timestampInMilliseconds = timestampInSeconds * 1000; // 1704067200000
 
-      const numberInput = page.getByTestId('start-timestamp-input').locator('input[type="number"]');
+      const numberInput = page.getByTestId('start-timestamp-input').getByRole('textbox', { name: 'Unix timestamp' });
       await expect(numberInput).toBeVisible();
 
       // Listen for the API request BEFORE pressing Enter (Enter triggers onChange)

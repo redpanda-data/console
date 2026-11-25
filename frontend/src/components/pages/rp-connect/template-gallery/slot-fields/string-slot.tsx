@@ -33,14 +33,14 @@ export const StringSlotField = ({ slot, control }: StringSlotFieldProps) => (
       slot.multiline ? (
         <Textarea
           data-testid={`slot-${slot.id}`}
-          onChange={field.onChange}
+          onValueChange={field.onChange}
           placeholder={slot.placeholder}
           value={field.value ?? ''}
         />
       ) : (
         <Input
           data-testid={`slot-${slot.id}`}
-          onChange={field.onChange}
+          onValueChange={field.onChange}
           placeholder={slot.placeholder}
           value={field.value ?? ''}
         />

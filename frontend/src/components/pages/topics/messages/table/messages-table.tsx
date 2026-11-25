@@ -12,7 +12,7 @@
 import type { OnChangeFn, PaginationState, SortingState } from '@tanstack/react-table';
 import { FENCED_READS_DESCRIPTION, FENCED_READS_TITLE } from 'components/cluster-fence/cluster-fence-model';
 import { useClusterFenceGuard } from 'components/cluster-fence/use-cluster-fence-guard';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import { type DataTableColumnDef, useDataTable } from 'components/redpanda-ui/components/data-table';
 import {
   Empty,
@@ -279,7 +279,7 @@ export const MessagesTable = ({
                     }
                   >
                     {canSort ? (
-                      <button
+                      <PlainButton
                         className={cn(
                           'inline-flex cursor-pointer items-center gap-1.5 rounded-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-primary',
                           clearOfCornerActions
@@ -288,7 +288,7 @@ export const MessagesTable = ({
                         type="button"
                       >
                         {label}
-                      </button>
+                      </PlainButton>
                     ) : (
                       <span className={cn('inline-flex items-center gap-1.5', clearOfCornerActions)}>{label}</span>
                     )}

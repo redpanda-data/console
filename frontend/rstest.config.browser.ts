@@ -3,6 +3,7 @@ import { definePlaywrightConfig } from '@rstest/playwright/config';
 
 export default defineConfig({
   name: 'browser',
+  globalSetup: './tests/browser/rstest-global-setup.ts',
   extends: definePlaywrightConfig({ launchOptions: { headless: true } }),
   testEnvironment: 'node',
   include: ['tests/browser/*.spec.ts'],

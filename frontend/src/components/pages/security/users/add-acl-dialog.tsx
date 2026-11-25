@@ -28,7 +28,7 @@ import { z } from 'zod';
 import { useCreateACLMutation } from '../../../../react-query/api/acl';
 import { api } from '../../../../state/backend-api';
 import { Alert, AlertDescription } from '../../../redpanda-ui/components/alert';
-import { Button } from '../../../redpanda-ui/components/button';
+import { Button, PlainButton } from '../../../redpanda-ui/components/button';
 import { Combobox } from '../../../redpanda-ui/components/combobox';
 import {
   Dialog,
@@ -345,7 +345,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                             { value: ACL_ResourcePatternType.PREFIXED, label: 'Prefixed' },
                             { value: ACL_ResourcePatternType.ANY, label: 'Any' },
                           ].map((opt) => (
-                            <button
+                            <PlainButton
                               className={clsx(
                                 'inline-flex flex-1 items-center justify-center rounded-sm px-3 py-1.5 text-body font-medium whitespace-nowrap ring-offset-background transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
                                 field.value === opt.value
@@ -357,7 +357,7 @@ export const AddAclDialog = ({ open, onOpenChange, principal }: AddAclDialogProp
                               type="button"
                             >
                               {opt.label}
-                            </button>
+                            </PlainButton>
                           ))}
                         </div>
                         {PATTERN_TYPE_HELP[field.value] && (

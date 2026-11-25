@@ -9,6 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
+import { PlainButton } from 'components/redpanda-ui/components/button';
 import { Link } from 'components/redpanda-ui/components/typography';
 import { BookOpenIcon } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
@@ -128,7 +129,7 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
         )}
       </div>
       <div className="flex items-baseline gap-3 text-body-sm text-muted-foreground">
-        <button
+        <PlainButton
           aria-controls={bodyId}
           aria-expanded={expanded}
           className="text-body-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
@@ -136,7 +137,7 @@ const LongDescription = ({ source, docsLink }: { source: string; docsLink: React
           type="button"
         >
           {expanded ? 'Show less' : 'Show more'}
-        </button>
+        </PlainButton>
         {docsLink}
       </div>
     </div>

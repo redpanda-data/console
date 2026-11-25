@@ -617,7 +617,7 @@ describe('the NodeConfigForm — topic fields', () => {
 
     const topic = screen.getByRole('combobox', { name: TOPIC_FIELD_RE });
     expect(topic).toHaveAttribute('aria-invalid', 'true');
-    expect(topic).toHaveAccessibleDescription('topic does not exist');
+    await waitFor(() => expect(topic).toHaveAccessibleDescription('topic does not exist'));
 
     await user.type(topic, 'opic');
     await waitFor(() => expect(topic).not.toHaveAttribute('aria-invalid'));

@@ -13,7 +13,7 @@ import { useRouterState } from '@tanstack/react-router';
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
 import { Badge } from 'components/redpanda-ui/components/badge';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { SimpleCodeBlock } from 'components/redpanda-ui/components/code-block';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
@@ -35,6 +35,7 @@ import { Kbd, KbdGroup } from 'components/redpanda-ui/components/kbd';
 import { Label } from 'components/redpanda-ui/components/label';
 import { Switch } from 'components/redpanda-ui/components/switch';
 import { Table, TableBody, TableCell, TableRow } from 'components/redpanda-ui/components/table';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { ToggleGroup, ToggleGroupItem } from 'components/redpanda-ui/components/toggle-group';
 import { InlineCode } from 'components/redpanda-ui/components/typography';
 import { cn } from 'components/redpanda-ui/lib/utils';
@@ -56,7 +57,6 @@ import {
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { Fragment, useCallback, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { toast } from 'sonner';
 import { pluralizeWithNumber } from 'utils/string';
 
 import { CONNECT_CONFIG_FIXTURES, type ConnectConfigFixture } from './connect-config-fixtures';
@@ -229,7 +229,7 @@ function ConfigFixtureRow({ entry }: { entry: FixtureEntry }) {
           <CollapsibleTrigger
             aria-label={`${expanded ? 'Hide' : 'Show'} the YAML for ${fixture.name}`}
             render={
-              <button
+              <PlainButton
                 className="flex min-w-0 flex-1 cursor-pointer items-start gap-1.5 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 type="button"
               />
@@ -405,9 +405,9 @@ const TOAST_ACTIONS: { label: string; variant: ButtonVariant; run: () => void }[
     label: 'With action',
     variant: 'outline',
     run: () =>
-      toast.message('Action required', {
+      toast('Action required', {
         description: 'A toast with a description and an action button.',
-        action: { label: 'Undo', onClick: () => toast('Undone') },
+        action: { label: 'Undo', onAction: () => toast('Undone') },
       }),
   },
   {
@@ -1006,7 +1006,7 @@ function OverviewPanel({ onNavigate }: { onNavigate: (panel: PanelId) => void })
           {index > 0 ? <ItemSeparator /> : null}
           <Item
             className="cursor-pointer text-left"
-            render={<button onClick={() => onNavigate(panel)} type="button" />}
+            render={<PlainButton onClick={() => onNavigate(panel)} type="button" />}
             size="sm"
           >
             <ItemMedia variant="icon">{icon}</ItemMedia>
@@ -1093,7 +1093,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                       const count = railCounts[id] ?? 0;
                       const active = panel === id;
                       return (
-                        <button
+                        <PlainButton
                           className={cn(
                             'flex h-7 w-full cursor-pointer items-center gap-2 rounded-md px-2 text-left text-body-sm transition-colors',
                             active
@@ -1113,7 +1113,7 @@ export function DebugDialog({ open, onOpenChange }: { open: boolean; onOpenChang
                               </PopIn>
                             ) : null}
                           </AnimatePresence>
-                        </button>
+                        </PlainButton>
                       );
                     })}
                   </div>
@@ -1162,7 +1162,7 @@ function DebugLauncher({ onClick }: { onClick: () => void }) {
 
   return createPortal(
     <ElementTooltip content="Debug helpers — ⌃/⌘⇧D">
-      <button
+      <PlainButton
         aria-label="Open debug helpers (Ctrl/Cmd+Shift+D)"
         className="fixed right-[56px] bottom-[64px] z-40 flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-full border bg-linear-to-b from-background to-muted text-muted-foreground opacity-85 shadow-md transition-all hover:text-foreground hover:opacity-100 hover:shadow-lg"
         onClick={onClick}
@@ -1176,7 +1176,7 @@ function DebugLauncher({ onClick }: { onClick: () => void }) {
             </PopIn>
           ) : null}
         </AnimatePresence>
-      </button>
+      </PlainButton>
     </ElementTooltip>,
     document.body
   );

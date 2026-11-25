@@ -11,11 +11,11 @@
 
 import { ElementTooltip } from 'components/misc/element-tooltip';
 import { TonedIcon } from 'components/pages/shared/toned-icon';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from 'components/redpanda-ui/components/collapsible';
 import { Combobox } from 'components/redpanda-ui/components/combobox';
 import { CountDot } from 'components/redpanda-ui/components/count-dot';
-import { Field, useFieldContext } from 'components/redpanda-ui/components/field';
+import { Field, FieldError } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import {
@@ -97,7 +97,7 @@ const ChildItemRow = ({
 }) => {
   const condText = childItemConditionText(item);
   return (
-    <button
+    <PlainButton
       className="flex w-full cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-left transition-colors outline-none hover:border-primary/50 hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       onClick={() => onSelect(item)}
       type="button"
@@ -116,7 +116,7 @@ const ChildItemRow = ({
       </div>
       {item.lintCount ? <CountDot count={item.lintCount} size="sm" variant="destructive" /> : null}
       <TonedIcon className="size-4 shrink-0" icon={ChevronRight} tone="muted" />
-    </button>
+    </PlainButton>
   );
 };
 
@@ -384,21 +384,21 @@ const FieldLintErrorsContext = createContext<FieldLintErrors>(new Map());
 // it, and the message describes the SAVED value, not what they're typing.
 const FieldLintErrorList = ({ fieldKey, dirty }: { fieldKey: string; dirty: boolean }) => {
   const errors = useContext(FieldLintErrorsContext).get(fieldKey);
-  // Inside an invalid registry Field, this list is what the control's aria-describedby points at.
-  const { errorId } = useFieldContext();
   if (!errors || errors.length === 0 || dirty) {
     return null;
   }
   return (
-    <div className="flex flex-col gap-1" id={errorId}>
-      {errors.map((message, i) => (
-        // Indexed key: identical messages can anchor to one field, and the list is rebuilt per render.
-        <div className="flex items-start gap-1 text-body-sm text-destructive" key={`${i}-${message}`}>
-          <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
-          {message}
-        </div>
-      ))}
-    </div>
+    <FieldError>
+      <div className="flex flex-col gap-1">
+        {errors.map((message, i) => (
+          // Indexed key: identical messages can anchor to one field, and the list is rebuilt per render.
+          <div className="flex items-start gap-1 text-body-sm text-destructive" key={`${i}-${message}`}>
+            <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+            {message}
+          </div>
+        ))}
+      </div>
+    </FieldError>
   );
 };
 
@@ -589,7 +589,7 @@ const SecretInput = (props: { id?: string; value: string; onChange: (value: unkn
     aria-required={props.required || undefined}
     autoComplete="off"
     id={props.id}
-    onChange={props.onChange}
+    onValueChange={props.onChange}
     type={props.value.includes('${') ? 'text' : 'password'}
     value={props.value}
   />
@@ -801,7 +801,7 @@ const ScalarTextInput = ({
       aria-required={required || undefined}
       id={id}
       inputMode={spec.type === 'int' || spec.type === 'float' ? numericMode : undefined}
-      onChange={onChange}
+      onValueChange={onChange}
       placeholder={spec.defaultValue || spec.examples?.[0] || undefined}
       type="text"
       value={String(value ?? '')}
@@ -901,7 +901,7 @@ const ArrayField = ({ leaf, control }: { leaf: Leaf; control: Control<FormValues
               aria-invalid={((lintErrors.get(leaf.key)?.length ?? 0) > 0 && !fieldState.isDirty) || undefined}
               aria-required={checkRequired(leaf.spec) || undefined}
               id={inputId}
-              onChange={field.onChange}
+              onValueChange={field.onChange}
               placeholder="One value per line"
               rows={3}
               value={String(field.value ?? '')}
@@ -1265,7 +1265,7 @@ const LabelField = ({ control, requireLabel }: { control: Control<FormValues>; r
             <Input
               aria-required={requireLabel || undefined}
               id={labelId}
-              onChange={field.onChange}
+              onValueChange={field.onChange}
               placeholder={
                 requireLabel
                   ? 'Name other nodes use to reference this resource'

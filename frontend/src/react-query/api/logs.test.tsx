@@ -12,8 +12,8 @@
 import { Code, ConnectError } from '@connectrpc/connect';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
+import { toast } from 'components/redpanda-ui/components/toast';
 import type { PropsWithChildren } from 'react';
-import { toast } from 'sonner';
 
 import type { TopicMessage } from '../../state/rest-interfaces';
 import { PartitionOffsetOrigin } from '../../state/ui';
@@ -34,7 +34,7 @@ rs.mock('../../utils/message-converters', () => ({
   },
 }));
 
-rs.mock('sonner', () => ({
+rs.mock('components/redpanda-ui/components/toast', () => ({
   toast: { error: rs.fn(), success: rs.fn() },
 }));
 

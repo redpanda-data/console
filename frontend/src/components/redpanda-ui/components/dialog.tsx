@@ -12,10 +12,17 @@ import { usePortalContainer } from '../lib/use-portal-container';
 import { useScrollShadow } from '../lib/use-scroll-shadow';
 import { cn, type SharedProps } from '../lib/utils';
 
-type DialogRootProps = DialogPrimitive.Root.Props & SharedProps;
+type DialogRootProps = DialogPrimitive.Root.Props & SharedProps & { closeOnOutsidePress?: boolean };
 
-function Dialog({ testId, ...props }: DialogRootProps) {
-  return <DialogPrimitive.Root data-slot="dialog" data-testid={testId} {...props} />;
+function Dialog({ testId, closeOnOutsidePress, ...props }: DialogRootProps) {
+  return (
+    <DialogPrimitive.Root
+      disablePointerDismissal={closeOnOutsidePress === false}
+      data-slot="dialog"
+      data-testid={testId}
+      {...props}
+    />
+  );
 }
 
 function DialogTrigger({ className, ...props }: DialogPrimitive.Trigger.Props) {

@@ -14,9 +14,9 @@ import { useNavigate } from '@tanstack/react-router';
 import { CardField } from 'components/redpanda-ui/components/card';
 import { FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { CreateRoleRequestSchema } from 'protogen/redpanda/api/dataplane/v1/security_pb';
 import { useLayoutEffect } from 'react';
-import { toast } from 'sonner';
 
 import { useCreateAcls } from '../../../../react-query/api/acl';
 import { useCreateRoleMutation } from '../../../../react-query/api/security';

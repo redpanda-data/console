@@ -18,6 +18,7 @@ import {
   type DataTableColumnDef,
   DataTableColumnHeader,
 } from 'components/redpanda-ui/components/data-table';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 import { Text } from 'components/redpanda-ui/components/typography';
 import type { FC, ReactNode } from 'react';
 import { showToast } from 'utils/toast.utils';
@@ -180,13 +181,13 @@ const columns: DataTableColumnDef<Pipeline>[] = [
     id: 'id',
     enableSorting: false,
     cell: ({ row: { original } }) => (
-      <Link
+      <PlainLink
         params={{ pipelineId: encodeURIComponentPercents(original.id) }}
         search={{} as never}
         to="/rp-connect/$pipelineId"
       >
         <Text>{original.id}</Text>
-      </Link>
+      </PlainLink>
     ),
   },
   {
@@ -196,13 +197,13 @@ const columns: DataTableColumnDef<Pipeline>[] = [
     // The Registry DataTable ignores column sizes.
     cell: ({ row: { original } }) => (
       <div className="w-screen max-w-full">
-        <Link
+        <PlainLink
           params={{ pipelineId: encodeURIComponentPercents(original.id) }}
           search={{} as never}
           to="/rp-connect/$pipelineId"
         >
           <Text className="wrap-break-word whitespace-break-spaces">{original.displayName}</Text>
-        </Link>
+        </PlainLink>
       </div>
     ),
   },

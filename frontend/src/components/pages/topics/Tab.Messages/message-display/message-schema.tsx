@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@tanstack/react-router';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 
 import { api, useApiStoreHook } from '../../../../../state/backend-api';
 import { pickSubjectForContext, topicSchemaContext } from '../../../schemas/schema-context-utils';
@@ -25,12 +25,12 @@ export const MessageSchema = (p: { schemaId: number; topicName?: string }) => {
   // The same schema ID can name different schemas in different contexts.
   const s = pickSubjectForContext(subjects, topicSchemaContext(topicConfig?.configEntries)) ?? subjects[0];
   return (
-    <Link
+    <PlainLink
       params={{ subjectName: encodeURIComponent(s.subject) }}
       search={{ version: String(s.version) }}
       to="/schema-registry/subjects/$subjectName"
     >
       {s.subject} (version {s.version})
-    </Link>
+    </PlainLink>
   );
 };

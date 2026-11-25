@@ -2,11 +2,11 @@
 
 // Copyright 2026 Redpanda Data, Inc.
 
+import { normalizeNumberValue, resolveNumericStep, useFieldTestIds } from './shared';
 import { Input } from '../../input';
 import type { AutoFormFieldProps } from '../core-types';
 import { getFieldUiConfig } from '../helpers';
 import type { FieldTypeDefinition } from '../registry';
-import { normalizeNumberValue, resolveNumericStep, useFieldTestIds } from './shared';
 
 function NumberFieldComponent({ error, field, id, inputProps }: AutoFormFieldProps) {
   const testIds = useFieldTestIds(id);

@@ -10,7 +10,7 @@
  */
 
 import { ElementTooltip } from 'components/misc/element-tooltip';
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainButton } from 'components/redpanda-ui/components/button';
 import {
   Dialog,
   DialogBody,
@@ -122,13 +122,13 @@ export const JsFilterDialog = ({ filter, seedCode, seedName, onClose, onSave }: 
             <div className="flex flex-wrap gap-1.5">
               {EXAMPLES.map((example) => (
                 <ElementTooltip content={example.note} key={example.code}>
-                  <button
+                  <PlainButton
                     className="rounded-md border bg-background px-2.5 py-1 font-mono text-xs whitespace-nowrap hover:bg-muted"
                     onClick={() => setDraft((prev) => ({ ...prev, code: example.code, transpiledCode: example.code }))}
                     type="button"
                   >
                     {example.code}
-                  </button>
+                  </PlainButton>
                 </ElementTooltip>
               ))}
             </div>

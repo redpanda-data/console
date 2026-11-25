@@ -9,7 +9,6 @@
  * by the Apache License, Version 2.0
  */
 
-import { Link } from '@tanstack/react-router';
 import type { ColumnFiltersState, PaginationState, SortingState, Updater } from '@tanstack/react-table';
 import { FenceGuardedButton, FenceGuardedMenuItem } from 'components/cluster-fence/fence-guarded-controls';
 import { MoreHorizontalIcon, TrashIcon } from 'components/icons';
@@ -23,12 +22,12 @@ import {
 } from 'components/redpanda-ui/components/empty';
 import { InputEnd, InputStart } from 'components/redpanda-ui/components/input';
 import { ListLayout, ListLayoutFilters, ListLayoutSearchInput } from 'components/redpanda-ui/components/list-layout';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { AlertCircle, AlertTriangle, DatabaseIcon, EyeOff, Search, X } from 'lucide-react';
 import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import type { FC } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLegacyListTopicsQuery } from 'react-query/api/topic';
-import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 
 import { CreateTopicDialog } from './create-topic-dialog';
@@ -42,7 +41,7 @@ import { setPageHeader } from '../../../state/ui-state';
 import { DEFAULT_TABLE_PAGE_SIZE } from '../../constants';
 import { renderLogDirSummary } from '../../misc/common';
 import { Alert, AlertDescription, AlertTitle } from '../../redpanda-ui/components/alert';
-import { Button } from '../../redpanda-ui/components/button';
+import { Button, PlainButton } from '../../redpanda-ui/components/button';
 import { Checkbox } from '../../redpanda-ui/components/checkbox';
 import {
   type DataTableColumnDef,
@@ -51,6 +50,7 @@ import {
   useDataTable,
 } from '../../redpanda-ui/components/data-table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../../redpanda-ui/components/dropdown-menu';
+import { PlainLink } from '../../redpanda-ui/components/plain-link';
 import { Skeleton } from '../../redpanda-ui/components/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../redpanda-ui/components/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../redpanda-ui/components/tooltip';
@@ -237,7 +237,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
       meta: columnMeta({ headWidth: 'full' as const }),
       cell: ({ row: { original: topic } }) => (
         <div className="flex items-start gap-2">
-          <Link
+          <PlainLink
             className="min-w-0 wrap-anywhere whitespace-normal"
             data-testid={`topic-link-${topic.topicName}`}
             params={{ topicName: encodeURIComponent(topic.topicName) }}
@@ -245,7 +245,7 @@ function buildTopicColumns(onDeleteTopic: (topic: Topic) => void): DataTableColu
             to="/topics/$topicName"
           >
             <TopicName topic={topic} />
-          </Link>
+          </PlainLink>
           <TopicHealthIcons topic={topic} />
         </div>
       ),
@@ -515,7 +515,7 @@ const TopicList: FC = () => {
             {/* The slots stay mounted so the input's padding follows them: an empty slot measures 0. */}
             <ListLayoutSearchInput
               data-testid="search-field-input"
-              onChange={(e) => table.getColumn('topicName')?.setFilterValue(e.target.value || undefined)}
+              onValueChange={(value) => table.getColumn('topicName')?.setFilterValue(value || undefined)}
               placeholder="Filter by name (regexp)..."
               value={(table.getColumn('topicName')?.getFilterValue() as string) ?? ''}
             >
@@ -528,14 +528,14 @@ const TopicList: FC = () => {
               </InputStart>
               <InputEnd className="pointer-events-auto">
                 {(table.getColumn('topicName')?.getFilterValue() as string) && (
-                  <button
+                  <PlainButton
                     className="text-muted-foreground hover:text-foreground"
                     data-testid="search-field-reset-icon"
                     onClick={() => table.getColumn('topicName')?.setFilterValue(undefined)}
                     type="button"
                   >
                     <X className="h-4 w-4" />
-                  </button>
+                  </PlainButton>
                 )}
               </InputEnd>
             </ListLayoutSearchInput>

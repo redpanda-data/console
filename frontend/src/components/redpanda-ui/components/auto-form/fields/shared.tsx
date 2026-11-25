@@ -101,8 +101,6 @@ export function parseNumericProp(value: unknown): number | undefined {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
   }
-
-  return;
 }
 
 export function resolveNumericStep(inputProps: AutoFormFieldProps['inputProps'], fallbackValue?: number): number {
@@ -126,8 +124,6 @@ export function normalizeNumberValue(value: unknown): number | undefined {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
   }
-
-  return;
 }
 
 export function getGroupedOptions(field: AutoFormFieldProps['field']): AutoFormOptionGroup[] | undefined {
@@ -234,5 +230,4 @@ export function readDataProviderId(field: AutoFormFieldProps['field'] | undefine
   if (bag.ui && typeof bag.ui === 'object' && typeof bag.ui.dataProvider === 'string') {
     return bag.ui.dataProvider;
   }
-  return;
 }

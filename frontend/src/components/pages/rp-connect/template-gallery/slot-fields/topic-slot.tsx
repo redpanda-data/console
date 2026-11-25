@@ -9,7 +9,7 @@
  * by the Apache License, Version 2.0
  */
 
-import { Button } from 'components/redpanda-ui/components/button';
+import { Button, PlainAnchor } from 'components/redpanda-ui/components/button';
 import { SimpleFormField } from 'components/redpanda-ui/components/form';
 import { TopicSelector } from 'components/ui/topic/topic-selector';
 import { config, isEmbedded } from 'config';
@@ -47,6 +47,7 @@ export const TopicSlotField = ({ slot, control, onRequestCreateTopic }: TopicSlo
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
         <div className="flex-1" data-testid={`slot-${slot.id}`}>
           <TopicSelector
+            aria-label={slot.label}
             onTopicsChange={(topics) => field.onChange(topics[0] ?? '')}
             selectedTopics={field.value ? [field.value] : []}
           />
@@ -61,7 +62,7 @@ export const TopicSlotField = ({ slot, control, onRequestCreateTopic }: TopicSlo
             <Plus className="h-4 w-4" /> Create topic
           </Button>
         ) : (
-          <a
+          <PlainAnchor
             className="inline-flex items-center gap-1 text-body-sm font-medium text-primary hover:underline"
             data-testid={`slot-${slot.id}-create`}
             href={buildTopicsHref()}
@@ -70,7 +71,7 @@ export const TopicSlotField = ({ slot, control, onRequestCreateTopic }: TopicSlo
           >
             Create a new topic
             <ExternalLink aria-hidden className="h-3 w-3" />
-          </a>
+          </PlainAnchor>
         )}
       </div>
     )}

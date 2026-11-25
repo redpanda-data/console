@@ -4,17 +4,16 @@
 
 import { UploadIcon } from 'lucide-react';
 import React, { useContext } from 'react';
-import type { DropEvent, DropzoneOptions, FileRejection } from 'react-dropzone';
-import { useDropzone } from 'react-dropzone';
+import * as FileInput from '@ui-sdk/react/file-input';
 
-import { Button, type ButtonVariants } from './button';
+import { buttonVariants, type ButtonVariants } from './button';
 import { cn, type SharedProps } from '../lib/utils';
 
 interface DropzoneContextType {
-  accept?: DropzoneOptions['accept'];
-  maxFiles?: DropzoneOptions['maxFiles'];
-  maxSize?: DropzoneOptions['maxSize'];
-  minSize?: DropzoneOptions['minSize'];
+  accept?: Record<string, string[]>;
+  maxFiles?: number;
+  maxSize?: number;
+  minSize?: number;
   src?: File[];
 }
 
@@ -33,15 +32,23 @@ const renderBytes = (bytes: number) => {
 
 const DropzoneContext = React.createContext<DropzoneContextType | undefined>(undefined);
 
-export type DropzoneProps = Omit<DropzoneOptions, 'onDrop'> &
+type FileInputProps = React.ComponentProps<typeof FileInput.FileInput>;
+export type DropzoneProps = Pick<FileInputProps, 'disabled' | 'multiple' | 'minSize' | 'maxSize' | 'maxFiles'> &
   SharedProps & {
+    accept?: Record<string, string[]>;
     src?: File[];
     className?: string;
-    onDrop?: (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => void;
+    onDrop?: (files: File[]) => void;
+    onError?: (error: Error) => void;
     children?: React.ReactNode;
     variant?: ButtonVariants['variant'];
   };
-
+const rejectionMessages: Record<string, string> = {
+  'file-type': 'File type not accepted',
+  'file-too-large': 'File is too large',
+  'file-too-small': 'File is too small',
+  'too-many-files': 'Too many files',
+};
 export const Dropzone = ({
   accept,
   maxFiles = 1,
@@ -56,51 +63,38 @@ export const Dropzone = ({
   testId,
   variant = 'outline',
   ref,
-  ...props
-}: DropzoneProps & { ref?: React.Ref<HTMLButtonElement> }) => {
-  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
-    accept,
-    maxFiles,
-    maxSize,
-    minSize,
-    onError,
-    disabled,
-    onDrop: (acceptedFiles, fileRejections, event) => {
-      if (fileRejections.length > 0) {
-        const message = fileRejections.at(0)?.errors.at(0)?.message;
-        onError?.(new Error(message));
-        return;
-      }
-
-      onDrop?.(acceptedFiles, fileRejections, event);
-    },
-    ...props,
-  });
-  const inputProps = getInputProps();
-
-  return (
-    <DropzoneContext.Provider key={JSON.stringify(src)} value={{ src, accept, maxSize, minSize, maxFiles }}>
-      <Button
-        className={cn(
-          'group relative h-auto w-full flex-col overflow-hidden p-8',
-          isDragActive && 'outline-none ring-2 ring-ring',
-          isDragReject && 'ring-destructive',
-          className
-        )}
-        data-testid={testId}
-        disabled={disabled}
-        ref={ref}
-        type="button"
-        variant={variant}
-        {...getRootProps()}
-      >
-        {/* react-dropzone >= 19 hides the input with a zero-size, in-flow box; keep it out of the flex gap. */}
-        <input {...inputProps} className="absolute" disabled={disabled} />
-        {children}
-      </Button>
-    </DropzoneContext.Provider>
-  );
-};
+  multiple = maxFiles !== 1,
+}: DropzoneProps & { ref?: React.Ref<HTMLButtonElement> }) => (
+  <DropzoneContext.Provider value={{ src, accept, maxSize, minSize, maxFiles }}>
+    <FileInput.FileInput
+      accept={accept ? Object.entries(accept).flatMap(([mime, extensions]) => [mime, ...extensions]) : undefined}
+      maxFiles={maxFiles}
+      maxSize={maxSize}
+      minSize={minSize}
+      disabled={disabled}
+      multiple={multiple}
+      onValueChange={(files, details) => {
+        // Certificates and licenses are atomic uploads: never process a partially rejected drop.
+        if (details.rejected.length) details.cancel();
+        else onDrop?.(files);
+      }}
+      onReject={(rejected) => {
+        const reason = rejected[0]?.reasons[0];
+        if (reason) onError?.(new Error(rejectionMessages[reason] ?? reason));
+      }}
+    >
+      <FileInput.FileInputDropzone className="group w-full data-dragging:ring-2 data-dragging:ring-ring data-drag-reject:ring-destructive">
+        <FileInput.FileInputTrigger
+          ref={ref}
+          data-testid={testId}
+          className={cn(buttonVariants({ variant }), 'relative h-auto w-full flex-col overflow-hidden p-8', className)}
+        >
+          {children}
+        </FileInput.FileInputTrigger>
+      </FileInput.FileInputDropzone>
+    </FileInput.FileInput>
+  </DropzoneContext.Provider>
+);
 
 Dropzone.displayName = 'Dropzone';
 
@@ -170,10 +164,7 @@ export const DropzoneEmptyState = ({ children, className }: DropzoneEmptyStatePr
 
   if (accept) {
     caption += 'Accepts ';
-    // Grouped filters name themselves ("Images"); fall back to MIME types when a group has no description.
-    const accepted = Array.isArray(accept)
-      ? accept.map((group) => group.description ?? Object.keys(group.accept).join(', '))
-      : Object.keys(accept);
+    const accepted = Object.values(accept).flat();
     caption += accepted.join(', ');
   }
 

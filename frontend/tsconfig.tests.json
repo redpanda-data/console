@@ -7,6 +7,7 @@
   "include": [
     "tests/**/*.spec.ts",
     "tests/**/*.cases.ts",
+    "tests/browser/fixtures/**/*.tsx",
     "tests/**/fixtures.ts",
     "tests/shared/e2e.ts",
     "tests/shared/assertions.ts",

@@ -96,7 +96,7 @@ function RadioIndicator({ checked }: { checked: boolean }) {
     <span
       className={cn(
         'mr-1 flex size-4 shrink-0 items-center justify-center rounded-full border border-primary',
-        checked ? 'opacity-100' : 'opacity-0 group-data-[selected=true]:opacity-100'
+        checked ? 'opacity-100' : 'opacity-0 group-data-highlighted:opacity-100'
       )}
     >
       {checked ? <span className="size-2 rounded-full bg-primary" /> : null}
@@ -171,7 +171,7 @@ function MatchingOptionItem({
       ) : (
         <Checkbox
           checked={isSelected}
-          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
+          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-highlighted:opacity-100"
         />
       )}
       <span className="inline-flex items-center gap-1 text-subtle">
@@ -649,13 +649,13 @@ const OptionItem = memo(function OptionItemImpl({ option, onToggle, singleMode }
   }, [onToggle, value, selected, singleMode]);
 
   return (
-    <CommandItem className="group flex items-center gap-1.5" onSelect={handleSelect}>
+    <CommandItem className="group flex items-center gap-1.5" label={label} onSelect={handleSelect} value={value}>
       {singleMode ? (
         <RadioIndicator checked={selected} />
       ) : (
         <Checkbox
           checked={selected}
-          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-[selected=true]:opacity-100"
+          className="mr-1 opacity-0 data-[state=checked]:opacity-100 group-data-highlighted:opacity-100"
         />
       )}
       {ItemIcon ? renderIcon(ItemIcon, 'size-4 text-primary') : null}

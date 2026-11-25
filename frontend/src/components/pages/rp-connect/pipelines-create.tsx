@@ -12,13 +12,14 @@
 import { create } from '@bufbuild/protobuf';
 import { ConnectError } from '@connectrpc/connect';
 import type { Monaco } from '@monaco-editor/react';
-import { Link } from '@tanstack/react-router';
 import { Alert, AlertDescription } from 'components/redpanda-ui/components/alert';
 import { Button } from 'components/redpanda-ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from 'components/redpanda-ui/components/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from 'components/redpanda-ui/components/field';
 import { Input } from 'components/redpanda-ui/components/input';
+import { PlainLink } from 'components/redpanda-ui/components/plain-link';
 import { Spinner } from 'components/redpanda-ui/components/spinner';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Link as UILink } from 'components/redpanda-ui/components/typography';
 import { isFeatureFlagEnabled } from 'config';
 import { AlertCircle, PlusIcon, Sparkles } from 'lucide-react';
@@ -26,7 +27,6 @@ import type { editor, IDisposable, IPosition, languages } from 'monaco-editor';
 import { AnimatePresence, motion } from 'motion/react';
 import { PipelineCreateSchema } from 'protogen/redpanda/api/dataplane/v1/pipeline_pb';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { docsLinks } from 'utils/docs-links';
 
 import { formatPipelineError } from './errors';
@@ -217,9 +217,9 @@ const RpConnectPipelinesCreateContent = () => {
           {Boolean(isCreating) && <Spinner />}
           {isCreating ? 'Creating...' : 'Create'}
         </Button>
-        <Link search={{} as never} to="/connect-clusters">
+        <PlainLink search={{} as never} to="/connect-clusters">
           <Button variant="link">Cancel</Button>
-        </Link>
+        </PlainLink>
       </div>
     </PageContent>
   );
@@ -468,10 +468,11 @@ export const PipelineEditor = (p: {
           title: 'Configuration',
           content: () => (
             <div>
-              <div className="flex min-h-[400px] gap-7">
+              <div className="flex min-h-[400px] flex-col gap-7 lg:flex-row">
                 <PipelinesYamlEditor
                   defaultPath="config.yaml"
                   defaultValue={p.yaml}
+                  height={400}
                   language="yaml"
                   onChange={(e) => {
                     // Propagate empty content too — clearing the editor must

@@ -57,7 +57,7 @@ rs.mock('../../../config', () => {
   };
 });
 
-rs.mock('sonner', () => ({
+rs.mock('components/redpanda-ui/components/toast', () => ({
   toast: {
     success: rs.fn(),
     error: rs.fn(),
@@ -183,9 +183,9 @@ describe('the CreateTopicDialog', () => {
 
       const input = await enterTopicName(user, name);
 
-      expect(await screen.findByText(message)).toBeInTheDocument();
+      expect(await screen.findByRole('alert')).toHaveTextContent(message);
       expect(input).toHaveAttribute('aria-invalid', 'true');
-      expect(input).toHaveAccessibleDescription(message);
+      expect(input).toHaveAccessibleDescription(`Letters, numbers, dots, underscores, and hyphens. ${message}`);
       expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
 
       await submitOwningForm(input);

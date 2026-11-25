@@ -22,9 +22,9 @@ import { Input } from 'components/redpanda-ui/components/input';
 import { Label } from 'components/redpanda-ui/components/label';
 import { RadioGroup, RadioGroupItem } from 'components/redpanda-ui/components/radio-group';
 import { Tabs, TabsList, TabsTrigger } from 'components/redpanda-ui/components/tabs';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { Trash2 } from 'lucide-react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import { TagChipInput } from './tag-chip-input';
 import type { FormValues } from '../../model';
@@ -142,7 +142,11 @@ export const ScopeSection = () => {
             <FormLabel>Destination contexts</FormLabel>
             <FormControl>
               <RadioGroup
-                onValueChange={handleDestinationModeChange}
+                onValueChange={(value) => {
+                  if (value !== null) {
+                    handleDestinationModeChange(value);
+                  }
+                }}
                 testId="sr-destination-mode-selection"
                 value={field.value}
               >

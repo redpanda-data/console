@@ -27,10 +27,10 @@ rs.mock('react-query/api/cluster-fence', () => {
     useUpdateClusterFenceSettingsMutation: rs.fn(() => mutation),
   };
 });
-rs.mock('sonner', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
+rs.mock('components/redpanda-ui/components/toast', () => ({ toast: { success: rs.fn(), error: rs.fn() } }));
 
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useClusterFenceStatusQuery } from 'react-query/api/cluster-fence';
-import { toast } from 'sonner';
 
 import type { FencePhase } from './cluster-fence-model';
 import { ClusterFenceSettingsDialog } from './cluster-fence-settings-dialog';

@@ -144,15 +144,13 @@ export const parseRetentionFromConfig = (config: TopicConfigEntries) =>
   parseTopicConfigFromExisting({ topicName: '' }, config);
 
 // Form helper functions for input handling
-export const createNumberChangeHandler =
-  (onChange: (value?: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value ? Number.parseInt(e.target.value, 10) : undefined);
-  };
+export const createNumberChangeHandler = (onChange: (value?: number) => void) => (value: string) => {
+  onChange(value ? Number.parseInt(value, 10) : undefined);
+};
 
-export const createFloatChangeHandler =
-  (onChange: (value?: number) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value ? Number.parseFloat(e.target.value) : 0);
-  };
+export const createFloatChangeHandler = (onChange: (value?: number) => void) => (value: string) => {
+  onChange(value ? Number.parseFloat(value) : 0);
+};
 
 // Generate unit options from create-topic-dialog factors for consistency
 export const getRetentionTimeUnitOptions = () => {

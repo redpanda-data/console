@@ -11,8 +11,8 @@
 
 import { useNavigate } from '@tanstack/react-router';
 import { Button } from 'components/redpanda-ui/components/button';
+import { toast } from 'components/redpanda-ui/components/toast';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { CreateUserButton, CreateUserConfirmationModal, CreateUserModal } from './user-create';
 import {

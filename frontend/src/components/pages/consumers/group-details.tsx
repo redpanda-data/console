@@ -233,13 +233,7 @@ const AssignmentCell = ({ assignments }: { assignments: GroupMemberAssignment[] 
 };
 
 const MemberFilterInput = ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
-  <Input
-    containerClassName="w-[300px]"
-    onChange={(e) => onChange(e.target.value)}
-    placeholder="Filter by member"
-    size="sm"
-    value={value}
-  >
+  <Input containerClassName="w-[300px]" onValueChange={onChange} placeholder="Filter by member" size="sm" value={value}>
     <InputStart>
       <TonedIcon className="size-4" icon={Search} tone="muted" />
     </InputStart>

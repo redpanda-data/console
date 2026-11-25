@@ -110,6 +110,16 @@ describe('the ScopeSection', () => {
     });
   });
 
+  test('pastes comma- and newline-separated contexts as distinct tokens', async () => {
+    const { user, latest } = renderTrackingFormValues();
+    await user.click(screen.getByTestId('sr-scope-specify-tab'));
+    await user.click(await screen.findByTestId('sr-contexts-input-field'));
+    await user.paste('.prod,.dr\n.prod');
+    expect(latest.values?.schemaRegistry?.contexts).toEqual(['.prod', '.dr']);
+    await user.keyboard('{Backspace}');
+    expect(latest.values?.schemaRegistry?.contexts).toEqual(['.prod']);
+  });
+
   test('should manage context mapping rows when destinations are mapped', async () => {
     const { user, latest } = renderTrackingFormValues();
 

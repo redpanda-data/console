@@ -97,6 +97,22 @@ function queryHeading(name: string) {
   return screen.queryByRole('heading', { name, level: 5 });
 }
 
+it.each([
+  ['my_api', 'secrets.MY_API_KEY', '${REDPANDA_BROKERS}'],
+  ['brokers', '${REDPANDA_BROKERS}', 'secrets.MY_API_KEY'],
+])('searching %s finds the composed pipeline command row', async (query, match, other) => {
+  const user = userEvent.setup();
+  const transport = createTestTransport({ secretNames: ['MY_API_KEY'] });
+  render(<PipelineCommandMenu editorInstance={createMockEditor()} onOpenChange={rs.fn()} open variant="dialog" />, {
+    transport,
+  });
+
+  expect(await screen.findByRole('option', { name: 'secrets.MY_API_KEY' })).toBeVisible();
+  await user.type(screen.getByRole('combobox', { name: 'Search variables, secrets, topics, users...' }), query);
+  expect(screen.getByRole('option', { name: match })).toBeVisible();
+  expect(screen.queryByRole('option', { name: other })).not.toBeInTheDocument();
+});
+
 describe('the PipelineCommandMenu', () => {
   it('dialog variant renders all category group headings', async () => {
     const transport = createTestTransport({ secretNames: ['API_KEY'], topicNames: ['orders'], userNames: ['svc'] });

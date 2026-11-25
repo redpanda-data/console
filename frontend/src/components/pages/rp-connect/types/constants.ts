@@ -81,6 +81,6 @@ export const redpandaConnectorSetupStepDefinitions = [
 
 const RedpandaConnectorSetupStepDefinition = defineStepper(...redpandaConnectorSetupStepDefinitions);
 export const RedpandaConnectorSetupStepper = RedpandaConnectorSetupStepDefinition.Stepper;
-export type RedpandaConnectorSetupSteps = typeof RedpandaConnectorSetupStepDefinition.Steps;
+export type RedpandaConnectorSetupSteps = ReturnType<typeof RedpandaConnectorSetupStepDefinition.useStepper>;
 
 export type PipelineMode = 'create' | 'edit' | 'view';
