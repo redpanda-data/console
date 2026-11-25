@@ -1,4 +1,3 @@
-import { stringValue } from 'utils/type-guards';
 /**
  * Copyright 2026 Redpanda Data, Inc.
  *
@@ -32,6 +31,7 @@ import { useLegacyListTopicsQuery } from 'react-query/api/topic';
 import { toast } from 'sonner';
 import { columnMeta, readColumnMeta } from 'utils/data-table-column-meta';
 import { reportActionError } from 'utils/toast.utils';
+import { stringValue } from 'utils/type-guards';
 
 import { CreateTopicDialog } from './create-topic-dialog';
 import { TopicListPagination } from './topic-list-pagination';
@@ -81,7 +81,9 @@ function useTopicListPage(refetchTopics: () => unknown) {
 
   const refreshData = useCallback(() => {
     api.refreshClusterOverview().catch(reportActionError);
-    api.refreshClusterHealth().catch(reportActionError);
+    api.refreshClusterHealth().catch(() => {
+      // Best-effort: clusters without the debug-bundle endpoint reject this call.
+    });
     refetchTopics();
   }, [refetchTopics]);
 
