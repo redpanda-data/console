@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -184,18 +183,11 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 		rcl, err := sr.NewClient(sr.URLs(s.registryAddress))
 		require.NoError(err)
 
-		_, err = rcl.Contexts(t.Context())
-		if err != nil {
-			t.Skipf("this Redpanda image has no schema registry contexts: %v", err)
-		}
-
 		testTopicName := testutil.TopicNameForTest("serde_schema_protobuf_context")
 		_, err = s.kafkaAdminClient.CreateTopic(ctx, 1, 1, map[string]*string{
 			schemacache.TopicConfigSchemaRegistryContext: &contextCfg,
 		}, testTopicName)
-		if err != nil {
-			t.Skipf("this Redpanda image does not support the %s topic config: %v", schemacache.TopicConfigSchemaRegistryContext, err)
-		}
+		require.NoError(err)
 
 		defer func() {
 			_, err := s.kafkaAdminClient.DeleteTopics(ctx, testTopicName)
@@ -209,15 +201,12 @@ func (s *SerdeIntegrationTestSuite) TestDeserializeRecord() {
 			Schema: string(protoFile),
 			Type:   sr.TypeProtobuf,
 		})
-		if err != nil {
-			t.Skipf("schema registry contexts are not enabled on this Redpanda image: %v", err)
-		}
+		require.NoError(err)
 		require.NotNil(ss)
 
 		contexts, err := rcl.Contexts(t.Context())
-		if err != nil || !slices.Contains(contexts, schemaContext) {
-			t.Skipf("schema registry contexts are not enabled on this Redpanda image (contexts: %v, error: %v)", contexts, err)
-		}
+		require.NoError(err)
+		require.Contains(contexts, schemaContext)
 
 		var serde sr.Serde
 		serde.Register(

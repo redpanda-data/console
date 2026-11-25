@@ -271,7 +271,7 @@ export class SchemaPage {
     const createButton = this.page.getByTestId('schema-list-create-btn');
     await expect(createButton).toBeVisible();
     await createButton.click();
-    await expect(this.page).toHaveURL(appURL('/schema-registry/create'));
+    await expect(this.page).toHaveURL(appURL('/schema-registry/contexts/default/create'));
   }
 
   async clickEditCompatibilityButton() {

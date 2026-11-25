@@ -1074,8 +1074,8 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 			Configurations: []*v1alpha2.UpdateTopicConfigurationsRequest_UpdateConfiguration{
 				{
 					Name:      "cleanup.policy",
-					Value:     kmsg.StringPtr("compact"), // Value must be empty for delete operation
-					Operation: v1alpha2.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
+					Value:     kmsg.StringPtr("not-a-policy"),
+					Operation: v1alpha2.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
 				},
 				{
 					Name:      "compression.type",
@@ -1088,7 +1088,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1alpha2() {
 		assert.Nil(response)
 		require.Error(err)
 		assert.Equal(connect.CodeInvalidArgument.String(), connect.CodeOf(err).String())
-		assert.Contains(err.Error(), "cleanup.policy requires a value to be empty")
+		assert.Contains(err.Error(), "cleanup.policy")
 	})
 
 	t.Run("update topic configuration for non existent topic (http)", func(t *testing.T) {

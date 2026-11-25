@@ -2,7 +2,7 @@
   "images": {
     "redpanda": {
       "repository": "redpandadata/redpanda",
-      "tag": "v25.3.6"
+      "tag": "v26.3.1"
     },
     "redpandaNightly": {
       "repository": "redpandadata/redpanda-nightly",

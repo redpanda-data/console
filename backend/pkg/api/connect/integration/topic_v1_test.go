@@ -1079,8 +1079,8 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1() {
 			Configurations: []*v1.UpdateTopicConfigurationsRequest_UpdateConfiguration{
 				{
 					Name:      "cleanup.policy",
-					Value:     kmsg.StringPtr("compact"), // Value must be empty for delete operation
-					Operation: v1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_DELETE,
+					Value:     kmsg.StringPtr("not-a-policy"),
+					Operation: v1.ConfigAlterOperation_CONFIG_ALTER_OPERATION_SET,
 				},
 				{
 					Name:      "compression.type",
@@ -1093,7 +1093,7 @@ func (s *APISuite) TestUpdateTopicConfiguration_v1() {
 		assert.Nil(response)
 		require.Error(err)
 		assert.Equal(connect.CodeInvalidArgument.String(), connect.CodeOf(err).String())
-		assert.Contains(err.Error(), "cleanup.policy requires a value to be empty")
+		assert.Contains(err.Error(), "cleanup.policy")
 	})
 
 	t.Run("update topic configuration for non existent topic (http)", func(t *testing.T) {
@@ -1585,7 +1585,7 @@ func (s *APISuite) TestAddTopicPartitions_v1() {
 		require.Error(err)
 		assert.NotEmpty(errResponse)
 
-		assert.Contains(errResponse, "Partition count must be greater then current number of partitions")
+		assert.Contains(errResponse, "Partition count must be greater")
 		assert.Truef(requests.HasStatusErr(err, http.StatusBadRequest), "Status code should be 400")
 
 		// 3. Verify results
@@ -1711,7 +1711,7 @@ func (s *APISuite) TestAddTopicPartitions_v1() {
 		_, err = client.AddTopicPartitions(ctx, connect.NewRequest(addTopicPartitionReq))
 
 		require.Error(err)
-		assert.Contains(err.Error(), "Partition count must be greater then current number of partitions")
+		assert.Contains(err.Error(), "Partition count must be greater")
 
 		// 3. Verify results
 		topicMetadata, err := s.kafkaAdminClient.Metadata(ctx, topicName)
@@ -1767,8 +1767,8 @@ func (s *APISuite) TestAddTopicPartitions_v1() {
 		assert.NotEmpty(errResponse)
 
 		assert.Contains(errResponse, "INVALID_ARGUMENT")
-		assert.Contains(errResponse, "INVALID_REQUEST")
-		assert.Contains(errResponse, "Partition count must be greater then current number of partitions")
+		assert.Contains(errResponse, "INVALID_PARTITIONS")
+		assert.Contains(errResponse, "Partition count must be greater")
 		assert.Truef(requests.HasStatusErr(err, http.StatusBadRequest), "Status code should be 400")
 	})
 }
@@ -1915,7 +1915,7 @@ func (s *APISuite) TestSetTopicPartitions_v1() {
 		require.Error(err)
 		assert.NotEmpty(errResponse)
 
-		assert.Contains(errResponse, "Partition count must be greater then current number of partitions")
+		assert.Contains(errResponse, "Partition count must be greater")
 		assert.Truef(requests.HasStatusErr(err, http.StatusBadRequest), "Status code should be 400")
 
 		// 3. Verify results
@@ -1962,10 +1962,10 @@ func (s *APISuite) TestSetTopicPartitions_v1() {
 		require.Error(err)
 		assert.NotEmpty(errResponse)
 
-		assert.Contains(errResponse, "INVALID_ARGUMENT")
-		assert.Contains(errResponse, "INVALID_TOPIC_EXCEPTION")
+		assert.Contains(errResponse, "NOT_FOUND")
+		assert.Contains(errResponse, "UNKNOWN_TOPIC_OR_PARTITION")
 		assert.Contains(errResponse, "Topic does not exist")
-		assert.Truef(requests.HasStatusErr(err, http.StatusBadRequest), "Status code should be 400")
+		assert.Truef(requests.HasStatusErr(err, http.StatusNotFound), "Status code should be 404")
 	})
 }
 
@@ -2187,9 +2187,9 @@ func (s *APISuite) TestAddPartitionsToTopics_v1() {
 		defer cancel()
 
 		// 1. Create new topic
-		topicName0 := "console-integration-test-add-partitions-invalid-topic-0-http"
-		topicName1 := "console-integration-test-add-partitions-invalid-topic-1-http-123" // not created
-		topicName2 := "console-integration-test-add-partitions-invalid-topic-2-http"
+		topicName0 := "console-integration-test-validate-add-partitions-invalid-topic-0-http"
+		topicName1 := "console-integration-test-validate-add-partitions-invalid-topic-1-http-123" // not created
+		topicName2 := "console-integration-test-validate-add-partitions-invalid-topic-2-http"
 
 		_, err := s.kafkaAdminClient.CreateTopics(ctx, 1, 1, nil, topicName0, topicName2)
 		require.NoError(err)
@@ -2455,7 +2455,7 @@ func (s *APISuite) TestSetPartitionsToTopics_v1() {
 
 			if status.TopicName == topicName1 {
 				assert.False(status.Success)
-				assert.Contains(status.Error, "INVALID_TOPIC_EXCEPTION")
+				assert.Contains(status.Error, "UNKNOWN_TOPIC_OR_PARTITION")
 				assert.Contains(status.Error, "Topic does not exist")
 			} else {
 				assert.True(status.Success)
@@ -2481,9 +2481,9 @@ func (s *APISuite) TestSetPartitionsToTopics_v1() {
 		defer cancel()
 
 		// 1. Create new topic
-		topicName0 := "console-integration-test-set-partitions-invalid-topic-0-http"
-		topicName1 := "console-integration-test-set-partitions-invalid-topic-1-http-123" // not created
-		topicName2 := "console-integration-test-set-partitions-invalid-topic-2-http"
+		topicName0 := "console-integration-test-validate-set-partitions-invalid-topic-0-http"
+		topicName1 := "console-integration-test-validate-set-partitions-invalid-topic-1-http-123" // not created
+		topicName2 := "console-integration-test-validate-set-partitions-invalid-topic-2-http"
 
 		_, err := s.kafkaAdminClient.CreateTopics(ctx, 1, 1, nil, topicName0, topicName2)
 		require.NoError(err)
@@ -2538,7 +2538,7 @@ func (s *APISuite) TestSetPartitionsToTopics_v1() {
 
 			if status.TopicName == topicName1 {
 				assert.False(status.Success)
-				assert.Contains(status.Error, "INVALID_TOPIC_EXCEPTION")
+				assert.Contains(status.Error, "UNKNOWN_TOPIC_OR_PARTITION")
 				assert.Contains(status.Error, "Topic does not exist")
 			} else {
 				assert.True(status.Success)
