@@ -130,7 +130,7 @@
                   "@playwright/test",
                   "@playwright/test/**"
                 ],
-                "message": "Use Bun for units, Rstest with Turbo DOM for DOM integration, and Rstest with native Playwright for browser/E2E tests."
+                "message": "Use Bun for units, Rstest with Ctrl DOM for DOM integration, and Rstest with native Playwright for browser/E2E tests."
               }
             ]
           }

@@ -54,7 +54,7 @@ test.each([
   {
     name: 'allows the supported runners, DOM environment, native browser APIs and selector helpers',
     source:
-      "import 'bun:test'; import '@rstest/core'; import '@rstest/playwright'; import 'playwright'; import '@miaskiewicz/turbo-dom/install'; import 'ivya';",
+      "import 'bun:test'; import '@rstest/core'; import '@rstest/playwright'; import 'playwright'; import '@ctrl/dom/register/pure'; import 'ivya';",
     rule: '',
     violations: 0,
   },

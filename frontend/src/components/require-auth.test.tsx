@@ -10,7 +10,7 @@
  */
 
 import { Code, ConnectError } from '@connectrpc/connect';
-import { afterEach, beforeEach, describe, expect, rs, test } from '@rstest/core';
+import { afterEach, beforeEach, describe, expect, test } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
 
 import RequireAuth from './require-auth';
@@ -22,8 +22,7 @@ import { AppFeatures } from '../utils/env';
 const LICENSE_EXPIRED_ERROR = new ConnectError('enterprise license expired', Code.FailedPrecondition);
 
 function setPath(path: string) {
-  // Turbo DOM's history does not update location; this suite only reads the current URL.
-  rs.stubGlobal('location', new URL(path, window.location.origin));
+  window.history.pushState({}, '', path);
 }
 
 describe('the RequireAuth', () => {
@@ -52,7 +51,7 @@ describe('the RequireAuth', () => {
     act(() => {
       useApiStore.setState({ userData: undefined, userDataError: null, isUserDataFetchInProgress: false });
     });
-    rs.unstubAllGlobals();
+    setPath('/');
   });
 
   test('renders /trial-expired instead of a blank screen when the redirect leaves userData unresolved', () => {

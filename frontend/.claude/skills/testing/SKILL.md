@@ -38,7 +38,7 @@ bun run test:coverage     # Coverage report
 
 ## Key Points
 
-- `.test.ts` = Bun unit, `.test.tsx` / `.integration.test.ts` = Rstest integration (Turbo DOM)
+- `.test.ts` = Bun unit, `.test.tsx` / `.integration.test.ts` = Rstest integration (Ctrl DOM)
 - Always use `test-utils/test-utils.tsx` for React component tests
 - Test that features are fully wired: UI elements must connect to actual functionality
 

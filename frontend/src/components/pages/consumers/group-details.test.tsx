@@ -126,7 +126,8 @@ const partitionTable = () => {
 };
 
 const sortPartitionsDescending = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(screen.getByRole('button', { name: 'Partition' }));
+  screen.getByRole('button', { name: 'Partition' }).focus();
+  await user.keyboard('{ArrowDown}');
   await user.click(screen.getByRole('menuitem', { name: 'Desc' }));
 };
 

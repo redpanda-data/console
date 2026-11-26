@@ -244,10 +244,7 @@ describe('the BootstrapServers', () => {
       // Order: client key appears before client certificate in the DOM
       const keyButton = screen.getByTestId('add-clientKey-button');
       const certButton = screen.getByTestId('add-clientCert-button');
-      const buttons = document.querySelectorAll(
-        '[data-testid="add-clientKey-button"], [data-testid="add-clientCert-button"]'
-      );
-      expect(Array.from(buttons)).toEqual([keyButton, certButton]);
+      expect(keyButton.compareDocumentPosition(certButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
     test('should auto-open mTLS disclosure when client cert is already filled', () => {

@@ -41,6 +41,10 @@ export default defineConfig({
     conditionNames: ['browser', '...'],
     alias: {
       ...sharedAliases,
+      '@testing-library/react$': '@ctrl/dom/react',
+      '@testing-library/dom$': '@ctrl/dom/testing-library',
+      '@testing-library/user-event$': '@ctrl/dom/user-event',
+      '@testing-library/jest-dom/matchers$': '@ctrl/dom/jest-dom/matchers',
       'monaco-editor$': fromHere('./tests/mocks/monaco-editor.ts'),
       '@monaco-editor/react$': fromHere('./tests/mocks/monaco-editor-react.ts'),
     },

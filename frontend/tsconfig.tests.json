@@ -23,7 +23,6 @@
     "tests/**/rstest.config.ts",
     "tests/**/rstest-global-setup.ts",
     "bun.setup.ts",
-    "tests/turbo-dom.d.ts",
     "src/env.d.ts",
     "src/app.tsx",
     "src/**/*.d.ts"

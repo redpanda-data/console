@@ -27,7 +27,7 @@ Always use `bun run <script>` for project tools. Never use `bunx`, `npx`, or run
 | `bun run build` | Production build |
 | `bun run test` | Unit, integration and federation checks |
 | `bun run test:unit` | `.test.ts` (Bun) |
-| `bun run test:integration` | `.test.tsx` (Turbo DOM) |
+| `bun run test:integration` | `.test.tsx` (Ctrl DOM) |
 | `bun run lint` | Biome/Ultracite linter |
 | `bun run type:check` | TypeScript |
 

@@ -417,7 +417,7 @@ export default defineProject({
 ```
 
 Rstest consumes the generated route tree. Keep route generation in `rsbuild.config.ts`.
-Keep the shared Turbo DOM environment and setup from `rstest.config.integration.ts`.
+Keep the shared Ctrl DOM environment and setup from `rstest.config.integration.ts`.
 
 ### Phase 7: Integrations
 

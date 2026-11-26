@@ -1,4 +1,4 @@
-import { installGlobals } from '@miaskiewicz/turbo-dom/install';
+import { register } from '@ctrl/dom/register/pure';
 
 import { afterEach, describe, expect, it, mock, test } from 'bun:test';
 
@@ -23,8 +23,8 @@ const nativeApis = {
   WritableStream,
   TransformStream,
 };
-installGlobals(globalThis, { url: 'http://localhost:3000' });
-// Keep Bun's networking constructors and the base64 APIs Turbo DOM delegates to.
+register({ url: 'http://localhost:3000/', compat: 'modern', timeSkip: false });
+// DOM registration must not replace Bun's native networking or base64 APIs.
 Object.assign(globalThis, nativeApis);
 Object.assign(globalThis, { describe, expect, it, test });
 
