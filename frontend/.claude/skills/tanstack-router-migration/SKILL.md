@@ -413,15 +413,11 @@ import { defineProject } from '@rstest/core';
 export default defineProject({
   plugins: [pluginReact()],
   include: ['src/**/*.test.tsx'],
-  testEnvironment: {
-    name: 'happy-dom',
-    prebundle: 'auto',
-  },
-  setupFiles: './rstest.setup.ts',
 });
 ```
 
 Rstest consumes the generated route tree. Keep route generation in `rsbuild.config.ts`.
+Keep the shared Ctrl DOM environment and setup from `rstest.config.integration.ts`.
 
 ### Phase 7: Integrations
 

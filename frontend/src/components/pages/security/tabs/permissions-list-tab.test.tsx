@@ -181,9 +181,7 @@ describe('the Permissions List - delete dropdown for different principal types',
 
     render(<PermissionsListTab />, { wrapper: NuqsWrapper });
 
-    const groupRow = await screen.findByTestId('row-engineering');
-    const actionsDiv = within(groupRow).getByTestId('actions-engineering');
-    await user.click(within(actionsDiv).getByRole('button'));
+    await openPrincipalActions(user, 'engineering');
 
     // Group should only have "Delete (ACLs only)", not user-delete options
     expect(screen.queryByText('Delete (User and ACLs)')).not.toBeInTheDocument();
@@ -196,9 +194,7 @@ describe('the Permissions List - delete dropdown for different principal types',
 
     render(<PermissionsListTab />, { wrapper: NuqsWrapper });
 
-    const scramRow = await screen.findByTestId('row-scram-admin');
-    const actionsDiv = within(scramRow).getByTestId('actions-scram-admin');
-    await user.click(within(actionsDiv).getByRole('button'));
+    await openPrincipalActions(user, 'scram-admin');
 
     // SCRAM user should have all delete options available and enabled
     const deleteUserAndAcls = screen.getByText('Delete (User and ACLs)');
@@ -215,9 +211,7 @@ describe('the Permissions List - delete dropdown for different principal types',
 
     render(<PermissionsListTab />, { wrapper: NuqsWrapper });
 
-    const groupRow = await screen.findByTestId('row-engineering');
-    const actionsDiv = within(groupRow).getByTestId('actions-engineering');
-    await user.click(within(actionsDiv).getByRole('button'));
+    await openPrincipalActions(user, 'engineering');
 
     expect(screen.getByText('Delete (ACLs only)')).toBeInTheDocument();
   });
@@ -297,15 +291,22 @@ describe('the Permissions List - delete dropdown for different principal types',
   });
 });
 
-async function openAclsOnlyDelete(user: ReturnType<typeof userEvent.setup>, principalName: string) {
+async function openPrincipalActions(user: ReturnType<typeof userEvent.setup>, principalName: string) {
   const row = await screen.findByTestId(`row-${principalName}`);
-  await user.click(within(within(row).getByTestId(`actions-${principalName}`)).getByRole('button'));
+  within(within(row).getByTestId(`actions-${principalName}`))
+    .getByRole('button')
+    .focus();
+  await user.keyboard('{ArrowDown}');
+  await screen.findByRole('menu');
+}
+
+async function openAclsOnlyDelete(user: ReturnType<typeof userEvent.setup>, principalName: string) {
+  await openPrincipalActions(user, principalName);
   await user.click(screen.getByText('Delete (ACLs only)'));
 }
 
 async function confirmUserOnlyDelete(user: ReturnType<typeof userEvent.setup>, principalName: string) {
-  const row = await screen.findByTestId(`row-${principalName}`);
-  await user.click(within(within(row).getByTestId(`actions-${principalName}`)).getByRole('button'));
+  await openPrincipalActions(user, principalName);
   await user.click(screen.getByText('Delete (User only)'));
   await user.click(screen.getByTestId('confirm-delete'));
 }

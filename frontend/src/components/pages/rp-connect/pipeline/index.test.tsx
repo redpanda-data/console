@@ -666,7 +666,8 @@ const saveAndCapturePipeline = async (user: UserSession, rpcMock: ReturnType<typ
 
 /** Picks "Save and start" from the save button's options. */
 const chooseSaveAndStart = async (user: UserSession) => {
-  await user.click(screen.getByTestId('save-pipeline-options'));
+  screen.getByTestId('save-pipeline-options').focus();
+  await user.keyboard('{ArrowDown}');
   await user.click(await screen.findByRole('menuitem', { name: 'Save and start' }));
 };
 

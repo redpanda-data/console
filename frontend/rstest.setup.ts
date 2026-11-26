@@ -1,6 +1,5 @@
 // Copyright 2026 Redpanda Data, Inc.
 
-// React 19 under Rstest's prebundled happy-dom no longer needs the former MessageChannel deletion workaround.
 import { afterEach, beforeEach, expect, rs } from '@rstest/core';
 import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
@@ -12,10 +11,7 @@ import { createMemoryStorage } from './tests/memory-storage';
 
 expect.extend(jestDomMatchers);
 
-// Node 24 exposes an opt-in global localStorage getter that returns undefined
-// unless --localstorage-file is provided. Install a deterministic per-worker
-// Storage implementation instead of letting that host getter shadow
-// happy-dom's storage.
+// Keep Node and the emulated window on the same in-memory storage.
 const testLocalStorage = createMemoryStorage();
 Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
@@ -25,32 +21,6 @@ Object.defineProperty(window, 'localStorage', {
   configurable: true,
   value: testLocalStorage,
 });
-
-// ── happy-dom network / resource isolation ───────────────────────────
-// Unlike jsdom, happy-dom attempts real network requests for scripts,
-// images, and fetch calls. Disable external loading + same-origin policy
-// to suppress AbortError / ECONNREFUSED noise from unmocked endpoints.
-if (typeof window !== 'undefined' && 'happyDOM' in window) {
-  const happyDOM = Reflect.get(window, 'happyDOM');
-  if (typeof happyDOM === 'object' && happyDOM !== null) {
-    const settings = Reflect.get(happyDOM, 'settings');
-    if (typeof settings === 'object' && settings !== null) {
-      const navigation = Reflect.get(settings, 'navigation');
-      const fetchSettings = Reflect.get(settings, 'fetch');
-      Reflect.set(settings, 'navigation', {
-        ...(typeof navigation === 'object' && navigation !== null ? navigation : {}),
-        disableMainFrameNavigation: true,
-      });
-      Reflect.set(settings, 'fetch', {
-        ...(typeof fetchSettings === 'object' && fetchSettings !== null ? fetchSettings : {}),
-        disableSameOriginPolicy: true,
-      });
-      Reflect.set(settings, 'disableJavaScriptFileLoading', true);
-      Reflect.set(settings, 'disableCSSFileLoading', true);
-      Reflect.set(settings, 'disableJavaScriptEvaluation', true);
-    }
-  }
-}
 
 const unexpectedRequests: Error[] = [];
 
@@ -71,8 +41,7 @@ if (typeof window !== 'undefined') {
   );
 }
 
-// Polyfill Element/Document.getAnimations — happy-dom doesn't implement them
-// but Base UI's ScrollAreaViewport calls them from a setTimeout.
+// Base UI's ScrollAreaViewport calls getAnimations from a setTimeout.
 if (typeof Element !== 'undefined' && typeof Element.prototype.getAnimations !== 'function') {
   Element.prototype.getAnimations = () => [];
 }
@@ -80,22 +49,8 @@ if (typeof Document !== 'undefined' && typeof Document.prototype.getAnimations !
   Document.prototype.getAnimations = () => [];
 }
 
-// happy-dom >=20.12 implements Web Animations, but Animation.cancel() rejects
-// `finished` without marking it handled as the spec requires, so every
-// unmount mid-animation surfaces an unhandled AbortError
-// (capricorn86/happy-dom#2412). Mark it handled before cancelling.
-if (typeof Animation !== 'undefined') {
-  const originalCancel = Animation.prototype.cancel;
-  Animation.prototype.cancel = function cancel(this: Animation) {
-    this.finished.catch(() => undefined);
-    originalCancel.call(this);
-  };
-}
-
 // ── Mocks ────────────────────────────────────────────────────────────
-// happy-dom ships ResizeObserver / matchMedia / scrollTo / crypto natively, but
-// matchMedia must be an rs.fn so media-query reads (the theme provider's
-// prefers-color-scheme, responsive hooks) return a deterministic `matches: false`.
+// Keep prefers-color-scheme and responsive hook results deterministic.
 beforeEach(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,

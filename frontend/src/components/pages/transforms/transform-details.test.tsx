@@ -83,7 +83,8 @@ function renderTransformWithPartitionLags() {
 }
 
 async function sortByLag(user: ReturnType<typeof userEvent.setup>, direction: 'Asc' | 'Desc') {
-  await user.click(screen.getByRole('button', { name: 'Lag' }));
+  screen.getByRole('button', { name: 'Lag' }).focus();
+  await user.keyboard('{ArrowDown}');
   await user.click(screen.getByRole('menuitem', { name: direction }));
 }
 

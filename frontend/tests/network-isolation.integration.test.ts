@@ -16,7 +16,7 @@ function writeNetworkIsolationProject(directory: string) {
       import config from ${JSON.stringify(resolve('rstest.config.integration.ts'))};
       export default {
         ...config, root: ${JSON.stringify(directory)}, include: ['*.test.ts'],
-        setupFiles: [${JSON.stringify(resolve('rstest.setup.ts'))}], plugins: [],
+        plugins: [],
         pool: { type: 'threads', maxWorkers: 1 }, performance: { buildCache: false },
         onConsoleLog(content) { process.stderr.write(content); },
       };

@@ -22,8 +22,8 @@ rs.mock('@uiw/react-codemirror', () => ({
 
 const QUERY_1_TAB = /Query 1/;
 const QUERY_2_TAB = /Query 2/;
-// Matches the Run button's accessible name including its platform Kbd hint.
-const RUN_BUTTON = /Run (Ctrl|⌘)/;
+// Locate Run by name and its shortcut hint, regardless of whitespace between them.
+const RUN_BUTTON = /^Run\s*(Ctrl|⌘)/;
 
 const renderEditor = (onRun = rs.fn()) => {
   render(<SqlEditor catalogs={[]} initialQuery="SELECT 1;" onRun={onRun} />);

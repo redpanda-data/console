@@ -85,7 +85,7 @@ In order:
 3. **Contract and compatibility.** Proto changes that are not wire-compatible, hook signature
    changes, API version placement, generated output not regenerated.
 4. **Tests.** New behavior needs a test. Backend prefers table-driven with `t.Run`; frontend
-   splits `.test.ts` (unit, node) from `.test.tsx` (integration, happy-dom).
+   splits `.test.ts` (Bun unit) from `.test.tsx` (Rstest integration with Ctrl DOM).
 5. **Noise.** Comments that restate the code, commented-out code, and dead scaffolding. See
    Comments above.
 

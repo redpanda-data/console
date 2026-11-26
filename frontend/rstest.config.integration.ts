@@ -16,17 +16,14 @@ export default defineConfig({
   name: 'integration',
   globals: true,
   passWithNoTests: false,
-  testEnvironment: {
-    name: 'happy-dom',
-    prebundle: 'auto',
-  },
+  testEnvironment: 'node',
   pool: {
     type: 'threads',
     maxWorkers: '50%',
   },
   include: ['src/**/*.test.tsx', 'src/**/*.integration.test.ts', 'tests/**/*.integration.test.ts'],
   exclude: ['src/**/*.federation.test.tsx'],
-  setupFiles: './rstest.setup.ts',
+  setupFiles: [fromHere('./tests/rstest-dom.setup.mjs'), fromHere('./rstest.setup.ts')],
   testTimeout: 30_000,
   reporters: [['md', { preset: 'compact' }], ...(process.env.CI ? ['github-actions' as const] : [])],
   plugins: [pluginReact(), pluginSass(), pluginYaml()],
@@ -34,13 +31,20 @@ export default defineConfig({
     buildCache: true,
   },
   output: {
+    // Keep Rstest's DOM bundling defaults when the DOM is installed by setupFiles.
+    bundleDependencies: true,
     cssModules: {
       localIdentName: '[local]',
     },
   },
   resolve: {
+    conditionNames: ['browser', '...'],
     alias: {
       ...sharedAliases,
+      '@testing-library/react$': '@ctrl/dom/react',
+      '@testing-library/dom$': '@ctrl/dom/testing-library',
+      '@testing-library/user-event$': '@ctrl/dom/user-event',
+      '@testing-library/jest-dom/matchers$': '@ctrl/dom/jest-dom/matchers',
       'monaco-editor$': fromHere('./tests/mocks/monaco-editor.ts'),
       '@monaco-editor/react$': fromHere('./tests/mocks/monaco-editor-react.ts'),
     },
