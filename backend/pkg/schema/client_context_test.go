@@ -21,6 +21,10 @@ import (
 func (s *TestCachedClientSuite) TestSchemaContextScoping() {
 	avroSchema := `{"type": "record", "name": "Convoy", "fields": [{"name": "id", "type": "string"}]}`
 	s.mockRegistry.SeedSchema(":.outgo:convoy-value", 1, 7, sr.Schema{Schema: avroSchema})
+	// Each context has its own IDs, so the default context needs its own schema 7.
+	s.mockRegistry.SeedSchema("escort-value", 1, 7, sr.Schema{
+		Schema: `{"type": "record", "name": "Escort", "fields": [{"name": "id", "type": "string"}]}`,
+	})
 
 	var mu sync.Mutex
 	var paths []string

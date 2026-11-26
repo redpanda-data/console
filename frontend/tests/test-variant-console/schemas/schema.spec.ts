@@ -317,7 +317,7 @@ function describeSchemaWorkflowSuites() {
       await schemaPage.goto();
 
       await schemaPage.clickCreateButton();
-      await expect(page).toHaveURL(appURL('/schema-registry/create'));
+      await expect(page).toHaveURL(appURL('/schema-registry/contexts/default/create'));
     });
   });
 
