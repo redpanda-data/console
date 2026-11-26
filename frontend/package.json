@@ -56,6 +56,7 @@
     "ultracite": "ultracite"
   },
   "resolutions": {
+    "@builder.io/sdk-react/isolated-vm": "7.0.2",
     "@module-federation/dts-plugin/undici": "^7.30.1",
     "dompurify": "^3.4.17",
     "prismjs": "^1.30.0"
