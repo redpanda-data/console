@@ -156,50 +156,8 @@ func (p *streamProgressReporter) OnMessage(message *console.TopicMessage) {
 		Timestamp:       message.Timestamp,
 		Compression:     compression,
 		IsTransactional: message.IsTransactional,
-		Key: &v1alpha.KafkaRecordPayload{
-			OriginalPayload:   message.Key.OriginalPayload,
-			PayloadSize:       int32(message.Key.PayloadSizeBytes),
-			NormalizedPayload: message.Key.NormalizedPayload,
-			IsPayloadTooLarge: message.Key.IsPayloadTooLarge,
-			Encoding:          toProtoEncoding(message.Key.Encoding),
-		},
-		Value: &v1alpha.KafkaRecordPayload{
-			OriginalPayload:   message.Value.OriginalPayload,
-			PayloadSize:       int32(message.Value.PayloadSizeBytes),
-			NormalizedPayload: message.Value.NormalizedPayload,
-			IsPayloadTooLarge: message.Value.IsPayloadTooLarge,
-			Encoding:          toProtoEncoding(message.Value.Encoding),
-		},
-	}
-
-	if message.Key.SchemaID != nil {
-		schemaID := int32(*message.Key.SchemaID)
-		data.Key.SchemaId = &schemaID
-	}
-
-	if message.Value.SchemaID != nil {
-		schemaID := int32(*message.Value.SchemaID)
-		data.Value.SchemaId = &schemaID
-	}
-
-	data.Key.TroubleshootReport = make([]*v1alpha.TroubleshootReport, 0, len(message.Key.Troubleshooting))
-	for _, ts := range message.Key.Troubleshooting {
-		data.Key.TroubleshootReport = append(
-			data.Key.TroubleshootReport, &v1alpha.TroubleshootReport{
-				SerdeName: ts.SerdeName,
-				Message:   ts.Message,
-			},
-		)
-	}
-
-	data.Value.TroubleshootReport = make([]*v1alpha.TroubleshootReport, 0, len(message.Value.Troubleshooting))
-	for _, ts := range message.Value.Troubleshooting {
-		data.Value.TroubleshootReport = append(
-			data.Value.TroubleshootReport, &v1alpha.TroubleshootReport{
-				SerdeName: ts.SerdeName,
-				Message:   ts.Message,
-			},
-		)
+		Key:             toProtoRecordPayload(message.Key),
+		Value:           toProtoRecordPayload(message.Value),
 	}
 
 	if err := p.stream.Send(

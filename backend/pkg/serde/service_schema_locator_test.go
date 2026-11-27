@@ -58,6 +58,10 @@ func locatorTestName(sc schemaseed.Scenario, n int) string {
 func assertLocatorWant(t *testing.T, label string, want schemaseed.Want, got *RecordPayload) {
 	t.Helper()
 
+	if want.WrongSchema {
+		return
+	}
+
 	if want.Error != "" {
 		var messages []string
 		for _, ts := range got.Troubleshooting {
@@ -81,4 +85,7 @@ func assertLocatorWant(t *testing.T, label string, want schemaseed.Want, got *Re
 	if want.JSON != "" {
 		assert.JSONEq(t, want.JSON, string(got.NormalizedPayload), "%s payload", label)
 	}
+	assert.Equal(t, want.Location, string(got.SchemaIDLocation), "%s schema ID location", label)
+	assert.Equal(t, want.Context, got.SchemaContext, "%s schema context", label)
+	assert.Equal(t, want.GUID, got.SchemaGUID, "%s schema GUID", label)
 }

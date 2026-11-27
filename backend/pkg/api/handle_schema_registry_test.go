@@ -208,3 +208,32 @@ func Test_handleCreateSchema_NormalizeParam(t *testing.T) {
 		})
 	}
 }
+
+func Test_parseSchemaGUID(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     string
+		want    string
+		wantErr bool
+	}{
+		{name: "lowercase", raw: "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9", want: "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9"},
+		{name: "uppercase", raw: "0A1B2C3D-4E5F-6071-8293-A4B5C6D7E8F9", want: "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9"},
+		{name: "empty", raw: "", wantErr: true},
+		{name: "schema ID", raw: "42", wantErr: true},
+		{name: "no hyphens", raw: "0a1b2c3d4e5f60718293a4b5c6d7e8f9", wantErr: true},
+		{name: "braces", raw: "{0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8f9}", wantErr: true},
+		{name: "not hexadecimal", raw: "0a1b2c3d-4e5f-6071-8293-a4b5c6d7e8fz", wantErr: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := parseSchemaGUID(tc.raw)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}

@@ -104,4 +104,14 @@ message KafkaRecordPayload {
   int32 payload_size = 5; // Payload size in bytes.
   bool is_payload_too_large = 6; // If payload is too large for deserialization.
   repeated TroubleshootReport troubleshoot_report = 7; // Troubleshooting data for debugging.
+  optional string schema_guid = 8; // Schema GUID that the record carries. Unset if the record carries a schema ID.
+  string schema_context = 9; // Schema Registry context that schema_id was resolved in. Empty is the default context.
+  SchemaIdLocation schema_id_location = 10; // Where the record carries the schema ID or GUID.
+}
+
+// SchemaIdLocation is where a record carries the schema ID or GUID of its key or value.
+enum SchemaIdLocation {
+  SCHEMA_ID_LOCATION_UNSPECIFIED = 0;
+  SCHEMA_ID_LOCATION_PAYLOAD = 1; // Prefix of the key or value.
+  SCHEMA_ID_LOCATION_HEADER = 2; // Record header __key_schema_id or __value_schema_id.
 }

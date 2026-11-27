@@ -15,6 +15,7 @@ import (
 
 	"github.com/bufbuild/protocompile"
 	"github.com/twmb/avro"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sr"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -22,21 +23,65 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-// Location is where a key or value carries its schema ID.
+// Location is where a key or value carries its schema locator.
 type Location string
 
-// Locations of a schema ID.
+// Locations of a schema locator.
 const (
-	Plain     Location = "plain"
-	PayloadID Location = "payload-id"
+	Plain       Location = "plain"
+	PayloadID   Location = "payload-id"
+	PayloadGUID Location = "payload-guid"
+	HeaderID    Location = "header-id"
+	HeaderGUID  Location = "header-guid"
 )
 
-// IDLocator returns a schema ID in the Confluent wire format: 0x00, the ID,
-// and the Protobuf message indexes if any.
+// Record headers that carry a schema locator.
+const (
+	KeySchemaIDHeader   = "__key_schema_id"
+	ValueSchemaIDHeader = "__value_schema_id"
+)
+
+func (l Location) inHeader() bool { return l == HeaderID || l == HeaderGUID }
+func (l Location) isGUID() bool   { return l == PayloadGUID || l == HeaderGUID }
+
+// IDLocator returns the schema ID form of a locator: 0x00, the ID, and the
+// Protobuf message indexes if any.
 func IDLocator(id int, index ...int) []byte {
 	var h sr.ConfluentHeader
 	b, _ := h.AppendEncode(nil, id, index)
 	return b
+}
+
+// GUIDLocator returns the schema GUID form of a locator: 0x01, the GUID, and
+// the Protobuf message indexes if any.
+func GUIDLocator(guid string, index ...int) []byte {
+	var h sr.ConfluentHeader
+	b, err := h.AppendEncodeGUID(nil, guid, index)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+// Place writes an encoded message to the key or value of rec. A payload
+// location prefixes the message with the locator, a header location puts the
+// locator in the schema ID record header.
+func Place(rec *kgo.Record, isKey bool, loc Location, locator, message []byte) {
+	payload := message
+	if loc.inHeader() {
+		name := ValueSchemaIDHeader
+		if isKey {
+			name = KeySchemaIDHeader
+		}
+		rec.Headers = append(rec.Headers, kgo.RecordHeader{Key: name, Value: locator})
+	} else {
+		payload = append(append([]byte{}, locator...), message...)
+	}
+	if isKey {
+		rec.Key = payload
+		return
+	}
+	rec.Value = payload
 }
 
 // encoded is a message encoded with a fixture schema.
@@ -47,9 +92,11 @@ type encoded struct {
 	json    string // the decoded message as Console shows it
 }
 
-// payload returns the message with its schema ID in front.
-func (e encoded) payload() []byte {
-	return append(IDLocator(e.schema.ID, e.index...), e.message...)
+func (e encoded) locator(loc Location) []byte {
+	if loc.isGUID() {
+		return GUIDLocator(e.schema.GUID, e.index...)
+	}
+	return IDLocator(e.schema.ID, e.index...)
 }
 
 func encodeAvro(s *Schema, sample string) (encoded, error) {

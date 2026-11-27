@@ -16,6 +16,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -677,5 +679,96 @@ func (s *APIIntegrationTestSuite) TestSchemaUsagesByIDSubjectFilter() {
 		require.NoError(err)
 		require.Len(versions, 1)
 		assert.Equal("usage-test-value", versions[0].Subject)
+	})
+}
+
+func (s *APIIntegrationTestSuite) TestSchemaGUIDs() {
+	t := s.T()
+	require := require.New(t)
+	assert := assert.New(t)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+
+	// The same schema in two contexts has two schema IDs and one GUID.
+	const (
+		subject          = "guid-test-value"
+		schemaContext    = ".guidtest"
+		qualifiedSubject = ":" + schemaContext + ":" + subject
+	)
+	schema := sr.Schema{
+		Schema: `{"type":"record","name":"GuidTest","fields":[{"name":"id","type":"int"}]}`,
+		Type:   sr.TypeAvro,
+	}
+	_, err := s.kafkaSRClient.CreateSchema(ctx, subject, schema)
+	require.NoError(err)
+	_, err = s.kafkaSRClient.CreateSchema(sr.InContext(ctx, schemaContext), subject, schema)
+	require.NoError(err)
+	defer func() {
+		for _, name := range []string{subject, qualifiedSubject} {
+			_, err := s.kafkaSRClient.DeleteSubject(context.Background(), name, sr.SoftDelete)
+			assert.NoError(err)
+			_, err = s.kafkaSRClient.DeleteSubject(context.Background(), name, sr.HardDelete)
+			assert.NoError(err)
+		}
+	}()
+
+	guidOf := func(name string) string {
+		res, body := s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/subjects/"+url.PathEscape(name)+"/versions/latest", nil)
+		require.Equal(200, res.StatusCode, string(body))
+
+		var details struct {
+			Schemas []struct {
+				ID   int    `json:"id"`
+				GUID string `json:"guid"`
+			} `json:"schemas"`
+		}
+		require.NoError(json.Unmarshal(body, &details))
+		require.Len(details.Schemas, 1)
+		return details.Schemas[0].GUID
+	}
+
+	guid := guidOf(subject)
+
+	t.Run("subject details report the GUID", func(_ *testing.T) {
+		assert.Len(guid, 36)
+		assert.Equal(guid, guidOf(qualifiedSubject), "the GUID is the same in every context")
+	})
+
+	type schemaVersion struct {
+		Subject string `json:"subject"`
+		Version int    `json:"version"`
+	}
+
+	t.Run("usages by GUID list the subjects of every context", func(_ *testing.T) {
+		res, body := s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/schemas/guids/"+guid+"/versions", nil)
+		require.Equal(200, res.StatusCode, string(body))
+
+		var versions []schemaVersion
+		require.NoError(json.Unmarshal(body, &versions))
+		assert.ElementsMatch([]schemaVersion{
+			{Subject: subject, Version: 1},
+			{Subject: qualifiedSubject, Version: 1},
+		}, versions)
+	})
+
+	t.Run("the GUID is accepted in uppercase", func(_ *testing.T) {
+		res, body := s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/schemas/guids/"+strings.ToUpper(guid)+"/versions", nil)
+		require.Equal(200, res.StatusCode, string(body))
+
+		var versions []schemaVersion
+		require.NoError(json.Unmarshal(body, &versions))
+		assert.Len(versions, 2)
+	})
+
+	t.Run("an unknown GUID has no usages", func(_ *testing.T) {
+		res, body := s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/schemas/guids/00000000-dead-beef-0000-000000000000/versions", nil)
+		require.Equal(200, res.StatusCode, string(body))
+		assert.JSONEq(`[]`, string(body))
+	})
+
+	t.Run("an invalid GUID is rejected", func(_ *testing.T) {
+		res, _ := s.apiRequest(ctx, http.MethodGet, "/api/schema-registry/schemas/guids/42/versions", nil)
+		assert.Equal(400, res.StatusCode)
 	})
 }

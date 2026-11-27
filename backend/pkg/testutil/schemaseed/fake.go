@@ -12,6 +12,8 @@ package schemaseed
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/twmb/franz-go/pkg/sr"
 	"github.com/twmb/franz-go/pkg/sr/srfake"
@@ -26,6 +28,8 @@ func Fake(opts ...Option) (*Fixture, *srfake.Registry, error) {
 	registry := srfake.New()
 	for _, s := range schemas {
 		registry.SeedSchema(s.QualifiedSubject(), 1, s.ID, s.registrySchema())
+		seeded, _ := registry.GetSchema(s.QualifiedSubject(), 1)
+		s.GUID = seeded.GUID
 	}
 	scenarios, err := buildScenarios(schemas, o.idBase)
 	if err == nil {
@@ -53,4 +57,18 @@ func softDelete(registry *srfake.Registry, schemas []*Schema) error {
 		}
 	}
 	return nil
+}
+
+// DisableGUIDRoutes makes the registry answer GUID lookups like a broker older
+// than 26.3, which has no GUID routes.
+func DisableGUIDRoutes(registry *srfake.Registry) {
+	registry.Intercept(func(w http.ResponseWriter, r *http.Request) bool {
+		if !strings.HasPrefix(r.URL.Path, "/schemas/guids/") {
+			return false
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message":"Not found","code":404}`))
+		return true
+	})
 }

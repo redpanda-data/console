@@ -10,9 +10,7 @@
 package proto
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -322,84 +320,6 @@ func (s *Service) GetMessageDescriptor(topicName string, property RecordProperty
 	}
 
 	return messageType.Descriptor(), nil
-}
-
-type confluentEnvelope struct {
-	SchemaID     uint32
-	IndexArray   []int
-	ProtoPayload []byte
-}
-
-// decodeConfluentBinaryWrapper decodes the serialized message that contains metadata in order for the client to
-// know what information it has to fetch from the schema registry to deserialize the Protobuf message.
-//
-// Binary format:
-// Byte 0: A magic byte that identifies this as a message with Confluent Platform framing.
-//
-// Bytes 1-4: Unique global id of the Protobuf schema that was used for encoding
-// (as registered in Confluent Schema Registry), big endian.
-//
-// Bytes 5-n: A size-prefixed array of indices that identify the specific message type in the schema (a given schema
-// can contain many message types and they can be nested). Size and indices are unsigned varints. The common case
-// where the message type is the first message in the schema (i.e. index data would be [1,0]) is encoded as
-// a single 0 byte as an optimization.
-//
-// Bytes n+1-end: Protobuf serialized payload.
-func (*Service) decodeConfluentBinaryWrapper(payload []byte) (*confluentEnvelope, error) {
-	buf := bytes.NewReader(payload)
-	magicByte, err := buf.ReadByte()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read magic byte: %w", err)
-	}
-	if magicByte != byte(0) {
-		return nil, errors.New("magic byte is not 0")
-	}
-
-	var schemaID uint32
-	err = binary.Read(buf, binary.BigEndian, &schemaID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read schemaID: %w", err)
-	}
-
-	arrLength, err := binary.ReadVarint(buf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read arrLength: %w", err)
-	}
-
-	// Because we can not be sure this is a legit message the read arr length
-	// may be too large to make an array. If that's the case we would get a
-	// panic with: makeslice: len out of range. Therefore, we check this length
-	// before allocating the slice. We assume to not have more than 128 types in
-	// a single message
-	if arrLength > 128 || arrLength < 0 {
-		return nil, errors.New("arrLength is out of expected bounds, unlikely a legit envelope")
-	}
-
-	msgTypeIDs := make([]int, arrLength)
-	// If there is just one msgtype (default index - 0) the array won't be sent at all
-	if arrLength == 0 {
-		msgTypeIDs = append(msgTypeIDs, 0)
-	}
-
-	for i := 0; i < int(arrLength); i++ {
-		id, err := binary.ReadVarint(buf)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read msgTypeID: %w", err)
-		}
-		msgTypeIDs[i] = int(id)
-	}
-
-	remainingPayload := make([]byte, buf.Len())
-	_, err = buf.Read(remainingPayload)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read remaining payload: %w", err)
-	}
-
-	return &confluentEnvelope{
-		SchemaID:     schemaID,
-		IndexArray:   msgTypeIDs,
-		ProtoPayload: remainingPayload,
-	}, nil
 }
 
 func (s *Service) tryCreateProtoRegistry() {

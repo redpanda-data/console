@@ -19,9 +19,11 @@ import (
 	"strings"
 
 	"github.com/cloudhut/common/rest"
+	"github.com/google/uuid"
 	"github.com/twmb/franz-go/pkg/sr"
 
 	"github.com/redpanda-data/console/backend/pkg/console"
+	schemacache "github.com/redpanda-data/console/backend/pkg/schema"
 )
 
 // createSchemaRequest defines the expected JSON body to create a schema.
@@ -115,6 +117,53 @@ func (api *API) handleGetSchemaUsagesByID() http.HandlerFunc {
 		}
 		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
 	}
+}
+
+func (api *API) handleGetSchemaUsagesByGUID() http.HandlerFunc {
+	if !api.Cfg.SchemaRegistry.Enabled {
+		return api.handleSchemaRegistryNotConfigured()
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		guid, err := parseSchemaGUID(rest.GetURLParam(r, "guid"))
+		if err != nil {
+			rest.SendRESTError(w, r, api.Logger, &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadRequest,
+				Message:  err.Error(),
+				IsSilent: false,
+			})
+			return
+		}
+
+		res, err := api.ConsoleSvc.GetSchemaUsagesByGUID(r.Context(), guid)
+		if err != nil {
+			restErr := &rest.Error{
+				Err:      err,
+				Status:   http.StatusBadGateway,
+				Message:  fmt.Sprintf("Failed to retrieve schema usages for schema GUID: %v", err.Error()),
+				IsSilent: false,
+			}
+			if schemacache.IsRouteNotFound(err) {
+				restErr.Status = http.StatusNotFound
+				restErr.Message = "The schema registry does not support schema GUIDs. Redpanda supports them from 26.3."
+			}
+			rest.SendRESTError(w, r, api.Logger, restErr)
+			return
+		}
+		rest.SendResponse(w, r, api.Logger, http.StatusOK, res)
+	}
+}
+
+// parseSchemaGUID returns the GUID in the lowercase form that the schema
+// registry uses. It accepts only the 36 character form with hyphens.
+func parseSchemaGUID(raw string) (string, error) {
+	const guidLength = 36
+	parsed, err := uuid.Parse(raw)
+	if err != nil || len(raw) != guidLength {
+		return "", fmt.Errorf("schema GUID %q is not valid. Must have the form xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", raw)
+	}
+	return parsed.String(), nil
 }
 
 func (api *API) handleGetSchemaRegistryConfig() http.HandlerFunc {

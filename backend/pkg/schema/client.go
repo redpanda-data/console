@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -55,6 +56,10 @@ type CachedClient struct {
 
 	schemaCache        *cache.Cache[string, sr.Schema]
 	subjectSchemaCache *cache.Cache[string, sr.SubjectSchema]
+	guidCache          *cache.Cache[string, []sr.ContextID]
+	// guidRoutesMissing holds, per tenant, the error of a registry that has no
+	// GUID routes. It saves a request for every record that looks like a GUID.
+	guidRoutesMissing *cache.Cache[string, error]
 
 	avroSchemaCache  *cache.Cache[string, *avro.Schema]
 	protoSchemaCache *cache.Cache[string, linker.Files]
@@ -69,6 +74,7 @@ type Client interface {
 	ParseAvroSchemaWithReferences(ctx context.Context, schema sr.Schema) (*avro.Schema, error)
 	ParseJSONSchema(ctx context.Context, sch sr.Schema) (*jsonschema.Schema, error)
 	SchemaByID(ctx context.Context, id int) (sr.Schema, error)
+	SchemaIDsByGUID(ctx context.Context, guid string) ([]sr.ContextID, error)
 	SchemaByVersion(ctx context.Context, subject string, id int) (sr.SubjectSchema, error)
 	CompileProtoSchemaWithReferences(ctx context.Context, schema sr.Schema, accessorMap map[string]string) (linker.Files, error)
 }
@@ -102,6 +108,10 @@ func NewCachedClient(schemaClientFactory schema.ClientFactory, cacheNamespaceFn 
 		cache.MaxErrorAge(time.Second),
 	}
 
+	// A payload that only looks like a GUID adds one entry per record, so
+	// expired entries must be removed.
+	guidCacheSettings := append(slices.Clone(cacheSettings), cache.AutoCleanInterval(time.Minute))
+
 	standardImportsResolver, err := createCustomProtoResolver(context.Background())
 	if err != nil {
 		return nil, err
@@ -115,6 +125,8 @@ func NewCachedClient(schemaClientFactory schema.ClientFactory, cacheNamespaceFn 
 
 		schemaCache:        cache.New[string, sr.Schema](cacheSettings...),
 		subjectSchemaCache: cache.New[string, sr.SubjectSchema](cacheSettings...),
+		guidCache:          cache.New[string, []sr.ContextID](guidCacheSettings...),
+		guidRoutesMissing:  cache.New[string, error](cacheSettings...),
 
 		avroSchemaCache:  cache.New[string, *avro.Schema](cacheSettings...),
 		protoSchemaCache: cache.New[string, linker.Files](cacheSettings...),
@@ -435,6 +447,36 @@ func (c *CachedClient) SchemaByID(ctx context.Context, id int) (sr.Schema, error
 	})
 
 	return sch, err
+}
+
+// SchemaIDsByGUID returns the schema ID that a schema GUID has in each context
+// that holds the schema. A GUID is the same in every context, so the lookup
+// and its cache entry ignore the context set with InContext.
+func (c *CachedClient) SchemaIDsByGUID(ctx context.Context, guid string) ([]sr.ContextID, error) {
+	namespace, err := c.cacheNamespace(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if routeErr, _, state := c.guidRoutesMissing.TryGet(namespace); state.IsHit() {
+		return nil, routeErr
+	}
+
+	key := namespace + "/schemas/guids/" + guid + "/ids"
+
+	ids, err, _ := c.guidCache.Get(key, func() ([]sr.ContextID, error) {
+		srClient, err := c.schemaClientFactory.GetSchemaRegistryClient(ctx)
+		if err != nil {
+			return nil, err
+		}
+		// An empty name drops the context prefix from the request path.
+		return srClient.SchemaIDsByGUID(sr.InContext(ctx, ""), guid)
+	})
+	if IsRouteNotFound(err) {
+		c.guidRoutesMissing.Set(namespace, err)
+	}
+
+	return ids, err
 }
 
 // SchemaByVersion retrieves a schema by its subject and version from the schema

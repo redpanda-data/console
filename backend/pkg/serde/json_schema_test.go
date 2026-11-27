@@ -97,7 +97,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
-				assert.Equal(t, "incorrect magic byte for json schema", err.Error())
+				assert.Equal(t, "payload has no schema ID: unknown magic byte 0x5b", err.Error())
 			},
 		},
 		{
@@ -108,7 +108,7 @@ func TestJsonSchemaSerde_DeserializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
-				assert.Equal(t, "incorrect magic byte for json schema", err.Error())
+				assert.Equal(t, "payload has no schema ID: unknown magic byte 0x74", err.Error())
 			},
 		},
 	}

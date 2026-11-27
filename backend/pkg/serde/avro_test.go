@@ -183,7 +183,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
-				assert.Equal(t, "payload size is <= 5", err.Error())
+				assert.Equal(t, "payload has no schema ID: truncated schema ID, got 4 of 5 bytes", err.Error())
 			},
 		},
 		{
@@ -194,7 +194,7 @@ func TestAvroSerde_DeserializePayload(t *testing.T) {
 			payloadType: PayloadTypeValue,
 			validationFunc: func(t *testing.T, _ RecordPayload, err error) {
 				assert.Error(t, err)
-				assert.Equal(t, "incorrect magic byte for avro", err.Error())
+				assert.Equal(t, "payload has no schema ID: truncated schema GUID, got 7 of 17 bytes", err.Error())
 			},
 		},
 		{
